@@ -42,16 +42,16 @@ export async function transitionInTx(
   name: TransitionName,
   actor: Actor,
   rawExtra: TransitionExtra,
-  opts: { now: Date; blockDays: number },
+  opts: { now: Date; blockDays: number; viaReturn?: boolean },
 ) {
   const extra = transitionExtraSchema.parse(rawExtra);
   const userId = "system" in actor ? null : actor.userId;
   if ("system" in actor ? name !== "cancel" : !can(actor.role, TRANSITIONS[name].permission)) {
     throw new OrderError("forbidden", "Không có quyền thực hiện thao tác này");
   }
-  if (name === "returned") {
-    // Nhập lại hàng trả vào "Chờ kiểm tra" làm ở P3 — chưa cho đổi trạng thái để kho không lệch.
-    throw new OrderError("invalid_transition", "Trả hàng chưa được hỗ trợ");
+  if (name === "returned" && !opts.viaReturn) {
+    // Chỉ chuyển RETURNED qua returnItems() (src/server/orders/returns.ts) — luôn kèm phiếu nhập hàng trả vào kho.
+    throw new OrderError("invalid_transition", "Dùng chức năng Trả hàng để nhập lại hàng");
   }
 
   await tx.$queryRaw`SELECT "id" FROM "Order" WHERE "id" = ${orderId} FOR UPDATE`;

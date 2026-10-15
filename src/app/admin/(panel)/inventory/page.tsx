@@ -36,6 +36,9 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
           newDoc("TRANSFER", "stock:transfer"),
           newDoc("ISSUE", "stock:issue"),
           newDoc("ADJUST", "stock:adjust"),
+          <LinkButton key="quarantine" href="/admin/inventory/quarantine">
+            {t("quarantine")}
+          </LinkButton>,
           <LinkButton key="docs" href="/admin/inventory/documents">
             {t("documents")}
           </LinkButton>,

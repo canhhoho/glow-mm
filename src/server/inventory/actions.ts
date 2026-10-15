@@ -7,6 +7,7 @@ import type { DocType } from "@/generated/prisma/client";
 import { requirePermission } from "@/server/auth/session";
 import type { Permission } from "@/server/auth/roles";
 import { cancelDocument, createDocument, postDocument } from "./documents";
+import { discardFromQuarantine, restockFromQuarantine } from "./quarantine";
 import { addShipmentCost, allocateShipment, createShipment, removeShipmentCost, setAllocationMethod } from "./shipments";
 
 export type ActionState = { error?: string; ok?: string } | undefined;
@@ -126,4 +127,35 @@ export async function allocateShipmentAction(_prev: ActionState, formData: FormD
   }
   revalidatePath(`/admin/shipments/${shipmentId}`);
   return { ok: "allocated" };
+}
+
+// ── Khu Chờ kiểm tra (hàng trả) ──
+
+const quarantineFields = (fd: FormData) => ({
+  batchId: fd.get("batchId"),
+  fromId: fd.get("fromId"),
+  qty: fd.get("qty"),
+  stockType: fd.get("stockType") || undefined,
+});
+
+export async function restockAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("stock:transfer");
+    await restockFromQuarantine({ ...quarantineFields(formData), toId: formData.get("toId") }, user.id);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  revalidatePath("/admin/inventory/quarantine");
+  return { ok: "restocked" };
+}
+
+export async function discardAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("stock:issue");
+    await discardFromQuarantine({ ...quarantineFields(formData), reason: formData.get("reason") }, user.id);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  revalidatePath("/admin/inventory/quarantine");
+  return { ok: "discarded" };
 }

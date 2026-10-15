@@ -1,72 +1,17 @@
 import Rabbit from "rabbit-node";
 import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
-import { createDocument, postDocument } from "@/server/inventory/documents";
-import { availableToSell } from "@/server/orders/availability";
 import { cancelExpiredOrders } from "@/server/orders/cron";
 import { OrderError } from "@/server/orders/errors";
 import { createOrder } from "@/server/orders/orders";
 import { reviewPaymentProof, submitPaymentProof } from "@/server/orders/payments";
-import { transitionOrder, type Actor } from "@/server/orders/transitions";
-import { balance, makeFixture, type Fixture } from "./fixtures";
+import { transitionOrder } from "@/server/orders/transitions";
+import { admin, avail, balance, orderInput, saleFixture, unpublishTestProducts } from "./fixtures";
 
 const DAY = 24 * 60 * 60 * 1000;
 
 // Sản phẩm test phải "đã đăng" mới đặt được; gỡ đăng khi xong để không lẫn vào storefront của E2E (cùng DB glow_test).
-afterAll(async () => {
-  await prisma.product.updateMany({ where: { slug: { startsWith: "it-" }, published: true }, data: { published: false } });
-});
-const isoDay = (offsetDays: number) => new Date(Date.now() + offsetDays * DAY).toISOString().slice(0, 10);
-
-/** Fixture bán hàng: sản phẩm đã đăng, hàng nằm ở kho MM (bán được), vùng giao hàng riêng. */
-async function saleFixture(lots: { lot: string; expiryInDays: number; qty: number }[]) {
-  const f = await makeFixture();
-  await prisma.product.update({ where: { id: f.productId }, data: { published: true } });
-  const doc = await createDocument(
-    {
-      type: "RECEIVE",
-      toId: f.mm.id,
-      lines: lots.map((l) => ({
-        variantId: f.variantId,
-        lotNo: l.lot,
-        expiryDate: isoDay(l.expiryInDays),
-        unitCostVnd: 100_000,
-        qty: l.qty,
-      })),
-    },
-    f.userId,
-  );
-  await postDocument(doc.id, f.userId);
-  const zone = await prisma.shippingZone.create({
-    data: {
-      code: `IT-${f.tag}`,
-      region: "Yangon",
-      township: "IT",
-      nameMy: "စမ်းသပ်",
-      nameEn: "Test",
-      rates: { create: { feeMmk: 2500, freeFromMmk: 100_000 } },
-    },
-  });
-  return { ...f, zoneId: zone.id };
-}
-type SaleFixture = Awaited<ReturnType<typeof saleFixture>>;
-
-const admin = (f: Fixture): Actor => ({ userId: f.userId, role: "ADMIN" });
-
-function orderInput(f: SaleFixture, qty: number, extra: Record<string, unknown> = {}) {
-  return {
-    paymentMethod: "COD",
-    name: "Ma Hla",
-    phone: "+95 9 7812 3456",
-    zoneId: f.zoneId,
-    addressLine: "No. 12, Bo Aung Kyaw St",
-    items: [{ variantId: f.variantId, qty }],
-    ...extra,
-  };
-}
-
-const avail = async (variantId: string, now = new Date()) =>
-  (await prisma.$transaction((tx) => availableToSell(tx, [variantId], { now, blockDays: 90 }))).get(variantId);
+afterAll(unpublishTestProducts);
 
 describe("Tạo đơn + giữ hàng", () => {
   it("tạo đơn: giá/phí ship từ DB, snapshot, giữ hàng làm giảm khả dụng", async () => {

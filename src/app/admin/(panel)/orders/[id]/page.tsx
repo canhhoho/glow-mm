@@ -3,22 +3,28 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
-import { getOrderAdmin, sellableLocations } from "@/server/orders/admin-queries";
-import { reviewProofAction } from "@/server/orders/actions";
+import { getOrderAdmin, quarantineLocations, sellableLocations } from "@/server/orders/admin-queries";
+import { returnItemsAction, reviewProofAction } from "@/server/orders/actions";
 import { availableTransitions, TRANSITIONS } from "@/server/orders/state-machine";
 import { ActionButton } from "@/components/admin/action-button";
+import { ActionForm } from "@/components/admin/action-form";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/admin/order-badges";
 import { TransitionForm, type TransitionField } from "@/components/admin/transition-form";
-import { Badge, DataTable, LinkButton, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, fieldClass, LinkButton, PageHeader, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
 
 export default async function OrderPage({ params }: PageProps<"/admin/orders/[id]">) {
   const user = await requirePagePermission("orders:view");
   const { id } = await params;
-  const [t, order, locations] = await Promise.all([getTranslations("Orders"), getOrderAdmin(id), sellableLocations()]);
+  const [t, order, locations, qcLocations] = await Promise.all([
+    getTranslations("Orders"),
+    getOrderAdmin(id),
+    sellableLocations(),
+    quarantineLocations(),
+  ]);
   if (!order) notFound();
 
-  // "returned" (nhập lại hàng trả) làm ở P3.
+  // "returned" chỉ qua form Trả hàng (kèm phiếu nhập hàng trả vào Chờ kiểm tra).
   const transitions = availableTransitions(order).filter(
     (n) => n !== "returned" && can(user.role, TRANSITIONS[n].permission),
   );
@@ -43,6 +49,12 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
     return [];
   };
   const canReview = can(user.role, "orders:confirm-payment");
+  const returnable = order.items.filter((i) => i.qty - i.returnedQty > 0);
+  const canReturn =
+    (order.status === "SHIPPING" || order.status === "COMPLETED") &&
+    can(user.role, "orders:return") &&
+    returnable.length > 0 &&
+    qcLocations.length > 0;
   const showLabel = ["PACKING", "SHIPPING", "COMPLETED"].includes(order.status);
   const who = (userId: string | null) => (userId ? (order.userNames[userId] ?? userId) : t("system"));
 
@@ -111,12 +123,13 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
 
       <section className="space-y-2">
         <h2 className="font-medium">{t("items")}</h2>
-        <DataTable head={[t("sku"), t("product"), t("qty"), t("unitPrice"), t("lineTotal"), t("lots")]}>
+        <DataTable head={[t("sku"), t("product"), t("qty"), t("ret.returned"), t("unitPrice"), t("lineTotal"), t("lots")]}>
           {order.items.map((i) => (
             <tr key={i.id}>
               <Td className="font-mono text-xs">{i.sku}</Td>
               <Td>{i.name}</Td>
               <Td className="text-right tabular-nums">{fmtInt(i.qty)}</Td>
+              <Td className="text-right tabular-nums">{i.returnedQty > 0 ? fmtInt(i.returnedQty) : "—"}</Td>
               <Td className="text-right tabular-nums">{fmtInt(i.unitPriceMmk)}</Td>
               <Td className="text-right tabular-nums">{fmtInt(i.qty * i.unitPriceMmk)}</Td>
               <Td className="text-xs">
@@ -163,6 +176,65 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
           </div>
         )}
       </section>
+
+      {canReturn && (
+        <section className="space-y-2">
+          <h2 className="font-medium">{t("ret.title")}</h2>
+          <p className="text-xs text-muted-foreground">{t("ret.hint")}</p>
+          <ActionForm
+            action={returnItemsAction}
+            submitLabel={t("ret.submit")}
+            okText={t("ret.done")}
+            confirm={t("ret.confirm")}
+            className="space-y-3 rounded-lg border p-3"
+          >
+            <input type="hidden" name="orderId" value={order.id} />
+            <ul className="space-y-2">
+              {returnable.map((i) => (
+                <li key={i.id} className="flex flex-wrap items-center gap-2 text-sm">
+                  <input
+                    name={`qty:${i.id}`}
+                    type="number"
+                    min={0}
+                    max={i.qty - i.returnedQty}
+                    defaultValue={0}
+                    aria-label={`${t("ret.title")} ${i.sku}`}
+                    className={`${fieldClass} w-20`}
+                  />
+                  <span>
+                    <span className="font-mono text-xs">{i.sku}</span> {i.name}{" "}
+                    <span className="text-muted-foreground">
+                      ({t("ret.returnable")}: {i.qty - i.returnedQty})
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="space-y-1 text-xs">
+                <span className="text-muted-foreground">{t("ret.reason")}</span>
+                <input name="reason" required maxLength={500} className={`${fieldClass} w-64`} />
+              </label>
+              {qcLocations.length > 1 && (
+                <label className="space-y-1 text-xs">
+                  <span className="text-muted-foreground">{t("ret.location")}</span>
+                  <select name="toLocationId" className={`${fieldClass} w-48`}>
+                    {qcLocations.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.code} — {l.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <label className="flex min-h-9 items-center gap-2 text-sm">
+                <input type="checkbox" name="refunded" />
+                {t("ret.refunded")}
+              </label>
+            </div>
+          </ActionForm>
+        </section>
+      )}
 
       {order.paymentMethod === "BANK_TRANSFER" && (
         <section className="space-y-2">

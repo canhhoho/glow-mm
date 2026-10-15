@@ -127,3 +127,11 @@ export async function sellableLocations() {
     select: { id: true, code: true, name: true },
   });
 }
+
+export async function quarantineLocations() {
+  return prisma.location.findMany({
+    where: { type: "QUARANTINE" },
+    orderBy: { code: "asc" },
+    select: { id: true, code: true, name: true },
+  });
+}

@@ -57,7 +57,8 @@
     "TESTER": "Tester/gift",
     "nearExpiry": "Near expiry",
     "blocked": "Not for sale",
-    "expired": "Expired"
+    "expired": "Expired",
+    "quarantine": "Quarantine"
   },
   "Docs": {
     "title": "Stock documents",
@@ -323,6 +324,18 @@
       "forbidden": "You do not have permission",
       "invalid_file": "Invalid file (JPG/PNG/WebP/PDF, max 5MB)",
       "proof_not_allowed": "Order is not awaiting payment proof"
+    },
+    "ret": {
+      "title": "Return items",
+      "hint": "Enter returned quantity per line. Goods go back to the original lots, into quarantine.",
+      "returnable": "Returnable",
+      "returned": "Returned",
+      "reason": "Return reason",
+      "location": "Quarantine location",
+      "refunded": "Customer refunded",
+      "submit": "Record return",
+      "confirm": "Record the return into quarantine?",
+      "done": "Return recorded"
     }
   },
   "Settings": {
@@ -403,5 +416,21 @@
     "back": "Prices",
     "noRate": "No exchange rate yet — add one first",
     "empty": "Nothing yet"
+  },
+  "Quarantine": {
+    "title": "Quarantine (returned goods)",
+    "empty": "Nothing in quarantine",
+    "hint": "Inspect returned goods: restock if sellable, otherwise discard.",
+    "product": "Product",
+    "lot": "Lot · expiry",
+    "qty": "Qty",
+    "orders": "From orders",
+    "restockTo": "Restock to",
+    "restock": "Restock",
+    "restocked": "Restocked",
+    "reason": "Discard reason",
+    "discard": "Discard",
+    "discarded": "Discarded",
+    "discardConfirm": "Discard these items (remove from stock)?"
   }
 }

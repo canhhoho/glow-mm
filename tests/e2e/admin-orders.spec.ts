@@ -62,7 +62,30 @@ test("đơn thủ công (Facebook, COD): tạo → xác nhận → đóng gói F
   await page.goto(orderUrl);
   await page.getByRole("button", { name: "Hoàn tất (đã giao)" }).click();
   await expectStatus(page, "Hoàn tất");
-  await expectStatus(page, "Đã trả");
+  await expectStatus(page, "Đã thanh toán");
+
+  // Khách trả lại 1 món → hàng vào khu Chờ kiểm tra (MM-QC); trả hết nên đơn → Trả hàng.
+  await page.getByLabel("Trả hàng SV-SUN-50").fill("1");
+  const qc = page.getByLabel("Vị trí chờ kiểm tra");
+  if (await qc.count()) {
+    const value = await qc.locator("option", { hasText: "MM-QC" }).getAttribute("value");
+    await qc.selectOption(value!);
+  }
+  await page.getByLabel("Lý do trả").fill("Khách đổi ý");
+  page.once("dialog", (d) => d.accept());
+  await page.getByRole("button", { name: "Ghi nhận trả hàng" }).click();
+  await expectStatus(page, "Trả hàng");
+  await page.screenshot({ path: "test-results/screens/order-returned.png", fullPage: true });
+
+  // Thủ kho kiểm tra xong → nhập lại kho bán.
+  await login(page, "kho@glow.local");
+  await page.goto("/admin/inventory/quarantine");
+  const row = page.getByTestId("quarantine-row").filter({ has: page.getByRole("link", { name: code }) });
+  await expect(row).toBeVisible();
+  await page.screenshot({ path: "test-results/screens/quarantine.png", fullPage: true });
+  await row.getByLabel("Nhập vào").selectOption({ label: "MM-STOCK" });
+  await row.getByRole("button", { name: "Nhập lại kho bán" }).click();
+  await expect(page.getByTestId("quarantine-row").filter({ has: page.getByRole("link", { name: code }) })).toHaveCount(0);
 });
 
 test("huỷ đơn thủ công nhả hàng; lỗi hiển thị khi đặt quá tồn", async ({ page }) => {

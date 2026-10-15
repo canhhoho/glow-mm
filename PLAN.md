@@ -114,7 +114,7 @@ Dockerfile  docker-compose.yml  docker-compose.prod.yml  .env.example
 
 ## 4. Roadmap (dừng chờ duyệt sau mỗi phase)
 
-Trạng thái: P0 ✅ (2026-10-15) · P1 ✅ (2026-10-15) · P2 ✅ (2026-10-15) · P3 đang làm: 3a cài đặt + giá ✅ → 3b trả hàng → 3c cảnh báo → 3d dashboard → 3e đánh giá/chat/PWA.
+Trạng thái: P0 ✅ (2026-10-15) · P1 ✅ (2026-10-15) · P2 ✅ (2026-10-15) · P3 đang làm: 3a cài đặt + giá ✅ → 3b trả hàng ✅ → 3c cảnh báo → 3d dashboard → 3e đánh giá/chat/PWA.
 
 | Phase | Nội dung | Hoàn thành khi |
 |---|---|---|

@@ -10,6 +10,7 @@ import type { ActionState } from "@/server/inventory/actions";
 import { OrderError } from "./errors";
 import { createOrder } from "./orders";
 import { reviewPaymentProof } from "./payments";
+import { returnItems } from "./returns";
 import { TRANSITIONS, type TransitionName } from "./state-machine";
 import { transitionOrder } from "./transitions";
 
@@ -96,4 +97,30 @@ export async function reviewProofAction(_prev: ActionState, formData: FormData):
   revalidatePath(`/admin/orders/${orderId}`);
   revalidatePath("/admin/orders");
   return { ok: "reviewed" };
+}
+
+/** Form trả hàng: mỗi dòng đơn là ô `qty:<orderItemId>`. */
+export async function returnItemsAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const orderId = String(formData.get("orderId"));
+  try {
+    const user = await requirePermission("orders:return");
+    const lines = [...formData.entries()]
+      .filter(([k]) => k.startsWith("qty:"))
+      .map(([k, v]) => ({ orderItemId: k.slice(4), qty: v }));
+    await returnItems(
+      orderId,
+      {
+        lines,
+        reason: formData.get("reason"),
+        toLocationId: field(formData, "toLocationId"),
+        refunded: formData.get("refunded") === "on",
+      },
+      { userId: user.id, role: user.role },
+    );
+  } catch (e) {
+    return { error: await message(e) };
+  }
+  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath("/admin/orders");
+  return { ok: "returned" };
 }

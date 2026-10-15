@@ -57,7 +57,8 @@
     "TESTER": "Tester/quà",
     "nearExpiry": "Cận hạn",
     "blocked": "Ngừng bán",
-    "expired": "Hết hạn"
+    "expired": "Hết hạn",
+    "quarantine": "Chờ kiểm tra"
   },
   "Docs": {
     "title": "Phiếu kho",
@@ -237,7 +238,7 @@
     "pay": {
       "UNPAID": "Chưa trả",
       "PROOF_SUBMITTED": "Đã gửi biên lai",
-      "PAID": "Đã trả",
+      "PAID": "Đã thanh toán",
       "REJECTED": "Biên lai bị từ chối",
       "REFUNDED": "Đã hoàn tiền"
     },
@@ -323,6 +324,18 @@
       "forbidden": "Bạn không có quyền thực hiện thao tác này",
       "invalid_file": "File không hợp lệ (JPG/PNG/WebP/PDF, tối đa 5MB)",
       "proof_not_allowed": "Đơn không ở trạng thái chờ biên lai"
+    },
+    "ret": {
+      "title": "Trả hàng",
+      "hint": "Nhập số lượng khách trả cho từng dòng. Hàng về đúng lô đã xuất, vào khu Chờ kiểm tra.",
+      "returnable": "Còn trả được",
+      "returned": "Trả lại",
+      "reason": "Lý do trả",
+      "location": "Vị trí chờ kiểm tra",
+      "refunded": "Đã hoàn tiền cho khách",
+      "submit": "Ghi nhận trả hàng",
+      "confirm": "Ghi nhận trả hàng và nhập vào khu Chờ kiểm tra?",
+      "done": "Đã ghi nhận trả hàng"
     }
   },
   "Settings": {
@@ -403,5 +416,21 @@
     "back": "Giá & tỷ giá",
     "noRate": "Chưa có tỷ giá — thêm tỷ giá trước",
     "empty": "Chưa có dữ liệu"
+  },
+  "Quarantine": {
+    "title": "Hàng chờ kiểm tra (hàng trả)",
+    "empty": "Không có hàng chờ kiểm tra",
+    "hint": "Kiểm tra hàng khách trả: còn bán được thì nhập lại kho bán, hỏng/hết hạn thì huỷ.",
+    "product": "Sản phẩm",
+    "lot": "Lô · hạn dùng",
+    "qty": "SL",
+    "orders": "Đơn gốc",
+    "restockTo": "Nhập vào",
+    "restock": "Nhập lại kho bán",
+    "restocked": "Đã nhập lại kho bán",
+    "reason": "Lý do huỷ",
+    "discard": "Huỷ hàng",
+    "discarded": "Đã huỷ",
+    "discardConfirm": "Huỷ số hàng này (trừ khỏi kho)?"
   }
 }

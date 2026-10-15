@@ -680,6 +680,8 @@ model OrderItem {
   name         String
   qty          Int
   unitPriceMmk Int
+  /// Số lượng khách đã trả lại (≤ qty). Doanh thu/giá vốn trừ phần này.
+  returnedQty  Int               @default(0)
   allocations  OrderAllocation[]
 }
 
