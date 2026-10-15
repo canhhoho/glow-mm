@@ -14,9 +14,10 @@
     "db:reset": "prisma migrate reset --force",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
-    "test": "npm run lint && npm run typecheck && npm run test:unit && npm run test:e2e",
+    "test": "npm run lint && npm run typecheck && npm run test:unit && npm run test:int && npm run test:e2e",
     "postinstall": "prisma generate",
-    "vercel-build": "prisma migrate deploy && next build"
+    "vercel-build": "prisma migrate deploy && next build",
+    "test:int": "vitest run -c vitest.integration.config.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
