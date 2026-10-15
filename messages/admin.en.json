@@ -1,0 +1,35 @@
+{
+  "Meta": { "title": "Admin — Glow VN" },
+  "Nav": {
+    "dashboard": "Dashboard",
+    "products": "Products",
+    "inventory": "Inventory",
+    "shipments": "Shipments",
+    "orders": "Orders",
+    "pricing": "Pricing & FX",
+    "reports": "Reports",
+    "users": "Staff",
+    "settings": "Settings",
+    "logout": "Sign out",
+    "language": "Language"
+  },
+  "Login": {
+    "title": "Admin sign in",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "error": "Wrong email or password"
+  },
+  "Dashboard": {
+    "welcome": "Hello, {name}",
+    "role": "Role: {role}",
+    "denied": "You don't have access to that page.",
+    "placeholder": "Metrics will appear here (Phase 3)."
+  },
+  "Role": {
+    "ADMIN": "Administrator",
+    "WAREHOUSE_MANAGER": "Warehouse manager",
+    "ORDER_STAFF": "Order staff"
+  },
+  "Common": { "comingSoon": "Coming soon" }
+}

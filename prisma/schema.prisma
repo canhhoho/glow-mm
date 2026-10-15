@@ -1,0 +1,711 @@
+// Data model — xem PLAN.md §2.
+// Quy ước: tiền = Int (MMK, VND), tỷ giá = Decimal, thời gian = UTC.
+// Tồn kho CHỈ thay đổi qua StockDocument → StockLedger (+ StockBalance cùng transaction).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────── Auth (Better Auth) & hệ thống ─────────────────────────
+
+enum Role {
+  ADMIN
+  WAREHOUSE_MANAGER
+  ORDER_STAFF
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  role          Role      @default(ORDER_STAFF)
+  locale        String    @default("vi")
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  data      Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+/// Cấu hình key/value: expiry.blockDays, expiry.warnDays, reservation.transferHours, cod.confirmHours…
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+enum StorageDriver {
+  VERCEL_BLOB
+  LOCAL
+}
+
+model FileObject {
+  id            String         @id @default(cuid())
+  driver        StorageDriver
+  key           String         @unique
+  url           String
+  mime          String
+  size          Int
+  createdAt     DateTime       @default(now())
+  productImages ProductImage[]
+  paymentProofs PaymentProof[]
+}
+
+// ───────────────────────── Catalog ─────────────────────────
+
+model Brand {
+  id       String    @id @default(cuid())
+  slug     String    @unique
+  name     String
+  origin   String?
+  products Product[]
+}
+
+model Category {
+  id           String                @id @default(cuid())
+  slug         String                @unique
+  parentId     String?
+  parent       Category?             @relation("CategoryTree", fields: [parentId], references: [id])
+  children     Category[]            @relation("CategoryTree")
+  sortOrder    Int                   @default(0)
+  translations CategoryTranslation[]
+  products     Product[]
+}
+
+model CategoryTranslation {
+  categoryId String
+  locale     String
+  name       String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([categoryId, locale])
+}
+
+/// Thuộc tính lọc: loại da, vấn đề da, thành phần.
+enum TagKind {
+  SKIN_TYPE
+  CONCERN
+  INGREDIENT
+}
+
+model Tag {
+  id           String           @id @default(cuid())
+  kind         TagKind
+  slug         String
+  translations TagTranslation[]
+  products     ProductTag[]
+
+  @@unique([kind, slug])
+}
+
+model TagTranslation {
+  tagId  String
+  locale String
+  name   String
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([tagId, locale])
+}
+
+model Product {
+  id           String               @id @default(cuid())
+  slug         String               @unique
+  brandId      String
+  brand        Brand                @relation(fields: [brandId], references: [id])
+  categoryId   String
+  category     Category             @relation(fields: [categoryId], references: [id])
+  storageNote  String?
+  published    Boolean              @default(false)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  translations ProductTranslation[]
+  tags         ProductTag[]
+  images       ProductImage[]
+  variants     Variant[]
+  reviews      Review[]
+
+  @@index([categoryId])
+  @@index([brandId])
+}
+
+model ProductTranslation {
+  productId       String
+  locale          String
+  name            String
+  description     String?
+  usage           String?
+  ingredientsText String?
+  /// Bản chuẩn hoá để tìm kiếm (lowercase, Unicode).
+  searchText      String
+  product         Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([productId, locale])
+}
+
+model ProductTag {
+  productId String
+  tagId     String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tagId])
+}
+
+model ProductImage {
+  id        String     @id @default(cuid())
+  productId String
+  fileId    String
+  sortOrder Int        @default(0)
+  alt       String?
+  product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  file      FileObject @relation(fields: [fileId], references: [id])
+}
+
+model Variant {
+  id            String              @id @default(cuid())
+  productId     String
+  product       Product             @relation(fields: [productId], references: [id])
+  sku           String              @unique
+  /// Tên biến thể (dung tích / màu), ví dụ "50ml", "#21 Light".
+  label         String
+  priceMmk      Int
+  weightGrams   Int?
+  isBundle      Boolean             @default(false)
+  active        Boolean             @default(true)
+  /// Thời gian VN→MM (ngày) cho gợi ý đặt hàng.
+  leadTimeDays  Int                 @default(21)
+  safetyStock   Int                 @default(0)
+  lowStockAt    Int                 @default(5)
+  bundleItems   BundleItem[]        @relation("BundleParent")
+  componentOf   BundleItem[]        @relation("BundleComponent")
+  batches       Batch[]
+  reservations  Reservation[]
+  orderItems    OrderItem[]
+  priceHistory  PriceHistory[]
+  documentLines StockDocumentLine[]
+
+  @@index([productId])
+}
+
+model BundleItem {
+  bundleId    String
+  componentId String
+  qty         Int
+  bundle      Variant @relation("BundleParent", fields: [bundleId], references: [id], onDelete: Cascade)
+  component   Variant @relation("BundleComponent", fields: [componentId], references: [id])
+
+  @@id([bundleId, componentId])
+}
+
+// ───────────────────────── Giá ─────────────────────────
+
+model ExchangeRate {
+  id          String           @id @default(cuid())
+  /// Số MMK cho 1 VND.
+  mmkPerVnd   Decimal          @db.Decimal(14, 6)
+  effectiveAt DateTime         @default(now())
+  note        String?
+  createdById String
+  createdAt   DateTime         @default(now())
+  priceRuns   PriceUpdateRun[]
+  batches     Batch[]
+
+  @@index([effectiveAt])
+}
+
+enum PriceRunStatus {
+  PREVIEW
+  APPLIED
+  CANCELLED
+}
+
+model PriceUpdateRun {
+  id          String         @id @default(cuid())
+  rateId      String
+  rate        ExchangeRate   @relation(fields: [rateId], references: [id])
+  marginPct   Decimal        @db.Decimal(6, 2)
+  roundTo     Int            @default(100)
+  status      PriceRunStatus @default(PREVIEW)
+  createdById String
+  createdAt   DateTime       @default(now())
+  appliedAt   DateTime?
+  history     PriceHistory[]
+}
+
+model PriceHistory {
+  id          String          @id @default(cuid())
+  variantId   String
+  variant     Variant         @relation(fields: [variantId], references: [id])
+  oldPriceMmk Int
+  newPriceMmk Int
+  runId       String?
+  run         PriceUpdateRun? @relation(fields: [runId], references: [id])
+  reason      String?
+  userId      String
+  createdAt   DateTime        @default(now())
+
+  @@index([variantId, createdAt])
+}
+
+// ───────────────────────── Kho ─────────────────────────
+
+model Warehouse {
+  id        String     @id @default(cuid())
+  code      String     @unique
+  name      String
+  country   String
+  locations Location[]
+}
+
+enum LocationType {
+  VN_STOCK
+  IN_TRANSIT
+  CUSTOMS
+  MM_STOCK
+  QUARANTINE
+}
+
+model Location {
+  id          String          @id @default(cuid())
+  code        String          @unique
+  name        String
+  type        LocationType
+  warehouseId String?
+  warehouse   Warehouse?      @relation(fields: [warehouseId], references: [id])
+  /// Chỉ vị trí bán được (MM_STOCK) mới tính vào tồn bán.
+  sellable    Boolean         @default(false)
+  ledger      StockLedger[]
+  balances    StockBalance[]
+  docsFrom    StockDocument[] @relation("DocFrom")
+  docsTo      StockDocument[] @relation("DocTo")
+}
+
+enum AllocationMethod {
+  BY_VALUE
+  BY_QTY
+}
+
+/// Chuyến hàng VN→MM, gom chi phí để phân bổ landed cost.
+model InboundShipment {
+  id               String           @id @default(cuid())
+  code             String           @unique
+  allocationMethod AllocationMethod @default(BY_VALUE)
+  departedAt       DateTime?
+  arrivedAt        DateTime?
+  note             String?
+  createdAt        DateTime         @default(now())
+  costs            ShipmentCost[]
+  batches          Batch[]
+  documents        StockDocument[]
+}
+
+enum ShipmentCostType {
+  SHIPPING
+  TAX
+  FEE
+}
+
+model ShipmentCost {
+  id         String           @id @default(cuid())
+  shipmentId String
+  shipment   InboundShipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  type       ShipmentCostType
+  amountVnd  Int
+  note       String?
+}
+
+model Batch {
+  id            String              @id @default(cuid())
+  variantId     String
+  variant       Variant             @relation(fields: [variantId], references: [id])
+  lotNo         String
+  mfgDate       DateTime?           @db.Date
+  expiryDate    DateTime            @db.Date
+  unitCostVnd   Int
+  /// Giá vốn đã cộng chi phí phân bổ (VND/đơn vị).
+  landedCostVnd Int?
+  rateId        String?
+  rate          ExchangeRate?       @relation(fields: [rateId], references: [id])
+  landedCostMmk Int?
+  shipmentId    String?
+  shipment      InboundShipment?    @relation(fields: [shipmentId], references: [id])
+  createdAt     DateTime            @default(now())
+  ledger        StockLedger[]
+  balances      StockBalance[]
+  allocations   OrderAllocation[]
+  documentLines StockDocumentLine[]
+
+  @@unique([variantId, lotNo])
+  @@index([variantId, expiryDate])
+}
+
+enum StockType {
+  SELLABLE
+  TESTER
+}
+
+enum DocType {
+  RECEIVE
+  TRANSFER
+  ISSUE
+  ADJUST
+  RETURN
+}
+
+enum DocStatus {
+  DRAFT
+  POSTED
+  CANCELLED
+}
+
+model StockDocument {
+  id          String              @id @default(cuid())
+  code        String              @unique
+  type        DocType
+  status      DocStatus           @default(DRAFT)
+  fromId      String?
+  from        Location?           @relation("DocFrom", fields: [fromId], references: [id])
+  toId        String?
+  to          Location?           @relation("DocTo", fields: [toId], references: [id])
+  shipmentId  String?
+  shipment    InboundShipment?    @relation(fields: [shipmentId], references: [id])
+  orderId     String?
+  order       Order?              @relation(fields: [orderId], references: [id])
+  reason      String?
+  createdById String
+  postedById  String?
+  createdAt   DateTime            @default(now())
+  postedAt    DateTime?
+  lines       StockDocumentLine[]
+  ledger      StockLedger[]
+
+  @@index([type, status])
+}
+
+model StockDocumentLine {
+  id         String        @id @default(cuid())
+  documentId String
+  document   StockDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  variantId  String
+  variant    Variant       @relation(fields: [variantId], references: [id])
+  /// Null khi phiếu xuất để hệ thống tự chọn lô theo FEFO.
+  batchId    String?
+  batch      Batch?        @relation(fields: [batchId], references: [id])
+  stockType  StockType     @default(SELLABLE)
+  /// Với ADJUST có thể âm.
+  qty        Int
+}
+
+/// Sổ cái — chỉ INSERT, không UPDATE/DELETE.
+model StockLedger {
+  id         String        @id @default(cuid())
+  documentId String
+  document   StockDocument @relation(fields: [documentId], references: [id])
+  batchId    String
+  batch      Batch         @relation(fields: [batchId], references: [id])
+  locationId String
+  location   Location      @relation(fields: [locationId], references: [id])
+  stockType  StockType
+  qtyDelta   Int
+  userId     String
+  createdAt  DateTime      @default(now())
+
+  @@index([batchId, locationId])
+  @@index([createdAt])
+}
+
+/// Tổng hợp từ ledger, cập nhật trong cùng transaction.
+model StockBalance {
+  batchId    String
+  locationId String
+  stockType  StockType
+  qty        Int
+  batch      Batch     @relation(fields: [batchId], references: [id])
+  location   Location  @relation(fields: [locationId], references: [id])
+
+  @@id([batchId, locationId, stockType])
+  @@index([locationId])
+}
+
+enum ReservationStatus {
+  ACTIVE
+  RELEASED
+  CONSUMED
+}
+
+model Reservation {
+  id        String            @id @default(cuid())
+  variantId String
+  variant   Variant           @relation(fields: [variantId], references: [id])
+  orderId   String
+  order     Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  qty       Int
+  status    ReservationStatus @default(ACTIVE)
+  expiresAt DateTime?
+  createdAt DateTime          @default(now())
+
+  @@index([variantId, status])
+  @@index([status, expiresAt])
+}
+
+// ───────────────────────── Bán hàng ─────────────────────────
+
+model Customer {
+  id        String    @id @default(cuid())
+  /// Chuẩn hoá dạng 09xxxxxxxx.
+  phone     String    @unique
+  name      String
+  createdAt DateTime  @default(now())
+  addresses Address[]
+  orders    Order[]
+}
+
+model Address {
+  id         String       @id @default(cuid())
+  customerId String
+  customer   Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  zoneId     String
+  zone       ShippingZone @relation(fields: [zoneId], references: [id])
+  line       String
+  note       String?
+  orders     Order[]
+}
+
+/// Vùng giao hàng (region/township).
+model ShippingZone {
+  id        String         @id @default(cuid())
+  code      String         @unique
+  region    String
+  township  String
+  nameMy    String
+  nameEn    String
+  active    Boolean        @default(true)
+  rates     ShippingRate[]
+  addresses Address[]
+}
+
+model ShippingRate {
+  id          String       @id @default(cuid())
+  zoneId      String
+  zone        ShippingZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  feeMmk      Int
+  /// Miễn phí ship khi tổng đơn >= ngưỡng (null = không áp dụng).
+  freeFromMmk Int?
+  etaDays     Int?
+}
+
+enum OrderStatus {
+  PENDING
+  PAYMENT_CONFIRMED
+  COD_CONFIRMED
+  PACKING
+  SHIPPING
+  COMPLETED
+  CANCELLED
+  RETURNED
+}
+
+enum PaymentMethod {
+  COD
+  BANK_TRANSFER
+}
+
+enum PaymentStatus {
+  UNPAID
+  PROOF_SUBMITTED
+  PAID
+  REJECTED
+  REFUNDED
+}
+
+enum OrderChannel {
+  WEB
+  FACEBOOK
+  VIBER
+  PHONE
+}
+
+model Order {
+  id             String               @id @default(cuid())
+  code           String               @unique
+  customerId     String
+  customer       Customer             @relation(fields: [customerId], references: [id])
+  addressId      String
+  address        Address              @relation(fields: [addressId], references: [id])
+  channel        OrderChannel         @default(WEB)
+  status         OrderStatus          @default(PENDING)
+  paymentMethod  PaymentMethod
+  paymentStatus  PaymentStatus        @default(UNPAID)
+  subtotalMmk    Int
+  shippingFeeMmk Int
+  totalMmk       Int
+  locale         String               @default("my")
+  note           String?
+  codConfirmedAt DateTime?
+  createdById    String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  items          OrderItem[]
+  reservations   Reservation[]
+  history        OrderStatusHistory[]
+  paymentProofs  PaymentProof[]
+  deliveries     Delivery[]
+  documents      StockDocument[]
+  reviews        Review[]
+
+  @@index([status, createdAt])
+  @@index([customerId])
+}
+
+model OrderItem {
+  id           String            @id @default(cuid())
+  orderId      String
+  order        Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId    String
+  variant      Variant           @relation(fields: [variantId], references: [id])
+  qty          Int
+  unitPriceMmk Int
+  allocations  OrderAllocation[]
+}
+
+/// Phân lô khi đóng gói; giữ giá vốn để tính lợi nhuận.
+model OrderAllocation {
+  id                String    @id @default(cuid())
+  orderItemId       String
+  orderItem         OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  batchId           String
+  batch             Batch     @relation(fields: [batchId], references: [id])
+  qty               Int
+  unitLandedCostMmk Int
+}
+
+model OrderStatusHistory {
+  id         String       @id @default(cuid())
+  orderId    String
+  order      Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  userId     String?
+  note       String?
+  createdAt  DateTime     @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+enum ProofStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model PaymentProof {
+  id           String      @id @default(cuid())
+  orderId      String
+  order        Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fileId       String
+  file         FileObject  @relation(fields: [fileId], references: [id])
+  status       ProofStatus @default(PENDING)
+  reviewedById String?
+  reviewedAt   DateTime?
+  note         String?
+  createdAt    DateTime    @default(now())
+}
+
+model Delivery {
+  id         String    @id @default(cuid())
+  orderId    String
+  order      Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  carrier    String
+  trackingNo String?
+  shippedAt  DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Review {
+  id        String       @id @default(cuid())
+  productId String
+  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderId   String
+  order     Order        @relation(fields: [orderId], references: [id])
+  rating    Int
+  body      String?
+  status    ReviewStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+
+  @@unique([productId, orderId])
+}

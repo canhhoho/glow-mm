@@ -1,0 +1,37 @@
+{
+  "Meta": {
+    "title": "Glow VN — Vietnamese cosmetics",
+    "description": "Quality cosmetics imported directly from Vietnam"
+  },
+  "Nav": {
+    "search": "Search",
+    "cart": "Cart",
+    "categories": "Categories",
+    "orderLookup": "Track order",
+    "language": "Language"
+  },
+  "Home": {
+    "heroKicker": "Direct from Vietnam",
+    "heroTitle": "Quality-checked cosmetics",
+    "categories": "Categories",
+    "popular": "Popular products",
+    "empty": "Products coming soon"
+  },
+  "Product": {
+    "addToCart": "Add to cart",
+    "askViber": "Ask on Viber",
+    "askMessenger": "Ask on Messenger",
+    "expiry": "Expiry date",
+    "ingredients": "Ingredients",
+    "usage": "How to use",
+    "outOfStock": "Out of stock"
+  },
+  "Footer": {
+    "contact": "Contact",
+    "rights": "All rights reserved"
+  },
+  "NotFound": {
+    "title": "Page not found",
+    "back": "Back to home"
+  }
+}

@@ -1,0 +1,24 @@
+# Môi trường DEV: chỉ chạy Postgres; app chạy bằng `npm run dev` trên máy.
+#   docker compose up -d
+services:
+  db:
+    image: postgres:17.6-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: glow
+      POSTGRES_PASSWORD: glow
+      POSTGRES_DB: glow
+      TZ: UTC
+    ports:
+      - "55432:5432" # cổng 55432 trên máy để tránh trùng các Postgres khác
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U glow -d glow"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:
