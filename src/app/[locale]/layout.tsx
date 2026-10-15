@@ -7,6 +7,8 @@ import { getMessages, getTranslations, setRequestLocale } from "next-intl/server
 import { routing } from "@/i18n/routing";
 import { StoreHeader } from "@/components/store/header";
 import { StoreFooter } from "@/components/store/footer";
+import { ChatFab } from "@/components/store/chat-fab";
+import { SwRegister } from "@/components/store/sw-register";
 
 /**
  * Font Myanmar tự host: chỉ phần chữ Myanmar, 1 độ đậm (400) để nhẹ trên 3G; Next tự preload + tạo fallback metric.
@@ -22,7 +24,7 @@ const myanmarFont = localFont({
 });
 
 /** Chỉ gửi xuống client các namespace mà Client Component storefront dùng (giảm kích thước trang). */
-const CLIENT_NAMESPACES = ["Checkout", "Order", "Track"] as const;
+const CLIENT_NAMESPACES = ["Checkout", "Order", "Track", "Review"] as const;
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -31,7 +33,12 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "Meta" });
-  return { title: t("title"), description: t("description"), manifest: "/manifest.webmanifest" };
+  // Manifest sinh từ src/app/manifest.ts (Next tự gắn <link rel="manifest">).
+  return {
+    title: t("title"),
+    description: t("description"),
+    icons: { icon: "/icons/icon-192.png", apple: "/icons/apple-touch-icon.png" },
+  };
 }
 
 export const viewport: Viewport = { themeColor: "#e8657a", width: "device-width", initialScale: 1 };
@@ -51,6 +58,8 @@ export default async function StoreLayout({ children, params }: LayoutProps<"/[l
             <StoreHeader locale={locale} />
             <main className="flex-1 px-4 py-4">{children}</main>
             <StoreFooter />
+            <ChatFab locale={locale} />
+            <SwRegister />
           </div>
         </NextIntlClientProvider>
       </body>

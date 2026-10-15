@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 const NAV: { href: string; key: string; permission: Permission }[] = [
   { href: "/admin", key: "dashboard", permission: "dashboard:view" },
   { href: "/admin/orders", key: "orders", permission: "orders:view" },
+  { href: "/admin/reviews", key: "reviews", permission: "reviews:moderate" },
   { href: "/admin/inventory", key: "inventory", permission: "stock:view" },
   { href: "/admin/alerts", key: "alerts", permission: "stock:view" },
   { href: "/admin/shipments", key: "shipments", permission: "shipment:manage" },

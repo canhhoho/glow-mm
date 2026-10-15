@@ -14,7 +14,8 @@
     "settings": "Settings",
     "logout": "Sign out",
     "language": "Language",
-    "alerts": "Alerts"
+    "alerts": "Alerts",
+    "reviews": "Reviews"
   },
   "Login": {
     "title": "Admin sign in",
@@ -518,5 +519,21 @@
       "QUARANTINE": "Quarantine"
     },
     "andMore": "… and {count} more"
+  },
+  "Reviews": {
+    "title": "Product reviews",
+    "st": {
+      "PENDING": "Pending",
+      "APPROVED": "Published",
+      "REJECTED": "Rejected"
+    },
+    "product": "Product",
+    "rating": "Stars",
+    "body": "Comment",
+    "order": "Order",
+    "created": "Date",
+    "approve": "Publish",
+    "reject": "Reject",
+    "empty": "No reviews"
   }
 }

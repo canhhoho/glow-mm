@@ -135,6 +135,7 @@ export async function getStoreProduct(slug: string, locale: string, now = new Da
 
   const tr = pick(p.translations, locale);
   return {
+    id: p.id,
     slug: p.slug,
     name: tr?.name ?? p.slug,
     description: tr?.description ?? null,

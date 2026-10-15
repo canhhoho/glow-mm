@@ -7,9 +7,11 @@ import { fmtDateTime } from "@/lib/format";
 import { formatMmk } from "@/lib/money";
 import { ORDERS_COOKIE, parseOrderAccess } from "@/server/cart/cart";
 import { findOrderForCustomer } from "@/server/orders/orders";
+import { reviewablesForOrder } from "@/server/reviews/reviews";
 import { getStringSetting } from "@/server/settings";
 import { ContactLinks } from "@/components/store/contact-links";
 import { ProofForm } from "@/components/store/proof-form";
+import { ReviewForm } from "@/components/store/review-form";
 import { BlockSkeleton, Notice } from "@/components/store/ui";
 
 export default function OrderPage(props: PageProps<"/[locale]/order/[code]">) {
@@ -29,9 +31,11 @@ async function OrderContent({ params, searchParams }: PageProps<"/[locale]/order
   const order = access ? await findOrderForCustomer(code, access.p) : null;
   if (!order) return redirect({ href: { pathname: "/track", query: { code } }, locale });
 
-  const [t, bankInstructions] = await Promise.all([
+  const [t, tr, bankInstructions, reviewables] = await Promise.all([
     getTranslations({ locale, namespace: "Order" }),
+    getTranslations({ locale, namespace: "Review" }),
     order.paymentMethod === "BANK_TRANSFER" ? getStringSetting("payment.bankInstructions") : "",
+    order.status === "COMPLETED" ? reviewablesForOrder(order.id) : [],
   ]);
   const total = formatMmk(order.totalMmk, locale);
   const awaitingProof =
@@ -118,6 +122,24 @@ async function OrderContent({ params, searchParams }: PageProps<"/[locale]/order
           </dd>
         </dl>
       </section>
+
+      {reviewables.length > 0 && (
+        <section aria-labelledby="review-h" className="space-y-2">
+          <h2 id="review-h" className="font-medium">
+            {tr("title")}
+          </h2>
+          {reviewables.map((r) =>
+            r.review ? (
+              <p key={r.productId} className="text-sm" data-testid="review-status">
+                {r.name}: {"★".repeat(r.review.rating)} —{" "}
+                {r.review.status === "PENDING" ? tr("pending") : r.review.status === "APPROVED" ? tr("approved") : tr("rejected")}
+              </p>
+            ) : (
+              <ReviewForm key={r.productId} locale={locale} code={order.code} productId={r.productId} name={r.name} />
+            ),
+          )}
+        </section>
+      )}
 
       <section className="space-y-2">
         <p className="text-sm text-muted-foreground">{t("askHelp")}</p>

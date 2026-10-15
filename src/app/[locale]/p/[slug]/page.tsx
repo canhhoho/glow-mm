@@ -5,10 +5,11 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { fmtDay } from "@/lib/format";
+import { fmtDate, fmtDay } from "@/lib/format";
 import { formatMmk } from "@/lib/money";
 import { addToCartAction } from "@/server/cart/actions";
 import { getStoreProduct } from "@/server/catalog/store-queries";
+import { productReviews } from "@/server/reviews/reviews";
 import { ContactLinks } from "@/components/store/contact-links";
 import { primaryButton, storeField } from "@/components/store/ui";
 
@@ -36,6 +37,7 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
   setRequestLocale(locale);
   const [t, p] = await Promise.all([getTranslations({ locale, namespace: "Product" }), loadProduct(slug, locale)]);
   if (!p) notFound();
+  const [reviews, tr] = await Promise.all([productReviews(p.id), getTranslations({ locale, namespace: "Review" })]);
   const firstAvailable = p.variants.find((v) => v.available > 0);
   const sections = [
     { key: "description", title: t("description"), body: p.description },
@@ -67,6 +69,11 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
         </Link>
         <p className="text-sm text-muted-foreground">{p.brand}</p>
         <h1 className="text-lg font-medium">{p.name}</h1>
+        {reviews.average != null && (
+          <a href="#reviews" className="text-sm text-brand" data-testid="rating-summary">
+            ★ {tr("summary", { avg: reviews.average, count: reviews.count })}
+          </a>
+        )}
         {p.tags.length > 0 && (
           <ul className="mt-1 flex flex-wrap gap-1">
             {p.tags.map((tag) => (
@@ -136,6 +143,32 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
           <p className="px-3 pb-3 text-sm whitespace-pre-line">{s.body}</p>
         </details>
       ))}
+
+      <section id="reviews" aria-labelledby="reviews-h" className="space-y-2">
+        <h2 id="reviews-h" className="font-medium">
+          {tr("heading")}
+        </h2>
+        {reviews.items.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{tr("none")}</p>
+        ) : (
+          <ul className="space-y-2">
+            {reviews.items.map((r) => (
+              <li key={r.id} className="rounded-lg border border-border bg-card p-3 text-sm">
+                <p>
+                  <span className="text-brand" aria-label={tr("stars", { n: r.rating })}>
+                    {"★".repeat(r.rating)}
+                    <span className="text-muted-foreground">{"★".repeat(5 - r.rating)}</span>
+                  </span>{" "}
+                  <span className="text-muted-foreground">
+                    {r.author} · {fmtDate(r.createdAt)}
+                  </span>
+                </p>
+                {r.body && <p className="mt-1 whitespace-pre-line">{r.body}</p>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </article>
   );
 }

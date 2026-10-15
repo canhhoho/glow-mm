@@ -160,5 +160,23 @@
     "phone": "Phone number used for the order",
     "submit": "Find order",
     "notFound": "No order matches this code and phone number"
+  },
+  "Review": {
+    "title": "Rate your products",
+    "rating": "Rating",
+    "stars": "{n} stars",
+    "body": "Comment (optional)",
+    "submit": "Send review",
+    "pending": "Thanks! Your review is waiting for approval.",
+    "approved": "Your review is published.",
+    "rejected": "Your review was not published.",
+    "errRating": "Please choose 1–5 stars",
+    "errGeneric": "Could not send this review",
+    "heading": "Reviews",
+    "summary": "{avg} / 5 · {count} reviews",
+    "none": "No reviews yet"
+  },
+  "Chat": {
+    "label": "Chat with us"
   }
 }

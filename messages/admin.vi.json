@@ -14,7 +14,8 @@
     "settings": "Cài đặt",
     "logout": "Đăng xuất",
     "language": "Ngôn ngữ",
-    "alerts": "Cảnh báo"
+    "alerts": "Cảnh báo",
+    "reviews": "Đánh giá"
   },
   "Login": {
     "title": "Đăng nhập quản trị",
@@ -518,5 +519,21 @@
       "QUARANTINE": "Chờ kiểm tra"
     },
     "andMore": "… và {count} đơn khác"
+  },
+  "Reviews": {
+    "title": "Đánh giá sản phẩm",
+    "st": {
+      "PENDING": "Chờ duyệt",
+      "APPROVED": "Đã đăng",
+      "REJECTED": "Đã từ chối"
+    },
+    "product": "Sản phẩm",
+    "rating": "Sao",
+    "body": "Nội dung",
+    "order": "Đơn",
+    "created": "Ngày",
+    "approve": "Đăng",
+    "reject": "Từ chối",
+    "empty": "Không có đánh giá"
   }
 }

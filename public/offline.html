@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="my">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#e8657a" />
+    <title>Glow VN — offline</title>
+    <!-- Trang tĩnh do service worker trả khi mất mạng. Màu = design token (globals.css): chính #E8657A, nền #FFF8F5, chữ #2B2B2B. -->
+    <style>
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        background: #fff8f5;
+        color: #2b2b2b;
+        font-family: "Noto Sans Myanmar", system-ui, sans-serif;
+        line-height: 1.8;
+        text-align: center;
+      }
+      main {
+        padding: 24px;
+        max-width: 420px;
+      }
+      .logo {
+        display: inline-grid;
+        place-items: center;
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        background: #e8657a;
+        color: #fff;
+        font: 700 36px/1 Arial, sans-serif;
+      }
+      button {
+        min-height: 44px;
+        padding: 0 20px;
+        border: 0;
+        border-radius: 8px;
+        background: #e8657a;
+        color: #fff;
+        font: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="logo" aria-hidden="true">G</div>
+      <h1>အင်တာနက် ချိတ်ဆက်မှု မရှိပါ</h1>
+      <p>ချိတ်ဆက်မှု ပြန်ရလျှင် ထပ်ကြိုးစားပါ။</p>
+      <p lang="en">You are offline. Please try again when your connection is back.</p>
+      <button type="button" onclick="location.reload()">ထပ်ကြိုးစားမည် · Retry</button>
+    </main>
+  </body>
+</html>
