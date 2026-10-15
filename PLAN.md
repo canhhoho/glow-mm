@@ -113,10 +113,13 @@ Dockerfile  docker-compose.yml  docker-compose.prod.yml  .env.example
 ```
 
 ## 4. Roadmap (dừng chờ duyệt sau mỗi phase)
+
+Trạng thái: P0 ✅ (2026-10-15) · P1 ✅ (2026-10-15) · đang làm P2.
+
 | Phase | Nội dung | Hoàn thành khi |
 |---|---|---|
-| **P0 Nền tảng** | Init project, git `dev`/`main`, Prisma schema đầy đủ + seed, layout rỗng store/admin + i18n, Better Auth + RBAC, adapter storage, Docker, `.env.example`, CI, DEPLOY.md | `npm test` (lint + typecheck + vitest + e2e smoke) xanh; `docker compose up` chạy; Vercel preview + Neon hoạt động; đăng nhập theo 3 vai trò |
-| **P1 Kho lõi** | CRUD catalog, import CSV, chuyến hàng + landed cost, phiếu nhận/chuyển/xuất/điều chỉnh, ledger, FEFO, tester, combo, xem tồn theo vị trí/lô | Vitest: FEFO, landed cost/FX, combo; E2E: nhận → chuyển → xuất; không có đường sửa số lượng trực tiếp |
+| **P0 Nền tảng** ✅ | Init project, git `dev`/`main`, Prisma schema đầy đủ + seed, layout rỗng store/admin + i18n, Better Auth + RBAC, adapter storage, Docker, `.env.example`, CI, DEPLOY.md | `npm test` (lint + typecheck + vitest + e2e smoke) xanh; `docker compose up` chạy; Vercel preview + Neon hoạt động; đăng nhập theo 3 vai trò |
+| **P1 Kho lõi** ✅ | CRUD catalog, import CSV, chuyến hàng + landed cost, phiếu nhận/chuyển/xuất/điều chỉnh, ledger, FEFO, tester, combo, xem tồn theo vị trí/lô | Vitest: FEFO, landed cost/FX, combo; E2E: nhận → chuyển → xuất; không có đường sửa số lượng trực tiếp |
 | **P2 Bán hàng** | Storefront (danh mục, bộ lọc, trang SP có hạn dùng lô hiện tại), giỏ hàng, checkout 1 trang, **tạo đơn thủ công trong admin** (đơn từ FB/Viber), COD + chuyển khoản/upload biên lai, giữ hàng + cron, máy trạng thái đơn, duyệt thanh toán, in nhãn ship, Zawgyi trong ô tìm kiếm/form | Vitest: reservation, chuyển trạng thái; E2E: duyệt web → đơn COD, chuyển khoản → upload → duyệt; Lighthouse mobile (Slow 3G) Performance ≥ 85 |
 | **P3 Vận hành** | Cập nhật giá hàng loạt + lịch sử, cảnh báo (tồn thấp/cận date/gợi ý đặt hàng), dashboard (doanh thu, lợi nhuận, bán chạy, bán chậm, hàng đang vận chuyển), trả hàng, đánh giá, nút Viber/Messenger, PWA | Toàn bộ test xanh; số liệu dashboard khớp ledger trên dữ liệu seed |
 | **P4 Lên server Myanmar** | Theo DEPLOY.md: chuyển DB/file, Coolify, domain, HTTPS, backup | Checklist sau khi chuyển đạt; khôi phục thử từ backup thành công |
