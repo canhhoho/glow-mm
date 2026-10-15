@@ -13,7 +13,8 @@
     "users": "Nhân viên",
     "settings": "Cài đặt",
     "logout": "Đăng xuất",
-    "language": "Ngôn ngữ"
+    "language": "Ngôn ngữ",
+    "alerts": "Cảnh báo"
   },
   "Login": {
     "title": "Đăng nhập quản trị",
@@ -432,5 +433,33 @@
     "discard": "Huỷ hàng",
     "discarded": "Đã huỷ",
     "discardConfirm": "Huỷ số hàng này (trừ khỏi kho)?"
+  },
+  "Alerts": {
+    "title": "Cảnh báo kho",
+    "tabLow": "Tồn thấp",
+    "tabExpiry": "Hạn dùng",
+    "tabReorder": "Gợi ý đặt hàng",
+    "empty": "Không có cảnh báo",
+    "product": "Sản phẩm",
+    "available": "Còn bán được",
+    "threshold": "Ngưỡng",
+    "vn": "Kho VN",
+    "inbound": "Đang về",
+    "level": "Mức",
+    "lot": "Lô",
+    "expiry": "Hạn dùng",
+    "location": "Vị trí",
+    "qty": "SL",
+    "dailySales": "Bán/ngày",
+    "coverDays": "Đủ bán (ngày)",
+    "leadTime": "Thời gian về (ngày)",
+    "suggest": "Nên đặt",
+    "lv": {
+      "expired": "Hết hạn",
+      "blocked": "Ngừng bán",
+      "near": "Cận date"
+    },
+    "note": "Ngừng bán khi còn < {block} ngày, cảnh báo < {warn} ngày. Tốc độ bán tính trong {window} ngày gần nhất, cần đủ hàng {cover} ngày sau khi về. Sửa ở Cài đặt.",
+    "reorderHint": "Nên đặt = bán/ngày × (thời gian về + số ngày cần đủ) + tồn an toàn − (còn bán được + kho VN + đang về)."
   }
 }

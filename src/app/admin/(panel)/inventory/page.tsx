@@ -2,9 +2,10 @@ import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { listLocations, stockOverview } from "@/server/inventory/queries";
+import { classifyExpiry } from "@/server/alerts/compute";
 import { getNumberSetting } from "@/server/settings";
 import { Badge, DataTable, fieldClass, LinkButton, PageHeader, Td } from "@/components/admin/ui";
-import { daysUntil, fmtDay, fmtInt } from "@/lib/format";
+import { fmtDay, fmtInt } from "@/lib/format";
 
 export default async function InventoryPage({ searchParams }: PageProps<"/admin/inventory">) {
   const user = await requirePagePermission("stock:view");
@@ -20,6 +21,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
     getNumberSetting("expiry.warnDays"),
   ]);
 
+  const now = new Date();
   const newDoc = (type: string, perm: Parameters<typeof can>[1]) =>
     can(user.role, perm) ? (
       <LinkButton key={type} href={`/admin/inventory/documents/new?type=${type}`}>
@@ -61,9 +63,9 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
         head={[t("colSku"), t("colProduct"), t("colLot"), t("colExpiry"), t("colLocation"), t("colType"), t("colQty"), t("colCost")]}
       >
         {rows.map((r) => {
-          const left = daysUntil(r.expiryDate);
-          const tone = left < 0 ? "danger" : left < blockDays ? "danger" : left < warnDays ? "warning" : null;
-          const label = left < 0 ? t("expired") : left < blockDays ? t("blocked") : left < warnDays ? t("nearExpiry") : null;
+          const level = classifyExpiry(r.expiryDate, now, { blockDays, warnDays });
+          const tone = level === "near" ? "warning" : level ? "danger" : null;
+          const label = level === "expired" ? t("expired") : level === "blocked" ? t("blocked") : level ? t("nearExpiry") : null;
           return (
             <tr key={r.key}>
               <Td className="font-mono text-xs">{r.sku}</Td>

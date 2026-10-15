@@ -13,7 +13,8 @@
     "users": "Staff",
     "settings": "Settings",
     "logout": "Sign out",
-    "language": "Language"
+    "language": "Language",
+    "alerts": "Alerts"
   },
   "Login": {
     "title": "Admin sign in",
@@ -432,5 +433,33 @@
     "discard": "Discard",
     "discarded": "Discarded",
     "discardConfirm": "Discard these items (remove from stock)?"
+  },
+  "Alerts": {
+    "title": "Stock alerts",
+    "tabLow": "Low stock",
+    "tabExpiry": "Expiry",
+    "tabReorder": "Reorder",
+    "empty": "No alerts",
+    "product": "Product",
+    "available": "Available",
+    "threshold": "Threshold",
+    "vn": "VN stock",
+    "inbound": "Inbound",
+    "level": "Level",
+    "lot": "Lot",
+    "expiry": "Expiry",
+    "location": "Location",
+    "qty": "Qty",
+    "dailySales": "Sold/day",
+    "coverDays": "Days covered",
+    "leadTime": "Lead time (days)",
+    "suggest": "Suggest",
+    "lv": {
+      "expired": "Expired",
+      "blocked": "Blocked",
+      "near": "Near expiry"
+    },
+    "note": "Stop selling below {block} days, warn below {warn} days. Sales velocity over the last {window} days, cover {cover} days after arrival. Change in Settings.",
+    "reorderHint": "Suggest = sold/day × (lead time + cover days) + safety stock − (available + VN + inbound)."
   }
 }

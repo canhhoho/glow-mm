@@ -1,4 +1,5 @@
 import { isAuthorizedCron } from "@/server/cron/auth";
+import { runComputeAlerts } from "@/server/alerts/queries";
 import { cancelExpiredOrders } from "@/server/orders/cron";
 
 /**
@@ -8,7 +9,7 @@ import { cancelExpiredOrders } from "@/server/orders/cron";
 const JOBS: Record<string, () => Promise<Record<string, unknown>>> = {
   "release-reservations": () => cancelExpiredOrders("BANK_TRANSFER"),
   "cancel-unconfirmed-cod": () => cancelExpiredOrders("COD"),
-  "compute-alerts": async () => ({ alerts: 0, todo: "P3" }),
+  "compute-alerts": async () => ({ alerts: await runComputeAlerts() }),
 };
 
 async function handle(req: Request, ctx: RouteContext<"/api/cron/[job]">) {
