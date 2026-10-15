@@ -5,6 +5,7 @@ import { defineConfig, devices } from "@playwright/test";
 config({ path: ".env.test", override: true, quiet: true });
 // Cho phép trỏ DB test khác (vd khi không có Docker) mà không đụng DATABASE_URL của dev.
 if (process.env.E2E_DATABASE_URL) process.env.DATABASE_URL = process.env.E2E_DATABASE_URL;
+process.env.DIRECT_DATABASE_URL = "";
 
 export default defineConfig({
   testDir: "tests/e2e",

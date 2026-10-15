@@ -1,7 +1,8 @@
-# Chạy thử bản giống PRODUCTION trên máy local (cũng là mẫu cho Coolify).
-#   docker compose -p glow-prod -f docker-compose.prod.yml up --build
-# (-p glow-prod: tách khỏi project dev để không đụng container/volume dev)
-# Biến môi trường lấy từ .env.prod (copy từ .env.example, đặt STORAGE_DRIVER=local).
+# Bản giống PRODUCTION: dùng để chạy thử local VÀ làm file deploy trên Coolify (Docker Compose).
+#   Local: docker compose -p glow-prod -f docker-compose.prod.yml up --build
+#   (-p glow-prod: tách khỏi project dev để không đụng container/volume dev)
+# Biến môi trường: local lấy từ .env.prod (tuỳ chọn); Coolify nhập trong giao diện (Environment Variables).
+# Không publish cổng DB ra ngoài (Docker bỏ qua ufw với cổng đã publish).
 services:
   db:
     image: postgres:17.6-alpine
@@ -23,7 +24,6 @@ services:
     build:
       context: .
       target: migrator
-    env_file: .env.prod
     environment:
       DATABASE_URL: postgresql://glow:${POSTGRES_PASSWORD:-glow}@db:5432/glow
     depends_on:
@@ -36,9 +36,16 @@ services:
       context: .
       target: runner
     restart: unless-stopped
-    env_file: .env.prod
+    env_file:
+      - path: .env.prod
+        required: false
     environment:
       DATABASE_URL: postgresql://glow:${POSTGRES_PASSWORD:-glow}@db:5432/glow
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Cần đặt BETTER_AUTH_SECRET}
+      CRON_SECRET: ${CRON_SECRET:?Cần đặt CRON_SECRET}
+      FB_PAGE_USERNAME: ${FB_PAGE_USERNAME:-}
+      VIBER_CHAT_URI: ${VIBER_CHAT_URI:-}
       STORAGE_DRIVER: local
       LOCAL_STORAGE_DIR: /app/storage
     ports:

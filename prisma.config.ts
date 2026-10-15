@@ -8,6 +8,7 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // CLI (migrate) ưu tiên kết nối TRỰC TIẾP (Neon: không qua pooler); app dùng DATABASE_URL.
+    url: process.env["DIRECT_DATABASE_URL"] || process.env["DATABASE_URL"],
   },
 });

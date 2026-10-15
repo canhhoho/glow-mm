@@ -1,0 +1,12 @@
+# Crontab trên server Myanmar (sudo crontab -e) — hoặc nhập tương đương vào Coolify "Scheduled Tasks".
+# Server để múi giờ UTC (DEPLOY.md §4) → lịch dưới đây tính theo UTC (Yangon = UTC+6:30).
+# File /opt/glow/cron.env (chmod 600) chứa: CRON_SECRET=..., APP_URL=https://<domain>, và biến cho backup.sh.
+
+# Nhả hàng giữ quá hạn (đơn chuyển khoản chưa thanh toán) — mỗi 15 phút
+*/15 * * * * set -a && . /opt/glow/cron.env && curl -fsS -m 60 -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/cron/release-reservations" >/dev/null
+# Huỷ đơn COD chưa gọi xác nhận quá hạn — mỗi 15 phút
+*/15 * * * * set -a && . /opt/glow/cron.env && curl -fsS -m 60 -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/cron/cancel-unconfirmed-cod" >/dev/null
+# Tính cảnh báo tồn thấp / cận hạn — 23:30 UTC = 06:00 Yangon
+30 23 * * * set -a && . /opt/glow/cron.env && curl -fsS -m 120 -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/cron/compute-alerts" >/dev/null
+# Backup DB + upload ra off-site — 20:00 UTC = 02:30 Yangon
+0 20 * * * set -a && . /opt/glow/cron.env && /opt/glow/backup.sh >> /var/log/glow-backup.log 2>&1
