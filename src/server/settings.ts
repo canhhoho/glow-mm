@@ -17,3 +17,8 @@ export async function getNumberSetting(key: NumericSettingKey): Promise<number> 
   const v = row?.value;
   return typeof v === "number" && Number.isFinite(v) ? v : SETTING_DEFAULTS[key];
 }
+
+export async function getStringSetting(key: "payment.bankInstructions"): Promise<string> {
+  const row = await prisma.setting.findUnique({ where: { key } });
+  return typeof row?.value === "string" ? row.value : "";
+}

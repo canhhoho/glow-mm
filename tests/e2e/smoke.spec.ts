@@ -1,6 +1,5 @@
 import { expect, test } from "@playwright/test";
-
-const PASSWORD = process.env.SEED_STAFF_PASSWORD!;
+import { login } from "./helpers";
 
 test("storefront mặc định tiếng Myanmar, hiển thị sản phẩm từ DB", async ({ page }) => {
   await page.goto("/");
@@ -27,10 +26,7 @@ for (const [email, roleText, canSeePricing] of [
   ["donhang@glow.local", "Nhân viên đơn hàng", false],
 ] as const) {
   test(`đăng nhập theo vai trò: ${email}`, async ({ page }) => {
-    await page.goto("/admin/login");
-    await page.getByLabel("Email").fill(email);
-    await page.getByLabel("Mật khẩu").fill(PASSWORD);
-    await page.getByRole("button", { name: "Đăng nhập" }).click();
+    await login(page, email);
     await expect(page.getByTestId("role")).toContainText(roleText);
     await expect(page.getByRole("link", { name: "Giá & tỷ giá" })).toHaveCount(canSeePricing ? 1 : 0);
 

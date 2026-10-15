@@ -1,0 +1,103 @@
+import { Suspense } from "react";
+import { cookies } from "next/headers";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
+import { cn } from "@/lib/utils";
+import { formatMmk } from "@/lib/money";
+import { setCartQtyAction } from "@/server/cart/actions";
+import { CART_COOKIE, parseCart } from "@/server/cart/cart";
+import { getCartDetails } from "@/server/catalog/store-queries";
+import { BlockSkeleton, Notice, outlineButton, PageTitle, primaryButton, storeField } from "@/components/store/ui";
+
+export default function CartPage(props: PageProps<"/[locale]/cart">) {
+  return (
+    <Suspense fallback={<BlockSkeleton />}>
+      <CartContent {...props} />
+    </Suspense>
+  );
+}
+
+async function CartContent({ params }: PageProps<"/[locale]/cart">) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const lines = parseCart((await cookies()).get(CART_COOKIE)?.value);
+  const [t, cart] = await Promise.all([getTranslations({ locale, namespace: "Cart" }), getCartDetails(lines, locale)]);
+
+  if (cart.lines.length === 0) {
+    return (
+      <div className="space-y-3">
+        <PageTitle>{t("title")}</PageTitle>
+        <p className="text-muted-foreground">{t("empty")}</p>
+        <Link href="/" className={outlineButton}>
+          {t("continue")}
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <PageTitle>{t("title")}</PageTitle>
+      <ul className="space-y-3">
+        {cart.lines.map((l) => (
+          <li
+            key={l.variantId}
+            className={cn("space-y-2 rounded-lg border bg-card p-3", l.ok ? "border-border" : "border-destructive")}
+            data-testid="cart-line"
+          >
+            <div className="flex justify-between gap-3">
+              <Link href={`/p/${l.slug}`} className="text-sm">
+                {l.name} <span className="text-muted-foreground">· {l.label}</span>
+              </Link>
+              <span className="font-medium whitespace-nowrap">{formatMmk(l.priceMmk * l.qty, locale)}</span>
+            </div>
+            {!l.ok && (
+              <p className="text-xs text-destructive">
+                {l.available <= 0 ? t("unavailable") : t("onlyLeft", { count: l.available })}
+              </p>
+            )}
+            <div className="flex items-center gap-2">
+              <form action={setCartQtyAction} className="flex items-center gap-2">
+                <input type="hidden" name="variantId" value={l.variantId} />
+                <input
+                  name="qty"
+                  type="number"
+                  min={1}
+                  max={99}
+                  defaultValue={l.qty}
+                  inputMode="numeric"
+                  aria-label={`${l.name} ${l.label}`}
+                  className={cn(storeField, "w-20")}
+                />
+                <button type="submit" className={outlineButton}>
+                  {t("update")}
+                </button>
+              </form>
+              <form action={setCartQtyAction}>
+                <input type="hidden" name="variantId" value={l.variantId} />
+                <input type="hidden" name="qty" value="0" />
+                <button type="submit" className="min-h-11 px-2 text-sm text-muted-foreground underline">
+                  {t("remove")}
+                </button>
+              </form>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div className="flex items-baseline justify-between text-base">
+        <span>{t("subtotal")}</span>
+        <span className="font-medium" data-testid="cart-subtotal">
+          {formatMmk(cart.subtotalMmk, locale)}
+        </span>
+      </div>
+      <p className="text-xs text-muted-foreground">{t("shippingNote")}</p>
+      {cart.ok ? (
+        <Link href="/checkout" className={cn(primaryButton, "w-full")}>
+          {t("checkout")}
+        </Link>
+      ) : (
+        <Notice tone="error">{t("fix")}</Notice>
+      )}
+    </div>
+  );
+}

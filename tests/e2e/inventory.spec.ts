@@ -1,15 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
+import { login } from "./helpers";
 
-const PASSWORD = process.env.SEED_STAFF_PASSWORD!;
 const VARIANT = "SV-SUN-50 — Sunscreen SPF50 PA++++ (50ml)";
-
-async function login(page: Page, email: string) {
-  await page.goto("/admin/login");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Mật khẩu").fill(PASSWORD);
-  await page.getByRole("button", { name: "Đăng nhập" }).click();
-  await expect(page.getByTestId("role")).toBeVisible();
-}
 
 async function postAndExpect(page: Page) {
   await page.getByRole("button", { name: "Lưu nháp" }).click();

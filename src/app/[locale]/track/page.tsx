@@ -1,0 +1,25 @@
+import { Suspense } from "react";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { TrackForm } from "@/components/store/track-form";
+import { BlockSkeleton, PageTitle } from "@/components/store/ui";
+
+export default function TrackPage(props: PageProps<"/[locale]/track">) {
+  return (
+    <Suspense fallback={<BlockSkeleton />}>
+      <TrackContent {...props} />
+    </Suspense>
+  );
+}
+
+async function TrackContent({ params, searchParams }: PageProps<"/[locale]/track">) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const { code } = await searchParams;
+  const t = await getTranslations({ locale, namespace: "Track" });
+  return (
+    <div>
+      <PageTitle>{t("title")}</PageTitle>
+      <TrackForm locale={locale} code={typeof code === "string" ? code : undefined} />
+    </div>
+  );
+}

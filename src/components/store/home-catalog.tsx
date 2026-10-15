@@ -1,14 +1,20 @@
 import { connection } from "next/server";
 import { getTranslations } from "next-intl/server";
-import { formatMmk } from "@/lib/money";
+import { Link } from "@/i18n/navigation";
 import type { StoreLocale } from "@/i18n/routing";
-import { getHomeCatalog } from "@/server/catalog/queries";
+import { listRootCategories } from "@/server/catalog/queries";
+import { listStoreProducts } from "@/server/catalog/store-queries";
+import { ProductGrid } from "./product-card";
+import { ListSkeleton } from "./ui";
 
 /** Phần dữ liệu (DB) của trang chủ — render lúc request, stream sau static shell. */
 export async function HomeCatalog({ locale }: { locale: StoreLocale }) {
   await connection();
-  const t = await getTranslations("Home");
-  const { categories, products } = await getHomeCatalog(locale);
+  const t = await getTranslations({ locale, namespace: "Home" });
+  const [categories, products] = await Promise.all([
+    listRootCategories(locale),
+    listStoreProducts({ locale, sort: "new" }),
+  ]);
 
   return (
     <>
@@ -18,8 +24,13 @@ export async function HomeCatalog({ locale }: { locale: StoreLocale }) {
         </h2>
         <ul className="flex flex-wrap gap-2">
           {categories.map((c) => (
-            <li key={c.slug} className="rounded-full bg-accent px-3 py-1 text-sm text-accent-foreground">
-              {c.name}
+            <li key={c.slug}>
+              <Link
+                href={`/c/${c.slug}`}
+                className="inline-flex min-h-11 items-center rounded-full bg-accent px-4 text-sm text-accent-foreground"
+              >
+                {c.name}
+              </Link>
             </li>
           ))}
         </ul>
@@ -31,16 +42,7 @@ export async function HomeCatalog({ locale }: { locale: StoreLocale }) {
         {products.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("empty")}</p>
         ) : (
-          <ul className="grid grid-cols-2 gap-3">
-            {products.map((p) => (
-              <li key={p.slug} className="rounded-lg border border-border bg-card p-2">
-                <div className="mb-2 aspect-square rounded-md bg-accent" aria-hidden />
-                <p className="text-xs text-muted-foreground">{p.brand}</p>
-                <p className="line-clamp-2 text-sm">{p.name}</p>
-                {p.priceMmk != null && <p className="font-medium text-brand">{formatMmk(p.priceMmk, locale)}</p>}
-              </li>
-            ))}
-          </ul>
+          <ProductGrid products={products.slice(0, 8)} locale={locale} />
         )}
       </section>
     </>
@@ -48,11 +50,5 @@ export async function HomeCatalog({ locale }: { locale: StoreLocale }) {
 }
 
 export function HomeCatalogSkeleton() {
-  return (
-    <div className="grid grid-cols-2 gap-3" aria-hidden>
-      {Array.from({ length: 4 }, (_, i) => (
-        <div key={i} className="aspect-[3/4] animate-pulse rounded-lg bg-accent" />
-      ))}
-    </div>
-  );
+  return <ListSkeleton />;
 }

@@ -1,0 +1,76 @@
+import { getTranslations } from "next-intl/server";
+import { storeFilterOptions, type StoreSort } from "@/server/catalog/store-queries";
+import { outlineButton, storeField } from "./ui";
+
+export type CatalogParams = { q?: string; brand?: string; tags: string[]; sort: StoreSort };
+
+const SORTS: StoreSort[] = ["new", "price_asc", "price_desc"];
+
+/** Đọc bộ lọc từ searchParams (GET form, không cần JS). */
+export function parseCatalogParams(sp: Record<string, string | string[] | undefined>): CatalogParams {
+  const one = (v: string | string[] | undefined) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
+  const tags = ([] as string[]).concat(sp.tag ?? []).filter(Boolean).slice(0, 10);
+  const sort = SORTS.includes(sp.sort as StoreSort) ? (sp.sort as StoreSort) : "new";
+  return { q: one(sp.q), brand: one(sp.brand), tags, sort };
+}
+
+/** Bộ lọc thu gọn trong <details> (không cần JS). */
+export async function CatalogFilters({ locale, current }: { locale: string; current: CatalogParams }) {
+  const [t, options] = await Promise.all([getTranslations({ locale, namespace: "Catalog" }), storeFilterOptions(locale)]);
+  const groups = [
+    { kind: "SKIN_TYPE", label: t("skinType") },
+    { kind: "CONCERN", label: t("concern") },
+  ];
+  const active = !!current.brand || current.tags.length > 0 || current.sort !== "new";
+
+  return (
+    <details open={active} className="mb-4 rounded-lg border border-border bg-card">
+      <summary className="flex min-h-11 cursor-pointer items-center px-3 font-medium">{t("filter")}</summary>
+      <form className="space-y-3 px-3 pb-3">
+        {current.q && <input type="hidden" name="q" value={current.q} />}
+        <label className="block space-y-1 text-sm">
+          <span>{t("sort")}</span>
+          <select name="sort" defaultValue={current.sort} className={storeField}>
+            <option value="new">{t("sortNew")}</option>
+            <option value="price_asc">{t("sortPriceAsc")}</option>
+            <option value="price_desc">{t("sortPriceDesc")}</option>
+          </select>
+        </label>
+        <label className="block space-y-1 text-sm">
+          <span>{t("brand")}</span>
+          <select name="brand" defaultValue={current.brand ?? ""} className={storeField}>
+            <option value="">{t("allBrands")}</option>
+            {options.brands.map((b) => (
+              <option key={b.slug} value={b.slug}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        {groups.map((g) => {
+          const tags = options.tags.filter((x) => x.kind === g.kind);
+          if (tags.length === 0) return null;
+          return (
+            <fieldset key={g.kind} className="space-y-1">
+              <legend className="text-sm">{g.label}</legend>
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <label
+                    key={tag.slug}
+                    className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-3 text-sm has-checked:border-brand has-checked:bg-accent"
+                  >
+                    <input type="checkbox" name="tag" value={tag.slug} defaultChecked={current.tags.includes(tag.slug)} />
+                    {tag.name}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          );
+        })}
+        <button type="submit" className={outlineButton}>
+          {t("apply")}
+        </button>
+      </form>
+    </details>
+  );
+}

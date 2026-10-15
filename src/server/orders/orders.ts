@@ -167,6 +167,7 @@ export async function findOrderForCustomer(code: string, phoneInput: string) {
       paymentProofs: { orderBy: { createdAt: "desc" }, select: { id: true, status: true, createdAt: true } },
       deliveries: { orderBy: { createdAt: "desc" } },
       history: { orderBy: { createdAt: "asc" }, select: { toStatus: true, createdAt: true } },
+      reservations: { where: { status: "ACTIVE" }, select: { expiresAt: true }, take: 1 },
     },
   });
   return order && order.recipientPhone === phone ? order : null;
