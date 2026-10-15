@@ -114,7 +114,7 @@ Dockerfile  docker-compose.yml  docker-compose.prod.yml  .env.example
 
 ## 4. Roadmap (dừng chờ duyệt sau mỗi phase)
 
-Trạng thái: P0 ✅ (2026-10-15) · P1 ✅ (2026-10-15) · P2 đang làm: 2a lõi đơn ✅ → 2b admin đơn → 2c storefront → 2d E2E + Lighthouse.
+Trạng thái: P0 ✅ (2026-10-15) · P1 ✅ (2026-10-15) · P2 đang làm: 2a lõi đơn ✅ → 2b admin đơn ✅ → 2c storefront → 2d E2E + Lighthouse.
 
 | Phase | Nội dung | Hoàn thành khi |
 |---|---|---|

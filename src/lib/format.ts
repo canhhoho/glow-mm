@@ -19,3 +19,16 @@ export function daysUntil(d: Date, now = new Date()): number {
   const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
   return Math.floor((d.getTime() - today) / 86_400_000);
 }
+
+export function fmtDateTime(d: Date | null | undefined, timeZone = "Asia/Yangon"): string {
+  if (!d) return "—";
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(d);
+}

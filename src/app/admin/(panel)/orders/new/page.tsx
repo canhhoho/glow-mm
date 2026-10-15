@@ -1,0 +1,45 @@
+import { getTranslations } from "next-intl/server";
+import { requirePagePermission } from "@/server/auth/session";
+import { findCustomerByPhone, orderFormOptions } from "@/server/orders/admin-queries";
+import { OrderForm, type OrderFormInitial } from "@/components/admin/order-form";
+import { fieldClass, LinkButton, PageHeader } from "@/components/admin/ui";
+import { Button } from "@/components/ui/button";
+
+export default async function NewOrderPage({ searchParams }: PageProps<"/admin/orders/new">) {
+  await requirePagePermission("orders:create");
+  const { phone } = await searchParams;
+  const lookup = typeof phone === "string" && phone.trim() ? phone.trim() : undefined;
+  const [t, options, customer] = await Promise.all([
+    getTranslations("Orders"),
+    orderFormOptions(),
+    lookup ? findCustomerByPhone(lookup) : null,
+  ]);
+  const address = customer?.addresses[0];
+  const initial: OrderFormInitial = {
+    phone: customer?.phone ?? lookup ?? "",
+    name: customer?.name ?? "",
+    zoneId: address?.zoneId ?? "",
+    addressLine: address?.line ?? "",
+  };
+
+  return (
+    <div className="max-w-3xl space-y-4">
+      <PageHeader title={t("new")} actions={<LinkButton href="/admin/orders">← {t("back")}</LinkButton>} />
+      <form role="search" className="flex flex-wrap items-end gap-2">
+        <label className="space-y-1 text-sm">
+          <span className="text-muted-foreground">{t("lookupPhone")}</span>
+          <input name="phone" type="tel" inputMode="tel" defaultValue={lookup} className={`${fieldClass} w-56`} />
+        </label>
+        <Button type="submit" variant="outline">
+          {t("lookup")}
+        </Button>
+        {lookup && (
+          <p className="pb-2 text-sm text-muted-foreground" data-testid="customer-lookup">
+            {customer ? t("customerFound", { name: customer.name, count: customer._count.orders }) : t("customerNew")}
+          </p>
+        )}
+      </form>
+      <OrderForm key={lookup ?? ""} options={options} initial={initial} />
+    </div>
+  );
+}
