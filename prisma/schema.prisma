@@ -118,6 +118,12 @@ enum StorageDriver {
   LOCAL
 }
 
+enum FileVisibility {
+  PUBLIC
+  /// Chỉ nhân viên có quyền mới tải được (biên lai chuyển khoản).
+  PRIVATE
+}
+
 model FileObject {
   id            String         @id @default(cuid())
   driver        StorageDriver
@@ -125,6 +131,7 @@ model FileObject {
   url           String
   mime          String
   size          Int
+  visibility    FileVisibility @default(PUBLIC)
   createdAt     DateTime       @default(now())
   productImages ProductImage[]
   paymentProofs PaymentProof[]
@@ -523,6 +530,7 @@ model Reservation {
   expiresAt DateTime?
   createdAt DateTime          @default(now())
 
+  @@unique([orderId, variantId])
   @@index([variantId, status])
   @@index([status, expiresAt])
 }
@@ -611,6 +619,11 @@ model Order {
   customer       Customer             @relation(fields: [customerId], references: [id])
   addressId      String
   address        Address              @relation(fields: [addressId], references: [id])
+  /// Snapshot lúc đặt — sửa khách/địa chỉ sau này không đổi đơn cũ.
+  recipientName  String
+  recipientPhone String
+  addressText    String
+  zoneName       String
   channel        OrderChannel         @default(WEB)
   status         OrderStatus          @default(PENDING)
   paymentMethod  PaymentMethod
@@ -620,6 +633,9 @@ model Order {
   totalMmk       Int
   locale         String               @default("my")
   note           String?
+  cancelReason   String?
+  /// Chống tạo trùng khi bấm gửi 2 lần.
+  idempotencyKey String?              @unique
   codConfirmedAt DateTime?
   createdById    String?
   createdAt      DateTime             @default(now())
@@ -642,6 +658,9 @@ model OrderItem {
   order        Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
   variantId    String
   variant      Variant           @relation(fields: [variantId], references: [id])
+  /// Snapshot lúc đặt.
+  sku          String
+  name         String
   qty          Int
   unitPriceMmk Int
   allocations  OrderAllocation[]

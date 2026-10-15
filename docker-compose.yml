@@ -10,7 +10,7 @@ services:
       POSTGRES_DB: glow
       TZ: UTC
     ports:
-      - "55432:5432" # cổng 55432 trên máy để tránh trùng các Postgres khác
+      - "15432:5432" # cổng 15432: tránh Postgres khác và dải cổng Windows/Hyper-V tự giữ (49152+)
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./docker/initdb:/docker-entrypoint-initdb.d:ro

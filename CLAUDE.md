@@ -39,7 +39,7 @@ Next.js 16 có API mới (proxy thay middleware, Cache Components bật) → đ�
 ## Lệnh
 ```bash
 npm install
-docker compose up -d     # Postgres dev ở localhost:55432 (DB glow + glow_test)
+docker compose up -d     # Postgres dev ở localhost:15432 (DB glow + glow_test)
 cp .env.example .env     # rồi sửa secret
 npm run db:migrate       # prisma migrate dev (tạo/áp migration)
 npm run db:seed          # dữ liệu mẫu (có tiếng Myanmar), tài khoản *@glow.local

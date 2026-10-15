@@ -1,12 +1,13 @@
 import { isAuthorizedCron } from "@/server/cron/auth";
+import { cancelExpiredOrders } from "@/server/orders/cron";
 
 /**
  * Tác vụ định kỳ (chạy được cả Vercel Cron lẫn crontab/Coolify).
- * Logic từng job được cài ở phase tương ứng (P2: reservation/COD, P3: alerts).
+ * Logic nằm ở src/server/<domain>/ (P2: giữ hàng/COD, P3: cảnh báo).
  */
 const JOBS: Record<string, () => Promise<Record<string, unknown>>> = {
-  "release-reservations": async () => ({ released: 0, todo: "P2" }),
-  "cancel-unconfirmed-cod": async () => ({ cancelled: 0, todo: "P2" }),
+  "release-reservations": () => cancelExpiredOrders("BANK_TRANSFER"),
+  "cancel-unconfirmed-cod": () => cancelExpiredOrders("COD"),
   "compute-alerts": async () => ({ alerts: 0, todo: "P3" }),
 };
 

@@ -1,0 +1,198 @@
+import "server-only";
+import { z } from "zod";
+import { prisma } from "@/lib/db";
+import { can, type Role } from "@/server/auth/roles";
+import { candidatesAt, postDocumentTx, salesBlockDays } from "@/server/inventory/documents";
+import { InsufficientStockError, pickFefo, type FefoCandidate } from "@/server/inventory/fefo";
+import type { Tx } from "@/server/inventory/ledger";
+import { newCode } from "@/server/codes";
+import { bundleDefs } from "./availability";
+import { OrderError } from "./errors";
+import { holdIndefinitely, releaseReservations } from "./reservations";
+import { assertTransition, TRANSITIONS, TransitionError, type TransitionName } from "./state-machine";
+
+/**
+ * Thực thi chuyển trạng thái đơn (kèm tác động kho/thanh toán) — luôn đi qua `assertTransition`.
+ * Khoá dòng Order (SELECT … FOR UPDATE) để hai thao tác đồng thời không chồng nhau.
+ */
+
+/** Nhân viên (kiểm quyền theo bảng TRANSITIONS) hoặc hệ thống (cron — chỉ được huỷ). */
+export type Actor = { userId: string; role: Role } | { system: true };
+
+export const transitionExtraSchema = z.object({
+  note: z.string().trim().max(500).optional(),
+  reason: z.string().trim().max(500).optional(),
+  carrier: z.string().trim().min(1).max(100).optional(),
+  trackingNo: z.string().trim().max(100).optional(),
+  fromLocationId: z.string().min(1).optional(),
+});
+export type TransitionExtra = z.input<typeof transitionExtraSchema>;
+
+export async function transitionOrder(orderId: string, name: TransitionName, actor: Actor, extra: TransitionExtra = {}) {
+  const blockDays = await salesBlockDays();
+  return prisma.$transaction((tx) => transitionInTx(tx, orderId, name, actor, extra, { now: new Date(), blockDays }), {
+    maxWait: 10_000,
+    timeout: 30_000,
+  });
+}
+
+export async function transitionInTx(
+  tx: Tx,
+  orderId: string,
+  name: TransitionName,
+  actor: Actor,
+  rawExtra: TransitionExtra,
+  opts: { now: Date; blockDays: number },
+) {
+  const extra = transitionExtraSchema.parse(rawExtra);
+  const userId = "system" in actor ? null : actor.userId;
+  if ("system" in actor ? name !== "cancel" : !can(actor.role, TRANSITIONS[name].permission)) {
+    throw new OrderError("forbidden", "Không có quyền thực hiện thao tác này");
+  }
+  if (name === "returned") {
+    // Nhập lại hàng trả vào "Chờ kiểm tra" làm ở P3 — chưa cho đổi trạng thái để kho không lệch.
+    throw new OrderError("invalid_transition", "Trả hàng chưa được hỗ trợ");
+  }
+
+  await tx.$queryRaw`SELECT "id" FROM "Order" WHERE "id" = ${orderId} FOR UPDATE`;
+  const order = await tx.order.findUnique({ where: { id: orderId } });
+  if (!order) throw new OrderError("not_found", "Không tìm thấy đơn");
+
+  let to;
+  try {
+    to = assertTransition(name, order);
+  } catch (e) {
+    if (e instanceof TransitionError) throw new OrderError("invalid_transition", e.message);
+    throw e;
+  }
+
+  const data: Parameters<typeof tx.order.update>[0]["data"] = { status: to };
+  switch (name) {
+    case "confirmCod":
+      await holdIndefinitely(tx, order.id, opts);
+      data.codConfirmedAt = opts.now;
+      break;
+    case "confirmPayment":
+      await holdIndefinitely(tx, order.id, opts);
+      data.paymentStatus = "PAID";
+      break;
+    case "pack":
+      if (!userId) throw new OrderError("forbidden", "Thiếu người đóng gói");
+      await packOrder(tx, order, userId, extra.fromLocationId, opts);
+      break;
+    case "ship":
+      await tx.delivery.create({
+        data: { orderId: order.id, carrier: extra.carrier ?? "manual", trackingNo: extra.trackingNo || null, shippedAt: opts.now },
+      });
+      break;
+    case "complete":
+      if (order.paymentMethod === "COD") data.paymentStatus = "PAID"; // đã thu tiền khi giao
+      break;
+    case "cancel":
+      await releaseReservations(tx, order.id);
+      data.cancelReason = extra.reason || null;
+      break;
+  }
+
+  const updated = await tx.order.update({ where: { id: order.id }, data });
+  await tx.orderStatusHistory.create({
+    data: {
+      orderId: order.id,
+      fromStatus: order.status,
+      toStatus: to,
+      userId,
+      note: extra.note || extra.reason || null,
+      createdAt: opts.now,
+    },
+  });
+  await tx.auditLog.create({
+    data: { userId, action: `order.${name}`, entity: "Order", entityId: order.id, data: { code: order.code, from: order.status, to } },
+  });
+  return updated;
+}
+
+/**
+ * Đóng gói: phân lô FEFO (bỏ lô dưới ngưỡng hạn dùng) cho từng dòng đơn, combo trừ từng thành phần,
+ * ghi phiếu xuất (ledger) + OrderAllocation (giá vốn) và chuyển giữ hàng sang CONSUMED.
+ */
+async function packOrder(
+  tx: Tx,
+  order: { id: string; code: string },
+  userId: string,
+  fromLocationId: string | undefined,
+  opts: { now: Date; blockDays: number },
+) {
+  const fromId = fromLocationId ?? (await defaultSellableLocation(tx));
+  const loc = await tx.location.findUnique({ where: { id: fromId } });
+  if (!loc?.sellable) throw new OrderError("invalid_transition", "Vị trí xuất phải là kho bán được");
+
+  const items = await tx.orderItem.findMany({ where: { orderId: order.id } });
+  const defs = await bundleDefs(tx, items.map((i) => i.variantId));
+  const needs = items.flatMap((i) => {
+    const def = defs.get(i.variantId);
+    return def
+      ? def.map((c) => ({ orderItemId: i.id, variantId: c.componentId, qty: c.qty * i.qty }))
+      : [{ orderItemId: i.id, variantId: i.variantId, qty: i.qty }];
+  });
+
+  // Tồn theo lô dùng chung cho các dòng cùng biến thể (trừ dần khi phân bổ).
+  const pools = new Map<string, FefoCandidate[]>();
+  const picks: { orderItemId: string; variantId: string; batchId: string; qty: number }[] = [];
+  for (const n of needs) {
+    let pool = pools.get(n.variantId);
+    if (!pool) {
+      pool = await candidatesAt(tx, n.variantId, fromId, "SELLABLE");
+      pools.set(n.variantId, pool);
+    }
+    let alloc;
+    try {
+      alloc = pickFefo(pool, n.qty, { today: opts.now, blockDays: opts.blockDays });
+    } catch (e) {
+      if (e instanceof InsufficientStockError) {
+        throw new OrderError("out_of_stock", `Không đủ hàng còn hạn để đóng gói: ${e.message}`, { variantId: n.variantId });
+      }
+      throw e;
+    }
+    for (const a of alloc) {
+      const c = pool.find((p) => p.batchId === a.batchId)!;
+      c.available -= a.qty;
+      picks.push({ orderItemId: n.orderItemId, variantId: n.variantId, batchId: a.batchId, qty: a.qty });
+    }
+  }
+
+  const doc = await tx.stockDocument.create({
+    data: {
+      code: newCode("IS", opts.now),
+      type: "ISSUE",
+      status: "DRAFT",
+      fromId,
+      orderId: order.id,
+      reason: `Đơn ${order.code}`,
+      createdById: userId,
+      lines: { create: picks.map((p) => ({ variantId: p.variantId, batchId: p.batchId, stockType: "SELLABLE", qty: p.qty })) },
+    },
+  });
+  await postDocumentTx(tx, doc.id, userId);
+
+  const batches = await tx.batch.findMany({
+    where: { id: { in: picks.map((p) => p.batchId) } },
+    select: { id: true, landedCostMmk: true },
+  });
+  // [CẦN XÁC MINH] Lô chưa có landed cost (chưa phân bổ chi phí chuyến) ghi giá vốn 0 — báo cáo lợi nhuận P3 cần cảnh báo.
+  const cost = new Map(batches.map((b) => [b.id, b.landedCostMmk ?? 0]));
+  await tx.orderAllocation.createMany({
+    data: picks.map((p) => ({
+      orderItemId: p.orderItemId,
+      batchId: p.batchId,
+      qty: p.qty,
+      unitLandedCostMmk: cost.get(p.batchId) ?? 0,
+    })),
+  });
+  await tx.reservation.updateMany({ where: { orderId: order.id, status: "ACTIVE" }, data: { status: "CONSUMED" } });
+}
+
+async function defaultSellableLocation(tx: Tx) {
+  const locs = await tx.location.findMany({ where: { sellable: true }, select: { id: true }, take: 2 });
+  if (locs.length !== 1) throw new OrderError("invalid_transition", "Chọn vị trí kho xuất hàng");
+  return locs[0].id;
+}

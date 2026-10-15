@@ -17,7 +17,7 @@ jobs:
           POSTGRES_USER: glow
           POSTGRES_PASSWORD: glow
           POSTGRES_DB: glow_test
-        ports: ["55432:5432"]
+        ports: ["15432:5432"]
         options: >-
           --health-cmd "pg_isready -U glow -d glow_test"
           --health-interval 5s --health-timeout 3s --health-retries 20
