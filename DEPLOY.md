@@ -31,12 +31,13 @@ Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong bi�
 ### 1.2 Neon (Singapore)
 1. Tạo project với region **AWS ap-southeast-1 (Singapore)** và Postgres **17**.
 2. Tạo 2 branch/database:
-   - `main` → cho Vercel Production;
-   - `preview` → cho Vercel Preview.
+   - branch mặc định (Neon đặt tên `production`) → cho Vercel Production;
+   - `preview` (Create child branch, **Auto-delete: Never**) → cho Vercel Preview.
 3. Mỗi branch lấy 2 chuỗi kết nối:
    - **Pooled** (host có `-pooler`) → `DATABASE_URL`;
    - **Direct** (không có `-pooler`) → `DIRECT_DATABASE_URL`, dùng cho `prisma migrate`.
    - Cả hai phải có `?sslmode=require`.
+   - Ô Value trên Vercel phải là **nguyên chuỗi** bắt đầu bằng `postgresql://` (chuỗi đã chứa mật khẩu), không phải chỉ mật khẩu, không có `psql`, dấu nháy hay xuống dòng. Sai định dạng → build lỗi `P1013`.
 4. Không bật tính năng riêng của Neon trong code (đã tuân thủ: chỉ dùng Prisma + Postgres chuẩn).
 
 ### 1.3 Vercel
@@ -54,6 +55,9 @@ Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong bi�
    | `BETTER_AUTH_SECRET` | `openssl rand -base64 32` | giá trị khác |
    | `CRON_SECRET` | ngẫu nhiên ≥ 16 ký tự | giá trị khác |
    | `STORAGE_DRIVER` | `vercel-blob` | `vercel-blob` |
+
+   - Secret chỉ dùng ký tự ASCII (dùng lệnh tạo ngẫu nhiên). Có chữ tiếng Việt có dấu trong `CRON_SECRET` → build lỗi ngay ("not valid in HTTP headers").
+   - Biến Preview chọn **Preview Branches → `dev`** (bỏ tick Production) để mỗi bộ biến chỉ áp cho đúng môi trường.
    | `FB_PAGE_USERNAME`, `VIBER_CHAT_URI` | tuỳ chọn | tuỳ chọn |
 
 5. **Cron:** `vercel.json` khai báo 3 job, đều chạy 1 lần/ngày, vì gói Hobby chỉ cho cron hằng ngày **[CẦN XÁC MINH theo gói hiện tại]**.
