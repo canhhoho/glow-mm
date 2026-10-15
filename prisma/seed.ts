@@ -371,6 +371,86 @@ async function seedZones() {
   }
 }
 
+/** Phân bổ chi phí chuyến hàng mẫu vào giá vốn lô (để báo cáo lợi nhuận có số). Dùng đúng hàm nghiệp vụ. */
+async function seedLandedCost() {
+  const shipment = await prisma.inboundShipment.findUniqueOrThrow({ where: { code: "SH-2026-001" } });
+  const { allocateShipment } = await import("../src/server/inventory/shipments");
+  await allocateShipment(shipment.id, STAFF[0].id);
+}
+
+/**
+ * Đơn mẫu cho dashboard/báo cáo — đi qua ĐÚNG luồng nghiệp vụ (tạo đơn → xác nhận → đóng gói FEFO
+ * → giao → hoàn tất, trả hàng, huỷ), không ghi DB trực tiếp. Ngày trạng thái lùi vài ngày để biểu đồ có dữ liệu.
+ * Không dùng ML-LIP-02 (E2E cần tồn thấp cố định của mã này).
+ */
+async function seedDemoOrders() {
+  const { createOrder } = await import("../src/server/orders/orders");
+  const { transitionOrder } = await import("../src/server/orders/transitions");
+  const { returnItems } = await import("../src/server/orders/returns");
+  type Step = Parameters<typeof transitionOrder>[1];
+
+  const DAY = 86_400_000;
+  const ago = (days: number) => new Date(Date.now() - days * DAY);
+  const admin = { userId: STAFF[0].id, role: "ADMIN" as const };
+  const zone = await prisma.shippingZone.findUniqueOrThrow({ where: { code: "YGN-KMY" } });
+  const mm = await prisma.location.findUniqueOrThrow({ where: { code: "MM-STOCK" } });
+  const qc = await prisma.location.findUniqueOrThrow({ where: { code: "MM-QC" } });
+  const id = async (sku: string) => (await prisma.variant.findUniqueOrThrow({ where: { sku } })).id;
+
+  const demo = async (
+    key: string,
+    o: { method: "COD" | "BANK_TRANSFER"; name: string; phone: string; items: [string, number][]; createdDaysAgo: number },
+    steps: [Step, number][],
+  ) => {
+    const order = await createOrder(
+      {
+        idempotencyKey: key,
+        channel: "FACEBOOK",
+        paymentMethod: o.method,
+        name: o.name,
+        phone: o.phone,
+        zoneId: zone.id,
+        addressLine: "အမှတ် ၁၂၊ ဗိုလ်အောင်ကျော်လမ်း",
+        locale: "my",
+        items: await Promise.all(o.items.map(async ([sku, qty]) => ({ variantId: await id(sku), qty }))),
+      },
+      { userId: STAFF[2].id, now: ago(o.createdDaysAgo) },
+    );
+    for (const [step, days] of steps) {
+      const extra = step === "pack" ? { fromLocationId: mm.id } : step === "ship" ? { carrier: "Royal Express" } : {};
+      await transitionOrder(order.id, step, admin, extra, ago(days));
+    }
+    return order;
+  };
+
+  await demo("seed-demo-1", { method: "COD", name: "Ma Hla", phone: "09 7812 0001", items: [["SV-SUN-50", 2], ["ML-TON-150", 1]], createdDaysAgo: 6 }, [
+    ["confirmCod", 6],
+    ["pack", 5],
+    ["ship", 5],
+    ["complete", 4],
+  ]);
+  await demo("seed-demo-2", { method: "BANK_TRANSFER", name: "Ko Zaw", phone: "09 7812 0002", items: [["SV-VC-30", 1]], createdDaysAgo: 4 }, [
+    ["confirmPayment", 4],
+    ["pack", 3],
+    ["ship", 3],
+    ["complete", 2],
+  ]);
+  const withReturn = await demo(
+    "seed-demo-3",
+    { method: "COD", name: "Daw Mya", phone: "09 7812 0003", items: [["SV-SUN-100", 1], ["COMBO-SUN-TON", 1]], createdDaysAgo: 3 },
+    [
+      ["confirmCod", 3],
+      ["pack", 2],
+      ["ship", 2],
+      ["complete", 1],
+    ],
+  );
+  const sun100 = await prisma.orderItem.findFirstOrThrow({ where: { orderId: withReturn.id, sku: "SV-SUN-100" } });
+  await returnItems(withReturn.id, { toLocationId: qc.id, lines: [{ orderItemId: sun100.id, qty: 1 }], reason: "Vỏ hộp móp (mẫu)" }, admin);
+  await demo("seed-demo-4", { method: "COD", name: "Ko Min", phone: "09 7812 0004", items: [["ML-LIP-01", 2]], createdDaysAgo: 2 }, [["cancel", 2]]);
+  await demo("seed-demo-5", { method: "COD", name: "Ma Su", phone: "09 7812 0005", items: [["SV-SUN-50", 1]], createdDaysAgo: 0 }, []);
+}
+
 async function main() {
   if (await prisma.user.findUnique({ where: { email: STAFF[0].email } })) {
     console.log("• Nhân viên + catalog: đã có → bỏ qua");
@@ -390,7 +470,24 @@ async function main() {
     await seedZones();
     console.log("• Vùng giao hàng: xong");
   }
-  console.log("Seed xong: 3 nhân viên, 6 sản phẩm (1 combo), 8 lô, 4 vùng giao hàng.");
+  // Hai bước dưới gọi hàm nghiệp vụ (src/server, kết nối qua DATABASE_URL) → bỏ qua khi seed qua WebSocket.
+  if (process.env.SEED_VIA_WEBSOCKET === "1") {
+    console.log("• Landed cost + đơn mẫu: bỏ qua (SEED_VIA_WEBSOCKET)");
+  } else {
+    if (await prisma.batch.count({ where: { shipment: { code: "SH-2026-001" }, landedCostVnd: null } })) {
+      await seedLandedCost();
+      console.log("• Landed cost chuyến mẫu: xong");
+    } else {
+      console.log("• Landed cost chuyến mẫu: đã có → bỏ qua");
+    }
+    if (await prisma.order.findUnique({ where: { idempotencyKey: "seed-demo-1" } })) {
+      console.log("• Đơn mẫu: đã có → bỏ qua");
+    } else {
+      await seedDemoOrders();
+      console.log("• Đơn mẫu: xong (5 đơn: 3 hoàn tất — 1 có trả hàng, 1 huỷ, 1 chờ xác nhận)");
+    }
+  }
+  console.log("Seed xong: 3 nhân viên, 6 sản phẩm (1 combo), 8 lô, 4 vùng giao hàng, đơn mẫu.");
 }
 
 main()

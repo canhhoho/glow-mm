@@ -28,7 +28,21 @@
     "welcome": "Xin chào, {name}",
     "role": "Vai trò: {role}",
     "denied": "Bạn không có quyền truy cập trang đó.",
-    "placeholder": "Các chỉ số sẽ hiển thị ở đây (Phase 3)."
+    "placeholder": "Các chỉ số sẽ hiển thị ở đây (Phase 3).",
+    "todo": "Việc cần làm",
+    "codToConfirm": "COD chờ gọi xác nhận",
+    "proofsToReview": "Biên lai chờ duyệt",
+    "toPack": "Chờ đóng gói",
+    "packing": "Đã đóng gói, chờ giao",
+    "shipping": "Đang giao",
+    "overdue": "Đơn quá hạn giữ hàng",
+    "alerts": "Cảnh báo kho",
+    "lowStock": "Tồn thấp",
+    "expiry": "Hết hạn / ngừng bán / cận date",
+    "reorder": "Nên đặt thêm",
+    "sales": "Kinh doanh 30 ngày",
+    "today": "Hôm nay",
+    "viewReports": "Xem báo cáo"
   },
   "Role": {
     "ADMIN": "Quản trị viên",
@@ -132,7 +146,9 @@
     "colLanded": "Giá vốn/đv (VND)",
     "colLandedMmk": "Giá vốn/đv (MMK)",
     "colRate": "Tỷ giá",
-    "receiveHint": "Lô được gắn vào chuyến khi tạo phiếu nhập kho và chọn chuyến hàng này."
+    "receiveHint": "Lô được gắn vào chuyến khi tạo phiếu nhập kho và chọn chuyến hàng này.",
+    "arrivedAt": "Ngày đến",
+    "markArrived": "Đánh dấu đã đến"
   },
   "Products": {
     "title": "Sản phẩm",
@@ -461,5 +477,46 @@
     },
     "note": "Ngừng bán khi còn < {block} ngày, cảnh báo < {warn} ngày. Tốc độ bán tính trong {window} ngày gần nhất, cần đủ hàng {cover} ngày sau khi về. Sửa ở Cài đặt.",
     "reorderHint": "Nên đặt = bán/ngày × (thời gian về + số ngày cần đủ) + tồn an toàn − (còn bán được + kho VN + đang về)."
+  },
+  "Reports": {
+    "title": "Báo cáo",
+    "from": "Từ ngày",
+    "to": "Đến ngày",
+    "apply": "Xem",
+    "basis": "Doanh thu = tiền hàng đơn hoàn tất trong kỳ (theo ngày hoàn tất, giờ Yangon), đã trừ hàng khách trả. Lợi nhuận = doanh thu − giá vốn lô đã xuất. Phí ship tách riêng.",
+    "revenue": "Doanh thu",
+    "cogs": "Giá vốn",
+    "profit": "Lợi nhuận gộp",
+    "margin": "Biên lợi nhuận",
+    "orders": "Đơn hoàn tất",
+    "returns": "Hàng trả (giảm doanh thu)",
+    "shippingFees": "Phí ship thu",
+    "daily": "Theo ngày",
+    "day": "Ngày",
+    "top": "Bán chạy",
+    "units": "SL bán",
+    "slow": "Bán chậm (còn hàng, không bán trong {days} ngày)",
+    "available": "Còn bán được",
+    "inbound": "Hàng đang vận chuyển",
+    "shipment": "Chuyến",
+    "departed": "Ngày đi",
+    "batches": "Số lô",
+    "costs": "Chi phí chuyến (VND)",
+    "stock": "Tồn kho theo vị trí",
+    "locType": "Loại vị trí",
+    "qty": "Bán được",
+    "tester": "Tester",
+    "value": "Giá trị (MMK)",
+    "noCost": "SL chưa có giá vốn",
+    "missingCost": "Các đơn có lô chưa có giá vốn (tính 0) — phân bổ chi phí chuyến hàng để lợi nhuận chính xác:",
+    "empty": "Không có dữ liệu trong kỳ",
+    "loc": {
+      "VN_STOCK": "Kho VN",
+      "IN_TRANSIT": "Đang vận chuyển",
+      "CUSTOMS": "Hải quan",
+      "MM_STOCK": "Kho MM",
+      "QUARANTINE": "Chờ kiểm tra"
+    },
+    "andMore": "… và {count} đơn khác"
   }
 }

@@ -84,3 +84,43 @@ export function Badge({ tone = "neutral", children }: { tone?: keyof typeof TONE
 
 export const fieldClass =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+
+/** Ô chỉ số trên dashboard/báo cáo; có `href` thì bấm được. */
+export function Stat({
+  label,
+  value,
+  href,
+  tone = "neutral",
+  testId,
+}: {
+  label: string;
+  value: React.ReactNode;
+  href?: string;
+  tone?: "neutral" | "warning" | "danger";
+  testId?: string;
+}) {
+  const body = (
+    <>
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div
+        className={cn(
+          "text-xl font-medium tabular-nums",
+          tone === "warning" && "text-amber-700 dark:text-amber-400",
+          tone === "danger" && "text-destructive",
+        )}
+      >
+        {value}
+      </div>
+    </>
+  );
+  const cls = "block rounded-lg border p-3";
+  return href ? (
+    <Link href={href} className={cn(cls, "hover:bg-muted")} data-testid={testId}>
+      {body}
+    </Link>
+  ) : (
+    <div className={cls} data-testid={testId}>
+      {body}
+    </div>
+  );
+}

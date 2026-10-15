@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { getShipment } from "@/server/inventory/queries";
-import { removeShipmentCostAction } from "@/server/inventory/actions";
+import { markArrivedAction, removeShipmentCostAction } from "@/server/inventory/actions";
+import { ActionButton } from "@/components/admin/action-button";
 import { AllocateForm, ShipmentCostForm } from "@/components/admin/shipment-forms";
 import { DataTable, LinkButton, PageHeader, Td } from "@/components/admin/ui";
 import { fmtDay, fmtInt } from "@/lib/format";
@@ -17,6 +18,17 @@ export default async function ShipmentPage({ params }: PageProps<"/admin/shipmen
   return (
     <div className="max-w-5xl space-y-6">
       <PageHeader title={`${t("title")} · ${s.code}`} actions={<LinkButton href="/admin/shipments">← {td("back")}</LinkButton>} />
+      <p className="flex flex-wrap items-center gap-3 text-sm" data-testid="shipment-dates">
+        <span>
+          {t("departedAt")}: {fmtDay(s.departedAt)}
+        </span>
+        <span>
+          {t("arrivedAt")}: {fmtDay(s.arrivedAt)}
+        </span>
+        {!s.arrivedAt && (
+          <ActionButton action={markArrivedAction} fields={{ shipmentId: s.id }} label={t("markArrived")} variant="outline" />
+        )}
+      </p>
 
       <section className="space-y-3">
         <h2 className="font-medium">

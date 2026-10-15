@@ -28,9 +28,16 @@ export const transitionExtraSchema = z.object({
 });
 export type TransitionExtra = z.input<typeof transitionExtraSchema>;
 
-export async function transitionOrder(orderId: string, name: TransitionName, actor: Actor, extra: TransitionExtra = {}) {
+/** `now`: mặc định thời điểm hiện tại (truyền vào để tạo dữ liệu mẫu theo ngày). */
+export async function transitionOrder(
+  orderId: string,
+  name: TransitionName,
+  actor: Actor,
+  extra: TransitionExtra = {},
+  now = new Date(),
+) {
   const blockDays = await salesBlockDays();
-  return prisma.$transaction((tx) => transitionInTx(tx, orderId, name, actor, extra, { now: new Date(), blockDays }), {
+  return prisma.$transaction((tx) => transitionInTx(tx, orderId, name, actor, extra, { now, blockDays }), {
     maxWait: 10_000,
     timeout: 30_000,
   });

@@ -33,6 +33,19 @@ export async function removeShipmentCost(costId: string) {
   await prisma.shipmentCost.delete({ where: { id: costId } });
 }
 
+/** Đánh dấu chuyến đã đến (hết "đang vận chuyển" trên báo cáo). Ghi ngày đi nếu chưa có. */
+export async function markShipmentArrived(shipmentId: string, userId: string, at = new Date()) {
+  const s = await prisma.inboundShipment.findUniqueOrThrow({ where: { id: shipmentId } });
+  if (s.arrivedAt) throw new Error("Chuyến hàng đã được đánh dấu đã đến");
+  await prisma.inboundShipment.update({
+    where: { id: shipmentId },
+    data: { arrivedAt: at, departedAt: s.departedAt ?? at },
+  });
+  await prisma.auditLog.create({
+    data: { userId, action: "shipment.arrived", entity: "InboundShipment", entityId: shipmentId },
+  });
+}
+
 export async function setAllocationMethod(shipmentId: string, method: "BY_VALUE" | "BY_QTY") {
   await prisma.inboundShipment.update({ where: { id: shipmentId }, data: { allocationMethod: method } });
 }

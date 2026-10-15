@@ -8,7 +8,14 @@ import { requirePermission } from "@/server/auth/session";
 import type { Permission } from "@/server/auth/roles";
 import { cancelDocument, createDocument, postDocument } from "./documents";
 import { discardFromQuarantine, restockFromQuarantine } from "./quarantine";
-import { addShipmentCost, allocateShipment, createShipment, removeShipmentCost, setAllocationMethod } from "./shipments";
+import {
+  addShipmentCost,
+  allocateShipment,
+  createShipment,
+  markShipmentArrived,
+  removeShipmentCost,
+  setAllocationMethod,
+} from "./shipments";
 
 export type ActionState = { error?: string; ok?: string } | undefined;
 
@@ -158,4 +165,17 @@ export async function discardAction(_prev: ActionState, formData: FormData): Pro
   }
   revalidatePath("/admin/inventory/quarantine");
   return { ok: "discarded" };
+}
+
+export async function markArrivedAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const shipmentId = String(formData.get("shipmentId"));
+  try {
+    const user = await requirePermission("shipment:manage");
+    await markShipmentArrived(shipmentId, user.id);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  revalidatePath(`/admin/shipments/${shipmentId}`);
+  revalidatePath("/admin/shipments");
+  return { ok: "arrived" };
 }

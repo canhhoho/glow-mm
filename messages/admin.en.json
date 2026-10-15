@@ -28,7 +28,21 @@
     "welcome": "Hello, {name}",
     "role": "Role: {role}",
     "denied": "You don't have access to that page.",
-    "placeholder": "Metrics will appear here (Phase 3)."
+    "placeholder": "Metrics will appear here (Phase 3).",
+    "todo": "To do",
+    "codToConfirm": "COD to confirm",
+    "proofsToReview": "Receipts to review",
+    "toPack": "To pack",
+    "packing": "Packed, to ship",
+    "shipping": "Shipping",
+    "overdue": "Overdue holds",
+    "alerts": "Stock alerts",
+    "lowStock": "Low stock",
+    "expiry": "Expired / blocked / near",
+    "reorder": "To reorder",
+    "sales": "Last 30 days",
+    "today": "Today",
+    "viewReports": "View reports"
   },
   "Role": {
     "ADMIN": "Administrator",
@@ -132,7 +146,9 @@
     "colLanded": "Landed/unit (VND)",
     "colLandedMmk": "Landed/unit (MMK)",
     "colRate": "FX rate",
-    "receiveHint": "Batches are linked when a receive document selects this shipment."
+    "receiveHint": "Batches are linked when a receive document selects this shipment.",
+    "arrivedAt": "Arrived",
+    "markArrived": "Mark as arrived"
   },
   "Products": {
     "title": "Products",
@@ -461,5 +477,46 @@
     },
     "note": "Stop selling below {block} days, warn below {warn} days. Sales velocity over the last {window} days, cover {cover} days after arrival. Change in Settings.",
     "reorderHint": "Suggest = sold/day × (lead time + cover days) + safety stock − (available + VN + inbound)."
+  },
+  "Reports": {
+    "title": "Reports",
+    "from": "From",
+    "to": "To",
+    "apply": "Apply",
+    "basis": "Revenue = goods value of orders completed in the period (by completion date, Yangon time), net of returns. Profit = revenue − cost of issued lots. Shipping fees shown separately.",
+    "revenue": "Revenue",
+    "cogs": "Cost of goods",
+    "profit": "Gross profit",
+    "margin": "Margin",
+    "orders": "Completed orders",
+    "returns": "Returns (deducted)",
+    "shippingFees": "Shipping fees",
+    "daily": "By day",
+    "day": "Day",
+    "top": "Best sellers",
+    "units": "Units",
+    "slow": "Slow movers (in stock, no sales in {days} days)",
+    "available": "Available",
+    "inbound": "Inbound shipments",
+    "shipment": "Shipment",
+    "departed": "Departed",
+    "batches": "Batches",
+    "costs": "Shipment costs (VND)",
+    "stock": "Stock by location",
+    "locType": "Location type",
+    "qty": "Sellable",
+    "tester": "Tester",
+    "value": "Value (MMK)",
+    "noCost": "Qty without cost",
+    "missingCost": "Orders with lots missing landed cost (counted as 0) — allocate shipment costs for accurate profit:",
+    "empty": "No data in this period",
+    "loc": {
+      "VN_STOCK": "VN warehouse",
+      "IN_TRANSIT": "In transit",
+      "CUSTOMS": "Customs",
+      "MM_STOCK": "MM warehouse",
+      "QUARANTINE": "Quarantine"
+    },
+    "andMore": "… and {count} more"
   }
 }
