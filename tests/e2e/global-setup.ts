@@ -8,4 +8,6 @@ export default function globalSetup() {
   const opts = { stdio: "inherit" as const, env: process.env };
   execSync("npx prisma migrate deploy", opts);
   execSync("npx prisma db seed", opts);
+  // Xoá bộ đếm chống dò mật khẩu còn lại từ lần chạy trước (chỉ DB test).
+  execSync("npx prisma db execute --stdin", { ...opts, stdio: ["pipe", "inherit", "inherit"], input: 'DELETE FROM "rateLimit";' });
 }

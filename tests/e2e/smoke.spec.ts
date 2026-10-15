@@ -33,6 +33,14 @@ for (const [email, roleText, canSeePricing] of [
     await page.getByRole("button", { name: "Đăng nhập" }).click();
     await expect(page.getByTestId("role")).toContainText(roleText);
     await expect(page.getByRole("link", { name: "Giá & tỷ giá" })).toHaveCount(canSeePricing ? 1 : 0);
+
+    // Đổi ngôn ngữ admin (cookie) rồi đổi lại, sau đó đăng xuất.
+    await page.getByRole("button", { name: "EN", exact: true }).click();
+    await expect(page.getByTestId("role")).toContainText("Role:");
+    await page.getByRole("button", { name: "VI", exact: true }).click();
+    await expect(page.getByTestId("role")).toContainText(roleText);
+    await page.getByRole("button", { name: "Đăng xuất" }).click();
+    await expect(page).toHaveURL(/\/admin\/login$/);
   });
 }
 

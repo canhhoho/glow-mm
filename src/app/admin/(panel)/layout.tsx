@@ -43,14 +43,14 @@ export default async function PanelLayout({ children }: LayoutProps<"/admin">) {
         <header className="flex items-center justify-end gap-2 border-b px-4 py-2 text-sm">
           <form action={setAdminLocaleAction} className="flex gap-1" aria-label={t("language")}>
             {ADMIN_LOCALES.map((l) => (
-              <Button key={l} name="locale" value={l} size="sm" variant={l === locale ? "secondary" : "ghost"}>
+              <Button key={l} type="submit" name="locale" value={l} size="sm" variant={l === locale ? "secondary" : "ghost"}>
                 {l.toUpperCase()}
               </Button>
             ))}
           </form>
           <span className="text-muted-foreground">{user.name}</span>
           <form action={signOutAction}>
-            <Button size="sm" variant="outline">
+            <Button type="submit" size="sm" variant="outline">
               {t("logout")}
             </Button>
           </form>

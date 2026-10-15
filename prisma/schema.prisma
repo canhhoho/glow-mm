@@ -83,6 +83,16 @@ model Verification {
   @@map("verification")
 }
 
+/// Bộ đếm chống dò mật khẩu của Better Auth (dùng chung mọi instance serverless).
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rateLimit")
+}
+
 model AuditLog {
   id        String   @id @default(cuid())
   userId    String?

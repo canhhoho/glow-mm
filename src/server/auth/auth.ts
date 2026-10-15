@@ -17,6 +17,17 @@ export const auth = betterAuth({
     disableSignUp: true,
     minPasswordLength: 8,
   },
+  // Lưu trong DB để mọi instance (Vercel serverless / nhiều container) dùng chung bộ đếm.
+  // Nhân viên cùng cửa hàng thường chung 1 IP → nới giới hạn đăng nhập: 10 lần / 60 giây / IP.
+  rateLimit: {
+    enabled: true,
+    storage: "database",
+    window: 60,
+    max: 100,
+    customRules: {
+      "/sign-in/email": { window: 60, max: 10 },
+    },
+  },
   session: {
     expiresIn: 60 * 60 * 12, // 12 giờ
     updateAge: 60 * 60,

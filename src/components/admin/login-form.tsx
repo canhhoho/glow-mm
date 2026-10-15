@@ -11,20 +11,20 @@ import { Label } from "@/components/ui/label";
 export function LoginForm() {
   const t = useTranslations("Login");
   const router = useRouter();
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<"invalid" | "tooMany" | null>(null);
   const [pending, setPending] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     setPending(true);
-    setError(false);
+    setError(null);
     const { error } = await authClient.signIn.email({
       email: String(form.get("email")),
       password: String(form.get("password")),
     });
     setPending(false);
-    if (error) return setError(true);
+    if (error) return setError(error.status === 429 ? "tooMany" : "invalid");
     router.replace("/admin");
     router.refresh();
   }
@@ -41,7 +41,7 @@ export function LoginForm() {
       </div>
       {error && (
         <p role="alert" className="text-sm text-destructive">
-          {t("error")}
+          {t(error === "tooMany" ? "tooMany" : "error")}
         </p>
       )}
       <Button type="submit" className="w-full" disabled={pending}>

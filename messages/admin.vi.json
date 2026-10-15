@@ -1,5 +1,7 @@
 {
-  "Meta": { "title": "Quản trị — Glow VN" },
+  "Meta": {
+    "title": "Quản trị — Glow VN"
+  },
   "Nav": {
     "dashboard": "Tổng quan",
     "products": "Sản phẩm",
@@ -18,7 +20,8 @@
     "email": "Email",
     "password": "Mật khẩu",
     "submit": "Đăng nhập",
-    "error": "Sai email hoặc mật khẩu"
+    "error": "Sai email hoặc mật khẩu",
+    "tooMany": "Đăng nhập quá nhiều lần. Vui lòng thử lại sau ít phút."
   },
   "Dashboard": {
     "welcome": "Xin chào, {name}",
@@ -31,5 +34,7 @@
     "WAREHOUSE_MANAGER": "Quản lý kho",
     "ORDER_STAFF": "Nhân viên đơn hàng"
   },
-  "Common": { "comingSoon": "Đang xây dựng" }
+  "Common": {
+    "comingSoon": "Đang xây dựng"
+  }
 }
