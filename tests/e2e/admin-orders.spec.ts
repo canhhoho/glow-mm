@@ -95,12 +95,13 @@ test("huỷ đơn thủ công nhả hàng; lỗi hiển thị khi đặt quá t�
   await page.getByLabel("SĐT", { exact: true }).fill("09 4500 1234");
   await page.getByLabel("Khu vực").selectOption({ index: 1 });
   await page.getByLabel("Địa chỉ").fill("Hlaing Township");
-  const option = page.getByLabel("Biến thể").locator("option", { hasText: VARIANT });
+  // ML-LIP-02 chỉ có 4 cái trong seed và không test nào bán → luôn vượt tồn được, không phụ thuộc lần chạy trước.
+  const option = page.getByLabel("Biến thể").locator("option", { hasText: "ML-LIP-02" });
   await page.getByLabel("Biến thể").selectOption((await option.getAttribute("value"))!);
 
   // Vượt tồn: bỏ giới hạn max của ô số lượng để kiểm tra lỗi từ server.
   await page.getByLabel("SL").evaluate((el) => el.removeAttribute("max"));
-  await page.getByLabel("SL").fill("99");
+  await page.getByLabel("SL").fill("5");
   await page.getByRole("button", { name: "Tạo đơn" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Không đủ hàng" })).toBeVisible();
 
