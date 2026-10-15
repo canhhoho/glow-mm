@@ -4,11 +4,24 @@
  * Tồn đầu kỳ được tạo qua phiếu RECEIVE đã POSTED + ledger + balance (đúng quy tắc kho).
  */
 import "dotenv/config";
+import { neonConfig } from "@neondatabase/serverless";
+import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { hashPassword } from "better-auth/crypto";
 import { PrismaClient, type StockType } from "../src/generated/prisma/client";
 
-const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
+// SEED_VIA_WEBSOCKET=1: kết nối Neon qua WebSocket cổng 443 — dùng khi mạng chặn cổng 5432.
+// Chỉ áp dụng cho công cụ seed; app luôn dùng Postgres chuẩn (adapter-pg).
+function createAdapter() {
+  const connectionString = process.env.DATABASE_URL;
+  if (process.env.SEED_VIA_WEBSOCKET === "1") {
+    neonConfig.webSocketConstructor = WebSocket;
+    return new PrismaNeon({ connectionString });
+  }
+  return new PrismaPg({ connectionString });
+}
+
+const prisma = new PrismaClient({ adapter: createAdapter() });
 
 const STAFF = [
   { id: "seed-admin", email: "admin@glow.local", name: "Admin", role: "ADMIN", locale: "vi" },
