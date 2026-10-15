@@ -268,6 +268,7 @@ model Variant {
   reservations  Reservation[]
   orderItems    OrderItem[]
   priceHistory  PriceHistory[]
+  priceRunLines PriceRunLine[]
   documentLines StockDocumentLine[]
 
   @@index([productId])
@@ -316,6 +317,22 @@ model PriceUpdateRun {
   createdAt   DateTime       @default(now())
   appliedAt   DateTime?
   history     PriceHistory[]
+  lines       PriceRunLine[]
+}
+
+/// Dòng xem trước của một lần cập nhật giá — áp dụng đúng số đã xem (không tính lại).
+model PriceRunLine {
+  id          String         @id @default(cuid())
+  runId       String
+  run         PriceUpdateRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  variantId   String
+  variant     Variant        @relation(fields: [variantId], references: [id])
+  /// Vốn VND dùng để tính (lô nhập gần nhất; combo = tổng thành phần).
+  costVnd     Int
+  oldPriceMmk Int
+  newPriceMmk Int
+
+  @@unique([runId, variantId])
 }
 
 model PriceHistory {

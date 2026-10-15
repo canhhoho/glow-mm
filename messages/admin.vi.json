@@ -324,5 +324,84 @@
       "invalid_file": "File không hợp lệ (JPG/PNG/WebP/PDF, tối đa 5MB)",
       "proof_not_allowed": "Đơn không ở trạng thái chờ biên lai"
     }
+  },
+  "Settings": {
+    "title": "Cài đặt",
+    "expiry": "Hạn dùng",
+    "orders": "Đơn hàng",
+    "pricing": "Giá",
+    "reorder": "Gợi ý đặt hàng",
+    "payment": "Thanh toán",
+    "keys": {
+      "expiry": {
+        "blockDays": "Ngừng bán khi còn hạn dưới (ngày)",
+        "warnDays": "Cảnh báo cận date dưới (ngày)"
+      },
+      "reservation": {
+        "transferHours": "Giữ hàng chờ chuyển khoản (giờ)"
+      },
+      "cod": {
+        "confirmHours": "Tự huỷ COD chưa xác nhận sau (giờ)"
+      },
+      "pricing": {
+        "roundTo": "Làm tròn giá lên bội số (MMK)"
+      },
+      "reorder": {
+        "coverDays": "Số ngày bán cần đủ hàng sau khi về",
+        "salesWindowDays": "Tính tốc độ bán trong (ngày gần nhất)"
+      },
+      "payment": {
+        "bankInstructions": "Hướng dẫn chuyển khoản (hiện cho khách)"
+      }
+    },
+    "save": "Lưu cài đặt",
+    "saved": "Đã lưu"
+  },
+  "Pricing": {
+    "title": "Giá & tỷ giá",
+    "rates": "Tỷ giá (MMK cho 1 VND)",
+    "rate": "Tỷ giá",
+    "effectiveAt": "Hiệu lực từ",
+    "note": "Ghi chú",
+    "addRate": "Thêm tỷ giá",
+    "rateAdded": "Đã thêm tỷ giá",
+    "newRun": "Tính giá mới (xem trước)",
+    "formula": "Giá = vốn VND (lô nhập gần nhất) × tỷ giá × (1 + % lãi), làm tròn lên",
+    "marginPct": "% lãi",
+    "roundTo": "Làm tròn lên (MMK)",
+    "category": "Danh mục",
+    "brand": "Thương hiệu",
+    "all": "Tất cả",
+    "preview": "Xem trước",
+    "noCost": "Chưa có giá vốn (chưa nhập lô) nên không tính được",
+    "runs": "Các lần tính giá",
+    "history": "Lịch sử giá",
+    "created": "Tạo lúc",
+    "status": "Trạng thái",
+    "lines": "Số dòng",
+    "st": {
+      "PREVIEW": "Xem trước",
+      "APPLIED": "Đã áp dụng",
+      "CANCELLED": "Đã huỷ"
+    },
+    "runTitle": "Tính giá {date}",
+    "sku": "SKU",
+    "product": "Sản phẩm",
+    "cost": "Vốn (VND)",
+    "oldPrice": "Giá cũ",
+    "newPrice": "Giá mới",
+    "change": "Thay đổi",
+    "changedSince": "Giá đã bị sửa sau khi xem trước — sẽ bỏ qua",
+    "apply": "Áp dụng giá đã chọn",
+    "applyConfirm": "Áp dụng giá mới cho các dòng đã chọn?",
+    "appliedResult": "Đã áp dụng {applied} giá, bỏ qua {skipped}",
+    "cancelRun": "Huỷ bản xem trước",
+    "select": "Chọn",
+    "reason": "Lý do",
+    "reasonBulk": "Cập nhật hàng loạt",
+    "reasonManual": "Sửa tay",
+    "back": "Giá & tỷ giá",
+    "noRate": "Chưa có tỷ giá — thêm tỷ giá trước",
+    "empty": "Chưa có dữ liệu"
   }
 }

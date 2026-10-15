@@ -324,5 +324,84 @@
       "invalid_file": "Invalid file (JPG/PNG/WebP/PDF, max 5MB)",
       "proof_not_allowed": "Order is not awaiting payment proof"
     }
+  },
+  "Settings": {
+    "title": "Settings",
+    "expiry": "Expiry",
+    "orders": "Orders",
+    "pricing": "Pricing",
+    "reorder": "Reorder suggestions",
+    "payment": "Payment",
+    "keys": {
+      "expiry": {
+        "blockDays": "Stop selling below (days left)",
+        "warnDays": "Near-expiry warning below (days)"
+      },
+      "reservation": {
+        "transferHours": "Hold stock for bank transfer (hours)"
+      },
+      "cod": {
+        "confirmHours": "Auto-cancel unconfirmed COD after (hours)"
+      },
+      "pricing": {
+        "roundTo": "Round prices up to multiple of (MMK)"
+      },
+      "reorder": {
+        "coverDays": "Days of stock to cover after arrival",
+        "salesWindowDays": "Sales velocity window (last days)"
+      },
+      "payment": {
+        "bankInstructions": "Bank transfer instructions (shown to customers)"
+      }
+    },
+    "save": "Save settings",
+    "saved": "Saved"
+  },
+  "Pricing": {
+    "title": "Prices & exchange rate",
+    "rates": "Exchange rates (MMK per 1 VND)",
+    "rate": "Rate",
+    "effectiveAt": "Effective from",
+    "note": "Note",
+    "addRate": "Add rate",
+    "rateAdded": "Rate added",
+    "newRun": "Recalculate prices (preview)",
+    "formula": "Price = VND cost (latest batch) × rate × (1 + margin %), rounded up",
+    "marginPct": "Margin %",
+    "roundTo": "Round up to (MMK)",
+    "category": "Category",
+    "brand": "Brand",
+    "all": "All",
+    "preview": "Preview",
+    "noCost": "No cost yet (no batch received), cannot be priced",
+    "runs": "Price runs",
+    "history": "Price history",
+    "created": "Created",
+    "status": "Status",
+    "lines": "Lines",
+    "st": {
+      "PREVIEW": "Preview",
+      "APPLIED": "Applied",
+      "CANCELLED": "Cancelled"
+    },
+    "runTitle": "Price run {date}",
+    "sku": "SKU",
+    "product": "Product",
+    "cost": "Cost (VND)",
+    "oldPrice": "Old price",
+    "newPrice": "New price",
+    "change": "Change",
+    "changedSince": "Price edited after preview — will be skipped",
+    "apply": "Apply selected prices",
+    "applyConfirm": "Apply new prices to the selected lines?",
+    "appliedResult": "Applied {applied} prices, skipped {skipped}",
+    "cancelRun": "Discard preview",
+    "select": "Select",
+    "reason": "Reason",
+    "reasonBulk": "Bulk update",
+    "reasonManual": "Manual edit",
+    "back": "Prices",
+    "noRate": "No exchange rate yet — add one first",
+    "empty": "Nothing yet"
   }
 }

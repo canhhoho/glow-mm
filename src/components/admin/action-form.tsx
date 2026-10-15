@@ -1,0 +1,57 @@
+"use client";
+
+import { useActionState } from "react";
+import { useTranslations } from "next-intl";
+import { Button } from "@/components/ui/button";
+import type { ActionState } from "@/server/inventory/actions";
+
+/**
+ * Form gửi server action với các ô nhập render sẵn (children, có thể là Server Component).
+ * Hiện lỗi / thông báo thành công; `okText` dùng khi action trả `ok` là mã ngắn.
+ */
+export function ActionForm({
+  action,
+  children,
+  submitLabel,
+  okText,
+  className,
+  variant = "default",
+  confirm,
+}: {
+  action: (prev: ActionState, fd: FormData) => Promise<ActionState>;
+  children: React.ReactNode;
+  submitLabel: string;
+  okText?: string;
+  className?: string;
+  variant?: "default" | "outline" | "destructive";
+  confirm?: string;
+}) {
+  const t = useTranslations("Docs");
+  const [state, formAction, pending] = useActionState(action, undefined);
+  return (
+    <form
+      action={formAction}
+      onSubmit={(e) => {
+        if (confirm && !window.confirm(confirm)) e.preventDefault();
+      }}
+      className={className ?? "space-y-3"}
+    >
+      {children}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" variant={variant} disabled={pending}>
+          {submitLabel}
+        </Button>
+        {state?.ok && !state.error && (
+          <p role="status" className="text-sm text-emerald-700 dark:text-emerald-400">
+            {okText ?? state.ok}
+          </p>
+        )}
+      </div>
+      {state?.error && (
+        <p role="alert" className="max-w-2xl text-sm text-destructive">
+          {t("error")}: {state.error}
+        </p>
+      )}
+    </form>
+  );
+}

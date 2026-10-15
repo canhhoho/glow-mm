@@ -114,7 +114,7 @@ Dockerfile  docker-compose.yml  docker-compose.prod.yml  .env.example
 
 ## 4. Roadmap (dừng chờ duyệt sau mỗi phase)
 
-Trạng thái: P0 ✅ (2026-10-15) · P1 ✅ (2026-10-15) · P2 ✅ (2026-10-15) · tiếp theo P3.
+Trạng thái: P0 ✅ (2026-10-15) · P1 ✅ (2026-10-15) · P2 ✅ (2026-10-15) · P3 đang làm: 3a cài đặt + giá ✅ → 3b trả hàng → 3c cảnh báo → 3d dashboard → 3e đánh giá/chat/PWA.
 
 | Phase | Nội dung | Hoàn thành khi |
 |---|---|---|
@@ -123,6 +123,12 @@ Trạng thái: P0 ✅ (2026-10-15) · P1 ✅ (2026-10-15) · P2 ✅ (2026-10-15)
 | **P2 Bán hàng** ✅ | Storefront (danh mục, bộ lọc, trang SP có hạn dùng lô hiện tại), giỏ hàng, checkout 1 trang, **tạo đơn thủ công trong admin** (đơn từ FB/Viber), COD + chuyển khoản/upload biên lai, giữ hàng + cron, máy trạng thái đơn, duyệt thanh toán, in nhãn ship, Zawgyi trong ô tìm kiếm/form | Vitest: reservation, chuyển trạng thái; E2E: duyệt web → đơn COD, chuyển khoản → upload → duyệt; Lighthouse mobile chuẩn (Slow 4G mô phỏng) Performance ≥ 85; Slow 3G (RTT 400ms, 400 Kbps) theo dõi, ≥ 70 — `npm run perf` |
 | **P3 Vận hành** | Cập nhật giá hàng loạt + lịch sử, cảnh báo (tồn thấp/cận date/gợi ý đặt hàng), dashboard (doanh thu, lợi nhuận, bán chạy, bán chậm, hàng đang vận chuyển), trả hàng, đánh giá, nút Viber/Messenger, PWA | Toàn bộ test xanh; số liệu dashboard khớp ledger trên dữ liệu seed |
 | **P4 Lên server Myanmar** | Theo DEPLOY.md: chuyển DB/file, Coolify, domain, HTTPS, backup | Checklist sau khi chuyển đạt; khôi phục thử từ backup thành công |
+
+**P3 — quyết định đã chốt (2026-10-15):**
+- Thêm trang Cài đặt (ngưỡng, giờ giữ hàng, COD, làm tròn giá, hướng dẫn chuyển khoản); quản lý Nhân viên để sau.
+- Vốn VND để tính giá = lô nhập gần nhất (`landedCostVnd`, chưa phân bổ thì `unitCostVnd`); combo = tổng thành phần. Áp dụng đúng bản xem trước (`PriceRunLine`).
+- Trả hàng một phần theo dòng → về đúng lô đã xuất, vào "Chờ kiểm tra" → nhập lại kho bán hoặc huỷ; ghi nhận hoàn tiền thủ công.
+- Doanh thu = tiền hàng đơn COMPLETED theo ngày hoàn tất (giờ Yangon), trừ hàng trả; lợi nhuận = doanh thu − giá vốn lô đã xuất; phí ship tách riêng.
 
 ## 5. Giao diện
 - **Storefront:** tươi sáng, hồng đào. Màu chính `#E8657A`, màu phụ xanh lá nhạt `#7FB89A`, nền kem `#FFF8F5`, chữ `#2B2B2B`. Mobile-first, nút bấm cao ít nhất 44px.
