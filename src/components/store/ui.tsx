@@ -31,9 +31,10 @@ export function Notice({ tone = "info", children }: { tone?: "info" | "error" | 
   );
 }
 
-export function ListSkeleton({ rows = 4 }: { rows?: number }) {
+/** Khung chờ cao ≥ 1 màn hình: footer nằm ngoài khung nhìn → không gây layout shift khi nội dung stream vào. */
+export function ListSkeleton({ rows = 6 }: { rows?: number }) {
   return (
-    <div className="grid grid-cols-2 gap-3" aria-hidden>
+    <div className="grid min-h-dvh grid-cols-2 content-start gap-3" aria-hidden>
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="aspect-[3/4] animate-pulse rounded-lg bg-accent" />
       ))}
@@ -43,7 +44,7 @@ export function ListSkeleton({ rows = 4 }: { rows?: number }) {
 
 export function BlockSkeleton() {
   return (
-    <div className="space-y-3" aria-hidden>
+    <div className="min-h-dvh space-y-3" aria-hidden>
       <div className="h-6 w-1/2 animate-pulse rounded bg-accent" />
       <div className="h-40 animate-pulse rounded-lg bg-accent" />
       <div className="h-11 animate-pulse rounded-lg bg-accent" />

@@ -1,3 +1,4 @@
+import Rabbit from "rabbit-node";
 import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { createDocument, postDocument } from "@/server/inventory/documents";
@@ -88,6 +89,17 @@ describe("Tạo đơn + giữ hàng", () => {
     const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 2 }]);
     await expect(createOrder(orderInput(f, 3), { userId: null })).rejects.toMatchObject({ code: "out_of_stock" });
     expect(await prisma.order.count({ where: { items: { some: { variantId: f.variantId } } } })).toBe(0);
+  });
+
+  it("tên/địa chỉ gõ bằng Zawgyi được lưu dạng Unicode", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 2 }]);
+    const name = "မမြင့်မြင့်";
+    const address = "အမှတ် ၁၂၊ ဗိုလ်အောင်ကျော်လမ်း";
+    const order = await createOrder(
+      orderInput(f, 1, { name: Rabbit.uni2zg(name), addressLine: Rabbit.uni2zg(address), phone: "၀၉၇၈၁၂၃၄၅၆" }),
+      { userId: null },
+    );
+    expect(order).toMatchObject({ recipientName: name, addressText: address, recipientPhone: "0978123456" });
   });
 
   it("SĐT sai → invalid_phone", async () => {

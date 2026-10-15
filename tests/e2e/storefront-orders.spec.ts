@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import Rabbit from "rabbit-node";
 import { login } from "./helpers";
 
 const PRODUCT = "/en/p/sen-viet-sunscreen-spf50";
@@ -45,6 +46,11 @@ async function cancelInAdmin(page: Page) {
 test("khách đặt COD trên web → nhân viên gọi xác nhận", async ({ page }) => {
   // Tìm kiếm tiếng Myanmar ra đúng sản phẩm.
   await page.goto("/search?q=နေကာ");
+  await expect(page.locator('a[href="/p/sen-viet-sunscreen-spf50"]')).toBeVisible();
+  // Gõ bằng font Zawgyi (máy cũ) vẫn ra đúng sản phẩm.
+  await page.getByRole("searchbox").fill(Rabbit.uni2zg("နေကာခရင်မ်"));
+  await page.getByRole("button", { name: "ရှာမည်" }).click();
+  await expect(page).toHaveURL(/\/search\?q=/);
   await expect(page.locator('a[href="/p/sen-viet-sunscreen-spf50"]')).toBeVisible();
 
   const { code } = await addToCartAndCheckout(page, "Cash on delivery", "09 7812 3456");

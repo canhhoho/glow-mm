@@ -1,21 +1,14 @@
-import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getStoreCategory, listStoreProducts } from "@/server/catalog/store-queries";
 import { CatalogFilters, parseCatalogParams } from "@/components/store/catalog-filters";
 import { ProductGrid } from "@/components/store/product-card";
-import { ListSkeleton } from "@/components/store/ui";
 
-export default function CategoryPage(props: PageProps<"/[locale]/c/[slug]">) {
-  return (
-    <Suspense fallback={<ListSkeleton />}>
-      <CategoryContent {...props} />
-    </Suspense>
-  );
-}
+/** Render chặn: HTML trả về đã có danh sách sản phẩm → LCP sớm trên 3G (xem trang sản phẩm). */
+export const instant = false;
 
-async function CategoryContent({ params, searchParams }: PageProps<"/[locale]/c/[slug]">) {
+export default async function CategoryPage({ params, searchParams }: PageProps<"/[locale]/c/[slug]">) {
   const { locale, slug } = await params;
   setRequestLocale(locale);
   const current = parseCatalogParams(await searchParams);

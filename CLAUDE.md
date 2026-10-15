@@ -47,6 +47,7 @@ npm run dev              # http://localhost:3000 (storefront) · /admin
 npm test                 # TẤT CẢ: lint + typecheck + vitest + playwright (DB glow_test, cổng 3100)
 npm run test:unit        # chỉ Vitest
 npm run test:e2e         # chỉ Playwright (build standalone rồi chạy)
+npm run perf             # Lighthouse mobile (cần server production ở cổng 3100, xem scripts/lighthouse.mjs)
 docker compose -p glow-prod -f docker-compose.prod.yml up --build   # thử bản giống production (cần .env.prod)
 ```
 - `prisma migrate reset` bị Prisma chặn khi AI chạy → không tự chạy; E2E chỉ dùng `migrate deploy` + seed (không xoá dữ liệu).

@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { cache } from "react";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -10,30 +10,31 @@ import { formatMmk } from "@/lib/money";
 import { addToCartAction } from "@/server/cart/actions";
 import { getStoreProduct } from "@/server/catalog/store-queries";
 import { ContactLinks } from "@/components/store/contact-links";
-import { BlockSkeleton, primaryButton, storeField } from "@/components/store/ui";
+import { primaryButton, storeField } from "@/components/store/ui";
+
+// Metadata và trang dùng chung một lần truy vấn trong cùng request.
+const loadProduct = cache((slug: string, locale: string) => getStoreProduct(slug, locale));
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/p/[slug]">): Promise<Metadata> {
   const { locale, slug } = await params;
   await connection();
-  const p = await getStoreProduct(slug, locale);
+  const p = await loadProduct(slug, locale);
   return p ? { title: `${p.name} · ${p.brand}`, description: p.description?.slice(0, 160) } : {};
 }
 
-export default function ProductPage(props: PageProps<"/[locale]/p/[slug]">) {
-  return (
-    <Suspense fallback={<BlockSkeleton />}>
-      <ProductContent {...props} />
-    </Suspense>
-  );
-}
+/**
+ * Render chặn (không stream sau static shell): HTML trả về đã có đủ tên/giá/tồn → LCP sớm trên mạng 3G.
+ * Trang luôn động (tồn kho + hạn dùng lô tính lúc request) nên không có static shell để validate.
+ */
+export const instant = false;
 
 const LOW_STOCK = 5;
 
-async function ProductContent({ params }: PageProps<"/[locale]/p/[slug]">) {
+export default async function ProductPage({ params }: PageProps<"/[locale]/p/[slug]">) {
   const { locale, slug } = await params;
   await connection(); // tồn kho + hạn dùng lô tính lúc request
   setRequestLocale(locale);
-  const [t, p] = await Promise.all([getTranslations({ locale, namespace: "Product" }), getStoreProduct(slug, locale)]);
+  const [t, p] = await Promise.all([getTranslations({ locale, namespace: "Product" }), loadProduct(slug, locale)]);
   if (!p) notFound();
   const firstAvailable = p.variants.find((v) => v.available > 0);
   const sections = [
