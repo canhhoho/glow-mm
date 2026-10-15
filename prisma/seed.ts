@@ -1,6 +1,7 @@
 /**
  * Dữ liệu mẫu cho dev/test (có nội dung tiếng Myanmar). Chạy: `npm run db:seed`.
- * Bỏ qua nếu đã seed (có user admin). Reset toàn bộ: `npm run db:reset`.
+ * Chạy lại an toàn: từng phần (catalog / tồn kho / vùng giao hàng) chỉ chạy nếu chưa có.
+ * Reset toàn bộ: `npm run db:reset`.
  * Tồn đầu kỳ được tạo qua phiếu RECEIVE đã POSTED + ledger + balance (đúng quy tắc kho).
  */
 import "dotenv/config";
@@ -34,11 +35,8 @@ const t = (my: string, en: string) => [
   { locale: "en", name: en },
 ];
 
-async function main() {
-  if (await prisma.user.findUnique({ where: { email: STAFF[0].email } })) {
-    console.log("Đã có dữ liệu seed → bỏ qua. Dùng `npm run db:reset` để làm lại.");
-    return;
-  }
+/** Nhân viên, cài đặt, kho, tỷ giá, danh mục, sản phẩm, chuyến hàng mẫu. */
+async function seedCatalog() {
   const password = process.env.SEED_STAFF_PASSWORD;
   if (!password) throw new Error("Thiếu SEED_STAFF_PASSWORD trong .env");
   const hash = await hashPassword(password);
@@ -71,20 +69,16 @@ async function main() {
   // ── Kho & vị trí ──
   const vn = await prisma.warehouse.create({ data: { code: "VN-HCM", name: "Kho TP.HCM", country: "VN" } });
   const mm = await prisma.warehouse.create({ data: { code: "MM-YGN", name: "Yangon Warehouse", country: "MM" } });
-  const loc = {
-    vn: await prisma.location.create({ data: { code: "VN-STOCK", name: "Kho VN", type: "VN_STOCK", warehouseId: vn.id } }),
-    transit: await prisma.location.create({ data: { code: "IN-TRANSIT", name: "Đang vận chuyển", type: "IN_TRANSIT" } }),
-    customs: await prisma.location.create({ data: { code: "CUSTOMS", name: "Hải quan", type: "CUSTOMS" } }),
-    mm: await prisma.location.create({
-      data: { code: "MM-STOCK", name: "Kho Yangon", type: "MM_STOCK", warehouseId: mm.id, sellable: true },
-    }),
-    quarantine: await prisma.location.create({
-      data: { code: "MM-QC", name: "Chờ kiểm tra", type: "QUARANTINE", warehouseId: mm.id },
-    }),
-  };
+  await prisma.location.create({ data: { code: "VN-STOCK", name: "Kho VN", type: "VN_STOCK", warehouseId: vn.id } });
+  await prisma.location.create({ data: { code: "IN-TRANSIT", name: "Đang vận chuyển", type: "IN_TRANSIT" } });
+  await prisma.location.create({ data: { code: "CUSTOMS", name: "Hải quan", type: "CUSTOMS" } });
+  await prisma.location.create({
+    data: { code: "MM-STOCK", name: "Kho Yangon", type: "MM_STOCK", warehouseId: mm.id, sellable: true },
+  });
+  await prisma.location.create({ data: { code: "MM-QC", name: "Chờ kiểm tra", type: "QUARANTINE", warehouseId: mm.id } });
 
   // ── Tỷ giá mẫu (KHÔNG phải tỷ giá thật) ──
-  const rate = await prisma.exchangeRate.create({
+  await prisma.exchangeRate.create({
     data: { mmkPerVnd: "0.170000", note: "Tỷ giá mẫu cho dev", createdById: adminId },
   });
 
@@ -190,7 +184,7 @@ async function main() {
     variants: [{ sku: "ML-TON-150", label: "150ml", priceMmk: 18500, costVnd: 70000, weightGrams: 200 }],
   });
 
-  const serum = await product({
+  await product({
     slug: "sen-viet-vitamin-c-serum",
     brandId: senviet.id,
     categoryId: skincare.id,
@@ -210,7 +204,7 @@ async function main() {
     variants: [{ sku: "SV-VC-30", label: "30ml", priceMmk: 32000, costVnd: 120000, weightGrams: 90 }],
   });
 
-  const lipstick = await product({
+  await product({
     slug: "moc-lan-matte-lipstick",
     brandId: moclan.id,
     categoryId: makeup.id,
@@ -268,7 +262,7 @@ async function main() {
   });
 
   // ── Chuyến hàng + lô + tồn đầu kỳ (qua phiếu RECEIVE đã POSTED) ──
-  const shipment = await prisma.inboundShipment.create({
+  await prisma.inboundShipment.create({
     data: {
       code: "SH-2026-001",
       departedAt: new Date("2026-09-01T00:00:00Z"),
@@ -282,6 +276,15 @@ async function main() {
       },
     },
   });
+}
+
+/** Lô + tồn đầu kỳ qua phiếu RECEIVE đã POSTED (một transaction). */
+async function seedStock() {
+  const adminId = STAFF[0].id;
+  const rate = await prisma.exchangeRate.findFirstOrThrow({ orderBy: { createdAt: "asc" } });
+  const loc = { mm: await prisma.location.findUniqueOrThrow({ where: { code: "MM-STOCK" } }) };
+  const shipment = await prisma.inboundShipment.findUniqueOrThrow({ where: { code: "SH-2026-001" } });
+  const allVariants = await prisma.variant.findMany();
 
   const costOf: Record<string, number> = {
     "SV-SUN-50": 95000,
@@ -291,7 +294,6 @@ async function main() {
     "ML-LIP-01": 55000,
     "ML-LIP-02": 55000,
   };
-  const allVariants = [...sunscreen.variants, ...toner.variants, ...serum.variants, ...lipstick.variants];
   const plan: { sku: string; lot: string; expiry: string; qty: number; tester?: number }[] = [
     { sku: "SV-SUN-50", lot: "L2601", expiry: "2027-01-15", qty: 20 }, // cận hạn → FEFO xuất trước
     { sku: "SV-SUN-50", lot: "L2608", expiry: "2028-03-31", qty: 60, tester: 3 },
@@ -350,8 +352,10 @@ async function main() {
         });
       }
     }
-  });
+  }, { maxWait: 30_000, timeout: 120_000 }); // DB ở xa (Neon Singapore) → cho thêm thời gian
+}
 
+async function seedZones() {
   // ── Vùng giao hàng ──
   const zones = [
     { code: "YGN-KMY", region: "Yangon", township: "Kamayut", nameMy: "ကမာရွတ်", nameEn: "Kamayut", fee: 2500 },
@@ -365,7 +369,27 @@ async function main() {
       data: { ...zone, rates: { create: { feeMmk: fee, freeFromMmk: 100000, etaDays: z.region === "Yangon" ? 2 : 4 } } },
     });
   }
+}
 
+async function main() {
+  if (await prisma.user.findUnique({ where: { email: STAFF[0].email } })) {
+    console.log("• Nhân viên + catalog: đã có → bỏ qua");
+  } else {
+    await seedCatalog();
+    console.log("• Nhân viên + catalog: xong");
+  }
+  if (await prisma.stockDocument.findUnique({ where: { code: "RC-SEED-0001" } })) {
+    console.log("• Tồn đầu kỳ: đã có → bỏ qua");
+  } else {
+    await seedStock();
+    console.log("• Tồn đầu kỳ: xong");
+  }
+  if (await prisma.shippingZone.count()) {
+    console.log("• Vùng giao hàng: đã có → bỏ qua");
+  } else {
+    await seedZones();
+    console.log("• Vùng giao hàng: xong");
+  }
   console.log("Seed xong: 3 nhân viên, 6 sản phẩm (1 combo), 8 lô, 4 vùng giao hàng.");
 }
 
