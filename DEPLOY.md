@@ -110,7 +110,7 @@ Làm trong giờ thấp điểm, khoảng 15–30 phút ngừng ghi dữ liệu.
 
 1. **Đóng băng ghi:**
    - thông báo cho nhân viên;
-   - tạm tắt checkout (cờ cấu hình, làm ở P4) hoặc chuyển Vercel sang trang bảo trì.
+   - tạm tắt checkout: admin Vercel → **Cài đặt → bỏ chọn "Nhận đơn trên web"** → Lưu. Khách vẫn xem hàng, trang thanh toán báo tạm ngừng; đơn tạo tay trong admin không bị chặn. Cài đặt nằm trong DB nên được chuyển sang server cùng dữ liệu → **bật lại trên server mới** sau khi kiểm tra xong.
 2. **Dump từ Neon**, chạy ở máy có `pg_dump` 17:
    ```bash
    pg_dump "<neon main DIRECT url>" --format=custom --no-owner --no-acl -f glow-neon.dump
@@ -125,9 +125,14 @@ Làm trong giờ thấp điểm, khoảng 15–30 phút ngừng ghi dữ liệu.
    ```sql
    SELECT 'Order', count(*) FROM "Order" UNION ALL SELECT 'StockLedger', count(*) FROM "StockLedger";
    ```
-5. **Chuyển file** Vercel Blob → ổ đĩa:
-   - chạy script `scripts/migrate-blob-to-local.ts` (viết ở P4). Script tải từng `FileObject` về volume `uploads` và cập nhật `driver=LOCAL`, `url=/api/files/<key>`;
-   - kiểm tra vài ảnh sản phẩm và biên lai.
+5. **Chuyển file** Vercel Blob → ổ đĩa bằng `scripts/migrate-blob-to-local.mjs` (có sẵn trong image `migrator`):
+   - Script tải từng `FileObject` có `driver=VERCEL_BLOB` về volume `uploads` rồi cập nhật `driver=LOCAL`, `url=/api/files/<key>`. Chạy lại an toàn (chỉ xử lý dòng chưa chuyển); còn lỗi → exit code 1, chạy lại.
+   - Chạy **sau khi** `app` đã khởi động ít nhất một lần (volume `uploads` được tạo với quyền của user `nextjs`), và chạy bằng `--user 1001:1001` để app ghi tiếp được vào các thư mục script tạo:
+     ```bash
+     docker run --rm --user 1001:1001 --network <mạng compose>        -v <volume uploads>:/app/storage -e LOCAL_STORAGE_DIR=/app/storage        -e DATABASE_URL=postgresql://glow:<POSTGRES_PASSWORD>@db:5432/glow        <image migrate> node scripts/migrate-blob-to-local.mjs --dry-run   # bỏ --dry-run để chạy thật
+     ```
+     Tên mạng/volume/image xem bằng `docker network ls`, `docker volume ls`, `docker image ls` **[CẦN XÁC MINH tên do Coolify đặt]**.
+   - Kiểm tra vài ảnh sản phẩm và biên lai.
 6. **Cron:**
    - copy `ops/cron.example` vào crontab (hoặc Coolify → Scheduled Tasks);
    - tạo `/opt/glow/cron.env` (chmod 600).
@@ -136,7 +141,8 @@ Làm trong giờ thấp điểm, khoảng 15–30 phút ngừng ghi dữ liệu.
 ### 2.5 Checklist sau khi chuyển
 - [ ] `https://<domain>/api/health` → `{"ok":true}`, chứng chỉ HTTPS hợp lệ.
 - [ ] Storefront `/` (Myanmar) và `/en` hiển thị đúng; ảnh sản phẩm tải được.
-- [ ] Đăng nhập admin bằng cả 3 vai trò; đổi mật khẩu mặc định.
+- [ ] Đăng nhập admin bằng cả 3 vai trò; đổi mật khẩu mặc định (bấm tên mình ở góc trên → `/admin/account`).
+- [ ] Cài đặt → bật lại "Nhận đơn trên web".
 - [ ] Tồn kho trùng khớp: tổng `StockBalance` theo biến thể = số liệu trước khi chuyển.
 - [ ] Đặt thử 1 đơn COD và 1 đơn chuyển khoản (upload biên lai → duyệt) rồi huỷ.
 - [ ] Gọi tay từng cron với `CRON_SECRET` → 200; không có secret → 401.

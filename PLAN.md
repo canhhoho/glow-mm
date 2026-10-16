@@ -114,7 +114,7 @@ Dockerfile  docker-compose.yml  docker-compose.prod.yml  .env.example
 
 ## 4. Roadmap (dừng chờ duyệt sau mỗi phase)
 
-Trạng thái: P0 ✅ (2026-10-15) · P1 ✅ (2026-10-15) · P2 ✅ (2026-10-15) · P3 ✅ (2026-10-16) · tiếp theo P4.
+Trạng thái: P0 ✅ (2026-10-15) · P1 ✅ (2026-10-15) · P2 ✅ (2026-10-15) · P3 ✅ (2026-10-16) · P4a đang làm (chưa có server Myanmar).
 
 | Phase | Nội dung | Hoàn thành khi |
 |---|---|---|
@@ -122,7 +122,8 @@ Trạng thái: P0 ✅ (2026-10-15) · P1 ✅ (2026-10-15) · P2 ✅ (2026-10-15)
 | **P1 Kho lõi** ✅ | CRUD catalog, import CSV, chuyến hàng + landed cost, phiếu nhận/chuyển/xuất/điều chỉnh, ledger, FEFO, tester, combo, xem tồn theo vị trí/lô | Vitest: FEFO, landed cost/FX, combo; E2E: nhận → chuyển → xuất; không có đường sửa số lượng trực tiếp |
 | **P2 Bán hàng** ✅ | Storefront (danh mục, bộ lọc, trang SP có hạn dùng lô hiện tại), giỏ hàng, checkout 1 trang, **tạo đơn thủ công trong admin** (đơn từ FB/Viber), COD + chuyển khoản/upload biên lai, giữ hàng + cron, máy trạng thái đơn, duyệt thanh toán, in nhãn ship, Zawgyi trong ô tìm kiếm/form | Vitest: reservation, chuyển trạng thái; E2E: duyệt web → đơn COD, chuyển khoản → upload → duyệt; Lighthouse mobile chuẩn (Slow 4G mô phỏng) Performance ≥ 85; Slow 3G (RTT 400ms, 400 Kbps) theo dõi, ≥ 70 — `npm run perf` |
 | **P3 Vận hành** ✅ | Cập nhật giá hàng loạt + lịch sử, cảnh báo (tồn thấp/cận date/gợi ý đặt hàng), dashboard (doanh thu, lợi nhuận, bán chạy, bán chậm, hàng đang vận chuyển), trả hàng, đánh giá, nút Viber/Messenger, PWA | Toàn bộ test xanh; số liệu dashboard khớp ledger trên dữ liệu seed |
-| **P4 Lên server Myanmar** | Theo DEPLOY.md: chuyển DB/file, Coolify, domain, HTTPS, backup | Checklist sau khi chuyển đạt; khôi phục thử từ backup thành công |
+| **P4a Chuẩn bị chuyển** | Đổi mật khẩu nhân viên (`/admin/account`), cờ tạm tắt nhận đơn web, script chuyển file Blob → ổ đĩa, diễn tập local bằng `docker-compose.prod.yml` (restore dump, chuyển file, backup → khôi phục) | Toàn bộ test xanh; diễn tập local đạt các mục của checklist DEPLOY §2.5 không cần server/domain |
+| **P4b Lên server Myanmar** | Khi có server + domain. Theo DEPLOY.md: hardening, Coolify, domain, HTTPS, chuyển DB/file, backup | Checklist sau khi chuyển đạt; khôi phục thử từ backup thành công |
 
 **P3 — quyết định đã chốt (2026-10-15):**
 - Thêm trang Cài đặt (ngưỡng, giờ giữ hàng, COD, làm tròn giá, hướng dẫn chuyển khoản); quản lý Nhân viên để sau.

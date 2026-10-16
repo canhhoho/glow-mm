@@ -26,6 +26,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json prisma.config.ts ./
 COPY prisma ./prisma
+# Script một lần khi chuyển từ Vercel: chuyển file Blob → volume uploads (DEPLOY.md §2.4).
+COPY scripts/migrate-blob-to-local.mjs ./scripts/
 CMD ["npx", "prisma", "migrate", "deploy"]
 
 # ── runner: image chạy production, user không phải root ──
