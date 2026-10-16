@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/p/[slug]
 export const instant = false;
 
 const LOW_STOCK = 5;
-const RELATED = 10;
+const RELATED = 5; // đúng 1 hàng desktop; giữ HTML trang SP nhẹ trên 3G
 
 /** Dải "SP khác cùng danh mục" — stream sau phần chính (không chặn LCP). */
 async function RelatedProducts({ locale, category, exclude }: { locale: string; category: string; exclude: string }) {
