@@ -114,7 +114,7 @@ Dockerfile  docker-compose.yml  docker-compose.prod.yml  .env.example
 
 ## 4. Roadmap (dừng chờ duyệt sau mỗi phase)
 
-Trạng thái: P0 ✅ (2026-10-15) · P1 ✅ (2026-10-15) · P2 ✅ (2026-10-15) · P3 ✅ (2026-10-16) · P4a ✅ (2026-10-16) · tiếp theo P4b khi có server + domain Myanmar.
+Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 đang chờ duyệt · P4b chờ server + domain Myanmar.
 
 | Phase | Nội dung | Hoàn thành khi |
 |---|---|---|
@@ -124,8 +124,12 @@ Trạng thái: P0 ✅ (2026-10-15) · P1 ✅ (2026-10-15) · P2 ✅ (2026-10-15)
 | **P3 Vận hành** ✅ | Cập nhật giá hàng loạt + lịch sử, cảnh báo (tồn thấp/cận date/gợi ý đặt hàng), dashboard (doanh thu, lợi nhuận, bán chạy, bán chậm, hàng đang vận chuyển), trả hàng, đánh giá, nút Viber/Messenger, PWA | Toàn bộ test xanh; số liệu dashboard khớp ledger trên dữ liệu seed |
 | **P4a Chuẩn bị chuyển** ✅ | Đổi mật khẩu nhân viên (`/admin/account`), cờ tạm tắt nhận đơn web, script chuyển file Blob → ổ đĩa, diễn tập local bằng `docker-compose.prod.yml` (restore dump, chuyển file, backup → khôi phục) | Toàn bộ test xanh; diễn tập local đạt các mục của checklist DEPLOY §2.5 không cần server/domain |
 | **P4b Lên server Myanmar** | Khi có server + domain. Theo DEPLOY.md: hardening, Coolify, domain, HTTPS, chuyển DB/file, backup | Checklist sau khi chuyển đạt; khôi phục thử từ backup thành công |
+| **P5 Ảnh + dữ liệu demo** ✅ (2026-10-16) | Quản lý ảnh SP, danh mục con, header menu 2 cấp + footer + trang thông tin, `db:seed:demo` ~45 SP từ lengocanh.vn, storefront responsive tablet/desktop | Toàn bộ test xanh |
 | **P6 Nội dung trang chủ** ✅ (2026-10-16) | Quản trị banner carousel, icon danh mục, bộ sưu tập sản phẩm; hiển thị trên trang chủ theo bố cục responsive đã duyệt | Toàn bộ test xanh (có E2E admin → storefront, mobile + desktop); `npm run perf`: mobile ≥ 85, desktop ≥ 90, slow-3g ≥ 70 cho trang không có banner ảnh (trang chủ có banner ảnh: chấp nhận 69, xem ghi chú P6) |
 | **P7 Hoàn thiện trước khi mở bán** ✅ (2026-10-16) | SEO (metadataBase, canonical/hreflang, Open Graph, JSON-LD sản phẩm, robots.txt, sitemap.xml, noindex trang riêng tư), 404 có giao diện cho mọi đường dẫn lạ, sửa nút ngôn ngữ Myanmar, quy trình xuất/nhập bản dịch cho người bản ngữ duyệt | Toàn bộ test xanh (E2E 404, meta/JSON-LD, robots/sitemap); `npm run perf` giữ ngưỡng |
+| **P8 Quản lý nhân viên** | `/admin/users` (ADMIN): tạo nhân viên + mật khẩu tạm, đổi tên/vai trò, khoá/mở khoá, đặt lại mật khẩu; khoá/đặt lại → xoá mọi phiên; tài khoản bị khoá không đăng nhập được (hook Better Auth); luôn còn ≥ 1 ADMIN; không tự khoá/tự đổi vai trò; ghi AuditLog. Không cần migration | Toàn bộ test xanh (integration + E2E tạo → đăng nhập đúng quyền → khoá → bị đăng xuất) |
+
+**P8 — quyết định (2026-10-16):** không gửi email (chưa có dịch vụ mail), admin tự báo mật khẩu tạm, nhân viên đổi ở `/admin/account`. Bỏ ô "ngôn ngữ" khi tạo nhân viên vì ngôn ngữ admin lấy theo cookie từng trình duyệt (`User.locale` chưa dùng). Ngoài phạm vi: bắt buộc đổi mật khẩu lần đầu (cần cột mới), 2FA, trang xem AuditLog.
 
 **P3 — quyết định đã chốt (2026-10-15):**
 - Thêm trang Cài đặt (ngưỡng, giờ giữ hàng, COD, làm tròn giá, hướng dẫn chuyển khoản); quản lý Nhân viên để sau.

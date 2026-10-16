@@ -19,12 +19,12 @@ async function resetLoginRateLimit() {
 }
 
 /** Đăng nhập admin bằng tài khoản seed (*@glow.local). Xoá phiên cũ trước để đổi vai trò được. */
-export async function login(page: Page, email: string) {
+export async function login(page: Page, email: string, password = PASSWORD) {
   await resetLoginRateLimit();
   await page.context().clearCookies();
   await page.goto("/admin/login");
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Mật khẩu").fill(PASSWORD);
+  await page.getByLabel("Mật khẩu").fill(password);
   await page.getByRole("button", { name: "Đăng nhập" }).click();
   await expect(page.getByTestId("role")).toBeVisible();
 }
