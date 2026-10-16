@@ -601,7 +601,9 @@
     "iconHelp": "Ảnh vuông JPG/PNG/WebP, tối đa 5MB (nên dùng 256×256).",
     "iconTooBig": "Ảnh quá lớn (tối đa 5MB)",
     "noIcon": "Chưa có",
-    "newCategory": "Thêm danh mục"
+    "newCategory": "Thêm danh mục",
+    "search": "Tìm danh mục (slug, tên)",
+    "searchBtn": "Tìm"
   },
   "Content": {
     "bannersTitle": "Banner trang chủ",

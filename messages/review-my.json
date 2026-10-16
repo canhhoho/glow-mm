@@ -54,6 +54,8 @@
     "Categories.parent",
     "Categories.save",
     "Categories.saved",
+    "Categories.search",
+    "Categories.searchBtn",
     "Categories.sortOrder",
     "Categories.title",
     "Content.active",

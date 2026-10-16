@@ -6,7 +6,7 @@ import { login, solidPng } from "./helpers";
 test("danh mục: lưu, tải icon (hiện ảnh), xoá icon", async ({ page }) => {
   test.setTimeout(90_000);
   await login(page, "admin@glow.local");
-  await page.goto("/admin/categories");
+  await page.goto("/admin/categories?q=skincare"); // lọc → trang nhẹ dù DB test có hàng nghìn danh mục fixture
   // Lọc theo ô slug (ô chọn danh mục cha ở mọi hàng cũng chứa chữ "Skincare").
   const row = page.getByTestId("category-row").filter({ has: page.getByText("skincare", { exact: true }) });
 

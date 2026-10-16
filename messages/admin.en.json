@@ -601,7 +601,9 @@
     "iconHelp": "Square JPG/PNG/WebP, max 5MB (256×256 recommended).",
     "iconTooBig": "Image too large (max 5MB)",
     "noIcon": "None",
-    "newCategory": "New category"
+    "newCategory": "New category",
+    "search": "Search categories (slug, name)",
+    "searchBtn": "Search"
   },
   "Content": {
     "bannersTitle": "Home page banners",

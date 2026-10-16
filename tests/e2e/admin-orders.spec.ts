@@ -8,6 +8,7 @@ async function expectStatus(page: Page, text: string) {
 }
 
 test("đơn thủ công (Facebook, COD): tạo → xác nhận → đóng gói FEFO → giao → hoàn tất", async ({ page }) => {
+  test.setTimeout(90_000); // luồng dài: 3 vai trò, nhiều trang admin
   // Nhân viên đơn hàng tạo đơn từ tin nhắn Facebook.
   await login(page, "donhang@glow.local");
   await page.goto("/admin/orders/new?phone=09%207812%203456");
@@ -82,10 +83,11 @@ test("đơn thủ công (Facebook, COD): tạo → xác nhận → đóng gói F
   await page.goto("/admin/inventory/quarantine");
   const row = page.getByTestId("quarantine-row").filter({ has: page.getByRole("link", { name: code }) });
   await expect(row).toBeVisible();
-  await page.screenshot({ path: "test-results/screens/quarantine.png", fullPage: true });
+  // Không chụp full-page: DB test local tích luỹ nhiều dòng "chờ kiểm tra" → trang rất dài, chụp quá 30s.
+  await page.screenshot({ path: "test-results/screens/quarantine.png" });
   await row.getByLabel("Nhập vào").selectOption({ label: "MM-STOCK" });
   await row.getByRole("button", { name: "Nhập lại kho bán" }).click();
-  await expect(page.getByTestId("quarantine-row").filter({ has: page.getByRole("link", { name: code }) })).toHaveCount(0);
+  await expect(page.getByTestId("quarantine-row").filter({ has: page.getByRole("link", { name: code }) })).toHaveCount(0, { timeout: 20_000 });
 });
 
 test("huỷ đơn thủ công nhả hàng; lỗi hiển thị khi đặt quá tồn", async ({ page }) => {

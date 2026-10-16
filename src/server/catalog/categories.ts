@@ -32,7 +32,8 @@ const updateSchema = z.object({
 
 export type CategoryUpdateInput = z.input<typeof updateSchema>;
 
-export async function listCategoriesAdmin() {
+/** Danh sách cho trang quản lý; `q` lọc theo slug/tên (giữ cả danh mục cha của mục khớp để thấy ngữ cảnh). */
+export async function listCategoriesAdmin(q?: string) {
   const rows = await prisma.category.findMany({
     orderBy: [{ sortOrder: "asc" }, { slug: "asc" }],
     include: {
@@ -54,9 +55,15 @@ export async function listCategoriesAdmin() {
     children: r._count.children,
   });
   // Gốc trước, con nằm ngay dưới cha.
-  return rows
-    .filter((r) => !r.parentId)
-    .flatMap((root) => [toRow(root), ...rows.filter((c) => c.parentId === root.id).map(toRow)]);
+  const children = new Map<string, typeof rows>();
+  for (const r of rows) if (r.parentId) children.set(r.parentId, [...(children.get(r.parentId) ?? []), r]);
+  const tree = rows.filter((r) => !r.parentId).flatMap((root) => [toRow(root), ...(children.get(root.id) ?? []).map(toRow)]);
+
+  const query = q?.trim().toLowerCase();
+  if (!query) return tree;
+  const hits = tree.filter((r) => [r.slug, r.nameMy, r.nameEn].some((v) => v.toLowerCase().includes(query)));
+  const keep = new Set(hits.flatMap((r) => (r.parentId ? [r.id, r.parentId] : [r.id])));
+  return tree.filter((r) => keep.has(r.id));
 }
 
 async function findCategory(id: string) {
