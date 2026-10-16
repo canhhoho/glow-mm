@@ -23,7 +23,7 @@ test("ô tìm kiếm trên header", async ({ page }) => {
   await expect(page.locator('a[href="/en/p/sen-viet-sunscreen-spf50"]')).toBeVisible();
 });
 
-test("footer → trang thông tin; slug lạ → 404", async ({ page }) => {
+test("footer → trang thông tin", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("contentinfo").getByRole("link", { name: "ပို့ဆောင်ခြင်း" }).click();
   await expect(page).toHaveURL(/\/info\/shipping$/);
@@ -33,8 +33,21 @@ test("footer → trang thông tin; slug lạ → 404", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Payment");
   await expect(page.getByText("Cash on delivery (COD)")).toBeVisible();
 
-  // Cache Components gửi static shell (HTTP 200) trước khi notFound() chạy → kiểm tra trang 404 + noindex.
-  await page.goto("/en/info/khong-co");
-  await expect(page.getByText("Page not found")).toBeVisible();
-  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
+});
+
+test("slug sản phẩm/danh mục/trang thông tin không tồn tại → HTTP 404 thật", async ({ page, request }) => {
+  for (const path of ["/en/p/khong-co", "/en/c/khong-co", "/en/info/khong-co", "/p/khong-co"]) {
+    const res = await page.goto(path);
+    expect(res?.status(), path).toBe(404);
+    expect(page.url()).toMatch(new RegExp(`${path}$`)); // proxy rewrite, URL giữ nguyên
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      path.startsWith("/en") ? "Page not found" : "စာမျက်နှာ မတွေ့ပါ",
+    );
+    // Next chèn noindex cho cả status 404 lẫn not-found boundary → có thể 2 thẻ trùng nhau.
+    await expect(page.locator('meta[name="robots"][content="noindex"]').first()).toBeAttached();
+  }
+  // Slug có thật vẫn 200 (cả locale mặc định không có tiền tố).
+  for (const path of ["/en/p/sen-viet-sunscreen-spf50", "/p/sen-viet-sunscreen-spf50", "/en/c/skincare", "/en/info/about"]) {
+    expect((await request.get(path)).status(), path).toBe(200);
+  }
 });
