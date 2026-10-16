@@ -1,5 +1,20 @@
+import { readdirSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { createPositiveCache, parseStoreSlugPath, storeSlugExists } from "@/server/catalog/store-slugs";
+import { createPositiveCache, isKnownStorePath, parseStoreSlugPath, storeSlugExists } from "@/server/catalog/store-slugs";
+
+/** Mọi route trang trong src/app/[locale] (thay [param] bằng giá trị mẫu). */
+function storeRoutes(dir = path.resolve("src/app/[locale]"), prefix = ""): string[] {
+  const out: string[] = [];
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    if (e.isFile() && e.name === "page.tsx") out.push(prefix || "/");
+    if (e.isDirectory() && !e.name.startsWith("_") && !e.name.startsWith("(")) {
+      const seg = e.name.startsWith("[") ? "mau-thu" : e.name;
+      out.push(...storeRoutes(path.join(dir, e.name), `${prefix}/${seg}`));
+    }
+  }
+  return out;
+}
 
 describe("Slug storefront cho proxy 404", () => {
   it("chỉ nhận /<locale>/(p|c|info)/<slug>", () => {
@@ -32,5 +47,25 @@ describe("Slug storefront cho proxy 404", () => {
     cache.add("b");
     cache.add("c"); // đầy → xoá hết rồi thêm
     expect([cache.has("a"), cache.has("b"), cache.has("c")]).toEqual([false, false, true]);
+  });
+
+  it("mọi route trong src/app/[locale] đều được proxy nhận (thêm route mới phải cập nhật isKnownStorePath)", () => {
+    const routes = storeRoutes();
+    expect(routes.length).toBeGreaterThan(8);
+    for (const r of routes) {
+      for (const locale of ["my", "en"]) {
+        const p = r === "/" ? `/${locale}` : `/${locale}${r}`;
+        expect(isKnownStorePath(p), p).toBe(true);
+      }
+    }
+  });
+
+  it("đường dẫn lạ → không nhận (proxy trả trang 404 có giao diện)", () => {
+    for (const p of ["/en/foo", "/en/p/a/b", "/my/khong-co", "/fr/p/a", "/en/cart/x", "/en/order", "/en/p/"]) {
+      expect(isKnownStorePath(p), p).toBe(false);
+    }
+    for (const p of ["/en", "/my/", "/en/cart", "/my/order/OD-1", "/en/collection/sale/"]) {
+      expect(isKnownStorePath(p), p).toBe(true);
+    }
   });
 });

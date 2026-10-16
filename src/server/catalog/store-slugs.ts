@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { routing } from "@/i18n/routing";
 import { isInfoPage } from "@/lib/info-pages";
 import { collectionVisible } from "@/server/content/collections";
 
@@ -10,6 +11,22 @@ import { collectionVisible } from "@/server/content/collections";
 export type StoreSlugKind = "p" | "c" | "info" | "collection";
 
 const STORE_PATH = /^\/([^/]+)\/(p|c|info|collection)\/([^/]+)\/?$/;
+
+/**
+ * Các dạng route storefront (sau khi next-intl gắn locale, vd `/p/x` → `/my/p/x`). Đường dẫn ngoài danh sách →
+ * proxy trả trang 404 có giao diện (HTTP 404) thay cho trang 404 trắng mặc định của Next.
+ * Thêm route mới trong src/app/[locale] thì phải thêm vào đây — test `store-slugs.test.ts` quét thư mục để nhắc.
+ */
+const L = routing.locales.join("|");
+const KNOWN_STORE_PATHS = [
+  new RegExp(`^/(${L})/?$`),
+  new RegExp(`^/(${L})/(cart|checkout|search|track|404)/?$`),
+  new RegExp(`^/(${L})/(p|c|info|collection|order)/[^/]+/?$`),
+];
+
+export function isKnownStorePath(pathname: string): boolean {
+  return KNOWN_STORE_PATHS.some((re) => re.test(pathname));
+}
 
 /** `/en/p/abc` → { kind: "p", slug: "abc" }; đường dẫn khác → null. */
 export function parseStoreSlugPath(pathname: string): { kind: StoreSlugKind; slug: string } | null {
