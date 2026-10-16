@@ -6,7 +6,7 @@ import { parseStoreSlugPath, storeSlugExists } from "./server/catalog/store-slug
 const intl = createMiddleware(routing);
 
 /**
- * Proxy: định tuyến locale cho storefront + trả HTTP 404 thật cho slug sản phẩm/danh mục/trang thông tin không tồn tại
+ * Proxy: định tuyến locale cho storefront + trả HTTP 404 thật cho slug sản phẩm/danh mục/trang thông tin/bộ sưu tập không tồn tại
  * (rewrite sang /[locale]/404 — trang tĩnh gọi notFound() lúc prerender nên giữ status 404).
  * KHÔNG phải lớp bảo mật — quyền được kiểm tra trong từng Server Action/route.
  */

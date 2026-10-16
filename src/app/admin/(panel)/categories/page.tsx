@@ -8,6 +8,7 @@ import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
 import { CategoryForm } from "@/components/admin/catalog-forms";
 import { CategoryIconUpload } from "@/components/admin/category-icon-upload";
+import { ParentSelect } from "@/components/admin/parent-select";
 import { fieldClass, PageHeader } from "@/components/admin/ui";
 
 /** Quản lý danh mục: tên my/en, danh mục cha (tối đa 2 cấp), thứ tự, icon nhóm hàng trên trang chủ. */
@@ -67,16 +68,7 @@ export default async function CategoriesPage() {
                   </label>
                   <label className="space-y-1 text-sm">
                     <span className="text-muted-foreground">{t("parent")}</span>
-                    <select name="parentId" defaultValue={c.parentId ?? ""} className={fieldClass}>
-                      <option value="">{t("noParent")}</option>
-                      {roots
-                        .filter((r) => r.id !== c.id)
-                        .map((r) => (
-                          <option key={r.id} value={r.id}>
-                            {r.name}
-                          </option>
-                        ))}
-                    </select>
+                    <ParentSelect roots={roots} value={c.parentId} excludeId={c.id} noParentLabel={t("noParent")} />
                   </label>
                   <label className="space-y-1 text-sm">
                     <span className="text-muted-foreground">{t("sortOrder")}</span>

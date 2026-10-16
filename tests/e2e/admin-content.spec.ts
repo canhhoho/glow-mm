@@ -10,19 +10,20 @@ test("danh mục: lưu, tải icon (hiện ảnh), xoá icon", async ({ page }) 
   // Lọc theo ô slug (ô chọn danh mục cha ở mọi hàng cũng chứa chữ "Skincare").
   const row = page.getByTestId("category-row").filter({ has: page.getByText("skincare", { exact: true }) });
 
+  // DB test local tích luỹ nhiều danh mục fixture → trang nặng, server action có thể chậm vài giây.
   await row.getByRole("button", { name: "Lưu" }).click();
-  await expect(row.getByRole("status").filter({ hasText: "Đã lưu" })).toBeVisible();
+  await expect(row.getByRole("status").filter({ hasText: "Đã lưu" })).toBeVisible({ timeout: 20_000 });
 
   await row.getByLabel("Chọn ảnh icon").setInputFiles({ name: "icon.png", mimeType: "image/png", buffer: solidPng(64) });
   await row.getByRole("button", { name: "Tải icon" }).click();
-  await expect(row.getByRole("status").filter({ hasText: "Đã tải icon" })).toBeVisible();
-  await expect(row.getByRole("img", { name: /Icon/ })).toBeVisible();
+  await expect(row.getByRole("status").filter({ hasText: "Đã tải icon" })).toBeVisible({ timeout: 20_000 });
+  await expect(row.getByRole("img", { name: /Icon/ })).toBeVisible({ timeout: 20_000 });
   await page.screenshot({ path: "test-results/screens/admin-categories.png", fullPage: true });
 
   // Dọn: bỏ icon để không ảnh hưởng test khác.
   page.once("dialog", (d) => d.accept());
   await row.getByRole("button", { name: "Xoá icon" }).click();
-  await expect(row.getByRole("img", { name: /Icon/ })).toHaveCount(0);
+  await expect(row.getByRole("img", { name: /Icon/ })).toHaveCount(0, { timeout: 20_000 });
 });
 
 test("banner: tạo, báo lỗi link sai, tắt/bật, sửa, xoá", async ({ page }) => {

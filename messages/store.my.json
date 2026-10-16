@@ -20,7 +20,11 @@
     "categories": "အမျိုးအစားများ",
     "empty": "ပစ္စည်းများ မကြာမီ ရောက်ရှိပါမည်",
     "newArrivals": "ပစ္စည်းအသစ်များ",
-    "bannerCta": "ယခုဝယ်ယူရန်"
+    "bannerCta": "ယခုဝယ်ယူရန်",
+    "bannerRegion": "ပရိုမိုးရှင်းများ",
+    "bannerPrev": "ယခင် ဘန်နာ",
+    "bannerNext": "နောက် ဘန်နာ",
+    "bannerGoTo": "ဘန်နာ {n} ကို ပြရန်"
   },
   "Product": {
     "addToCart": "ခြင်းထဲထည့်ရန်",

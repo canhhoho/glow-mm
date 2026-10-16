@@ -6,6 +6,7 @@ describe("Slug storefront cho proxy 404", () => {
     expect(parseStoreSlugPath("/en/p/sen-viet")).toEqual({ kind: "p", slug: "sen-viet" });
     expect(parseStoreSlugPath("/my/c/skincare/")).toEqual({ kind: "c", slug: "skincare" });
     expect(parseStoreSlugPath("/en/info/about")).toEqual({ kind: "info", slug: "about" });
+    expect(parseStoreSlugPath("/my/collection/sale")).toEqual({ kind: "collection", slug: "sale" });
     expect(parseStoreSlugPath("/en/p/%E1%80%80")).toEqual({ kind: "p", slug: "က" });
     expect(parseStoreSlugPath("/en/p/%E0%A4")).toEqual({ kind: "p", slug: "" });
     for (const p of ["/en", "/en/p", "/en/p/a/b", "/en/cart", "/en/search", "/en/order/ABC"]) {

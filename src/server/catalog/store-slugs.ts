@@ -1,14 +1,15 @@
 import { prisma } from "@/lib/db";
 import { isInfoPage } from "@/lib/info-pages";
+import { collectionVisible } from "@/server/content/collections";
 
 /**
  * Kiểm tra nhanh slug storefront có tồn tại không — dùng trong proxy để trả HTTP 404 thật.
  * (Cache Components gửi static shell với status 200 trước khi notFound() trong page chạy.)
  * Điều kiện phải khớp getStoreProduct/getStoreCategory; page vẫn gọi notFound() làm lớp dự phòng.
  */
-export type StoreSlugKind = "p" | "c" | "info";
+export type StoreSlugKind = "p" | "c" | "info" | "collection";
 
-const STORE_PATH = /^\/([^/]+)\/(p|c|info)\/([^/]+)\/?$/;
+const STORE_PATH = /^\/([^/]+)\/(p|c|info|collection)\/([^/]+)\/?$/;
 
 /** `/en/p/abc` → { kind: "p", slug: "abc" }; đường dẫn khác → null. */
 export function parseStoreSlugPath(pathname: string): { kind: StoreSlugKind; slug: string } | null {
@@ -49,6 +50,10 @@ export async function storeSlugExists(kind: StoreSlugKind, slug: string): Promis
   if (!slug) return false;
   const key = `${kind}:${slug}`;
   if (known.has(key)) return true;
+  if (kind === "collection") {
+    // Bộ sưu tập có lịch hiển thị → không cache (truy vấn theo slug unique, rẻ).
+    return collectionVisible(slug, new Date());
+  }
   const found =
     kind === "p"
       ? await prisma.product.findFirst({ where: { slug, published: true, variants: { some: { active: true } } }, select: { id: true } })

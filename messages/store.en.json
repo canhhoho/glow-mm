@@ -20,7 +20,11 @@
     "categories": "Categories",
     "empty": "Products coming soon",
     "newArrivals": "New arrivals",
-    "bannerCta": "Shop now"
+    "bannerCta": "Shop now",
+    "bannerRegion": "Promotions",
+    "bannerPrev": "Previous banner",
+    "bannerNext": "Next banner",
+    "bannerGoTo": "Show banner {n}"
   },
   "Product": {
     "addToCart": "Add to cart",

@@ -156,20 +156,57 @@ export async function getBannerAdmin(id: string) {
   });
 }
 
-export type StoreBanner = { id: string; alt: string; href: string | null; desktopUrl: string; mobileUrl: string | null };
+export type StoreBanner = {
+  id: string;
+  alt: string;
+  href: string | null;
+  desktopUrl: string;
+  mobileUrl: string | null;
+  startAt: Date | null;
+  endAt: Date | null;
+};
+
+const storeBannerInclude = { desktopFile: { select: { url: true } }, mobileFile: { select: { url: true } } } as const;
+
+function toStoreBanner(b: {
+  id: string;
+  alt: string;
+  href: string | null;
+  startAt: Date | null;
+  endAt: Date | null;
+  desktopFile: { url: string };
+  mobileFile: { url: string } | null;
+}): StoreBanner {
+  return {
+    id: b.id,
+    alt: b.alt,
+    href: b.href,
+    desktopUrl: b.desktopFile.url,
+    mobileUrl: b.mobileFile?.url ?? null,
+    startAt: b.startAt,
+    endAt: b.endAt,
+  };
+}
+
+/**
+ * Banner đang bật cho ngôn ngữ `locale` (chưa lọc lịch) — để storefront cache theo tag rồi lọc lịch lúc request
+ * bằng `isInSchedule`.
+ */
+export async function bannersForLocale(locale: string): Promise<StoreBanner[]> {
+  const rows = await prisma.banner.findMany({
+    where: { active: true, OR: [{ locale: null }, { locale }] },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    include: storeBannerInclude,
+  });
+  return rows.map(toStoreBanner);
+}
 
 /** Banner đang hiện cho ngôn ngữ `locale` tại thời điểm `now`, theo thứ tự. */
 export async function activeBanners(locale: string, now: Date): Promise<StoreBanner[]> {
   const rows = await prisma.banner.findMany({
     where: { active: true, OR: [{ locale: null }, { locale }], ...inSchedule(now) },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    include: { desktopFile: { select: { url: true } }, mobileFile: { select: { url: true } } },
+    include: storeBannerInclude,
   });
-  return rows.map((b) => ({
-    id: b.id,
-    alt: b.alt,
-    href: b.href,
-    desktopUrl: b.desktopFile.url,
-    mobileUrl: b.mobileFile?.url ?? null,
-  }));
+  return rows.map(toStoreBanner);
 }
