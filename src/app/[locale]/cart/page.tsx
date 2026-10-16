@@ -7,7 +7,7 @@ import { formatMmk } from "@/lib/money";
 import { setCartQtyAction } from "@/server/cart/actions";
 import { CART_COOKIE, parseCart } from "@/server/cart/cart";
 import { getCartDetails } from "@/server/catalog/store-queries";
-import { BlockSkeleton, Notice, outlineButton, PageTitle, primaryButton, storeField } from "@/components/store/ui";
+import { BlockSkeleton, Notice, outlineButton, PageTitle, primaryButton, storeCard, storeField } from "@/components/store/ui";
 
 export default function CartPage(props: PageProps<"/[locale]/cart">) {
   return (
@@ -25,7 +25,7 @@ async function CartContent({ params }: PageProps<"/[locale]/cart">) {
 
   if (cart.lines.length === 0) {
     return (
-      <div className="space-y-3">
+      <div className={`${storeCard} mx-auto max-w-screen-md space-y-3`}>
         <PageTitle>{t("title")}</PageTitle>
         <p className="text-muted-foreground">{t("empty")}</p>
         <Link href="/" className={outlineButton}>
@@ -36,8 +36,10 @@ async function CartContent({ params }: PageProps<"/[locale]/cart">) {
   }
 
   return (
-    <div className="space-y-4">
-      <PageTitle>{t("title")}</PageTitle>
+    <div className="space-y-4 lg:grid lg:grid-cols-[1fr_20rem] lg:items-start lg:gap-6 lg:space-y-0">
+      <div className="lg:col-span-2">
+        <PageTitle>{t("title")}</PageTitle>
+      </div>
       <ul className="space-y-3">
         {cart.lines.map((l) => (
           <li
@@ -84,20 +86,22 @@ async function CartContent({ params }: PageProps<"/[locale]/cart">) {
           </li>
         ))}
       </ul>
-      <div className="flex items-baseline justify-between text-base">
-        <span>{t("subtotal")}</span>
-        <span className="font-medium" data-testid="cart-subtotal">
-          {formatMmk(cart.subtotalMmk, locale)}
-        </span>
-      </div>
-      <p className="text-xs text-muted-foreground">{t("shippingNote")}</p>
-      {cart.ok ? (
-        <Link href="/checkout" className={cn(primaryButton, "w-full")}>
-          {t("checkout")}
-        </Link>
-      ) : (
-        <Notice tone="error">{t("fix")}</Notice>
-      )}
+      <aside className="space-y-4 lg:sticky lg:top-36 lg:rounded-xl lg:bg-card lg:p-4 lg:ring-1 lg:ring-border" data-testid="cart-summary">
+        <div className="flex items-baseline justify-between text-base">
+          <span>{t("subtotal")}</span>
+          <span className="font-medium" data-testid="cart-subtotal">
+            {formatMmk(cart.subtotalMmk, locale)}
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground">{t("shippingNote")}</p>
+        {cart.ok ? (
+          <Link href="/checkout" className={cn(primaryButton, "w-full")}>
+            {t("checkout")}
+          </Link>
+        ) : (
+          <Notice tone="error">{t("fix")}</Notice>
+        )}
+      </aside>
     </div>
   );
 }

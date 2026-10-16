@@ -4,7 +4,7 @@ import { refresh } from "next/cache";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { hasLocale } from "next-intl";
-import { ZodError } from "zod";
+import { z, ZodError } from "zod";
 import { redirect } from "@/i18n/navigation";
 import { routing, type StoreLocale } from "@/i18n/routing";
 import { OrderError } from "@/server/orders/errors";
@@ -62,10 +62,14 @@ async function errorText(e: unknown, locale: StoreLocale): Promise<string> {
   return t("err.unknown");
 }
 
+/** Nút bấm trên trang SP: "Thêm giỏ hàng" (mặc định) → giỏ; "Mua ngay" (intent=buy) → thẳng checkout. */
+const addIntent = z.enum(["cart", "buy"]).catch("cart");
+
 export async function addToCartAction(formData: FormData) {
   const locale = localeOf(formData);
+  const intent = addIntent.parse(formData.get("intent") ?? "cart");
   await writeCart(addLine(await readCart(), String(formData.get("variantId")), Number(formData.get("qty") ?? 1)));
-  redirect({ href: "/cart", locale });
+  redirect({ href: intent === "buy" ? "/checkout" : "/cart", locale });
 }
 
 /** Đổi số lượng / xoá dòng (qty = 0). Trang giỏ tự render lại sau khi cookie đổi. */

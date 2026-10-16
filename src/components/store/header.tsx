@@ -1,9 +1,11 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
-import { Search, ShoppingBag } from "lucide-react";
+import { connection } from "next/server";
+import { PackageSearch, Search, ShoppingBag } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getPathname, Link } from "@/i18n/navigation";
 import { routing, type StoreLocale } from "@/i18n/routing";
+import { env } from "@/lib/env";
 import { CART_COOKIE, cartCount, parseCart } from "@/server/cart/cart";
 import { CategoryMenu } from "./category-menu";
 import { storeField } from "./ui";
@@ -14,7 +16,7 @@ async function CartBadge() {
   if (n === 0) return null;
   return (
     <span
-      className="absolute top-1 right-0.5 grid min-w-4 place-items-center rounded-full bg-card px-1 text-[10px] leading-4 text-brand"
+      className="absolute top-1 right-0.5 grid min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] leading-4 text-brand-foreground lg:bg-card lg:text-brand"
       data-testid="cart-count"
     >
       {n > 99 ? "99+" : n}
@@ -22,41 +24,98 @@ async function CartBadge() {
   );
 }
 
+/** Liên hệ nhanh trên thanh phụ desktop (env đọc lúc request, như ChatFab). */
+async function HeaderContact({ locale }: { locale: string }) {
+  await connection();
+  const { FB_PAGE_USERNAME, VIBER_CHAT_URI } = env();
+  const t = await getTranslations({ locale, namespace: "Product" });
+  const link = "inline-flex min-h-11 items-center hover:text-brand";
+  return (
+    <>
+      {VIBER_CHAT_URI && (
+        <a href={VIBER_CHAT_URI} className={link}>
+          {t("askViber")}
+        </a>
+      )}
+      {FB_PAGE_USERNAME && (
+        <a href={`https://m.me/${encodeURIComponent(FB_PAGE_USERNAME)}`} target="_blank" rel="noreferrer" className={link}>
+          {t("askMessenger")}
+        </a>
+      )}
+    </>
+  );
+}
+
+/**
+ * Header 2 tầng (theo bố cục mẫu đã duyệt):
+ * - Mobile: tầng 1 (màu thương hiệu) logo giữa + ngôn ngữ; tầng 2 (trắng) menu · ô tìm kiếm · giỏ.
+ * - lg: tầng 1 logo · ô tìm kiếm + nút · ngôn ngữ · giỏ; tầng 2 nút "Danh mục" · tra cứu đơn + liên hệ.
+ * Chỉ có MỘT form tìm kiếm và MỘT link giỏ: đổi vị trí bằng CSS grid, dải màu tầng 1 là ::before.
+ */
 export async function StoreHeader({ locale }: { locale: StoreLocale }) {
   const [t, ts] = await Promise.all([getTranslations("Nav"), getTranslations("Search")]);
   const other = routing.locales.find((l) => l !== locale) ?? routing.defaultLocale;
 
   return (
-    <>
-      <header className="sticky top-0 z-10 flex h-12 items-center justify-between bg-brand pr-4 pl-1 text-brand-foreground">
-        <div className="flex items-center">
+    <header className="sticky top-0 z-30 bg-card shadow-sm before:absolute before:inset-x-0 before:top-0 before:h-12 before:bg-brand lg:before:h-16">
+      <div className="relative mx-auto grid max-w-6xl grid-cols-[auto_1fr_auto] grid-rows-[3rem_auto] items-center gap-x-1 pr-2 pl-1 lg:grid-cols-[auto_1fr_auto_auto] lg:grid-rows-[4rem_3rem] lg:gap-x-4 lg:px-4">
+        <Link
+          href="/"
+          className="col-start-2 row-start-1 justify-self-center text-lg font-medium text-brand-foreground lg:col-start-1 lg:justify-self-start lg:text-2xl"
+        >
+          Glow VN
+        </Link>
+
+        <Link
+          href="/"
+          locale={other}
+          className="col-start-3 row-start-1 inline-flex h-8 items-center justify-self-end rounded px-2 text-xs whitespace-nowrap text-brand-foreground uppercase ring-1 ring-white/50"
+          aria-label={t("language")}
+        >
+          {other === "my" ? "မြန်မာ" : "EN"}
+        </Link>
+
+        <div className="col-start-1 row-start-2 lg:row-start-2">
           <CategoryMenu locale={locale} />
-          <Link href="/" className="text-base font-medium">
-            Glow VN
-          </Link>
         </div>
-        <nav className="flex items-center gap-1">
-          <Link
-            href="/"
-            locale={other}
-            className="inline-flex h-8 items-center rounded px-2 text-xs whitespace-nowrap uppercase ring-1 ring-white/50"
-            aria-label={t("language")}
+
+        {/* Ô tìm kiếm luôn sẵn (GET, chạy cả khi chưa tải JS). */}
+        <form
+          role="search"
+          action={getPathname({ href: "/search", locale })}
+          className="relative col-start-2 row-start-2 flex gap-2 py-2 lg:row-start-1 lg:mx-auto lg:w-full lg:max-w-xl lg:py-0"
+        >
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <input name="q" type="search" placeholder={ts("placeholder")} aria-label={t("search")} className={`${storeField} pl-9`} />
+          <button
+            type="submit"
+            className="hidden h-11 shrink-0 items-center justify-center rounded-lg bg-card px-5 font-medium whitespace-nowrap text-brand hover:bg-muted lg:inline-flex"
           >
-            {other === "my" ? "မြန်မာ" : "EN"}
+            {ts("submit")}
+          </button>
+        </form>
+
+        <Link
+          href="/cart"
+          aria-label={t("cart")}
+          className="relative col-start-3 row-start-2 grid size-11 place-items-center justify-self-end lg:col-start-4 lg:row-start-1 lg:text-brand-foreground"
+        >
+          <ShoppingBag className="size-5 lg:size-6" aria-hidden />
+          <Suspense>
+            <CartBadge />
+          </Suspense>
+        </Link>
+
+        <div className="col-span-3 col-start-2 row-start-2 hidden items-center justify-end gap-5 text-sm lg:flex">
+          <Link href="/track" className="inline-flex min-h-11 items-center gap-1.5 hover:text-brand">
+            <PackageSearch className="size-4" aria-hidden />
+            {t("orderLookup")}
           </Link>
-          <Link href="/cart" aria-label={t("cart")} className="relative grid size-11 place-items-center">
-            <ShoppingBag className="size-5" aria-hidden />
-            <Suspense>
-              <CartBadge />
-            </Suspense>
-          </Link>
-        </nav>
-      </header>
-      {/* Ô tìm kiếm luôn sẵn dưới header (GET, chạy cả khi chưa tải JS). */}
-      <form role="search" action={getPathname({ href: "/search", locale })} className="relative px-4 pt-3">
-        <Search className="pointer-events-none absolute top-1/2 left-7 mt-1.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-        <input name="q" type="search" placeholder={ts("placeholder")} aria-label={t("search")} className={`${storeField} pl-9`} />
-      </form>
-    </>
+          <Suspense>
+            <HeaderContact locale={locale} />
+          </Suspense>
+        </div>
+      </div>
+    </header>
   );
 }

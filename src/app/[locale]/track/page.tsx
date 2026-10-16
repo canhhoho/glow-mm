@@ -17,7 +17,7 @@ async function TrackContent({ params, searchParams }: PageProps<"/[locale]/track
   const { code } = await searchParams;
   const t = await getTranslations({ locale, namespace: "Track" });
   return (
-    <div>
+    <div className="mx-auto max-w-screen-md">
       <PageTitle>{t("title")}</PageTitle>
       <TrackForm locale={locale} code={typeof code === "string" ? code : undefined} />
     </div>

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { INFO_PAGES, isInfoPage } from "@/lib/info-pages";
-import { PageTitle } from "@/components/store/ui";
+import { PageTitle, storeCard } from "@/components/store/ui";
 
 export function generateStaticParams() {
   return routing.locales.flatMap((locale) => INFO_PAGES.map((slug) => ({ locale, slug })));
@@ -24,7 +24,7 @@ export default async function InfoPage({ params }: PageProps<"/[locale]/info/[sl
   const t = await getTranslations({ locale, namespace: "Info" });
   const paragraphs = t.raw(`${slug}.body`) as string[];
   return (
-    <article className="space-y-3">
+    <article className={`${storeCard} mx-auto max-w-prose space-y-3 lg:p-8`}>
       <PageTitle>{t(`${slug}.title`)}</PageTitle>
       {paragraphs.map((p, i) => (
         <p key={i} className="leading-relaxed">

@@ -9,10 +9,12 @@
  *  - "mobile": cấu hình mobile chuẩn của Lighthouse/PageSpeed (Slow 4G mô phỏng) → mọi trang ≥ 85.
  *  - "slow-3g": RTT 400ms, 400 Kbps, CPU ×4 → theo dõi, chặn tụt hạng ≥ 70
  *    (giới hạn bởi ~160KB JS nền của Next/React + font Myanmar ở 400 Kbps).
+ *  - "desktop": cấu hình desktop chuẩn của Lighthouse (1350×940, mạng nhanh, CPU ×1) → bố cục desktop ≥ 90.
  * Báo cáo HTML/JSON lưu ở lighthouse-reports/.
  */
 import { mkdir, writeFile } from "node:fs/promises";
 import lighthouse from "lighthouse";
+import desktopConfig from "lighthouse/core/config/desktop-config.js";
 import { chromium } from "@playwright/test";
 
 const BASE = process.env.PERF_URL ?? "http://localhost:3100";
@@ -23,8 +25,15 @@ const PAGES = [
   { name: "category", path: "/c/skincare" },
 ];
 const PROFILES = {
-  mobile: { throttling: { rttMs: 150, throughputKbps: 1638.4, cpuSlowdownMultiplier: 4 }, min: 85 },
-  "slow-3g": { throttling: { rttMs: 400, throughputKbps: 400, cpuSlowdownMultiplier: 4 }, min: 70 },
+  mobile: {
+    settings: { formFactor: "mobile", throttling: { rttMs: 150, throughputKbps: 1638.4, cpuSlowdownMultiplier: 4 } },
+    min: 85,
+  },
+  "slow-3g": {
+    settings: { formFactor: "mobile", throttling: { rttMs: 400, throughputKbps: 400, cpuSlowdownMultiplier: 4 } },
+    min: 70,
+  },
+  desktop: { settings: desktopConfig.settings, min: 90 },
 };
 
 // Dùng Chromium của Playwright (đã cài cho E2E), mở cổng debug cho Lighthouse.
@@ -35,7 +44,7 @@ await mkdir("lighthouse-reports", { recursive: true });
 const failures = [];
 const rows = [];
 try {
-  for (const [profile, { throttling, min }] of Object.entries(PROFILES)) {
+  for (const [profile, { settings, min }] of Object.entries(PROFILES)) {
     for (const page of PAGES) {
       const runs = [];
       for (let i = 0; i < RUNS; i++) {
@@ -43,7 +52,7 @@ try {
           await lighthouse(
             BASE + page.path,
             { port: PORT, output: ["html", "json"], onlyCategories: ["performance"], logLevel: "error" },
-            { extends: "lighthouse:default", settings: { formFactor: "mobile", throttlingMethod: "simulate", throttling } },
+            { extends: "lighthouse:default", settings: { ...settings, throttlingMethod: "simulate" } },
           ),
         );
       }

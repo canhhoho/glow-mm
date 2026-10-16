@@ -18,6 +18,8 @@ export type ProductListQuery = {
   brand?: string;
   tags?: string[];
   sort?: StoreSort;
+  /** Số sản phẩm tối đa (mặc định 60; dải sản phẩm trang chủ lấy ít hơn). */
+  take?: number;
 };
 
 async function availability(variantIds: string[]) {
@@ -46,7 +48,7 @@ export async function listStoreProducts(query: ProductListQuery) {
   const products = await prisma.product.findMany({
     where: { AND: and },
     orderBy: { createdAt: "desc" },
-    take: 60,
+    take: Math.min(query.take ?? 60, 60),
     include: {
       brand: true,
       translations: true,
@@ -90,12 +92,17 @@ export async function storeFilterOptions(locale: string) {
 export async function getStoreCategory(slug: string, locale: string) {
   const c = await prisma.category.findUnique({
     where: { slug },
-    include: { translations: true, children: { include: { translations: true }, orderBy: { sortOrder: "asc" } } },
+    include: {
+      translations: true,
+      parent: { include: { translations: true } },
+      children: { include: { translations: true }, orderBy: { sortOrder: "asc" } },
+    },
   });
   if (!c) return null;
   return {
     slug: c.slug,
     name: pick(c.translations, locale)?.name ?? c.slug,
+    parent: c.parent ? { slug: c.parent.slug, name: pick(c.parent.translations, locale)?.name ?? c.parent.slug } : null,
     children: c.children.map((ch) => ({ slug: ch.slug, name: pick(ch.translations, locale)?.name ?? ch.slug })),
   };
 }

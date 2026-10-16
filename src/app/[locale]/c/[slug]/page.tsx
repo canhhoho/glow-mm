@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { getStoreCategory, listStoreProducts } from "@/server/catalog/store-queries";
 import { CatalogFilters, parseCatalogParams } from "@/components/store/catalog-filters";
 import { ProductGrid } from "@/components/store/product-card";
+import { Breadcrumb, storeCard } from "@/components/store/ui";
 
 /** Render chặn: HTML trả về đã có danh sách sản phẩm → LCP sớm trên 3G (xem trang sản phẩm). */
 export const instant = false;
@@ -12,8 +13,9 @@ export default async function CategoryPage({ params, searchParams }: PageProps<"
   const { locale, slug } = await params;
   setRequestLocale(locale);
   const current = parseCatalogParams(await searchParams);
-  const [t, category, products] = await Promise.all([
+  const [t, tn, category, products] = await Promise.all([
     getTranslations({ locale, namespace: "Catalog" }),
+    getTranslations({ locale, namespace: "Nav" }),
     getStoreCategory(slug, locale),
     listStoreProducts({ locale, category: slug, brand: current.brand, tags: current.tags, sort: current.sort }),
   ]);
@@ -21,21 +23,31 @@ export default async function CategoryPage({ params, searchParams }: PageProps<"
 
   return (
     <div>
-      <h1 className="mb-2 text-lg font-medium">{category.name}</h1>
-      {category.children.length > 0 && (
-        <ul className="mb-3 flex flex-wrap gap-2">
-          {category.children.map((c) => (
-            <li key={c.slug}>
-              <Link href={`/c/${c.slug}`} className="inline-flex min-h-11 items-center rounded-full bg-accent px-4 text-sm">
-                {c.name}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      <Breadcrumb
+        label={tn("breadcrumb")}
+        items={[
+          { href: "/", name: tn("home") },
+          ...(category.parent ? [{ href: `/c/${category.parent.slug}`, name: category.parent.name }] : []),
+          { name: category.name },
+        ]}
+      />
       <CatalogFilters locale={locale} current={current} />
-      <p className="mb-2 text-sm text-muted-foreground">{t("count", { count: products.length })}</p>
-      <ProductGrid products={products} locale={locale} />
+      <section className={storeCard}>
+        <h1 className="mb-2 text-lg font-medium lg:text-xl">{category.name}</h1>
+        {category.children.length > 0 && (
+          <ul className="mb-3 flex flex-wrap gap-2">
+            {category.children.map((c) => (
+              <li key={c.slug}>
+                <Link href={`/c/${c.slug}`} className="inline-flex min-h-11 items-center rounded-full bg-accent px-4 text-sm lg:min-h-9">
+                  {c.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="mb-2 text-sm text-muted-foreground">{t("count", { count: products.length })}</p>
+        <ProductGrid products={products} locale={locale} />
+      </section>
     </div>
   );
 }

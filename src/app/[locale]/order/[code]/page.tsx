@@ -46,7 +46,7 @@ async function OrderContent({ params, searchParams }: PageProps<"/[locale]/order
   const delivery = order.deliveries[0];
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-screen-md space-y-4">
       {placed && <Notice tone="success">{t("thanks")}</Notice>}
       <section className="rounded-xl bg-accent p-4 text-accent-foreground">
         <p className="text-sm">{t("code")}</p>

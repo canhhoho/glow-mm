@@ -15,6 +15,17 @@ test("menu danh mục 2 cấp: chỉ hiện nhánh có SP, tự đóng khi chuy�
   await expect(menu).not.toHaveAttribute("open");
 });
 
+test("mobile: không cuộn ngang; trang chủ có dải SP cuộn ngang theo danh mục", async ({ page }) => {
+  for (const path of ["/en", "/en/c/skincare", "/en/p/sen-viet-sunscreen-spf50", "/en/cart", "/en/info/about"]) {
+    await page.goto(path);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow, path).toBeLessThanOrEqual(0);
+  }
+  await page.goto("/en");
+  await expect(page.getByRole("heading", { name: "New arrivals" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Skincare", level: 2 })).toBeVisible();
+});
+
 test("ô tìm kiếm trên header", async ({ page }) => {
   await page.goto("/en/cart");
   await page.getByRole("searchbox").fill("Sunscreen"); // trang giỏ chỉ có ô tìm kiếm trên header

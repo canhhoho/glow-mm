@@ -54,9 +54,10 @@ export default async function StoreLayout({ children, params }: LayoutProps<"/[l
     <html lang={locale} data-theme="store" className={myanmarFont.className}>
       <body className="min-h-dvh bg-background text-foreground antialiased">
         <NextIntlClientProvider messages={clientMessages}>
-          <div className="mx-auto flex min-h-dvh max-w-screen-md flex-col">
+          {/* Header/footer trải hết chiều ngang; nội dung trong khung max-w-6xl (mobile-first). */}
+          <div className="flex min-h-dvh flex-col">
             <StoreHeader locale={locale} />
-            <main className="flex-1 px-4 py-4">{children}</main>
+            <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-4 lg:py-6">{children}</main>
             <StoreFooter locale={locale} />
             <ChatFab locale={locale} />
             <SwRegister />

@@ -11,14 +11,16 @@
     "language": "Language",
     "home": "Home",
     "menu": "Menu",
-    "allIn": "All {name}"
+    "allIn": "All {name}",
+    "breadcrumb": "Breadcrumb"
   },
   "Home": {
     "heroKicker": "Direct from Vietnam",
     "heroTitle": "Quality-checked cosmetics",
     "categories": "Categories",
-    "popular": "Popular products",
-    "empty": "Products coming soon"
+    "empty": "Products coming soon",
+    "newArrivals": "New arrivals",
+    "bannerCta": "Shop now"
   },
   "Product": {
     "addToCart": "Add to cart",
@@ -36,7 +38,9 @@
     "expiryNote": "Expiry of the batch you will receive",
     "description": "Description",
     "storage": "Storage",
-    "bundle": "Set"
+    "bundle": "Set",
+    "buyNow": "Buy now",
+    "related": "More in this category"
   },
   "Footer": {
     "contact": "Contact",
@@ -61,7 +65,9 @@
     "sortPriceDesc": "Price: high to low",
     "empty": "No products found",
     "from": "from {price}",
-    "count": "{count} products"
+    "count": "{count} products",
+    "choose": "Choose",
+    "seeMore": "See more"
   },
   "Search": {
     "title": "Search",
