@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     "src/lib/myanmar/vendor/**",
     "playwright-report/**",
     "test-results/**",
+    // Worktree của các phiên Claude Code (bản sao code + .next build) — không thuộc mã nguồn checkout này.
+    ".claude/**",
   ]),
 ]);
 
