@@ -5,14 +5,14 @@ test("storefront mặc định tiếng Myanmar, hiển thị sản phẩm từ D
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("lang", "my");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("အရည်အသွေးစစ် အလှကုန်");
-  await expect(page.getByText("နေကာခရင်မ် SPF50 PA++++")).toBeVisible();
-  await expect(page.getByText("25,000 ကျပ်")).toBeVisible();
+  await expect(page.getByText("နေကာခရင်မ် SPF50 PA++++").first()).toBeVisible();
+  await expect(page.getByText("25,000 ကျပ်").first()).toBeVisible();
 });
 
 test("chuyển sang tiếng Anh", async ({ page }) => {
   await page.goto("/en");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await expect(page.getByText("Sunscreen SPF50 PA++++")).toBeVisible();
+  await expect(page.getByText("Sunscreen SPF50 PA++++").first()).toBeVisible();
 });
 
 test("admin chưa đăng nhập → chuyển tới trang login", async ({ page }) => {

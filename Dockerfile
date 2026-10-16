@@ -16,6 +16,9 @@ RUN npm ci
 FROM node:${NODE_VERSION}-alpine AS builder
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
+# URL gốc cho metadata tĩnh (canonical, hreflang, Open Graph) — phần trang prerender lúc build. Không phải secret.
+ARG APP_URL=http://localhost:3000
+ENV APP_URL=${APP_URL}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate && npm run build

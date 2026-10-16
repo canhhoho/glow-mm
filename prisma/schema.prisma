@@ -125,16 +125,19 @@ enum FileVisibility {
 }
 
 model FileObject {
-  id            String         @id @default(cuid())
-  driver        StorageDriver
-  key           String         @unique
-  url           String
-  mime          String
-  size          Int
-  visibility    FileVisibility @default(PUBLIC)
-  createdAt     DateTime       @default(now())
-  productImages ProductImage[]
-  paymentProofs PaymentProof[]
+  id             String         @id @default(cuid())
+  driver         StorageDriver
+  key            String         @unique
+  url            String
+  mime           String
+  size           Int
+  visibility     FileVisibility @default(PUBLIC)
+  createdAt      DateTime       @default(now())
+  productImages  ProductImage[]
+  paymentProofs  PaymentProof[]
+  categoryIcons  Category[]
+  bannersDesktop Banner[]       @relation("BannerDesktop")
+  bannersMobile  Banner[]       @relation("BannerMobile")
 }
 
 // ───────────────────────── Catalog ─────────────────────────
@@ -154,6 +157,9 @@ model Category {
   parent       Category?             @relation("CategoryTree", fields: [parentId], references: [id])
   children     Category[]            @relation("CategoryTree")
   sortOrder    Int                   @default(0)
+  /// Icon ô "nhóm hàng" trên trang chủ (ảnh vuông PNG/WebP/JPG).
+  iconFileId   String?
+  icon         FileObject?           @relation(fields: [iconFileId], references: [id])
   translations CategoryTranslation[]
   products     Product[]
 }
@@ -209,6 +215,7 @@ model Product {
   images       ProductImage[]
   variants     Variant[]
   reviews      Review[]
+  collections  CollectionItem[]
 
   @@index([categoryId])
   @@index([brandId])
@@ -756,4 +763,63 @@ model Review {
   createdAt DateTime     @default(now())
 
   @@unique([productId, orderId])
+}
+
+// ───────────────────────── Nội dung trang chủ (P6) ─────────────────────────
+
+/// Banner carousel trang chủ. Ảnh desktop 3:1, ảnh mobile 3:2 (không có thì dùng ảnh desktop).
+model Banner {
+  id            String      @id @default(cuid())
+  desktopFileId String
+  desktopFile   FileObject  @relation("BannerDesktop", fields: [desktopFileId], references: [id])
+  mobileFileId  String?
+  mobileFile    FileObject? @relation("BannerMobile", fields: [mobileFileId], references: [id])
+  alt           String
+  /// null = hiện cho mọi ngôn ngữ; "my" | "en" khi ảnh có chữ theo ngôn ngữ.
+  locale        String?
+  /// Đường dẫn nội bộ (`/c/...`) hoặc URL `https://`.
+  href          String?
+  sortOrder     Int         @default(0)
+  active        Boolean     @default(true)
+  startAt       DateTime?
+  endAt         DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([active, sortOrder])
+}
+
+/// Bộ sưu tập sản phẩm chọn tay (vd "Hàng mới về", "Thanh lý"). Không đổi giá.
+model Collection {
+  id           String                  @id @default(cuid())
+  slug         String                  @unique
+  sortOrder    Int                     @default(0)
+  active       Boolean                 @default(true)
+  showOnHome   Boolean                 @default(true)
+  startAt      DateTime?
+  endAt        DateTime?
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+  translations CollectionTranslation[]
+  items        CollectionItem[]
+}
+
+model CollectionTranslation {
+  collectionId String
+  locale       String
+  name         String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, locale])
+}
+
+model CollectionItem {
+  collectionId String
+  productId    String
+  sortOrder    Int        @default(0)
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, productId])
+  @@index([productId])
 }

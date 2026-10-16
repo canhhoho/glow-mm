@@ -44,7 +44,7 @@ export function BrandForm() {
   );
 }
 
-export function CategoryForm() {
+export function CategoryForm({ parents }: { parents: { id: string; name: string }[] }) {
   const t = useTranslations("Products");
   const [state, action, pending] = useActionState(createCategoryAction, undefined);
   return (
@@ -60,6 +60,17 @@ export function CategoryForm() {
       <label className="space-y-1 text-sm">
         <span className="text-muted-foreground">{t("catNameEn")}</span>
         <input name="nameEn" required className={fieldClass} />
+      </label>
+      <label className="space-y-1 text-sm">
+        <span className="text-muted-foreground">{t("catParent")}</span>
+        <select name="parentId" defaultValue="" className={fieldClass}>
+          <option value="">{t("catNoParent")}</option>
+          {parents.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
       </label>
       <Button type="submit" variant="outline" disabled={pending}>
         {t("add")}

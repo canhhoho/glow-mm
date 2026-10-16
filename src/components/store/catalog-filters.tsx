@@ -14,7 +14,10 @@ export function parseCatalogParams(sp: Record<string, string | string[] | undefi
   return { q: one(sp.q), brand: one(sp.brand), tags, sort };
 }
 
-/** Bộ lọc thu gọn trong <details> (không cần JS). */
+/**
+ * Bộ lọc trong <details> (không cần JS): mobile thu gọn; lg luôn mở, các ô xếp ngang
+ * (::details-content — trình duyệt cũ chưa hỗ trợ thì vẫn bấm mở như mobile).
+ */
 export async function CatalogFilters({ locale, current }: { locale: string; current: CatalogParams }) {
   const [t, options] = await Promise.all([getTranslations({ locale, namespace: "Catalog" }), storeFilterOptions(locale)]);
   const groups = [
@@ -24,11 +27,14 @@ export async function CatalogFilters({ locale, current }: { locale: string; curr
   const active = !!current.brand || current.tags.length > 0 || current.sort !== "new";
 
   return (
-    <details open={active} className="mb-4 rounded-lg border border-border bg-card">
+    <details
+      open={active}
+      className="mb-4 rounded-xl border border-border bg-card lg:[&::details-content]:[content-visibility:visible] lg:[&>summary]:hidden"
+    >
       <summary className="flex min-h-11 cursor-pointer items-center px-3 font-medium">{t("filter")}</summary>
-      <form className="space-y-3 px-3 pb-3">
+      <form className="space-y-3 px-3 pb-3 lg:flex lg:flex-wrap lg:items-end lg:gap-x-4 lg:gap-y-3 lg:space-y-0 lg:p-4">
         {current.q && <input type="hidden" name="q" value={current.q} />}
-        <label className="block space-y-1 text-sm">
+        <label className="block space-y-1 text-sm lg:w-52">
           <span>{t("sort")}</span>
           <select name="sort" defaultValue={current.sort} className={storeField}>
             <option value="new">{t("sortNew")}</option>
@@ -36,7 +42,7 @@ export async function CatalogFilters({ locale, current }: { locale: string; curr
             <option value="price_desc">{t("sortPriceDesc")}</option>
           </select>
         </label>
-        <label className="block space-y-1 text-sm">
+        <label className="block space-y-1 text-sm lg:w-52">
           <span>{t("brand")}</span>
           <select name="brand" defaultValue={current.brand ?? ""} className={storeField}>
             <option value="">{t("allBrands")}</option>

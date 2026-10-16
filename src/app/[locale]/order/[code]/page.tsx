@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -13,6 +14,9 @@ import { ContactLinks } from "@/components/store/contact-links";
 import { ProofForm } from "@/components/store/proof-form";
 import { ReviewForm } from "@/components/store/review-form";
 import { BlockSkeleton, Notice } from "@/components/store/ui";
+
+/** Đơn của khách (riêng tư): không cho máy tìm kiếm index (SEO, P7). */
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default function OrderPage(props: PageProps<"/[locale]/order/[code]">) {
   return (
@@ -46,7 +50,7 @@ async function OrderContent({ params, searchParams }: PageProps<"/[locale]/order
   const delivery = order.deliveries[0];
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-screen-md space-y-4">
       {placed && <Notice tone="success">{t("thanks")}</Notice>}
       <section className="rounded-xl bg-accent p-4 text-accent-foreground">
         <p className="text-sm">{t("code")}</p>

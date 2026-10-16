@@ -161,11 +161,16 @@ export async function createCategory(raw: unknown) {
       slug: z.string().trim().min(1).max(60).regex(/^[a-z0-9-]+$/),
       nameMy: z.string().trim().min(1).max(80),
       nameEn: z.string().trim().min(1).max(80),
+      parentId: z.string().trim().max(40).optional().transform((v) => v || null),
     })
     .parse(raw);
+  if (input.parentId && !(await prisma.category.findUnique({ where: { id: input.parentId } }))) {
+    throw new CatalogError("Danh mục cha không tồn tại");
+  }
   return prisma.category.create({
     data: {
       slug: input.slug,
+      parentId: input.parentId,
       translations: {
         create: [
           { locale: "my", name: toUnicode(input.nameMy) },

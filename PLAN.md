@@ -124,12 +124,99 @@ Trạng thái: P0 ✅ (2026-10-15) · P1 ✅ (2026-10-15) · P2 ✅ (2026-10-15)
 | **P3 Vận hành** ✅ | Cập nhật giá hàng loạt + lịch sử, cảnh báo (tồn thấp/cận date/gợi ý đặt hàng), dashboard (doanh thu, lợi nhuận, bán chạy, bán chậm, hàng đang vận chuyển), trả hàng, đánh giá, nút Viber/Messenger, PWA | Toàn bộ test xanh; số liệu dashboard khớp ledger trên dữ liệu seed |
 | **P4a Chuẩn bị chuyển** ✅ | Đổi mật khẩu nhân viên (`/admin/account`), cờ tạm tắt nhận đơn web, script chuyển file Blob → ổ đĩa, diễn tập local bằng `docker-compose.prod.yml` (restore dump, chuyển file, backup → khôi phục) | Toàn bộ test xanh; diễn tập local đạt các mục của checklist DEPLOY §2.5 không cần server/domain |
 | **P4b Lên server Myanmar** | Khi có server + domain. Theo DEPLOY.md: hardening, Coolify, domain, HTTPS, chuyển DB/file, backup | Checklist sau khi chuyển đạt; khôi phục thử từ backup thành công |
+| **P6 Nội dung trang chủ** ✅ (2026-10-16) | Quản trị banner carousel, icon danh mục, bộ sưu tập sản phẩm; hiển thị trên trang chủ theo bố cục responsive đã duyệt | Toàn bộ test xanh (có E2E admin → storefront, mobile + desktop); `npm run perf`: mobile ≥ 85, desktop ≥ 90, slow-3g ≥ 70 cho trang không có banner ảnh (trang chủ có banner ảnh: chấp nhận 69, xem ghi chú P6) |
+| **P7 Hoàn thiện trước khi mở bán** ✅ (2026-10-16) | SEO (metadataBase, canonical/hreflang, Open Graph, JSON-LD sản phẩm, robots.txt, sitemap.xml, noindex trang riêng tư), 404 có giao diện cho mọi đường dẫn lạ, sửa nút ngôn ngữ Myanmar, quy trình xuất/nhập bản dịch cho người bản ngữ duyệt | Toàn bộ test xanh (E2E 404, meta/JSON-LD, robots/sitemap); `npm run perf` giữ ngưỡng |
 
 **P3 — quyết định đã chốt (2026-10-15):**
 - Thêm trang Cài đặt (ngưỡng, giờ giữ hàng, COD, làm tròn giá, hướng dẫn chuyển khoản); quản lý Nhân viên để sau.
 - Vốn VND để tính giá = lô nhập gần nhất (`landedCostVnd`, chưa phân bổ thì `unitCostVnd`); combo = tổng thành phần. Áp dụng đúng bản xem trước (`PriceRunLine`).
 - Trả hàng một phần theo dòng → về đúng lô đã xuất, vào "Chờ kiểm tra" → nhập lại kho bán hoặc huỷ; ghi nhận hoàn tiền thủ công.
 - Doanh thu = tiền hàng đơn COMPLETED theo ngày hoàn tất (giờ Yangon), trừ hàng trả; lợi nhuận = doanh thu − giá vốn lô đã xuất; phí ship tách riêng.
+
+**P6 — Nội dung trang chủ: quyết định đã chốt (2026-10-16)**
+
+Đợt trước đã làm storefront responsive theo bố cục lengocanh.vn (nhánh `claude/storefront-desktop`), nhưng banner, icon nhóm hàng và các dải "chủ đề" vẫn là phần giữ chỗ. P6 thêm phần quản trị để admin tự cập nhật nội dung trang chủ. Không đụng tới kho, giá hay đơn hàng.
+
+- **Banner:** carousel vuốt được bằng CSS scroll-snap (chạy cả khi chưa tải JS), kèm client component nhỏ (~1–2KB) để tự chuyển sau 5s, có chấm tròn và mũi tên trên desktop.
+  - Dừng tự chuyển khi người dùng chạm/rê chuột, khi `prefers-reduced-motion`, hoặc khi carousel ra khỏi màn hình.
+  - Mỗi banner gồm: ảnh desktop 3:1 + ảnh mobile 3:2 (không bắt buộc), ngôn ngữ (my / en / cả hai), link đích, ngày bắt đầu/kết thúc, bật/tắt, thứ tự.
+- **Icon danh mục:** upload ảnh vuông PNG/WebP/JPG. Không nhận SVG vì rủi ro XSS. Danh mục chưa có icon thì hiện chữ cái đầu như hiện tại.
+  - Thêm trang quản lý danh mục: đổi tên my/en, danh mục cha, thứ tự, icon.
+- **Bộ sưu tập:** admin chọn tay sản phẩm và xếp thứ tự. Mỗi bộ có tên my/en, lịch hiển thị, bật/tắt, cờ "hiện trên trang chủ".
+  - Trang chủ xếp theo thứ tự: banner → nhóm hàng → các bộ sưu tập → SP mới → dải theo danh mục.
+  - "Xem thêm" mở `/[locale]/collection/<slug>`.
+  - Bộ sưu tập chỉ gom sản phẩm, không đổi giá. Giá gạch ngang và mã giảm giá vẫn ngoài phạm vi.
+- **Quyền:** thêm `content:manage` (ADMIN) cho banner và bộ sưu tập. Icon và quản lý danh mục dùng `catalog:manage` sẵn có.
+
+**P6 — chi tiết**
+
+*Dữ liệu (một migration, chỉ PostgreSQL chuẩn):*
+- `Banner`:
+  - `desktopFileId` → `FileObject`, `mobileFileId?` → `FileObject`
+  - `alt`, `locale?` (null = cả hai), `href?`
+  - `sortOrder`, `active`, `startAt?`, `endAt?`, `createdAt/updatedAt`
+- `Category.iconFileId?` → `FileObject`.
+- `Collection`:
+  - `slug @unique`, `sortOrder`, `active`, `showOnHome`, `startAt?`, `endAt?`
+  - `CollectionTranslation` (locale, name), `CollectionItem` (collectionId, productId, sortOrder; khoá chính ghép)
+- Thời gian lưu UTC. Admin nhập và hiển thị theo giờ Yangon.
+- `href` chỉ nhận đường dẫn nội bộ (`/…`) hoặc `https://`.
+
+*Domain (`src/server/content/`, `src/server/catalog/`, không import Next):*
+- Tách phần kiểm tra ảnh trong `catalog/images.ts` (magic bytes, ≤ 5MB, chỉ JPG/PNG/WebP, dọn file mồ côi khi lỗi DB) thành helper dùng chung. Banner và icon dùng lại helper này.
+- `banners.ts`: tạo/sửa/xoá/sắp xếp/bật-tắt; `activeBanners(locale, now)`.
+- `collections.ts`:
+  - tạo/sửa, thêm/bỏ/sắp xếp SP (khoá dòng như ảnh SP)
+  - `homeCollections(locale, now)`, `collectionProducts(slug, locale)`; chỉ lấy SP đã đăng và có biến thể active, dùng chung điều kiện với `listStoreProducts`
+- `categories` admin: `updateCategory`, `setCategoryIcon` / `removeCategoryIcon`; `listRootCategories` trả thêm `iconUrl`.
+- Mọi thay đổi ghi `AuditLog`. Action admin validate bằng Zod + `requirePermission`, rồi gọi `updateTag`:
+  - `HOME_TAG` cho banner/bộ sưu tập
+  - `CATALOG_TAG` cho danh mục
+
+*Admin (chuỗi trong `messages/admin.{vi,en,my}.json`):*
+- `/admin/content/banners`: danh sách có ảnh thu nhỏ; form tạo/sửa (2 ô ảnh, ngôn ngữ, link, lịch, bật/tắt); lên/xuống thứ tự.
+- `/admin/content/collections`: danh sách → trang sửa gồm tên, slug, lịch, cờ trang chủ, ô tìm SP để thêm, danh sách SP lên/xuống/bỏ.
+- `/admin/categories`: cây danh mục; sửa tên/cha/thứ tự; upload/xoá icon. Form "Danh mục mới" ở trang Sản phẩm chuyển sang trang này.
+- Thêm vào menu admin, chỉ hiện với vai trò có quyền.
+
+*Storefront:*
+- `HomeBanner` (server):
+  - Dùng `"use cache"` + `cacheTag(HOME_TAG)`; lọc theo lịch lúc request.
+  - Ảnh dùng `<picture>` + `getImageProps` (art direction desktop/mobile); ảnh đầu `priority`, các ảnh sau lazy.
+  - Không có banner thì dùng banner CSS hiện tại.
+- `BannerCarousel` (client nhỏ): tự chuyển, chấm tròn, mũi tên.
+- Ô nhóm hàng hiện icon (`next/image`, 64px).
+- Dải bộ sưu tập (`StoreSection` + `ProductRail`) đứng trước dải danh mục. Thêm trang `/[locale]/collection/[slug]` (breadcrumb + lưới).
+- Proxy 404: `store-slugs.ts` thêm loại `collection` (chỉ bộ đang bật và trong lịch).
+
+*Thứ tự làm (commit sau mỗi bước, dừng chờ duyệt sau P6):*
+1. **P6a** Schema + migration (`npm run db:migrate`, không reset) + domain + integration test:
+   - lịch hiển thị, ngôn ngữ, thứ tự
+   - SP ẩn không lọt vào bộ sưu tập
+   - file mồ côi bị dọn khi lỗi
+   - từ chối SVG / `href` `javascript:`
+2. **P6b** Ba màn hình admin + E2E: admin tạo banner (ảnh fixture), danh mục có icon, bộ sưu tập 2 SP.
+3. **P6c** Storefront (carousel, icon, dải + trang bộ sưu tập, proxy 404) + E2E mobile/desktop:
+   - banner hiện và tự chuyển
+   - không cuộn ngang
+   - `/en/collection/khong-co` trả 404
+   - Kèm `npm run perf`. Ảnh banner thành LCP nên ảnh mobile cần ≤ ~60KB (AVIF/WebP 750w). Nếu slow-3g < 70 thì xem lại trước khi xong.
+
+*Hiệu năng (đã chốt 2026-10-16):*
+- Đo trên DB có 1 banner ảnh: mobile 94 / 98 / 96 (trang chủ / SP / danh mục), desktop 100; slow-3g trang chủ **69**, SP 71, danh mục 71.
+- Ảnh LCP mobile chỉ ~14KB (AVIF/WebP 750w, `fetchpriority=high`, có trong HTML ban đầu). Phần tụt chủ yếu do mô phỏng 400 Kbps tính chung ~160KB JS nền của Next/React; trang chủ không banner vốn đã ~70.
+- Quyết định: ngưỡng slow-3g chỉ để **theo dõi**. Chấp nhận trang chủ có banner ảnh ở mức 69; vẫn giữ **≥ 70** cho trang không có banner ảnh (`npm run perf` đo trên seed không có banner nên cổng này không đổi). Ảnh banner nên nén tốt (ảnh mobile ≤ ~60KB) để không tụt thêm.
+
+*Rủi ro / cần xác minh:*
+- Nút "Lên/Xuống" đủ dùng khi số lượng ít. Kéo-thả để sau.
+- Seed-demo (đang làm ở phiên khác) có thể thêm banner/icon mẫu sau khi P6a xong.
+- Chuỗi tiếng Myanmar mới cần người bản ngữ duyệt **[CẦN XÁC MINH]**.
+
+**P7 — Hoàn thiện trước khi mở bán: quyết định (2026-10-16)**
+- URL gốc lấy từ `APP_URL` lúc build (Docker: build arg) qua `src/lib/site.ts`, không qua `env()` (build không có secret).
+- 404 cho đường dẫn lạ: proxy rewrite sang `/<locale>/404` (trang tĩnh, HTTP 404 thật, có header/footer) theo danh sách dạng route `isKnownStorePath`; không dùng `globalNotFound` (còn experimental). Unit test quét `src/app/[locale]` để danh sách không lệch route.
+- Bản dịch: `npm run i18n:export` ra CSV (Excel) cho người bản ngữ, `npm run i18n:import` ghi lại cột `my` (giữ biến ICU, chuyển Zawgyi → Unicode); key cần duyệt liệt kê trong `messages/review-my.json`.
+- Ngoài phạm vi: mã giảm giá, tài khoản khách, Telegram, Search Console/Analytics (cần tài khoản + domain, làm ở P4b) **[CẦN XÁC MINH]**.
 
 ## 5. Giao diện
 - **Storefront:** tươi sáng, hồng đào. Màu chính `#E8657A`, màu phụ xanh lá nhạt `#7FB89A`, nền kem `#FFF8F5`, chữ `#2B2B2B`. Mobile-first, nút bấm cao ít nhất 44px.

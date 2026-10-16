@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
@@ -10,6 +11,9 @@ import { getCartDetails, storeShippingZones } from "@/server/catalog/store-queri
 import { getBoolSetting } from "@/server/settings";
 import { CheckoutForm } from "@/components/store/checkout-form";
 import { BlockSkeleton, PageTitle } from "@/components/store/ui";
+
+/** Thanh toán: không cho máy tìm kiếm index (SEO, P7). */
+export const metadata: Metadata = { robots: { index: false, follow: true } };
 
 export default function CheckoutPage(props: PageProps<"/[locale]/checkout">) {
   return (
@@ -41,9 +45,14 @@ async function CheckoutContent({ params }: PageProps<"/[locale]/checkout">) {
   }));
 
   return (
-    <div className="space-y-4">
-      <PageTitle>{t("title")}</PageTitle>
-      <section aria-labelledby="sum-h" className="rounded-lg border border-border bg-card p-3">
+    <div className="space-y-4 lg:grid lg:grid-cols-[1fr_22rem] lg:items-start lg:gap-6 lg:space-y-0">
+      <div className="lg:col-span-2">
+        <PageTitle>{t("title")}</PageTitle>
+      </div>
+      <section
+        aria-labelledby="sum-h"
+        className="rounded-xl border border-border bg-card p-3 lg:sticky lg:top-36 lg:col-start-2 lg:row-start-2 lg:p-4"
+      >
         <h2 id="sum-h" className="mb-2 font-medium">
           {t("summary")}
         </h2>
@@ -62,13 +71,15 @@ async function CheckoutContent({ params }: PageProps<"/[locale]/checkout">) {
           <span>{formatMmk(cart.subtotalMmk, locale)}</span>
         </p>
       </section>
-      {checkoutEnabled ? (
-        <CheckoutForm locale={locale} zones={zoneOptions} idempotencyKey={randomUUID()} />
-      ) : (
-        <p role="alert" className="rounded-lg border border-border bg-card p-3 text-sm">
-          {t("err.checkout_disabled")}
-        </p>
-      )}
+      <div className="lg:col-start-1 lg:row-start-2 lg:rounded-xl lg:bg-card lg:p-4 lg:ring-1 lg:ring-border">
+        {checkoutEnabled ? (
+          <CheckoutForm locale={locale} zones={zoneOptions} idempotencyKey={randomUUID()} />
+        ) : (
+          <p role="alert" className="rounded-lg border border-border bg-card p-3 text-sm">
+            {t("err.checkout_disabled")}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

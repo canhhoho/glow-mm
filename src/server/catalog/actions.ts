@@ -1,10 +1,13 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
-import { ZodError } from "zod";
+import { revalidatePath, updateTag } from "next/cache";
+import { z, ZodError } from "zod";
 import { requirePermission } from "@/server/auth/session";
 import type { ActionState } from "@/server/inventory/actions";
+import { removeCategoryIcon, setCategoryIcon, updateCategory } from "./categories";
+import { CATALOG_TAG } from "./category-tree";
+import { addProductImages, deleteProductImage, reorderProductImage, updateProductImageAlt } from "./images";
 import { createBrand, createCategory, importOpeningStockCsv, importProductsCsv, saveProduct, type ImportResult } from "./products";
 
 function message(e: unknown): string {
@@ -21,6 +24,7 @@ export async function saveProductAction(_prev: ActionState, formData: FormData):
   } catch (e) {
     return { error: message(e) };
   }
+  updateTag(CATALOG_TAG); // menu danh mục storefront (SP đăng/ẩn, đổi danh mục)
   revalidatePath("/admin/products");
   redirect(`/admin/products/${id}?saved=1`);
 }
@@ -39,12 +43,134 @@ export async function createBrandAction(_prev: ActionState, formData: FormData):
 export async function createCategoryAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   try {
     await requirePermission("catalog:manage");
-    await createCategory({ slug: formData.get("slug"), nameMy: formData.get("nameMy"), nameEn: formData.get("nameEn") });
+    await createCategory({
+      slug: formData.get("slug"),
+      nameMy: formData.get("nameMy"),
+      nameEn: formData.get("nameEn"),
+      parentId: formData.get("parentId") ?? undefined,
+    });
   } catch (e) {
     return { error: message(e) };
   }
+  updateTag(CATALOG_TAG);
   revalidatePath("/admin/products");
+  revalidatePath("/admin/categories");
   return { ok: "category" };
+}
+
+// ───────────────────────── Danh mục (P6) ─────────────────────────
+
+/** Danh mục đổi → menu + nhóm hàng trang chủ (CATALOG_TAG) và trang quản lý. */
+function categoriesChanged() {
+  updateTag(CATALOG_TAG);
+  revalidatePath("/admin/categories");
+}
+
+export async function updateCategoryAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("catalog:manage");
+    await updateCategory(
+      z.string().trim().min(1).max(40).parse(formData.get("categoryId")),
+      {
+        nameMy: String(formData.get("nameMy") ?? ""),
+        nameEn: String(formData.get("nameEn") ?? ""),
+        parentId: String(formData.get("parentId") ?? ""),
+        sortOrder: String(formData.get("sortOrder") ?? "0"),
+      },
+      user.id,
+    );
+  } catch (e) {
+    return { error: message(e) };
+  }
+  categoriesChanged();
+  return { ok: "saved" };
+}
+
+export async function setCategoryIconAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("catalog:manage");
+    const file = formData.get("icon");
+    if (!(file instanceof File) || file.size === 0) return { error: "Chưa chọn ảnh" };
+    await setCategoryIcon(
+      z.string().trim().min(1).max(40).parse(formData.get("categoryId")),
+      { data: Buffer.from(await file.arrayBuffer()), mime: file.type },
+      user.id,
+    );
+  } catch (e) {
+    return { error: message(e) };
+  }
+  categoriesChanged();
+  return { ok: "uploaded" };
+}
+
+export async function removeCategoryIconAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("catalog:manage");
+    await removeCategoryIcon(z.string().trim().min(1).max(40).parse(formData.get("categoryId")), user.id);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  categoriesChanged();
+  return { ok: "removed" };
+}
+
+// ───────────────────────── Ảnh sản phẩm ─────────────────────────
+
+const id = z.string().trim().min(1).max(40);
+
+function revalidateProduct(productId: string) {
+  revalidatePath(`/admin/products/${productId}`);
+  revalidatePath("/[locale]/p/[slug]", "page");
+}
+
+export async function addProductImagesAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  let productId: string;
+  try {
+    const user = await requirePermission("catalog:manage");
+    productId = id.parse(formData.get("productId"));
+    const files = formData.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
+    const uploads = await Promise.all(files.map(async (f) => ({ data: Buffer.from(await f.arrayBuffer()), mime: f.type })));
+    await addProductImages(productId, uploads, user.id);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  revalidateProduct(productId);
+  return { ok: "uploaded" };
+}
+
+export async function reorderProductImageAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("catalog:manage");
+    const input = z.object({ imageId: id, direction: z.enum(["up", "down"]) }).parse(Object.fromEntries(formData));
+    const r = await reorderProductImage(input.imageId, input.direction, user.id);
+    if (r.moved) revalidateProduct(r.productId);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  return { ok: "moved" };
+}
+
+export async function updateProductImageAltAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("catalog:manage");
+    const input = z.object({ imageId: id, alt: z.string().max(200).default("") }).parse(Object.fromEntries(formData));
+    const image = await updateProductImageAlt(input.imageId, input.alt, user.id);
+    revalidateProduct(image.productId);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  return { ok: "alt" };
+}
+
+export async function deleteProductImageAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("catalog:manage");
+    const { productId } = await deleteProductImage(id.parse(formData.get("imageId")), user.id);
+    revalidateProduct(productId);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  return { ok: "deleted" };
 }
 
 export type ImportState = (ImportResult & { error?: string }) | undefined;
@@ -62,6 +188,7 @@ export async function importProductsAction(_prev: ImportState, formData: FormDat
   try {
     const user = await requirePermission("catalog:manage");
     const result = await importProductsCsv(await readCsv(formData), user.id);
+    updateTag(CATALOG_TAG);
     revalidatePath("/admin/products");
     return result;
   } catch (e) {

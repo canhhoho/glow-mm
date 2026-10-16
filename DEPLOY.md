@@ -92,7 +92,7 @@ Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong bi�
    - File này gồm `db` (Postgres 17), `migrate` (`prisma migrate deploy`, chạy xong thì thoát) và `app` (Next standalone, user không phải root).
 3. Environment Variables (nhập trong Coolify):
    - `POSTGRES_PASSWORD` (mạnh);
-   - `APP_URL=https://<domain>`;
+   - `APP_URL=https://<domain>` (dùng cả lúc build qua build arg cho canonical/Open Graph — đổi domain thì phải **build lại**, không chỉ restart);
    - `BETTER_AUTH_SECRET`, `CRON_SECRET` (giá trị **mới**, khác Vercel);
    - `FB_PAGE_USERNAME`, `VIBER_CHAT_URI`.
 4. Persistent storage:
@@ -103,7 +103,7 @@ Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong bi�
 ### 2.3 Domain + HTTPS
 1. DNS: bản ghi `A` của `<domain>` (và `www` nếu cần) trỏ về IP server.
 2. Coolify → service `app` → Domains: `https://<domain>`. Coolify (Traefik) tự xin chứng chỉ Let's Encrypt; cần cổng 80/443 mở.
-3. Cập nhật `APP_URL=https://<domain>` → Redeploy.
+3. Cập nhật `APP_URL=https://<domain>` → Redeploy (build lại image để metadata SEO dùng domain mới). Kiểm tra `https://<domain>/robots.txt` và `/sitemap.xml` trỏ đúng domain.
 4. Bỏ `ports: "3000:3000"` của `app` nếu Coolify định tuyến qua proxy nội bộ, để không lộ cổng 3000 **[CẦN XÁC MINH theo cách Coolify xử lý compose]**.
 
 ### 2.4 Chuyển dữ liệu từ Neon
@@ -153,7 +153,7 @@ Làm trong giờ thấp điểm, khoảng 15–30 phút ngừng ghi dữ liệu.
 
 ---
 
-### 2.6 Diễn tập local trước khi chuyển (đã làm 2026-10-16, P4a)
+### 2.6 Diễn tập local trước khi chuyển (đã làm 2026-10-16: P4a, P7)
 Chạy lại khi đổi `Dockerfile`, `docker-compose.prod.yml`, `ops/*.sh` hoặc script chuyển file. Kết quả lần đầu: **tất cả đạt**.
 
 | Bước | Cách làm | Kết quả |
@@ -163,6 +163,7 @@ Chạy lại khi đổi `Dockerfile`, `docker-compose.prod.yml`, `ops/*.sh` ho�
 | Chuyển file | 3 dòng `FileObject` VERCEL_BLOB (2 ảnh, 1 biên lai PRIVATE) trỏ tới server HTTP giả trong mạng compose → chạy lệnh §2.4 bước 5 | dry-run → 3/3 → chạy lại 0; tắt server giả vẫn xem được ảnh (`/_next/image` ra AVIF); biên lai: chưa đăng nhập 404, admin 200; app (`nextjs`) ghi được vào thư mục script tạo |
 | Checklist §2.5 | storefront `my`/`en`, đăng nhập 3 vai trò, tắt/bật nhận đơn, đặt đơn COD rồi huỷ, đổi mật khẩu, cron có/không secret | đạt (cron 200/401) |
 | Backup → khôi phục | chạy `ops/backup.sh` + `ops/restore.sh` trong container Alpine (bash, docker-cli, age, rclone; mount `/var/run/docker.sock`), `RCLONE_REMOTE` = thư mục local | DB khôi phục khớp số dòng; volume upload khôi phục khớp md5 |
+| Diễn tập P7 (2026-10-16) | nhánh P5c→P7: `docker compose -p glow-p7 ... --env-file <file tạm> up -d --build` (build arg `APP_URL`); `pg_restore` dữ liệu test; admin tải ảnh SP + banner (desktop/mobile) + icon danh mục | `migrate` exit 0 (có migration P6); `/_next/image` trả `image/avif` 200 cho banner/ảnh SP/icon (**sharp chạy được trên alpine**), server không treo; canonical/og:image/robots/sitemap dùng `APP_URL`; `/en/foo`, `/en/collection/khong-co` → 404 có header; trang chủ có carousel |
 
 **Lưu ý rút ra:**
 - `docker compose` lấy giá trị `${...}` từ file `.env` cạnh compose (là `.env` của dev!) → khi thử local dùng `--env-file` trỏ tới file secret riêng. `env_file: .env.prod` chỉ nạp vào container, không dùng để thay `${...}`.

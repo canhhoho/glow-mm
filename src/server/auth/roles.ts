@@ -8,6 +8,8 @@ export type Role = (typeof ROLES)[number];
 export const PERMISSIONS = {
   "dashboard:view": ["ADMIN", "WAREHOUSE_MANAGER", "ORDER_STAFF"],
   "catalog:manage": ["ADMIN"],
+  /** Nội dung trang chủ: banner, bộ sưu tập (P6). */
+  "content:manage": ["ADMIN"],
   "pricing:manage": ["ADMIN"],
   "users:manage": ["ADMIN"],
   "settings:manage": ["ADMIN"],

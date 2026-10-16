@@ -28,3 +28,16 @@ export function dayRange(from: string, to: string): string[] {
   for (let k = from; k <= to && out.length < 1000; k = addDays(k, 1)) out.push(k);
   return out;
 }
+
+/** Ô `datetime-local` của admin ("YYYY-MM-DDTHH:mm", giờ Yangon) → thời điểm UTC. Ném lỗi nếu sai định dạng. */
+export function yangonLocalToUtc(value: string): Date {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) throw new Error(`Thời gian không hợp lệ: ${value}`);
+  const t = Date.parse(`${value}:00Z`);
+  if (Number.isNaN(t)) throw new Error(`Thời gian không hợp lệ: ${value}`);
+  return new Date(t - OFFSET_MS);
+}
+
+/** Thời điểm UTC → giá trị ô `datetime-local` theo giờ Yangon ("YYYY-MM-DDTHH:mm"). */
+export function utcToYangonLocal(d: Date): string {
+  return new Date(d.getTime() + OFFSET_MS).toISOString().slice(0, 16);
+}
