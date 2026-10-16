@@ -464,7 +464,8 @@ async function main() {
     await seedStock();
     console.log("• Tồn đầu kỳ: xong");
   }
-  if (await prisma.shippingZone.count()) {
+  // Kiểm tra theo mã vùng mẫu (không đếm tổng): DB test có thể đã có vùng do integration test tạo.
+  if (await prisma.shippingZone.findUnique({ where: { code: "YGN-KMY" } })) {
     console.log("• Vùng giao hàng: đã có → bỏ qua");
   } else {
     await seedZones();
