@@ -152,6 +152,25 @@ Làm trong giờ thấp điểm, khoảng 15–30 phút ngừng ghi dữ liệu.
 
 ---
 
+### 2.6 Diễn tập local trước khi chuyển (đã làm 2026-10-16, P4a)
+Chạy lại khi đổi `Dockerfile`, `docker-compose.prod.yml`, `ops/*.sh` hoặc script chuyển file. Kết quả lần đầu: **tất cả đạt**.
+
+| Bước | Cách làm | Kết quả |
+|---|---|---|
+| Dựng stack | `docker compose -p glow-prod -f docker-compose.prod.yml --env-file <file secret riêng> up -d --build` | app healthy, `migrate` exit 0, `/api/health` OK |
+| Chuyển DB | `pg_dump` DB dev (thay cho Neon) → `pg_restore --clean --if-exists` vào DB đã migrate | số dòng `Order`/`StockLedger`/`StockBalance`/`Batch`/`Product`/`user` và tồn theo từng SKU khớp |
+| Chuyển file | 3 dòng `FileObject` VERCEL_BLOB (2 ảnh, 1 biên lai PRIVATE) trỏ tới server HTTP giả trong mạng compose → chạy lệnh §2.4 bước 5 | dry-run → 3/3 → chạy lại 0; tắt server giả vẫn xem được ảnh (`/_next/image` ra AVIF); biên lai: chưa đăng nhập 404, admin 200; app (`nextjs`) ghi được vào thư mục script tạo |
+| Checklist §2.5 | storefront `my`/`en`, đăng nhập 3 vai trò, tắt/bật nhận đơn, đặt đơn COD rồi huỷ, đổi mật khẩu, cron có/không secret | đạt (cron 200/401) |
+| Backup → khôi phục | chạy `ops/backup.sh` + `ops/restore.sh` trong container Alpine (bash, docker-cli, age, rclone; mount `/var/run/docker.sock`), `RCLONE_REMOTE` = thư mục local | DB khôi phục khớp số dòng; volume upload khôi phục khớp md5 |
+
+**Lưu ý rút ra:**
+- `docker compose` lấy giá trị `${...}` từ file `.env` cạnh compose (là `.env` của dev!) → khi thử local dùng `--env-file` trỏ tới file secret riêng. `env_file: .env.prod` chỉ nạp vào container, không dùng để thay `${...}`.
+- DB không publish cổng (đúng thiết kế) → thao tác DB bằng `docker exec <db> psql/pg_restore`.
+- Trên Windows Git Bash phải đặt `MSYS_NO_PATHCONV=1`, nếu không đường dẫn trong container (`/tmp/...`) bị đổi thành đường dẫn Windows. Trên server Linux không gặp.
+- `restore.sh` hỏi `YES` từ stdin → chạy tự động được bằng `echo YES | ...`; chỉ làm vậy với DB tạm.
+
+---
+
 ## 3. Backup hằng ngày ra off-site + khôi phục
 
 **Nguyên tắc:**
