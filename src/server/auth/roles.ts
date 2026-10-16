@@ -35,6 +35,9 @@ export type Permission = keyof typeof PERMISSIONS;
 /** Độ dài tối thiểu khi nhân viên tự đặt mật khẩu mới. */
 export const MIN_STAFF_PASSWORD = 12;
 
+/** Mã lỗi Better Auth khi tài khoản bị khoá đăng nhập (form đăng nhập hiện thông báo riêng). */
+export const USER_INACTIVE = "USER_INACTIVE";
+
 export function isRole(value: unknown): value is Role {
   return typeof value === "string" && (ROLES as readonly string[]).includes(value);
 }
