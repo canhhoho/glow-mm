@@ -67,6 +67,7 @@ Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong bi�
    ```bash
    DATABASE_URL="<neon preview direct>" SEED_STAFF_PASSWORD="<mật khẩu mạnh>" npm run db:seed
    ```
+   - `npm run db:seed:demo` (SP demo lấy từ lengocanh.vn) **không** dùng cho Production. Trên Preview chỉ chạy với `--no-images`: ảnh mẫu thuộc bản quyền shop/thương hiệu, không đưa lên Vercel Blob public.
 7. **Kiểm tra sau deploy:**
    - `GET /api/health` trả `{"ok":true}`;
    - `/` hiển thị tiếng Myanmar;

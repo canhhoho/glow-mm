@@ -43,6 +43,7 @@ docker compose up -d     # Postgres dev ở localhost:15432 (DB glow + glow_test
 cp .env.example .env     # rồi sửa secret
 npm run db:migrate       # prisma migrate dev (tạo/áp migration)
 npm run db:seed          # dữ liệu mẫu (có tiếng Myanmar), tài khoản *@glow.local
+npm run db:seed:demo     # + ~45 SP demo từ lengocanh.vn kèm ảnh (chỉ DB dev; ảnh vào ./storage, không commit; --dry-run, --no-images)
 npm run dev              # http://localhost:3000 (storefront) · /admin
 npm test                 # TẤT CẢ: lint + typecheck + vitest + playwright (DB glow_test, cổng 3100)
 npm run test:unit        # chỉ Vitest

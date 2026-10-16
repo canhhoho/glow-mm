@@ -1,0 +1,435 @@
+{
+  "_note": "Dữ liệu DEMO để test giao diện (P5). Tên/thương hiệu/danh mục/dung tích/giá bán lẻ VND lấy từ lengocanh.vn (2026-10-16). Mô tả và bản dịch Myanmar tự viết — [CẦN XÁC MINH] bởi người bản ngữ. Ảnh chỉ để test local, KHÔNG dùng khi bán thật; script không tải ảnh khi STORAGE_DRIVER=vercel-blob.",
+  "source": "https://lengocanh.vn",
+  "pricing": { "costRatio": 0.7, "marginPct": 35 },
+  "tags": [
+    { "kind": "CONCERN", "slug": "hydration", "my": "အစိုဓာတ် ဖြည့်ခြင်း", "en": "Hydration" }
+  ],
+  "categories": [
+    { "slug": "fragrance", "sortOrder": 5, "my": "ရေမွှေး", "en": "Fragrance" },
+    { "slug": "combo", "sortOrder": 6, "my": "ကွန်ဘို အစုံ", "en": "Value sets" },
+
+    { "slug": "makeup-lips", "parent": "makeup", "sortOrder": 1, "my": "နှုတ်ခမ်း", "en": "Lips" },
+    { "slug": "makeup-face", "parent": "makeup", "sortOrder": 2, "my": "ကူရှင်နှင့် ဖောင်ဒေးရှင်း", "en": "Cushion & foundation" },
+    { "slug": "makeup-cheek", "parent": "makeup", "sortOrder": 3, "my": "ပါးနီ", "en": "Blush" },
+    { "slug": "makeup-eyes", "parent": "makeup", "sortOrder": 4, "my": "မျက်လုံး", "en": "Eyes" },
+
+    { "slug": "skincare-cleanser", "parent": "skincare", "sortOrder": 1, "my": "မျက်နှာသစ်ဆေး", "en": "Cleansers" },
+    { "slug": "skincare-remover", "parent": "skincare", "sortOrder": 2, "my": "မိတ်ကပ်ဖျက်ဆေး", "en": "Makeup removers" },
+    { "slug": "skincare-toner", "parent": "skincare", "sortOrder": 3, "my": "တိုနာနှင့် လိုးရှင်း", "en": "Toners & lotions" },
+    { "slug": "skincare-serum", "parent": "skincare", "sortOrder": 4, "my": "ဆီရမ်", "en": "Serums" },
+    { "slug": "skincare-moisturizer", "parent": "skincare", "sortOrder": 5, "my": "အစိုဓာတ်ထိန်း ခရင်မ်", "en": "Moisturizers" },
+    { "slug": "skincare-sunscreen", "parent": "skincare", "sortOrder": 6, "my": "နေကာခရင်မ်", "en": "Sunscreen" },
+    { "slug": "skincare-mask", "parent": "skincare", "sortOrder": 7, "my": "မျက်နှာဖုံး", "en": "Masks" },
+
+    { "slug": "fragrance-women", "parent": "fragrance", "sortOrder": 1, "my": "အမျိုးသမီး ရေမွှေး", "en": "For women" },
+    { "slug": "fragrance-men", "parent": "fragrance", "sortOrder": 2, "my": "အမျိုးသား ရေမွှေး", "en": "For men" },
+
+    { "slug": "body-wash", "parent": "body", "sortOrder": 1, "my": "ရေချိုးဆပ်ပြာရည်", "en": "Body wash" },
+    { "slug": "body-lotion", "parent": "body", "sortOrder": 2, "my": "ခန္ဓာကိုယ် လိမ်းဆေး", "en": "Body lotion" },
+    { "slug": "body-hand", "parent": "body", "sortOrder": 3, "my": "လက်လိမ်း ခရင်မ်", "en": "Hand care" },
+    { "slug": "body-sun", "parent": "body", "sortOrder": 4, "my": "ခန္ဓာကိုယ် နေကာ", "en": "Body sunscreen" },
+    { "slug": "body-scrub", "parent": "body", "sortOrder": 5, "my": "အသေရေ ဖယ်ရှားဆေး", "en": "Body scrub" },
+
+    { "slug": "hair-shampoo", "parent": "hair", "sortOrder": 1, "my": "ခေါင်းလျှော်ရည်နှင့် ပေါင်းဆေး", "en": "Shampoo & conditioner" },
+    { "slug": "hair-treatment", "parent": "hair", "sortOrder": 2, "my": "ဆံပင် ပြုစုစောင့်ရှောက်မှု", "en": "Hair treatment" }
+  ],
+  "brands": [
+    { "slug": "romand", "name": "rom&nd", "origin": "KR" },
+    { "slug": "mac", "name": "MAC", "origin": "US" },
+    { "slug": "into-you", "name": "INTO YOU", "origin": "CN" },
+    { "slug": "clio", "name": "CLIO", "origin": "KR" },
+    { "slug": "fwee", "name": "fwee", "origin": "KR" },
+    { "slug": "maybelline", "name": "Maybelline", "origin": "US" },
+    { "slug": "peripera", "name": "PERIPERA", "origin": "KR" },
+    { "slug": "rare-beauty", "name": "Rare Beauty", "origin": "US" },
+    { "slug": "nongchat", "name": "NONGCHAT", "origin": "KR" },
+    { "slug": "joocyee", "name": "Joocyee", "origin": "CN" },
+    { "slug": "innisfree", "name": "innisfree", "origin": "KR" },
+    { "slug": "klairs", "name": "Klairs", "origin": "KR" },
+    { "slug": "la-roche-posay", "name": "La Roche-Posay", "origin": "FR" },
+    { "slug": "biodance", "name": "BIODANCE", "origin": "KR" },
+    { "slug": "hada-labo", "name": "Hada Labo", "origin": "JP" },
+    { "slug": "anua", "name": "ANUA", "origin": "KR" },
+    { "slug": "axis-y", "name": "AXIS-Y", "origin": "KR" },
+    { "slug": "dr-althea", "name": "Dr.Althea", "origin": "KR" },
+    { "slug": "paulas-choice", "name": "Paula's Choice", "origin": "US" },
+    { "slug": "anessa", "name": "ANESSA", "origin": "JP" },
+    { "slug": "cell-fusion-c", "name": "Cell Fusion C", "origin": "KR" },
+    { "slug": "beplain", "name": "beplain", "origin": "KR" },
+    { "slug": "banila-co", "name": "BANILA CO", "origin": "KR" },
+    { "slug": "cocoon", "name": "Cocoon", "origin": "VN" },
+    { "slug": "mediheal", "name": "MEDIHEAL", "origin": "KR" },
+    { "slug": "jo-malone", "name": "Jo Malone London", "origin": "GB" },
+    { "slug": "marc-jacobs", "name": "Marc Jacobs", "origin": "US" },
+    { "slug": "lancome", "name": "Lancôme", "origin": "FR" },
+    { "slug": "versace", "name": "Versace", "origin": "IT" },
+    { "slug": "olay", "name": "Olay", "origin": "US" },
+    { "slug": "loccitane", "name": "L'Occitane", "origin": "FR" },
+    { "slug": "cleo", "name": "Cleo", "origin": "VN" },
+    { "slug": "olaplex", "name": "OLAPLEX", "origin": "US" },
+    { "slug": "pantene", "name": "Pantene", "origin": "US" },
+    { "slug": "batiste", "name": "Batiste", "origin": "GB" }
+  ],
+  "products": [
+    {
+      "slug": "romand-blur-fudge-tint-07", "brand": "romand", "category": "makeup-lips",
+      "en": { "name": "rom&nd Blur Fudge Tint – 07 Cool Rose Up", "description": "Soft-blur lip tint with a velvety, non-drying finish.", "usage": "Apply to the centre of the lips and blend outward." },
+      "my": { "name": "rom&nd Blur Fudge Tint – 07 Cool Rose Up နှုတ်ခမ်းဆိုးဆေး", "description": "နှုတ်ခမ်း မခြောက်စေဘဲ နူးညံ့သော မက်တ် အရောင်။", "usage": "နှုတ်ခမ်း အလယ်တွင် လိမ်းပြီး အပြင်ဘက်သို့ ဖြန့်ပါ။" },
+      "tags": [], "variants": [{ "sku": "DM-ROM-BFT07", "label": "07 Cool Rose Up", "priceVnd": 160000, "weightGrams": 30 }],
+      "stock": { "qty": 40, "expiry": "2028-06-30" },
+      "images": ["https://cdn1-retail-images.kiotviet.vn/2026/01/22/lengocanhshop/a2285c47de044e9288f3d77e0eb864e4.png", "https://cdn2-retail-images.kiotviet.vn/lengocanhkho/e29f3d0732ac4f508b22b70f688c3cac.png", "https://cdn-images.kiotviet.vn/lengocanhkho/70cc12a0f1a4454cabe2a98ca57439a6.jpg"]
+    },
+    {
+      "slug": "mac-ximal-matte-662", "brand": "mac", "category": "makeup-lips",
+      "en": { "name": "MAC Ximal Matte Lipstick – 662 Sugar Dada", "description": "Classic matte lipstick with rich, long-wearing colour.", "usage": "Apply directly to lips; line first for a sharper edge." },
+      "my": { "name": "MAC Ximal Matte – 662 Sugar Dada နှုတ်ခမ်းနီ", "description": "အရောင်ပြည့်ပြီး ကြာရှည်ခံသော မက်တ် နှုတ်ခမ်းနီ။", "usage": "နှုတ်ခမ်းပေါ်သို့ တိုက်ရိုက် လိမ်းပါ။" },
+      "tags": [], "variants": [{ "sku": "DM-MAC-XM662", "label": "662 Sugar Dada", "priceVnd": 580000, "weightGrams": 30 }],
+      "stock": { "qty": 15, "expiry": "2029-01-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2025/12/01/lengocanhkho/702b8430ea6d4df0b9f37fa51ed171d7.jpg", "https://cdn2-retail-images.kiotviet.vn/2025/11/20/lengocanhkho/d9716adf492b4fdb8f1c648587a2e0c9.jpeg"]
+    },
+    {
+      "slug": "into-you-lip-mud-em08", "brand": "into-you", "category": "makeup-lips",
+      "en": { "name": "INTO YOU Lip Mud – EM08", "description": "Creamy mousse lip colour, buildable from sheer to full.", "usage": "Dab onto lips with the applicator or a fingertip." },
+      "my": { "name": "INTO YOU Lip Mud – EM08 နှုတ်ခမ်းနီ", "description": "ပါးပါး သို့မဟုတ် ထူထူ လိမ်းနိုင်သော ခရင်မ် နှုတ်ခမ်းနီ။", "usage": "လိမ်းတံ သို့မဟုတ် လက်ချောင်းဖြင့် နှုတ်ခမ်းပေါ် ပုတ်လိမ်းပါ။" },
+      "tags": [], "variants": [{ "sku": "DM-ITY-EM08", "label": "EM08", "priceVnd": 145000, "weightGrams": 30 }],
+      "stock": { "qty": 50, "expiry": "2028-03-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2026/05/16/lengocanhshop/1a1247ea4d144d0780f81ae575ea39a9.jpg", "https://cdn-images.kiotviet.vn/lengocanhkho/2bb4fbfff53345fc88ded596898816c5.jpeg", "https://cdn-images.kiotviet.vn/2025/08/23/lengocanhkho/ef816fd542e54b42b2de5128bdc070e3.jpeg"]
+    },
+    {
+      "slug": "romand-juicy-lasting-tint-20", "brand": "romand", "category": "makeup-lips",
+      "en": { "name": "rom&nd Juicy Lasting Tint – 20 Juju Fig", "description": "Glossy, juicy lip tint with long-lasting colour.", "usage": "Apply one layer for a sheer look, two for more colour." },
+      "my": { "name": "rom&nd Juicy Lasting Tint – 20 Juju Fig နှုတ်ခမ်းဆိုးဆေး", "description": "တောက်ပြောင်ပြီး ကြာရှည်ခံသော နှုတ်ခမ်းဆိုးဆေး။", "usage": "ပါးပါးအတွက် တစ်ထပ်၊ အရောင်ရင့်ရန် နှစ်ထပ် လိမ်းပါ။" },
+      "tags": [], "variants": [{ "sku": "DM-ROM-JLT20", "label": "20 Juju Fig", "priceVnd": 160000, "weightGrams": 25 }],
+      "stock": { "qty": 60, "expiry": "2028-09-30" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2025/03/10/lengocanhkho/f148afc0b3354425b2d3c06214fb01a0.jpeg"]
+    },
+    {
+      "slug": "romand-glasting-color-gloss-01", "brand": "romand", "category": "makeup-lips",
+      "en": { "name": "rom&nd Glasting Color Gloss – 01 Peony Ballet", "description": "Lightweight gloss with a glassy shine and a hint of colour.", "usage": "Wear alone or over lipstick." },
+      "my": { "name": "rom&nd Glasting Color Gloss – 01 Peony Ballet နှုတ်ခမ်းတောက်", "description": "ပေါ့ပါးပြီး ဖန်ကဲ့သို့ တောက်ပသော နှုတ်ခမ်းတောက်။", "usage": "တစ်ခုတည်း သို့မဟုတ် နှုတ်ခမ်းနီပေါ်တွင် လိမ်းပါ။" },
+      "tags": [], "variants": [{ "sku": "DM-ROM-GCG01", "label": "01 Peony Ballet", "priceVnd": 160000, "weightGrams": 25 }],
+      "stock": { "qty": 35, "expiry": "2028-08-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2025/12/01/lengocanhkho/fec31ec16f1b44a38087e89bd9b8dcc8.png", "https://cdn-images.kiotviet.vn/lengocanhkho/ab9b11855a3a4255b5073c01ca9c64d0.jpeg"]
+    },
+    {
+      "slug": "clio-kill-cover-founwear-cushion-23n", "brand": "clio", "category": "makeup-face",
+      "en": { "name": "CLIO Kill Cover Founwear Cushion – 23N Ginger", "description": "High-coverage cushion with a long-wearing semi-matte finish.", "usage": "Press the puff into the cushion and pat evenly over the face." },
+      "my": { "name": "CLIO Kill Cover Founwear – 23N Ginger ကူရှင်", "description": "ဖုံးအုပ်မှု ကောင်းပြီး ကြာရှည်ခံသော ကူရှင် ဖောင်ဒေးရှင်း။", "usage": "ပဖ်ဖြင့် ယူပြီး မျက်နှာတစ်ပြင်လုံး ညီညာစွာ ပုတ်လိမ်းပါ။" },
+      "tags": ["oily"], "variants": [{ "sku": "DM-CLI-KCC23", "label": "23N Ginger", "priceVnd": 390000, "weightGrams": 90 }],
+      "stock": { "qty": 12, "expiry": "2027-03-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2026/08/30/lengocanhshop/616e6b73cd874dbd8b6277a428dc2199.jpeg"]
+    },
+    {
+      "slug": "fwee-egg-fit-cover-cushion-01", "brand": "fwee", "category": "makeup-face",
+      "en": { "name": "fwee Egg Fit Cover Cushion SPF50+ – 01 Fair", "description": "Fresh cushion with sun protection and natural coverage.", "usage": "Pat a thin layer over the face; build up where needed." },
+      "my": { "name": "fwee Egg Fit Cover SPF50+ – 01 Fair ကူရှင်", "description": "နေကာပါဝင်ပြီး သဘာဝကျသော ကူရှင်။", "usage": "မျက်နှာပေါ် ပါးပါး ပုတ်လိမ်းပြီး လိုအပ်သလို ထပ်လိမ်းပါ။" },
+      "tags": [], "variants": [{ "sku": "DM-FWE-EGG01", "label": "01 Fair", "priceVnd": 385000, "weightGrams": 90 }],
+      "stock": { "qty": 20, "expiry": "2028-02-29" },
+      "images": ["https://cdn-images.kiotviet.vn/2025/09/22/lengocanhkho/a360fe18787245e79bea928e656590a3.jpeg"]
+    },
+    {
+      "slug": "maybelline-fit-me-foundation-118", "brand": "maybelline", "category": "makeup-face",
+      "en": { "name": "Maybelline Fit Me Matte + Poreless Foundation – 118", "description": "Everyday liquid foundation that blurs pores and controls shine.", "usage": "Shake, then blend from the centre of the face outward." },
+      "my": { "name": "Maybelline Fit Me – 118 ဖောင်ဒေးရှင်း", "description": "ချွေးပေါက်ကို ဖုံးပြီး အဆီထိန်းသော နေ့စဉ်သုံး ဖောင်ဒေးရှင်း။", "usage": "လှုပ်ပြီး မျက်နှာအလယ်မှ အပြင်ဘက်သို့ ဖြန့်လိမ်းပါ။" },
+      "tags": ["oily"], "variants": [{ "sku": "DM-MAY-FM118", "label": "118 · 30ml", "priceVnd": 195000, "weightGrams": 60 }],
+      "stock": { "qty": 45, "expiry": "2028-11-30" },
+      "images": ["https://cdn-images.kiotviet.vn/lengocanhkho/007e6059c7c74caea8d738891fa8624c.jpg", "https://cdn-images.kiotviet.vn/lengocanhkho/1f2fee357701426ab297d9af9904084c.png", "https://cdn-images.kiotviet.vn/lengocanhkho/a9180d961bc642beb508d27b5aab89f3.png"]
+    },
+    {
+      "slug": "peripera-syrupy-tok-cheek-02", "brand": "peripera", "category": "makeup-cheek",
+      "en": { "name": "PERIPERA Syrupy Tok Cheek – 02 Milky Lavender", "description": "Jelly-cream blush that melts into skin for a dewy flush.", "usage": "Tap onto cheeks with fingertips and blend." },
+      "my": { "name": "PERIPERA Syrupy Tok Cheek – 02 Milky Lavender ပါးနီ", "description": "အသားအရေထဲ စိမ့်ဝင်ပြီး စိုပြေသော ပါးနီ။", "usage": "လက်ချောင်းဖြင့် ပါးပေါ် ပုတ်ပြီး ဖြန့်ပါ။" },
+      "tags": [], "variants": [{ "sku": "DM-PER-STC02", "label": "02 Milky Lavender · 9g", "priceVnd": 180000, "weightGrams": 30 }],
+      "stock": { "qty": 30, "expiry": "2028-04-30" },
+      "images": ["https://cdn-images.kiotviet.vn/2025/08/23/lengocanhkho/01ab947231bf4ed0bb6cf0cfbc4976a3.jpg", "https://cdn-images.kiotviet.vn/2025/04/27/lengocanhkho/4ba38de44a68445aa6560dcd3bff4e55.jpeg"]
+    },
+    {
+      "slug": "rare-beauty-mini-blush-hope", "brand": "rare-beauty", "category": "makeup-cheek",
+      "en": { "name": "Rare Beauty Soft Pinch Liquid Blush Mini – Hope", "description": "Weightless liquid blush; a single dot gives a natural flush.", "usage": "Dot onto cheeks and blend quickly." },
+      "my": { "name": "Rare Beauty Mini – Hope အရည်ပါးနီ", "description": "အနည်းငယ်သာ သုံးရုံဖြင့် သဘာဝ ပန်းရောင်ရသော အရည်ပါးနီ။", "usage": "ပါးပေါ် အစက်ချပြီး မြန်မြန် ဖြန့်ပါ။" },
+      "tags": [], "variants": [{ "sku": "DM-RAR-MBH", "label": "Hope · mini", "priceVnd": 390000, "weightGrams": 20 }],
+      "stock": { "qty": 3, "expiry": "2028-05-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2025/11/21/lengocanhkho/3f458ae89df24b949b684acd941fc55a.png", "https://cdn-images.kiotviet.vn/lengocanhkho/4c683b48fb9a4187beed4d4b3b646a30.jpeg"]
+    },
+    {
+      "slug": "nongchat-lift-lock-mascara", "brand": "nongchat", "category": "makeup-eyes",
+      "en": { "name": "NONGCHAT Lift & Lock Sexy Black Mascara", "description": "Curl-holding mascara for lifted, smudge-resistant lashes.", "usage": "Wiggle from the lash roots to the tips; add a second coat if desired." },
+      "my": { "name": "NONGCHAT Lift & Lock မျက်တောင်ကော့ဆေး", "description": "မျက်တောင်ကို ကော့ပြီး မပျံ့စေသော မက်စကာရာ။", "usage": "မျက်တောင်အရင်းမှ အဖျားသို့ လှုပ်ပြီး လိမ်းပါ။" },
+      "tags": [], "variants": [{ "sku": "DM-NON-LLM", "label": "Sexy Black", "priceVnd": 130000, "weightGrams": 25 }],
+      "stock": { "qty": 55, "expiry": "2027-12-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2024/09/26/lengocanhkho/21733a925f854691802f904490e7eec7.png", "https://cdn2-retail-images.kiotviet.vn/lengocanhkho/953c7a4e9a40403b8f2b6995f456f180.jpeg", "https://cdn2-retail-images.kiotviet.vn/2024/09/26/lengocanhkho/ac8e0b209c2f443c9beedd02f5e5df61.png"]
+    },
+    {
+      "slug": "joocyee-12-shades-palette-01", "brand": "joocyee", "category": "makeup-eyes",
+      "en": { "name": "Joocyee 12 Shades Eyeshadow Palette – 01 Wooden Pink", "description": "Twelve wearable matte and shimmer shades in warm pinks.", "usage": "Use matte shades on the lid, shimmer on the centre." },
+      "my": { "name": "Joocyee ၁၂ ရောင် – 01 Wooden Pink မျက်ခွံဆိုးဆေး", "description": "ပန်းရောင်နွေးနွေး အရောင် ၁၂ မျိုးပါသော မျက်ခွံဆိုးဆေး။", "usage": "မက်တ်ကို မျက်ခွံပေါ်၊ တောက်ပသော အရောင်ကို အလယ်တွင် လိမ်းပါ။" },
+      "tags": [], "variants": [{ "sku": "DM-JOO-12S01", "label": "01 Wooden Pink", "priceVnd": 460000, "weightGrams": 120 }],
+      "stock": { "qty": 10, "expiry": "2029-03-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2026/05/16/lengocanhshop/67c42ed74b7a49f2a384e6f25c11b152.jpg", "https://cdn2-retail-images.kiotviet.vn/2026/02/01/lengocanhshop/7b7079d97f964fadb078e75646cc9f48.jpeg"]
+    },
+    {
+      "slug": "innisfree-volcanic-bha-foam-150g", "brand": "innisfree", "category": "skincare-cleanser",
+      "en": { "name": "innisfree Volcanic BHA Pore Cleansing Foam 150g", "description": "Deep-cleansing foam with volcanic clay and BHA for oily skin.", "usage": "Lather with water, massage onto damp skin, rinse well." },
+      "my": { "name": "innisfree Volcanic BHA မျက်နှာသစ်ဆေး ၁၅၀ ဂရမ်", "description": "အဆီပြန်သော အသားအရေအတွက် ချွေးပေါက်ကို သန့်စင်ပေးသည်။", "usage": "ရေနှင့် အမြှုပ်ထပြီး မျက်နှာကို နှိပ်နယ်ကာ ဆေးချပါ။" },
+      "tags": ["oily", "acne"], "variants": [{ "sku": "DM-INN-VBF150", "label": "150g", "priceVnd": 190000, "weightGrams": 180 }],
+      "stock": { "qty": 40, "expiry": "2028-07-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2024/09/30/lengocanhkho/d214e3f8bcba405a950277ff820c412d.jpg", "https://cdn2-retail-images.kiotviet.vn/lengocanhkho/94912b3d9b264ea4b28df5625c610f2c.jpeg"]
+    },
+    {
+      "slug": "klairs-rich-moist-foaming-cleanser", "brand": "klairs", "category": "skincare-cleanser",
+      "en": { "name": "Klairs Rich Moist Foaming Cleanser 100ml", "description": "Gentle, low-pH foam that cleans without stripping moisture.", "usage": "Use morning and evening on damp skin; rinse with lukewarm water." },
+      "my": { "name": "Klairs Rich Moist မျက်နှာသစ်ဆေး ၁၀၀ မီလီ", "description": "အစိုဓာတ် မဆုံးရှုံးစေဘဲ နူးညံ့စွာ သန့်စင်ပေးသည်။", "usage": "နံနက်နှင့် ညနေ စိုစွတ်သော မျက်နှာပေါ် သုံးပါ။" },
+      "tags": ["dry", "sensitive"], "variants": [{ "sku": "DM-KLA-RMF100", "label": "100ml", "priceVnd": 325000, "weightGrams": 130 }],
+      "stock": { "qty": 25, "expiry": "2028-01-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2024/10/26/lengocanhkho/47287aefb2ba4c339bcc4588e86584a3.png", "https://cdn-images.kiotviet.vn/lengocanhkho/ceab34dbdd0544ac87486666541eca80.jpg", "https://cdn2-retail-images.kiotviet.vn/2024/10/26/lengocanhkho/a8a96c68041b48faabe8fe845c66ac50.png"]
+    },
+    {
+      "slug": "la-roche-posay-effaclar-gel-50ml", "brand": "la-roche-posay", "category": "skincare-cleanser",
+      "en": { "name": "La Roche-Posay Effaclar Purifying Foaming Gel 50ml", "description": "Purifying gel for oily, sensitive skin. Travel size.", "usage": "Massage onto wet skin, then rinse." },
+      "my": { "name": "La Roche-Posay Effaclar ဂျယ် မျက်နှာသစ်ဆေး ၅၀ မီလီ", "description": "အဆီပြန်ပြီး ထိခိုက်လွယ်သော အသားအရေအတွက်။ ခရီးဆောင် အရွယ်။", "usage": "စိုစွတ်သော မျက်နှာပေါ် နှိပ်နယ်ပြီး ဆေးချပါ။" },
+      "tags": ["oily", "acne", "sensitive"], "variants": [{ "sku": "DM-LRP-EFG50", "label": "50ml", "priceVnd": 50000, "weightGrams": 70 }],
+      "stock": { "qty": 80, "expiry": "2027-10-31" },
+      "images": ["https://cdn-images.kiotviet.vn/lengocanhkho/d8a1d4d454734531b40caa92178a631e.jpg"]
+    },
+    {
+      "slug": "biodance-collagen-gel-toner-pads", "brand": "biodance", "category": "skincare-toner",
+      "en": { "name": "BIODANCE Collagen Gel Toner Pads", "description": "Soaked gel pads that hydrate and soften skin in one step.", "usage": "After cleansing, sweep a pad over the face or leave on dry areas for a few minutes." },
+      "my": { "name": "BIODANCE Collagen ဂျယ် တိုနာ ပဒ်", "description": "အသားအရေကို စိုပြေ နူးညံ့စေသော တိုနာ ပဒ်။", "usage": "မျက်နှာသစ်ပြီးနောက် ပဒ်ဖြင့် သုတ်ပါ။" },
+      "tags": ["dry", "hydration"], "variants": [{ "sku": "DM-BIO-CGTP", "label": "60 pads", "priceVnd": 395000, "weightGrams": 250 }],
+      "stock": { "qty": 18, "expiry": "2027-09-30" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2025/05/30/lengocanhkho/c62c01e2b13a47cd9b8ad329b2ee029d.jpeg", "https://cdn2-retail-images.kiotviet.vn/2026/09/27/lengocanhshop/539287894afa4fc1a9339d2177e81d6c.png"]
+    },
+    {
+      "slug": "hada-labo-gokujyun-milk-140ml", "brand": "hada-labo", "category": "skincare-toner",
+      "en": { "name": "Hada Labo Gokujyun Hydrating Milk 140ml", "description": "Hyaluronic acid milk lotion for deep, lasting hydration.", "usage": "Pat a few drops into the skin after toner." },
+      "my": { "name": "Hada Labo Gokujyun လိုးရှင်း ၁၄၀ မီလီ", "description": "ဟိုင်ယာလူရောနစ် အက်ဆစ်ဖြင့် အစိုဓာတ် ကြာရှည် ထိန်းပေးသည်။", "usage": "တိုနာပြီးနောက် အစက်အနည်းငယ်ကို ပုတ်လိမ်းပါ။" },
+      "tags": ["dry", "hydration"], "variants": [{ "sku": "DM-HDL-GKM140", "label": "140ml", "priceVnd": 270000, "weightGrams": 180 }],
+      "stock": { "qty": 30, "expiry": "2028-02-29" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2026/09/27/lengocanhshop/2b07feca105b4f4a92670283b5bd0105.png", "https://cdn2-retail-images.kiotviet.vn/2026/09/27/lengocanhshop/d355e88a7a1c4c508e7647ce2bc8c78a.jpeg"]
+    },
+    {
+      "slug": "anua-peach-70-niacin-serum-30ml", "brand": "anua", "category": "skincare-serum",
+      "en": { "name": "ANUA Peach 70% Niacin Serum 30ml", "description": "Peach-extract serum with niacinamide for a brighter, even tone.", "usage": "Apply 2–3 drops after toner, morning and evening." },
+      "my": { "name": "ANUA Peach 70% Niacin ဆီရမ် ၃၀ မီလီ", "description": "နိုင်ယာစီနာမိုက်ဖြင့် အသားအရေ ကြည်လင်စေသည်။", "usage": "တိုနာပြီးနောက် ၂-၃ စက် လိမ်းပါ။" },
+      "tags": ["brightening"], "variants": [{ "sku": "DM-ANU-PNS30", "label": "30ml", "priceVnd": 370000, "weightGrams": 80 }],
+      "stock": { "qty": 35, "expiry": "2028-05-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/lengocanhkho/98e8df8eca02493fb98698c3bc8e3ac3.jpg", "https://cdn2-retail-images.kiotviet.vn/2026/06/07/lengocanhshop/1e40787867994d539b31467b43df0e6d.png"]
+    },
+    {
+      "slug": "anua-azelaic-acid-10-serum-30ml", "brand": "anua", "category": "skincare-serum",
+      "en": { "name": "ANUA Azelaic Acid 10 Hyaluron Redness Soothing Serum 30ml", "description": "Calming serum for redness-prone and blemish-prone skin.", "usage": "Apply a thin layer to affected areas after toner." },
+      "my": { "name": "ANUA Azelaic Acid 10 ဆီရမ် ၃၀ မီလီ", "description": "နီရဲလွယ်ပြီး ဝက်ခြံထွက်လွယ်သော အသားအရေကို ငြိမ်စေသည်။", "usage": "တိုနာပြီးနောက် လိုအပ်သည့်နေရာတွင် ပါးပါး လိမ်းပါ။" },
+      "tags": ["sensitive", "acne"], "variants": [{ "sku": "DM-ANU-AZS30", "label": "30ml", "priceVnd": 370000, "weightGrams": 80 }],
+      "stock": { "qty": 22, "expiry": "2028-04-30" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2025/10/18/lengocanhkho/4e75d8ea09844d8d9a0b6f2f35b7431a.jpeg", "https://cdn2-retail-images.kiotviet.vn/2026/06/07/lengocanhshop/9243c527ea1c425a87cd0325d9f73e6f.png"]
+    },
+    {
+      "slug": "axis-y-spot-the-difference-15ml", "brand": "axis-y", "category": "skincare-serum",
+      "en": { "name": "AXIS-Y Spot The Difference Blemish Treatment 15ml", "description": "Targeted treatment that helps fade the look of dark spots.", "usage": "Dab onto spots after serum, once or twice a day." },
+      "my": { "name": "AXIS-Y Spot The Difference ၁၅ မီလီ", "description": "အမည်းစက်များ မှိန်သွားစေရန် ကူညီသည်။", "usage": "ဆီရမ်ပြီးနောက် အစက်ပေါ်တွင် ပုတ်လိမ်းပါ။" },
+      "tags": ["acne", "brightening"], "variants": [{ "sku": "DM-AXY-STD15", "label": "15ml", "priceVnd": 220000, "weightGrams": 40 }],
+      "stock": { "qty": 28, "expiry": "2027-08-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2026/08/31/lengocanhshop/00423b2c6f3a4633a7cff6f642d2195b.jpeg"]
+    },
+    {
+      "slug": "dr-althea-345-relief-cream-50ml", "brand": "dr-althea", "category": "skincare-moisturizer",
+      "en": { "name": "Dr.Althea 345 Relief Cream 50ml", "description": "Soothing cream that strengthens the skin barrier overnight.", "usage": "Apply as the last step of your evening routine." },
+      "my": { "name": "Dr.Althea 345 Relief ခရင်မ် ၅၀ မီလီ", "description": "အသားအရေ အကာအကွယ်ကို အားဖြည့်ပေးသော ငြိမ်စေသည့် ခရင်မ်။", "usage": "ညဘက် အဆုံးအဆင့်အဖြစ် လိမ်းပါ။" },
+      "tags": ["sensitive", "dry"], "variants": [{ "sku": "DM-DRA-345R50", "label": "50ml", "priceVnd": 330000, "weightGrams": 90 }],
+      "stock": { "qty": 25, "expiry": "2028-06-30" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2025/03/11/lengocanhkho/194dc5f24dfd4c03ae0d34ef00e3a7dc.jpeg"]
+    },
+    {
+      "slug": "paulas-choice-invisible-finish-gel-60ml", "brand": "paulas-choice", "category": "skincare-moisturizer",
+      "en": { "name": "Paula's Choice Invisible Finish Moisture Gel 60ml", "description": "Weightless gel moisturiser for oily and combination skin.", "usage": "Smooth over face and neck morning and evening." },
+      "my": { "name": "Paula's Choice Invisible Finish ဂျယ် ၆၀ မီလီ", "description": "အဆီပြန်သော အသားအရေအတွက် ပေါ့ပါးသော အစိုဓာတ်ထိန်း ဂျယ်။", "usage": "နံနက်နှင့် ညနေ မျက်နှာနှင့် လည်ပင်းတွင် လိမ်းပါ။" },
+      "tags": ["oily", "hydration"], "variants": [{ "sku": "DM-PAU-IFG60", "label": "60ml", "priceVnd": 720000, "weightGrams": 90 }],
+      "stock": { "qty": 8, "expiry": "2027-11-30" },
+      "images": ["https://cdn-images.kiotviet.vn/2025/06/27/lengocanhkho/5382f30563a342329aca7fbc7cccfa3c.jpeg"]
+    },
+    {
+      "slug": "anessa-perfect-uv-milk-60ml", "brand": "anessa", "category": "skincare-sunscreen",
+      "en": { "name": "ANESSA Perfect UV Sunscreen Skincare Milk SPF50+ 60ml", "description": "Very water-resistant sunscreen milk for face and body.", "usage": "Shake well. Apply generously before sun exposure; reapply after swimming." },
+      "my": { "name": "ANESSA Perfect UV SPF50+ နေကာ ၆၀ မီလီ", "description": "ရေနှင့် ချွေးဒဏ် ခံနိုင်သော မျက်နှာနှင့် ခန္ဓာကိုယ်သုံး နေကာ။", "usage": "ကောင်းစွာ လှုပ်ပါ။ နေထဲမထွက်မီ လုံလောက်စွာ လိမ်းပါ။" },
+      "tags": ["oily"], "variants": [{ "sku": "DM-ANE-PUM60", "label": "60ml", "priceVnd": 480000, "weightGrams": 90 }],
+      "stock": { "qty": 50, "expiry": "2028-12-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2024/09/27/lengocanhkho/f024c945ecc1408b8b67deb953a4dd81.png", "https://cdn2-retail-images.kiotviet.vn/2024/09/27/lengocanhkho/fb2e0ac8c8c74801a8b9a1509eb14c4f.png", "https://cdn2-retail-images.kiotviet.vn/2024/09/27/lengocanhkho/e972d375942e48beb9311d5351bf7bfa.png"]
+    },
+    {
+      "slug": "cell-fusion-c-sunscreen-100-tone-up", "brand": "cell-fusion-c", "category": "skincare-sunscreen",
+      "en": { "name": "Cell Fusion C Sunscreen 100 SPF50+ Brightening Tone Up 50ml", "description": "Gentle tone-up sunscreen suitable for sensitive skin.", "usage": "Apply as the last skincare step every morning." },
+      "my": { "name": "Cell Fusion C Sunscreen 100 Tone Up နေကာ ၅၀ မီလီ", "description": "ထိခိုက်လွယ်သော အသားအရေအတွက် အသားရောင် လင်းစေသော နေကာ။", "usage": "နံနက်တိုင်း နောက်ဆုံးအဆင့်အဖြစ် လိမ်းပါ။" },
+      "tags": ["sensitive", "brightening"], "variants": [{ "sku": "DM-CFC-S100T", "label": "50ml", "priceVnd": 290000, "weightGrams": 80 }],
+      "stock": { "qty": 30, "expiry": "2028-03-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2025/12/15/lengocanhkho/42079e92fac24d37aaed94c3fb757d19.png", "https://cdn-images.kiotviet.vn/2025/06/23/lengocanhkho/3bba6b3ad62a459895a3353bc1df144a.jpg"]
+    },
+    {
+      "slug": "beplain-sunmuse-tone-up-50ml", "brand": "beplain", "category": "skincare-sunscreen",
+      "en": { "name": "beplain Sunmuse Tone Up & Correcting Sunscreen 50ml", "description": "Lavender tone-up sunscreen that evens out sallow skin.", "usage": "Apply evenly 15 minutes before going out." },
+      "my": { "name": "beplain Sunmuse Tone Up နေကာ ၅၀ မီလီ", "description": "အသားအရေ အရောင်ကို ညီညာစေသော နေကာ။", "usage": "အပြင်မထွက်မီ ၁၅ မိနစ်အလိုတွင် ညီညာစွာ လိမ်းပါ။" },
+      "tags": ["brightening"], "variants": [{ "sku": "DM-BEP-STU50", "label": "50ml", "priceVnd": 255000, "weightGrams": 80 }],
+      "stock": { "qty": 6, "expiry": "2027-02-28" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2025/11/24/lengocanhkho/820b0280df3142d0a881124422ea673b.png", "https://cdn2-retail-images.kiotviet.vn/2025/03/26/lengocanhkho/e09408c24d614455ae4b43998efd37db.jpg", "https://cdn2-retail-images.kiotviet.vn/2026/07/24/lengocanhshop/fb82bd8edaa944e79b154848dd6c04b3.png"]
+    },
+    {
+      "slug": "banila-co-clean-it-zero-ginseng-100ml", "brand": "banila-co", "category": "skincare-remover",
+      "en": { "name": "BANILA CO Clean It Zero Cleansing Balm Ginseng Glow 100ml", "description": "Sherbet-texture balm that melts away makeup and sunscreen.", "usage": "Massage onto dry skin, emulsify with water, then rinse." },
+      "my": { "name": "BANILA CO Clean It Zero Ginseng မိတ်ကပ်ဖျက် ဘမ်း", "description": "မိတ်ကပ်နှင့် နေကာကို အရည်ပျော်စေပြီး ဖယ်ရှားပေးသည်။", "usage": "ခြောက်သွေ့သော မျက်နှာပေါ် နှိပ်နယ်ပြီး ရေဖြင့် ဆေးပါ။" },
+      "tags": [], "variants": [{ "sku": "DM-BAN-CIZG100", "label": "100ml", "priceVnd": 295000, "weightGrams": 150 }],
+      "stock": { "qty": 20, "expiry": "2028-08-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2026/05/09/lengocanhshop/9b5652c3fbd04c27ab0110b0ac46d1b7.jpeg"]
+    },
+    {
+      "slug": "cocoon-rose-cleansing-oil-310ml", "brand": "cocoon", "category": "skincare-remover",
+      "en": { "name": "Cocoon Rose Cleansing Oil 310ml", "description": "Vegan cleansing oil with rose that removes makeup gently.", "usage": "Massage onto dry face, add water to emulsify, rinse." },
+      "my": { "name": "Cocoon နှင်းဆီ မိတ်ကပ်ဖျက်ဆီ ၃၁၀ မီလီ", "description": "နှင်းဆီပါဝင်ပြီး မိတ်ကပ်ကို နူးညံ့စွာ ဖယ်ရှားပေးသည်။", "usage": "ခြောက်သွေ့သော မျက်နှာပေါ် နှိပ်နယ်ပြီး ရေဖြင့် ဆေးပါ။" },
+      "tags": ["dry"], "variants": [{ "sku": "DM-COC-RCO310", "label": "310ml", "priceVnd": 270000, "weightGrams": 360 }],
+      "stock": { "qty": 15, "expiry": "2027-06-30" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2025/12/26/lengocanhshop/de93dc2a3cd542209263d5d148b7ad49.jpeg"]
+    },
+    {
+      "slug": "mediheal-mask-hyalu-moist", "brand": "mediheal", "category": "skincare-mask",
+      "en": { "name": "MEDIHEAL Sheet Mask – Hyalu Moist", "description": "Hydrating sheet mask for a quick moisture boost.", "usage": "Leave on for 15–20 minutes, then pat in the remaining essence." },
+      "my": { "name": "MEDIHEAL Hyalu Moist မျက်နှာဖုံး", "description": "အစိုဓာတ် အမြန်ဖြည့်ပေးသော မျက်နှာဖုံး။", "usage": "၁၅-၂၀ မိနစ် တင်ထားပြီး ကျန်သော အရည်ကို ပုတ်လိမ်းပါ။" },
+      "tags": ["hydration"], "variants": [{ "sku": "DM-MED-HYM", "label": "1 sheet", "priceVnd": 20000, "weightGrams": 30 }],
+      "stock": { "qty": 120, "expiry": "2028-10-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2026/10/04/lengocanhshop/d26f92e916b44ba4b140ec7118dd5fb7.jpeg"]
+    },
+    {
+      "slug": "jo-malone-rose-blush-cologne-50ml", "brand": "jo-malone", "category": "fragrance-women",
+      "en": { "name": "Jo Malone London Rose Blush Cologne 50ml", "description": "Bright floral scent of rose, lychee and soft musk.", "usage": "Spray onto pulse points from about 15 cm away." },
+      "my": { "name": "Jo Malone Rose Blush Cologne ၅၀ မီလီ ရေမွှေး", "description": "နှင်းဆီနှင့် လိုင်ချီး ရနံ့ရှိသော ရေမွှေး။", "usage": "လက်ကောက်ဝတ်နှင့် လည်ပင်းသို့ ၁၅ စင်တီမီတာ အကွာမှ ဖြန်းပါ။" },
+      "tags": [], "variants": [{ "sku": "DM-JOM-RBC50", "label": "50ml", "priceVnd": 2950000, "weightGrams": 250 }],
+      "stock": null,
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2025/11/25/lengocanhkho/c1a9e4dfba114d8e93d2c0c74558a9a8.png"]
+    },
+    {
+      "slug": "marc-jacobs-daisy-eau-so-fresh-125ml", "brand": "marc-jacobs", "category": "fragrance-women",
+      "en": { "name": "Marc Jacobs Daisy Eau So Fresh EDT 125ml", "description": "Light, fruity-floral fragrance for everyday wear.", "usage": "Spray onto skin or clothing as desired." },
+      "my": { "name": "Marc Jacobs Daisy Eau So Fresh ၁၂၅ မီလီ ရေမွှေး", "description": "နေ့စဉ်သုံးရန် ပေါ့ပါးသော သစ်သီးနှင့် ပန်းရနံ့။", "usage": "အသားအရေ သို့မဟုတ် အဝတ်ပေါ် ဖြန်းပါ။" },
+      "tags": [], "variants": [{ "sku": "DM-MJA-DESF125", "label": "125ml", "priceVnd": 2200000, "weightGrams": 350 }],
+      "stock": { "qty": 4, "expiry": "2030-12-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2025/11/23/lengocanhkho/f8518b524e2e40ef9b14c50c9e9f8701.jpeg"]
+    },
+    {
+      "slug": "lancome-idole-eau-de-parfum-20ml", "brand": "lancome", "category": "fragrance-women",
+      "en": { "name": "Lancôme Idôle L'Eau de Parfum 20ml", "description": "Clean rose and jasmine scent in a slim travel bottle.", "usage": "Spray onto pulse points." },
+      "my": { "name": "Lancôme Idôle ၂၀ မီလီ ရေမွှေး", "description": "နှင်းဆီနှင့် စံပယ် ရနံ့ရှိသော ခရီးဆောင် ရေမွှေး။", "usage": "လက်ကောက်ဝတ်နှင့် လည်ပင်းတွင် ဖြန်းပါ။" },
+      "tags": [], "variants": [{ "sku": "DM-LAN-IDL20", "label": "20ml", "priceVnd": 1080000, "weightGrams": 80 }],
+      "stock": { "qty": 7, "expiry": "2030-06-30" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2026/10/08/lengocanhshop/4c0a14b2ee104e22a8bdb1a0386854b0.jpeg"]
+    },
+    {
+      "slug": "versace-eros-edt-100ml", "brand": "versace", "category": "fragrance-men",
+      "en": { "name": "Versace Eros Eau de Toilette 100ml", "description": "Fresh mint and vanilla scent for men.", "usage": "Spray onto neck and chest." },
+      "my": { "name": "Versace Eros ၁၀၀ မီလီ အမျိုးသား ရေမွှေး", "description": "ပူစီနံနှင့် ဗနီလာ ရနံ့ရှိသော အမျိုးသား ရေမွှေး။", "usage": "လည်ပင်းနှင့် ရင်ဘတ်တွင် ဖြန်းပါ။" },
+      "tags": [], "variants": [{ "sku": "DM-VER-EROS100", "label": "100ml", "priceVnd": 1950000, "weightGrams": 350 }],
+      "stock": { "qty": 6, "expiry": "2030-12-31" },
+      "images": ["https://cdn-images.kiotviet.vn/2025/08/15/lengocanhkho/963aab3aa3de43dd9a55ed2ede300d07.jpeg", "https://cdn-images.kiotviet.vn/2025/08/24/lengocanhkho/f96111a1ee3c48dd8407d8944416971d.jpg"]
+    },
+    {
+      "slug": "cocoon-winter-melon-body-wash-500ml", "brand": "cocoon", "category": "body-wash",
+      "en": { "name": "Cocoon Winter Melon Body Wash 500ml", "description": "Gentle body wash with winter melon for clear-looking skin.", "usage": "Lather on wet skin and rinse." },
+      "my": { "name": "Cocoon ကျောက်ဖရုံ ရေချိုးဆပ်ပြာရည် ၅၀၀ မီလီ", "description": "ကျောက်ဖရုံ ပါဝင်သော နူးညံ့သည့် ရေချိုးဆပ်ပြာရည်။", "usage": "စိုစွတ်သော ခန္ဓာကိုယ်ပေါ် အမြှုပ်ထပြီး ဆေးချပါ။" },
+      "tags": ["acne"], "variants": [{ "sku": "DM-COC-WMB500", "label": "500ml", "priceVnd": 155000, "weightGrams": 560 }],
+      "stock": { "qty": 40, "expiry": "2027-12-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2026/06/15/lengocanhshop/1ccb18818cdb4455b38fb332f8fe579b.jpeg", "https://cdn2-retail-images.kiotviet.vn/2026/06/26/lengocanhshop/dde72813e89e42f0a0a7533b131e0fa2.png"]
+    },
+    {
+      "slug": "olay-brightening-body-lotion-260g", "brand": "olay", "category": "body-lotion",
+      "en": { "name": "Olay Brightening Body Lotion 260g", "description": "Moisturising body lotion with niacinamide for brighter-looking skin.", "usage": "Apply all over the body after showering." },
+      "my": { "name": "Olay Brightening ခန္ဓာကိုယ် လိမ်းဆေး ၂၆၀ ဂရမ်", "description": "နိုင်ယာစီနာမိုက်ဖြင့် အသားအရေ ကြည်လင်စေသော လိမ်းဆေး။", "usage": "ရေချိုးပြီးနောက် တစ်ကိုယ်လုံး လိမ်းပါ။" },
+      "tags": ["brightening"], "variants": [{ "sku": "DM-OLA-BBL260", "label": "260g", "priceVnd": 265000, "weightGrams": 300 }],
+      "stock": { "qty": 25, "expiry": "2028-01-31" },
+      "images": ["https://cdn1-retail-images.kiotviet.vn/2026/03/28/lengocanhshop/7bac2471d0f0428aaff9032442669583.jpeg"]
+    },
+    {
+      "slug": "loccitane-almond-hand-cream-30ml", "brand": "loccitane", "category": "body-hand",
+      "en": { "name": "L'Occitane Almond Delicious Hands 30ml", "description": "Nourishing almond hand cream in a pocket size.", "usage": "Massage into hands whenever they feel dry." },
+      "my": { "name": "L'Occitane ဗာဒံ လက်လိမ်းခရင်မ် ၃၀ မီလီ", "description": "ဗာဒံဖြင့် လက်ကို နူးညံ့စေသော အိတ်ဆောင် ခရင်မ်။", "usage": "လက်ခြောက်သွေ့သည့်အခါ နှိပ်နယ်လိမ်းပါ။" },
+      "tags": ["dry"], "variants": [{ "sku": "DM-LOC-AHC30", "label": "30ml", "priceVnd": 260000, "weightGrams": 50 }],
+      "stock": { "qty": 20, "expiry": "2028-09-30" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2026/07/02/lengocanhshop/b0ad11725e134d6a8b0b8a653487b743.png", "https://cdn2-retail-images.kiotviet.vn/2026/07/02/lengocanhshop/7408b6758baf479abc02bf3c1dac9ad8.jpg"]
+    },
+    {
+      "slug": "anessa-perfect-uv-spray-60g", "brand": "anessa", "category": "body-sun",
+      "en": { "name": "ANESSA Perfect UV Sunscreen Skincare Spray 60g", "description": "Quick-dry sunscreen spray for body and hair.", "usage": "Shake and spray evenly from 10–15 cm; do not spray directly on the face." },
+      "my": { "name": "ANESSA Perfect UV နေကာ စပရေး ၆၀ ဂရမ်", "description": "ခန္ဓာကိုယ်နှင့် ဆံပင်အတွက် မြန်မြန်ခြောက်သော နေကာ စပရေး။", "usage": "လှုပ်ပြီး ၁၀-၁၅ စင်တီမီတာ အကွာမှ ဖြန်းပါ။ မျက်နှာသို့ တိုက်ရိုက် မဖြန်းပါနှင့်။" },
+      "tags": [], "variants": [{ "sku": "DM-ANE-PUS60", "label": "60g", "priceVnd": 295000, "weightGrams": 120 }],
+      "stock": { "qty": 24, "expiry": "2028-12-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2025/07/28/lengocanhkho/d97b88aab74c41f08e016dce77069958.jpg", "https://cdn2-retail-images.kiotviet.vn/2026/07/05/lengocanhshop/cf32590eb5c944428440e3f7c9bd71e9.jpg", "https://cdn2-retail-images.kiotviet.vn/2026/07/05/lengocanhshop/730121f9d23443d3ae4b1066203eee11.png"]
+    },
+    {
+      "slug": "cleo-candy-scrub-fruity-150g", "brand": "cleo", "category": "body-scrub",
+      "en": { "name": "Cleo Candy Body Scrub – Fruity 150g", "description": "Sugar scrub that smooths rough skin with a fruity scent.", "usage": "Massage onto damp skin 2–3 times a week, then rinse." },
+      "my": { "name": "Cleo Candy Scrub သစ်သီးရနံ့ ၁၅၀ ဂရမ်", "description": "သကြားဖြင့် ကြမ်းသော အသားအရေကို ချောမွေ့စေသည်။", "usage": "တစ်ပတ် ၂-၃ ကြိမ် စိုစွတ်သော အသားအရေပေါ် နှိပ်နယ်ပြီး ဆေးချပါ။" },
+      "tags": [], "variants": [{ "sku": "DM-CLE-CSF150", "label": "150g", "priceVnd": 160000, "weightGrams": 190 }],
+      "stock": { "qty": 30, "expiry": "2027-05-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2026/07/30/lengocanhshop/4eb1f46f137e42639bd0cc2ee037b1e5.jpeg", "https://cdn1-retail-images.kiotviet.vn/2026/07/31/lengocanhshop/44a437efd03c49879b4902d7906abb3b.png"]
+    },
+    {
+      "slug": "cocoon-pomelo-shampoo-500ml", "brand": "cocoon", "category": "hair-shampoo",
+      "en": { "name": "Cocoon Pomelo Shampoo 500ml", "description": "Pomelo-peel shampoo that helps reduce hair fall.", "usage": "Massage into wet scalp, leave 1–2 minutes, rinse." },
+      "my": { "name": "Cocoon ဂရိတ်ဖရုသီး ခေါင်းလျှော်ရည် ၅၀၀ မီလီ", "description": "ဆံပင်ကျွတ်ခြင်း လျော့ချရန် ကူညီသော ခေါင်းလျှော်ရည်။", "usage": "စိုစွတ်သော ခေါင်းပေါ် နှိပ်နယ်ပြီး ၁-၂ မိနစ်ကြာမှ ဆေးပါ။" },
+      "tags": [], "variants": [{ "sku": "DM-COC-PSH500", "label": "500ml", "priceVnd": 235000, "weightGrams": 560 }],
+      "stock": { "qty": 35, "expiry": "2027-11-30" },
+      "images": ["https://cdn-images.kiotviet.vn/2025/08/24/lengocanhkho/d27e7b6561b244daacd8d9e7f574b45d.png"]
+    },
+    {
+      "slug": "olaplex-no4-bond-shampoo-250ml", "brand": "olaplex", "category": "hair-shampoo",
+      "en": { "name": "OLAPLEX No.4 Bond Maintenance Shampoo 250ml", "description": "Repairing shampoo for damaged and colour-treated hair.", "usage": "Lather into wet hair, rinse and follow with conditioner." },
+      "my": { "name": "OLAPLEX No.4 ခေါင်းလျှော်ရည် ၂၅၀ မီလီ", "description": "ပျက်စီးနေသော ဆံပင်ကို ပြုပြင်ပေးသော ခေါင်းလျှော်ရည်။", "usage": "စိုစွတ်သော ဆံပင်တွင် အမြှုပ်ထပြီး ဆေးပါ။" },
+      "tags": [], "variants": [{ "sku": "DM-OLA-NO4-250", "label": "250ml", "priceVnd": 590000, "weightGrams": 300 }],
+      "stock": { "qty": 12, "expiry": "2028-07-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2026/05/13/lengocanhshop/d9216e08a4734751a5230db9d45a4175.jpeg"]
+    },
+    {
+      "slug": "olaplex-no7-bonding-oil-60ml", "brand": "olaplex", "category": "hair-treatment",
+      "en": { "name": "OLAPLEX No.7 Bonding Oil 60ml", "description": "Lightweight styling oil that adds shine and heat protection.", "usage": "Apply 1–3 drops to damp or dry hair." },
+      "my": { "name": "OLAPLEX No.7 ဆံပင်ဆီ ၆၀ မီလီ", "description": "ဆံပင်ကို တောက်ပစေပြီး အပူဒဏ်မှ ကာကွယ်ပေးသော ဆီ။", "usage": "စိုစွတ်သော သို့မဟုတ် ခြောက်သော ဆံပင်တွင် ၁-၃ စက် လိမ်းပါ။" },
+      "tags": [], "variants": [{ "sku": "DM-OLA-NO7-60", "label": "60ml", "priceVnd": 990000, "weightGrams": 100 }],
+      "stock": { "qty": 9, "expiry": "2028-07-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2026/08/17/lengocanhshop/d33b1363f2434d0799b51398dcfbf42d.jpeg"]
+    },
+    {
+      "slug": "pantene-miracles-hair-mask-300ml", "brand": "pantene", "category": "hair-treatment",
+      "en": { "name": "Pantene Miracles Intensive Treatment Hair Mask 300ml", "description": "Rich hair mask that softens dry, frizzy hair.", "usage": "After shampoo, leave on for 3–5 minutes, then rinse." },
+      "my": { "name": "Pantene Miracles ဆံပင်ပေါင်းဆေး ၃၀၀ မီလီ", "description": "ခြောက်သွေ့ ကြမ်းသော ဆံပင်ကို နူးညံ့စေသည်။", "usage": "ခေါင်းလျှော်ပြီးနောက် ၃-၅ မိနစ် ထားပြီး ဆေးပါ။" },
+      "tags": [], "variants": [{ "sku": "DM-PAN-MHM300", "label": "300ml", "priceVnd": 160000, "weightGrams": 340 }],
+      "stock": { "qty": 28, "expiry": "2026-12-31" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2026/03/28/lengocanhshop/434c0daa375340cf8622675cf4227b1a.jpeg", "https://cdn2-retail-images.kiotviet.vn/2026/07/26/lengocanhshop/1810564f24104d19803de05741f53ad8.png"]
+    },
+    {
+      "slug": "batiste-dry-shampoo-floral-200ml", "brand": "batiste", "category": "hair-shampoo",
+      "en": { "name": "Batiste Dry Shampoo – Floral 200ml", "description": "Refreshes hair between washes and absorbs excess oil.", "usage": "Shake, spray at the roots from 30 cm, then massage and brush out." },
+      "my": { "name": "Batiste ခြောက်သွေ့ ခေါင်းလျှော်ဆေး ပန်းရနံ့ ၂၀၀ မီလီ", "description": "ခေါင်းမလျှော်ရသည့်နေ့များတွင် ဆံပင်ကို လန်းဆန်းစေသည်။", "usage": "လှုပ်ပြီး ဆံပင်အရင်းသို့ ၃၀ စင်တီမီတာ အကွာမှ ဖြန်းပါ။" },
+      "tags": ["oily"], "variants": [{ "sku": "DM-BAT-DSF200", "label": "200ml", "priceVnd": 135000, "weightGrams": 220 }],
+      "stock": { "qty": 40, "expiry": "2028-04-30" },
+      "images": ["https://cdn2-retail-images.kiotviet.vn/2026/07/13/lengocanhshop/0a49c43cbef44891bc20dc97d1695393.jpg"]
+    }
+  ],
+  "combos": [
+    {
+      "slug": "combo-daily-skincare", "brand": "anua", "category": "combo",
+      "en": { "name": "Set: Cleanse – Brighten – Protect", "description": "innisfree BHA foam + ANUA Peach Niacin serum + ANESSA sunscreen milk.", "usage": "See each product." },
+      "my": { "name": "အစုံ: သန့်စင် – ကြည်လင် – ကာကွယ်", "description": "innisfree မျက်နှာသစ်ဆေး + ANUA ဆီရမ် + ANESSA နေကာ။", "usage": "ပစ္စည်းတစ်ခုချင်းစီ၏ အသုံးပြုနည်းအတိုင်း။" },
+      "sku": "DM-SET-DAILY", "label": "Set 3", "discountPct": 10,
+      "items": [{ "sku": "DM-INN-VBF150", "qty": 1 }, { "sku": "DM-ANU-PNS30", "qty": 1 }, { "sku": "DM-ANE-PUM60", "qty": 1 }]
+    },
+    {
+      "slug": "combo-romand-lips", "brand": "romand", "category": "combo",
+      "en": { "name": "Set: rom&nd Tint + Gloss", "description": "Juicy Lasting Tint 20 + Glasting Color Gloss 01.", "usage": "See each product." },
+      "my": { "name": "အစုံ: rom&nd တင့် + ဂလော့စ်", "description": "Juicy Lasting Tint 20 + Glasting Color Gloss 01။", "usage": "ပစ္စည်းတစ်ခုချင်းစီ၏ အသုံးပြုနည်းအတိုင်း။" },
+      "sku": "DM-SET-ROMLIP", "label": "Set 2", "discountPct": 8,
+      "items": [{ "sku": "DM-ROM-JLT20", "qty": 1 }, { "sku": "DM-ROM-GCG01", "qty": 1 }]
+    },
+    {
+      "slug": "combo-olaplex-repair", "brand": "olaplex", "category": "combo",
+      "en": { "name": "Set: OLAPLEX Repair (No.4 + No.7)", "description": "Bond Maintenance Shampoo + Bonding Oil.", "usage": "See each product." },
+      "my": { "name": "အစုံ: OLAPLEX ပြုပြင် (No.4 + No.7)", "description": "ခေါင်းလျှော်ရည် + ဆံပင်ဆီ။", "usage": "ပစ္စည်းတစ်ခုချင်းစီ၏ အသုံးပြုနည်းအတိုင်း။" },
+      "sku": "DM-SET-OLAPLEX", "label": "Set 2", "discountPct": 10,
+      "items": [{ "sku": "DM-OLA-NO4-250", "qty": 1 }, { "sku": "DM-OLA-NO7-60", "qty": 1 }]
+    }
+  ]
+}

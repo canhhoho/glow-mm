@@ -10,6 +10,7 @@ import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { hashPassword } from "better-auth/crypto";
 import { PrismaClient, type StockType } from "../src/generated/prisma/client";
+import { normalizeForSearch } from "../src/lib/myanmar";
 
 // SEED_VIA_WEBSOCKET=1: kết nối Neon qua WebSocket cổng 443 — dùng khi mạng chặn cổng 5432.
 // Chỉ áp dụng cho công cụ seed; app luôn dùng Postgres chuẩn (adapter-pg).
@@ -132,7 +133,7 @@ async function seedCatalog() {
             locale,
             ...p[locale],
             ingredientsText: p.ingredientsText,
-            searchText: `${p[locale].name} ${p.ingredientsText}`.toLowerCase(),
+            searchText: normalizeForSearch(`${p[locale].name} ${p.ingredientsText}`),
           })),
         },
         tags: { create: p.tags.map((tagId) => ({ tagId })) },
