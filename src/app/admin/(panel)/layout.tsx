@@ -50,7 +50,9 @@ export default async function PanelLayout({ children }: LayoutProps<"/admin">) {
               </Button>
             ))}
           </form>
-          <span className="text-muted-foreground">{user.name}</span>
+          <Link href="/admin/account" title={t("account")} className="text-muted-foreground hover:underline">
+            {user.name}
+          </Link>
           <form action={signOutAction}>
             <Button type="submit" size="sm" variant="outline">
               {t("logout")}

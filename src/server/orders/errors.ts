@@ -10,7 +10,8 @@ export type OrderErrorCode =
   | "invalid_transition"
   | "forbidden"
   | "invalid_file"
-  | "proof_not_allowed";
+  | "proof_not_allowed"
+  | "checkout_disabled";
 
 export class OrderError extends Error {
   constructor(

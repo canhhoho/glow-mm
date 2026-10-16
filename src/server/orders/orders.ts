@@ -7,7 +7,7 @@ import { manualShipping } from "@/server/adapters/shipping";
 import { newCode } from "@/server/codes";
 import { salesBlockDays } from "@/server/inventory/documents";
 import type { Tx } from "@/server/inventory/ledger";
-import { getNumberSetting } from "@/server/settings";
+import { getBoolSetting, getNumberSetting } from "@/server/settings";
 import { OrderError } from "./errors";
 import { normalizeMmPhone, orderTotals } from "./pricing";
 import { reserveForOrder } from "./reservations";
@@ -45,6 +45,9 @@ export type CreateOrderContext = { userId: string | null; now?: Date };
 export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
   const input = createOrderSchema.parse(raw);
   const channel = ctx.userId ? input.channel : "WEB";
+  if (!ctx.userId && !(await getBoolSetting("store.checkoutEnabled"))) {
+    throw new OrderError("checkout_disabled", "Đang tạm ngừng nhận đơn trên web");
+  }
   const phone = normalizeMmPhone(input.phone);
   if (!phone) throw new OrderError("invalid_phone", "Số điện thoại không hợp lệ");
 

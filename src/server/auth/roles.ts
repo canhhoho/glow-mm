@@ -30,6 +30,9 @@ export const PERMISSIONS = {
 
 export type Permission = keyof typeof PERMISSIONS;
 
+/** Độ dài tối thiểu khi nhân viên tự đặt mật khẩu mới. */
+export const MIN_STAFF_PASSWORD = 12;
+
 export function isRole(value: unknown): value is Role {
   return typeof value === "string" && (ROLES as readonly string[]).includes(value);
 }

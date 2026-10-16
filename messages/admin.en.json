@@ -15,7 +15,8 @@
     "logout": "Sign out",
     "language": "Language",
     "alerts": "Alerts",
-    "reviews": "Reviews"
+    "reviews": "Reviews",
+    "account": "Account"
   },
   "Login": {
     "title": "Admin sign in",
@@ -341,7 +342,8 @@
       "invalid_transition": "Not allowed in the current status",
       "forbidden": "You do not have permission",
       "invalid_file": "Invalid file (JPG/PNG/WebP/PDF, max 5MB)",
-      "proof_not_allowed": "Order is not awaiting payment proof"
+      "proof_not_allowed": "Order is not awaiting payment proof",
+      "checkout_disabled": "Web orders are temporarily paused"
     },
     "ret": {
       "title": "Return items",
@@ -383,10 +385,15 @@
       },
       "payment": {
         "bankInstructions": "Bank transfer instructions (shown to customers)"
+      },
+      "store": {
+        "checkoutEnabled": "Accept web orders"
       }
     },
     "save": "Save settings",
-    "saved": "Saved"
+    "saved": "Saved",
+    "store": "Web store",
+    "checkoutHint": "Untick during maintenance or server migration: customers can browse but cannot place orders. Manual orders in admin are not affected."
   },
   "Pricing": {
     "title": "Prices & exchange rate",
@@ -535,5 +542,21 @@
     "approve": "Publish",
     "reject": "Reject",
     "empty": "No reviews"
+  },
+  "Account": {
+    "title": "My account",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "hint": "At least {min} characters. Other signed-in devices will be signed out.",
+    "submit": "Change password",
+    "changed": "Password changed",
+    "errors": {
+      "invalid": "Invalid input",
+      "tooShort": "New password must be at least {min} characters",
+      "mismatch": "Passwords do not match",
+      "same": "New password must differ from the current one",
+      "wrongCurrent": "Current password is incorrect"
+    }
   }
 }

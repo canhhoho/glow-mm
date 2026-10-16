@@ -20,6 +20,14 @@ export default async function SettingsPage() {
     <div className="max-w-2xl">
       <PageHeader title={t("title")} />
       <ActionForm action={saveSettingsAction} submitLabel={t("save")} okText={t("saved")} className="space-y-5">
+        <fieldset className="space-y-2 rounded-lg border p-4">
+          <legend className="px-1 font-medium">{t("store")}</legend>
+          <label className="flex items-center gap-2 text-sm">
+            <input name="store.checkoutEnabled" type="checkbox" defaultChecked={settings.checkoutEnabled} className="size-4" />
+            <span>{t("keys.store.checkoutEnabled")}</span>
+          </label>
+          <p className="text-xs text-muted-foreground">{t("checkoutHint")}</p>
+        </fieldset>
         {GROUPS.map((g) => (
           <fieldset key={g.title} className="space-y-2 rounded-lg border p-4">
             <legend className="px-1 font-medium">{t(g.title)}</legend>

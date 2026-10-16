@@ -15,7 +15,8 @@
     "logout": "Đăng xuất",
     "language": "Ngôn ngữ",
     "alerts": "Cảnh báo",
-    "reviews": "Đánh giá"
+    "reviews": "Đánh giá",
+    "account": "Tài khoản"
   },
   "Login": {
     "title": "Đăng nhập quản trị",
@@ -341,7 +342,8 @@
       "invalid_transition": "Không thể thực hiện ở trạng thái hiện tại",
       "forbidden": "Bạn không có quyền thực hiện thao tác này",
       "invalid_file": "File không hợp lệ (JPG/PNG/WebP/PDF, tối đa 5MB)",
-      "proof_not_allowed": "Đơn không ở trạng thái chờ biên lai"
+      "proof_not_allowed": "Đơn không ở trạng thái chờ biên lai",
+      "checkout_disabled": "Đang tạm ngừng nhận đơn trên web"
     },
     "ret": {
       "title": "Trả hàng",
@@ -383,10 +385,15 @@
       },
       "payment": {
         "bankInstructions": "Hướng dẫn chuyển khoản (hiện cho khách)"
+      },
+      "store": {
+        "checkoutEnabled": "Nhận đơn trên web"
       }
     },
     "save": "Lưu cài đặt",
-    "saved": "Đã lưu"
+    "saved": "Đã lưu",
+    "store": "Cửa hàng web",
+    "checkoutHint": "Bỏ chọn khi bảo trì hoặc chuyển server: khách vẫn xem được hàng nhưng không đặt được đơn. Đơn tạo tay trong admin không bị ảnh hưởng."
   },
   "Pricing": {
     "title": "Giá & tỷ giá",
@@ -535,5 +542,21 @@
     "approve": "Đăng",
     "reject": "Từ chối",
     "empty": "Không có đánh giá"
+  },
+  "Account": {
+    "title": "Tài khoản của tôi",
+    "currentPassword": "Mật khẩu hiện tại",
+    "newPassword": "Mật khẩu mới",
+    "confirmPassword": "Nhập lại mật khẩu mới",
+    "hint": "Ít nhất {min} ký tự. Sau khi đổi, các thiết bị khác đang đăng nhập sẽ bị đăng xuất.",
+    "submit": "Đổi mật khẩu",
+    "changed": "Đã đổi mật khẩu",
+    "errors": {
+      "invalid": "Dữ liệu không hợp lệ",
+      "tooShort": "Mật khẩu mới phải có ít nhất {min} ký tự",
+      "mismatch": "Mật khẩu nhập lại không khớp",
+      "same": "Mật khẩu mới phải khác mật khẩu hiện tại",
+      "wrongCurrent": "Mật khẩu hiện tại không đúng"
+    }
   }
 }

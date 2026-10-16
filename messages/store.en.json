@@ -110,7 +110,8 @@
       "proof_not_allowed": "This order is not waiting for a receipt",
       "invalid_transition": "This order can no longer be changed",
       "forbidden": "Not allowed",
-      "unknown": "Something went wrong, please try again"
+      "unknown": "Something went wrong, please try again",
+      "checkout_disabled": "We are temporarily not accepting online orders. Please try again later or message us on Viber/Messenger."
     }
   },
   "Order": {

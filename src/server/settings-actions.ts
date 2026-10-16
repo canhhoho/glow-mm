@@ -11,6 +11,7 @@ export async function saveSettingsAction(_prev: ActionState, formData: FormData)
     const user = await requirePermission("settings:manage");
     const raw: Record<string, unknown> = Object.fromEntries(NUMERIC_SETTING_KEYS.map((k) => [k, formData.get(k)]));
     raw["payment.bankInstructions"] = formData.get("payment.bankInstructions") ?? "";
+    raw["store.checkoutEnabled"] = formData.get("store.checkoutEnabled") === "on";
     await saveSettings(raw, user.id);
   } catch (e) {
     if (e instanceof ZodError) return { error: e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") };

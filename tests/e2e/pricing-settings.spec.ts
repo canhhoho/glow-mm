@@ -28,3 +28,31 @@ test("admin: lưu cài đặt; tính giá mới (xem trước) rồi huỷ", asy
   await expect(page.getByText("Đã huỷ", { exact: true }).filter({ visible: true }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Áp dụng giá đã chọn" })).toHaveCount(0);
 });
+
+test("admin tắt nhận đơn web → trang checkout báo tạm ngừng → bật lại", async ({ page }) => {
+  const toggle = async (on: boolean) => {
+    await login(page, "admin@glow.local");
+    await page.goto("/admin/settings");
+    await page.getByLabel("Nhận đơn trên web").setChecked(on);
+    await page.getByRole("button", { name: "Lưu cài đặt" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Đã lưu" })).toBeVisible();
+  };
+
+  await toggle(false);
+  try {
+    await page.goto("/en/p/sen-viet-sunscreen-spf50");
+    await page.getByRole("button", { name: "Add to cart" }).click();
+    await page.getByRole("link", { name: "Checkout" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "temporarily not accepting online orders" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Place order" })).toHaveCount(0);
+  } finally {
+    await toggle(true);
+  }
+  // login() xoá cookie (giỏ) → thêm lại hàng rồi kiểm tra form đặt hàng hiện lại.
+  await page.goto("/en/p/sen-viet-sunscreen-spf50");
+  await page.getByRole("button", { name: "Add to cart" }).click();
+  await page.getByRole("link", { name: "Checkout" }).click();
+  await expect(page.getByRole("button", { name: "Place order" })).toBeVisible();
+  // Dọn giỏ để không ảnh hưởng test khác (giỏ nằm trong cookie của context này).
+  await page.context().clearCookies();
+});

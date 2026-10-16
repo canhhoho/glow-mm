@@ -7,6 +7,7 @@ import type { StoreLocale } from "@/i18n/routing";
 import { formatMmk } from "@/lib/money";
 import { CART_COOKIE, parseCart } from "@/server/cart/cart";
 import { getCartDetails, storeShippingZones } from "@/server/catalog/store-queries";
+import { getBoolSetting } from "@/server/settings";
 import { CheckoutForm } from "@/components/store/checkout-form";
 import { BlockSkeleton, PageTitle } from "@/components/store/ui";
 
@@ -22,10 +23,11 @@ async function CheckoutContent({ params }: PageProps<"/[locale]/checkout">) {
   const { locale } = (await params) as { locale: StoreLocale };
   setRequestLocale(locale);
   const lines = parseCart((await cookies()).get(CART_COOKIE)?.value);
-  const [t, cart, zones] = await Promise.all([
+  const [t, cart, zones, checkoutEnabled] = await Promise.all([
     getTranslations({ locale, namespace: "Checkout" }),
     getCartDetails(lines, locale),
     storeShippingZones(locale),
+    getBoolSetting("store.checkoutEnabled"),
   ]);
   if (!cart.ok) redirect({ href: "/cart", locale });
 
@@ -60,7 +62,13 @@ async function CheckoutContent({ params }: PageProps<"/[locale]/checkout">) {
           <span>{formatMmk(cart.subtotalMmk, locale)}</span>
         </p>
       </section>
-      <CheckoutForm locale={locale} zones={zoneOptions} idempotencyKey={randomUUID()} />
+      {checkoutEnabled ? (
+        <CheckoutForm locale={locale} zones={zoneOptions} idempotencyKey={randomUUID()} />
+      ) : (
+        <p role="alert" className="rounded-lg border border-border bg-card p-3 text-sm">
+          {t("err.checkout_disabled")}
+        </p>
+      )}
     </div>
   );
 }

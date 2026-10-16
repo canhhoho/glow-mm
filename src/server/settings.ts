@@ -23,6 +23,12 @@ export async function getNumberSetting(key: NumericSettingKey): Promise<number> 
   return typeof v === "number" && Number.isFinite(v) ? v : SETTING_DEFAULTS[key];
 }
 
+/** Bật/tắt nhận đơn web (tắt khi bảo trì / chuyển server). Đơn tạo tay trong admin không bị chặn. */
+export async function getBoolSetting(key: "store.checkoutEnabled"): Promise<boolean> {
+  const row = await prisma.setting.findUnique({ where: { key } });
+  return typeof row?.value === "boolean" ? row.value : true;
+}
+
 export async function getStringSetting(key: "payment.bankInstructions"): Promise<string> {
   const row = await prisma.setting.findUnique({ where: { key } });
   return typeof row?.value === "string" ? row.value : "";
@@ -39,7 +45,12 @@ export async function getAllSettings() {
     }),
   ) as Record<NumericSettingKey, number>;
   const bank = byKey.get("payment.bankInstructions");
-  return { numbers, bankInstructions: typeof bank === "string" ? bank : "" };
+  const checkout = byKey.get("store.checkoutEnabled");
+  return {
+    numbers,
+    bankInstructions: typeof bank === "string" ? bank : "",
+    checkoutEnabled: typeof checkout === "boolean" ? checkout : true,
+  };
 }
 
 const int = (min: number, max: number) => z.coerce.number().int().min(min).max(max);
@@ -54,6 +65,8 @@ export const settingsSchema = z
     "reorder.coverDays": int(0, 365),
     "reorder.salesWindowDays": int(7, 365),
     "payment.bankInstructions": z.string().trim().max(1000).transform(toUnicode),
+    // Không gửi → giữ nguyên giá trị hiện tại.
+    "store.checkoutEnabled": z.boolean().optional(),
   })
   .refine((s) => s["expiry.warnDays"] >= s["expiry.blockDays"], {
     path: ["expiry.warnDays"],
@@ -64,12 +77,16 @@ export const settingsSchema = z
 export async function saveSettings(raw: unknown, userId: string) {
   const input = settingsSchema.parse(raw);
   const before = await getAllSettings();
-  const changed: Record<string, { from: number | string; to: number | string }> = {};
+  const changed: Record<string, { from: number | string | boolean; to: number | string | boolean }> = {};
   for (const k of NUMERIC_SETTING_KEYS) {
     if (before.numbers[k] !== input[k]) changed[k] = { from: before.numbers[k], to: input[k] };
   }
   if (before.bankInstructions !== input["payment.bankInstructions"]) {
     changed["payment.bankInstructions"] = { from: before.bankInstructions, to: input["payment.bankInstructions"] };
+  }
+  const checkout = input["store.checkoutEnabled"];
+  if (checkout !== undefined && checkout !== before.checkoutEnabled) {
+    changed["store.checkoutEnabled"] = { from: before.checkoutEnabled, to: checkout };
   }
   if (Object.keys(changed).length === 0) return changed;
 
@@ -77,8 +94,8 @@ export async function saveSettings(raw: unknown, userId: string) {
     ...Object.keys(changed).map((key) =>
       prisma.setting.upsert({
         where: { key },
-        update: { value: input[key as keyof typeof input] },
-        create: { key, value: input[key as keyof typeof input] },
+        update: { value: changed[key].to },
+        create: { key, value: changed[key].to },
       }),
     ),
     prisma.auditLog.create({ data: { userId, action: "settings.save", entity: "Setting", data: changed } }),

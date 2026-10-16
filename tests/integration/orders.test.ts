@@ -47,6 +47,21 @@ describe("Tạo đơn + giữ hàng", () => {
     expect(order).toMatchObject({ recipientName: name, addressText: address, recipientPhone: "0978123456" });
   });
 
+  it("tắt nhận đơn web → chặn đơn khách (checkout_disabled), đơn tạo tay vẫn được", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
+    const key = "store.checkoutEnabled";
+    const before = await prisma.setting.findUnique({ where: { key } });
+    await prisma.setting.upsert({ where: { key }, update: { value: false }, create: { key, value: false } });
+    try {
+      await expect(createOrder(orderInput(f, 1), { userId: null })).rejects.toMatchObject({ code: "checkout_disabled" });
+      const manual = await createOrder({ ...orderInput(f, 1), channel: "VIBER" }, { userId: f.userId });
+      expect(manual.channel).toBe("VIBER");
+    } finally {
+      if (before) await prisma.setting.update({ where: { key }, data: { value: before.value ?? true } });
+      else await prisma.setting.delete({ where: { key } });
+    }
+  });
+
   it("SĐT sai → invalid_phone", async () => {
     const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 2 }]);
     await expect(createOrder(orderInput(f, 1, { phone: "12345" }), { userId: null })).rejects.toBeInstanceOf(OrderError);
