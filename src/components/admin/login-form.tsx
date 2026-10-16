@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { authClient } from "@/lib/auth-client";
+import { USER_INACTIVE } from "@/server/auth/roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +12,7 @@ import { Label } from "@/components/ui/label";
 export function LoginForm() {
   const t = useTranslations("Login");
   const router = useRouter();
-  const [error, setError] = useState<"invalid" | "tooMany" | null>(null);
+  const [error, setError] = useState<"error" | "tooMany" | "locked" | null>(null);
   const [pending, setPending] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -24,7 +25,7 @@ export function LoginForm() {
       password: String(form.get("password")),
     });
     setPending(false);
-    if (error) return setError(error.status === 429 ? "tooMany" : "invalid");
+    if (error) return setError(error.status === 429 ? "tooMany" : error.code === USER_INACTIVE ? "locked" : "error");
     router.replace("/admin");
     router.refresh();
   }
@@ -41,7 +42,7 @@ export function LoginForm() {
       </div>
       {error && (
         <p role="alert" className="text-sm text-destructive">
-          {t(error === "tooMany" ? "tooMany" : "error")}
+          {t(error)}
         </p>
       )}
       <Button type="submit" className="w-full" disabled={pending}>

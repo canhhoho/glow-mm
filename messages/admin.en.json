@@ -27,7 +27,8 @@
     "password": "Password",
     "submit": "Sign in",
     "error": "Wrong email or password",
-    "tooMany": "Too many sign-in attempts. Try again in a few minutes."
+    "tooMany": "Too many sign-in attempts. Try again in a few minutes.",
+    "locked": "This account is locked. Contact an administrator."
   },
   "Dashboard": {
     "welcome": "Hello, {name}",
@@ -669,5 +670,50 @@
     "viewOnStore": "View on store",
     "yes": "Yes",
     "no": "No"
+  },
+  "Users": {
+    "title": "Staff",
+    "new": "Add staff",
+    "create": "Create account",
+    "created": "Staff account created",
+    "search": "Search name / email",
+    "role": "Role",
+    "status": "Status",
+    "all": "All",
+    "active": "Active",
+    "locked": "Locked",
+    "filter": "Filter",
+    "empty": "No staff found",
+    "name": "Name",
+    "email": "Email",
+    "createdAt": "Created",
+    "edit": "Edit",
+    "you": "you",
+    "tempPassword": "Temporary password",
+    "tempPasswordHint": "At least {min} characters. Give it to the staff member; they change it on the Account page after signing in.",
+    "profile": "Profile",
+    "save": "Save",
+    "saved": "Saved",
+    "selfNote": "This is your own account: you cannot change your role or lock it. Change your password on",
+    "myAccount": "My account",
+    "resetTitle": "Reset password",
+    "reset": "Set temporary password",
+    "resetDone": "New password set; the staff member was signed out on all devices",
+    "resetHint": "At least {min} characters. The staff member is signed out on all devices and must sign in with the new password.",
+    "access": "Access",
+    "lock": "Lock account",
+    "unlock": "Unlock account",
+    "lockHint": "Locking signs them out on every device and blocks sign-in. Activity history is kept.",
+    "unlockHint": "This account is locked. Unlock it to let them sign in again with their old password.",
+    "lockConfirm": "Lock {name}'s account?",
+    "errors": {
+      "invalid": "Invalid data",
+      "email": "Invalid email",
+      "tooShort": "Password must be at least {min} characters",
+      "email_taken": "This email is already used by another account",
+      "not_found": "Staff member not found",
+      "self": "You cannot change the role of, lock, or reset the password of your own account",
+      "last_admin": "At least one active administrator must remain"
+    }
   }
 }

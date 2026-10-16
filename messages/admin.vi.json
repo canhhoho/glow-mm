@@ -27,7 +27,8 @@
     "password": "Mật khẩu",
     "submit": "Đăng nhập",
     "error": "Sai email hoặc mật khẩu",
-    "tooMany": "Đăng nhập quá nhiều lần. Vui lòng thử lại sau ít phút."
+    "tooMany": "Đăng nhập quá nhiều lần. Vui lòng thử lại sau ít phút.",
+    "locked": "Tài khoản đã bị khoá. Liên hệ quản trị viên."
   },
   "Dashboard": {
     "welcome": "Xin chào, {name}",
@@ -669,5 +670,50 @@
     "viewOnStore": "Xem trên web",
     "yes": "Có",
     "no": "Không"
+  },
+  "Users": {
+    "title": "Nhân viên",
+    "new": "Thêm nhân viên",
+    "create": "Tạo tài khoản",
+    "created": "Đã tạo tài khoản nhân viên",
+    "search": "Tìm tên / email",
+    "role": "Vai trò",
+    "status": "Trạng thái",
+    "all": "Tất cả",
+    "active": "Đang hoạt động",
+    "locked": "Đã khoá",
+    "filter": "Lọc",
+    "empty": "Không có nhân viên nào",
+    "name": "Họ tên",
+    "email": "Email",
+    "createdAt": "Ngày tạo",
+    "edit": "Sửa",
+    "you": "bạn",
+    "tempPassword": "Mật khẩu tạm",
+    "tempPasswordHint": "Ít nhất {min} ký tự. Báo mật khẩu này cho nhân viên; họ tự đổi ở trang Tài khoản sau khi đăng nhập.",
+    "profile": "Thông tin",
+    "save": "Lưu",
+    "saved": "Đã lưu",
+    "selfNote": "Đây là tài khoản của bạn: không tự đổi vai trò hay khoá được. Đổi mật khẩu ở",
+    "myAccount": "Tài khoản của tôi",
+    "resetTitle": "Đặt lại mật khẩu",
+    "reset": "Đặt mật khẩu tạm",
+    "resetDone": "Đã đặt mật khẩu mới, nhân viên đã bị đăng xuất khỏi mọi thiết bị",
+    "resetHint": "Ít nhất {min} ký tự. Nhân viên bị đăng xuất khỏi mọi thiết bị và phải đăng nhập bằng mật khẩu mới.",
+    "access": "Quyền truy cập",
+    "lock": "Khoá tài khoản",
+    "unlock": "Mở khoá tài khoản",
+    "lockHint": "Khoá → đăng xuất ngay trên mọi thiết bị và không đăng nhập được nữa. Lịch sử thao tác vẫn giữ nguyên.",
+    "unlockHint": "Tài khoản đang bị khoá. Mở khoá để nhân viên đăng nhập lại bằng mật khẩu cũ.",
+    "lockConfirm": "Khoá tài khoản {name}?",
+    "errors": {
+      "invalid": "Dữ liệu không hợp lệ",
+      "email": "Email không hợp lệ",
+      "tooShort": "Mật khẩu phải có ít nhất {min} ký tự",
+      "email_taken": "Email đã được dùng cho tài khoản khác",
+      "not_found": "Không tìm thấy nhân viên",
+      "self": "Không thể tự thay đổi vai trò, khoá hay đặt lại mật khẩu cho chính mình",
+      "last_admin": "Phải còn ít nhất 1 quản trị viên đang hoạt động"
+    }
   }
 }

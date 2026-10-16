@@ -19,7 +19,7 @@ const NAV: { href: string; key: string; permission: Permission }[] = [
   { href: "/admin/content/collections", key: "collections", permission: "content:manage" },
   { href: "/admin/pricing", key: "pricing", permission: "pricing:manage" },
   { href: "/admin/reports", key: "reports", permission: "reports:view" },
-  // TODO: thêm lại { href: "/admin/users", key: "users", permission: "users:manage" } khi có trang quản lý nhân viên.
+  { href: "/admin/users", key: "users", permission: "users:manage" },
   { href: "/admin/settings", key: "settings", permission: "settings:manage" },
 ];
 
