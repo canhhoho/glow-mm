@@ -5,6 +5,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { z, ZodError } from "zod";
 import { requirePermission } from "@/server/auth/session";
 import type { ActionState } from "@/server/inventory/actions";
+import { removeCategoryIcon, setCategoryIcon, updateCategory } from "./categories";
 import { CATALOG_TAG } from "./category-tree";
 import { addProductImages, deleteProductImage, reorderProductImage, updateProductImageAlt } from "./images";
 import { createBrand, createCategory, importOpeningStockCsv, importProductsCsv, saveProduct, type ImportResult } from "./products";
@@ -53,7 +54,64 @@ export async function createCategoryAction(_prev: ActionState, formData: FormDat
   }
   updateTag(CATALOG_TAG);
   revalidatePath("/admin/products");
+  revalidatePath("/admin/categories");
   return { ok: "category" };
+}
+
+// ───────────────────────── Danh mục (P6) ─────────────────────────
+
+/** Danh mục đổi → menu + nhóm hàng trang chủ (CATALOG_TAG) và trang quản lý. */
+function categoriesChanged() {
+  updateTag(CATALOG_TAG);
+  revalidatePath("/admin/categories");
+}
+
+export async function updateCategoryAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("catalog:manage");
+    await updateCategory(
+      z.string().trim().min(1).max(40).parse(formData.get("categoryId")),
+      {
+        nameMy: String(formData.get("nameMy") ?? ""),
+        nameEn: String(formData.get("nameEn") ?? ""),
+        parentId: String(formData.get("parentId") ?? ""),
+        sortOrder: String(formData.get("sortOrder") ?? "0"),
+      },
+      user.id,
+    );
+  } catch (e) {
+    return { error: message(e) };
+  }
+  categoriesChanged();
+  return { ok: "saved" };
+}
+
+export async function setCategoryIconAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("catalog:manage");
+    const file = formData.get("icon");
+    if (!(file instanceof File) || file.size === 0) return { error: "Chưa chọn ảnh" };
+    await setCategoryIcon(
+      z.string().trim().min(1).max(40).parse(formData.get("categoryId")),
+      { data: Buffer.from(await file.arrayBuffer()), mime: file.type },
+      user.id,
+    );
+  } catch (e) {
+    return { error: message(e) };
+  }
+  categoriesChanged();
+  return { ok: "uploaded" };
+}
+
+export async function removeCategoryIconAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("catalog:manage");
+    await removeCategoryIcon(z.string().trim().min(1).max(40).parse(formData.get("categoryId")), user.id);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  categoriesChanged();
+  return { ok: "removed" };
 }
 
 // ───────────────────────── Ảnh sản phẩm ─────────────────────────

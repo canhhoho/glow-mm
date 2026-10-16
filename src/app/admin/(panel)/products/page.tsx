@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
-import { listProductsAdmin, rootCategories } from "@/server/catalog/admin-queries";
-import { BrandForm, CategoryForm } from "@/components/admin/catalog-forms";
+import { listProductsAdmin } from "@/server/catalog/admin-queries";
+import { BrandForm } from "@/components/admin/catalog-forms";
 import { Badge, DataTable, fieldClass, LinkButton, PageHeader, Td } from "@/components/admin/ui";
 import { fmtInt } from "@/lib/format";
 
@@ -10,7 +10,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
   await requirePagePermission("catalog:manage");
   const { q } = await searchParams;
   const query = typeof q === "string" ? q : undefined;
-  const [t, products, parents] = await Promise.all([getTranslations("Products"), listProductsAdmin(query), rootCategories()]);
+  const [t, tn, products] = await Promise.all([getTranslations("Products"), getTranslations("Nav"), listProductsAdmin(query)]);
 
   return (
     <div className="space-y-6">
@@ -62,7 +62,8 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
         </section>
         <section className="rounded-lg border p-4">
           <h2 className="mb-3 font-medium">{t("newCategory")}</h2>
-          <CategoryForm parents={parents} />
+          {/* Thêm/sửa danh mục + icon: trang Danh mục (P6). */}
+          <LinkButton href="/admin/categories">{tn("categories")} →</LinkButton>
         </section>
       </div>
     </div>

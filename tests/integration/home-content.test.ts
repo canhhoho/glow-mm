@@ -11,6 +11,7 @@ import {
   addCollectionProducts,
   collectionVisible,
   createCollection,
+  deleteCollection,
   getStoreCollection,
   homeCollections,
   moveCollectionProduct,
@@ -75,6 +76,9 @@ describe("Banner trang chủ", () => {
     await deleteBanner(all.id, userId);
     expect(await prisma.fileObject.findUnique({ where: { id: after.desktopFileId } })).toBeNull();
     expect(await disk().get(after.desktopFile.key)).toBeNull();
+
+    // Dọn: CI chạy integration trước E2E trên cùng DB → không để banner test lọt lên trang chủ.
+    for (const b of await prisma.banner.findMany({ where: { alt: { startsWith: tag } } })) await deleteBanner(b.id, userId);
   });
 
   it("từ chối SVG, link javascript:, lịch ngược; DB lỗi thì không để file mồ côi", async () => {
@@ -136,6 +140,8 @@ describe("Bộ sưu tập", () => {
     expect(await collectionVisible(slug, now)).toBe(false);
     await edit({});
     expect(await collectionVisible(slug, now)).toBe(true);
+    await deleteCollection(c.id, userId); // dọn (xem ghi chú ở test banner)
+    expect(await collectionVisible(slug, now)).toBe(false);
   });
 });
 
