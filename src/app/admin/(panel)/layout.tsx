@@ -16,7 +16,7 @@ const NAV: { href: string; key: string; permission: Permission }[] = [
   { href: "/admin/products", key: "products", permission: "catalog:manage" },
   { href: "/admin/pricing", key: "pricing", permission: "pricing:manage" },
   { href: "/admin/reports", key: "reports", permission: "reports:view" },
-  { href: "/admin/users", key: "users", permission: "users:manage" },
+  // TODO: thêm lại { href: "/admin/users", key: "users", permission: "users:manage" } khi có trang quản lý nhân viên.
   { href: "/admin/settings", key: "settings", permission: "settings:manage" },
 ];
 

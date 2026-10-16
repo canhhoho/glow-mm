@@ -78,3 +78,22 @@ export async function getProductForEdit(id: string) {
   };
 }
 export type ProductEditData = NonNullable<Awaited<ReturnType<typeof getProductForEdit>>>;
+
+export async function getProductImages(productId: string) {
+  const images = await prisma.productImage.findMany({
+    where: { productId },
+    orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+    include: { file: { select: { url: true, size: true } } },
+  });
+  return images.map((i) => ({ id: i.id, url: i.file.url, size: i.file.size, alt: i.alt ?? "" }));
+}
+
+/** Danh mục gốc — chọn làm danh mục cha khi tạo danh mục con (cây 2 cấp). */
+export async function rootCategories() {
+  const cats = await prisma.category.findMany({
+    where: { parentId: null },
+    include: { translations: true },
+    orderBy: [{ sortOrder: "asc" }, { slug: "asc" }],
+  });
+  return cats.map((c) => ({ id: c.id, name: productName(c.translations, c.slug) }));
+}
