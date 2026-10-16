@@ -125,6 +125,7 @@ Trạng thái: P0 ✅ (2026-10-15) · P1 ✅ (2026-10-15) · P2 ✅ (2026-10-15)
 | **P4a Chuẩn bị chuyển** ✅ | Đổi mật khẩu nhân viên (`/admin/account`), cờ tạm tắt nhận đơn web, script chuyển file Blob → ổ đĩa, diễn tập local bằng `docker-compose.prod.yml` (restore dump, chuyển file, backup → khôi phục) | Toàn bộ test xanh; diễn tập local đạt các mục của checklist DEPLOY §2.5 không cần server/domain |
 | **P4b Lên server Myanmar** | Khi có server + domain. Theo DEPLOY.md: hardening, Coolify, domain, HTTPS, chuyển DB/file, backup | Checklist sau khi chuyển đạt; khôi phục thử từ backup thành công |
 | **P6 Nội dung trang chủ** ✅ (2026-10-16) | Quản trị banner carousel, icon danh mục, bộ sưu tập sản phẩm; hiển thị trên trang chủ theo bố cục responsive đã duyệt | Toàn bộ test xanh (có E2E admin → storefront, mobile + desktop); `npm run perf`: mobile ≥ 85, desktop ≥ 90, slow-3g ≥ 70 cho trang không có banner ảnh (trang chủ có banner ảnh: chấp nhận 69, xem ghi chú P6) |
+| **P7 Hoàn thiện trước khi mở bán** (đang làm) | SEO (metadataBase, canonical/hreflang, Open Graph, JSON-LD sản phẩm, robots.txt, sitemap.xml, noindex trang riêng tư), 404 có giao diện cho mọi đường dẫn lạ, sửa nút ngôn ngữ Myanmar, quy trình xuất/nhập bản dịch cho người bản ngữ duyệt | Toàn bộ test xanh (E2E 404, meta/JSON-LD, robots/sitemap); `npm run perf` giữ ngưỡng |
 
 **P3 — quyết định đã chốt (2026-10-15):**
 - Thêm trang Cài đặt (ngưỡng, giờ giữ hàng, COD, làm tròn giá, hướng dẫn chuyển khoản); quản lý Nhân viên để sau.
@@ -210,6 +211,12 @@ Trạng thái: P0 ✅ (2026-10-15) · P1 ✅ (2026-10-15) · P2 ✅ (2026-10-15)
 - Nút "Lên/Xuống" đủ dùng khi số lượng ít. Kéo-thả để sau.
 - Seed-demo (đang làm ở phiên khác) có thể thêm banner/icon mẫu sau khi P6a xong.
 - Chuỗi tiếng Myanmar mới cần người bản ngữ duyệt **[CẦN XÁC MINH]**.
+
+**P7 — Hoàn thiện trước khi mở bán: quyết định (2026-10-16)**
+- URL gốc lấy từ `APP_URL` lúc build (Docker: build arg) qua `src/lib/site.ts`, không qua `env()` (build không có secret).
+- 404 cho đường dẫn lạ: proxy rewrite sang `/<locale>/404` (trang tĩnh, HTTP 404 thật, có header/footer) theo danh sách dạng route `isKnownStorePath`; không dùng `globalNotFound` (còn experimental). Unit test quét `src/app/[locale]` để danh sách không lệch route.
+- Bản dịch: `npm run i18n:export` ra CSV (Excel) cho người bản ngữ, `npm run i18n:import` ghi lại cột `my` (giữ biến ICU, chuyển Zawgyi → Unicode); key cần duyệt liệt kê trong `messages/review-my.json`.
+- Ngoài phạm vi: mã giảm giá, tài khoản khách, Telegram, Search Console/Analytics (cần tài khoản + domain, làm ở P4b) **[CẦN XÁC MINH]**.
 
 ## 5. Giao diện
 - **Storefront:** tươi sáng, hồng đào. Màu chính `#E8657A`, màu phụ xanh lá nhạt `#7FB89A`, nền kem `#FFF8F5`, chữ `#2B2B2B`. Mobile-first, nút bấm cao ít nhất 44px.
