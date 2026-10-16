@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
+import { ogLocale, siteUrl } from "@/lib/site";
 import { StoreHeader } from "@/components/store/header";
 import { StoreFooter } from "@/components/store/footer";
 import { ChatFab } from "@/components/store/chat-fab";
@@ -34,10 +35,21 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "Meta" });
   // Manifest sinh từ src/app/manifest.ts (Next tự gắn <link rel="manifest">).
+  // canonical/hreflang đặt ở từng trang (alternates); ảnh OG mặc định là file tĩnh để trang SP ghi đè được.
   return {
-    title: t("title"),
+    metadataBase: siteUrl(),
+    title: { default: t("title"), template: "%s · Glow VN" },
     description: t("description"),
     icons: { icon: "/icons/icon-192.png", apple: "/icons/apple-touch-icon.png" },
+    openGraph: {
+      type: "website",
+      siteName: "Glow VN",
+      locale: ogLocale(locale),
+      title: t("title"),
+      description: t("description"),
+      images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "Glow VN" }],
+    },
+    twitter: { card: "summary_large_image" },
   };
 }
 

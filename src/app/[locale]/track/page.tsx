@@ -1,7 +1,11 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { TrackForm } from "@/components/store/track-form";
 import { BlockSkeleton, PageTitle } from "@/components/store/ui";
+
+/** Tra cứu đơn: không cho máy tìm kiếm index (SEO, P7). */
+export const metadata: Metadata = { robots: { index: false, follow: true } };
 
 export default function TrackPage(props: PageProps<"/[locale]/track">) {
   return (

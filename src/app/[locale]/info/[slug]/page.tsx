@@ -4,6 +4,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { INFO_PAGES, isInfoPage } from "@/lib/info-pages";
 import { PageTitle, storeCard } from "@/components/store/ui";
+import { alternates } from "@/lib/site";
 
 export function generateStaticParams() {
   return routing.locales.flatMap((locale) => INFO_PAGES.map((slug) => ({ locale, slug })));
@@ -13,7 +14,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/info/[sl
   const { locale, slug } = await params;
   if (!isInfoPage(slug)) return {};
   const t = await getTranslations({ locale, namespace: "Info" });
-  return { title: t(`${slug}.title`) };
+  return { title: t(`${slug}.title`), alternates: alternates(locale, `/info/${slug}`) };
 }
 
 /** Trang tĩnh: giới thiệu, giao hàng, thanh toán, đổi trả, quyền riêng tư. */

@@ -1,9 +1,13 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { listStoreProducts } from "@/server/catalog/store-queries";
 import { CatalogFilters, parseCatalogParams } from "@/components/store/catalog-filters";
 import { ProductGrid } from "@/components/store/product-card";
 import { ListSkeleton, primaryButton, storeCard, storeField } from "@/components/store/ui";
+
+/** Kết quả tìm kiếm: không cho máy tìm kiếm index (SEO, P7). */
+export const metadata: Metadata = { robots: { index: false, follow: true } };
 
 export default function SearchPage(props: PageProps<"/[locale]/search">) {
   return (

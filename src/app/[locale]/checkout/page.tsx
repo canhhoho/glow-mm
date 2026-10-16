@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
@@ -10,6 +11,9 @@ import { getCartDetails, storeShippingZones } from "@/server/catalog/store-queri
 import { getBoolSetting } from "@/server/settings";
 import { CheckoutForm } from "@/components/store/checkout-form";
 import { BlockSkeleton, PageTitle } from "@/components/store/ui";
+
+/** Thanh toán: không cho máy tìm kiếm index (SEO, P7). */
+export const metadata: Metadata = { robots: { index: false, follow: true } };
 
 export default function CheckoutPage(props: PageProps<"/[locale]/checkout">) {
   return (

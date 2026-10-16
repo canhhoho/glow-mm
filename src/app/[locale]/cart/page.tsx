@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -8,6 +9,9 @@ import { setCartQtyAction } from "@/server/cart/actions";
 import { CART_COOKIE, parseCart } from "@/server/cart/cart";
 import { getCartDetails } from "@/server/catalog/store-queries";
 import { BlockSkeleton, Notice, outlineButton, PageTitle, primaryButton, storeCard, storeField } from "@/components/store/ui";
+
+/** Giỏ hàng: không cho máy tìm kiếm index (SEO, P7). */
+export const metadata: Metadata = { robots: { index: false, follow: true } };
 
 export default function CartPage(props: PageProps<"/[locale]/cart">) {
   return (

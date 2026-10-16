@@ -91,7 +91,7 @@ Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong bi�
    - File này gồm `db` (Postgres 17), `migrate` (`prisma migrate deploy`, chạy xong thì thoát) và `app` (Next standalone, user không phải root).
 3. Environment Variables (nhập trong Coolify):
    - `POSTGRES_PASSWORD` (mạnh);
-   - `APP_URL=https://<domain>`;
+   - `APP_URL=https://<domain>` (dùng cả lúc build qua build arg cho canonical/Open Graph — đổi domain thì phải **build lại**, không chỉ restart);
    - `BETTER_AUTH_SECRET`, `CRON_SECRET` (giá trị **mới**, khác Vercel);
    - `FB_PAGE_USERNAME`, `VIBER_CHAT_URI`.
 4. Persistent storage:
@@ -102,7 +102,7 @@ Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong bi�
 ### 2.3 Domain + HTTPS
 1. DNS: bản ghi `A` của `<domain>` (và `www` nếu cần) trỏ về IP server.
 2. Coolify → service `app` → Domains: `https://<domain>`. Coolify (Traefik) tự xin chứng chỉ Let's Encrypt; cần cổng 80/443 mở.
-3. Cập nhật `APP_URL=https://<domain>` → Redeploy.
+3. Cập nhật `APP_URL=https://<domain>` → Redeploy (build lại image để metadata SEO dùng domain mới). Kiểm tra `https://<domain>/robots.txt` và `/sitemap.xml` trỏ đúng domain.
 4. Bỏ `ports: "3000:3000"` của `app` nếu Coolify định tuyến qua proxy nội bộ, để không lộ cổng 3000 **[CẦN XÁC MINH theo cách Coolify xử lý compose]**.
 
 ### 2.4 Chuyển dữ liệu từ Neon

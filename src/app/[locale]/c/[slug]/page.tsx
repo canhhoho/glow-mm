@@ -1,10 +1,24 @@
+import { cache } from "react";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getStoreCategory, listStoreProducts } from "@/server/catalog/store-queries";
 import { CatalogFilters, parseCatalogParams } from "@/components/store/catalog-filters";
 import { ProductGrid } from "@/components/store/product-card";
 import { Breadcrumb, storeCard } from "@/components/store/ui";
+import { alternates } from "@/lib/site";
+
+// Metadata và trang dùng chung một lần truy vấn trong cùng request.
+const loadCategory = cache((slug: string, locale: string) => getStoreCategory(slug, locale));
+
+export async function generateMetadata({ params }: PageProps<"/[locale]/c/[slug]">): Promise<Metadata> {
+  const { locale, slug } = await params;
+  await connection();
+  const c = await loadCategory(slug, locale);
+  return c ? { title: c.name, alternates: alternates(locale, `/c/${slug}`) } : {};
+}
 
 /** Render chặn: HTML trả về đã có danh sách sản phẩm → LCP sớm trên 3G (xem trang sản phẩm). */
 export const instant = false;
@@ -16,7 +30,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps<"
   const [t, tn, category, products] = await Promise.all([
     getTranslations({ locale, namespace: "Catalog" }),
     getTranslations({ locale, namespace: "Nav" }),
-    getStoreCategory(slug, locale),
+    loadCategory(slug, locale),
     listStoreProducts({ locale, category: slug, brand: current.brand, tags: current.tags, sort: current.sort }),
   ]);
   if (!category) notFound();

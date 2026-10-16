@@ -35,6 +35,9 @@ services:
     build:
       context: .
       target: runner
+      args:
+        # Metadata tĩnh (canonical/Open Graph) cần URL gốc lúc build.
+        APP_URL: ${APP_URL:-http://localhost:3000}
     restart: unless-stopped
     env_file:
       - path: .env.prod

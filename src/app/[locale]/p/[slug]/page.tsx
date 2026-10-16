@@ -20,6 +20,8 @@ import {
   StoreSection,
   storeField,
 } from "@/components/store/ui";
+import { absoluteUrl, alternates, localizedPath, ogLocale } from "@/lib/site";
+import { breadcrumbJsonLd, jsonLdScript, productJsonLd } from "@/server/catalog/structured-data";
 
 // Metadata và trang dùng chung một lần truy vấn trong cùng request.
 const loadProduct = cache((slug: string, locale: string) => getStoreProduct(slug, locale));
@@ -28,7 +30,24 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/p/[slug]
   const { locale, slug } = await params;
   await connection();
   const p = await loadProduct(slug, locale);
-  return p ? { title: `${p.name} · ${p.brand}`, description: p.description?.slice(0, 160) } : {};
+  if (!p) return {};
+  const title = `${p.name} · ${p.brand}`;
+  const description = p.description?.slice(0, 160);
+  return {
+    title,
+    description,
+    alternates: alternates(locale, `/p/${slug}`),
+    openGraph: {
+      type: "website",
+      siteName: "Glow VN",
+      locale: ogLocale(locale),
+      title,
+      description,
+      images: p.images[0]
+        ? [{ url: p.images[0].url, alt: p.images[0].alt ?? p.name }]
+        : [{ url: "/og-default.png", width: 1200, height: 630, alt: "Glow VN" }],
+    },
+  };
 }
 
 /**
@@ -77,8 +96,19 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
     { key: "storage", title: t("storage"), body: p.storageNote },
   ].filter((s) => s.body);
 
+  const pageUrl = absoluteUrl(localizedPath(locale, `/p/${p.slug}`));
+  const jsonLd = [
+    productJsonLd(p, { url: pageUrl, absolute: absoluteUrl, rating: reviews }),
+    breadcrumbJsonLd([
+      { name: tn("home"), url: absoluteUrl(localizedPath(locale, "/")) },
+      { name: p.category.name, url: absoluteUrl(localizedPath(locale, `/c/${p.category.slug}`)) },
+      { name: p.name, url: pageUrl },
+    ]),
+  ];
+
   return (
     <div className="space-y-4">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }} />
       <Breadcrumb
         label={tn("breadcrumb")}
         items={[

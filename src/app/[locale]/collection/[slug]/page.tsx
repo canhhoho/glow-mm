@@ -6,6 +6,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getStoreCollection } from "@/server/content/collections";
 import { ProductGrid } from "@/components/store/product-card";
 import { Breadcrumb, storeCard } from "@/components/store/ui";
+import { alternates } from "@/lib/site";
 
 // Metadata và trang dùng chung một lần truy vấn trong cùng request.
 const loadCollection = cache((slug: string, locale: string) => getStoreCollection(slug, locale, new Date()));
@@ -14,7 +15,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/collecti
   const { locale, slug } = await params;
   await connection();
   const c = await loadCollection(slug, locale);
-  return c ? { title: c.name } : {};
+  return c ? { title: c.name, alternates: alternates(locale, `/collection/${slug}`) } : {};
 }
 
 /** Render chặn: HTML đã có danh sách sản phẩm → LCP sớm trên 3G (như trang danh mục). */
