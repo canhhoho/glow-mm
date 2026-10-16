@@ -18,7 +18,9 @@
     "postinstall": "prisma generate",
     "vercel-build": "prisma migrate deploy && next build",
     "test:int": "vitest run -c vitest.integration.config.mts",
-    "perf": "node scripts/lighthouse.mjs"
+    "perf": "node scripts/lighthouse.mjs",
+    "i18n:export": "tsx scripts/i18n-export.ts",
+    "i18n:import": "tsx scripts/i18n-import.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

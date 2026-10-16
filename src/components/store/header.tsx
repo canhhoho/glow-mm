@@ -66,11 +66,14 @@ export async function StoreHeader({ locale }: { locale: StoreLocale }) {
           Glow VN
         </Link>
 
+        {/* lang theo ngôn ngữ đích: chữ Myanmar cần line-height cao (trang /en có lang="en"). */}
         <Link
           href="/"
           locale={other}
-          className="col-start-3 row-start-1 inline-flex h-8 items-center justify-self-end rounded px-2 text-xs whitespace-nowrap text-brand-foreground uppercase ring-1 ring-white/50"
+          lang={other}
+          className="col-start-3 row-start-1 inline-flex min-h-8 items-center justify-self-end rounded px-2 py-0.5 text-sm leading-[1.8] whitespace-nowrap text-brand-foreground ring-1 ring-white/50"
           aria-label={t("language")}
+          data-testid="language-switch"
         >
           {other === "my" ? "မြန်မာ" : "EN"}
         </Link>

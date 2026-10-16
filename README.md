@@ -20,3 +20,20 @@ Tài khoản mẫu: `admin@glow.local`, `kho@glow.local`, `donhang@glow.local` �
 ```bash
 npm test
 ```
+
+## Bản dịch (duyệt tiếng Myanmar)
+
+Chuỗi giao diện nằm trong `messages/` (storefront `store.{my,en}.json`, admin `admin.{vi,en,my}.json`).
+Danh sách chuỗi tiếng Myanmar **cần người bản ngữ duyệt** ở `messages/review-my.json`.
+
+```bash
+npm run i18n:export
+```
+
+Lệnh trên tạo `i18n-export.csv` (mở bằng Excel). Người duyệt sửa cột `my`, rồi **xoá chữ `x` ở cột `review`** của dòng đã duyệt.
+
+```bash
+npm run i18n:import -- i18n-export.csv
+```
+
+Lệnh trên ghi lại cột `my` (tự chuyển Zawgyi → Unicode) và bỏ các dòng đã duyệt khỏi `review-my.json`. Gặp key lạ hoặc thiếu/thừa biến như `{count}` thì lệnh báo lỗi và không ghi gì.
