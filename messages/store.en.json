@@ -9,7 +9,9 @@
     "categories": "Categories",
     "orderLookup": "Track order",
     "language": "Language",
-    "home": "Home"
+    "home": "Home",
+    "menu": "Menu",
+    "allIn": "All {name}"
   },
   "Home": {
     "heroKicker": "Direct from Vietnam",
@@ -38,7 +40,8 @@
   },
   "Footer": {
     "contact": "Contact",
-    "rights": "All rights reserved"
+    "rights": "All rights reserved",
+    "info": "Information"
   },
   "NotFound": {
     "title": "Page not found",
@@ -179,5 +182,45 @@
   },
   "Chat": {
     "label": "Chat with us"
+  },
+  "Info": {
+    "about": {
+      "title": "About us",
+      "body": [
+        "Glow VN brings skincare and cosmetics made in Vietnam directly to customers in Myanmar.",
+        "Every product is imported by us, stored at our warehouse in Yangon and checked for its expiry date before it is shipped.",
+        "Questions about a product? Contact us on Viber or Messenger — we are happy to help you choose."
+      ]
+    },
+    "shipping": {
+      "title": "Shipping",
+      "body": [
+        "We deliver within Myanmar. The shipping fee and any free-shipping threshold depend on your township and are shown at checkout before you place the order.",
+        "After your order is confirmed we pack it and hand it to the courier. You can follow its status on the Track order page with your order code and phone number."
+      ]
+    },
+    "payment": {
+      "title": "Payment",
+      "body": [
+        "Cash on delivery (COD): pay the courier when you receive the parcel. We call you first to confirm the order.",
+        "Bank transfer: after ordering, transfer the total and upload a photo of the receipt on your order page. We ship once the payment has been checked.",
+        "Unpaid bank-transfer orders are held for a limited time and then cancelled automatically."
+      ]
+    },
+    "returns": {
+      "title": "Returns",
+      "body": [
+        "If a product arrives damaged, is wrong or is close to its expiry date, contact us within a few days of receiving it with your order code and photos.",
+        "Returned items are inspected first. When the return is accepted we refund the amount for the returned items or send a replacement.",
+        "For hygiene reasons, opened products cannot be returned unless they are faulty."
+      ]
+    },
+    "privacy": {
+      "title": "Privacy",
+      "body": [
+        "We only collect the information needed to deliver your order: name, phone number and address.",
+        "Your information is used to process and deliver orders and to contact you about them. We do not sell it to anyone."
+      ]
+    }
   }
 }

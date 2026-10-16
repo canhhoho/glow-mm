@@ -51,3 +51,17 @@ export function BlockSkeleton() {
     </div>
   );
 }
+
+/** Ảnh dự phòng khi sản phẩm chưa có ảnh: chữ cái đầu thương hiệu trên nền token (đặt trong khung `relative`). */
+export function ImageFallback({ brand, className }: { brand: string; className?: string }) {
+  const initial = Array.from(brand.trim())[0]?.toUpperCase() ?? "G";
+  return (
+    <span
+      aria-hidden
+      data-testid="image-fallback"
+      className={cn("absolute inset-0 grid place-items-center bg-accent font-medium text-accent-foreground/70 select-none", className)}
+    >
+      {initial}
+    </span>
+  );
+}

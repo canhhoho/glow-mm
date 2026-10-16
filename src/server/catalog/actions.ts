@@ -1,10 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { z, ZodError } from "zod";
 import { requirePermission } from "@/server/auth/session";
 import type { ActionState } from "@/server/inventory/actions";
+import { CATALOG_TAG } from "./category-tree";
 import { addProductImages, deleteProductImage, reorderProductImage, updateProductImageAlt } from "./images";
 import { createBrand, createCategory, importOpeningStockCsv, importProductsCsv, saveProduct, type ImportResult } from "./products";
 
@@ -22,6 +23,7 @@ export async function saveProductAction(_prev: ActionState, formData: FormData):
   } catch (e) {
     return { error: message(e) };
   }
+  updateTag(CATALOG_TAG); // menu danh mục storefront (SP đăng/ẩn, đổi danh mục)
   revalidatePath("/admin/products");
   redirect(`/admin/products/${id}?saved=1`);
 }
@@ -49,6 +51,7 @@ export async function createCategoryAction(_prev: ActionState, formData: FormDat
   } catch (e) {
     return { error: message(e) };
   }
+  updateTag(CATALOG_TAG);
   revalidatePath("/admin/products");
   return { ok: "category" };
 }
@@ -127,6 +130,7 @@ export async function importProductsAction(_prev: ImportState, formData: FormDat
   try {
     const user = await requirePermission("catalog:manage");
     const result = await importProductsCsv(await readCsv(formData), user.id);
+    updateTag(CATALOG_TAG);
     revalidatePath("/admin/products");
     return result;
   } catch (e) {

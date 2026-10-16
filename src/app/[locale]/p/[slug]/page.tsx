@@ -11,7 +11,7 @@ import { addToCartAction } from "@/server/cart/actions";
 import { getStoreProduct } from "@/server/catalog/store-queries";
 import { productReviews } from "@/server/reviews/reviews";
 import { ContactLinks } from "@/components/store/contact-links";
-import { primaryButton, storeField } from "@/components/store/ui";
+import { ImageFallback, primaryButton, storeField } from "@/components/store/ui";
 
 // Metadata và trang dùng chung một lần truy vấn trong cùng request.
 const loadProduct = cache((slug: string, locale: string) => getStoreProduct(slug, locale));
@@ -49,8 +49,10 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
   return (
     <article className="space-y-4">
       <div className="relative aspect-square overflow-hidden rounded-xl bg-accent">
-        {p.images[0] && (
+        {p.images[0] ? (
           <Image src={p.images[0].url} alt={p.images[0].alt ?? p.name} fill priority sizes="(max-width: 768px) 100vw, 720px" className="object-cover" />
+        ) : (
+          <ImageFallback brand={p.brand} className="text-8xl" />
         )}
       </div>
       {p.images.length > 1 && (

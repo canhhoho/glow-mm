@@ -57,7 +57,7 @@ export default async function StoreLayout({ children, params }: LayoutProps<"/[l
           <div className="mx-auto flex min-h-dvh max-w-screen-md flex-col">
             <StoreHeader locale={locale} />
             <main className="flex-1 px-4 py-4">{children}</main>
-            <StoreFooter />
+            <StoreFooter locale={locale} />
             <ChatFab locale={locale} />
             <SwRegister />
           </div>

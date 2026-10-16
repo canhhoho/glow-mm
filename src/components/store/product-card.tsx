@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { formatMmk } from "@/lib/money";
 import type { ProductCardData } from "@/server/catalog/store-queries";
+import { ImageFallback } from "./ui";
 
 export async function ProductCard({ p, locale }: { p: ProductCardData; locale: string }) {
   const t = await getTranslations({ locale, namespace: "Catalog" });
@@ -11,8 +12,10 @@ export async function ProductCard({ p, locale }: { p: ProductCardData; locale: s
     <li className="rounded-lg border border-border bg-card p-2">
       <Link href={`/p/${p.slug}`} className="block">
         <div className="relative mb-2 aspect-square overflow-hidden rounded-md bg-accent">
-          {p.imageUrl && (
+          {p.imageUrl ? (
             <Image src={p.imageUrl} alt={p.imageAlt ?? p.name} fill sizes="(max-width: 768px) 50vw, 360px" className="object-cover" />
+          ) : (
+            <ImageFallback brand={p.brand} className="text-5xl" />
           )}
           {!p.inStock && (
             <span className="absolute top-1 left-1 rounded bg-card/90 px-1.5 py-0.5 text-xs">{tp("outOfStock")}</span>

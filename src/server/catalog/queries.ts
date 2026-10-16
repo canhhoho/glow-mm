@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { buildCategoryTree } from "./category-tree";
 
 /** Lấy bản dịch theo locale, fallback sang bản đầu tiên có sẵn. */
 export function pick<T extends { locale: string }>(rows: T[], locale: string): T | undefined {
@@ -20,4 +21,21 @@ export async function listRootCategories(locale: string) {
     include: { translations: true },
   });
   return categories.map((c) => ({ slug: c.slug, name: pick(c.translations, locale)?.name ?? c.slug }));
+}
+
+/** Cây danh mục 2 cấp cho menu header (chỉ nhánh có SP đã đăng). */
+export async function listCategoryTree(locale: string) {
+  const categories = await prisma.category.findMany({
+    include: { translations: true, _count: { select: { products: { where: { published: true } } } } },
+  });
+  return buildCategoryTree(
+    categories.map((c) => ({
+      id: c.id,
+      slug: c.slug,
+      parentId: c.parentId,
+      sortOrder: c.sortOrder,
+      name: pick(c.translations, locale)?.name ?? c.slug,
+      published: c._count.products,
+    })),
+  );
 }
