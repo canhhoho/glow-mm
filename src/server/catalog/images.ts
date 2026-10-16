@@ -1,9 +1,14 @@
 import "server-only";
-import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { toUnicode } from "@/lib/myanmar";
-import { storage, type StoredFile } from "@/server/adapters/storage";
+import {
+  deleteFileIfUnused,
+  deleteStoredKeys,
+  discardStored,
+  putPublicImages,
+  type ImageUpload,
+} from "@/server/files/public-images";
 import type { Tx } from "@/server/inventory/ledger";
 import { CatalogError } from "./products";
 
@@ -12,34 +17,11 @@ import { CatalogError } from "./products";
  * Thứ tự hiển thị theo sortOrder (ảnh đầu tiên là ảnh đại diện).
  */
 
-export const IMAGE_MIME: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
-export const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+export type { ImageUpload } from "@/server/files/public-images";
 export const IMAGE_MAX_PER_UPLOAD = 10;
-
-/** Nhận dạng định dạng theo magic bytes — không tin mime trình duyệt gửi lên. */
-export function sniffImageMime(data: Buffer): string | null {
-  if (data.length >= 3 && data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff) return "image/jpeg";
-  if (data.length >= 8 && data.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "image/png";
-  if (data.length >= 12 && data.toString("ascii", 0, 4) === "RIFF" && data.toString("ascii", 8, 12) === "WEBP") return "image/webp";
-  return null;
-}
 
 // Như các nghiệp vụ khác: chờ kết nối lâu hơn mặc định 2s khi server bận.
 const TX = { maxWait: 10_000, timeout: 30_000 };
-
-export type ImageUpload = { data: Buffer; mime: string };
-
-function checkFile(file: ImageUpload): string {
-  const mime = sniffImageMime(file.data);
-  if (!mime || !IMAGE_MIME[file.mime] || file.data.length === 0 || file.data.length > IMAGE_MAX_BYTES) {
-    throw new CatalogError("File ảnh không hợp lệ (JPG/PNG/WebP, tối đa 5MB)");
-  }
-  return mime;
-}
 
 /** Khoá dòng Product để thêm/sắp xếp ảnh không giẫm sortOrder của nhau. */
 async function lockProduct(tx: Tx, productId: string) {
@@ -49,17 +31,11 @@ async function lockProduct(tx: Tx, productId: string) {
 export async function addProductImages(productId: string, files: ImageUpload[], userId: string) {
   if (files.length === 0) throw new CatalogError("Chưa chọn ảnh");
   if (files.length > IMAGE_MAX_PER_UPLOAD) throw new CatalogError(`Tối đa ${IMAGE_MAX_PER_UPLOAD} ảnh mỗi lần`);
-  const mimes = files.map(checkFile);
   const product = await prisma.product.findUnique({ where: { id: productId }, select: { id: true, slug: true } });
   if (!product) throw new CatalogError("Không tìm thấy sản phẩm");
 
-  const s = await storage();
-  const stored: StoredFile[] = [];
+  const stored = await putPublicImages(`products/${product.slug}`, files, CatalogError);
   try {
-    for (const [i, file] of files.entries()) {
-      const key = `products/${product.slug}/${randomBytes(12).toString("hex")}.${IMAGE_MIME[mimes[i]]}`;
-      stored.push(await s.put(key, file.data, mimes[i]));
-    }
     return await prisma.$transaction(async (tx) => {
       await lockProduct(tx, product.id);
       const last = await tx.productImage.aggregate({ where: { productId: product.id }, _max: { sortOrder: true } });
@@ -75,8 +51,7 @@ export async function addProductImages(productId: string, files: ImageUpload[], 
       return images;
     }, TX);
   } catch (e) {
-    // Không để file mồ côi trên storage khi ghi DB lỗi.
-    await Promise.allSettled(stored.map((f) => s.delete(f.key)));
+    await discardStored(stored);
     throw e;
   }
 }
@@ -126,20 +101,12 @@ export async function deleteProductImage(imageId: string, userId: string) {
   const orphanKey = await prisma.$transaction(async (tx) => {
     await lockProduct(tx, image.productId);
     await tx.productImage.delete({ where: { id: image.id } });
-    const file = await tx.fileObject.findUniqueOrThrow({
-      where: { id: image.fileId },
-      include: { _count: { select: { productImages: true, paymentProofs: true } } },
-    });
-    let key: string | null = null;
-    if (file._count.productImages === 0 && file._count.paymentProofs === 0) {
-      await tx.fileObject.delete({ where: { id: file.id } });
-      key = file.key;
-    }
+    const key = await deleteFileIfUnused(tx, image.fileId);
     await tx.auditLog.create({
-      data: { userId, action: "product.image.delete", entity: "Product", entityId: image.productId, data: { imageId, fileKey: file.key } },
+      data: { userId, action: "product.image.delete", entity: "Product", entityId: image.productId, data: { imageId, fileId: image.fileId } },
     });
     return key;
   }, TX);
-  if (orphanKey) await (await storage()).delete(orphanKey);
+  await deleteStoredKeys([orphanKey]);
   return { productId: image.productId, fileDeleted: !!orphanKey };
 }

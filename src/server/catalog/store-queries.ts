@@ -27,8 +27,45 @@ async function availability(variantIds: string[]) {
   return prisma.$transaction((tx) => availableToSell(tx, variantIds, { now: new Date(), blockDays }));
 }
 
+/** Điều kiện "SP hiển thị trên storefront" — dùng chung cho danh sách, bộ sưu tập, proxy 404. */
+export const STORE_VISIBLE: Prisma.ProductWhereInput[] = [{ published: true }, { variants: { some: { active: true } } }];
+
+const CARD_INCLUDE = {
+  brand: true,
+  translations: true,
+  images: { orderBy: { sortOrder: "asc" }, take: 1, include: { file: { select: { url: true } } } },
+  variants: { where: { active: true }, select: { id: true, priceMmk: true } },
+} satisfies Prisma.ProductInclude;
+
+type CardRow = Prisma.ProductGetPayload<{ include: typeof CARD_INCLUDE }>;
+
+async function toCards(products: CardRow[], locale: string) {
+  const avail = await availability(products.flatMap((p) => p.variants.map((v) => v.id)));
+  return products.map((p) => ({
+    slug: p.slug,
+    name: pick(p.translations, locale)?.name ?? p.slug,
+    brand: p.brand.name,
+    priceMmk: Math.min(...p.variants.map((v) => v.priceMmk)),
+    imageUrl: p.images[0]?.file.url ?? null,
+    imageAlt: p.images[0]?.alt ?? null,
+    inStock: p.variants.some((v) => (avail.get(v.id) ?? 0) > 0),
+  }));
+}
+
+/** Thẻ SP theo danh sách id, giữ đúng thứ tự cho sẵn (bộ sưu tập); bỏ SP chưa đăng / không còn biến thể bán. */
+export async function listStoreProductsByIds(ids: string[], locale: string) {
+  if (ids.length === 0) return [];
+  const products = await prisma.product.findMany({
+    where: { AND: [...STORE_VISIBLE, { id: { in: ids } }] },
+    include: CARD_INCLUDE,
+  });
+  const pos = new Map(ids.map((id, i) => [id, i]));
+  products.sort((a, b) => (pos.get(a.id) ?? 0) - (pos.get(b.id) ?? 0));
+  return toCards(products, locale);
+}
+
 export async function listStoreProducts(query: ProductListQuery) {
-  const and: Prisma.ProductWhereInput[] = [{ published: true }, { variants: { some: { active: true } } }];
+  const and: Prisma.ProductWhereInput[] = [...STORE_VISIBLE];
   if (query.category) {
     and.push({ OR: [{ category: { slug: query.category } }, { category: { parent: { slug: query.category } } }] });
   }
@@ -49,24 +86,9 @@ export async function listStoreProducts(query: ProductListQuery) {
     where: { AND: and },
     orderBy: { createdAt: "desc" },
     take: Math.min(query.take ?? 60, 60),
-    include: {
-      brand: true,
-      translations: true,
-      images: { orderBy: { sortOrder: "asc" }, take: 1, include: { file: { select: { url: true } } } },
-      variants: { where: { active: true }, select: { id: true, priceMmk: true } },
-    },
+    include: CARD_INCLUDE,
   });
-  const avail = await availability(products.flatMap((p) => p.variants.map((v) => v.id)));
-
-  const cards = products.map((p) => ({
-    slug: p.slug,
-    name: pick(p.translations, query.locale)?.name ?? p.slug,
-    brand: p.brand.name,
-    priceMmk: Math.min(...p.variants.map((v) => v.priceMmk)),
-    imageUrl: p.images[0]?.file.url ?? null,
-    imageAlt: p.images[0]?.alt ?? null,
-    inStock: p.variants.some((v) => (avail.get(v.id) ?? 0) > 0),
-  }));
+  const cards = await toCards(products, query.locale);
   if (query.sort === "price_asc") cards.sort((a, b) => a.priceMmk - b.priceMmk);
   if (query.sort === "price_desc") cards.sort((a, b) => b.priceMmk - a.priceMmk);
   return cards;

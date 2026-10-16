@@ -18,9 +18,13 @@ export async function listRootCategories(locale: string) {
       ],
     },
     orderBy: { sortOrder: "asc" },
-    include: { translations: true },
+    include: { translations: true, icon: { select: { url: true } } },
   });
-  return categories.map((c) => ({ slug: c.slug, name: pick(c.translations, locale)?.name ?? c.slug }));
+  return categories.map((c) => ({
+    slug: c.slug,
+    name: pick(c.translations, locale)?.name ?? c.slug,
+    iconUrl: c.icon?.url ?? null,
+  }));
 }
 
 /** Cây danh mục 2 cấp cho menu header (chỉ nhánh có SP đã đăng). */
