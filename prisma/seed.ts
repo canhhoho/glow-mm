@@ -62,8 +62,9 @@ async function seedCatalog() {
     "pricing.roundTo": 100,
     "payment.bankInstructions": "KBZ Bank · 999-000-0000 · Glow VN (mẫu)",
   };
+  // upsert không ghi đè: giữ giá trị đã có (đã sửa ở /admin/settings hoặc do test ghi trước).
   for (const [key, value] of Object.entries(settings)) {
-    await prisma.setting.create({ data: { key, value: value as never } });
+    await prisma.setting.upsert({ where: { key }, update: {}, create: { key, value: value as never } });
   }
 
   // ── Kho & vị trí ──
@@ -281,7 +282,11 @@ async function seedCatalog() {
 /** Lô + tồn đầu kỳ qua phiếu RECEIVE đã POSTED (một transaction). */
 async function seedStock() {
   const adminId = STAFF[0].id;
-  const rate = await prisma.exchangeRate.findFirstOrThrow({ orderBy: { createdAt: "asc" } });
+  // Đúng tỷ giá mẫu của seed (DB test có thể đã có tỷ giá khác do test tạo trước).
+  const rate = await prisma.exchangeRate.findFirstOrThrow({
+    where: { note: "Tỷ giá mẫu cho dev" },
+    orderBy: { createdAt: "asc" },
+  });
   const loc = { mm: await prisma.location.findUniqueOrThrow({ where: { code: "MM-STOCK" } }) };
   const shipment = await prisma.inboundShipment.findUniqueOrThrow({ where: { code: "SH-2026-001" } });
   const allVariants = await prisma.variant.findMany();
