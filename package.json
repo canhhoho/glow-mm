@@ -13,6 +13,7 @@
     "db:seed": "prisma db seed",
     "db:seed:demo": "tsx --conditions=react-server scripts/seed-demo.ts",
     "db:seed:placeholders": "tsx --conditions=react-server scripts/seed-placeholders.ts",
+    "seed:preview": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/seed-preview.ps1",
     "db:reset": "prisma migrate reset --force",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",

@@ -68,7 +68,9 @@ Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong bi�
    DATABASE_URL="<neon preview direct>" SEED_STAFF_PASSWORD="<mật khẩu mạnh>" npm run db:seed
    ```
    - `npm run db:seed:demo` (SP demo lấy từ lengocanh.vn) **không** dùng cho Production. Trên Preview chỉ chạy với `--no-images`: ảnh mẫu thuộc bản quyền shop/thương hiệu, không đưa lên Vercel Blob public.
-   - Muốn Preview có ảnh: dùng **ảnh minh hoạ tự vẽ** (nền màu thương hiệu + tên SP + nhãn DEMO, không dính bản quyền). Script tạo ảnh cho SP chưa có ảnh, 2 banner (nếu chưa có banner) và icon danh mục gốc. Chạy lại an toàn; với Blob phải thêm `--yes` sau khi kiểm tra DB đích in ra màn hình:
+   - Muốn Preview có ảnh: dùng **ảnh minh hoạ tự vẽ** (nền màu thương hiệu + tên SP + nhãn DEMO, không dính bản quyền). Script tạo ảnh cho SP chưa có ảnh, 2 banner (nếu chưa có banner) và icon danh mục gốc. Chạy lại an toàn.
+   - **Windows (PowerShell) — một lệnh:** `npm run seed:preview`. Script hỏi ẩn chuỗi Neon preview (direct) + token Blob, chặn chuỗi localhost/pooled, chạy SP demo `--no-images` → chạy thử ảnh → hỏi gõ `YES` → tạo ảnh lên Blob; xong trả lại biến môi trường như cũ.
+   - Linux/macOS (bash) — từng bước; với Blob phải thêm `--yes` sau khi kiểm tra DB đích in ra màn hình:
      ```bash
      DATABASE_URL="<neon preview direct>" npm run db:seed:demo -- --no-images
      DATABASE_URL="<neon preview direct>" STORAGE_DRIVER=vercel-blob BLOB_READ_WRITE_TOKEN="<token Blob của Preview>" npm run db:seed:placeholders -- --dry-run

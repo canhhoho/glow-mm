@@ -45,6 +45,7 @@ npm run db:migrate       # prisma migrate dev (tạo/áp migration)
 npm run db:seed          # dữ liệu mẫu (có tiếng Myanmar), tài khoản *@glow.local
 npm run db:seed:demo     # + ~45 SP demo từ lengocanh.vn kèm ảnh (chỉ DB dev; ảnh vào ./storage, không commit; --dry-run, --no-images)
 npm run db:seed:placeholders  # ảnh minh hoạ tự vẽ (SP/banner/icon) cho Preview — không bản quyền; Blob cần --yes (xem DEPLOY.md §1.3)
+npm run seed:preview     # Windows: một lệnh nạp SP demo + ảnh minh hoạ vào Neon preview + Blob (hỏi ẩn chuỗi kết nối/token)
 npm run dev              # http://localhost:3000 (storefront) · /admin
 npm test                 # TẤT CẢ: lint + typecheck + vitest + playwright (DB glow_test, cổng 3100)
 npm run test:unit        # chỉ Vitest
