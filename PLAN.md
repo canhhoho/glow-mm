@@ -114,7 +114,7 @@ Dockerfile  docker-compose.yml  docker-compose.prod.yml  .env.example
 
 ## 4. Roadmap (dừng chờ duyệt sau mỗi phase)
 
-Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ · P9 ✅ (2026-10-19) chờ duyệt · P4b chờ server + domain Myanmar.
+Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ · P9 ✅ (2026-10-19) · P4b chờ server + domain Myanmar.
 
 | Phase | Nội dung | Hoàn thành khi |
 |---|---|---|
