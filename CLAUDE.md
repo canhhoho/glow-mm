@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 Web bán mỹ phẩm B2C nhập từ Việt Nam, bán tại Myanmar. Kế hoạch chi tiết: [PLAN.md](PLAN.md). Triển khai: [DEPLOY.md](DEPLOY.md).
 
 ## Cách làm việc
@@ -36,6 +38,16 @@ Next.js 16 có API mới (proxy thay middleware, Cache Components bật) → đ�
 - Admin: URL `/admin/...`, locale lấy từ cookie `ADMIN_LOCALE`; storefront: `/` (my) và `/en`.
 - Màu dùng design token trong `globals.css` (màu chính `#E8657A`, phụ `#7FB89A`, nền `#FFF8F5`); không hardcode màu trong component.
 
+## Kiến trúc
+- **Route:** storefront `src/app/[locale]/`; admin `src/app/admin/(panel)` (+ `(print)`, `login`); API `src/app/api/{auth/[...all],cron/[job],files/[...key],health}`. `src/proxy.ts` = next-intl + rewrite slug lạ → `/{locale}/404` (không áp cho admin/api).
+- **Luồng ghi:** form → `src/server/<domain>/actions.ts` (file `"use server"` duy nhất của domain) → `requirePermission` → hàm domain (tự parse Zod, schema nằm trong file domain) → trả `{ error }` hoặc `revalidatePath`/`updateTag`. Trang admin dùng `requirePagePermission` (redirect).
+- **Auth:** Better Auth chỉ cho nhân viên (`server/auth/auth.ts`, tắt đăng ký, phiên 12h). Khách không đăng nhập — nhận diện bằng SĐT + cookie mã đơn. RBAC thuần `roles.ts`: `can(role, perm)`, vai trò `ADMIN`/`WAREHOUSE_MANAGER`/`ORDER_STAFF`.
+- **Cache (`cacheComponents`):** `"use cache"` + `cacheTag` chỉ ở menu danh mục và banner trang chủ (`CATALOG_TAG`, `HOME_TAG`); action admin gọi `updateTag` (không dùng `revalidateTag`). `instant = false` ở layout admin và các trang slug storefront.
+- **Kho/đơn:** `inventory/documents.ts` (DRAFT → POSTED) → `inventory/ledger.ts` `applyMoves` = nơi duy nhất ghi `StockBalance` (cấm tồn âm). `fefo.ts`, `orders/state-machine.ts`, `alerts/compute.ts` là hàm thuần; `orders/transitions.ts` khoá đơn `FOR UPDATE`, nhận `Actor` (user/system).
+- **Hạ tầng:** `env()` validate lazy (`src/lib/env.ts`); `src/lib/db.ts` dùng PrismaPg, client sinh ở `src/generated/prisma`; migrate/seed dùng `DIRECT_DATABASE_URL || DATABASE_URL` (`prisma.config.ts`). `storage()` ở `src/server/adapters/storage`. Cron: map `JOBS` trong `api/cron/[job]`, lịch ở `vercel.json`.
+- **i18n:** storefront `my` (mặc định) + `en`, `localePrefix: "as-needed"`. Thêm/sửa chuỗi `my` → thêm key vào `messages/review-my.json` (danh sách chờ người bản ngữ duyệt); `npm run i18n:export` / `i18n:import -- file.csv` trao đổi qua CSV.
+- **Test:** `tests/unit` (logic thuần, `server-only` alias rỗng) · `tests/integration` (DB `glow_test`, chạy tuần tự, fixture ở `fixtures.ts`) · `tests/e2e` (1 worker, build standalone cổng 3100, global setup = migrate + seed + xoá `rateLimit`; project `mobile` Pixel 7 và `desktop` chỉ chạy `*.desktop.spec.ts`; helper `login`, `openAdminNav`). CI `.github/workflows/ci.yml` chạy `npm test` với Postgres 17.
+
 ## Lệnh
 ```bash
 npm install
@@ -48,12 +60,19 @@ npm run db:seed:placeholders  # ảnh minh hoạ tự vẽ (SP/banner/icon) cho 
 npm run seed:preview     # Windows: một lệnh nạp SP demo + ảnh minh hoạ vào Neon preview + Blob (hỏi ẩn chuỗi kết nối/token)
 npm run dev              # http://localhost:3000 (storefront) · /admin
 npm test                 # TẤT CẢ: lint + typecheck + vitest + playwright (DB glow_test, cổng 3100)
-npm run test:unit        # chỉ Vitest
+npm run test:unit        # chỉ Vitest unit
+npm run test:int         # chỉ Vitest integration (DB glow_test, cần docker)
 npm run test:e2e         # chỉ Playwright (build standalone rồi chạy)
+# Một test riêng lẻ:
+npx vitest run tests/unit/money.test.ts
+npx vitest run -c vitest.integration.config.mts tests/integration/orders.test.ts
+npx playwright test tests/e2e/smoke.spec.ts --project=mobile   # file *.desktop.spec.ts → --project=desktop
 npm run perf             # Lighthouse mobile (cần server production ở cổng 3100, xem scripts/lighthouse.mjs)
 docker compose -p glow-prod -f docker-compose.prod.yml up --build   # thử bản giống production (cần .env.prod)
 ```
 - `prisma migrate reset` bị Prisma chặn khi AI chạy → không tự chạy; E2E chỉ dùng `migrate deploy` + seed (không xoá dữ liệu).
+- Tài khoản seed: `admin@` / `kho@` / `donhang@glow.local`, mật khẩu = `SEED_STAFF_PASSWORD` trong `.env`.
+- Grep bỏ qua `.claude/worktrees/` (bản sao cũ). Khối hướng dẫn trong AGENTS.md do `next dev` tự ghi lại — không sửa tay.
 
 ## Git
 - Làm việc trên `dev`; `main` chỉ chứa code đã test. Merge vào `main` khi `npm test` và CI xanh.
