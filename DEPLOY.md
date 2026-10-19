@@ -68,6 +68,13 @@ Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong bi�
    DATABASE_URL="<neon preview direct>" SEED_STAFF_PASSWORD="<mật khẩu mạnh>" npm run db:seed
    ```
    - `npm run db:seed:demo` (SP demo lấy từ lengocanh.vn) **không** dùng cho Production. Trên Preview chỉ chạy với `--no-images`: ảnh mẫu thuộc bản quyền shop/thương hiệu, không đưa lên Vercel Blob public.
+   - Muốn Preview có ảnh: dùng **ảnh minh hoạ tự vẽ** (nền màu thương hiệu + tên SP + nhãn DEMO, không dính bản quyền). Script tạo ảnh cho SP chưa có ảnh, 2 banner (nếu chưa có banner) và icon danh mục gốc. Chạy lại an toàn; với Blob phải thêm `--yes` sau khi kiểm tra DB đích in ra màn hình:
+     ```bash
+     DATABASE_URL="<neon preview direct>" npm run db:seed:demo -- --no-images
+     DATABASE_URL="<neon preview direct>" STORAGE_DRIVER=vercel-blob BLOB_READ_WRITE_TOKEN="<token Blob của Preview>" npm run db:seed:placeholders -- --dry-run
+     DATABASE_URL="<neon preview direct>" STORAGE_DRIVER=vercel-blob BLOB_READ_WRITE_TOKEN="<token Blob của Preview>" npm run db:seed:placeholders -- --yes
+     ```
+     Trang chủ/catalog được cache theo tag, nên ảnh có thể chậm vài phút mới hiện (hoặc redeploy). Khi bán thật: xoá ảnh DEMO trong admin, thay bằng ảnh shop tự chụp hoặc ảnh có giấy phép.
 7. **Kiểm tra sau deploy:**
    - `GET /api/health` trả `{"ok":true}`;
    - `/` hiển thị tiếng Myanmar;

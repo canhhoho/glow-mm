@@ -12,6 +12,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:seed:demo": "tsx --conditions=react-server scripts/seed-demo.ts",
+    "db:seed:placeholders": "tsx --conditions=react-server scripts/seed-placeholders.ts",
     "db:reset": "prisma migrate reset --force",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
