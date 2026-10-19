@@ -105,13 +105,3 @@ export function activeHref(pathname: string, hrefs: string[]): string | null {
   }
   return best;
 }
-
-const DAY_MS = 86_400_000;
-
-/**
- * Lô "ngừng bán" (gồm hết hạn) khi hạn dùng < mốc này — cùng quy tắc `classifyExpiry`
- * (số ngày còn lại tính theo ngày UTC < blockDays).
- */
-export function blockedBefore(now: Date, blockDays: number): Date {
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) + blockDays * DAY_MS);
-}

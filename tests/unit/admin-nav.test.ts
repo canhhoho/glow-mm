@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { activeHref, blockedBefore, NAV, neededCounts, visibleNav } from "@/server/admin/nav";
+import { activeHref, NAV, neededCounts, visibleNav } from "@/server/admin/nav";
 import { classifyExpiry } from "@/server/alerts/compute";
+import { sellableCutoff } from "@/server/inventory/fefo";
 
 const hrefs = NAV.flatMap((g) => g.items.map((i) => i.href));
 
@@ -40,10 +41,10 @@ describe("menu admin", () => {
     expect(activeHref("/admin/account", hrefs)).toBeNull();
   });
 
-  it("mốc ngừng bán khớp classifyExpiry", () => {
+  it("mốc ngừng bán (badge Cảnh báo) khớp classifyExpiry", () => {
     const now = new Date("2026-10-19T20:30:00Z");
     const t = { blockDays: 90, warnDays: 180 };
-    const cut = blockedBefore(now, t.blockDays);
+    const cut = sellableCutoff(now, t.blockDays);
     const dayBefore = new Date(cut.getTime() - 86_400_000);
     expect(classifyExpiry(dayBefore, now, t)).toBe("blocked");
     expect(classifyExpiry(cut, now, t)).toBe("near");

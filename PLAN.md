@@ -114,7 +114,7 @@ Dockerfile  docker-compose.yml  docker-compose.prod.yml  .env.example
 
 ## 4. Roadmap (dừng chờ duyệt sau mỗi phase)
 
-Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ trên `dev`, chờ merge `main` · P9 đang làm (P9a ✅ 2026-10-19, chờ duyệt; P9b đã bắt đầu) · P4b chờ server + domain Myanmar.
+Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ trên `dev`, chờ merge `main` · P9 đang làm (P9a ✅ · P9b ✅ 2026-10-19 chờ duyệt · còn P9c) · P4b chờ server + domain Myanmar.
 
 | Phase | Nội dung | Hoàn thành khi |
 |---|---|---|
@@ -140,7 +140,8 @@ Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 
 - **P9b Domain** (không import Next): phần thuần ở `src/server/inventory/stock-summary.ts` (`summarizeStock`, `stockByVariantCols`), loader DB ở `src/server/inventory/overview.ts`:
   - `summarizeStock(rows, now, thresholds)` thuần → ô số tổng: bán được tại kho bán (lô còn hạn ≥ blockDays), giá trị tồn (Σ SL × landedCostMmk, đếm riêng SL chưa phân bổ), đang vận chuyển + hải quan, lô cận hạn / ngừng bán + hết hạn (lô × SL), SL theo loại vị trí cho tab.
   - `stockByVariant({ tab, q, expiry, stockType, page })`: phân trang 25 biến thể ở DB (lọc bằng quan hệ), sau đó nạp tồn của trang → cột VN / Đang VC (+ hải quan) / MM / Tester / Chờ KT / Đang giữ / **Còn bán** (`availableToSell`, dùng chung storefront) / lô hết hạn sớm nhất / giá trị; kèm danh sách lô cho dòng mở rộng. Tab "Tất cả" gồm cả biến thể hết hàng và combo (còn bán = số bộ ghép được).
-  - `stockOverview` (xem theo lô) thêm lọc tab/hạn dùng/loại tồn + phân trang.
+  - Xem theo lô: `stockLots` (lọc tab/hạn dùng/loại tồn + phân trang); P9c đổi trang sang hàm này rồi bỏ `stockOverview` cũ.
+  - Bộ lọc URL `parseStockFilter` (giá trị lạ → mặc định; ô tìm qua `toUnicode`); `stockSummary`; `batchDetail` (lô + tồn theo vị trí + ledger luỹ kế).
 - **P9c Trang** `/admin/inventory`: ô số tổng bấm được (lọc), tab vị trí kèm SL, ô tìm + lọc hạn dùng/loại tồn, chuyển "Theo sản phẩm / Theo lô", bảng (desktop) / thẻ (mobile), dòng mở rộng xem lô (client nhỏ), phân trang giữ bộ lọc trên URL. Nút "Tạo phiếu ▾" (`<details>`, chỉ loại phiếu có quyền). Trang mới `/admin/inventory/batches/[id]`: thông tin lô + tồn theo vị trí + lịch sử ledger (`batchHistory`).
 - Chuỗi giao diện vào `messages/admin.{vi,en,my}.json` (key `my` mới vào `review-my.json`). Màu theo token, không hardcode.
 - Ngoài phạm vi: form phiếu kho, dashboard biểu đồ (đợt sau nếu cần).

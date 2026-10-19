@@ -1,8 +1,9 @@
 import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { sellableCutoff } from "@/server/inventory/fefo";
 import { getNumberSetting } from "@/server/settings";
-import { blockedBefore, type NavCountKey } from "./nav";
+import type { NavCountKey } from "./nav";
 
 /**
  * Số đếm cho badge menu admin — chỉ tính những số được yêu cầu (theo quyền của người xem).
@@ -24,7 +25,7 @@ export async function navCounts(keys: Set<NavCountKey>, now = new Date()): Promi
   if (keys.has("blockedLots")) {
     jobs.push(
       getNumberSetting("expiry.blockDays")
-        .then((d) => distinctLots({ batch: { expiryDate: { lt: blockedBefore(now, d) } } }))
+        .then((d) => distinctLots({ batch: { expiryDate: { lt: sellableCutoff(now, d) } } }))
         .then((n) => ["blockedLots", n]),
     );
   }
