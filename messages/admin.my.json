@@ -5,7 +5,7 @@
   "Nav": {
     "dashboard": "ခြုံငုံသုံးသပ်ချက်",
     "products": "ပစ္စည်းများ",
-    "inventory": "ဂိုဒေါင်",
+    "inventory": "လက်ကျန်ပစ္စည်း",
     "shipments": "ကုန်တင်ပို့မှုများ",
     "orders": "အော်ဒါများ",
     "pricing": "ဈေးနှုန်းနှင့် ငွေလဲနှုန်း",
@@ -19,7 +19,18 @@
     "account": "အကောင့်",
     "categories": "အမျိုးအစားများ",
     "banners": "ဘန်နာများ",
-    "collections": "စုစည်းမှုများ"
+    "collections": "စုစည်းမှုများ",
+    "documents": "ဂိုဒေါင်စာရွက်များ",
+    "quarantine": "စစ်ဆေးရန်စောင့်",
+    "groupSales": "အရောင်း",
+    "groupStock": "ဂိုဒေါင်",
+    "groupCatalog": "ကတ်တလောက်",
+    "groupContent": "အကြောင်းအရာ",
+    "groupSystem": "စနစ်",
+    "subtitle": "စီမံခန့်ခွဲမှု",
+    "menu": "မီနူး ဖွင့်ရန်",
+    "closeMenu": "မီနူး ပိတ်ရန်",
+    "breadcrumb": "လမ်းကြောင်း"
   },
   "Login": {
     "title": "စီမံခန့်ခွဲသူ ဝင်ရောက်ရန်",

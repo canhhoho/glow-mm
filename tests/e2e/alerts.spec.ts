@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { login } from "./helpers";
+import { login, openAdminNav } from "./helpers";
 
 test("thủ kho xem cảnh báo: tồn thấp, hạn dùng, gợi ý đặt hàng", async ({ page }) => {
   await login(page, "kho@glow.local");
-  await page.getByRole("link", { name: "Cảnh báo" }).click();
+  await (await openAdminNav(page)).getByRole("link", { name: "Cảnh báo" }).click();
   await expect(page.getByRole("heading", { name: "Cảnh báo kho" })).toBeVisible();
 
   // Seed: ML-LIP-02 chỉ có 4 cái (ngưỡng 5).

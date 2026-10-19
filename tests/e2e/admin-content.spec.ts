@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { login, solidPng } from "./helpers";
+import { login, openAdminNav, solidPng } from "./helpers";
 
 // P6b: quản trị nội dung trang chủ (danh mục + icon, banner, bộ sưu tập) và phân quyền.
 
@@ -114,7 +114,7 @@ test("bộ sưu tập: tạo, thêm 2 SP, đổi thứ tự, bỏ SP, xoá", asy
 
 test("quản lý kho không vào được trang nội dung; menu không hiện", async ({ page }) => {
   await login(page, "kho@glow.local");
-  await expect(page.getByRole("navigation", { name: "Admin" }).getByRole("link", { name: "Banner" })).toHaveCount(0);
+  await expect((await openAdminNav(page)).getByRole("link", { name: "Banner" })).toHaveCount(0);
   await page.goto("/admin/content/banners");
   await expect(page).toHaveURL(/\/admin\?denied=1$/);
   await page.goto("/admin/categories");

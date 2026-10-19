@@ -70,7 +70,7 @@ export function Td({ children, className }: { children?: React.ReactNode; classN
   return <td className={cn("px-3 py-2 align-top", className)}>{children}</td>;
 }
 
-const TONES = {
+export const TONES = {
   neutral: "bg-muted text-muted-foreground",
   success: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
   warning: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",

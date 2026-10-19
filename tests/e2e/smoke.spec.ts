@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { login } from "./helpers";
+import { login, openAdminNav } from "./helpers";
 
 test("storefront mặc định tiếng Myanmar, hiển thị sản phẩm từ DB", async ({ page }) => {
   await page.goto("/");
@@ -28,7 +28,8 @@ for (const [email, roleText, canSeePricing] of [
   test(`đăng nhập theo vai trò: ${email}`, async ({ page }) => {
     await login(page, email);
     await expect(page.getByTestId("role")).toContainText(roleText);
-    await expect(page.getByRole("link", { name: "Giá & tỷ giá" })).toHaveCount(canSeePricing ? 1 : 0);
+    await expect((await openAdminNav(page)).getByRole("link", { name: "Giá & tỷ giá" })).toHaveCount(canSeePricing ? 1 : 0);
+    await page.keyboard.press("Escape"); // đóng ngăn kéo menu (mobile)
 
     // Đổi ngôn ngữ admin (cookie) rồi đổi lại, sau đó đăng xuất.
     await page.getByRole("button", { name: "EN", exact: true }).click();

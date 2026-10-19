@@ -5,7 +5,7 @@
   "Nav": {
     "dashboard": "Tổng quan",
     "products": "Sản phẩm",
-    "inventory": "Kho",
+    "inventory": "Tồn kho",
     "shipments": "Chuyến hàng",
     "orders": "Đơn hàng",
     "pricing": "Giá & tỷ giá",
@@ -19,7 +19,18 @@
     "account": "Tài khoản",
     "categories": "Danh mục",
     "banners": "Banner",
-    "collections": "Bộ sưu tập"
+    "collections": "Bộ sưu tập",
+    "documents": "Phiếu kho",
+    "quarantine": "Chờ kiểm tra",
+    "groupSales": "Bán hàng",
+    "groupStock": "Kho",
+    "groupCatalog": "Catalog",
+    "groupContent": "Nội dung",
+    "groupSystem": "Hệ thống",
+    "subtitle": "Quản trị",
+    "menu": "Mở menu",
+    "closeMenu": "Đóng menu",
+    "breadcrumb": "Vị trí trang"
   },
   "Login": {
     "title": "Đăng nhập quản trị",

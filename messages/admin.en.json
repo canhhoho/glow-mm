@@ -19,7 +19,18 @@
     "account": "Account",
     "categories": "Categories",
     "banners": "Banners",
-    "collections": "Collections"
+    "collections": "Collections",
+    "documents": "Stock documents",
+    "quarantine": "Quarantine",
+    "groupSales": "Sales",
+    "groupStock": "Warehouse",
+    "groupCatalog": "Catalog",
+    "groupContent": "Content",
+    "groupSystem": "System",
+    "subtitle": "Admin",
+    "menu": "Open menu",
+    "closeMenu": "Close menu",
+    "breadcrumb": "Breadcrumb"
   },
   "Login": {
     "title": "Admin sign in",

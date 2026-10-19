@@ -29,6 +29,15 @@ export async function login(page: Page, email: string, password = PASSWORD) {
   await expect(page.getByTestId("role")).toBeVisible();
 }
 
+/** Menu admin; trên mobile mở ngăn kéo (nút ☰) trước nếu đang đóng. */
+export async function openAdminNav(page: Page) {
+  const nav = page.getByRole("navigation", { name: "Admin" });
+  const toggle = page.getByRole("button", { name: "Mở menu" });
+  if ((await toggle.isVisible()) && (await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+  await expect(nav).toBeVisible();
+  return nav;
+}
+
 /** PNG đặc một màu size×size (đủ lớn để bộ tối ưu ảnh/next/image và trình duyệt giải mã bình thường). */
 export function solidPng(size: number): Buffer {
   const chunk = (type: string, data: Buffer) => {
