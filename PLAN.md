@@ -114,7 +114,7 @@ Dockerfile  docker-compose.yml  docker-compose.prod.yml  .env.example
 
 ## 4. Roadmap (dừng chờ duyệt sau mỗi phase)
 
-Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 đang chờ duyệt · P4b chờ server + domain Myanmar.
+Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ trên `dev`, chờ merge `main` · P9 đang làm (bắt đầu P9b) · P4b chờ server + domain Myanmar.
 
 | Phase | Nội dung | Hoàn thành khi |
 |---|---|---|
@@ -127,7 +127,23 @@ Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 
 | **P5 Ảnh + dữ liệu demo** ✅ (2026-10-16) | Quản lý ảnh SP, danh mục con, header menu 2 cấp + footer + trang thông tin, `db:seed:demo` ~45 SP từ lengocanh.vn, storefront responsive tablet/desktop | Toàn bộ test xanh |
 | **P6 Nội dung trang chủ** ✅ (2026-10-16) | Quản trị banner carousel, icon danh mục, bộ sưu tập sản phẩm; hiển thị trên trang chủ theo bố cục responsive đã duyệt | Toàn bộ test xanh (có E2E admin → storefront, mobile + desktop); `npm run perf`: mobile ≥ 85, desktop ≥ 90, slow-3g ≥ 70 cho trang không có banner ảnh (trang chủ có banner ảnh: chấp nhận 69, xem ghi chú P6) |
 | **P7 Hoàn thiện trước khi mở bán** ✅ (2026-10-16) | SEO (metadataBase, canonical/hreflang, Open Graph, JSON-LD sản phẩm, robots.txt, sitemap.xml, noindex trang riêng tư), 404 có giao diện cho mọi đường dẫn lạ, sửa nút ngôn ngữ Myanmar, quy trình xuất/nhập bản dịch cho người bản ngữ duyệt | Toàn bộ test xanh (E2E 404, meta/JSON-LD, robots/sitemap); `npm run perf` giữ ngưỡng |
-| **P8 Quản lý nhân viên** | `/admin/users` (ADMIN): tạo nhân viên + mật khẩu tạm, đổi tên/vai trò, khoá/mở khoá, đặt lại mật khẩu; khoá/đặt lại → xoá mọi phiên; tài khoản bị khoá không đăng nhập được (hook Better Auth); luôn còn ≥ 1 ADMIN; không tự khoá/tự đổi vai trò; ghi AuditLog. Không cần migration | Toàn bộ test xanh (integration + E2E tạo → đăng nhập đúng quyền → khoá → bị đăng xuất) |
+| **P8 Quản lý nhân viên** ✅ (2026-10-16) | `/admin/users` (ADMIN): tạo nhân viên + mật khẩu tạm, đổi tên/vai trò, khoá/mở khoá, đặt lại mật khẩu; khoá/đặt lại → xoá mọi phiên; tài khoản bị khoá không đăng nhập được (hook Better Auth); luôn còn ≥ 1 ADMIN; không tự khoá/tự đổi vai trò; ghi AuditLog. Không cần migration | Toàn bộ test xanh (integration + E2E tạo → đăng nhập đúng quyền → khoá → bị đăng xuất) |
+| **P9 Giao diện admin + Tồn kho** | Khung admin mới (menu nhóm + icon + badge + trang đang mở, ngăn kéo trên mobile, breadcrumb) và trang Tồn kho mới (ô số tổng, tab vị trí, xem theo sản phẩm/theo lô, lọc hạn dùng/loại tồn, phân trang, trang lịch sử lô) theo mẫu `docs/mockups/p9-admin-kho.html` | Toàn bộ test xanh (unit tổng hợp tồn, integration số liệu khớp ledger, E2E mobile: menu ngăn kéo, lọc/phân trang, mở lô, lịch sử lô) |
+
+**P9 — kế hoạch (mẫu đã duyệt 2026-10-17):**
+- *Không đổi dữ liệu, không migration.* Chỉ đọc `StockBalance`/`Batch`/`Reservation`; mọi thay đổi tồn vẫn qua phiếu kho.
+- **P9a Khung admin** (`src/app/admin/(panel)/layout.tsx` + client nhỏ `components/admin/admin-shell.tsx`):
+  - Nhóm menu: (Tổng quan) · Bán hàng (Đơn hàng, Đánh giá) · Kho (Tồn kho, Phiếu kho, Chờ kiểm tra, Chuyến hàng, Cảnh báo) · Catalog (Sản phẩm, Danh mục, Giá & tỷ giá) · Nội dung (Banner, Bộ sưu tập) · Hệ thống (Báo cáo, Nhân viên, Cài đặt). Lọc theo quyền như cũ; nhóm rỗng ẩn.
+  - Icon `lucide-react`; trang đang mở đánh dấu theo `usePathname` (khớp tiền tố dài nhất) + `aria-current`; breadcrumb "Nhóm › Mục" lấy từ mục đang mở.
+  - Badge: đơn PENDING, lô chờ kiểm tra còn hàng, lô hết hạn/ngừng bán còn hàng — 3 truy vấn đếm nhẹ (`navCounts`), chỉ chạy cho nhóm có quyền.
+  - Mobile (< md): menu ngăn kéo trái (nút ☰, đóng khi đổi trang / bấm nền / Esc). Header luôn có ngôn ngữ, tên nhân viên (link Tài khoản), Đăng xuất → test cũ không đổi; test bấm menu dùng helper `openAdminNav`.
+- **P9b Domain** (không import Next): phần thuần ở `src/server/inventory/stock-summary.ts` (`summarizeStock`, `stockByVariantCols`), loader DB ở `src/server/inventory/overview.ts`:
+  - `summarizeStock(rows, now, thresholds)` thuần → ô số tổng: bán được tại kho bán (lô còn hạn ≥ blockDays), giá trị tồn (Σ SL × landedCostMmk, đếm riêng SL chưa phân bổ), đang vận chuyển + hải quan, lô cận hạn / ngừng bán + hết hạn (lô × SL), SL theo loại vị trí cho tab.
+  - `stockByVariant({ tab, q, expiry, stockType, page })`: phân trang 25 biến thể ở DB (lọc bằng quan hệ), sau đó nạp tồn của trang → cột VN / Đang VC (+ hải quan) / MM / Tester / Chờ KT / Đang giữ / **Còn bán** (`availableToSell`, dùng chung storefront) / lô hết hạn sớm nhất / giá trị; kèm danh sách lô cho dòng mở rộng. Tab "Tất cả" gồm cả biến thể hết hàng và combo (còn bán = số bộ ghép được).
+  - `stockOverview` (xem theo lô) thêm lọc tab/hạn dùng/loại tồn + phân trang.
+- **P9c Trang** `/admin/inventory`: ô số tổng bấm được (lọc), tab vị trí kèm SL, ô tìm + lọc hạn dùng/loại tồn, chuyển "Theo sản phẩm / Theo lô", bảng (desktop) / thẻ (mobile), dòng mở rộng xem lô (client nhỏ), phân trang giữ bộ lọc trên URL. Nút "Tạo phiếu ▾" (`<details>`, chỉ loại phiếu có quyền). Trang mới `/admin/inventory/batches/[id]`: thông tin lô + tồn theo vị trí + lịch sử ledger (`batchHistory`).
+- Chuỗi giao diện vào `messages/admin.{vi,en,my}.json` (key `my` mới vào `review-my.json`). Màu theo token, không hardcode.
+- Ngoài phạm vi: form phiếu kho, dashboard biểu đồ (đợt sau nếu cần).
 
 **P8 — quyết định (2026-10-16):** không gửi email (chưa có dịch vụ mail), admin tự báo mật khẩu tạm, nhân viên đổi ở `/admin/account`. Bỏ ô "ngôn ngữ" khi tạo nhân viên vì ngôn ngữ admin lấy theo cookie từng trình duyệt (`User.locale` chưa dùng). Ngoài phạm vi: bắt buộc đổi mật khẩu lần đầu (cần cột mới), 2FA, trang xem AuditLog.
 
