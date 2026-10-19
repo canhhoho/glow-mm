@@ -95,7 +95,7 @@ export function ProductForm({ initial, options }: { initial: ProductEditData | n
       <section className="grid gap-3 rounded-lg border p-4 sm:grid-cols-2">
         <h2 className="font-medium sm:col-span-2">{t("general")}</h2>
         <Field label={t("slug")}>
-          <input required value={p.slug} onChange={(e) => set("slug", e.target.value)} pattern="[a-z0-9-]+" className={fieldClass} />
+          <input required value={p.slug} onChange={(e) => set("slug", e.target.value)} pattern="[a-z0-9\-]+" className={fieldClass} />
         </Field>
         <Field label={t("brand")}>
           <select required value={p.brandId} onChange={(e) => set("brandId", e.target.value)} className={fieldClass}>

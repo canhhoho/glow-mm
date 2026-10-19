@@ -42,8 +42,8 @@ test("quản lý kho: nhận → chuyển → xuất, tồn khớp theo lô và 
   await page.getByLabel("Số lượng").fill("1");
   await postAndExpect(page);
 
-  // 4) Tồn: VN còn 6, Yangon còn 3
-  await page.goto(`/admin/inventory?q=${lot}`);
+  // 4) Tồn (xem theo lô): VN còn 6, Yangon còn 3
+  await page.goto(`/admin/inventory?q=${lot}&view=lots`);
   const rows = page.getByRole("row").filter({ hasText: lot });
   await expect(rows).toHaveCount(2);
   await expect(rows.filter({ hasText: "VN-STOCK" })).toContainText("6");

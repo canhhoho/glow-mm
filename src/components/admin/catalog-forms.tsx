@@ -51,7 +51,7 @@ export function CategoryForm({ parents }: { parents: { id: string; name: string 
     <form action={action} className="flex flex-wrap items-end gap-2">
       <label className="space-y-1 text-sm">
         <span className="text-muted-foreground">{t("catSlug")}</span>
-        <input name="slug" required pattern="[a-z0-9-]+" className={fieldClass} />
+        <input name="slug" required pattern="[a-z0-9\-]+" className={fieldClass} />
       </label>
       <label className="space-y-1 text-sm" lang="my">
         <span className="text-muted-foreground">{t("catNameMy")}</span>

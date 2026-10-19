@@ -1,0 +1,121 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
+import { requirePagePermission } from "@/server/auth/session";
+import { batchDetail, loadThresholds } from "@/server/inventory/overview";
+import { ExpiryTag } from "@/components/admin/stock-parts";
+import { Badge, DataTable, LinkButton, PageHeader, Td } from "@/components/admin/ui";
+import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
+import { cn } from "@/lib/utils";
+
+/** Lịch sử lô (P9c): thông tin lô, tồn hiện tại theo vị trí, các dòng sổ kho kèm tồn luỹ kế. */
+export default async function BatchPage({ params }: PageProps<"/admin/inventory/batches/[id]">) {
+  await requirePagePermission("stock:view");
+  const { id } = await params;
+  const [detail, th, t, ti, td] = await Promise.all([
+    batchDetail(id),
+    loadThresholds(),
+    getTranslations("Batch"),
+    getTranslations("Inventory"),
+    getTranslations("Docs"),
+  ]);
+  if (!detail) notFound();
+  const { batch, entries } = detail;
+  const now = new Date();
+
+  const info: [string, React.ReactNode][] = [
+    [t("expiry"), <ExpiryTag key="e" date={batch.expiryDate} now={now} t={ti} th={th} />],
+    [t("mfg"), fmtDay(batch.mfgDate)],
+    [t("unitCostVnd"), fmtInt(batch.unitCostVnd)],
+    [t("landedVnd"), fmtInt(batch.landedCostVnd)],
+    [t("costMmk"), batch.landedCostMmk == null ? ti("unallocated") : fmtInt(batch.landedCostMmk)],
+    [t("rate"), batch.rate ? batch.rate.mmkPerVnd.toString() : "—"],
+    [
+      t("shipment"),
+      batch.shipment ? (
+        <Link key="s" href={`/admin/shipments/${batch.shipment.id}`} className="font-mono text-primary underline">
+          {batch.shipment.code}
+        </Link>
+      ) : (
+        "—"
+      ),
+    ],
+    [t("createdAt"), fmtDateTime(batch.createdAt)],
+  ];
+
+  return (
+    <div className="max-w-5xl space-y-5">
+      <PageHeader
+        title={t("title", { lotNo: batch.lotNo })}
+        actions={<LinkButton href={`/admin/inventory?q=${encodeURIComponent(batch.lotNo)}&view=lots`}>← {ti("title")}</LinkButton>}
+      />
+      <p className="-mt-3 text-sm text-muted-foreground">
+        {detail.name} ({batch.variant.label}) · <span className="font-mono">{batch.variant.sku}</span>
+      </p>
+
+      <dl className="grid grid-cols-2 gap-3 rounded-xl border p-4 text-sm sm:grid-cols-4">
+        {info.map(([label, value]) => (
+          <div key={label}>
+            <dt className="text-xs text-muted-foreground">{label}</dt>
+            <dd className="mt-0.5 tabular-nums">{value}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <section className="space-y-2">
+        <h2 className="font-medium">
+          {t("balances")} <span className="text-muted-foreground tabular-nums">· {fmtInt(detail.total)}</span>
+        </h2>
+        <DataTable empty={t("noBalance")} head={[t("colLocation"), t("colType"), t("qty")]}>
+          {batch.balances.map((b) => (
+            <tr key={`${b.locationId}|${b.stockType}`} data-testid="balance-row">
+              <Td>
+                <span className="font-mono text-xs">{b.location.code}</span> · {ti(`loc.${b.location.type}`)}
+              </Td>
+              <Td>
+                <Badge tone={b.stockType === "TESTER" ? "brand" : "neutral"}>{ti(b.stockType)}</Badge>
+              </Td>
+              <Td className="text-right tabular-nums">{fmtInt(b.qty)}</Td>
+            </tr>
+          ))}
+        </DataTable>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="font-medium">{t("ledger")}</h2>
+        <DataTable
+          empty="—"
+          head={[t("colTime"), t("colDoc"), t("colLocation"), t("colType"), t("colDelta"), t("colAfter"), t("colOrder")]}
+        >
+          {entries.map((e) => (
+            <tr key={e.id} data-testid="ledger-row">
+              <Td className="whitespace-nowrap tabular-nums">{fmtDateTime(e.createdAt)}</Td>
+              <Td>
+                <Link href={`/admin/inventory/documents/${e.document.id}`} className="font-mono text-xs text-primary underline">
+                  {e.document.code}
+                </Link>{" "}
+                <span className="text-muted-foreground">{td(e.document.type)}</span>
+                {e.document.reason && <div className="text-xs text-muted-foreground">{e.document.reason}</div>}
+              </Td>
+              <Td className="font-mono text-xs">{e.location.code}</Td>
+              <Td>
+                <Badge tone={e.stockType === "TESTER" ? "brand" : "neutral"}>{ti(e.stockType)}</Badge>
+              </Td>
+              <Td className={cn("text-right font-medium tabular-nums", e.qtyDelta < 0 ? "text-destructive" : "text-emerald-700 dark:text-emerald-400")}>
+                {e.qtyDelta > 0 ? `+${fmtInt(e.qtyDelta)}` : fmtInt(e.qtyDelta)}
+              </Td>
+              <Td className="text-right tabular-nums">{fmtInt(e.balanceAfter)}</Td>
+              <Td>
+                {e.document.order && (
+                  <Link href={`/admin/orders/${e.document.order.id}`} className="font-mono text-xs text-primary underline">
+                    {e.document.order.code}
+                  </Link>
+                )}
+              </Td>
+            </tr>
+          ))}
+        </DataTable>
+      </section>
+    </div>
+  );
+}

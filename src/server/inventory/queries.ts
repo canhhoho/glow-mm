@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
-import type { DocStatus, DocType, LocationType } from "@/generated/prisma/client";
+import type { DocStatus, DocType } from "@/generated/prisma/client";
 
 /** Tên hiển thị của sản phẩm cho admin: ưu tiên tiếng Anh, sau đó tiếng Myanmar. */
 export function productName(translations: { locale: string; name: string }[], fallback: string) {
@@ -55,44 +55,6 @@ export async function batchesForForms() {
     lotNo: b.lotNo,
     expiryDate: b.expiryDate.toISOString().slice(0, 10),
     balances: b.balances.map((x) => ({ locationId: x.locationId, stockType: x.stockType, qty: x.qty })),
-  }));
-}
-
-export async function stockOverview(filter: { locationId?: string; q?: string; locationType?: LocationType }) {
-  const q = filter.q?.trim();
-  const rows = await prisma.stockBalance.findMany({
-    where: {
-      qty: { not: 0 },
-      locationId: filter.locationId || undefined,
-      location: filter.locationType ? { type: filter.locationType } : undefined,
-      batch: q
-        ? {
-            OR: [
-              { lotNo: { contains: q, mode: "insensitive" } },
-              { variant: { sku: { contains: q, mode: "insensitive" } } },
-              { variant: { product: { translations: { some: { name: { contains: q, mode: "insensitive" } } } } } },
-            ],
-          }
-        : undefined,
-    },
-    include: {
-      location: true,
-      batch: { include: { variant: { include: { product: { include: { translations: true } } } } } },
-    },
-    orderBy: [{ batch: { variant: { sku: "asc" } } }, { batch: { expiryDate: "asc" } }],
-    take: 500,
-  });
-  return rows.map((r) => ({
-    key: `${r.batchId}|${r.locationId}|${r.stockType}`,
-    sku: r.batch.variant.sku,
-    name: productName(r.batch.variant.product.translations, r.batch.variant.product.slug),
-    variantLabel: r.batch.variant.label,
-    lotNo: r.batch.lotNo,
-    expiryDate: r.batch.expiryDate,
-    location: r.location.code,
-    stockType: r.stockType,
-    qty: r.qty,
-    landedCostMmk: r.batch.landedCostMmk,
   }));
 }
 

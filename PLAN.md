@@ -114,7 +114,7 @@ Dockerfile  docker-compose.yml  docker-compose.prod.yml  .env.example
 
 ## 4. Roadmap (dừng chờ duyệt sau mỗi phase)
 
-Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ trên `dev`, chờ merge `main` · P9 đang làm (P9a ✅ · P9b ✅ 2026-10-19 chờ duyệt · còn P9c) · P4b chờ server + domain Myanmar.
+Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ · P9 ✅ (2026-10-19) chờ duyệt · P4b chờ server + domain Myanmar.
 
 | Phase | Nội dung | Hoàn thành khi |
 |---|---|---|
@@ -128,7 +128,7 @@ Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 
 | **P6 Nội dung trang chủ** ✅ (2026-10-16) | Quản trị banner carousel, icon danh mục, bộ sưu tập sản phẩm; hiển thị trên trang chủ theo bố cục responsive đã duyệt | Toàn bộ test xanh (có E2E admin → storefront, mobile + desktop); `npm run perf`: mobile ≥ 85, desktop ≥ 90, slow-3g ≥ 70 cho trang không có banner ảnh (trang chủ có banner ảnh: chấp nhận 69, xem ghi chú P6) |
 | **P7 Hoàn thiện trước khi mở bán** ✅ (2026-10-16) | SEO (metadataBase, canonical/hreflang, Open Graph, JSON-LD sản phẩm, robots.txt, sitemap.xml, noindex trang riêng tư), 404 có giao diện cho mọi đường dẫn lạ, sửa nút ngôn ngữ Myanmar, quy trình xuất/nhập bản dịch cho người bản ngữ duyệt | Toàn bộ test xanh (E2E 404, meta/JSON-LD, robots/sitemap); `npm run perf` giữ ngưỡng |
 | **P8 Quản lý nhân viên** ✅ (2026-10-16) | `/admin/users` (ADMIN): tạo nhân viên + mật khẩu tạm, đổi tên/vai trò, khoá/mở khoá, đặt lại mật khẩu; khoá/đặt lại → xoá mọi phiên; tài khoản bị khoá không đăng nhập được (hook Better Auth); luôn còn ≥ 1 ADMIN; không tự khoá/tự đổi vai trò; ghi AuditLog. Không cần migration | Toàn bộ test xanh (integration + E2E tạo → đăng nhập đúng quyền → khoá → bị đăng xuất) |
-| **P9 Giao diện admin + Tồn kho** | Khung admin mới (menu nhóm + icon + badge + trang đang mở, ngăn kéo trên mobile, breadcrumb) và trang Tồn kho mới (ô số tổng, tab vị trí, xem theo sản phẩm/theo lô, lọc hạn dùng/loại tồn, phân trang, trang lịch sử lô) theo mẫu `docs/mockups/p9-admin-kho.html` | Toàn bộ test xanh (unit tổng hợp tồn, integration số liệu khớp ledger, E2E mobile: menu ngăn kéo, lọc/phân trang, mở lô, lịch sử lô) |
+| **P9 Giao diện admin + Tồn kho** ✅ (2026-10-19) | Khung admin mới (menu nhóm + icon + badge + trang đang mở, ngăn kéo trên mobile, breadcrumb) và trang Tồn kho mới (ô số tổng, tab vị trí, xem theo sản phẩm/theo lô, lọc hạn dùng/loại tồn, phân trang, trang lịch sử lô) theo mẫu `docs/mockups/p9-admin-kho.html` | Toàn bộ test xanh (unit tổng hợp tồn, integration số liệu khớp ledger, E2E mobile: menu ngăn kéo, lọc/phân trang, mở lô, lịch sử lô) |
 
 **P9 — kế hoạch (mẫu đã duyệt 2026-10-17):**
 - *Không đổi dữ liệu, không migration.* Chỉ đọc `StockBalance`/`Batch`/`Reservation`; mọi thay đổi tồn vẫn qua phiếu kho.
@@ -140,7 +140,7 @@ Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 
 - **P9b Domain** (không import Next): phần thuần ở `src/server/inventory/stock-summary.ts` (`summarizeStock`, `stockByVariantCols`), loader DB ở `src/server/inventory/overview.ts`:
   - `summarizeStock(rows, now, thresholds)` thuần → ô số tổng: bán được tại kho bán (lô còn hạn ≥ blockDays), giá trị tồn (Σ SL × landedCostMmk, đếm riêng SL chưa phân bổ), đang vận chuyển + hải quan, lô cận hạn / ngừng bán + hết hạn (lô × SL), SL theo loại vị trí cho tab.
   - `stockByVariant({ tab, q, expiry, stockType, page })`: phân trang 25 biến thể ở DB (lọc bằng quan hệ), sau đó nạp tồn của trang → cột VN / Đang VC (+ hải quan) / MM / Tester / Chờ KT / Đang giữ / **Còn bán** (`availableToSell`, dùng chung storefront) / lô hết hạn sớm nhất / giá trị; kèm danh sách lô cho dòng mở rộng. Tab "Tất cả" gồm cả biến thể hết hàng và combo (còn bán = số bộ ghép được).
-  - Xem theo lô: `stockLots` (lọc tab/hạn dùng/loại tồn + phân trang); P9c đổi trang sang hàm này rồi bỏ `stockOverview` cũ.
+  - Xem theo lô: `stockLots` (lọc tab/hạn dùng/loại tồn + phân trang); đã thay `stockOverview` cũ.
   - Bộ lọc URL `parseStockFilter` (giá trị lạ → mặc định; ô tìm qua `toUnicode`); `stockSummary`; `batchDetail` (lô + tồn theo vị trí + ledger luỹ kế).
 - **P9c Trang** `/admin/inventory`: ô số tổng bấm được (lọc), tab vị trí kèm SL, ô tìm + lọc hạn dùng/loại tồn, chuyển "Theo sản phẩm / Theo lô", bảng (desktop) / thẻ (mobile), dòng mở rộng xem lô (client nhỏ), phân trang giữ bộ lọc trên URL. Nút "Tạo phiếu ▾" (`<details>`, chỉ loại phiếu có quyền). Trang mới `/admin/inventory/batches/[id]`: thông tin lô + tồn theo vị trí + lịch sử ledger (`batchHistory`).
 - Chuỗi giao diện vào `messages/admin.{vi,en,my}.json` (key `my` mới vào `review-my.json`). Màu theo token, không hardcode.

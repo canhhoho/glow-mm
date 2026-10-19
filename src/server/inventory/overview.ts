@@ -138,6 +138,7 @@ export type VariantStockRow = {
   sku: string;
   label: string;
   name: string;
+  imageUrl: string | null;
   isBundle: boolean;
   active: boolean;
   /** null = không có dòng tồn nào (hết hàng hoặc combo). */
@@ -175,7 +176,15 @@ export async function stockByVariant(f: StockFilter, now = new Date()): Promise<
       orderBy: { sku: "asc" },
       skip: (f.page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
-      include: { product: { select: { slug: true, translations: { select: { locale: true, name: true } } } } },
+      include: {
+        product: {
+          select: {
+            slug: true,
+            translations: { select: { locale: true, name: true } },
+            images: { orderBy: { sortOrder: "asc" }, take: 1, select: { file: { select: { url: true } } } },
+          },
+        },
+      },
     }),
   ]);
   const ids = variants.map((v) => v.id);
@@ -202,6 +211,7 @@ export async function stockByVariant(f: StockFilter, now = new Date()): Promise<
         sku: v.sku,
         label: v.label,
         name: productName(v.product.translations, v.product.slug),
+        imageUrl: v.product.images[0]?.file.url ?? null,
         isBundle: v.isBundle,
         active: v.active,
         cols: c,

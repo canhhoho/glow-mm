@@ -20,7 +20,7 @@ export async function CollectionFields({ value }: { value?: CollectionFieldsValu
     <div className="grid gap-3 sm:grid-cols-3">
       <label className="space-y-1 text-sm">
         <span className="text-muted-foreground">{t("slug")}</span>
-        <input name="slug" required pattern="[a-z0-9-]+" maxLength={60} defaultValue={value?.slug} className={fieldClass} />
+        <input name="slug" required pattern="[a-z0-9\-]+" maxLength={60} defaultValue={value?.slug} className={fieldClass} />
       </label>
       <label className="space-y-1 text-sm" lang="my">
         <span className="text-muted-foreground">{t("nameMy")}</span>
