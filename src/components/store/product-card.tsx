@@ -48,10 +48,13 @@ export async function ProductGrid({ products, locale }: { products: ProductCardD
   );
 }
 
-/** Dải sản phẩm cuộn ngang (CSS scroll-snap, không JS): mobile/sm lộ một phần thẻ kế tiếp để gợi ý cuộn; lg đúng 5 thẻ. */
+/**
+ * Dải sản phẩm cuộn ngang (CSS scroll-snap, không JS): mobile/sm tràn lề, lộ một phần thẻ kế tiếp để gợi ý cuộn;
+ * lg bỏ tràn lề, đúng 5 thẻ lấp kín khung (% của auto-cols tính trên content box → chỉ trừ 4 khoảng gap-3).
+ */
 export async function ProductRail({ products, locale }: { products: ProductCardData[]; locale: string }) {
   return (
-    <ul className="-mx-3 grid snap-x snap-mandatory auto-cols-[44%] grid-flow-col gap-3 overflow-x-auto scroll-px-3 px-3 pb-2 sm:-mx-4 sm:auto-cols-[30%] sm:scroll-px-4 sm:px-4 lg:auto-cols-[calc((100%-2rem-3rem)/5)]">
+    <ul className="-mx-3 grid snap-x snap-mandatory auto-cols-[44%] grid-flow-col gap-3 overflow-x-auto scroll-px-3 px-3 pb-2 sm:-mx-4 sm:auto-cols-[30%] sm:scroll-px-4 sm:px-4 lg:mx-0 lg:auto-cols-[calc((100%-3rem)/5)] lg:scroll-px-0 lg:px-0">
       {products.map((p) => (
         <ProductCard key={p.slug} p={p} locale={locale} />
       ))}
