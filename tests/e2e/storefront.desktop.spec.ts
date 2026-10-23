@@ -68,6 +68,10 @@ test("trang chủ: dải SP 5 thẻ/hàng; danh mục: lưới 5 cột + bộ l�
   expect(edges.cards.length).toBeGreaterThanOrEqual(5);
   expect(edges.cards[4].right).toBeLessThanOrEqual(edges.right + 1);
   if (edges.cards[5]) expect(edges.cards[5].left).toBeGreaterThanOrEqual(edges.right);
+  // Footer: không có liên hệ (env test không đặt FB/Viber) → cột "Thông tin" dồn về mép trái, không chừa cột trống.
+  const footerRow = await box(page, page.getByRole("contentinfo").locator(":scope > div"));
+  const infoNav = await box(page, page.getByRole("contentinfo").getByRole("navigation"));
+  expect(infoNav.x - footerRow.x).toBeLessThan(40);
   await page.screenshot({ path: "test-results/screens/desktop-home.png", fullPage: true });
 
   await page.goto("/en/c/skincare");

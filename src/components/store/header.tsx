@@ -8,7 +8,11 @@ import { routing, type StoreLocale } from "@/i18n/routing";
 import { env } from "@/lib/env";
 import { CART_COOKIE, cartCount, parseCart } from "@/server/cart/cart";
 import { CategoryMenu } from "./category-menu";
+import { LanguageSwitch } from "./language-switch";
 import { storeField } from "./ui";
+
+const langClass =
+  "col-start-3 row-start-1 inline-flex min-h-8 items-center justify-self-end rounded px-2 py-0.5 text-sm leading-[1.8] whitespace-nowrap text-brand-foreground ring-1 ring-white/50";
 
 /** Số món trong giỏ (đọc cookie lúc request → nằm trong Suspense để header vẫn thuộc static shell). */
 async function CartBadge() {
@@ -66,17 +70,16 @@ export async function StoreHeader({ locale }: { locale: StoreLocale }) {
           Glow VN
         </Link>
 
-        {/* lang theo ngôn ngữ đích: chữ Myanmar cần line-height cao (trang /en có lang="en"). */}
-        <Link
-          href="/"
-          locale={other}
-          lang={other}
-          className="col-start-3 row-start-1 inline-flex min-h-8 items-center justify-self-end rounded px-2 py-0.5 text-sm leading-[1.8] whitespace-nowrap text-brand-foreground ring-1 ring-white/50"
-          aria-label={t("language")}
-          data-testid="language-switch"
+        {/* lang theo ngôn ngữ đích: chữ Myanmar cần line-height cao (trang /en có lang="en"). Fallback = về trang chủ. */}
+        <Suspense
+          fallback={
+            <Link href="/" locale={other} lang={other} className={langClass} aria-label={t("language")} data-testid="language-switch">
+              {other === "my" ? "မြန်မာ" : "EN"}
+            </Link>
+          }
         >
-          {other === "my" ? "မြန်မာ" : "EN"}
-        </Link>
+          <LanguageSwitch to={other} label={t("language")} className={langClass} />
+        </Suspense>
 
         <div className="col-start-1 row-start-2 lg:row-start-2">
           <CategoryMenu locale={locale} />

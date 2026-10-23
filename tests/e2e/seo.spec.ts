@@ -70,3 +70,22 @@ test("nút đổi ngôn ngữ: chữ Myanmar không tràn khung", async ({ page 
   const fits = await sw.evaluate((el) => el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1);
   expect(fits).toBe(true);
 });
+
+test("đổi ngôn ngữ giữ nguyên trang đang xem (kể cả query)", async ({ page }) => {
+  // Next giữ trang trước (ẩn) trong DOM sau khi điều hướng → chỉ lấy nút đang hiện.
+  const sw = page.getByTestId("language-switch").filter({ visible: true });
+  await page.goto("/en/c/skincare");
+  await expect(sw).toHaveAttribute("href", /\/c\/skincare$/); // href đúng sau khi hydrate
+  await sw.click();
+  await expect(page).toHaveURL(/\/c\/skincare$/);
+  await expect(page.locator("html")).toHaveAttribute("lang", "my");
+  await expect(sw).toHaveAttribute("href", /\/en\/c\/skincare$/);
+  await sw.click();
+  await expect(page).toHaveURL(/\/en\/c\/skincare$/);
+
+  await page.goto("/en/search?q=Sunscreen");
+  await expect(sw).toHaveAttribute("href", /\/search\?q=Sunscreen$/);
+  await sw.click();
+  await expect(page).toHaveURL(/\/search\?q=Sunscreen$/);
+  await expect(page.locator('a[href="/p/sen-viet-sunscreen-spf50"]').first()).toBeVisible();
+});
