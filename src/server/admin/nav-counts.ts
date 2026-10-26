@@ -10,6 +10,7 @@ import type { NavCountKey } from "./nav";
  *  - pendingOrders: đơn PENDING.
  *  - quarantineLots: số lô còn hàng ở khu Chờ kiểm tra.
  *  - blockedLots: số lô còn hàng (mọi vị trí) đã ngừng bán / hết hạn — như mục "Hạn dùng" ở trang Cảnh báo.
+ *  - pendingApplications: đơn đăng ký CTV chờ duyệt (P11).
  */
 export async function navCounts(keys: Set<NavCountKey>, now = new Date()): Promise<Partial<Record<NavCountKey, number>>> {
   const distinctLots = async (where: Prisma.StockBalanceWhereInput) =>
@@ -28,6 +29,9 @@ export async function navCounts(keys: Set<NavCountKey>, now = new Date()): Promi
         .then((d) => distinctLots({ batch: { expiryDate: { lt: sellableCutoff(now, d) } } }))
         .then((n) => ["blockedLots", n]),
     );
+  }
+  if (keys.has("pendingApplications")) {
+    jobs.push(prisma.affiliateApplication.count({ where: { status: "PENDING" } }).then((n) => ["pendingApplications", n]));
   }
   return Object.fromEntries(await Promise.all(jobs));
 }

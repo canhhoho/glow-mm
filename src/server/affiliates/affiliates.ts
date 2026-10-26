@@ -22,6 +22,7 @@ import {
   type CommissionState,
 } from "./commission";
 import { normalizeRefCode } from "./referral";
+import { wouldCreateCycle } from "./tree";
 
 /**
  * Cộng tác viên (P10b): tài khoản (user role AFFILIATE + hồ sơ CTV), gán CTV cho đơn, ghi nhận chi trả.
@@ -37,7 +38,8 @@ export type AffiliateErrorCode =
   | "forbidden"
   | "order_paid"
   | "nothing_due"
-  | "invalid_file";
+  | "invalid_file"
+  | "cycle";
 
 export class AffiliateError extends Error {
   constructor(
@@ -63,9 +65,11 @@ const profileSchema = z.object({
 export const createAffiliateSchema = profileSchema.extend({
   email: z.string().trim().toLowerCase().pipe(z.email().max(200)),
   password: z.string().min(MIN_STAFF_PASSWORD).max(128),
+  /** Cấp trên (P11) — trống = không có. */
+  parentId: z.string().trim().max(64).optional(),
 });
 
-function parseProfile<T extends z.ZodType<z.infer<typeof profileSchema>>>(schema: T, raw: unknown) {
+export function parseProfile<T extends z.ZodType<z.infer<typeof profileSchema>>>(schema: T, raw: unknown) {
   const input = schema.parse(raw) as z.infer<T> & z.infer<typeof profileSchema>;
   const code = normalizeRefCode(input.code);
   if (!code) throw new AffiliateError("invalid_code", "Mã CTV 4–12 ký tự A–Z, 0–9");
@@ -74,7 +78,7 @@ function parseProfile<T extends z.ZodType<z.infer<typeof profileSchema>>>(schema
   return { ...input, code, phone, commissionRateBp: percentToBp(input.commissionPercent), payoutInfo: input.payoutInfo || null };
 }
 
-function uniqueError(e: unknown): never {
+export function uniqueError(e: unknown): never {
   if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
     const target = JSON.stringify(e.meta ?? {});
     if (target.includes("code")) throw new AffiliateError("code_taken", "Mã CTV đã được dùng");
@@ -88,42 +92,62 @@ export function suggestAffiliateCode() {
   return `CTV${randomBytes(3).toString("hex").toUpperCase()}`;
 }
 
+export type NewAffiliate = {
+  name: string;
+  email: string;
+  phone: string;
+  code: string;
+  commissionRateBp: number;
+  payoutInfo: string | null;
+  parentId: string | null;
+  passwordHash: string;
+};
+
+/** Tạo user AFFILIATE (mặc định tiếng Myanmar) + hồ sơ CTV trong transaction có sẵn — dùng cho tạo tay và duyệt đơn đăng ký. */
+export async function insertAffiliate(tx: Tx, input: NewAffiliate, actorId: string, action = "affiliate.create") {
+  if (input.parentId && !(await tx.affiliate.findUnique({ where: { id: input.parentId }, select: { id: true } }))) {
+    throw new AffiliateError("not_found", "Không tìm thấy CTV cấp trên");
+  }
+  const userId = randomUUID();
+  await tx.user.create({
+    data: {
+      id: userId,
+      name: input.name,
+      email: input.email,
+      role: "AFFILIATE",
+      locale: "my",
+      accounts: { create: { id: randomUUID(), accountId: userId, providerId: "credential", password: input.passwordHash } },
+    },
+  });
+  const affiliate = await tx.affiliate.create({
+    data: {
+      userId,
+      code: input.code,
+      phone: input.phone,
+      commissionRateBp: input.commissionRateBp,
+      payoutInfo: input.payoutInfo,
+      parentId: input.parentId,
+    },
+  });
+  await tx.auditLog.create({
+    data: {
+      userId: actorId,
+      action,
+      entity: "Affiliate",
+      entityId: affiliate.id,
+      data: { email: input.email, code: input.code, commissionRateBp: input.commissionRateBp, parentId: input.parentId },
+    },
+  });
+  return affiliate;
+}
+
 export async function createAffiliate(raw: unknown, actorId: string) {
   const input = parseProfile(createAffiliateSchema, raw);
-  const userId = randomUUID();
-  const hash = await hashPassword(input.password);
+  const passwordHash = await hashPassword(input.password);
   try {
-    return await prisma.$transaction(async (tx) => {
-      await tx.user.create({
-        data: {
-          id: userId,
-          name: input.name,
-          email: input.email,
-          role: "AFFILIATE",
-          locale: "my",
-          accounts: { create: { id: randomUUID(), accountId: userId, providerId: "credential", password: hash } },
-        },
-      });
-      const affiliate = await tx.affiliate.create({
-        data: {
-          userId,
-          code: input.code,
-          phone: input.phone,
-          commissionRateBp: input.commissionRateBp,
-          payoutInfo: input.payoutInfo,
-        },
-      });
-      await tx.auditLog.create({
-        data: {
-          userId: actorId,
-          action: "affiliate.create",
-          entity: "Affiliate",
-          entityId: affiliate.id,
-          data: { email: input.email, code: input.code, commissionRateBp: input.commissionRateBp },
-        },
-      });
-      return affiliate;
-    });
+    return await prisma.$transaction((tx) =>
+      insertAffiliate(tx, { ...input, parentId: input.parentId || null, passwordHash }, actorId),
+    );
   } catch (e) {
     uniqueError(e);
   }
@@ -158,6 +182,28 @@ export async function updateAffiliate(id: string, raw: unknown, actorId: string)
   } catch (e) {
     uniqueError(e);
   }
+}
+
+/**
+ * Đổi cấp trên (P11, chỉ admin): chỉ áp cho đơn mới (đơn cũ đã chốt cấp trên). Không được chọn chính mình
+ * hoặc tuyến dưới của mình (tạo vòng). `parentId` null = bỏ cấp trên.
+ */
+export async function setAffiliateParent(id: string, parentId: string | null, actorId: string) {
+  await prisma.$transaction(async (tx) => {
+    const cur = await tx.affiliate.findUnique({ where: { id } });
+    if (!cur) throw new AffiliateError("not_found", "Không tìm thấy CTV");
+    if (cur.parentId === parentId) return;
+    if (parentId) {
+      const all = await tx.affiliate.findMany({ select: { id: true, parentId: true } });
+      const parentOf = new Map(all.map((a) => [a.id, a.parentId]));
+      if (!parentOf.has(parentId)) throw new AffiliateError("not_found", "Không tìm thấy CTV cấp trên");
+      if (wouldCreateCycle(id, parentId, parentOf)) throw new AffiliateError("cycle", "Không thể chọn chính CTV này hoặc tuyến dưới của họ");
+    }
+    await tx.affiliate.update({ where: { id }, data: { parentId } });
+    await tx.auditLog.create({
+      data: { userId: actorId, action: "affiliate.setParent", entity: "Affiliate", entityId: id, data: { from: cur.parentId, to: parentId } },
+    });
+  });
 }
 
 /** Khoá/mở CTV: khoá cả hồ sơ lẫn tài khoản đăng nhập, xoá phiên đang mở. Link giới thiệu cũ ngừng tính. */
@@ -311,6 +357,11 @@ export async function getAffiliate(id: string, now = new Date()) {
     where: { id },
     include: {
       user: { select: { id: true, name: true, email: true, active: true } },
+      parent: { select: { id: true, code: true, active: true, user: { select: { name: true } } } },
+      children: {
+        select: { id: true, code: true, active: true, createdAt: true, user: { select: { name: true } } },
+        orderBy: { createdAt: "asc" },
+      },
       payouts: { orderBy: { paidAt: "desc" }, include: { _count: { select: { lines: true } }, proofFile: { select: { url: true } } } },
     },
   });

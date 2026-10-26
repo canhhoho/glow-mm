@@ -1,10 +1,12 @@
 import { ADMIN_LOCALES } from "@/i18n/routing";
-import { LoginForm } from "@/components/admin/login-form";
 import { Button } from "@/components/ui/button";
 
-/** Màn hình đăng nhập dùng chung cho admin và cổng CTV (nền kem thương hiệu, đổi ngôn ngữ, logo). */
+/**
+ * Màn hình thẻ thương hiệu dùng chung (nền kem, đổi ngôn ngữ, logo): đăng nhập admin / cổng CTV,
+ * đăng ký CTV qua link mời. Nội dung thẻ truyền qua `children`.
+ */
 export function LoginScreen({
-  portal,
+  children,
   title,
   subtitle,
   brandSubtitle,
@@ -12,7 +14,7 @@ export function LoginScreen({
   locale,
   localeAction,
 }: {
-  portal: "admin" | "ctv";
+  children: React.ReactNode;
   title: string;
   subtitle: string;
   brandSubtitle: string;
@@ -48,7 +50,7 @@ export function LoginScreen({
         <div className="w-full max-w-sm rounded-2xl border bg-card p-6 shadow-xl shadow-brand/10">
           <h1 className="text-lg font-semibold">{title}</h1>
           <p className="mt-1 mb-6 text-sm text-muted-foreground">{subtitle}</p>
-          <LoginForm portal={portal} />
+          {children}
         </div>
       </main>
 

@@ -25,7 +25,7 @@ export type NavIcon =
   | "gear";
 
 /** Số đếm hiện ở badge (xem `navCounts`). */
-export type NavCountKey = "pendingOrders" | "quarantineLots" | "blockedLots";
+export type NavCountKey = "pendingOrders" | "quarantineLots" | "blockedLots" | "pendingApplications";
 
 export type NavItem = { href: string; key: string; permission: Permission; icon: NavIcon; count?: NavCountKey };
 /** `key` null = nhóm không có tiêu đề (Tổng quan). */
@@ -38,7 +38,13 @@ export const NAV: NavGroup[] = [
     items: [
       { href: "/admin/orders", key: "orders", permission: "orders:view", icon: "cart", count: "pendingOrders" },
       { href: "/admin/reviews", key: "reviews", permission: "reviews:moderate", icon: "star" },
-      { href: "/admin/affiliates", key: "affiliates", permission: "affiliates:manage", icon: "handshake" },
+      {
+        href: "/admin/affiliates",
+        key: "affiliates",
+        permission: "affiliates:manage",
+        icon: "handshake",
+        count: "pendingApplications",
+      },
     ],
   },
   {

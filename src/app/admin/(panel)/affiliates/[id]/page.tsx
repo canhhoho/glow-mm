@@ -10,9 +10,10 @@ import {
   recordPayoutAction,
   resetAffiliatePasswordAction,
   setAffiliateActiveAction,
+  setAffiliateParentAction,
   updateAffiliateAction,
 } from "@/server/affiliates/actions";
-import { affiliateOrders, currentMonth, getAffiliate } from "@/server/affiliates/affiliates";
+import { affiliateOptions, affiliateOrders, currentMonth, getAffiliate } from "@/server/affiliates/affiliates";
 import { getNumberSetting } from "@/server/settings";
 import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
@@ -30,11 +31,12 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
   const month = str(sp.month) || currentMonth();
   const rawState = str(sp.state);
   const state = (STATES as string[]).includes(rawState) ? (rawState as CommissionState) : undefined;
-  const [t, a, orders, holdDays] = await Promise.all([
+  const [t, a, orders, holdDays, options] = await Promise.all([
     getTranslations("Affiliates"),
     getAffiliate(id),
     affiliateOrders(id, { month: month === "all" ? undefined : month, state }),
     getNumberSetting("affiliate.holdDays"),
+    affiliateOptions(),
   ]);
   if (!a) notFound();
   const refLink = `${siteUrl()}/?ref=${a.code}`;
@@ -43,6 +45,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
     <div className="max-w-5xl space-y-6">
       <PageHeader title={a.user.name} actions={<LinkButton href="/admin/affiliates">← {t("back")}</LinkButton>} />
       {sp.created && <p className="text-sm text-emerald-700 dark:text-emerald-400">{t("created")}</p>}
+      {sp.approved && <p className="text-sm text-emerald-700 dark:text-emerald-400">{t("apps.approvedNote")}</p>}
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <span className="font-mono">{a.user.email}</span>
         <Badge tone={a.active ? "success" : "danger"}>{a.active ? t("active") : t("locked")}</Badge>
@@ -62,6 +65,60 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
         <Stat label={t("statPaid")} value={fmtInt(a.summary.paidMmk)} />
       </div>
       <p className="text-xs text-muted-foreground">{t("holdHint", { days: holdDays })}</p>
+
+      <section className="grid gap-4 rounded-lg border p-4 md:grid-cols-2" data-testid="affiliate-tree">
+        <div className="space-y-2">
+          <h2 className="font-medium">{t("tree.parent")}</h2>
+          <p className="text-sm" data-testid="affiliate-parent">
+            {a.parent ? (
+              <Link href={`/admin/affiliates/${a.parent.id}`} className="text-primary underline">
+                {a.parent.code} — {a.parent.user.name}
+              </Link>
+            ) : (
+              <span className="text-muted-foreground">{t("tree.noParent")}</span>
+            )}
+            {a.parent && !a.parent.active && <span className="ml-2 text-xs text-destructive">({t("locked")})</span>}
+          </p>
+          <ActionForm action={setAffiliateParentAction} submitLabel={t("tree.save")} okText={t("saved")} variant="outline">
+            <input type="hidden" name="id" value={a.id} />
+            <select name="parentId" defaultValue={a.parentId ?? ""} aria-label={t("tree.parent")} className={`${fieldClass} max-w-sm`}>
+              <option value="">{t("tree.noParent")}</option>
+              {options
+                .filter((o) => o.id !== a.id && !a.children.some((c) => c.id === o.id))
+                .map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                  </option>
+                ))}
+            </select>
+          </ActionForm>
+          <p className="text-xs text-muted-foreground">{t("tree.parentHint")}</p>
+        </div>
+        <div className="space-y-2">
+          <h2 className="font-medium">
+            {t("tree.children")} ({a.children.length})
+          </h2>
+          {a.children.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("tree.noChildren")}</p>
+          ) : (
+            <ul className="space-y-1 text-sm" data-testid="affiliate-children">
+              {a.children.map((c) => (
+                <li key={c.id}>
+                  <Link href={`/admin/affiliates/${c.id}`} className="text-primary underline">
+                    {c.code} — {c.user.name}
+                  </Link>
+                  <span className="ml-2 text-xs text-muted-foreground">{fmtDate(c.createdAt)}</span>
+                  {!c.active && <span className="ml-2 text-xs text-destructive">({t("locked")})</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="text-xs text-muted-foreground">
+            {t("tree.upline")}: {fmtInt(a.summary.upline.pendingMmk)} / {fmtInt(a.summary.upline.payableMmk)} /{" "}
+            {fmtInt(a.summary.upline.paidMmk)}
+          </p>
+        </div>
+      </section>
 
       <section className="space-y-2 rounded-lg border p-4">
         <h2 className="font-medium">{t("due")}</h2>

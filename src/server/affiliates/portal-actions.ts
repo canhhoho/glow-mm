@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
@@ -8,6 +9,8 @@ import { requireAffiliate } from "@/server/auth/session";
 import type { ActionState } from "@/server/inventory/actions";
 import { OrderError } from "@/server/orders/errors";
 import { createOrder } from "@/server/orders/orders";
+import { MIN_STAFF_PASSWORD } from "@/server/auth/roles";
+import { ApplicationError, submitApplication } from "./applications";
 
 /** Server Action của cổng CTV (P10c). CTV lấy từ phiên đăng nhập — không nhận id CTV từ form. */
 
@@ -26,4 +29,35 @@ export async function createAffiliateOrderAction(_prev: ActionState, formData: F
   }
   revalidatePath("/ctv");
   redirect(`/ctv/orders/${id}?created=1`);
+}
+
+/** Đăng ký làm CTV qua link mời (trang công khai /ctv/join, không cần đăng nhập). */
+export async function submitApplicationAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  const t = await getTranslations("Ctv");
+  try {
+    const h = await headers();
+    const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "";
+    await submitApplication(
+      {
+        invite: String(fd.get("invite") ?? ""),
+        name: String(fd.get("name") ?? ""),
+        phone: String(fd.get("phone") ?? ""),
+        email: String(fd.get("email") ?? ""),
+        password: String(fd.get("password") ?? ""),
+        confirmPassword: String(fd.get("confirmPassword") ?? ""),
+      },
+      { ip, honeypot: String(fd.get("website") ?? "") },
+    );
+  } catch (e) {
+    if (e instanceof ApplicationError) return { error: t(`join.errors.${e.code}`) };
+    if (e instanceof ZodError) {
+      const issue = e.issues[0];
+      if (issue?.message === "mismatch") return { error: t("join.errors.mismatch") };
+      if (issue?.path[0] === "password") return { error: t("join.errors.tooShort", { min: MIN_STAFF_PASSWORD }) };
+      if (issue?.path[0] === "email") return { error: t("join.errors.email") };
+      return { error: t("join.errors.invalid") };
+    }
+    throw e;
+  }
+  return { ok: "sent" };
 }

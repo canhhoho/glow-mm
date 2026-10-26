@@ -8,7 +8,15 @@ import {
   getAffiliateOrder,
   listAffiliates,
   recordPayout,
+  setAffiliateParent,
 } from "@/server/affiliates/affiliates";
+import {
+  approveApplication,
+  MAX_PENDING_PER_INVITER,
+  MAX_PER_IP_PER_HOUR,
+  rejectApplication,
+  submitApplication,
+} from "@/server/affiliates/applications";
 import { createOrder } from "@/server/orders/orders";
 import { returnItems } from "@/server/orders/returns";
 import { transitionOrder } from "@/server/orders/transitions";
@@ -263,5 +271,101 @@ describe("Hai tầng (P11a)", () => {
     await completedOrder(f, down.code, 3, 9); // tầng trên +600
     expect((await getAffiliate(up.id))!.summary.payableMmk).toBe(400); // 600 − 200
     expect((await recordPayout(up.id, {}, f.userId)).amountMmk).toBe(400);
+  });
+});
+
+describe("Đăng ký qua link mời + duyệt (P11b)", () => {
+  const form = (invite: string, tag: string, extra: Record<string, string> = {}) => ({
+    invite,
+    name: `Ko Moi ${tag}`,
+    phone: `09 ${String(parseInt(tag.slice(0, 6), 16) % 100_000_000).padStart(8, "0")}`,
+    email: `moi-${tag.toLowerCase()}@glow.local`,
+    password: "mat-khau-moi-12",
+    confirmPassword: "mat-khau-moi-12",
+    ...extra,
+  });
+  const ip = (f: SaleFixture, n = 0) => `10.${f.tag}.${n}`;
+
+  it("gửi đơn → duyệt: tạo user AFFILIATE dưới người mời, đăng nhập bằng mật khẩu đã đặt, xoá hash; duyệt lần 2 bị chặn", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 1 }]);
+    const inviter = await makeAffiliate(f, { suffix: "I" });
+    const app = await submitApplication(form(inviter.code.toLowerCase(), f.tag), { ip: ip(f) });
+    expect(app).toMatchObject({ inviterId: inviter.id, status: "PENDING", phone: expect.stringMatching(/^09/) });
+    expect(app!.passwordHash).toBeTruthy();
+
+    const a = await approveApplication(app!.id, { code: `J${f.tag}`, commissionPercent: "8" }, f.userId);
+    expect(a).toMatchObject({ code: `J${f.tag}`, parentId: inviter.id, commissionRateBp: 800 });
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: a!.userId }, include: { accounts: true } });
+    expect(user).toMatchObject({ role: "AFFILIATE", email: `moi-${f.tag.toLowerCase()}@glow.local` });
+    expect(user.accounts[0].password).toBe(app!.passwordHash);
+    expect(await prisma.affiliateApplication.findUniqueOrThrow({ where: { id: app!.id } })).toMatchObject({
+      status: "APPROVED",
+      passwordHash: null,
+      affiliateId: a!.id,
+    });
+    await expect(approveApplication(app!.id, { code: `K${f.tag}`, commissionPercent: "8" }, f.userId)).rejects.toMatchObject({
+      code: "not_pending",
+    });
+  });
+
+  it("từ chối xoá hash; link sai / email đã có / đơn trùng / bot (honeypot) bị chặn hoặc bỏ qua", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 1 }]);
+    const inviter = await makeAffiliate(f, { suffix: "I" });
+    const locked = await makeAffiliate(f, { suffix: "L", active: false });
+
+    await expect(submitApplication(form(locked.code, f.tag), { ip: ip(f) })).rejects.toMatchObject({ code: "invalid_invite" });
+    await expect(submitApplication(form(inviter.code, f.tag, { email: "admin@glow.local" }), { ip: ip(f) })).rejects.toMatchObject({
+      code: "email_taken",
+    });
+    expect(await submitApplication(form(inviter.code, f.tag), { ip: ip(f), honeypot: "http://spam" })).toBeNull();
+
+    const app = await submitApplication(form(inviter.code, f.tag), { ip: ip(f) });
+    await expect(submitApplication(form(inviter.code, f.tag), { ip: ip(f, 1) })).rejects.toMatchObject({ code: "duplicate" });
+    await rejectApplication(app!.id, "Không đủ điều kiện", f.userId);
+    expect(await prisma.affiliateApplication.findUniqueOrThrow({ where: { id: app!.id } })).toMatchObject({
+      status: "REJECTED",
+      passwordHash: null,
+      note: "Không đủ điều kiện",
+    });
+    await expect(rejectApplication(app!.id, "", f.userId)).rejects.toMatchObject({ code: "not_pending" });
+  });
+
+  it("chống spam: tối đa đơn chờ mỗi người mời và số đơn mỗi giờ mỗi IP", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 1 }]);
+    const inviter = await makeAffiliate(f, { suffix: "I" });
+    await prisma.affiliateApplication.createMany({
+      data: Array.from({ length: MAX_PENDING_PER_INVITER }, (_, i) => ({
+        inviterId: inviter.id,
+        name: `Spam ${i}`,
+        phone: `09${f.tag.slice(0, 4)}${String(i).padStart(4, "0")}`.replace(/[A-F]/g, "1"),
+        email: `spam-${i}-${f.tag.toLowerCase()}@glow.local`,
+      })),
+    });
+    await expect(submitApplication(form(inviter.code, f.tag), { ip: ip(f, 2) })).rejects.toMatchObject({ code: "too_many" });
+
+    const other = await makeAffiliate(f, { suffix: "O" });
+    const now = new Date();
+    for (let i = 0; i < MAX_PER_IP_PER_HOUR; i++) {
+      await submitApplication(form(other.code, f.tag, { email: `ip-${i}-${f.tag.toLowerCase()}@glow.local`, phone: `09 7${String(parseInt(f.tag, 16) % 1_000_000).padStart(6, "0")}${i}` }), {
+        ip: ip(f, 3),
+        now,
+      });
+    }
+    await expect(
+      submitApplication(form(other.code, f.tag, { email: `ip-9-${f.tag.toLowerCase()}@glow.local`, phone: `09 7${String(parseInt(f.tag, 16) % 1_000_000).padStart(6, "0")}9` }), { ip: ip(f, 3), now }),
+    ).rejects.toMatchObject({ code: "too_many" });
+  });
+
+  it("đổi cấp trên: chặn vòng (chính mình / tuyến dưới), cho phép bỏ cấp trên", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 1 }]);
+    const a = await makeAffiliate(f, { suffix: "A" });
+    const b = await makeAffiliate(f, { suffix: "B", parentId: a.id });
+    const c = await makeAffiliate(f, { suffix: "C", parentId: b.id });
+    await expect(setAffiliateParent(a.id, a.id, f.userId)).rejects.toMatchObject({ code: "cycle" });
+    await expect(setAffiliateParent(a.id, c.id, f.userId)).rejects.toMatchObject({ code: "cycle" });
+    await setAffiliateParent(c.id, a.id, f.userId);
+    expect((await prisma.affiliate.findUniqueOrThrow({ where: { id: c.id } })).parentId).toBe(a.id);
+    await setAffiliateParent(c.id, null, f.userId);
+    expect((await prisma.affiliate.findUniqueOrThrow({ where: { id: c.id } })).parentId).toBeNull();
   });
 });

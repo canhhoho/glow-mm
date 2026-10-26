@@ -932,11 +932,48 @@
       "email": "Invalid email",
       "tooShort": "Password must be at least {min} characters",
       "percent": "Commission must be 0–50% (max 2 decimals)",
-      "invalid": "Invalid data"
+      "invalid": "Invalid data",
+      "cycle": "Can't pick this affiliate or one of their recruits as upline",
+      "app_not_pending": "Application already decided",
+      "app_invalid_invite": "Invalid invite link",
+      "app_email_taken": "Email already has an account",
+      "app_duplicate": "An application is already pending",
+      "app_too_many": "Too many applications",
+      "app_invalid_phone": "Invalid phone number"
     },
     "lineKind": {
       "SALE": "sales",
       "UPLINE": "team"
+    },
+    "apps": {
+      "title": "Affiliate applications",
+      "hint": "People who signed up through an affiliate's invite link. Approving creates their account (they chose the password) under the inviter.",
+      "empty": "No pending applications.",
+      "invitedBy": "Invited by",
+      "approve": "Approve",
+      "reject": "Reject",
+      "rejected": "Rejected",
+      "rejectConfirm": "Reject {name}'s application?",
+      "reason": "Reason (optional)",
+      "decided": "Recently decided",
+      "decidedEmpty": "None yet.",
+      "reviewedAt": "Decided on",
+      "status": {
+        "PENDING": "Pending",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected"
+      },
+      "approvedNote": "Approved. The affiliate signs in at /ctv/login with the email + password they chose."
+    },
+    "tree": {
+      "parent": "Upline",
+      "noParent": "— No upline —",
+      "parentOptional": "Upline (optional)",
+      "save": "Save upline",
+      "parentHint": "A new upline applies to new orders only; existing orders keep theirs.",
+      "children": "Direct recruits",
+      "noChildren": "No recruits yet.",
+      "upline": "Team commission (pending / payable / paid)"
     }
   },
   "Ctv": {
@@ -985,6 +1022,35 @@
     "payoutInfoHint": "To change your payout details, contact the shop.",
     "accountTitle": "Account",
     "orderCreated": "Order created. The shop will call the customer to confirm.",
-    "holdHint": "Commission becomes payable {days} days after the order is completed (the return window)."
+    "holdHint": "Commission becomes payable {days} days after the order is completed (the return window).",
+    "join": {
+      "title": "Become an affiliate",
+      "subtitle": "Open the invite link an affiliate sent you to sign up.",
+      "invitedBy": "Invited by {name} ({code}). You can sign in once the shop approves you.",
+      "invalidLink": "This invite link is invalid or no longer active. Ask your referrer for a new one.",
+      "name": "Full name",
+      "phone": "Phone number",
+      "email": "Email (used to sign in)",
+      "password": "Password",
+      "confirmPassword": "Repeat password",
+      "passwordHint": "At least {min} characters.",
+      "submit": "Send application",
+      "sentTitle": "Application sent",
+      "sentBody": "The shop will review it. Once approved, sign in at /ctv/login with this email and password.",
+      "haveAccount": "Already have an account?",
+      "login": "Sign in",
+      "errors": {
+        "invalid_invite": "Invalid invite link",
+        "email_taken": "This email already has an account — sign in instead",
+        "duplicate": "This email or phone already has a pending application",
+        "too_many": "Too many attempts, try later",
+        "invalid_phone": "Invalid phone number",
+        "not_pending": "Already decided",
+        "mismatch": "Passwords don't match",
+        "tooShort": "Password must be at least {min} characters",
+        "email": "Invalid email",
+        "invalid": "Invalid details"
+      }
+    }
   }
 }

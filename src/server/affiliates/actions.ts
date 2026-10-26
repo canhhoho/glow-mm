@@ -15,8 +15,10 @@ import {
   createAffiliate,
   recordPayout,
   setAffiliateActive,
+  setAffiliateParent,
   updateAffiliate,
 } from "./affiliates";
+import { ApplicationError, approveApplication, rejectApplication } from "./applications";
 
 /** Server Action quản lý CTV (quyền `affiliates:manage`) + gán CTV cho đơn (`orders:assign-affiliate`). */
 
@@ -25,6 +27,7 @@ const id = z.string().trim().min(1).max(64);
 async function message(e: unknown): Promise<string> {
   const t = await getTranslations("Affiliates");
   if (e instanceof AffiliateError) return t(`errors.${e.code}`);
+  if (e instanceof ApplicationError) return t(`errors.app_${e.code}`);
   if (e instanceof ZodError) {
     const field = e.issues[0]?.path[0];
     if (field === "email") return t("errors.email");
@@ -50,7 +53,12 @@ export async function createAffiliateAction(_prev: ActionState, fd: FormData): P
   try {
     const user = await requirePermission("affiliates:manage");
     const a = await createAffiliate(
-      { ...profile(fd), email: String(fd.get("email") ?? ""), password: String(fd.get("password") ?? "") },
+      {
+        ...profile(fd),
+        email: String(fd.get("email") ?? ""),
+        password: String(fd.get("password") ?? ""),
+        parentId: String(fd.get("parentId") ?? ""),
+      },
       user.id,
     );
     affiliateId = a.id;
@@ -112,6 +120,53 @@ export async function recordPayoutAction(_prev: ActionState, fd: FormData): Prom
   }
   revalidatePath("/admin/affiliates");
   return { ok: "paid" };
+}
+
+/** `parentId` rỗng = bỏ cấp trên. Chỉ áp cho đơn mới. */
+export async function setAffiliateParentAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("affiliates:manage");
+    const affiliateId = id.parse(fd.get("id"));
+    const parentId = String(fd.get("parentId") ?? "").trim();
+    await setAffiliateParent(affiliateId, parentId || null, user.id);
+    revalidatePath(`/admin/affiliates/${affiliateId}`);
+  } catch (e) {
+    return { error: await message(e) };
+  }
+  revalidatePath("/admin/affiliates");
+  return { ok: "saved" };
+}
+
+export async function approveApplicationAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  let affiliateId: string;
+  try {
+    const user = await requirePermission("affiliates:manage");
+    const a = await approveApplication(
+      id.parse(fd.get("id")),
+      {
+        code: String(fd.get("code") ?? ""),
+        commissionPercent: String(fd.get("commissionPercent") ?? ""),
+        payoutInfo: String(fd.get("payoutInfo") ?? ""),
+      },
+      user.id,
+    );
+    affiliateId = a.id;
+  } catch (e) {
+    return { error: await message(e) };
+  }
+  revalidatePath("/admin/affiliates", "layout");
+  redirect(`/admin/affiliates/${affiliateId}?approved=1`);
+}
+
+export async function rejectApplicationAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("affiliates:manage");
+    await rejectApplication(id.parse(fd.get("id")), fd.get("note"), user.id);
+  } catch (e) {
+    return { error: await message(e) };
+  }
+  revalidatePath("/admin/affiliates", "layout");
+  return { ok: "rejected" };
 }
 
 /** `affiliateId` rỗng = bỏ CTV khỏi đơn. */
