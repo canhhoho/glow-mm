@@ -118,7 +118,7 @@ test("mobile: thanh mục ở đáy, Tài khoản trên header chứa ngôn ng�
   await page.getByTestId("ctv-account-link").click();
   await expect(page).toHaveURL(/\/ctv\/account$/);
   await page.getByRole("button", { name: "EN", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Account" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Account", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "VI", exact: true }).click();
   await page.getByRole("main").getByRole("button", { name: "Đăng xuất" }).click();
   await expect(page).toHaveURL(/\/ctv\/login$/);
