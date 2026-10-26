@@ -123,6 +123,7 @@
     "Affiliates.none",
     "Affiliates.orderSection",
     "Affiliates.orders",
+    "Affiliates.ordersCount",
     "Affiliates.ordersEmpty",
     "Affiliates.paid",
     "Affiliates.paidLocked",

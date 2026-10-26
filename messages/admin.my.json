@@ -891,6 +891,7 @@
     "proof": "ပြေစာ",
     "orders": "ကိုယ်စားလှယ်၏ အော်ဒါများ",
     "ordersEmpty": "အော်ဒါ မရှိသေးပါ။",
+    "ordersCount": "အော်ဒါ {count} ခု",
     "month": "လ",
     "state": "ကော်မရှင်",
     "allStates": "အားလုံး",

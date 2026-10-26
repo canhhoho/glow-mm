@@ -88,3 +88,38 @@ test("tách cổng: CTV không vào admin, nhân viên không vào cổng CTV; c
   await page.goto("/ctv");
   await expect(page).toHaveURL(/\/ctv\/login$/);
 });
+
+test("mobile: thanh mục ở đáy, Tài khoản trên header chứa ngôn ngữ + đăng xuất, không cuộn ngang", async ({ page }) => {
+  await loginCtv(page);
+  const bottom = page.getByTestId("ctv-bottom-nav");
+  await expect(bottom.getByRole("link")).toHaveCount(5);
+  // Thanh đáy nằm sát đáy màn hình, kể cả khi đã cuộn trang.
+  await page.mouse.wheel(0, 2000);
+  const b = (await bottom.boundingBox())!;
+  expect(Math.round(b.y + b.height)).toBe(page.viewportSize()!.height);
+  // Header mobile không còn ngôn ngữ / đăng xuất.
+  await expect(page.getByRole("banner").getByRole("button", { name: "Đăng xuất" })).toBeHidden();
+
+  for (const path of ["/ctv", "/ctv/orders", "/ctv/orders/new", "/ctv/team", "/ctv/payouts", "/ctv/account"]) {
+    await page.goto(path);
+    await expect(page.getByTestId("ctv-user")).toBeVisible();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow, path).toBeLessThanOrEqual(0);
+  }
+
+  // Bộ lọc đơn: ô Tháng và ô Hoa hồng không chồng lên nhau.
+  await bottom.getByRole("link", { name: "Đơn của tôi" }).click();
+  await expect(page).toHaveURL(/\/ctv\/orders$/);
+  const month = (await page.getByLabel("Tháng").boundingBox())!;
+  const state = (await page.getByLabel("Hoa hồng").boundingBox())!;
+  expect(month.x + month.width).toBeLessThanOrEqual(state.x);
+  await expect(page.getByText(/^\d+ đơn · Hoa hồng:/)).toBeVisible();
+
+  await page.getByTestId("ctv-account-link").click();
+  await expect(page).toHaveURL(/\/ctv\/account$/);
+  await page.getByRole("button", { name: "EN", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Account" })).toBeVisible();
+  await page.getByRole("button", { name: "VI", exact: true }).click();
+  await page.getByRole("main").getByRole("button", { name: "Đăng xuất" }).click();
+  await expect(page).toHaveURL(/\/ctv\/login$/);
+});

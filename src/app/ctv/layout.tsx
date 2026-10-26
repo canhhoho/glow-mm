@@ -1,11 +1,14 @@
 import "../globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { myanmarFont } from "@/lib/fonts";
 
 // Cổng CTV luôn động (cookie ngôn ngữ + phiên đăng nhập); không cần instant navigation.
 export const instant = false;
+
+// viewport-fit=cover: thanh mục đáy dùng env(safe-area-inset-bottom) để không bị thanh Home của iPhone che.
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Ctv");

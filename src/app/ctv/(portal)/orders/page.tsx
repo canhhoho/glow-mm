@@ -26,14 +26,20 @@ export default async function CtvOrdersPage({ searchParams }: PageProps<"/ctv/or
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">{t("nav.orders")}</h1>
-      <form className="flex flex-wrap items-end gap-2" role="search">
-        <label className="space-y-1 text-sm">
-          <span className="text-muted-foreground">{ta("month")}</span>
-          <input name="month" type="month" defaultValue={month} className={`${fieldClass} h-10 w-44`} />
+      <form className="grid grid-cols-2 gap-2 sm:flex sm:items-end" role="search">
+        <label className="min-w-0 space-y-1 text-sm">
+          <span className="block text-muted-foreground">{ta("month")}</span>
+          {/* iOS Safari tự bung rộng + căn giữa input tháng nếu không bỏ appearance. */}
+          <input
+            name="month"
+            type="month"
+            defaultValue={month}
+            className={`${fieldClass} h-10 min-w-0 appearance-none text-left sm:w-44 [&::-webkit-date-and-time-value]:text-left`}
+          />
         </label>
-        <label className="space-y-1 text-sm">
-          <span className="text-muted-foreground">{ta("state")}</span>
-          <select name="state" defaultValue={state ?? ""} className={`${fieldClass} h-10 w-auto`}>
+        <label className="min-w-0 space-y-1 text-sm">
+          <span className="block text-muted-foreground">{ta("state")}</span>
+          <select name="state" defaultValue={state ?? ""} className={`${fieldClass} h-10 min-w-0 sm:w-auto`}>
             <option value="">{ta("allStates")}</option>
             {STATES.map((s) => (
               <option key={s} value={s}>
@@ -42,12 +48,12 @@ export default async function CtvOrdersPage({ searchParams }: PageProps<"/ctv/or
             ))}
           </select>
         </label>
-        <Button type="submit" variant="outline" className="h-10">
+        <Button type="submit" variant="outline" className="col-span-2 h-10">
           {ta("filter")}
         </Button>
       </form>
       <p className="text-sm text-muted-foreground">
-        {orders.length} · {ta("colCommission")}: <span className="font-medium text-foreground tabular-nums">{fmtInt(totalCommission)} MMK</span>
+        {ta("ordersCount", { count: orders.length })} · {ta("colCommission")}: <span className="font-medium text-foreground tabular-nums">{fmtInt(totalCommission)} MMK</span>
       </p>
       {orders.length === 0 ? (
         <p className="rounded-2xl border bg-card p-6 text-center text-sm text-muted-foreground">{ta("ordersEmpty")}</p>

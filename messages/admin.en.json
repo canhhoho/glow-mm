@@ -891,6 +891,7 @@
     "proof": "Receipt",
     "orders": "Affiliate orders",
     "ordersEmpty": "No orders yet.",
+    "ordersCount": "{count, plural, one {# order} other {# orders}}",
     "month": "Month",
     "state": "Commission",
     "allStates": "All",

@@ -891,6 +891,7 @@
     "proof": "Biên nhận",
     "orders": "Đơn của CTV",
     "ordersEmpty": "Chưa có đơn.",
+    "ordersCount": "{count} đơn",
     "month": "Tháng",
     "state": "Hoa hồng",
     "allStates": "Tất cả",
