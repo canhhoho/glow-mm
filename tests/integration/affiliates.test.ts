@@ -315,7 +315,7 @@ describe("Đăng ký qua link mời + duyệt (P11b)", () => {
     const locked = await makeAffiliate(f, { suffix: "L", active: false });
 
     await expect(submitApplication(form(locked.code, f.tag), { ip: ip(f) })).rejects.toMatchObject({ code: "invalid_invite" });
-    await expect(submitApplication(form(inviter.code, f.tag, { email: "admin@glow.local" }), { ip: ip(f) })).rejects.toMatchObject({
+    await expect(submitApplication(form(inviter.code, f.tag, { email: "it-runner@glow.local" }), { ip: ip(f) })).rejects.toMatchObject({
       code: "email_taken",
     });
     expect(await submitApplication(form(inviter.code, f.tag), { ip: ip(f), honeypot: "http://spam" })).toBeNull();
