@@ -64,7 +64,8 @@ test("robots.txt + sitemap.xml", async ({ request }) => {
 
 test("nút đổi ngôn ngữ: chữ Myanmar không tràn khung", async ({ page }) => {
   await page.goto("/en");
-  const sw = page.getByTestId("language-switch");
+  // Lúc stream, nút thật (sau Suspense) có thể còn nằm ẩn cạnh nút fallback → chỉ lấy nút đang hiện.
+  const sw = page.getByTestId("language-switch").filter({ visible: true });
   await expect(sw).toHaveText("မြန်မာ");
   await expect(sw).toHaveAttribute("lang", "my");
   const fits = await sw.evaluate((el) => el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1);
