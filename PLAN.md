@@ -114,7 +114,7 @@ Dockerfile  docker-compose.yml  docker-compose.prod.yml  .env.example
 
 ## 4. Roadmap (dừng chờ duyệt sau mỗi phase)
 
-Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ · P9 ✅ (2026-10-19) · P10 CTV (code xong 2026-10-26, chờ duyệt) · P4b chờ server + domain Myanmar.
+Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ · P9 ✅ (2026-10-19) · P10 CTV ✅ (2026-10-26, đã lên production) · P11 CTV 2 tầng (code xong 2026-10-26, chờ duyệt) · P4b chờ server + domain Myanmar.
 
 | Phase | Nội dung | Hoàn thành khi |
 |---|---|---|
@@ -130,6 +130,7 @@ Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 
 | **P8 Quản lý nhân viên** ✅ (2026-10-16) | `/admin/users` (ADMIN): tạo nhân viên + mật khẩu tạm, đổi tên/vai trò, khoá/mở khoá, đặt lại mật khẩu; khoá/đặt lại → xoá mọi phiên; tài khoản bị khoá không đăng nhập được (hook Better Auth); luôn còn ≥ 1 ADMIN; không tự khoá/tự đổi vai trò; ghi AuditLog. Không cần migration | Toàn bộ test xanh (integration + E2E tạo → đăng nhập đúng quyền → khoá → bị đăng xuất) |
 | **P9 Giao diện admin + Tồn kho** ✅ (2026-10-19) | Khung admin mới (menu nhóm + icon + badge + trang đang mở, ngăn kéo trên mobile, breadcrumb) và trang Tồn kho mới (ô số tổng, tab vị trí, xem theo sản phẩm/theo lô, lọc hạn dùng/loại tồn, phân trang, trang lịch sử lô) theo mẫu `docs/mockups/p9-admin-kho.html` | Toàn bộ test xanh (unit tổng hợp tồn, integration số liệu khớp ledger, E2E mobile: menu ngăn kéo, lọc/phân trang, mở lô, lịch sử lô) |
 | **P10 Cộng tác viên (CTV) + hoa hồng** (2026-10-26) | Link giới thiệu `?ref=CODE`, CTV tự lên đơn, nhân viên gán CTV; hoa hồng % theo CTV chốt trên đơn; admin quản lý CTV + ghi nhận chi trả; cổng `/ctv` cho CTV xem đơn/hoa hồng/thanh toán | Toàn bộ test xanh (unit hoa hồng, integration gắn đơn/chi trả song song/cô lập CTV, E2E link → đơn → cổng CTV, admin chi trả, tách cổng) |
+| **P11 CTV hai tầng** (2026-10-26) | CTV tuyển CTV qua link mời `/ctv/join?inv=CODE` → admin duyệt; cấp trên trực tiếp hưởng thêm % tầng trên (shop trả, mặc định 2%) trên đơn của người mình tuyển; trang Tuyến dưới trong cổng CTV (chỉ số tổng, không thông tin khách); admin đổi cấp trên | Toàn bộ test xanh (unit hai tầng + chống vòng, integration chốt cấp trên/chi trả theo loại/đăng ký-duyệt/chống spam, E2E đăng ký → duyệt → đăng nhập, tuyến dưới) |
 
 **P9 — kế hoạch (mẫu đã duyệt 2026-10-17):**
 - *Không đổi dữ liệu, không migration.* Chỉ đọc `StockBalance`/`Batch`/`Reservation`; mọi thay đổi tồn vẫn qua phiếu kho.
@@ -153,6 +154,14 @@ Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 
 - Chi trả: admin chuyển tiền ngoài hệ thống rồi "Ghi nhận đã trả" → `AffiliatePayout` + `AffiliatePayoutLine` theo đơn (chỉ ghi thêm); trả hàng sau khi đã chi → số âm, trừ vào lần chi sau. Khoá dòng CTV khi ghi để không trùng.
 - CTV là user Better Auth role AFFILIATE (không thuộc ROLES nhân viên → không vào /admin); admin tạo tài khoản; đăng nhập email + mật khẩu ở `/ctv/login` (đăng nhập nhầm cổng bị từ chối). Cổng CTV mặc định tiếng Myanmar (cookie `CTV_LOCALE`), xem đủ tên/SĐT/địa chỉ khách trong đơn của mình, không thấy giá vốn/kho, không tra cứu khách theo SĐT.
 - Báo cáo: thêm hoa hồng CTV (theo ngày hoàn tất) + lợi nhuận sau hoa hồng. Seed: CTV mẫu `ctv@glow.local` (mã MAUNG).
+
+**P11 — quyết định (2026-10-26):**
+- 2 tầng: người bán nhận % của mình như P10; cấp trên trực tiếp nhận thêm `affiliate.uplineRateBp` (mặc định 2%) tiền hàng thực thu — shop trả, không trừ vào người bán; không hưởng tiếp xuống tầng dưới nữa. Cấp trên + % chốt vào đơn lúc gắn CTV (`Order.uplineAffiliateId/uplineRateBp`); cấp trên bị khoá → đơn mới không tính.
+- Chi trả tách loại dòng `AffiliatePayoutLine.kind` (SALE | UPLINE); một lần chi gồm cả hai loại của CTV đó, kể cả số âm.
+- Mọi CTV có link mời; người mới tự đăng ký (mật khẩu tự đặt, băm sẵn trong `AffiliateApplication`) → admin duyệt (nhập mã + %, mặc định `affiliate.defaultRateBp`) → gắn dưới người mời. Chống spam: honeypot, ≤ 20 đơn chờ / người mời, ≤ 5 đơn / giờ / IP.
+- Cấp trên chỉ thấy số tổng của tuyến dưới (không tên/SĐT/địa chỉ khách). Chỉ admin đổi cấp trên (chặn vòng), áp cho đơn mới.
+- [CẦN XÁC MINH] Quy định Myanmar về bán hàng đa cấp / trực tiếp trước khi mở cho CTV dùng. Thiết kế: không phí tham gia, không thưởng cho việc tuyển, chỉ trả trên doanh số thật, giới hạn 2 tầng.
+- Seed: CTV cấp dưới `ctv2@glow.local` (mã LINN) dưới MAUNG.
 
 **P8 — quyết định (2026-10-16):** không gửi email (chưa có dịch vụ mail), admin tự báo mật khẩu tạm, nhân viên đổi ở `/admin/account`. Bỏ ô "ngôn ngữ" khi tạo nhân viên vì ngôn ngữ admin lấy theo cookie từng trình duyệt (`User.locale` chưa dùng). Ngoài phạm vi: bắt buộc đổi mật khẩu lần đầu (cần cột mới), 2FA, trang xem AuditLog.
 

@@ -9,6 +9,7 @@ import {
   listAffiliates,
   recordPayout,
   setAffiliateParent,
+  teamOverview,
 } from "@/server/affiliates/affiliates";
 import {
   approveApplication,
@@ -367,5 +368,25 @@ describe("Đăng ký qua link mời + duyệt (P11b)", () => {
     expect((await prisma.affiliate.findUniqueOrThrow({ where: { id: c.id } })).parentId).toBe(a.id);
     await setAffiliateParent(c.id, null, f.userId);
     expect((await prisma.affiliate.findUniqueOrThrow({ where: { id: c.id } })).parentId).toBeNull();
+  });
+});
+
+describe("Tuyến dưới (P11c)", () => {
+  it("tổng hợp theo từng CTV cấp dưới + người đã chuyển tuyến; không trả thông tin khách", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 10 }]);
+    const up = await makeAffiliate(f, { suffix: "P" });
+    const d1 = await makeAffiliate(f, { suffix: "D1", parentId: up.id });
+    const d2 = await makeAffiliate(f, { suffix: "D2", parentId: up.id });
+    await completedOrder(f, d1.code, 2, 10); // tầng trên 400 đến hạn
+    await createOrder(orderInput(f, 1), { userId: null, affiliate: { source: "LINK", code: d2.code } }); // tầng trên 200 chờ
+    await setAffiliateParent(d2.id, null, f.userId); // d2 chuyển ra → đơn cũ vẫn tính cho up (former)
+
+    const team = await teamOverview(up.id);
+    expect(team.uplineRateBp).toBe(200);
+    expect(team.children.map((c) => c.code)).toEqual([d1.code]);
+    expect(team.children[0]).toMatchObject({ monthOrders: 1, commission: { payableMmk: 400, pendingMmk: 0 } });
+    expect(team.former).toMatchObject({ pendingMmk: 200 });
+    expect(team.total).toMatchObject({ payableMmk: 400, pendingMmk: 200 });
+    expect(JSON.stringify(team)).not.toMatch(/Ma Hla|0978123456|Bo Aung Kyaw/);
   });
 });

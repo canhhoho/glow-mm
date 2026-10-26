@@ -23,6 +23,14 @@ export default async function CtvPayoutsPage() {
         <Stat label={ta("statPending")} value={`${fmtInt(s.pendingMmk)} MMK`} />
         <Stat label={ta("statPaid")} value={`${fmtInt(s.paidMmk)} MMK`} testId="ctv-paid" />
       </div>
+      <p className="text-xs text-muted-foreground">
+        {t("split", {
+          salePending: fmtInt(s.sale.pendingMmk),
+          salePayable: fmtInt(s.sale.payableMmk),
+          teamPending: fmtInt(s.upline.pendingMmk),
+          teamPayable: fmtInt(s.upline.payableMmk),
+        })}
+      </p>
       <p className="text-xs text-muted-foreground">{t("holdHint", { days: holdDays })}</p>
 
       <section className="space-y-2 rounded-2xl border bg-card p-4">
@@ -42,7 +50,10 @@ export default async function CtvPayoutsPage() {
                 <span>
                   {fmtDateTime(p.paidAt)}
                   <span className="ml-2 text-xs text-muted-foreground">
-                    {p._count.lines} {ta("colOrders").toLowerCase()}
+                    {t("payoutLines", {
+                      sale: p.lines.filter((l) => l.kind === "SALE").length,
+                      team: p.lines.filter((l) => l.kind === "UPLINE").length,
+                    })}
                     {p.note && ` · ${p.note}`}
                   </span>
                 </span>

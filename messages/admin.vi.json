@@ -974,7 +974,9 @@
       "children": "Tuyến dưới trực tiếp",
       "noChildren": "Chưa tuyển ai.",
       "upline": "Hoa hồng tuyến dưới (chờ / đến hạn / đã trả)"
-    }
+    },
+    "teamOrders": "Đơn tuyến dưới (hưởng tầng trên)",
+    "colUpline": "Hoa hồng tầng trên"
   },
   "Ctv": {
     "metaTitle": "Cổng CTV — Glow VN",
@@ -986,7 +988,8 @@
       "orders": "Đơn của tôi",
       "newOrder": "Tạo đơn",
       "payouts": "Thanh toán",
-      "account": "Tài khoản"
+      "account": "Tài khoản",
+      "team": "Tuyến dưới"
     },
     "logout": "Đăng xuất",
     "hello": "Xin chào, {name}",
@@ -1051,6 +1054,23 @@
         "email": "Email không hợp lệ",
         "invalid": "Thông tin chưa hợp lệ"
       }
-    }
+    },
+    "team": {
+      "title": "Tuyến dưới của bạn",
+      "inviteLink": "Link mời làm CTV",
+      "inviteHint": "Gửi link này cho người muốn làm CTV. Shop duyệt xong, họ nằm dưới bạn và bạn được thêm {percent}% tiền hàng trên mỗi đơn họ bán (shop trả, không trừ vào hoa hồng của họ).",
+      "pendingApps": "{count} người đang chờ shop duyệt",
+      "pending": "Tuyến dưới — chờ",
+      "payable": "Tuyến dưới — đến hạn",
+      "paid": "Tuyến dưới — đã nhận",
+      "members": "CTV bạn đã tuyển",
+      "empty": "Chưa có ai. Gửi link mời ở trên để tuyển CTV.",
+      "joined": "Tham gia {date}",
+      "month": "Tháng này: {orders} đơn · {sales} MMK",
+      "former": "Từ CTV đã chuyển tuyến: chờ {pending} · đến hạn {payable} · đã nhận {paid} MMK",
+      "privacy": "Bạn chỉ thấy số tổng; thông tin khách của tuyến dưới được bảo mật."
+    },
+    "split": "Bán hàng: chờ {salePending} · đến hạn {salePayable} — Tuyến dưới: chờ {teamPending} · đến hạn {teamPayable} (MMK)",
+    "payoutLines": "{sale} đơn bán · {team} đơn tuyến dưới"
   }
 }

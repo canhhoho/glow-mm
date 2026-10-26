@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CreditCard, House, ListOrdered, PlusCircle, UserRound, type LucideIcon } from "lucide-react";
+import { CreditCard, House, ListOrdered, PlusCircle, UserRound, Users, type LucideIcon } from "lucide-react";
 import { activeHref } from "@/server/admin/nav";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,7 @@ const ICONS: Record<string, LucideIcon> = {
   "/ctv": House,
   "/ctv/orders": ListOrdered,
   "/ctv/orders/new": PlusCircle,
+  "/ctv/team": Users,
   "/ctv/payouts": CreditCard,
   "/ctv/account": UserRound,
 };

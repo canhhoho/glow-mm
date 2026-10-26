@@ -974,7 +974,9 @@
       "children": "Direct recruits",
       "noChildren": "No recruits yet.",
       "upline": "Team commission (pending / payable / paid)"
-    }
+    },
+    "teamOrders": "Team orders (upline share)",
+    "colUpline": "Upline commission"
   },
   "Ctv": {
     "metaTitle": "Affiliate portal — Glow VN",
@@ -986,7 +988,8 @@
       "orders": "My orders",
       "newOrder": "New order",
       "payouts": "Payouts",
-      "account": "Account"
+      "account": "Account",
+      "team": "Team"
     },
     "logout": "Sign out",
     "hello": "Hello, {name}",
@@ -1051,6 +1054,23 @@
         "email": "Invalid email",
         "invalid": "Invalid details"
       }
-    }
+    },
+    "team": {
+      "title": "Your team",
+      "inviteLink": "Affiliate invite link",
+      "inviteHint": "Send this link to people who want to become affiliates. Once the shop approves them they join your team and you earn an extra {percent}% of the goods on each order they sell (paid by the shop, not taken from their commission).",
+      "pendingApps": "{count} waiting for shop approval",
+      "pending": "Team — pending",
+      "payable": "Team — payable",
+      "paid": "Team — received",
+      "members": "Affiliates you recruited",
+      "empty": "No one yet. Share the invite link above to recruit.",
+      "joined": "Joined {date}",
+      "month": "This month: {orders} orders · {sales} MMK",
+      "former": "From affiliates who moved to another upline: pending {pending} · payable {payable} · received {paid} MMK",
+      "privacy": "You only see totals; your team's customer details stay private."
+    },
+    "split": "Sales: pending {salePending} · payable {salePayable} — Team: pending {teamPending} · payable {teamPayable} (MMK)",
+    "payoutLines": "{sale} sales orders · {team} team orders"
   }
 }

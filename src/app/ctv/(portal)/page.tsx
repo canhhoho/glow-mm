@@ -51,6 +51,14 @@ export default async function CtvHomePage() {
         <Stat label={ta("statPayable")} value={fmtInt(s.payableMmk)} href="/ctv/payouts" testId="ctv-payable" />
         <Stat label={ta("statPaid")} value={fmtInt(s.paidMmk)} href="/ctv/payouts" />
       </div>
+      <p className="text-xs text-muted-foreground" data-testid="ctv-split">
+        {t("split", {
+          salePending: fmtInt(s.sale.pendingMmk),
+          salePayable: fmtInt(s.sale.payableMmk),
+          teamPending: fmtInt(s.upline.pendingMmk),
+          teamPayable: fmtInt(s.upline.payableMmk),
+        })}
+      </p>
       <p className="text-xs text-muted-foreground">{t("holdHint", { days: holdDays })}</p>
 
       <section className="space-y-2">

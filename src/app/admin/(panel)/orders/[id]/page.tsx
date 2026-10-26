@@ -32,7 +32,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
     getNumberSetting("affiliate.holdDays"),
   ]);
   if (!order) notFound();
-  const { commission } = splitCommissions({ ...order, lines: order.payoutLines }, { now: new Date(), holdDays });
+  const { commission, uplineCommission } = splitCommissions({ ...order, lines: order.payoutLines }, { now: new Date(), holdDays });
   const affiliatePaid = order.payoutLines.length > 0;
 
   // "returned" chỉ qua form Trả hàng (kèm phiếu nhập hàng trả vào Chờ kiểm tra).
@@ -149,6 +149,19 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
               </span>
               <CommissionBadge state={commission.state} />
             </dd>
+            {order.uplineAffiliate && uplineCommission && (
+              <>
+                <dt className="text-muted-foreground">{ta("tree.parent")}</dt>
+                <dd className="flex flex-wrap items-center gap-2" data-testid="order-upline">
+                  <span>
+                    <span className="font-mono">{order.uplineAffiliate.code}</span> — {order.uplineAffiliate.user.name}
+                  </span>
+                  <span className="tabular-nums">{fmtInt(uplineCommission.commissionMmk)} MMK</span>
+                  <span className="text-xs text-muted-foreground">({bpToPercent(order.uplineRateBp ?? 0)}%)</span>
+                  <CommissionBadge state={uplineCommission.state} />
+                </dd>
+              </>
+            )}
           </dl>
         ) : (
           <p className="text-sm text-muted-foreground">{ta("none")}</p>

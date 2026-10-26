@@ -13,7 +13,7 @@ import {
   setAffiliateParentAction,
   updateAffiliateAction,
 } from "@/server/affiliates/actions";
-import { affiliateOptions, affiliateOrders, currentMonth, getAffiliate } from "@/server/affiliates/affiliates";
+import { affiliateOptions, affiliateOrders, currentMonth, getAffiliate, teamOrders } from "@/server/affiliates/affiliates";
 import { getNumberSetting } from "@/server/settings";
 import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
@@ -31,12 +31,13 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
   const month = str(sp.month) || currentMonth();
   const rawState = str(sp.state);
   const state = (STATES as string[]).includes(rawState) ? (rawState as CommissionState) : undefined;
-  const [t, a, orders, holdDays, options] = await Promise.all([
+  const [t, a, orders, holdDays, options, team] = await Promise.all([
     getTranslations("Affiliates"),
     getAffiliate(id),
     affiliateOrders(id, { month: month === "all" ? undefined : month, state }),
     getNumberSetting("affiliate.holdDays"),
     affiliateOptions(),
+    teamOrders(id),
   ]);
   if (!a) notFound();
   const refLink = `${siteUrl()}/?ref=${a.code}`;
@@ -218,6 +219,50 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
           ))}
         </DataTable>
       </section>
+
+      {team.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="font-medium">
+            {t("teamOrders")} ({team.length})
+          </h2>
+          <DataTable head={[t("colOrder"), t("colDate"), t("colCtv"), t("colGoods"), t("colUpline"), t("colOrderStatus")]}>
+            {team.map((o) => (
+              <tr key={o.id} data-testid="team-order">
+                <Td>
+                  <Link href={`/admin/orders/${o.id}`} className="font-mono text-xs text-primary underline">
+                    {o.code}
+                  </Link>
+                </Td>
+                <Td className="whitespace-nowrap">{fmtDate(o.createdAt)}</Td>
+                <Td className="text-xs">
+                  {o.seller ? (
+                    <>
+                      <span className="font-mono">{o.seller.code}</span> — {o.seller.user.name}
+                    </>
+                  ) : (
+                    "—"
+                  )}
+                </Td>
+                <Td className="text-right tabular-nums">{fmtInt(o.uplineCommission?.baseMmk ?? 0)}</Td>
+                <Td className="text-right tabular-nums">
+                  {o.uplineCommission && (
+                    <div className="flex flex-col items-end gap-1">
+                      <span>
+                        {fmtInt(o.uplineCommission.commissionMmk)}
+                        <span className="ml-1 text-xs text-muted-foreground">({bpToPercent(o.uplineRateBp ?? 0)}%)</span>
+                      </span>
+                      <CommissionBadge state={o.uplineCommission.state} />
+                    </div>
+                  )}
+                </Td>
+                <Td>
+                  <OrderStatusBadge status={o.status} />
+                </Td>
+              </tr>
+            ))}
+          </DataTable>
+        </section>
+      )}
 
       <section className="space-y-2">
         <h2 className="font-medium">{t("payouts")}</h2>

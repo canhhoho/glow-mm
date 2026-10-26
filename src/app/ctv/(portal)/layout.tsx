@@ -9,8 +9,15 @@ import { Button } from "@/components/ui/button";
 export default async function CtvPortalLayout({ children }: LayoutProps<"/ctv">) {
   const user = await requireAffiliate();
   const [t, tNav, locale] = await Promise.all([getTranslations("Ctv"), getTranslations("Nav"), getLocale()]);
-  const items = (["home", "orders", "newOrder", "payouts", "account"] as const).map((k) => ({
-    href: { home: "/ctv", orders: "/ctv/orders", newOrder: "/ctv/orders/new", payouts: "/ctv/payouts", account: "/ctv/account" }[k],
+  const items = (["home", "orders", "newOrder", "team", "payouts", "account"] as const).map((k) => ({
+    href: {
+      home: "/ctv",
+      orders: "/ctv/orders",
+      newOrder: "/ctv/orders/new",
+      team: "/ctv/team",
+      payouts: "/ctv/payouts",
+      account: "/ctv/account",
+    }[k],
     label: t(`nav.${k}`),
   }));
 

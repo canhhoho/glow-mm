@@ -479,17 +479,47 @@ async function seedAffiliate() {
   });
 }
 
+/** CTV cấp dưới mẫu (P11): ctv2@glow.local, mã LINN, nằm dưới MAUNG (MAUNG hưởng % tầng trên). */
+const AFFILIATE_2 = { id: "seed-affiliate-2", email: "ctv2@glow.local", name: "Ko Lin (CTV cấp dưới)", code: "LINN" } as const;
+
+async function seedSubAffiliate() {
+  const password = process.env.SEED_STAFF_PASSWORD;
+  if (!password) throw new Error("Thiếu SEED_STAFF_PASSWORD trong .env");
+  const parent = await prisma.affiliate.findUniqueOrThrow({ where: { code: AFFILIATE.code } });
+  await prisma.user.create({
+    data: {
+      id: AFFILIATE_2.id,
+      email: AFFILIATE_2.email,
+      name: AFFILIATE_2.name,
+      role: "AFFILIATE",
+      locale: "my",
+      emailVerified: true,
+      accounts: {
+        create: { id: `${AFFILIATE_2.id}-cred`, accountId: AFFILIATE_2.id, providerId: "credential", password: await hashPassword(password) },
+      },
+      affiliate: { create: { code: AFFILIATE_2.code, phone: "0978200000", commissionRateBp: 1000, parentId: parent.id } },
+    },
+  });
+}
+
 /** Đơn mẫu của CTV: 1 đơn khách đặt qua link đã hoàn tất 10 ngày trước (đến hạn trả), 1 đơn CTV tự lên đang chờ. */
-async function seedAffiliateOrders() {
-  const { createOrder } = await import("../src/server/orders/orders");
+const ago = (days: number) => new Date(Date.now() - days * 86_400_000);
+
+/** Đi hết luồng đơn (xác nhận COD → đóng gói → giao → hoàn tất) bằng hàm nghiệp vụ, hoàn tất `days` ngày trước. */
+async function completeDemo(orderId: string, days: number) {
   const { transitionOrder } = await import("../src/server/orders/transitions");
-  const ago = (days: number) => new Date(Date.now() - days * 86_400_000);
   const admin = { userId: STAFF[0].id, role: "ADMIN" as const };
-  const zone = await prisma.shippingZone.findUniqueOrThrow({ where: { code: "YGN-KMY" } });
   const mm = await prisma.location.findUniqueOrThrow({ where: { code: "MM-STOCK" } });
-  const affiliate = await prisma.affiliate.findUniqueOrThrow({ where: { code: AFFILIATE.code } });
-  const variant = async (sku: string) => (await prisma.variant.findUniqueOrThrow({ where: { sku } })).id;
-  const input = async (key: string, name: string, phone: string, sku: string) => ({
+  for (const [step, back] of [["confirmCod", 2], ["pack", 1], ["ship", 1], ["complete", 0]] as const) {
+    const extra = step === "pack" ? { fromLocationId: mm.id } : step === "ship" ? { carrier: "Royal Express" } : {};
+    await transitionOrder(orderId, step, admin, extra, ago(days + back));
+  }
+}
+
+async function demoOrderInput(key: string, name: string, phone: string, sku: string) {
+  const zone = await prisma.shippingZone.findUniqueOrThrow({ where: { code: "YGN-KMY" } });
+  const variant = await prisma.variant.findUniqueOrThrow({ where: { sku } });
+  return {
     idempotencyKey: key,
     paymentMethod: "COD" as const,
     name,
@@ -497,20 +527,32 @@ async function seedAffiliateOrders() {
     zoneId: zone.id,
     addressLine: "အမှတ် ၅၊ ပန်းဆိုးတန်းလမ်း",
     locale: "my" as const,
-    items: [{ variantId: await variant(sku), qty: 1 }],
-  });
+    items: [{ variantId: variant.id, qty: 1 }],
+  };
+}
 
-  const linked = await createOrder(await input("seed-ctv-1", "Ma Nwe", "09 7812 0011", "ML-TON-150"), {
+/** Đơn mẫu của CTV cấp dưới LINN: khách đặt qua link, hoàn tất 9 ngày trước → MAUNG có hoa hồng tầng trên đến hạn. */
+async function seedSubAffiliateOrders() {
+  const { createOrder } = await import("../src/server/orders/orders");
+  const order = await createOrder(await demoOrderInput("seed-ctv-3", "Ma Thin", "09 7812 0013", "SV-SUN-50"), {
+    userId: null,
+    now: ago(11),
+    affiliate: { source: "LINK", code: AFFILIATE_2.code },
+  });
+  await completeDemo(order.id, 9);
+}
+
+async function seedAffiliateOrders() {
+  const { createOrder } = await import("../src/server/orders/orders");
+  const affiliate = await prisma.affiliate.findUniqueOrThrow({ where: { code: AFFILIATE.code } });
+  const linked = await createOrder(await demoOrderInput("seed-ctv-1", "Ma Nwe", "09 7812 0011", "ML-TON-150"), {
     userId: null,
     now: ago(12),
     affiliate: { source: "LINK", code: AFFILIATE.code },
   });
-  for (const [step, days] of [["confirmCod", 12], ["pack", 11], ["ship", 11], ["complete", 10]] as const) {
-    const extra = step === "pack" ? { fromLocationId: mm.id } : step === "ship" ? { carrier: "Royal Express" } : {};
-    await transitionOrder(linked.id, step, admin, extra, ago(days));
-  }
+  await completeDemo(linked.id, 10);
   await createOrder(
-    { ...(await input("seed-ctv-2", "Ko Thet", "09 7812 0012", "SV-VC-30")), channel: "FACEBOOK" },
+    { ...(await demoOrderInput("seed-ctv-2", "Ko Thet", "09 7812 0012", "SV-VC-30")), channel: "FACEBOOK" },
     { userId: AFFILIATE.id, now: ago(1), affiliate: { source: "AFFILIATE", id: affiliate.id } },
   );
 }
@@ -541,6 +583,12 @@ async function main() {
     await seedAffiliate();
     console.log("• CTV mẫu: xong (ctv@glow.local, mã MAUNG)");
   }
+  if (await prisma.user.findUnique({ where: { email: AFFILIATE_2.email } })) {
+    console.log("• CTV cấp dưới mẫu: đã có → bỏ qua");
+  } else {
+    await seedSubAffiliate();
+    console.log("• CTV cấp dưới mẫu: xong (ctv2@glow.local, mã LINN, dưới MAUNG)");
+  }
   // Các bước dưới gọi hàm nghiệp vụ (src/server, kết nối qua DATABASE_URL) → bỏ qua khi seed qua WebSocket.
   if (process.env.SEED_VIA_WEBSOCKET === "1") {
     console.log("• Landed cost + đơn mẫu: bỏ qua (SEED_VIA_WEBSOCKET)");
@@ -563,8 +611,14 @@ async function main() {
       await seedAffiliateOrders();
       console.log("• Đơn mẫu CTV: xong (1 hoàn tất qua link, 1 CTV tự lên)");
     }
+    if (await prisma.order.findUnique({ where: { idempotencyKey: "seed-ctv-3" } })) {
+      console.log("• Đơn mẫu CTV cấp dưới: đã có → bỏ qua");
+    } else {
+      await seedSubAffiliateOrders();
+      console.log("• Đơn mẫu CTV cấp dưới: xong (LINN bán, MAUNG hưởng tầng trên)");
+    }
   }
-  console.log("Seed xong: 3 nhân viên, 1 CTV, 6 sản phẩm (1 combo), 8 lô, 4 vùng giao hàng, đơn mẫu.");
+  console.log("Seed xong: 3 nhân viên, 2 CTV (2 tầng), 6 sản phẩm (1 combo), 8 lô, 4 vùng giao hàng, đơn mẫu.");
 }
 
 main()
