@@ -12,6 +12,8 @@ export const SETTING_DEFAULTS = {
   "pricing.roundTo": 100,
   "reorder.coverDays": 30,
   "reorder.salesWindowDays": 60,
+  /** Số ngày sau khi đơn hoàn thành mới tính hoa hồng CTV là đến hạn (chờ đổi trả) — P10. */
+  "affiliate.holdDays": 7,
 } as const;
 
 export type NumericSettingKey = keyof typeof SETTING_DEFAULTS;
@@ -64,6 +66,7 @@ export const settingsSchema = z
     "pricing.roundTo": int(1, 100_000),
     "reorder.coverDays": int(0, 365),
     "reorder.salesWindowDays": int(7, 365),
+    "affiliate.holdDays": int(0, 90),
     "payment.bankInstructions": z.string().trim().max(1000).transform(toUnicode),
     // Không gửi → giữ nguyên giá trị hiện tại.
     "store.checkoutEnabled": z.boolean().optional(),

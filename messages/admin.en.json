@@ -454,6 +454,7 @@
     "orders": "Orders",
     "pricing": "Pricing",
     "reorder": "Reorder suggestions",
+    "affiliate": "Affiliates",
     "payment": "Payment",
     "keys": {
       "expiry": {
@@ -472,6 +473,9 @@
       "reorder": {
         "coverDays": "Days of stock to cover after arrival",
         "salesWindowDays": "Sales velocity window (last days)"
+      },
+      "affiliate": {
+        "holdDays": "Commission becomes payable after order completion (days)"
       },
       "payment": {
         "bankInstructions": "Bank transfer instructions (shown to customers)"

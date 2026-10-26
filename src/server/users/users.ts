@@ -5,7 +5,7 @@ import { hashPassword } from "better-auth/crypto";
 import { prisma } from "@/lib/db";
 import { Prisma, type Role } from "@/generated/prisma/client";
 import { toUnicode } from "@/lib/myanmar";
-import { MIN_STAFF_PASSWORD, ROLES } from "@/server/auth/roles";
+import { MIN_STAFF_PASSWORD, ROLES, type Role as StaffRole } from "@/server/auth/roles";
 
 /**
  * Quản lý tài khoản nhân viên (P8): tạo, đổi tên/vai trò, khoá/mở khoá, đặt lại mật khẩu.
@@ -44,7 +44,8 @@ export async function listStaff(filter: StaffFilter = {}) {
   const q = filter.q?.trim();
   return prisma.user.findMany({
     where: {
-      role: filter.role,
+      // CTV (role AFFILIATE) quản lý ở trang CTV riêng, không lẫn vào danh sách nhân viên.
+      role: filter.role ?? { in: [...ROLES] },
       active: filter.active,
       ...(q && { OR: [{ name: { contains: q, mode: "insensitive" } }, { email: { contains: q, mode: "insensitive" } }] }),
     },
@@ -55,10 +56,11 @@ export async function listStaff(filter: StaffFilter = {}) {
 }
 
 export async function getStaff(id: string) {
-  return prisma.user.findUnique({
-    where: { id },
+  const user = await prisma.user.findFirst({
+    where: { id, role: { in: [...ROLES] } },
     select: { id: true, name: true, email: true, role: true, active: true, createdAt: true },
   });
+  return user as (typeof user & { role: StaffRole }) | null;
 }
 
 export async function createStaff(raw: unknown, actorId: string) {

@@ -33,4 +33,17 @@ describe("RBAC", () => {
     expect(isRole("CUSTOMER")).toBe(false);
     expect(isRole(undefined)).toBe(false);
   });
+
+  it("CTV không phải nhân viên: không có quyền admin nào", () => {
+    expect(isRole("AFFILIATE")).toBe(false);
+    for (const p of Object.keys(PERMISSIONS) as (keyof typeof PERMISSIONS)[]) {
+      expect(can("AFFILIATE" as never, p)).toBe(false);
+    }
+  });
+
+  it("gán CTV cho đơn: admin + NV đơn hàng; quản lý CTV: chỉ admin", () => {
+    expect(can("ORDER_STAFF", "orders:assign-affiliate")).toBe(true);
+    expect(can("WAREHOUSE_MANAGER", "orders:assign-affiliate")).toBe(false);
+    expect(can("ORDER_STAFF", "affiliates:manage")).toBe(false);
+  });
 });

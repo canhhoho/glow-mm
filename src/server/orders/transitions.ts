@@ -94,6 +94,7 @@ export async function transitionInTx(
       break;
     case "complete":
       if (order.paymentMethod === "COD") data.paymentStatus = "PAID"; // đã thu tiền khi giao
+      data.completedAt = opts.now; // mốc tính hạn giữ hoa hồng CTV
       break;
     case "cancel":
       await releaseReservations(tx, order.id);

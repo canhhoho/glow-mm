@@ -223,6 +223,8 @@
     "Products.imagesUpload",
     "Products.imagesUploaded",
     "Products.imagesUploading",
+    "Settings.affiliate",
+    "Settings.keys.affiliate.holdDays",
     "Users.access",
     "Users.active",
     "Users.all",

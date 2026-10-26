@@ -17,21 +17,24 @@ enum Role {
   ADMIN
   WAREHOUSE_MANAGER
   ORDER_STAFF
+  /// Cộng tác viên bán hàng (P10): chỉ vào cổng /ctv, không vào /admin.
+  AFFILIATE
 }
 
 model User {
-  id            String    @id
+  id            String     @id
   name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
+  email         String     @unique
+  emailVerified Boolean    @default(false)
   image         String?
-  role          Role      @default(ORDER_STAFF)
-  locale        String    @default("vi")
-  active        Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  role          Role       @default(ORDER_STAFF)
+  locale        String     @default("vi")
+  active        Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
   sessions      Session[]
   accounts      Account[]
+  affiliate     Affiliate?
 
   @@map("user")
 }
@@ -125,19 +128,20 @@ enum FileVisibility {
 }
 
 model FileObject {
-  id             String         @id @default(cuid())
+  id             String            @id @default(cuid())
   driver         StorageDriver
-  key            String         @unique
+  key            String            @unique
   url            String
   mime           String
   size           Int
-  visibility     FileVisibility @default(PUBLIC)
-  createdAt      DateTime       @default(now())
+  visibility     FileVisibility    @default(PUBLIC)
+  createdAt      DateTime          @default(now())
   productImages  ProductImage[]
   paymentProofs  PaymentProof[]
+  payoutProofs   AffiliatePayout[]
   categoryIcons  Category[]
-  bannersDesktop Banner[]       @relation("BannerDesktop")
-  bannersMobile  Banner[]       @relation("BannerMobile")
+  bannersDesktop Banner[]          @relation("BannerDesktop")
+  bannersMobile  Banner[]          @relation("BannerMobile")
 }
 
 // ───────────────────────── Catalog ─────────────────────────
@@ -637,43 +641,110 @@ enum OrderChannel {
 }
 
 model Order {
-  id             String               @id @default(cuid())
-  code           String               @unique
-  customerId     String
-  customer       Customer             @relation(fields: [customerId], references: [id])
-  addressId      String
-  address        Address              @relation(fields: [addressId], references: [id])
+  id               String                @id @default(cuid())
+  code             String                @unique
+  customerId       String
+  customer         Customer              @relation(fields: [customerId], references: [id])
+  addressId        String
+  address          Address               @relation(fields: [addressId], references: [id])
   /// Snapshot lúc đặt — sửa khách/địa chỉ sau này không đổi đơn cũ.
-  recipientName  String
-  recipientPhone String
-  addressText    String
-  zoneName       String
-  channel        OrderChannel         @default(WEB)
-  status         OrderStatus          @default(PENDING)
-  paymentMethod  PaymentMethod
-  paymentStatus  PaymentStatus        @default(UNPAID)
-  subtotalMmk    Int
-  shippingFeeMmk Int
-  totalMmk       Int
-  locale         String               @default("my")
-  note           String?
-  cancelReason   String?
+  recipientName    String
+  recipientPhone   String
+  addressText      String
+  zoneName         String
+  channel          OrderChannel          @default(WEB)
+  status           OrderStatus           @default(PENDING)
+  paymentMethod    PaymentMethod
+  paymentStatus    PaymentStatus         @default(UNPAID)
+  subtotalMmk      Int
+  shippingFeeMmk   Int
+  totalMmk         Int
+  locale           String                @default("my")
+  note             String?
+  cancelReason     String?
   /// Chống tạo trùng khi bấm gửi 2 lần.
-  idempotencyKey String?              @unique
-  codConfirmedAt DateTime?
-  createdById    String?
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
-  items          OrderItem[]
-  reservations   Reservation[]
-  history        OrderStatusHistory[]
-  paymentProofs  PaymentProof[]
-  deliveries     Delivery[]
-  documents      StockDocument[]
-  reviews        Review[]
+  idempotencyKey   String?               @unique
+  codConfirmedAt   DateTime?
+  /// Thời điểm chuyển sang COMPLETED — mốc tính hạn giữ hoa hồng CTV.
+  completedAt      DateTime?
+  createdById      String?
+  /// CTV được tính đơn này (P10) + nguồn gắn + % hoa hồng chốt lúc gắn (phần vạn: 1000 = 10%).
+  affiliateId      String?
+  affiliate        Affiliate?            @relation(fields: [affiliateId], references: [id])
+  affiliateSource  AffiliateSource?
+  commissionRateBp Int?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  items            OrderItem[]
+  reservations     Reservation[]
+  history          OrderStatusHistory[]
+  paymentProofs    PaymentProof[]
+  deliveries       Delivery[]
+  documents        StockDocument[]
+  reviews          Review[]
+  payoutLines      AffiliatePayoutLine[]
 
   @@index([status, createdAt])
   @@index([customerId])
+  @@index([affiliateId, createdAt])
+}
+
+// ───────────────────────── Cộng tác viên (P10) ─────────────────────────
+
+enum AffiliateSource {
+  /// Khách bấm link giới thiệu (cookie 30 ngày, ai bấm sau cùng thì tính).
+  LINK
+  /// CTV tự lên đơn trong cổng /ctv.
+  AFFILIATE
+  /// Nhân viên gán CTV cho đơn.
+  STAFF
+}
+
+model Affiliate {
+  id               String            @id @default(cuid())
+  userId           String            @unique
+  user             User              @relation(fields: [userId], references: [id])
+  /// Mã giới thiệu (A–Z, 0–9), dùng trong link ?ref=CODE.
+  code             String            @unique
+  phone            String
+  /// % hoa hồng tính bằng phần vạn (1000 = 10%). Đổi chỉ áp dụng cho đơn mới (đơn chốt % lúc gắn).
+  commissionRateBp Int
+  /// Thông tin nhận tiền (ngân hàng / KBZPay / Wave…), chỉ để admin chuyển khoản.
+  payoutInfo       String?
+  active           Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  orders           Order[]
+  payouts          AffiliatePayout[]
+}
+
+/// Một lần chi trả hoa hồng (tiền chuyển ngoài hệ thống, ở đây chỉ ghi nhận).
+model AffiliatePayout {
+  id          String                @id @default(cuid())
+  affiliateId String
+  affiliate   Affiliate             @relation(fields: [affiliateId], references: [id])
+  amountMmk   Int
+  note        String?
+  proofFileId String?
+  proofFile   FileObject?           @relation(fields: [proofFileId], references: [id])
+  paidAt      DateTime              @default(now())
+  createdById String
+  createdAt   DateTime              @default(now())
+  lines       AffiliatePayoutLine[]
+
+  @@index([affiliateId, paidAt])
+}
+
+/// Số đã trả cho từng đơn trong một lần chi — chỉ ghi thêm. Có thể âm (khách trả hàng sau khi đã chi → trừ kỳ sau).
+model AffiliatePayoutLine {
+  id        String          @id @default(cuid())
+  payoutId  String
+  payout    AffiliatePayout @relation(fields: [payoutId], references: [id])
+  orderId   String
+  order     Order           @relation(fields: [orderId], references: [id])
+  amountMmk Int
+
+  @@index([orderId])
 }
 
 model OrderItem {

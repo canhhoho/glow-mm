@@ -10,6 +10,7 @@ const GROUPS: { title: string; keys: NumericSettingKey[] }[] = [
   { title: "orders", keys: ["reservation.transferHours", "cod.confirmHours"] },
   { title: "pricing", keys: ["pricing.roundTo"] },
   { title: "reorder", keys: ["reorder.coverDays", "reorder.salesWindowDays"] },
+  { title: "affiliate", keys: ["affiliate.holdDays"] },
 ];
 
 export default async function SettingsPage() {

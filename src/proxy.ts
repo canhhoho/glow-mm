@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import createMiddleware from "next-intl/middleware";
 import { hasLocale } from "next-intl";
 import { routing } from "./i18n/routing";
+import { normalizeRefCode, REF_COOKIE, REF_MAX_AGE_S, REF_PARAM } from "./server/affiliates/referral";
 import { isKnownStorePath, parseStoreSlugPath, storeSlugExists } from "./server/catalog/store-slugs";
 
 const intl = createMiddleware(routing);
@@ -14,6 +15,16 @@ const intl = createMiddleware(routing);
  * KHÔNG phải lớp bảo mật — quyền được kiểm tra trong từng Server Action/route.
  */
 export default async function proxy(req: NextRequest) {
+  // Link giới thiệu CTV (P10): ghi cookie rồi chuyển sang URL không còn `ref` (giữ cache/canonical sạch).
+  if (req.nextUrl.searchParams.has(REF_PARAM)) {
+    const code = normalizeRefCode(req.nextUrl.searchParams.get(REF_PARAM));
+    const clean = req.nextUrl.clone();
+    clean.searchParams.delete(REF_PARAM);
+    const res = NextResponse.redirect(clean);
+    if (code) res.cookies.set(REF_COOKIE, code, { httpOnly: true, sameSite: "lax", path: "/", maxAge: REF_MAX_AGE_S });
+    return res;
+  }
+
   const res = intl(req);
   if (res.headers.has("location")) return res; // next-intl chuyển hướng
 

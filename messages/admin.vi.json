@@ -454,6 +454,7 @@
     "orders": "Đơn hàng",
     "pricing": "Giá",
     "reorder": "Gợi ý đặt hàng",
+    "affiliate": "Cộng tác viên",
     "payment": "Thanh toán",
     "keys": {
       "expiry": {
@@ -472,6 +473,9 @@
       "reorder": {
         "coverDays": "Số ngày bán cần đủ hàng sau khi về",
         "salesWindowDays": "Tính tốc độ bán trong (ngày gần nhất)"
+      },
+      "affiliate": {
+        "holdDays": "Hoa hồng đến hạn sau khi đơn hoàn thành (ngày)"
       },
       "payment": {
         "bankInstructions": "Hướng dẫn chuyển khoản (hiện cho khách)"

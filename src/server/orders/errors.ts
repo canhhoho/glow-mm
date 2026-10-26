@@ -11,7 +11,8 @@ export type OrderErrorCode =
   | "forbidden"
   | "invalid_file"
   | "proof_not_allowed"
-  | "checkout_disabled";
+  | "checkout_disabled"
+  | "invalid_affiliate";
 
 export class OrderError extends Error {
   constructor(

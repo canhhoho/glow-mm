@@ -7,6 +7,7 @@ import { hasLocale } from "next-intl";
 import { z, ZodError } from "zod";
 import { redirect } from "@/i18n/navigation";
 import { routing, type StoreLocale } from "@/i18n/routing";
+import { normalizeRefCode, REF_COOKIE } from "@/server/affiliates/referral";
 import { OrderError } from "@/server/orders/errors";
 import { createOrder, findOrderForCustomer } from "@/server/orders/orders";
 import { submitPaymentProof } from "@/server/orders/payments";
@@ -46,6 +47,12 @@ async function writeCart(lines: ReturnType<typeof parseCart>) {
   const jar = await cookies();
   if (lines.length === 0) jar.delete(CART_COOKIE);
   else jar.set(CART_COOKIE, serializeCart(lines), COOKIE_OPTS);
+}
+
+/** CTV giới thiệu (cookie do proxy đặt khi khách mở link `?ref=`) — đọc phía server, không tin dữ liệu form. */
+async function referralFromCookie() {
+  const code = normalizeRefCode((await cookies()).get(REF_COOKIE)?.value);
+  return code ? { source: "LINK" as const, code } : undefined;
 }
 
 async function rememberOrder(code: string, phone: string) {
@@ -96,7 +103,7 @@ export async function placeOrderAction(_prev: StoreActionState, formData: FormDa
         items,
         idempotencyKey: formData.get("idempotencyKey") || undefined,
       },
-      { userId: null },
+      { userId: null, affiliate: await referralFromCookie() },
     );
   } catch (e) {
     return { error: await errorText(e, locale) };

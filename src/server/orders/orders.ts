@@ -39,8 +39,16 @@ export const createOrderSchema = z.object({
 });
 export type CreateOrderInput = z.input<typeof createOrderSchema>;
 
-/** `userId` = nhân viên tạo đơn tay; null = khách đặt trên web (kênh luôn là WEB). */
-export type CreateOrderContext = { userId: string | null; now?: Date };
+/**
+ * `userId` = nhân viên / CTV tạo đơn tay; null = khách đặt trên web (kênh luôn là WEB).
+ * `affiliate` (P10): mã từ cookie link giới thiệu (khách web — mã sai/CTV đã khoá thì bỏ qua),
+ * hoặc id CTV khi CTV tự lên đơn / nhân viên gán (không hợp lệ → lỗi).
+ */
+export type CreateOrderContext = {
+  userId: string | null;
+  now?: Date;
+  affiliate?: { source: "LINK"; code: string } | { source: "AFFILIATE" | "STAFF"; id: string };
+};
 
 export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
   const input = createOrderSchema.parse(raw);
@@ -81,6 +89,7 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
         const quote = await shipping.quote({ zoneId: zone.id, subtotalMmk: subtotal });
         if (!quote) throw new OrderError("invalid_zone", "Vùng giao hàng chưa có bảng phí");
         const totals = orderTotals(lines, quote.feeMmk);
+        const affiliate = await resolveAffiliate(tx, ctx.affiliate);
 
         const customer = await tx.customer.upsert({
           where: { phone },
@@ -111,6 +120,11 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
             idempotencyKey: input.idempotencyKey,
             createdById: ctx.userId,
             createdAt: now,
+            ...(affiliate && {
+              affiliateId: affiliate.id,
+              affiliateSource: ctx.affiliate!.source,
+              commissionRateBp: affiliate.commissionRateBp,
+            }),
             items: { create: lines.map(({ variantId, sku, name, qty, unitPriceMmk }) => ({ variantId, sku, name, qty, unitPriceMmk })) },
             history: { create: { toStatus: "PENDING", userId: ctx.userId, createdAt: now } },
           },
@@ -122,7 +136,13 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
           { now, blockDays },
         );
         await tx.auditLog.create({
-          data: { userId: ctx.userId, action: "order.create", entity: "Order", entityId: order.id, data: { code: order.code, channel } },
+          data: {
+            userId: ctx.userId,
+            action: "order.create",
+            entity: "Order",
+            entityId: order.id,
+            data: { code: order.code, channel, ...(affiliate && { affiliateId: affiliate.id, affiliateSource: ctx.affiliate!.source }) },
+          },
         });
         return order;
       },
@@ -136,6 +156,17 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
     }
     throw e;
   }
+}
+
+/** CTV đang hoạt động (cả hồ sơ CTV lẫn tài khoản). Link giới thiệu không hợp lệ → bỏ qua; id không hợp lệ → lỗi. */
+async function resolveAffiliate(tx: Tx, ref: CreateOrderContext["affiliate"]) {
+  if (!ref) return null;
+  const a = await tx.affiliate.findFirst({
+    where: { ...(ref.source === "LINK" ? { code: ref.code } : { id: ref.id }), active: true, user: { active: true } },
+    select: { id: true, commissionRateBp: true },
+  });
+  if (!a && ref.source !== "LINK") throw new OrderError("invalid_affiliate", "CTV không tồn tại hoặc đã bị khoá");
+  return a;
 }
 
 /** Giá hiện hành + snapshot tên/sku. Biến thể ngừng bán hoặc sản phẩm chưa đăng → lỗi. */
