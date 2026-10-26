@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import createMiddleware from "next-intl/middleware";
 import { hasLocale } from "next-intl";
-import { routing } from "./i18n/routing";
+import { PORTAL_HEADER, routing } from "./i18n/routing";
 import { normalizeRefCode, REF_COOKIE, REF_MAX_AGE_S, REF_PARAM } from "./server/affiliates/referral";
 import { isKnownStorePath, parseStoreSlugPath, storeSlugExists } from "./server/catalog/store-slugs";
 
@@ -15,6 +15,13 @@ const intl = createMiddleware(routing);
  * KHÔNG phải lớp bảo mật — quyền được kiểm tra trong từng Server Action/route.
  */
 export default async function proxy(req: NextRequest) {
+  // Cổng CTV: không qua next-intl storefront; gắn header để i18n chọn ngôn ngữ của cổng CTV.
+  if (req.nextUrl.pathname === "/ctv" || req.nextUrl.pathname.startsWith("/ctv/")) {
+    const headers = new Headers(req.headers);
+    headers.set(PORTAL_HEADER, "ctv");
+    return NextResponse.next({ request: { headers } });
+  }
+
   // Link giới thiệu CTV (P10): ghi cookie rồi chuyển sang URL không còn `ref` (giữ cache/canonical sạch).
   if (req.nextUrl.searchParams.has(REF_PARAM)) {
     const code = normalizeRefCode(req.nextUrl.searchParams.get(REF_PARAM));

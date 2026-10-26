@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import zlib from "node:zlib";
 import pg from "pg";
 
@@ -27,6 +27,19 @@ export async function login(page: Page, email: string, password = PASSWORD) {
   await page.getByLabel("Mật khẩu", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Đăng nhập" }).click();
   await expect(page.getByTestId("role")).toBeVisible();
+}
+
+/** Đăng nhập cổng CTV (P10c) bằng CTV seed; ép giao diện tiếng Việt (mặc định của cổng CTV là tiếng Myanmar). */
+export async function loginCtv(page: Page, email = "ctv@glow.local", password = PASSWORD) {
+  await resetLoginRateLimit();
+  await page.context().clearCookies();
+  const base = test.info().project.use.baseURL ?? process.env.APP_URL;
+  await page.context().addCookies([{ name: "CTV_LOCALE", value: "vi", url: `${base}/ctv` }]);
+  await page.goto("/ctv/login");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Mật khẩu", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Đăng nhập" }).click();
+  await expect(page.getByTestId("ctv-user")).toBeVisible();
 }
 
 /** Menu admin; trên mobile mở ngăn kéo (nút ☰) trước nếu đang đóng. */

@@ -247,13 +247,15 @@ function summarize(orders: AffiliateOrder[], now: Date) {
 
 export async function listAffiliates(filter: { q?: string; active?: boolean } = {}, now = new Date()) {
   const q = filter.q?.trim();
+  // Chỉ tìm theo SĐT khi người dùng gõ số (tránh mã như "E2E1" khớp nhầm SĐT chứa "21").
+  const phoneDigits = q && /^[\d\s+().-]+$/.test(q) ? q.replace(/\D/g, "") : "";
   const affiliates = await prisma.affiliate.findMany({
     where: {
       active: filter.active,
       ...(q && {
         OR: [
           { code: { contains: q.toUpperCase() } },
-          { phone: { contains: q.replace(/\D/g, "") || q } },
+          ...(phoneDigits ? [{ phone: { contains: phoneDigits.replace(/^(95|0)/, "") } }] : []),
           { user: { name: { contains: q, mode: "insensitive" } } },
           { user: { email: { contains: q, mode: "insensitive" } } },
         ],
@@ -404,4 +406,32 @@ async function storeProof(file: { data: Buffer; mime: string }) {
   // Tiền tố proofs/ → /api/files coi là riêng tư (chỉ nhân viên xem).
   const key = `proofs/payout-${randomBytes(16).toString("hex")}.${ext}`;
   return (await storage()).put(key, file.data, file.mime);
+}
+
+// ── Cổng CTV ──
+
+/**
+ * Một đơn của CTV (cổng /ctv) — luôn lọc theo `affiliateId` lấy từ phiên đăng nhập; đơn của người khác → null.
+ * Không trả giá vốn / lô / kho.
+ */
+export async function getAffiliateOrder(affiliateId: string, orderId: string, now = new Date()) {
+  const row = await prisma.order.findFirst({
+    where: { id: orderId, affiliateId },
+    select: {
+      ...orderForCommission,
+      shippingFeeMmk: true,
+      paymentMethod: true,
+      items: { select: { id: true, sku: true, name: true, qty: true, returnedQty: true, unitPriceMmk: true } },
+      history: { select: { toStatus: true, createdAt: true }, orderBy: { createdAt: "asc" } },
+    },
+  });
+  if (!row) return null;
+  const [order] = withCommission([row], await commissionOpts(now));
+  return {
+    ...order,
+    items: row.items,
+    history: row.history,
+    shippingFeeMmk: row.shippingFeeMmk,
+    paymentMethod: row.paymentMethod,
+  };
 }

@@ -95,14 +95,14 @@ export function neededCounts(groups: NavGroup[]): Set<NavCountKey> {
 }
 
 /**
- * Mục đang mở = href khớp tiền tố dài nhất (theo từng đoạn `/`). Trang gốc `/admin` chỉ khớp chính nó,
- * để các trang ngoài menu (vd. `/admin/account`) không làm sáng "Tổng quan".
+ * Mục đang mở = href khớp tiền tố dài nhất (theo từng đoạn `/`). Trang gốc (`/admin`, cổng CTV `/ctv`) chỉ khớp
+ * chính nó, để các trang ngoài menu (vd. `/admin/account`) không làm sáng "Tổng quan".
  */
-export function activeHref(pathname: string, hrefs: string[]): string | null {
+export function activeHref(pathname: string, hrefs: string[], root = "/admin"): string | null {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
   let best: string | null = null;
   for (const h of hrefs) {
-    const hit = h === "/admin" ? path === h : path === h || path.startsWith(`${h}/`);
+    const hit = h === root ? path === h : path === h || path.startsWith(`${h}/`);
     if (hit && (!best || h.length > best.length)) best = h;
   }
   return best;

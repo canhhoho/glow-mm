@@ -5,6 +5,8 @@ import {
   assignOrderAffiliate,
   createAffiliate,
   getAffiliate,
+  getAffiliateOrder,
+  listAffiliates,
   recordPayout,
 } from "@/server/affiliates/affiliates";
 import { createOrder } from "@/server/orders/orders";
@@ -173,5 +175,32 @@ describe("Quản lý CTV + chi trả (P10b)", () => {
     const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 10 }]);
     const a = await makeAffiliate(f);
     await expect(recordPayout(a.id, {}, f.userId)).rejects.toMatchObject({ code: "nothing_due" });
+  });
+});
+
+describe("Cổng CTV (P10c)", () => {
+  it("CTV chỉ đọc được đơn của mình; dữ liệu không có giá vốn/lô", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
+    const mine = await makeAffiliate(f);
+    const other = await makeAffiliate(f, { suffix: "X" });
+    const order = await createOrder(orderInput(f, 1), { userId: null, affiliate: { source: "LINK", code: mine.code } });
+    const plain = await createOrder(orderInput(f, 1), { userId: null });
+
+    const seen = await getAffiliateOrder(mine.id, order.id);
+    expect(seen).toMatchObject({ id: order.id, recipientName: "Ma Hla", commission: { state: "pending", commissionMmk: 1000 } });
+    expect(Object.keys(seen!.items[0]).sort()).toEqual(["id", "name", "qty", "returnedQty", "sku", "unitPriceMmk"]);
+    expect(await getAffiliateOrder(other.id, order.id)).toBeNull();
+    expect(await getAffiliateOrder(mine.id, plain.id)).toBeNull();
+  });
+});
+
+describe("Tìm CTV (P10b)", () => {
+  it("tìm theo mã không khớp nhầm SĐT; gõ số thì tìm theo SĐT (bỏ 0 / +95 đầu)", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 1 }]);
+    const a = await makeAffiliate(f);
+    const byCode = await listAffiliates({ q: a.code.toLowerCase() });
+    expect(byCode.map((x) => x.id)).toEqual([a.id]);
+    const byPhone = await listAffiliates({ q: "+95 9 1111 1111" });
+    expect(byPhone.map((x) => x.id)).toContain(a.id);
   });
 });

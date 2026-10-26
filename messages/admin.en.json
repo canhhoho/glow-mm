@@ -43,7 +43,8 @@
     "locked": "This account is locked. Contact an administrator.",
     "subtitle": "Use your staff account to continue",
     "showPassword": "Show password",
-    "hidePassword": "Hide password"
+    "hidePassword": "Hide password",
+    "wrongPortal": "This account can't sign in here. Staff sign in at /admin, affiliates at /ctv."
   },
   "Dashboard": {
     "welcome": "Hello, {name}",
@@ -434,7 +435,9 @@
       "forbidden": "You do not have permission",
       "invalid_file": "Invalid file (JPG/PNG/WebP/PDF, max 5MB)",
       "proof_not_allowed": "Order is not awaiting payment proof",
-      "checkout_disabled": "Web orders are temporarily paused"
+      "checkout_disabled": "Web orders are temporarily paused",
+      "invalid_affiliate": "Affiliate not found or locked",
+      "invalid_form": "Order details are invalid — check the fields"
     },
     "ret": {
       "title": "Return items",
@@ -928,5 +931,53 @@
       "percent": "Commission must be 0–50% (max 2 decimals)",
       "invalid": "Invalid data"
     }
+  },
+  "Ctv": {
+    "metaTitle": "Affiliate portal — Glow VN",
+    "portal": "Affiliate portal",
+    "loginTitle": "Affiliate sign in",
+    "loginSubtitle": "Use the affiliate account the shop gave you",
+    "nav": {
+      "home": "Overview",
+      "orders": "My orders",
+      "newOrder": "New order",
+      "payouts": "Payouts",
+      "account": "Account"
+    },
+    "logout": "Sign out",
+    "hello": "Hello, {name}",
+    "refLink": "Your referral link",
+    "refHint": "Share this link. When a customer opens it and orders within 30 days, the order counts for you.",
+    "productLinkHint": "Product links work too: add ?ref={code} to the end of the link.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "rate": "Commission {percent}%",
+    "recent": "Recent orders",
+    "seeAll": "See all",
+    "back": "← My orders",
+    "items": "Items",
+    "qty": "Qty",
+    "price": "Price",
+    "lineTotal": "Amount",
+    "subtotal": "Goods",
+    "shipping": "Shipping",
+    "total": "Total",
+    "customer": "Customer",
+    "address": "Address",
+    "history": "Progress",
+    "returned": "{qty} returned",
+    "orderHint": "The shop calls to confirm, then ships; track the status here.",
+    "newTitle": "New order for a customer",
+    "newHint": "The shop confirms and ships it like any order. Commission counts when the order is completed.",
+    "payoutsTitle": "Commission payouts",
+    "payableNow": "Payable — waiting for transfer",
+    "history2": "Payouts received",
+    "payoutsEmpty": "No payouts yet.",
+    "payoutInfo": "Your payout details",
+    "payoutInfoEmpty": "Not set — send them to the shop to get paid.",
+    "payoutInfoHint": "To change your payout details, contact the shop.",
+    "accountTitle": "Account",
+    "orderCreated": "Order created. The shop will call the customer to confirm.",
+    "holdHint": "Commission becomes payable {days} days after the order is completed (the return window)."
   }
 }

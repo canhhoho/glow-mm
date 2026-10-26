@@ -43,7 +43,8 @@
     "locked": "Tài khoản đã bị khoá. Liên hệ quản trị viên.",
     "subtitle": "Dùng tài khoản nhân viên để tiếp tục",
     "showPassword": "Hiện mật khẩu",
-    "hidePassword": "Ẩn mật khẩu"
+    "hidePassword": "Ẩn mật khẩu",
+    "wrongPortal": "Tài khoản này không dùng ở cổng đăng nhập này. Nhân viên đăng nhập tại /admin, cộng tác viên tại /ctv."
   },
   "Dashboard": {
     "welcome": "Xin chào, {name}",
@@ -434,7 +435,9 @@
       "forbidden": "Bạn không có quyền thực hiện thao tác này",
       "invalid_file": "File không hợp lệ (JPG/PNG/WebP/PDF, tối đa 5MB)",
       "proof_not_allowed": "Đơn không ở trạng thái chờ biên lai",
-      "checkout_disabled": "Đang tạm ngừng nhận đơn trên web"
+      "checkout_disabled": "Đang tạm ngừng nhận đơn trên web",
+      "invalid_affiliate": "CTV không tồn tại hoặc đã bị khoá",
+      "invalid_form": "Thông tin đơn chưa hợp lệ, kiểm tra lại các ô"
     },
     "ret": {
       "title": "Trả hàng",
@@ -928,5 +931,53 @@
       "percent": "% hoa hồng từ 0 đến 50 (tối đa 2 số lẻ)",
       "invalid": "Dữ liệu không hợp lệ"
     }
+  },
+  "Ctv": {
+    "metaTitle": "Cổng CTV — Glow VN",
+    "portal": "Cổng cộng tác viên",
+    "loginTitle": "Đăng nhập cổng CTV",
+    "loginSubtitle": "Dùng tài khoản cộng tác viên do shop cấp",
+    "nav": {
+      "home": "Tổng quan",
+      "orders": "Đơn của tôi",
+      "newOrder": "Tạo đơn",
+      "payouts": "Thanh toán",
+      "account": "Tài khoản"
+    },
+    "logout": "Đăng xuất",
+    "hello": "Xin chào, {name}",
+    "refLink": "Link giới thiệu của bạn",
+    "refHint": "Gửi link này cho khách. Khách bấm link rồi đặt hàng trong 30 ngày thì đơn được tính cho bạn.",
+    "productLinkHint": "Gửi link sản phẩm cũng được: thêm ?ref={code} vào cuối link.",
+    "copy": "Sao chép",
+    "copied": "Đã chép",
+    "rate": "Hoa hồng {percent}%",
+    "recent": "Đơn gần đây",
+    "seeAll": "Xem tất cả",
+    "back": "← Đơn của tôi",
+    "items": "Sản phẩm",
+    "qty": "SL",
+    "price": "Đơn giá",
+    "lineTotal": "Thành tiền",
+    "subtotal": "Tiền hàng",
+    "shipping": "Phí ship",
+    "total": "Tổng cộng",
+    "customer": "Khách hàng",
+    "address": "Địa chỉ",
+    "history": "Tiến trình",
+    "returned": "đã trả {qty}",
+    "orderHint": "Shop sẽ gọi xác nhận rồi giao hàng; bạn theo dõi trạng thái tại đây.",
+    "newTitle": "Tạo đơn cho khách",
+    "newHint": "Đơn được shop xác nhận rồi giao như đơn thường. Hoa hồng tính khi đơn hoàn thành.",
+    "payoutsTitle": "Thanh toán hoa hồng",
+    "payableNow": "Đến hạn — chờ shop chuyển",
+    "history2": "Các lần đã nhận",
+    "payoutsEmpty": "Chưa nhận lần nào.",
+    "payoutInfo": "Thông tin nhận tiền của bạn",
+    "payoutInfoEmpty": "Chưa có — gửi cho shop để nhận tiền.",
+    "payoutInfoHint": "Muốn đổi thông tin nhận tiền, liên hệ shop.",
+    "accountTitle": "Tài khoản",
+    "orderCreated": "Đã tạo đơn. Shop sẽ gọi khách xác nhận.",
+    "holdHint": "Hoa hồng đến hạn sau {days} ngày kể từ khi đơn hoàn thành (thời gian khách đổi trả)."
   }
 }

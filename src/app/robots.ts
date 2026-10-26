@@ -13,7 +13,7 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/admin", "/api/", ...routing.locales.flatMap((l) => PRIVATE.map((p) => localizedPath(l, p)))],
+      disallow: ["/admin", "/ctv", "/api/", ...routing.locales.flatMap((l) => PRIVATE.map((p) => localizedPath(l, p)))],
     },
     sitemap: `${siteUrl()}/sitemap.xml`,
   };

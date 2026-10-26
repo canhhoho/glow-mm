@@ -16,3 +16,9 @@ export const ADMIN_LOCALES = ["vi", "en", "my"] as const;
 export type AdminLocale = (typeof ADMIN_LOCALES)[number];
 export const ADMIN_DEFAULT_LOCALE: AdminLocale = "vi";
 export const ADMIN_LOCALE_COOKIE = "ADMIN_LOCALE";
+
+/** Cổng CTV (/ctv, P10): cùng bộ ngôn ngữ + file messages admin, cookie riêng, mặc định tiếng Myanmar. */
+export const CTV_DEFAULT_LOCALE: AdminLocale = "my";
+export const CTV_LOCALE_COOKIE = "CTV_LOCALE";
+/** Header proxy gắn cho request /ctv để request.ts biết đang ở cổng CTV. */
+export const PORTAL_HEADER = "x-glow-portal";

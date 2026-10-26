@@ -6,25 +6,35 @@ import { isAPIError } from "better-auth/api";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { ADMIN_LOCALE_COOKIE, ADMIN_LOCALES } from "@/i18n/routing";
+import { ADMIN_LOCALE_COOKIE, ADMIN_LOCALES, CTV_LOCALE_COOKIE } from "@/i18n/routing";
 import type { ActionState } from "@/server/inventory/actions";
 import { auth } from "./auth";
 import { MIN_STAFF_PASSWORD } from "./roles";
-import { requireStaff } from "./session";
+import { getAffiliateUser, getStaffUser } from "./session";
 
 export async function signOutAction() {
   await auth.api.signOut({ headers: await headers() });
   redirect("/admin/login");
 }
 
-export async function setAdminLocaleAction(formData: FormData) {
+export async function ctvSignOutAction() {
+  await auth.api.signOut({ headers: await headers() });
+  redirect("/ctv/login");
+}
+
+async function setLocaleCookie(formData: FormData, name: string, path: string) {
   const locale = String(formData.get("locale"));
   if (!(ADMIN_LOCALES as readonly string[]).includes(locale)) return;
-  (await cookies()).set(ADMIN_LOCALE_COOKIE, locale, {
-    path: "/admin",
-    maxAge: 60 * 60 * 24 * 365,
-    sameSite: "lax",
-  });
+  (await cookies()).set(name, locale, { path, maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
+}
+
+export async function setAdminLocaleAction(formData: FormData) {
+  await setLocaleCookie(formData, ADMIN_LOCALE_COOKIE, "/admin");
+}
+
+/** Ngôn ngữ cổng CTV (P10) — cookie riêng, không đụng ngôn ngữ admin. */
+export async function setCtvLocaleAction(formData: FormData) {
+  await setLocaleCookie(formData, CTV_LOCALE_COOKIE, "/ctv");
 }
 
 const changePasswordSchema = z
@@ -36,9 +46,10 @@ const changePasswordSchema = z
   .refine((d) => d.newPassword === d.confirmPassword, { path: ["confirmPassword"], message: "mismatch" })
   .refine((d) => d.newPassword !== d.currentPassword, { path: ["newPassword"], message: "same" });
 
-/** Nhân viên tự đổi mật khẩu; đăng xuất mọi phiên khác (thiết bị khác). */
+/** Nhân viên hoặc CTV tự đổi mật khẩu; đăng xuất mọi phiên khác (thiết bị khác). */
 export async function changePasswordAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const user = await requireStaff();
+  const user = (await getStaffUser()) ?? (await getAffiliateUser());
+  if (!user) redirect("/admin/login");
   const t = await getTranslations("Account");
   const parsed = changePasswordSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {

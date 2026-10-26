@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { fieldClass } from "@/components/admin/ui";
 import { createOrderAction } from "@/server/orders/actions";
 import type { OrderFormOptions } from "@/server/orders/admin-queries";
+import type { ActionState } from "@/server/inventory/actions";
 
 type Line = { key: number; variantId: string; qty: string };
 export type OrderFormInitial = { phone: string; name: string; zoneId: string; addressLine: string };
@@ -17,19 +18,22 @@ const fmt = (n: number) => new Intl.NumberFormat("en-US").format(n);
 /**
  * Form tạo đơn tay (đơn từ FB/Viber/điện thoại). Gửi JSON; giá, phí ship, tồn được kiểm lại ở server.
  * `affiliates`: danh sách CTV để nhân viên gán (P10) — không truyền thì không hiện ô chọn.
+ * `action`: mặc định tạo đơn admin; cổng CTV truyền action riêng (đơn gắn CTV đang đăng nhập).
  */
 export function OrderForm({
   options,
   initial,
   affiliates,
+  action: submit = createOrderAction,
 }: {
   options: OrderFormOptions;
   initial: OrderFormInitial;
   affiliates?: { id: string; label: string }[];
+  action?: (prev: ActionState, formData: FormData) => Promise<ActionState>;
 }) {
   const t = useTranslations("Orders");
   const ta = useTranslations("Affiliates");
-  const [state, action, pending] = useActionState(createOrderAction, undefined);
+  const [state, action, pending] = useActionState(submit, undefined);
   const [idempotencyKey] = useState(() => crypto.randomUUID());
   const [channel, setChannel] = useState("FACEBOOK");
   const [paymentMethod, setPaymentMethod] = useState("COD");

@@ -39,9 +39,9 @@ Next.js 16 có API mới (proxy thay middleware, Cache Components bật) → đ�
 - Màu dùng design token trong `globals.css` (màu chính `#E8657A`, phụ `#7FB89A`, nền `#FFF8F5`); không hardcode màu trong component.
 
 ## Kiến trúc
-- **Route:** storefront `src/app/[locale]/`; admin `src/app/admin/(panel)` (+ `(print)`, `login`); API `src/app/api/{auth/[...all],cron/[job],files/[...key],health}`. `src/proxy.ts` = next-intl + rewrite slug lạ → `/{locale}/404` (không áp cho admin/api).
+- **Route:** storefront `src/app/[locale]/`; admin `src/app/admin/(panel)` (+ `(print)`, `login`); cổng CTV `src/app/ctv/(portal)` + `login` (P10); API `src/app/api/{auth/[...all],cron/[job],files/[...key],health}`. `src/proxy.ts` = next-intl + rewrite slug lạ → `/{locale}/404` (không áp cho admin/api); `?ref=CODE` → cookie CTV rồi redirect; `/ctv` bỏ qua next-intl, gắn header để i18n chọn ngôn ngữ cổng CTV.
 - **Luồng ghi:** form → `src/server/<domain>/actions.ts` (file `"use server"` duy nhất của domain) → `requirePermission` → hàm domain (tự parse Zod, schema nằm trong file domain) → trả `{ error }` hoặc `revalidatePath`/`updateTag`. Trang admin dùng `requirePagePermission` (redirect).
-- **Auth:** Better Auth chỉ cho nhân viên (`server/auth/auth.ts`, tắt đăng ký, phiên 12h). Khách không đăng nhập — nhận diện bằng SĐT + cookie mã đơn. RBAC thuần `roles.ts`: `can(role, perm)`, vai trò `ADMIN`/`WAREHOUSE_MANAGER`/`ORDER_STAFF`.
+- **Auth:** Better Auth chỉ cho nhân viên (`server/auth/auth.ts`, tắt đăng ký, phiên 12h). Khách không đăng nhập — nhận diện bằng SĐT + cookie mã đơn. RBAC thuần `roles.ts`: `can(role, perm)`, vai trò `ADMIN`/`WAREHOUSE_MANAGER`/`ORDER_STAFF`. CTV = role `AFFILIATE` (ngoài ROLES): `requireAffiliate()` → `affiliateId` từ phiên, mọi truy vấn cổng CTV lọc theo nó; hoa hồng thuần ở `affiliates/commission.ts`.
 - **Cache (`cacheComponents`):** `"use cache"` + `cacheTag` chỉ ở menu danh mục và banner trang chủ (`CATALOG_TAG`, `HOME_TAG`); action admin gọi `updateTag` (không dùng `revalidateTag`). `instant = false` ở layout admin và các trang slug storefront.
 - **Kho/đơn:** `inventory/documents.ts` (DRAFT → POSTED) → `inventory/ledger.ts` `applyMoves` = nơi duy nhất ghi `StockBalance` (cấm tồn âm). `fefo.ts`, `orders/state-machine.ts`, `alerts/compute.ts` là hàm thuần; `orders/transitions.ts` khoá đơn `FOR UPDATE`, nhận `Actor` (user/system).
 - **Hạ tầng:** `env()` validate lazy (`src/lib/env.ts`); `src/lib/db.ts` dùng PrismaPg, client sinh ở `src/generated/prisma`; migrate/seed dùng `DIRECT_DATABASE_URL || DATABASE_URL` (`prisma.config.ts`). `storage()` ở `src/server/adapters/storage`. Cron: map `JOBS` trong `api/cron/[job]`, lịch ở `vercel.json`.
@@ -71,7 +71,7 @@ npm run perf             # Lighthouse mobile (cần server production ở cổng
 docker compose -p glow-prod -f docker-compose.prod.yml up --build   # thử bản giống production (cần .env.prod)
 ```
 - `prisma migrate reset` bị Prisma chặn khi AI chạy → không tự chạy; E2E chỉ dùng `migrate deploy` + seed (không xoá dữ liệu).
-- Tài khoản seed: `admin@` / `kho@` / `donhang@glow.local`, mật khẩu = `SEED_STAFF_PASSWORD` trong `.env`.
+- Tài khoản seed: `admin@` / `kho@` / `donhang@glow.local` (admin) và `ctv@glow.local` (cổng `/ctv`, mã MAUNG), mật khẩu = `SEED_STAFF_PASSWORD` trong `.env`.
 - Grep bỏ qua `.claude/worktrees/` (bản sao cũ). Khối hướng dẫn trong AGENTS.md do `next dev` tự ghi lại — không sửa tay.
 
 ## Git

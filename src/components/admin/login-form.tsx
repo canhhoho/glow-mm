@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-import { USER_INACTIVE } from "@/server/auth/roles";
+import { AFFILIATE_ROLE, USER_INACTIVE } from "@/server/auth/roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,10 +13,11 @@ import { Label } from "@/components/ui/label";
 const field = "h-11 bg-card pl-9";
 const fieldIcon = "pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground";
 
-export function LoginForm() {
+/** `portal`: admin (nhân viên) hoặc ctv (cộng tác viên) — tài khoản sai cổng bị đăng xuất ngay và báo lỗi. */
+export function LoginForm({ portal }: { portal: "admin" | "ctv" }) {
   const t = useTranslations("Login");
   const router = useRouter();
-  const [error, setError] = useState<"error" | "tooMany" | "locked" | null>(null);
+  const [error, setError] = useState<"error" | "tooMany" | "locked" | "wrongPortal" | null>(null);
   const [pending, setPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -25,13 +26,21 @@ export function LoginForm() {
     const form = new FormData(e.currentTarget);
     setPending(true);
     setError(null);
-    const { error } = await authClient.signIn.email({
+    const { data, error } = await authClient.signIn.email({
       email: String(form.get("email")),
       password: String(form.get("password")),
     });
-    setPending(false);
-    if (error) return setError(error.status === 429 ? "tooMany" : error.code === USER_INACTIVE ? "locked" : "error");
-    router.replace("/admin");
+    if (error) {
+      setPending(false);
+      return setError(error.status === 429 ? "tooMany" : error.code === USER_INACTIVE ? "locked" : "error");
+    }
+    const role = (data?.user as { role?: string } | undefined)?.role;
+    if (role && (role === AFFILIATE_ROLE) !== (portal === "ctv")) {
+      await authClient.signOut();
+      setPending(false);
+      return setError("wrongPortal");
+    }
+    router.replace(portal === "ctv" ? "/ctv" : "/admin");
     router.refresh();
   }
 

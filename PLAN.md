@@ -114,7 +114,7 @@ Dockerfile  docker-compose.yml  docker-compose.prod.yml  .env.example
 
 ## 4. Roadmap (dừng chờ duyệt sau mỗi phase)
 
-Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ · P9 ✅ (2026-10-19) · P4b chờ server + domain Myanmar.
+Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ · P9 ✅ (2026-10-19) · P10 CTV (code xong 2026-10-26, chờ duyệt) · P4b chờ server + domain Myanmar.
 
 | Phase | Nội dung | Hoàn thành khi |
 |---|---|---|
@@ -129,6 +129,7 @@ Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 
 | **P7 Hoàn thiện trước khi mở bán** ✅ (2026-10-16) | SEO (metadataBase, canonical/hreflang, Open Graph, JSON-LD sản phẩm, robots.txt, sitemap.xml, noindex trang riêng tư), 404 có giao diện cho mọi đường dẫn lạ, sửa nút ngôn ngữ Myanmar, quy trình xuất/nhập bản dịch cho người bản ngữ duyệt | Toàn bộ test xanh (E2E 404, meta/JSON-LD, robots/sitemap); `npm run perf` giữ ngưỡng |
 | **P8 Quản lý nhân viên** ✅ (2026-10-16) | `/admin/users` (ADMIN): tạo nhân viên + mật khẩu tạm, đổi tên/vai trò, khoá/mở khoá, đặt lại mật khẩu; khoá/đặt lại → xoá mọi phiên; tài khoản bị khoá không đăng nhập được (hook Better Auth); luôn còn ≥ 1 ADMIN; không tự khoá/tự đổi vai trò; ghi AuditLog. Không cần migration | Toàn bộ test xanh (integration + E2E tạo → đăng nhập đúng quyền → khoá → bị đăng xuất) |
 | **P9 Giao diện admin + Tồn kho** ✅ (2026-10-19) | Khung admin mới (menu nhóm + icon + badge + trang đang mở, ngăn kéo trên mobile, breadcrumb) và trang Tồn kho mới (ô số tổng, tab vị trí, xem theo sản phẩm/theo lô, lọc hạn dùng/loại tồn, phân trang, trang lịch sử lô) theo mẫu `docs/mockups/p9-admin-kho.html` | Toàn bộ test xanh (unit tổng hợp tồn, integration số liệu khớp ledger, E2E mobile: menu ngăn kéo, lọc/phân trang, mở lô, lịch sử lô) |
+| **P10 Cộng tác viên (CTV) + hoa hồng** (2026-10-26) | Link giới thiệu `?ref=CODE`, CTV tự lên đơn, nhân viên gán CTV; hoa hồng % theo CTV chốt trên đơn; admin quản lý CTV + ghi nhận chi trả; cổng `/ctv` cho CTV xem đơn/hoa hồng/thanh toán | Toàn bộ test xanh (unit hoa hồng, integration gắn đơn/chi trả song song/cô lập CTV, E2E link → đơn → cổng CTV, admin chi trả, tách cổng) |
 
 **P9 — kế hoạch (mẫu đã duyệt 2026-10-17):**
 - *Không đổi dữ liệu, không migration.* Chỉ đọc `StockBalance`/`Batch`/`Reservation`; mọi thay đổi tồn vẫn qua phiếu kho.
@@ -145,6 +146,13 @@ Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 
 - **P9c Trang** `/admin/inventory`: ô số tổng bấm được (lọc), tab vị trí kèm SL, ô tìm + lọc hạn dùng/loại tồn, chuyển "Theo sản phẩm / Theo lô", bảng (desktop) / thẻ (mobile), dòng mở rộng xem lô (client nhỏ), phân trang giữ bộ lọc trên URL. Nút "Tạo phiếu ▾" (`<details>`, chỉ loại phiếu có quyền). Trang mới `/admin/inventory/batches/[id]`: thông tin lô + tồn theo vị trí + lịch sử ledger (`batchHistory`).
 - Chuỗi giao diện vào `messages/admin.{vi,en,my}.json` (key `my` mới vào `review-my.json`). Màu theo token, không hardcode.
 - Ngoài phạm vi: form phiếu kho, dashboard biểu đồ (đợt sau nếu cần).
+
+**P10 — quyết định (2026-10-26):**
+- Gắn đơn: bấm link CTV → cookie `glow_ref` 30 ngày, ai bấm sau cùng thì tính (proxy ghi cookie rồi redirect bỏ `ref`); khách không được giảm giá. CTV tự lên đơn ở cổng CTV (nguồn AFFILIATE); nhân viên gán/đổi/bỏ CTV (nguồn STAFF, quyền `orders:assign-affiliate`), khoá khi đơn đã chi trả.
+- Hoa hồng = floor(tiền hàng thực thu × % chốt trên đơn) — không tính phí ship, trừ hàng trả; % lưu phần vạn. "Chờ" khi đơn chưa xong hoặc còn trong hạn giữ (`affiliate.holdDays`, mặc định 7 ngày sau hoàn tất), "đến hạn" sau đó; huỷ/trả trước khi xong = 0. Tính lại khi xem, không lưu sẵn.
+- Chi trả: admin chuyển tiền ngoài hệ thống rồi "Ghi nhận đã trả" → `AffiliatePayout` + `AffiliatePayoutLine` theo đơn (chỉ ghi thêm); trả hàng sau khi đã chi → số âm, trừ vào lần chi sau. Khoá dòng CTV khi ghi để không trùng.
+- CTV là user Better Auth role AFFILIATE (không thuộc ROLES nhân viên → không vào /admin); admin tạo tài khoản; đăng nhập email + mật khẩu ở `/ctv/login` (đăng nhập nhầm cổng bị từ chối). Cổng CTV mặc định tiếng Myanmar (cookie `CTV_LOCALE`), xem đủ tên/SĐT/địa chỉ khách trong đơn của mình, không thấy giá vốn/kho, không tra cứu khách theo SĐT.
+- Báo cáo: thêm hoa hồng CTV (theo ngày hoàn tất) + lợi nhuận sau hoa hồng. Seed: CTV mẫu `ctv@glow.local` (mã MAUNG).
 
 **P8 — quyết định (2026-10-16):** không gửi email (chưa có dịch vụ mail), admin tự báo mật khẩu tạm, nhân viên đổi ở `/admin/account`. Bỏ ô "ngôn ngữ" khi tạo nhân viên vì ngôn ngữ admin lấy theo cookie từng trình duyệt (`User.locale` chưa dùng). Ngoài phạm vi: bắt buộc đổi mật khẩu lần đầu (cần cột mới), 2FA, trang xem AuditLog.
 
