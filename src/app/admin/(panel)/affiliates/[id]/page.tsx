@@ -65,17 +65,19 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
 
       <section className="space-y-2 rounded-lg border p-4">
         <h2 className="font-medium">{t("due")}</h2>
-        {a.due.orders.length === 0 ? (
+        {a.due.entries.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("dueEmpty")}</p>
         ) : (
           <>
             <p className="text-sm" data-testid="due-summary">
-              {t("dueSummary", { count: a.due.orders.length, amount: fmtInt(a.due.totalMmk) })}
+              {t("dueSummary", { count: a.due.entries.length, amount: fmtInt(a.due.totalMmk) })}
             </p>
             <ul className="flex flex-wrap gap-1.5 text-xs">
-              {a.due.orders.map((o) => (
-                <li key={o.id} className="rounded border px-1.5 py-0.5 font-mono">
-                  {o.code}: {fmtInt(o.commission.dueMmk)}
+              {a.due.entries.map((e) => (
+                <li key={`${e.orderId}-${e.kind}`} className="rounded border px-1.5 py-0.5 font-mono">
+                  {e.code}
+                  {e.kind === "UPLINE" && <span className="ml-1 font-sans text-muted-foreground">({t("lineKind.UPLINE")})</span>}:{" "}
+                  {fmtInt(e.commission.dueMmk)}
                 </li>
               ))}
             </ul>

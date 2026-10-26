@@ -79,10 +79,39 @@ export function summarizeCommissions(list: OrderCommission[]): CommissionSummary
   );
 }
 
-/** Dòng chi trả cho một lần chốt: mọi đơn đến hạn có số còn phải trả ≠ 0 (kể cả số âm). */
-export function payoutLines<T extends { id: string; commission: OrderCommission }>(orders: T[]) {
-  const lines = orders.filter((o) => o.commission.state !== "pending" && o.commission.dueMmk !== 0);
-  return { lines: lines.map((o) => ({ orderId: o.id, amountMmk: o.commission.dueMmk })), totalMmk: lines.reduce((s, o) => s + o.commission.dueMmk, 0) };
+// ── Hai tầng (P11): hoa hồng bán hàng (SALE) của người bán + hoa hồng tầng trên (UPLINE) của cấp trên ──
+
+export type CommissionLineKind = "SALE" | "UPLINE";
+
+export type SplitCommissionOrder = Omit<CommissionOrder, "paidMmk"> & {
+  uplineRateBp: number | null;
+  /** Mọi dòng chi trả đã ghi cho đơn (cả hai loại). */
+  lines: { kind: CommissionLineKind; amountMmk: number }[];
+};
+
+/** Tách hoa hồng của một đơn: phần người bán và phần cấp trên (null nếu đơn không có tầng trên). */
+export function splitCommissions(o: SplitCommissionOrder, opts: { now: Date; holdDays: number }) {
+  const paid = (kind: CommissionLineKind) => o.lines.filter((l) => l.kind === kind).reduce((s, l) => s + l.amountMmk, 0);
+  const uplinePaid = paid("UPLINE");
+  return {
+    commission: orderCommission({ ...o, paidMmk: paid("SALE") }, opts),
+    uplineCommission:
+      o.uplineRateBp == null && uplinePaid === 0
+        ? null
+        : orderCommission({ ...o, commissionRateBp: o.uplineRateBp, paidMmk: uplinePaid }, opts),
+  };
+}
+
+export type PayoutEntry = { orderId: string; kind: CommissionLineKind; commission: OrderCommission };
+
+/** Dòng chi trả cho một lần chốt: mọi phần đến hạn có số còn phải trả ≠ 0 (kể cả số âm), cả hai loại. */
+export function payoutLines<T extends PayoutEntry>(entries: T[]) {
+  const due = entries.filter((e) => e.commission.state !== "pending" && e.commission.dueMmk !== 0);
+  return {
+    entries: due,
+    lines: due.map((e) => ({ orderId: e.orderId, kind: e.kind, amountMmk: e.commission.dueMmk })),
+    totalMmk: due.reduce((s, e) => s + e.commission.dueMmk, 0),
+  };
 }
 
 /** "10" / "12.5" (%) ⇄ phần vạn. */

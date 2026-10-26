@@ -7,7 +7,7 @@ import { getOrderAdmin, quarantineLocations, sellableLocations } from "@/server/
 import { returnItemsAction, reviewProofAction } from "@/server/orders/actions";
 import { assignOrderAffiliateAction } from "@/server/affiliates/actions";
 import { affiliateOptions } from "@/server/affiliates/affiliates";
-import { bpToPercent, orderCommission } from "@/server/affiliates/commission";
+import { bpToPercent, splitCommissions } from "@/server/affiliates/commission";
 import { getNumberSetting } from "@/server/settings";
 import { CommissionBadge } from "@/components/admin/affiliate-parts";
 import { availableTransitions, TRANSITIONS } from "@/server/orders/state-machine";
@@ -32,10 +32,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
     getNumberSetting("affiliate.holdDays"),
   ]);
   if (!order) notFound();
-  const commission = orderCommission(
-    { ...order, paidMmk: order.payoutLines.reduce((s, l) => s + l.amountMmk, 0) },
-    { now: new Date(), holdDays },
-  );
+  const { commission } = splitCommissions({ ...order, lines: order.payoutLines }, { now: new Date(), holdDays });
   const affiliatePaid = order.payoutLines.length > 0;
 
   // "returned" chỉ qua form Trả hàng (kèm phiếu nhập hàng trả vào Chờ kiểm tra).

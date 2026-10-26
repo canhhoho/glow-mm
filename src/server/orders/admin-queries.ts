@@ -61,7 +61,8 @@ export async function getOrderAdmin(id: string, now = new Date()) {
       reservations: true,
       documents: { select: { id: true, code: true, type: true, status: true } },
       affiliate: { select: { id: true, code: true, user: { select: { name: true } } } },
-      payoutLines: { select: { amountMmk: true } },
+      payoutLines: { select: { amountMmk: true, kind: true } },
+      uplineAffiliate: { select: { id: true, code: true, user: { select: { name: true } } } },
     },
   });
   if (!order) return null;

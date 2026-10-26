@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { toUnicode } from "@/lib/myanmar";
 import { manualShipping } from "@/server/adapters/shipping";
+import { uplineSnapshot } from "@/server/affiliates/upline";
 import { newCode } from "@/server/codes";
 import { salesBlockDays } from "@/server/inventory/documents";
 import type { Tx } from "@/server/inventory/ledger";
@@ -124,6 +125,7 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
               affiliateId: affiliate.id,
               affiliateSource: ctx.affiliate!.source,
               commissionRateBp: affiliate.commissionRateBp,
+              ...(await uplineSnapshot(tx, affiliate.parentId)),
             }),
             items: { create: lines.map(({ variantId, sku, name, qty, unitPriceMmk }) => ({ variantId, sku, name, qty, unitPriceMmk })) },
             history: { create: { toStatus: "PENDING", userId: ctx.userId, createdAt: now } },
@@ -163,7 +165,7 @@ async function resolveAffiliate(tx: Tx, ref: CreateOrderContext["affiliate"]) {
   if (!ref) return null;
   const a = await tx.affiliate.findFirst({
     where: { ...(ref.source === "LINK" ? { code: ref.code } : { id: ref.id }), active: true, user: { active: true } },
-    select: { id: true, commissionRateBp: true },
+    select: { id: true, commissionRateBp: true, parentId: true },
   });
   if (!a && ref.source !== "LINK") throw new OrderError("invalid_affiliate", "CTV không tồn tại hoặc đã bị khoá");
   return a;

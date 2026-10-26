@@ -6,6 +6,7 @@ import {
   orderCommission,
   payoutLines,
   percentToBp,
+  splitCommissions,
   summarizeCommissions,
   type CommissionOrder,
 } from "@/server/affiliates/commission";
@@ -70,17 +71,18 @@ describe("Hoa hồng CTV", () => {
   });
 
   it("tổng hợp + dòng chi trả: gồm cả số âm, bỏ đơn còn chờ", () => {
+    const entry = (orderId: string, c: CommissionOrder) => ({ orderId, kind: "SALE" as const, commission: orderCommission(c, opts) });
     const list = [
-      { id: "a", commission: orderCommission(order(), opts) }, // +3000
-      { id: "b", commission: orderCommission(order({ completedAt: daysAgo(1) }), opts) }, // chờ 3000
-      { id: "c", commission: orderCommission(order({ status: "RETURNED", items: [{ qty: 2, returnedQty: 2, unitPriceMmk: 15_000 }], paidMmk: 1000 }), opts) }, // -1000
-      { id: "d", commission: orderCommission(order({ paidMmk: 3000 }), opts) }, // đã trả đủ
+      entry("a", order()), // +3000
+      entry("b", order({ completedAt: daysAgo(1) })), // chờ 3000
+      entry("c", order({ status: "RETURNED", items: [{ qty: 2, returnedQty: 2, unitPriceMmk: 15_000 }], paidMmk: 1000 })), // -1000
+      entry("d", order({ paidMmk: 3000 })), // đã trả đủ
     ];
     expect(summarizeCommissions(list.map((l) => l.commission))).toEqual({ pendingMmk: 3000, payableMmk: 2000, paidMmk: 4000 });
-    expect(payoutLines(list)).toEqual({
+    expect(payoutLines(list)).toMatchObject({
       lines: [
-        { orderId: "a", amountMmk: 3000 },
-        { orderId: "c", amountMmk: -1000 },
+        { orderId: "a", kind: "SALE", amountMmk: 3000 },
+        { orderId: "c", kind: "SALE", amountMmk: -1000 },
       ],
       totalMmk: 2000,
     });
@@ -89,5 +91,50 @@ describe("Hoa hồng CTV", () => {
   it("đổi % ⇄ phần vạn", () => {
     expect(percentToBp(12.5)).toBe(1250);
     expect(bpToPercent(1000)).toBe(10);
+  });
+});
+
+describe("Hoa hồng hai tầng (P11)", () => {
+  const split = (o: Partial<Parameters<typeof splitCommissions>[0]> = {}) =>
+    splitCommissions(
+      {
+        status: "COMPLETED",
+        completedAt: daysAgo(10),
+        commissionRateBp: 1000,
+        uplineRateBp: 200,
+        items: [{ qty: 2, returnedQty: 0, unitPriceMmk: 15_000 }],
+        lines: [],
+        ...o,
+      },
+      opts,
+    );
+
+  it("tầng trên cùng căn cứ + hạn giữ, % riêng; không có tầng trên → null", () => {
+    const c = split();
+    expect(c.commission).toMatchObject({ commissionMmk: 3000, state: "payable", dueMmk: 3000 });
+    expect(c.uplineCommission).toMatchObject({ commissionMmk: 600, state: "payable", dueMmk: 600 });
+    expect(split({ uplineRateBp: null }).uplineCommission).toBeNull();
+    expect(split({ completedAt: daysAgo(2) }).uplineCommission).toMatchObject({ state: "pending", dueMmk: 0 });
+    expect(split({ status: "CANCELLED", completedAt: null }).uplineCommission).toMatchObject({ state: "void", commissionMmk: 0 });
+  });
+
+  it("số đã trả tách theo loại dòng", () => {
+    const c = split({ lines: [{ kind: "SALE", amountMmk: 3000 }, { kind: "UPLINE", amountMmk: 200 }] });
+    expect(c.commission).toMatchObject({ paidMmk: 3000, dueMmk: 0 });
+    expect(c.uplineCommission).toMatchObject({ paidMmk: 200, dueMmk: 400 });
+  });
+
+  it("trả hàng sau khi đã chi tầng trên → số âm; dòng chi gồm cả hai loại", () => {
+    const c = split({ items: [{ qty: 2, returnedQty: 2, unitPriceMmk: 15_000 }], status: "RETURNED", lines: [{ kind: "UPLINE", amountMmk: 600 }] });
+    expect(c.uplineCommission).toMatchObject({ commissionMmk: 0, dueMmk: -600 });
+    const mixed = payoutLines([
+      { orderId: "a", kind: "SALE" as const, commission: split().commission },
+      { orderId: "b", kind: "UPLINE" as const, commission: c.uplineCommission! },
+    ]);
+    expect(mixed.lines).toEqual([
+      { orderId: "a", kind: "SALE", amountMmk: 3000 },
+      { orderId: "b", kind: "UPLINE", amountMmk: -600 },
+    ]);
+    expect(mixed.totalMmk).toBe(2400);
   });
 });

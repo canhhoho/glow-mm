@@ -481,7 +481,9 @@
         "salesWindowDays": "Sales velocity window (last days)"
       },
       "affiliate": {
-        "holdDays": "Commission becomes payable after order completion (days)"
+        "holdDays": "Commission becomes payable after order completion (days)",
+        "uplineRateBp": "Upline share of their recruits' orders (%)",
+        "defaultRateBp": "Default sales commission for new affiliates (%)"
       },
       "payment": {
         "bankInstructions": "Bank transfer instructions (shown to customers)"
@@ -627,7 +629,8 @@
     },
     "andMore": "… and {count} more",
     "commission": "Affiliate commission",
-    "profitAfterCommission": "Profit after commission"
+    "profitAfterCommission": "Profit after commission",
+    "uplineCommission": "Of which: team (upline) commission"
   },
   "Reviews": {
     "title": "Product reviews",
@@ -930,6 +933,10 @@
       "tooShort": "Password must be at least {min} characters",
       "percent": "Commission must be 0–50% (max 2 decimals)",
       "invalid": "Invalid data"
+    },
+    "lineKind": {
+      "SALE": "sales",
+      "UPLINE": "team"
     }
   },
   "Ctv": {

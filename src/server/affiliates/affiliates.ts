@@ -12,11 +12,12 @@ import type { Tx } from "@/server/inventory/ledger";
 import { normalizeMmPhone } from "@/server/orders/pricing";
 import { PROOF_MAX_BYTES, PROOF_MIME } from "@/server/orders/payments";
 import { getNumberSetting } from "@/server/settings";
+import { uplineSnapshot } from "./upline";
 import {
   commissionBaseMmk,
-  orderCommission,
   payoutLines,
   percentToBp,
+  splitCommissions,
   summarizeCommissions,
   type CommissionState,
 } from "./commission";
@@ -192,19 +193,29 @@ const orderForCommission = {
   commissionRateBp: true,
   affiliateId: true,
   affiliateSource: true,
+  uplineAffiliateId: true,
+  uplineRateBp: true,
   items: { select: { qty: true, returnedQty: true, unitPriceMmk: true } },
-  payoutLines: { select: { amountMmk: true } },
+  payoutLines: { select: { amountMmk: true, kind: true } },
 } satisfies Prisma.OrderSelect;
 
 type CommissionOrderRow = Prisma.OrderGetPayload<{ select: typeof orderForCommission }>;
 
+/** Hoa hồng của từng đơn: `commission` (người bán) + `uplineCommission` (cấp trên, null nếu không có). */
 function withCommission(rows: CommissionOrderRow[], opts: { now: Date; holdDays: number }) {
-  return rows.map(({ payoutLines: lines, ...o }) => ({
-    ...o,
-    commission: orderCommission({ ...o, paidMmk: lines.reduce((s, l) => s + l.amountMmk, 0) }, opts),
-  }));
+  return rows.map(({ payoutLines: lines, ...o }) => ({ ...o, ...splitCommissions({ ...o, lines }, opts) }));
 }
 export type AffiliateOrder = ReturnType<typeof withCommission>[number];
+
+/** Phần hoa hồng của CTV `affiliateId` trên các đơn: SALE nếu là người bán, UPLINE nếu là cấp trên. */
+function entriesFor(affiliateId: string, orders: AffiliateOrder[]) {
+  return orders.flatMap((o) => [
+    ...(o.affiliateId === affiliateId ? [{ orderId: o.id, code: o.code, kind: "SALE" as const, commission: o.commission }] : []),
+    ...(o.uplineAffiliateId === affiliateId && o.uplineCommission
+      ? [{ orderId: o.id, code: o.code, kind: "UPLINE" as const, commission: o.uplineCommission }]
+      : []),
+  ]);
+}
 
 async function commissionOpts(now: Date) {
   return { now, holdDays: await getNumberSetting("affiliate.holdDays") };
@@ -234,15 +245,37 @@ export function monthRange(month?: string) {
 
 export const currentMonth = (now = new Date()) => yangonDayKey(now).slice(0, 7);
 
-/** Tổng hợp cho một CTV: hoa hồng chờ / đến hạn / đã nhận (mọi thời điểm) + doanh số tháng này. */
-function summarize(orders: AffiliateOrder[], now: Date) {
+/**
+ * Tổng hợp cho một CTV (mọi thời điểm): hoa hồng chờ / đến hạn / đã nhận = bán hàng + tuyến dưới (tách ở `sale`, `upline`),
+ * doanh số tháng này của chính CTV. `orders` gồm cả đơn mình bán lẫn đơn tuyến dưới.
+ */
+function summarize(affiliateId: string, orders: AffiliateOrder[], now: Date) {
+  const entries = entriesFor(affiliateId, orders);
+  const sale = summarizeCommissions(entries.filter((e) => e.kind === "SALE").map((e) => e.commission));
+  const upline = summarizeCommissions(entries.filter((e) => e.kind === "UPLINE").map((e) => e.commission));
   const month = monthRange(currentMonth(now))!;
-  const thisMonth = orders.filter((o) => o.createdAt >= month.gte && o.createdAt < month.lt && o.status !== "CANCELLED");
+  const thisMonth = orders.filter(
+    (o) => o.affiliateId === affiliateId && o.createdAt >= month.gte && o.createdAt < month.lt && o.status !== "CANCELLED",
+  );
   return {
-    ...summarizeCommissions(orders.map((o) => o.commission)),
+    pendingMmk: sale.pendingMmk + upline.pendingMmk,
+    payableMmk: sale.payableMmk + upline.payableMmk,
+    paidMmk: sale.paidMmk + upline.paidMmk,
+    sale,
+    upline,
     monthOrders: thisMonth.length,
     monthSalesMmk: thisMonth.reduce((s, o) => s + commissionBaseMmk(o.items), 0),
   };
+}
+
+/** Đơn mình bán + đơn tuyến dưới của các CTV `ids` (để tổng hợp). */
+async function ordersInvolving(ids: string[], now: Date) {
+  const rows = await prisma.order.findMany({
+    where: { OR: [{ affiliateId: { in: ids } }, { uplineAffiliateId: { in: ids } }] },
+    select: orderForCommission,
+    orderBy: { createdAt: "desc" },
+  });
+  return withCommission(rows, await commissionOpts(now));
 }
 
 export async function listAffiliates(filter: { q?: string; active?: boolean } = {}, now = new Date()) {
@@ -265,12 +298,11 @@ export async function listAffiliates(filter: { q?: string; active?: boolean } = 
     orderBy: [{ active: "desc" }, { createdAt: "desc" }],
     take: 200,
   });
-  const rows = await prisma.order.findMany({
-    where: { affiliateId: { in: affiliates.map((a) => a.id) } },
-    select: orderForCommission,
-  });
-  const orders = withCommission(rows, await commissionOpts(now));
-  return affiliates.map((a) => ({ ...a, summary: summarize(orders.filter((o) => o.affiliateId === a.id), now) }));
+  const orders = await ordersInvolving(
+    affiliates.map((a) => a.id),
+    now,
+  );
+  return affiliates.map((a) => ({ ...a, summary: summarize(a.id, orders, now) }));
 }
 
 /** Chi tiết CTV cho admin và cổng CTV (cổng CTV truyền `affiliateId` lấy từ phiên đăng nhập). */
@@ -283,10 +315,9 @@ export async function getAffiliate(id: string, now = new Date()) {
     },
   });
   if (!affiliate) return null;
-  const all = await affiliateOrders(id, {}, now);
-  const due = payoutLines(all);
-  const dueOrders = all.filter((o) => due.lines.some((l) => l.orderId === o.id));
-  return { ...affiliate, summary: summarize(all, now), due: { totalMmk: due.totalMmk, orders: dueOrders } };
+  const orders = await ordersInvolving([id], now);
+  const due = payoutLines(entriesFor(id, orders));
+  return { ...affiliate, summary: summarize(id, orders, now), due: { totalMmk: due.totalMmk, entries: due.entries } };
 }
 export type AffiliateDetail = NonNullable<Awaited<ReturnType<typeof getAffiliate>>>;
 
@@ -316,11 +347,22 @@ export async function assignOrderAffiliate(
     if (order._count.payoutLines > 0) throw new AffiliateError("order_paid", "Đơn đã chi trả hoa hồng — không đổi CTV được");
     if (order.affiliateId === affiliateId) return order;
 
-    let data: Prisma.OrderUncheckedUpdateInput = { affiliateId: null, affiliateSource: null, commissionRateBp: null };
+    let data: Prisma.OrderUncheckedUpdateInput = {
+      affiliateId: null,
+      affiliateSource: null,
+      commissionRateBp: null,
+      uplineAffiliateId: null,
+      uplineRateBp: null,
+    };
     if (affiliateId) {
       const a = await tx.affiliate.findFirst({ where: { id: affiliateId, active: true, user: { active: true } } });
       if (!a) throw new AffiliateError("not_found", "CTV không tồn tại hoặc đã bị khoá");
-      data = { affiliateId: a.id, affiliateSource: "STAFF", commissionRateBp: a.commissionRateBp };
+      data = {
+        affiliateId: a.id,
+        affiliateSource: "STAFF",
+        commissionRateBp: a.commissionRateBp,
+        ...(await uplineSnapshot(tx, a.parentId)),
+      };
     }
     const updated = await tx.order.update({ where: { id: orderId }, data });
     await tx.auditLog.create({
@@ -359,7 +401,7 @@ export async function recordPayout(
       await tx.$queryRaw`SELECT "id" FROM "Affiliate" WHERE "id" = ${affiliateId} FOR UPDATE`;
       const affiliate = await tx.affiliate.findUnique({ where: { id: affiliateId } });
       if (!affiliate) throw new AffiliateError("not_found", "Không tìm thấy CTV");
-      const { lines, totalMmk } = payoutLines(withCommission(await dueRows(tx, affiliateId), cOpts));
+      const { lines, totalMmk } = payoutLines(entriesFor(affiliateId, withCommission(await dueRows(tx, affiliateId), cOpts)));
       if (totalMmk <= 0) throw new AffiliateError("nothing_due", "Chưa có hoa hồng đến hạn để trả");
       const file = stored
         ? await tx.fileObject.create({ data: { ...stored, url: `/api/files/${stored.key}`, visibility: "PRIVATE" } })
@@ -390,10 +432,13 @@ export async function recordPayout(
   );
 }
 
-/** Đơn có thể đến hạn: đã hoàn thành / trả / huỷ (đơn đang xử lý luôn `pending`). */
+/** Đơn có thể đến hạn (mình bán hoặc tuyến dưới): đã hoàn thành / trả / huỷ (đơn đang xử lý luôn `pending`). */
 function dueRows(tx: Tx, affiliateId: string) {
   return tx.order.findMany({
-    where: { affiliateId, status: { in: ["COMPLETED", "RETURNED", "CANCELLED"] } },
+    where: {
+      OR: [{ affiliateId }, { uplineAffiliateId: affiliateId }],
+      status: { in: ["COMPLETED", "RETURNED", "CANCELLED"] },
+    },
     select: orderForCommission,
   });
 }

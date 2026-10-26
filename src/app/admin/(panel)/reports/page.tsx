@@ -65,6 +65,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
         <Stat label={`${t("returns")} (MMK)`} value={fmtInt(totals.returnedRevenue)} />
         <Stat label={`${t("shippingFees")} (MMK)`} value={fmtInt(totals.shippingFees)} />
         <Stat label={`${t("commission")} (MMK)`} value={fmtInt(totals.commission)} testId="r-commission" />
+        <Stat label={`${t("uplineCommission")} (MMK)`} value={fmtInt(totals.uplineCommission)} />
         <Stat label={`${t("profitAfterCommission")} (MMK)`} value={fmtInt(totals.profitAfterCommission)} />
       </section>
 

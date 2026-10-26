@@ -641,52 +641,57 @@ enum OrderChannel {
 }
 
 model Order {
-  id               String                @id @default(cuid())
-  code             String                @unique
-  customerId       String
-  customer         Customer              @relation(fields: [customerId], references: [id])
-  addressId        String
-  address          Address               @relation(fields: [addressId], references: [id])
+  id                String                @id @default(cuid())
+  code              String                @unique
+  customerId        String
+  customer          Customer              @relation(fields: [customerId], references: [id])
+  addressId         String
+  address           Address               @relation(fields: [addressId], references: [id])
   /// Snapshot lúc đặt — sửa khách/địa chỉ sau này không đổi đơn cũ.
-  recipientName    String
-  recipientPhone   String
-  addressText      String
-  zoneName         String
-  channel          OrderChannel          @default(WEB)
-  status           OrderStatus           @default(PENDING)
-  paymentMethod    PaymentMethod
-  paymentStatus    PaymentStatus         @default(UNPAID)
-  subtotalMmk      Int
-  shippingFeeMmk   Int
-  totalMmk         Int
-  locale           String                @default("my")
-  note             String?
-  cancelReason     String?
+  recipientName     String
+  recipientPhone    String
+  addressText       String
+  zoneName          String
+  channel           OrderChannel          @default(WEB)
+  status            OrderStatus           @default(PENDING)
+  paymentMethod     PaymentMethod
+  paymentStatus     PaymentStatus         @default(UNPAID)
+  subtotalMmk       Int
+  shippingFeeMmk    Int
+  totalMmk          Int
+  locale            String                @default("my")
+  note              String?
+  cancelReason      String?
   /// Chống tạo trùng khi bấm gửi 2 lần.
-  idempotencyKey   String?               @unique
-  codConfirmedAt   DateTime?
+  idempotencyKey    String?               @unique
+  codConfirmedAt    DateTime?
   /// Thời điểm chuyển sang COMPLETED — mốc tính hạn giữ hoa hồng CTV.
-  completedAt      DateTime?
-  createdById      String?
+  completedAt       DateTime?
+  createdById       String?
   /// CTV được tính đơn này (P10) + nguồn gắn + % hoa hồng chốt lúc gắn (phần vạn: 1000 = 10%).
-  affiliateId      String?
-  affiliate        Affiliate?            @relation(fields: [affiliateId], references: [id])
-  affiliateSource  AffiliateSource?
-  commissionRateBp Int?
-  createdAt        DateTime              @default(now())
-  updatedAt        DateTime              @updatedAt
-  items            OrderItem[]
-  reservations     Reservation[]
-  history          OrderStatusHistory[]
-  paymentProofs    PaymentProof[]
-  deliveries       Delivery[]
-  documents        StockDocument[]
-  reviews          Review[]
-  payoutLines      AffiliatePayoutLine[]
+  affiliateId       String?
+  affiliate         Affiliate?            @relation(fields: [affiliateId], references: [id])
+  affiliateSource   AffiliateSource?
+  commissionRateBp  Int?
+  /// Cấp trên của CTV chốt lúc gắn CTV (P11) + % tầng trên (phần vạn). Đổi tuyến sau không ảnh hưởng đơn cũ.
+  uplineAffiliateId String?
+  uplineAffiliate   Affiliate?            @relation("OrderUpline", fields: [uplineAffiliateId], references: [id])
+  uplineRateBp      Int?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  items             OrderItem[]
+  reservations      Reservation[]
+  history           OrderStatusHistory[]
+  paymentProofs     PaymentProof[]
+  deliveries        Delivery[]
+  documents         StockDocument[]
+  reviews           Review[]
+  payoutLines       AffiliatePayoutLine[]
 
   @@index([status, createdAt])
   @@index([customerId])
   @@index([affiliateId, createdAt])
+  @@index([uplineAffiliateId, createdAt])
 }
 
 // ───────────────────────── Cộng tác viên (P10) ─────────────────────────
@@ -701,21 +706,30 @@ enum AffiliateSource {
 }
 
 model Affiliate {
-  id               String            @id @default(cuid())
-  userId           String            @unique
-  user             User              @relation(fields: [userId], references: [id])
+  id               String                 @id @default(cuid())
+  userId           String                 @unique
+  user             User                   @relation(fields: [userId], references: [id])
   /// Mã giới thiệu (A–Z, 0–9), dùng trong link ?ref=CODE.
-  code             String            @unique
+  code             String                 @unique
   phone            String
   /// % hoa hồng tính bằng phần vạn (1000 = 10%). Đổi chỉ áp dụng cho đơn mới (đơn chốt % lúc gắn).
   commissionRateBp Int
   /// Thông tin nhận tiền (ngân hàng / KBZPay / Wave…), chỉ để admin chuyển khoản.
   payoutInfo       String?
-  active           Boolean           @default(true)
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  active           Boolean                @default(true)
+  /// Cấp trên trực tiếp (P11 — 2 tầng): người tuyển CTV này, hưởng % tầng trên trên đơn của CTV này.
+  parentId         String?
+  parent           Affiliate?             @relation("AffiliateTree", fields: [parentId], references: [id])
+  children         Affiliate[]            @relation("AffiliateTree")
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
   orders           Order[]
+  uplineOrders     Order[]                @relation("OrderUpline")
   payouts          AffiliatePayout[]
+  invitations      AffiliateApplication[] @relation("ApplicationInviter")
+  application      AffiliateApplication?  @relation("ApplicationAffiliate")
+
+  @@index([parentId])
 }
 
 /// Một lần chi trả hoa hồng (tiền chuyển ngoài hệ thống, ở đây chỉ ghi nhận).
@@ -735,16 +749,51 @@ model AffiliatePayout {
   @@index([affiliateId, paidAt])
 }
 
+enum AffiliateLineKind {
+  /// Hoa hồng bán hàng của CTV bán đơn.
+  SALE
+  /// Hoa hồng tầng trên (P11) của cấp trên trên đơn tuyến dưới.
+  UPLINE
+}
+
 /// Số đã trả cho từng đơn trong một lần chi — chỉ ghi thêm. Có thể âm (khách trả hàng sau khi đã chi → trừ kỳ sau).
 model AffiliatePayoutLine {
-  id        String          @id @default(cuid())
+  id        String            @id @default(cuid())
   payoutId  String
-  payout    AffiliatePayout @relation(fields: [payoutId], references: [id])
+  payout    AffiliatePayout   @relation(fields: [payoutId], references: [id])
   orderId   String
-  order     Order           @relation(fields: [orderId], references: [id])
+  order     Order             @relation(fields: [orderId], references: [id])
+  kind      AffiliateLineKind @default(SALE)
   amountMmk Int
 
   @@index([orderId])
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Đơn đăng ký làm CTV qua link mời (P11). Admin duyệt mới tạo tài khoản; mật khẩu băm bị xoá khi xử lý xong.
+model AffiliateApplication {
+  id           String            @id @default(cuid())
+  inviterId    String
+  inviter      Affiliate         @relation("ApplicationInviter", fields: [inviterId], references: [id])
+  name         String
+  phone        String
+  email        String
+  passwordHash String?
+  status       ApplicationStatus @default(PENDING)
+  note         String?
+  reviewedById String?
+  reviewedAt   DateTime?
+  affiliateId  String?           @unique
+  affiliate    Affiliate?        @relation("ApplicationAffiliate", fields: [affiliateId], references: [id])
+  createdAt    DateTime          @default(now())
+
+  @@index([status, createdAt])
+  @@index([inviterId, status])
 }
 
 model OrderItem {

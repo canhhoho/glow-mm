@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
-import { getAllSettings, type NumericSettingKey } from "@/server/settings";
+import { bpToPercent } from "@/server/affiliates/commission";
+import { getAllSettings, PERCENT_SETTING_KEYS, type NumericSettingKey } from "@/server/settings";
 import { saveSettingsAction } from "@/server/settings-actions";
 import { ActionForm } from "@/components/admin/action-form";
 import { fieldClass, PageHeader } from "@/components/admin/ui";
@@ -10,7 +11,7 @@ const GROUPS: { title: string; keys: NumericSettingKey[] }[] = [
   { title: "orders", keys: ["reservation.transferHours", "cod.confirmHours"] },
   { title: "pricing", keys: ["pricing.roundTo"] },
   { title: "reorder", keys: ["reorder.coverDays", "reorder.salesWindowDays"] },
-  { title: "affiliate", keys: ["affiliate.holdDays"] },
+  { title: "affiliate", keys: ["affiliate.holdDays", "affiliate.defaultRateBp", "affiliate.uplineRateBp"] },
 ];
 
 export default async function SettingsPage() {
@@ -35,7 +36,21 @@ export default async function SettingsPage() {
             {g.keys.map((k) => (
               <label key={k} className="grid items-center gap-2 text-sm sm:grid-cols-[1fr_8rem]">
                 <span>{t(`keys.${k}`)}</span>
-                <input name={k} type="number" min={0} step={1} required defaultValue={settings.numbers[k]} className={fieldClass} />
+                {PERCENT_SETTING_KEYS.includes(k) ? (
+                  <input
+                    name={k}
+                    type="number"
+                    min={0}
+                    max={50}
+                    step={0.01}
+                    inputMode="decimal"
+                    required
+                    defaultValue={bpToPercent(settings.numbers[k])}
+                    className={fieldClass}
+                  />
+                ) : (
+                  <input name={k} type="number" min={0} step={1} required defaultValue={settings.numbers[k]} className={fieldClass} />
+                )}
               </label>
             ))}
           </fieldset>

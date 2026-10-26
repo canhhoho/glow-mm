@@ -17,7 +17,10 @@ import { admin, orderInput, saleFixture, unpublishTestProducts, type SaleFixture
 afterAll(unpublishTestProducts);
 
 /** CTV test: user role AFFILIATE + hồ sơ CTV, mã riêng theo tag của fixture. */
-async function makeAffiliate(f: SaleFixture, opts: { suffix?: string; rateBp?: number; active?: boolean; userActive?: boolean } = {}) {
+async function makeAffiliate(
+  f: SaleFixture,
+  opts: { suffix?: string; rateBp?: number; active?: boolean; userActive?: boolean; parentId?: string } = {},
+) {
   const code = `C${f.tag}${opts.suffix ?? ""}`;
   const user = await prisma.user.create({
     data: {
@@ -29,7 +32,14 @@ async function makeAffiliate(f: SaleFixture, opts: { suffix?: string; rateBp?: n
     },
   });
   return prisma.affiliate.create({
-    data: { userId: user.id, code, phone: "0911111111", commissionRateBp: opts.rateBp ?? 1000, active: opts.active ?? true },
+    data: {
+      userId: user.id,
+      code,
+      phone: "0911111111",
+      commissionRateBp: opts.rateBp ?? 1000,
+      active: opts.active ?? true,
+      parentId: opts.parentId,
+    },
   });
 }
 
@@ -202,5 +212,56 @@ describe("Tìm CTV (P10b)", () => {
     expect(byCode.map((x) => x.id)).toEqual([a.id]);
     const byPhone = await listAffiliates({ q: "+95 9 1111 1111" });
     expect(byPhone.map((x) => x.id)).toContain(a.id);
+  });
+});
+
+describe("Hai tầng (P11a)", () => {
+  // % tầng trên mặc định 2% (setting affiliate.uplineRateBp chưa đặt trong DB test).
+  it("đơn của CTV cấp dưới chốt cấp trên + 2%; cấp trên bị khoá → không chốt; đổi tuyến sau không ảnh hưởng đơn cũ", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 10 }]);
+    const up = await makeAffiliate(f, { suffix: "P" });
+    const lockedUp = await makeAffiliate(f, { suffix: "Q", active: false });
+    const down = await makeAffiliate(f, { suffix: "D", parentId: up.id });
+    const orphan = await makeAffiliate(f, { suffix: "O", parentId: lockedUp.id });
+
+    const o1 = await createOrder(orderInput(f, 1), { userId: null, affiliate: { source: "LINK", code: down.code } });
+    expect(o1).toMatchObject({ affiliateId: down.id, uplineAffiliateId: up.id, uplineRateBp: 200 });
+    const o2 = await createOrder(orderInput(f, 1), { userId: null, affiliate: { source: "LINK", code: orphan.code } });
+    expect(o2).toMatchObject({ affiliateId: orphan.id, uplineAffiliateId: null, uplineRateBp: null });
+
+    await prisma.affiliate.update({ where: { id: down.id }, data: { parentId: null } });
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: o1.id } })).uplineAffiliateId).toBe(up.id);
+    const o3 = await createOrder(orderInput(f, 1), { userId: null, affiliate: { source: "LINK", code: down.code } });
+    expect(o3.uplineAffiliateId).toBeNull();
+
+    // Nhân viên gán CTV cấp dưới → cũng chốt cấp trên.
+    await prisma.affiliate.update({ where: { id: down.id }, data: { parentId: up.id } });
+    const plain = await createOrder(orderInput(f, 1), { userId: null });
+    expect(await assignOrderAffiliate(plain.id, down.id, admin(f))).toMatchObject({ uplineAffiliateId: up.id, uplineRateBp: 200 });
+  });
+
+  it("chi trả: cấp trên chỉ nhận dòng UPLINE, người bán chỉ SALE; chi đồng thời không trùng; trả hàng sau khi chi → trừ kỳ sau", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 10 }]);
+    const up = await makeAffiliate(f, { suffix: "P" });
+    const down = await makeAffiliate(f, { suffix: "D", parentId: up.id });
+    const order = await completedOrder(f, down.code, 2, 10); // 20 000: bán 2 000, tầng trên 400
+
+    expect((await getAffiliate(up.id))!.summary).toMatchObject({ payableMmk: 400, sale: { payableMmk: 0 }, upline: { payableMmk: 400 } });
+    const both = await Promise.allSettled([recordPayout(up.id, {}, f.userId), recordPayout(up.id, {}, f.userId)]);
+    expect(both.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    const upLines = await prisma.affiliatePayoutLine.findMany({ where: { payout: { affiliateId: up.id } } });
+    expect(upLines).toMatchObject([{ orderId: order.id, kind: "UPLINE", amountMmk: 400 }]);
+
+    const sale = await recordPayout(down.id, {}, f.userId);
+    expect(sale.amountMmk).toBe(2000);
+    expect(await prisma.affiliatePayoutLine.findMany({ where: { payoutId: sale.id } })).toMatchObject([{ kind: "SALE", amountMmk: 2000 }]);
+    await expect(assignOrderAffiliate(order.id, null, admin(f))).rejects.toMatchObject({ code: "order_paid" });
+
+    // Khách trả 1 món sau khi đã chi cả hai → mỗi bên âm phần của mình.
+    const item = await prisma.orderItem.findFirstOrThrow({ where: { orderId: order.id } });
+    await returnItems(order.id, { toLocationId: f.qc.id, lines: [{ orderItemId: item.id, qty: 1 }], reason: "Hỏng" }, admin(f));
+    await completedOrder(f, down.code, 3, 9); // tầng trên +600
+    expect((await getAffiliate(up.id))!.summary.payableMmk).toBe(400); // 600 − 200
+    expect((await recordPayout(up.id, {}, f.userId)).amountMmk).toBe(400);
   });
 });

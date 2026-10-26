@@ -14,10 +14,16 @@ export const SETTING_DEFAULTS = {
   "reorder.salesWindowDays": 60,
   /** Số ngày sau khi đơn hoàn thành mới tính hoa hồng CTV là đến hạn (chờ đổi trả) — P10. */
   "affiliate.holdDays": 7,
+  /** % tầng trên (P11): cấp trên hưởng trên tiền hàng đơn của CTV mình tuyển — phần vạn (200 = 2%). */
+  "affiliate.uplineRateBp": 200,
+  /** % bán hàng điền sẵn khi duyệt CTV đăng ký qua link mời — phần vạn (1000 = 10%). */
+  "affiliate.defaultRateBp": 1000,
 } as const;
 
 export type NumericSettingKey = keyof typeof SETTING_DEFAULTS;
 export const NUMERIC_SETTING_KEYS = Object.keys(SETTING_DEFAULTS) as NumericSettingKey[];
+/** Cài đặt lưu phần vạn nhưng nhập/hiển thị theo % (trang Cài đặt đổi qua lại). */
+export const PERCENT_SETTING_KEYS: NumericSettingKey[] = ["affiliate.uplineRateBp", "affiliate.defaultRateBp"];
 
 export async function getNumberSetting(key: NumericSettingKey): Promise<number> {
   const row = await prisma.setting.findUnique({ where: { key } });
@@ -67,6 +73,8 @@ export const settingsSchema = z
     "reorder.coverDays": int(0, 365),
     "reorder.salesWindowDays": int(7, 365),
     "affiliate.holdDays": int(0, 90),
+    "affiliate.uplineRateBp": int(0, 2000),
+    "affiliate.defaultRateBp": int(0, 5000),
     "payment.bankInstructions": z.string().trim().max(1000).transform(toUnicode),
     // Không gửi → giữ nguyên giá trị hiện tại.
     "store.checkoutEnabled": z.boolean().optional(),

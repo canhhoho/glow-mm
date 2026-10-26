@@ -4,12 +4,15 @@ import { revalidatePath } from "next/cache";
 import { ZodError } from "zod";
 import { requirePermission } from "@/server/auth/session";
 import type { ActionState } from "@/server/inventory/actions";
-import { NUMERIC_SETTING_KEYS, saveSettings } from "./settings";
+import { percentToBp } from "@/server/affiliates/commission";
+import { NUMERIC_SETTING_KEYS, PERCENT_SETTING_KEYS, saveSettings } from "./settings";
 
 export async function saveSettingsAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   try {
     const user = await requirePermission("settings:manage");
     const raw: Record<string, unknown> = Object.fromEntries(NUMERIC_SETTING_KEYS.map((k) => [k, formData.get(k)]));
+    // Ô nhập theo % → lưu phần vạn.
+    for (const k of PERCENT_SETTING_KEYS) raw[k] = percentToBp(Number(formData.get(k)));
     raw["payment.bankInstructions"] = formData.get("payment.bankInstructions") ?? "";
     raw["store.checkoutEnabled"] = formData.get("store.checkoutEnabled") === "on";
     await saveSettings(raw, user.id);

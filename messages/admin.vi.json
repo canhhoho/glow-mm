@@ -481,7 +481,9 @@
         "salesWindowDays": "Tính tốc độ bán trong (ngày gần nhất)"
       },
       "affiliate": {
-        "holdDays": "Hoa hồng đến hạn sau khi đơn hoàn thành (ngày)"
+        "holdDays": "Hoa hồng đến hạn sau khi đơn hoàn thành (ngày)",
+        "uplineRateBp": "Cấp trên hưởng trên đơn của CTV mình tuyển (%)",
+        "defaultRateBp": "% bán hàng mặc định khi duyệt CTV mới (%)"
       },
       "payment": {
         "bankInstructions": "Hướng dẫn chuyển khoản (hiện cho khách)"
@@ -627,7 +629,8 @@
     },
     "andMore": "… và {count} đơn khác",
     "commission": "Hoa hồng CTV",
-    "profitAfterCommission": "Lợi nhuận sau hoa hồng"
+    "profitAfterCommission": "Lợi nhuận sau hoa hồng",
+    "uplineCommission": "Trong đó: hoa hồng tuyến dưới"
   },
   "Reviews": {
     "title": "Đánh giá sản phẩm",
@@ -930,6 +933,10 @@
       "tooShort": "Mật khẩu tối thiểu {min} ký tự",
       "percent": "% hoa hồng từ 0 đến 50 (tối đa 2 số lẻ)",
       "invalid": "Dữ liệu không hợp lệ"
+    },
+    "lineKind": {
+      "SALE": "bán hàng",
+      "UPLINE": "tuyến dưới"
     }
   },
   "Ctv": {
