@@ -14,9 +14,21 @@ let seq = 0;
 const blank = (): Line => ({ key: ++seq, variantId: "", qty: "1" });
 const fmt = (n: number) => new Intl.NumberFormat("en-US").format(n);
 
-/** Form tạo đơn tay (đơn từ FB/Viber/điện thoại). Gửi JSON; giá, phí ship, tồn được kiểm lại ở server. */
-export function OrderForm({ options, initial }: { options: OrderFormOptions; initial: OrderFormInitial }) {
+/**
+ * Form tạo đơn tay (đơn từ FB/Viber/điện thoại). Gửi JSON; giá, phí ship, tồn được kiểm lại ở server.
+ * `affiliates`: danh sách CTV để nhân viên gán (P10) — không truyền thì không hiện ô chọn.
+ */
+export function OrderForm({
+  options,
+  initial,
+  affiliates,
+}: {
+  options: OrderFormOptions;
+  initial: OrderFormInitial;
+  affiliates?: { id: string; label: string }[];
+}) {
   const t = useTranslations("Orders");
+  const ta = useTranslations("Affiliates");
   const [state, action, pending] = useActionState(createOrderAction, undefined);
   const [idempotencyKey] = useState(() => crypto.randomUUID());
   const [channel, setChannel] = useState("FACEBOOK");
@@ -79,6 +91,19 @@ export function OrderForm({ options, initial }: { options: OrderFormOptions; ini
             <option value="BANK_TRANSFER">{t("method.BANK_TRANSFER")}</option>
           </select>
         </label>
+        {affiliates && affiliates.length > 0 && (
+          <label className="space-y-1 text-sm">
+            <span className="text-muted-foreground">{ta("pickLabel")}</span>
+            <select name="affiliateId" defaultValue="" className={fieldClass}>
+              <option value="">{ta("assignNone")}</option>
+              {affiliates.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className="space-y-1 text-sm">
           <span className="text-muted-foreground">{t("name")}</span>
           <input name="name" required value={name} onChange={(e) => setName(e.target.value)} className={fieldClass} />

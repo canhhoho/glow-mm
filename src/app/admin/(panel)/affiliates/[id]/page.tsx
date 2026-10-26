@@ -1,0 +1,234 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
+import { fmtDate, fmtDateTime, fmtInt } from "@/lib/format";
+import { siteUrl } from "@/lib/site";
+import { requirePagePermission } from "@/server/auth/session";
+import { MIN_STAFF_PASSWORD } from "@/server/auth/roles";
+import { bpToPercent, type CommissionState } from "@/server/affiliates/commission";
+import {
+  recordPayoutAction,
+  resetAffiliatePasswordAction,
+  setAffiliateActiveAction,
+  updateAffiliateAction,
+} from "@/server/affiliates/actions";
+import { affiliateOrders, currentMonth, getAffiliate } from "@/server/affiliates/affiliates";
+import { getNumberSetting } from "@/server/settings";
+import { ActionButton } from "@/components/admin/action-button";
+import { ActionForm } from "@/components/admin/action-form";
+import { AffiliateFields, CommissionBadge } from "@/components/admin/affiliate-parts";
+import { OrderStatusBadge } from "@/components/admin/order-badges";
+import { Badge, DataTable, fieldClass, LinkButton, PageHeader, Stat, Td } from "@/components/admin/ui";
+import { Button } from "@/components/ui/button";
+
+const STATES: CommissionState[] = ["pending", "payable", "void"];
+const str = (v: string | string[] | undefined) => (typeof v === "string" ? v.trim() : "");
+
+export default async function AffiliatePage({ params, searchParams }: PageProps<"/admin/affiliates/[id]">) {
+  await requirePagePermission("affiliates:manage");
+  const [{ id }, sp] = await Promise.all([params, searchParams]);
+  const month = str(sp.month) || currentMonth();
+  const rawState = str(sp.state);
+  const state = (STATES as string[]).includes(rawState) ? (rawState as CommissionState) : undefined;
+  const [t, a, orders, holdDays] = await Promise.all([
+    getTranslations("Affiliates"),
+    getAffiliate(id),
+    affiliateOrders(id, { month: month === "all" ? undefined : month, state }),
+    getNumberSetting("affiliate.holdDays"),
+  ]);
+  if (!a) notFound();
+  const refLink = `${siteUrl()}/?ref=${a.code}`;
+
+  return (
+    <div className="max-w-5xl space-y-6">
+      <PageHeader title={a.user.name} actions={<LinkButton href="/admin/affiliates">← {t("back")}</LinkButton>} />
+      {sp.created && <p className="text-sm text-emerald-700 dark:text-emerald-400">{t("created")}</p>}
+      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <span className="font-mono">{a.user.email}</span>
+        <Badge tone={a.active ? "success" : "danger"}>{a.active ? t("active") : t("locked")}</Badge>
+        <span>
+          {t("refLink")}:{" "}
+          <code className="rounded bg-muted px-1.5 py-0.5 text-xs text-foreground" data-testid="ref-link">
+            {refLink}
+          </code>
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        <Stat label={t("statOrders")} value={fmtInt(a.summary.monthOrders)} />
+        <Stat label={t("statSales")} value={fmtInt(a.summary.monthSalesMmk)} />
+        <Stat label={t("statPending")} value={fmtInt(a.summary.pendingMmk)} />
+        <Stat label={t("statPayable")} value={fmtInt(a.summary.payableMmk)} testId="stat-payable" />
+        <Stat label={t("statPaid")} value={fmtInt(a.summary.paidMmk)} />
+      </div>
+      <p className="text-xs text-muted-foreground">{t("holdHint", { days: holdDays })}</p>
+
+      <section className="space-y-2 rounded-lg border p-4">
+        <h2 className="font-medium">{t("due")}</h2>
+        {a.due.orders.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t("dueEmpty")}</p>
+        ) : (
+          <>
+            <p className="text-sm" data-testid="due-summary">
+              {t("dueSummary", { count: a.due.orders.length, amount: fmtInt(a.due.totalMmk) })}
+            </p>
+            <ul className="flex flex-wrap gap-1.5 text-xs">
+              {a.due.orders.map((o) => (
+                <li key={o.id} className="rounded border px-1.5 py-0.5 font-mono">
+                  {o.code}: {fmtInt(o.commission.dueMmk)}
+                </li>
+              ))}
+            </ul>
+            {a.due.totalMmk > 0 && (
+              <ActionForm
+                action={recordPayoutAction}
+                submitLabel={t("pay")}
+                okText={t("paid")}
+                confirm={t("payConfirm", { amount: fmtInt(a.due.totalMmk), name: a.user.name })}
+                className="space-y-3"
+              >
+                <input type="hidden" name="id" value={a.id} />
+                {a.payoutInfo && <p className="text-sm whitespace-pre-line">{a.payoutInfo}</p>}
+                <label className="block space-y-1 text-sm">
+                  <span>{t("payNote")}</span>
+                  <input name="note" maxLength={500} className={fieldClass} />
+                </label>
+                <label className="block space-y-1 text-sm">
+                  <span>{t("payProof")}</span>
+                  <input name="proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" className="block text-sm" />
+                </label>
+              </ActionForm>
+            )}
+          </>
+        )}
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="font-medium">{t("orders")}</h2>
+        <form className="flex flex-wrap items-end gap-2" role="search">
+          <label className="space-y-1 text-sm">
+            <span className="text-muted-foreground">{t("month")}</span>
+            <input name="month" type="month" defaultValue={month === "all" ? "" : month} className={`${fieldClass} w-44`} />
+          </label>
+          <label className="space-y-1 text-sm">
+            <span className="text-muted-foreground">{t("state")}</span>
+            <select name="state" defaultValue={state ?? ""} className={`${fieldClass} w-auto`}>
+              <option value="">{t("allStates")}</option>
+              {STATES.map((s) => (
+                <option key={s} value={s}>
+                  {t(`commissionState.${s}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button type="submit" variant="outline">
+            {t("filter")}
+          </Button>
+        </form>
+        <DataTable
+          empty={t("ordersEmpty")}
+          head={[t("colOrder"), t("colDate"), t("colCustomer"), t("colSource"), t("colGoods"), t("colCommission"), t("colOrderStatus")]}
+        >
+          {orders.map((o) => (
+            <tr key={o.id} data-testid="affiliate-order">
+              <Td>
+                <Link href={`/admin/orders/${o.id}`} className="font-mono text-xs text-primary underline">
+                  {o.code}
+                </Link>
+              </Td>
+              <Td className="whitespace-nowrap">{fmtDate(o.createdAt)}</Td>
+              <Td>
+                {o.recipientName}
+                <div className="font-mono text-xs text-muted-foreground">{o.recipientPhone}</div>
+              </Td>
+              <Td className="text-xs">{o.affiliateSource && t(`source.${o.affiliateSource}`)}</Td>
+              <Td className="text-right tabular-nums">{fmtInt(o.commission.baseMmk)}</Td>
+              <Td className="text-right tabular-nums">
+                <div className="flex flex-col items-end gap-1">
+                  <span>
+                    {fmtInt(o.commission.commissionMmk)}
+                    <span className="ml-1 text-xs text-muted-foreground">({bpToPercent(o.commissionRateBp ?? 0)}%)</span>
+                  </span>
+                  <CommissionBadge state={o.commission.state} />
+                </div>
+              </Td>
+              <Td>
+                <OrderStatusBadge status={o.status} />
+              </Td>
+            </tr>
+          ))}
+        </DataTable>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="font-medium">{t("payouts")}</h2>
+        <DataTable empty={t("payoutsEmpty")} head={[t("colPaidAt"), t("colAmount"), t("colOrders"), t("colNote"), ""]}>
+          {a.payouts.map((p) => (
+            <tr key={p.id} data-testid="payout-row">
+              <Td className="whitespace-nowrap">{fmtDateTime(p.paidAt)}</Td>
+              <Td className="text-right font-medium tabular-nums">{fmtInt(p.amountMmk)} MMK</Td>
+              <Td className="tabular-nums">{p._count.lines}</Td>
+              <Td className="text-xs">{p.note}</Td>
+              <Td>
+                {p.proofFile && (
+                  <a href={p.proofFile.url} target="_blank" rel="noreferrer" className="text-sm text-primary underline">
+                    {t("proof")}
+                  </a>
+                )}
+              </Td>
+            </tr>
+          ))}
+        </DataTable>
+      </section>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <section className="space-y-2">
+          <h2 className="font-medium">{t("profile")}</h2>
+          <ActionForm action={updateAffiliateAction} submitLabel={t("save")} okText={t("saved")} className="space-y-3">
+            <input type="hidden" name="id" value={a.id} />
+            <AffiliateFields
+              values={{
+                name: a.user.name,
+                phone: a.phone,
+                code: a.code,
+                commissionPercent: bpToPercent(a.commissionRateBp),
+                payoutInfo: a.payoutInfo,
+              }}
+            />
+          </ActionForm>
+        </section>
+        <div className="space-y-6">
+          <section className="space-y-2">
+            <h2 className="font-medium">{t("resetTitle")}</h2>
+            <ActionForm action={resetAffiliatePasswordAction} submitLabel={t("reset")} okText={t("resetDone")} className="space-y-3">
+              <input type="hidden" name="id" value={a.id} />
+              <label className="block space-y-1 text-sm">
+                <span>{t("tempPassword")}</span>
+                <input
+                  name="password"
+                  type="password"
+                  required
+                  minLength={MIN_STAFF_PASSWORD}
+                  maxLength={128}
+                  autoComplete="new-password"
+                  className={fieldClass}
+                />
+              </label>
+            </ActionForm>
+          </section>
+          <section className="space-y-2">
+            <h2 className="font-medium">{t("access")}</h2>
+            <p className="text-xs text-muted-foreground">{a.active ? t("lockHint") : t("unlockHint")}</p>
+            <ActionButton
+              action={setAffiliateActiveAction}
+              fields={{ id: a.id, active: String(!a.active) }}
+              label={a.active ? t("lock") : t("unlock")}
+              variant={a.active ? "destructive" : "outline"}
+              confirm={a.active ? t("lockConfirm", { name: a.user.name }) : undefined}
+            />
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}

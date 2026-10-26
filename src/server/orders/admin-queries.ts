@@ -9,7 +9,7 @@ import { ORDER_STATUSES } from "./state-machine";
 
 /** Truy vấn cho admin đơn hàng (đọc, không thay đổi dữ liệu). */
 
-export type OrderListFilter = { status?: string; channel?: string; q?: string; overdue?: boolean };
+export type OrderListFilter = { status?: string; channel?: string; q?: string; overdue?: boolean; affiliateId?: string };
 
 const CHANNELS = ["WEB", "FACEBOOK", "VIBER", "PHONE"] as const;
 
@@ -21,6 +21,7 @@ export async function listOrdersAdmin(filter: OrderListFilter, now = new Date())
   if (filter.channel && (CHANNELS as readonly string[]).includes(filter.channel)) {
     where.channel = filter.channel as OrderChannel;
   }
+  if (filter.affiliateId) where.affiliateId = filter.affiliateId;
   const q = filter.q?.trim();
   if (q) {
     const phone = normalizeMmPhone(q);
@@ -41,7 +42,7 @@ export async function listOrdersAdmin(filter: OrderListFilter, now = new Date())
       where,
       orderBy: { createdAt: "desc" },
       take: 200,
-      include: { _count: { select: { items: true } } },
+      include: { _count: { select: { items: true } }, affiliate: { select: { code: true } } },
     }),
     prisma.order.findMany({ where: overdueWhere, select: { id: true } }),
   ]);
@@ -59,6 +60,8 @@ export async function getOrderAdmin(id: string, now = new Date()) {
       deliveries: { orderBy: { createdAt: "desc" } },
       reservations: true,
       documents: { select: { id: true, code: true, type: true, status: true } },
+      affiliate: { select: { id: true, code: true, user: { select: { name: true } } } },
+      payoutLines: { select: { amountMmk: true } },
     },
   });
   if (!order) return null;

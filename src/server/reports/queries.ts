@@ -5,6 +5,7 @@ import { loadVariantStock } from "@/server/alerts/queries";
 import { salesBlockDays } from "@/server/inventory/documents";
 import { bundleDefs } from "@/server/orders/availability";
 import { getNumberSetting } from "@/server/settings";
+import { commissionBaseMmk, commissionMmk } from "@/server/affiliates/commission";
 import { itemProfit } from "./profit";
 
 /**
@@ -52,7 +53,7 @@ export async function salesReport(range: Range, opts: { topN?: number } = {}) {
     dayRange(range.from, range.to).map((k) => [k, { day: k, orders: 0, revenue: 0, cogs: 0, profit: 0 }]),
   );
   const products = new Map<string, { sku: string; name: string; units: number; revenue: number; profit: number }>();
-  const totals = { orders: 0, grossRevenue: 0, returnedRevenue: 0, revenue: 0, cogs: 0, profit: 0, shippingFees: 0 };
+  const totals = { orders: 0, grossRevenue: 0, returnedRevenue: 0, revenue: 0, cogs: 0, profit: 0, shippingFees: 0, commission: 0 };
   const missingCostOrders: string[] = [];
 
   for (const o of orders) {
@@ -92,13 +93,19 @@ export async function salesReport(range: Range, opts: { topN?: number } = {}) {
     }
     totals.orders++;
     totals.shippingFees += o.shippingFeeMmk;
+    // Hoa hồng CTV (P10) ghi nhận theo ngày hoàn tất, trên tiền hàng sau khi trừ hàng trả.
+    totals.commission += commissionMmk(commissionBaseMmk(o.items), o.commissionRateBp);
     day.orders++;
     if (missing) missingCostOrders.push(o.code);
   }
 
   return {
     range,
-    totals: { ...totals, marginPct: totals.revenue > 0 ? Math.round((totals.profit / totals.revenue) * 1000) / 10 : null },
+    totals: {
+      ...totals,
+      profitAfterCommission: totals.profit - totals.commission,
+      marginPct: totals.revenue > 0 ? Math.round((totals.profit / totals.revenue) * 1000) / 10 : null,
+    },
     daily: [...days.values()],
     topProducts: [...products.values()].sort((a, b) => b.units - a.units || b.revenue - a.revenue).slice(0, opts.topN ?? 10),
     missingCostOrders,

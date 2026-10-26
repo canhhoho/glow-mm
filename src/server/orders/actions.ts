@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { ZodError } from "zod";
 import { prisma } from "@/lib/db";
-import { requirePermission } from "@/server/auth/session";
+import { can } from "@/server/auth/roles";
+import { ForbiddenError, requirePermission } from "@/server/auth/session";
 import type { ActionState } from "@/server/inventory/actions";
 import { OrderError } from "./errors";
 import { createOrder } from "./orders";
@@ -42,7 +43,10 @@ export async function createOrderAction(_prev: ActionState, formData: FormData):
   try {
     const user = await requirePermission("orders:create");
     const payload = JSON.parse(String(formData.get("payload") ?? "{}"));
-    id = (await createOrder(payload, { userId: user.id })).id;
+    // CTV được gán khi tạo đơn (P10) — chỉ nhân viên có quyền gán.
+    const affiliateId = field(formData, "affiliateId");
+    if (affiliateId && !can(user.role, "orders:assign-affiliate")) throw new ForbiddenError("orders:assign-affiliate");
+    id = (await createOrder(payload, { userId: user.id, affiliate: affiliateId ? { source: "STAFF", id: affiliateId } : undefined })).id;
   } catch (e) {
     return { error: await message(e) };
   }

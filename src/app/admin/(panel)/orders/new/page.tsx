@@ -1,18 +1,21 @@
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
+import { can } from "@/server/auth/roles";
+import { affiliateOptions } from "@/server/affiliates/affiliates";
 import { findCustomerByPhone, orderFormOptions } from "@/server/orders/admin-queries";
 import { OrderForm, type OrderFormInitial } from "@/components/admin/order-form";
 import { fieldClass, LinkButton, PageHeader } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 
 export default async function NewOrderPage({ searchParams }: PageProps<"/admin/orders/new">) {
-  await requirePagePermission("orders:create");
+  const user = await requirePagePermission("orders:create");
   const { phone } = await searchParams;
   const lookup = typeof phone === "string" && phone.trim() ? phone.trim() : undefined;
-  const [t, options, customer] = await Promise.all([
+  const [t, options, customer, affiliates] = await Promise.all([
     getTranslations("Orders"),
     orderFormOptions(),
     lookup ? findCustomerByPhone(lookup) : null,
+    can(user.role, "orders:assign-affiliate") ? affiliateOptions() : undefined,
   ]);
   const address = customer?.addresses[0];
   const initial: OrderFormInitial = {
@@ -39,7 +42,7 @@ export default async function NewOrderPage({ searchParams }: PageProps<"/admin/o
           </p>
         )}
       </form>
-      <OrderForm key={lookup ?? ""} options={options} initial={initial} />
+      <OrderForm key={lookup ?? ""} options={options} initial={initial} affiliates={affiliates} />
     </div>
   );
 }

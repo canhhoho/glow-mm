@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
+import { affiliateOptions } from "@/server/affiliates/affiliates";
 import { listOrdersAdmin } from "@/server/orders/admin-queries";
 import { ORDER_STATUSES } from "@/server/orders/state-machine";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/admin/order-badges";
@@ -15,8 +16,14 @@ const str = (v: string | string[] | undefined) => (typeof v === "string" ? v : u
 export default async function OrdersPage({ searchParams }: PageProps<"/admin/orders">) {
   const user = await requirePagePermission("orders:view");
   const sp = await searchParams;
-  const filter = { status: str(sp.status), channel: str(sp.channel), q: str(sp.q), overdue: sp.overdue === "1" };
-  const [t, orders] = await Promise.all([getTranslations("Orders"), listOrdersAdmin(filter)]);
+  const filter = {
+    status: str(sp.status),
+    channel: str(sp.channel),
+    q: str(sp.q),
+    overdue: sp.overdue === "1",
+    affiliateId: str(sp.affiliate),
+  };
+  const [t, orders, affiliates] = await Promise.all([getTranslations("Orders"), listOrdersAdmin(filter), affiliateOptions()]);
 
   return (
     <div className="space-y-4">
@@ -48,6 +55,16 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
             </option>
           ))}
         </select>
+        {affiliates.length > 0 && (
+          <select name="affiliate" defaultValue={filter.affiliateId ?? ""} aria-label={t("colAffiliate")} className={`${fieldClass} w-auto`}>
+            <option value="">{t("allAffiliates")}</option>
+            {affiliates.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.label}
+              </option>
+            ))}
+          </select>
+        )}
         <label className="flex items-center gap-1.5 text-sm">
           <input type="checkbox" name="overdue" value="1" defaultChecked={filter.overdue} />
           {t("overdueOnly")}
@@ -76,7 +93,14 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
               {o.recipientName}
               <div className="font-mono text-xs text-muted-foreground">{o.recipientPhone}</div>
             </Td>
-            <Td>{t(`channel.${o.channel}`)}</Td>
+            <Td>
+              {t(`channel.${o.channel}`)}
+              {o.affiliate && (
+                <div className="font-mono text-xs text-muted-foreground" title={t("colAffiliate")}>
+                  {t("colAffiliate")}: {o.affiliate.code}
+                </div>
+              )}
+            </Td>
             <Td>
               <div className="flex flex-col items-start gap-1">
                 <span className="text-xs">{t(`method.${o.paymentMethod}`)}</span>

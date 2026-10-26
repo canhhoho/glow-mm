@@ -5,6 +5,11 @@ import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { getOrderAdmin, quarantineLocations, sellableLocations } from "@/server/orders/admin-queries";
 import { returnItemsAction, reviewProofAction } from "@/server/orders/actions";
+import { assignOrderAffiliateAction } from "@/server/affiliates/actions";
+import { affiliateOptions } from "@/server/affiliates/affiliates";
+import { bpToPercent, orderCommission } from "@/server/affiliates/commission";
+import { getNumberSetting } from "@/server/settings";
+import { CommissionBadge } from "@/components/admin/affiliate-parts";
 import { availableTransitions, TRANSITIONS } from "@/server/orders/state-machine";
 import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
@@ -16,13 +21,22 @@ import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
 export default async function OrderPage({ params }: PageProps<"/admin/orders/[id]">) {
   const user = await requirePagePermission("orders:view");
   const { id } = await params;
-  const [t, order, locations, qcLocations] = await Promise.all([
+  const canAssign = can(user.role, "orders:assign-affiliate");
+  const [t, ta, order, locations, qcLocations, affiliates, holdDays] = await Promise.all([
     getTranslations("Orders"),
+    getTranslations("Affiliates"),
     getOrderAdmin(id),
     sellableLocations(),
     quarantineLocations(),
+    canAssign ? affiliateOptions() : [],
+    getNumberSetting("affiliate.holdDays"),
   ]);
   if (!order) notFound();
+  const commission = orderCommission(
+    { ...order, paidMmk: order.payoutLines.reduce((s, l) => s + l.amountMmk, 0) },
+    { now: new Date(), holdDays },
+  );
+  const affiliatePaid = order.payoutLines.length > 0;
 
   // "returned" chỉ qua form Trả hàng (kèm phiếu nhập hàng trả vào Chờ kiểm tra).
   const transitions = availableTransitions(order).filter(
@@ -119,6 +133,55 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
             </>
           )}
         </dl>
+      </section>
+
+      <section className="space-y-2 rounded-lg border p-4" data-testid="order-affiliate">
+        <h2 className="font-medium">{ta("orderSection")}</h2>
+        {order.affiliate ? (
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+            <dt className="text-muted-foreground">{t("colAffiliate")}</dt>
+            <dd>
+              <span className="font-mono">{order.affiliate.code}</span> — {order.affiliate.user.name}
+              {order.affiliateSource && <span className="ml-2 text-xs text-muted-foreground">({ta(`source.${order.affiliateSource}`)})</span>}
+            </dd>
+            <dt className="text-muted-foreground">{ta("colCommission")}</dt>
+            <dd className="flex flex-wrap items-center gap-2">
+              <span className="tabular-nums">{fmtInt(commission.commissionMmk)} MMK</span>
+              <span className="text-xs text-muted-foreground">
+                ({ta("rate")}: {bpToPercent(order.commissionRateBp ?? 0)}%)
+              </span>
+              <CommissionBadge state={commission.state} />
+            </dd>
+          </dl>
+        ) : (
+          <p className="text-sm text-muted-foreground">{ta("none")}</p>
+        )}
+        {canAssign &&
+          (affiliatePaid ? (
+            <p className="text-xs text-muted-foreground">{ta("paidLocked")}</p>
+          ) : (
+            <ActionForm action={assignOrderAffiliateAction} submitLabel={ta("assign")} okText={ta("assigned")} variant="outline">
+              <input type="hidden" name="orderId" value={order.id} />
+              <select
+                name="affiliateId"
+                defaultValue={order.affiliateId ?? ""}
+                aria-label={t("colAffiliate")}
+                className={`${fieldClass} max-w-sm`}
+              >
+                <option value="">{ta("assignNone")}</option>
+                {order.affiliate && !affiliates.some((a) => a.id === order.affiliate!.id) && (
+                  <option value={order.affiliate.id}>
+                    {order.affiliate.code} — {order.affiliate.user.name} ({ta("locked")})
+                  </option>
+                )}
+                {affiliates.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.label}
+                  </option>
+                ))}
+              </select>
+            </ActionForm>
+          ))}
       </section>
 
       <section className="space-y-2">

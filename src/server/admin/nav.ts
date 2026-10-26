@@ -21,6 +21,7 @@ export type NavIcon =
   | "layers"
   | "chart"
   | "users"
+  | "handshake"
   | "gear";
 
 /** Số đếm hiện ở badge (xem `navCounts`). */
@@ -37,6 +38,7 @@ export const NAV: NavGroup[] = [
     items: [
       { href: "/admin/orders", key: "orders", permission: "orders:view", icon: "cart", count: "pendingOrders" },
       { href: "/admin/reviews", key: "reviews", permission: "reviews:moderate", icon: "star" },
+      { href: "/admin/affiliates", key: "affiliates", permission: "affiliates:manage", icon: "handshake" },
     ],
   },
   {

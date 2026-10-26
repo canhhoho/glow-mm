@@ -1,6 +1,14 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
+import {
+  affiliateOrders,
+  assignOrderAffiliate,
+  createAffiliate,
+  getAffiliate,
+  recordPayout,
+} from "@/server/affiliates/affiliates";
 import { createOrder } from "@/server/orders/orders";
+import { returnItems } from "@/server/orders/returns";
 import { transitionOrder } from "@/server/orders/transitions";
 import { admin, orderInput, saleFixture, unpublishTestProducts, type SaleFixture } from "./fixtures";
 
@@ -73,5 +81,97 @@ describe("Gắn CTV khi tạo đơn (P10)", () => {
     await transitionOrder(order.id, "ship", admin(f));
     const done = await transitionOrder(order.id, "complete", admin(f), {}, at);
     expect(done).toMatchObject({ status: "COMPLETED", completedAt: at });
+  });
+});
+
+const DAY = 24 * 60 * 60 * 1000;
+
+/** Đơn của CTV đã hoàn thành `daysAgo` ngày trước (qua hạn giữ 7 ngày nếu > 7). */
+async function completedOrder(f: SaleFixture, affiliateCode: string, qty: number, daysAgo: number) {
+  const order = await createOrder(orderInput(f, qty), { userId: null, affiliate: { source: "LINK", code: affiliateCode } });
+  await transitionOrder(order.id, "confirmCod", admin(f));
+  await transitionOrder(order.id, "pack", admin(f), { fromLocationId: f.mm.id });
+  await transitionOrder(order.id, "ship", admin(f));
+  await transitionOrder(order.id, "complete", admin(f), {}, new Date(Date.now() - daysAgo * DAY));
+  return order;
+}
+
+describe("Quản lý CTV + chi trả (P10b)", () => {
+  it("tạo CTV: user AFFILIATE (mặc định tiếng Myanmar) + hồ sơ; trùng mã / email → lỗi riêng", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 1 }]);
+    const base = { name: "Ko Aung", phone: "09 7812 3456", commissionPercent: "12.5", password: "mat-khau-tam-12" };
+    const a = await createAffiliate({ ...base, email: `ctv-${f.tag.toLowerCase()}@glow.local`, code: `n${f.tag}` }, f.userId);
+    expect(a).toMatchObject({ code: `N${f.tag}`, phone: "0978123456", commissionRateBp: 1250 });
+    expect(await prisma.user.findUniqueOrThrow({ where: { id: a.userId } })).toMatchObject({ role: "AFFILIATE", locale: "my" });
+
+    await expect(
+      createAffiliate({ ...base, email: `ctv2-${f.tag.toLowerCase()}@glow.local`, code: `N${f.tag}` }, f.userId),
+    ).rejects.toMatchObject({ code: "code_taken" });
+    await expect(
+      createAffiliate({ ...base, email: `ctv-${f.tag.toLowerCase()}@glow.local`, code: `M${f.tag}` }, f.userId),
+    ).rejects.toMatchObject({ code: "email_taken" });
+    await expect(
+      createAffiliate({ ...base, email: `ctv3-${f.tag.toLowerCase()}@glow.local`, code: "ab" }, f.userId),
+    ).rejects.toMatchObject({ code: "invalid_code" });
+  });
+
+  it("gán CTV cho đơn: chốt % hiện tại, kho không có quyền, CTV bị khoá → lỗi", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
+    const a = await makeAffiliate(f, { rateBp: 900 });
+    const locked = await makeAffiliate(f, { suffix: "L", active: false });
+    const order = await createOrder(orderInput(f, 1), { userId: null });
+    const staff = { userId: f.userId, role: "ORDER_STAFF" as const };
+
+    await expect(assignOrderAffiliate(order.id, a.id, { userId: f.userId, role: "WAREHOUSE_MANAGER" })).rejects.toMatchObject({
+      code: "forbidden",
+    });
+    await expect(assignOrderAffiliate(order.id, locked.id, staff)).rejects.toMatchObject({ code: "not_found" });
+    expect(await assignOrderAffiliate(order.id, a.id, staff)).toMatchObject({ affiliateId: a.id, affiliateSource: "STAFF", commissionRateBp: 900 });
+    expect(await assignOrderAffiliate(order.id, null, staff)).toMatchObject({ affiliateId: null, commissionRateBp: null });
+  });
+
+  it("chi trả: chỉ đơn qua hạn giữ; bấm 2 lần đồng thời chỉ ghi 1; không còn gì → nothing_due; đơn đã trả khoá gán CTV", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 10 }]);
+    const a = await makeAffiliate(f, { rateBp: 1000 });
+    const old = await completedOrder(f, a.code, 2, 10); // 20 000 → 2 000
+    await completedOrder(f, a.code, 1, 2); // còn trong hạn giữ → chờ
+
+    const detail = await getAffiliate(a.id);
+    expect(detail!.summary).toMatchObject({ payableMmk: 2000, pendingMmk: 1000, paidMmk: 0 });
+
+    const results = await Promise.allSettled([
+      recordPayout(a.id, { note: "KBZPay 123" }, f.userId),
+      recordPayout(a.id, { note: "KBZPay 123" }, f.userId),
+    ]);
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    expect(results.find((r) => r.status === "rejected")).toMatchObject({ reason: { code: "nothing_due" } });
+    const payouts = await prisma.affiliatePayout.findMany({ where: { affiliateId: a.id }, include: { lines: true } });
+    expect(payouts).toHaveLength(1);
+    expect(payouts[0]).toMatchObject({ amountMmk: 2000, lines: [{ orderId: old.id, amountMmk: 2000 }] });
+
+    await expect(assignOrderAffiliate(old.id, null, admin(f))).rejects.toMatchObject({ code: "order_paid" });
+    expect((await getAffiliate(a.id))!.summary).toMatchObject({ payableMmk: 0, pendingMmk: 1000, paidMmk: 2000 });
+  });
+
+  it("khách trả hàng sau khi đã chi → số âm trừ vào lần chi sau", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 10 }]);
+    const a = await makeAffiliate(f, { rateBp: 1000 });
+    const first = await completedOrder(f, a.code, 2, 10); // 2 000
+    await recordPayout(a.id, {}, f.userId);
+
+    const item = await prisma.orderItem.findFirstOrThrow({ where: { orderId: first.id } });
+    await returnItems(first.id, { toLocationId: f.qc.id, lines: [{ orderItemId: item.id, qty: 1 }], reason: "Hỏng" }, admin(f));
+    await completedOrder(f, a.code, 3, 9); // +3 000
+
+    const orders = await affiliateOrders(a.id);
+    expect(orders.find((o) => o.id === first.id)!.commission).toMatchObject({ commissionMmk: 1000, dueMmk: -1000 });
+    const second = await recordPayout(a.id, {}, f.userId);
+    expect(second.amountMmk).toBe(2000); // 3 000 − 1 000
+  });
+
+  it("tổng không dương → không cho chi", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 10 }]);
+    const a = await makeAffiliate(f);
+    await expect(recordPayout(a.id, {}, f.userId)).rejects.toMatchObject({ code: "nothing_due" });
   });
 });

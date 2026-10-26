@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Coins,
   FileText,
+  Handshake,
   Folder,
   House,
   Image,
@@ -45,6 +46,7 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   layers: Layers,
   chart: ChartColumn,
   users: Users,
+  handshake: Handshake,
   gear: Settings,
 };
 
