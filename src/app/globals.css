@@ -154,6 +154,11 @@
   html {
     @apply font-sans;
   }
+  /* Chrome tô nền xanh cho ô đã tự điền → phủ lại bằng màu thẻ */
+  input:-webkit-autofill {
+    box-shadow: 0 0 0 1000px var(--card) inset;
+    -webkit-text-fill-color: var(--foreground);
+  }
   /* Chữ Myanmar cần line-height cao hơn Latin */
   :lang(my) body {
     line-height: 1.8;

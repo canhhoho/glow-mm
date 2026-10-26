@@ -13,7 +13,7 @@ import { SwRegister } from "@/components/store/sw-register";
 
 /**
  * Font Myanmar tự host: chỉ phần chữ Myanmar, 1 độ đậm (400) để nhẹ trên 3G; Next tự preload + tạo fallback metric.
- * Chữ Latin dùng font hệ thống. (Admin vẫn dùng @fontsource đầy đủ 400/500.)
+ * Chữ Latin dùng font hệ thống. (Admin dùng cùng cách, thêm độ đậm 500.)
  */
 const myanmarFont = localFont({
   src: "../../../node_modules/@fontsource/noto-sans-myanmar/files/noto-sans-myanmar-myanmar-400-normal.woff2",
@@ -22,6 +22,9 @@ const myanmarFont = localFont({
   fallback: ["ui-sans-serif", "system-ui", "sans-serif"],
   // Font chỉ có chữ Myanmar → chữ Latin dùng thẳng font hệ thống, không cần fallback chỉnh metric theo Arial.
   adjustFontFallback: false,
+  // Thiếu unicode-range thì trình duyệt vẫn lấy ascent/descent rất cao của font này cho chữ Latin (chữ trong nút lệch)
+  // và tải font cả ở trang /en. Giá trị lấy từ subset "myanmar" của @fontsource.
+  declarations: [{ prop: "unicode-range", value: "U+1000-109F, U+200C-200D, U+25CC, U+A92E, U+A9E0-A9FE, U+AA60-AA7F, U+116D0-116E3" }],
 });
 
 /** Chỉ gửi xuống client các namespace mà Client Component storefront dùng (giảm kích thước trang). */

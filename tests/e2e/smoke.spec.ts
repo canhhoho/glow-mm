@@ -44,7 +44,7 @@ for (const [email, roleText, canSeePricing] of [
 test("sai mật khẩu → báo lỗi", async ({ page }) => {
   await page.goto("/admin/login");
   await page.getByLabel("Email").fill("admin@glow.local");
-  await page.getByLabel("Mật khẩu").fill("wrong-password");
+  await page.getByLabel("Mật khẩu", { exact: true }).fill("wrong-password");
   await page.getByRole("button", { name: "Đăng nhập" }).click();
   await expect(page.getByText("Sai email hoặc mật khẩu")).toBeVisible();
 });

@@ -39,7 +39,10 @@
     "submit": "Đăng nhập",
     "error": "Sai email hoặc mật khẩu",
     "tooMany": "Đăng nhập quá nhiều lần. Vui lòng thử lại sau ít phút.",
-    "locked": "Tài khoản đã bị khoá. Liên hệ quản trị viên."
+    "locked": "Tài khoản đã bị khoá. Liên hệ quản trị viên.",
+    "subtitle": "Dùng tài khoản nhân viên để tiếp tục",
+    "showPassword": "Hiện mật khẩu",
+    "hidePassword": "Ẩn mật khẩu"
   },
   "Dashboard": {
     "welcome": "Xin chào, {name}",

@@ -33,7 +33,7 @@ test("nhân viên tự đổi mật khẩu → đăng nhập bằng mật khẩu
     await page.context().clearCookies();
     await page.goto("/admin/login");
     await page.getByLabel("Email").fill(EMAIL);
-    await page.getByLabel("Mật khẩu").fill(NEW_PASSWORD);
+    await page.getByLabel("Mật khẩu", { exact: true }).fill(NEW_PASSWORD);
     await page.getByRole("button", { name: "Đăng nhập" }).click();
     await expect(page.getByTestId("role")).toBeVisible();
   } finally {

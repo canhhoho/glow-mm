@@ -39,7 +39,10 @@
     "submit": "Sign in",
     "error": "Wrong email or password",
     "tooMany": "Too many sign-in attempts. Try again in a few minutes.",
-    "locked": "This account is locked. Contact an administrator."
+    "locked": "This account is locked. Contact an administrator.",
+    "subtitle": "Use your staff account to continue",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "Dashboard": {
     "welcome": "Hello, {name}",

@@ -56,7 +56,7 @@ test("admin tạo nhân viên → nhân viên đăng nhập đúng quyền → a
     await staff.goto("/admin");
     await expect(staff).toHaveURL(/\/admin\/login$/);
     await staff.getByLabel("Email").fill(email);
-    await staff.getByLabel("Mật khẩu").fill(password);
+    await staff.getByLabel("Mật khẩu", { exact: true }).fill(password);
     await staff.getByRole("button", { name: "Đăng nhập" }).click();
     await expect(staff.getByRole("alert").filter({ hasText: "Tài khoản đã bị khoá. Liên hệ quản trị viên." })).toBeVisible();
   } finally {

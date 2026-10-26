@@ -3,17 +3,22 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { USER_INACTIVE } from "@/server/auth/roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+const field = "h-11 bg-card pl-9";
+const fieldIcon = "pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground";
+
 export function LoginForm() {
   const t = useTranslations("Login");
   const router = useRouter();
   const [error, setError] = useState<"error" | "tooMany" | "locked" | null>(null);
   const [pending, setPending] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -34,18 +39,41 @@ export function LoginForm() {
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="email">{t("email")}</Label>
-        <Input id="email" name="email" type="email" autoComplete="username" required />
+        <div className="relative">
+          <Mail className={fieldIcon} aria-hidden />
+          <Input id="email" name="email" type="email" autoComplete="username" required className={field} />
+        </div>
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">{t("password")}</Label>
-        <Input id="password" name="password" type="password" autoComplete="current-password" required />
+        <div className="relative">
+          <Lock className={fieldIcon} aria-hidden />
+          <Input
+            id="password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            required
+            className={`${field} pr-11`}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            aria-label={t(showPassword ? "hidePassword" : "showPassword")}
+            aria-pressed={showPassword}
+            className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-r-lg text-muted-foreground hover:text-foreground"
+          >
+            {showPassword ? <EyeOff className="size-4" aria-hidden /> : <Eye className="size-4" aria-hidden />}
+          </button>
+        </div>
       </div>
       {error && (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {t(error)}
         </p>
       )}
-      <Button type="submit" className="w-full" disabled={pending}>
+      <Button type="submit" className="h-11 w-full text-base" disabled={pending}>
+        {pending && <Loader2 className="animate-spin" aria-hidden />}
         {t("submit")}
       </Button>
     </form>
