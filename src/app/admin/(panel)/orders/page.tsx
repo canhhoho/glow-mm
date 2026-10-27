@@ -9,6 +9,7 @@ import { OrderStatusBadge, PaymentStatusBadge } from "@/components/admin/order-b
 import { Badge, DataTable, fieldClass, LinkButton, PageHeader, Td } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import { fmtDate, fmtInt } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 const CHANNELS = ["WEB", "FACEBOOK", "VIBER", "PHONE"] as const;
 const str = (v: string | string[] | undefined) => (typeof v === "string" ? v : undefined);
@@ -38,8 +39,8 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
         }
       />
       <form role="search" className="flex flex-wrap items-center gap-2">
-        <input name="q" defaultValue={filter.q} placeholder={t("search")} className={`${fieldClass} max-w-60`} />
-        <select name="status" defaultValue={filter.status ?? ""} aria-label={t("colStatus")} className={`${fieldClass} w-auto`}>
+        <input name="q" defaultValue={filter.q} placeholder={t("search")} className={cn(fieldClass, "max-w-60")} />
+        <select name="status" defaultValue={filter.status ?? ""} aria-label={t("colStatus")} className={cn(fieldClass, "w-auto")}>
           <option value="">{t("allStatuses")}</option>
           {ORDER_STATUSES.map((s) => (
             <option key={s} value={s}>
@@ -47,7 +48,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
             </option>
           ))}
         </select>
-        <select name="channel" defaultValue={filter.channel ?? ""} aria-label={t("colChannel")} className={`${fieldClass} w-auto`}>
+        <select name="channel" defaultValue={filter.channel ?? ""} aria-label={t("colChannel")} className={cn(fieldClass, "w-auto")}>
           <option value="">{t("allChannels")}</option>
           {CHANNELS.map((c) => (
             <option key={c} value={c}>
@@ -56,7 +57,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
           ))}
         </select>
         {affiliates.length > 0 && (
-          <select name="affiliate" defaultValue={filter.affiliateId ?? ""} aria-label={t("colAffiliate")} className={`${fieldClass} w-auto`}>
+          <select name="affiliate" defaultValue={filter.affiliateId ?? ""} aria-label={t("colAffiliate")} className={cn(fieldClass, "w-auto")}>
             <option value="">{t("allAffiliates")}</option>
             {affiliates.map((a) => (
               <option key={a.id} value={a.id}>
@@ -77,6 +78,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
       <DataTable
         empty={t("empty")}
         head={[t("colCode"), t("colCreated"), t("colCustomer"), t("colChannel"), t("colPayment"), t("colTotal"), t("colStatus")]}
+        numeric={[5]}
       >
         {orders.map((o) => (
           <tr key={o.id}>

@@ -6,6 +6,7 @@ import { findCustomerByPhone, orderFormOptions } from "@/server/orders/admin-que
 import { OrderForm, type OrderFormInitial } from "@/components/admin/order-form";
 import { fieldClass, LinkButton, PageHeader } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default async function NewOrderPage({ searchParams }: PageProps<"/admin/orders/new">) {
   const user = await requirePagePermission("orders:create");
@@ -31,7 +32,7 @@ export default async function NewOrderPage({ searchParams }: PageProps<"/admin/o
       <form role="search" className="flex flex-wrap items-end gap-2">
         <label className="space-y-1 text-sm">
           <span className="text-muted-foreground">{t("lookupPhone")}</span>
-          <input name="phone" type="tel" inputMode="tel" defaultValue={lookup} className={`${fieldClass} w-56`} />
+          <input name="phone" type="tel" inputMode="tel" defaultValue={lookup} className={cn(fieldClass, "w-56")} />
         </label>
         <Button type="submit" variant="outline">
           {t("lookup")}

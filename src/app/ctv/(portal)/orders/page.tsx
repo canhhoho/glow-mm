@@ -6,6 +6,7 @@ import { affiliateOrders, currentMonth } from "@/server/affiliates/affiliates";
 import { fieldClass } from "@/components/admin/ui";
 import { CtvOrderCard } from "@/components/ctv/ctv-order-card";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const STATES: CommissionState[] = ["pending", "payable", "void"];
 const str = (v: string | string[] | undefined) => (typeof v === "string" ? v.trim() : "");
@@ -34,12 +35,12 @@ export default async function CtvOrdersPage({ searchParams }: PageProps<"/ctv/or
             name="month"
             type="month"
             defaultValue={month}
-            className={`${fieldClass} h-10 min-w-0 appearance-none text-left sm:w-44 [&::-webkit-date-and-time-value]:text-left`}
+            className={cn(fieldClass, "h-10 min-w-0 appearance-none text-left sm:w-44 [&::-webkit-date-and-time-value]:text-left")}
           />
         </label>
         <label className="min-w-0 space-y-1 text-sm">
           <span className="block text-muted-foreground">{ta("state")}</span>
-          <select name="state" defaultValue={state ?? ""} className={`${fieldClass} h-10 min-w-0 sm:w-auto`}>
+          <select name="state" defaultValue={state ?? ""} className={cn(fieldClass, "h-10 min-w-0 sm:w-auto")}>
             <option value="">{ta("allStates")}</option>
             {STATES.map((s) => (
               <option key={s} value={s}>

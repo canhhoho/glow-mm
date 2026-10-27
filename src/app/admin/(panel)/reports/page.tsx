@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { DataTable, fieldClass, PageHeader, Stat, Td } from "@/components/admin/ui";
 import { fmtDay, fmtInt } from "@/lib/format";
 import { addDays } from "@/lib/time";
+import { cn } from "@/lib/utils";
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_DAYS = 366;
@@ -44,11 +45,11 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
       <form className="flex flex-wrap items-end gap-2">
         <label className="space-y-1 text-sm">
           <span className="text-muted-foreground">{t("from")}</span>
-          <input type="date" name="from" defaultValue={range.from} className={`${fieldClass} w-40`} />
+          <input type="date" name="from" defaultValue={range.from} className={cn(fieldClass, "w-40")} />
         </label>
         <label className="space-y-1 text-sm">
           <span className="text-muted-foreground">{t("to")}</span>
-          <input type="date" name="to" defaultValue={range.to} className={`${fieldClass} w-40`} />
+          <input type="date" name="to" defaultValue={range.to} className={cn(fieldClass, "w-40")} />
         </label>
         <Button type="submit" variant="outline">
           {t("apply")}

@@ -9,6 +9,7 @@ import { listApplications } from "@/server/affiliates/applications";
 import { getNumberSetting } from "@/server/settings";
 import { ActionForm } from "@/components/admin/action-form";
 import { Badge, DataTable, fieldClass, LinkButton, PageHeader, Td } from "@/components/admin/ui";
+import { cn } from "@/lib/utils";
 
 /** Duyệt đơn đăng ký CTV qua link mời (P11b). */
 export default async function AffiliateApplicationsPage() {
@@ -59,7 +60,7 @@ export default async function AffiliateApplicationsPage() {
                         maxLength={12}
                         pattern="[A-Za-z0-9]{4,12}"
                         defaultValue={suggestAffiliateCode()}
-                        className={`${fieldClass} font-mono uppercase`}
+                        className={cn(fieldClass, "font-mono uppercase")}
                       />
                     </label>
                     <label className="block space-y-1 text-sm">

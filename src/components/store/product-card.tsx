@@ -2,6 +2,7 @@ import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { formatMmk } from "@/lib/money";
+import { cn } from "@/lib/utils";
 import type { ProductCardData } from "@/server/catalog/store-queries";
 import { ImageFallback } from "./ui";
 
@@ -14,7 +15,7 @@ export async function ProductCard({ p, locale }: { p: ProductCardData; locale: s
   return (
     <li className="snap-start rounded-lg border border-border bg-card p-2 transition-shadow hover:shadow-md">
       <Link href={`/p/${p.slug}`} className="flex h-full flex-col">
-        <div className="relative mb-2 aspect-square overflow-hidden rounded-md bg-accent">
+        <div className={cn("relative mb-2 aspect-square overflow-hidden rounded-md bg-accent", !p.inStock && "opacity-60")}>
           {p.imageUrl ? (
             <Image src={p.imageUrl} alt={p.imageAlt ?? p.name} fill sizes={CARD_SIZES} className="object-cover" />
           ) : (
@@ -27,9 +28,14 @@ export async function ProductCard({ p, locale }: { p: ProductCardData; locale: s
         <p className="text-xs text-muted-foreground">{p.brand}</p>
         <p className="line-clamp-2 text-sm">{p.name}</p>
         <p className="mt-auto pt-1 font-semibold text-brand">{t("from", { price: formatMmk(p.priceMmk, locale) })}</p>
-        {/* Cả thẻ là link tới trang SP (chọn biến thể ở đó); "nút" chỉ là gợi ý thị giác. */}
-        <span className="mt-2 flex min-h-9 items-center justify-center rounded-md bg-accent text-sm text-accent-foreground">
-          {t("choose")}
+        {/* Cả thẻ là link tới trang SP (chọn biến thể ở đó); "nút" chỉ là gợi ý thị giác. Hết hàng → không mời "chọn". */}
+        <span
+          className={cn(
+            "mt-2 flex min-h-9 items-center justify-center rounded-md text-sm",
+            p.inStock ? "bg-accent text-accent-foreground" : "border border-border text-muted-foreground",
+          )}
+        >
+          {p.inStock ? t("choose") : tp("outOfStock")}
         </span>
       </Link>
     </li>

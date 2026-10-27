@@ -50,7 +50,8 @@ export function LoginForm({ portal }: { portal: "admin" | "ctv" }) {
         <Label htmlFor="email">{t("email")}</Label>
         <div className="relative">
           <Mail className={fieldIcon} aria-hidden />
-          <Input id="email" name="email" type="email" autoComplete="username" required className={field} />
+          {/* section-<cổng>: trình duyệt nhớ tài khoản riêng cho admin / cổng CTV (cùng tên miền). */}
+          <Input id="email" name="email" type="email" autoComplete={`section-${portal} username`} required className={field} />
         </div>
       </div>
       <div className="space-y-2">
@@ -61,7 +62,7 @@ export function LoginForm({ portal }: { portal: "admin" | "ctv" }) {
             id="password"
             name="password"
             type={showPassword ? "text" : "password"}
-            autoComplete="current-password"
+            autoComplete={`section-${portal} current-password`}
             required
             className={`${field} pr-11`}
           />

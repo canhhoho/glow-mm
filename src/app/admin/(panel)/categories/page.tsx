@@ -11,6 +11,7 @@ import { CategoryIconUpload } from "@/components/admin/category-icon-upload";
 import { ParentSelect } from "@/components/admin/parent-select";
 import { fieldClass, PageHeader } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /** Quản lý danh mục: tên my/en, danh mục cha (tối đa 2 cấp), thứ tự, icon nhóm hàng trên trang chủ. */
 export default async function CategoriesPage({ searchParams }: PageProps<"/admin/categories">) {
@@ -29,7 +30,7 @@ export default async function CategoriesPage({ searchParams }: PageProps<"/admin
       <PageHeader title={t("title")} />
       <p className="text-sm text-muted-foreground">{t("intro")}</p>
       <form className="flex flex-wrap gap-2">
-        <input name="q" type="search" defaultValue={query} placeholder={t("search")} aria-label={t("search")} className={`${fieldClass} max-w-sm`} />
+        <input name="q" type="search" defaultValue={query} placeholder={t("search")} aria-label={t("search")} className={cn(fieldClass, "max-w-sm")} />
         <Button type="submit" variant="outline">
           {t("searchBtn")}
         </Button>

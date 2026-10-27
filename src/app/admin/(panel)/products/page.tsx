@@ -5,6 +5,7 @@ import { listProductsAdmin } from "@/server/catalog/admin-queries";
 import { BrandForm } from "@/components/admin/catalog-forms";
 import { Badge, DataTable, fieldClass, LinkButton, PageHeader, Td } from "@/components/admin/ui";
 import { fmtInt } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export default async function ProductsPage({ searchParams }: PageProps<"/admin/products">) {
   await requirePagePermission("catalog:manage");
@@ -26,7 +27,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
         ]}
       />
       <form role="search" className="flex gap-2">
-        <input name="q" defaultValue={query} placeholder={t("search")} className={`${fieldClass} max-w-xs`} />
+        <input name="q" defaultValue={query} placeholder={t("search")} className={cn(fieldClass, "max-w-xs")} />
       </form>
       <DataTable empty={t("empty")} head={[t("colName"), t("colBrand"), t("colCategory"), t("colVariants"), t("colStatus")]}>
         {products.map((p) => (

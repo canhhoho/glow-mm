@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { MIN_STAFF_PASSWORD } from "@/server/auth/roles";
 import type { CommissionState } from "@/server/affiliates/commission";
 import { Badge, fieldClass, type TONES } from "@/components/admin/ui";
+import { cn } from "@/lib/utils";
 
 /** Phần dùng chung của trang CTV (admin; cổng CTV dùng lại badge). */
 
@@ -49,7 +50,7 @@ export async function AffiliateFields({ values, withLogin }: { values?: Partial<
           pattern="[A-Za-z0-9]{4,12}"
           autoCapitalize="characters"
           defaultValue={values?.code}
-          className={`${fieldClass} font-mono uppercase`}
+          className={cn(fieldClass, "font-mono uppercase")}
         />
         <span className="block text-xs text-muted-foreground">{t("codeHint")}</span>
       </label>
@@ -70,7 +71,7 @@ export async function AffiliateFields({ values, withLogin }: { values?: Partial<
       </label>
       <label className="block space-y-1 text-sm">
         <span>{t("payoutInfo")}</span>
-        <textarea name="payoutInfo" rows={2} maxLength={500} defaultValue={values?.payoutInfo ?? ""} className={`${fieldClass} h-auto py-1.5`} />
+        <textarea name="payoutInfo" rows={2} maxLength={500} defaultValue={values?.payoutInfo ?? ""} className={cn(fieldClass, "h-auto py-1.5")} />
         <span className="block text-xs text-muted-foreground">{t("payoutInfoHint")}</span>
       </label>
       {withLogin && (

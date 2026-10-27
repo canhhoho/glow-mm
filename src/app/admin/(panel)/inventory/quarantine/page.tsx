@@ -8,6 +8,7 @@ import { sellableLocations } from "@/server/orders/admin-queries";
 import { ActionForm } from "@/components/admin/action-form";
 import { DataTable, fieldClass, LinkButton, PageHeader, Td } from "@/components/admin/ui";
 import { fmtDay, fmtInt } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export default async function QuarantinePage() {
   const user = await requirePagePermission("stock:view");
@@ -64,9 +65,9 @@ export default async function QuarantinePage() {
                         max={r.qty}
                         defaultValue={r.qty}
                         aria-label={`${t("qty")} ${t("restock")}`}
-                        className={`${fieldClass} w-20`}
+                        className={cn(fieldClass, "w-20")}
                       />
-                      <select name="toId" aria-label={t("restockTo")} defaultValue={locations[0].id} className={`${fieldClass} w-36`}>
+                      <select name="toId" aria-label={t("restockTo")} defaultValue={locations[0].id} className={cn(fieldClass, "w-36")}>
                         {locations.map((l) => (
                           <option key={l.id} value={l.id}>
                             {l.code}
@@ -92,9 +93,9 @@ export default async function QuarantinePage() {
                         max={r.qty}
                         defaultValue={r.qty}
                         aria-label={`${t("qty")} ${t("discard")}`}
-                        className={`${fieldClass} w-20`}
+                        className={cn(fieldClass, "w-20")}
                       />
-                      <input name="reason" required placeholder={t("reason")} aria-label={t("reason")} className={`${fieldClass} w-40`} />
+                      <input name="reason" required placeholder={t("reason")} aria-label={t("reason")} className={cn(fieldClass, "w-40")} />
                     </ActionForm>
                   )}
                 </div>

@@ -15,6 +15,7 @@ import { ActionForm } from "@/components/admin/action-form";
 import { CollectionFields } from "@/components/admin/collection-fields";
 import { Badge, fieldClass, LinkButton, PageHeader } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const SEARCH_LIMIT = 20;
 
@@ -100,7 +101,7 @@ export default async function EditCollectionPage({ params, searchParams }: PageP
           {t("addProducts")}
         </h2>
         <form className="mb-3 flex flex-wrap gap-2">
-          <input name="q" type="search" defaultValue={query} placeholder={t("searchProducts")} aria-label={t("searchProducts")} className={`${fieldClass} max-w-sm`} />
+          <input name="q" type="search" defaultValue={query} placeholder={t("searchProducts")} aria-label={t("searchProducts")} className={cn(fieldClass, "max-w-sm")} />
           <Button type="submit" variant="outline">
             {t("search")}
           </Button>

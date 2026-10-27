@@ -7,6 +7,7 @@ import { getNumberSetting } from "@/server/settings";
 import { ActionForm } from "@/components/admin/action-form";
 import { Badge, DataTable, fieldClass, PageHeader, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtInt } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 const RUN_TONE = { PREVIEW: "warning", APPLIED: "success", CANCELLED: "neutral" } as const;
 
@@ -41,11 +42,11 @@ export default async function PricingPage() {
           <ActionForm action={createRateAction} submitLabel={t("addRate")} okText={t("rateAdded")} className="flex flex-wrap items-end gap-2">
             <label className="space-y-1 text-sm">
               <span className="text-muted-foreground">{t("rate")}</span>
-              <input name="mmkPerVnd" required inputMode="decimal" placeholder="0.170000" className={`${fieldClass} w-36`} />
+              <input name="mmkPerVnd" required inputMode="decimal" placeholder="0.170000" className={cn(fieldClass, "w-36")} />
             </label>
             <label className="space-y-1 text-sm">
               <span className="text-muted-foreground">{t("note")}</span>
-              <input name="note" maxLength={200} className={`${fieldClass} w-48`} />
+              <input name="note" maxLength={200} className={cn(fieldClass, "w-48")} />
             </label>
           </ActionForm>
         </div>

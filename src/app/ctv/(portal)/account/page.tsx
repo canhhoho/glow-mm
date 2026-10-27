@@ -5,6 +5,7 @@ import { MIN_STAFF_PASSWORD } from "@/server/auth/roles";
 import { ActionForm } from "@/components/admin/action-form";
 import { fieldClass } from "@/components/admin/ui";
 import { CtvLocaleSwitch, CtvSignOut } from "@/components/ctv/ctv-session-controls";
+import { cn } from "@/lib/utils";
 
 export default async function CtvAccountPage() {
   const user = await requireAffiliate();
@@ -29,7 +30,7 @@ export default async function CtvAccountPage() {
                 minLength={name === "currentPassword" ? 1 : MIN_STAFF_PASSWORD}
                 maxLength={128}
                 autoComplete={name === "currentPassword" ? "current-password" : "new-password"}
-                className={`${fieldClass} h-10`}
+                className={cn(fieldClass, "h-10")}
               />
             </label>
           ))}

@@ -21,6 +21,8 @@ import { AffiliateFields, CommissionBadge } from "@/components/admin/affiliate-p
 import { OrderStatusBadge } from "@/components/admin/order-badges";
 import { Badge, DataTable, fieldClass, LinkButton, PageHeader, Stat, Td } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
+import { CopyButton } from "@/components/ctv/copy-button";
+import { cn } from "@/lib/utils";
 
 const STATES: CommissionState[] = ["pending", "payable", "void"];
 const str = (v: string | string[] | undefined) => (typeof v === "string" ? v.trim() : "");
@@ -31,8 +33,9 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
   const month = str(sp.month) || currentMonth();
   const rawState = str(sp.state);
   const state = (STATES as string[]).includes(rawState) ? (rawState as CommissionState) : undefined;
-  const [t, a, orders, holdDays, options, team] = await Promise.all([
+  const [t, tc, a, orders, holdDays, options, team] = await Promise.all([
     getTranslations("Affiliates"),
+    getTranslations("Ctv"),
     getAffiliate(id),
     affiliateOrders(id, { month: month === "all" ? undefined : month, state }),
     getNumberSetting("affiliate.holdDays"),
@@ -50,13 +53,25 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <span className="font-mono">{a.user.email}</span>
         <Badge tone={a.active ? "success" : "danger"}>{a.active ? t("active") : t("locked")}</Badge>
-        <span>
-          {t("refLink")}:{" "}
-          <code className="rounded bg-muted px-1.5 py-0.5 text-xs text-foreground" data-testid="ref-link">
-            {refLink}
-          </code>
-        </span>
       </div>
+      <dl className="grid gap-2 text-sm sm:grid-cols-2">
+        {(
+          [
+            ["refLink", refLink, "ref-link"],
+            ["inviteLink", `${siteUrl()}/ctv/join?inv=${a.code}`, "invite-link"],
+          ] as const
+        ).map(([key, link, testId]) => (
+          <div key={key} className="space-y-1">
+            <dt className="text-xs text-muted-foreground">{t(key)}</dt>
+            <dd className="flex items-center gap-2">
+              <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1.5 text-xs" data-testid={testId}>
+                {link}
+              </code>
+              <CopyButton text={link} label={tc("copy")} done={tc("copied")} />
+            </dd>
+          </div>
+        ))}
+      </dl>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         <Stat label={t("statOrders")} value={fmtInt(a.summary.monthOrders)} />
@@ -82,7 +97,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
           </p>
           <ActionForm action={setAffiliateParentAction} submitLabel={t("tree.save")} okText={t("saved")} variant="outline">
             <input type="hidden" name="id" value={a.id} />
-            <select name="parentId" defaultValue={a.parentId ?? ""} aria-label={t("tree.parent")} className={`${fieldClass} max-w-sm`}>
+            <select name="parentId" defaultValue={a.parentId ?? ""} aria-label={t("tree.parent")} className={cn(fieldClass, "max-w-sm")}>
               <option value="">{t("tree.noParent")}</option>
               {options
                 .filter((o) => o.id !== a.id && !a.children.some((c) => c.id === o.id))
@@ -168,11 +183,11 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
         <form className="flex flex-wrap items-end gap-2" role="search">
           <label className="space-y-1 text-sm">
             <span className="text-muted-foreground">{t("month")}</span>
-            <input name="month" type="month" defaultValue={month === "all" ? "" : month} className={`${fieldClass} w-44`} />
+            <input name="month" type="month" defaultValue={month === "all" ? "" : month} className={cn(fieldClass, "w-44")} />
           </label>
           <label className="space-y-1 text-sm">
             <span className="text-muted-foreground">{t("state")}</span>
-            <select name="state" defaultValue={state ?? ""} className={`${fieldClass} w-auto`}>
+            <select name="state" defaultValue={state ?? ""} className={cn(fieldClass, "w-auto")}>
               <option value="">{t("allStates")}</option>
               {STATES.map((s) => (
                 <option key={s} value={s}>
@@ -188,6 +203,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
         <DataTable
           empty={t("ordersEmpty")}
           head={[t("colOrder"), t("colDate"), t("colCustomer"), t("colSource"), t("colGoods"), t("colCommission"), t("colOrderStatus")]}
+          numeric={[4, 5]}
         >
           {orders.map((o) => (
             <tr key={o.id} data-testid="affiliate-order">
@@ -225,7 +241,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
           <h2 className="font-medium">
             {t("teamOrders")} ({team.length})
           </h2>
-          <DataTable head={[t("colOrder"), t("colDate"), t("colCtv"), t("colGoods"), t("colUpline"), t("colOrderStatus")]}>
+          <DataTable head={[t("colOrder"), t("colDate"), t("colCtv"), t("colGoods"), t("colUpline"), t("colOrderStatus")]} numeric={[3, 4]}>
             {team.map((o) => (
               <tr key={o.id} data-testid="team-order">
                 <Td>
@@ -266,7 +282,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
 
       <section className="space-y-2">
         <h2 className="font-medium">{t("payouts")}</h2>
-        <DataTable empty={t("payoutsEmpty")} head={[t("colPaidAt"), t("colAmount"), t("colOrders"), t("colNote"), ""]}>
+        <DataTable empty={t("payoutsEmpty")} head={[t("colPaidAt"), t("colAmount"), t("colOrders"), t("colNote"), ""]} numeric={[1]}>
           {a.payouts.map((p) => (
             <tr key={p.id} data-testid="payout-row">
               <Td className="whitespace-nowrap">{fmtDateTime(p.paidAt)}</Td>

@@ -17,6 +17,7 @@ import { OrderStatusBadge, PaymentStatusBadge } from "@/components/admin/order-b
 import { TransitionForm, type TransitionField } from "@/components/admin/transition-form";
 import { Badge, DataTable, fieldClass, LinkButton, PageHeader, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export default async function OrderPage({ params }: PageProps<"/admin/orders/[id]">) {
   const user = await requirePagePermission("orders:view");
@@ -176,7 +177,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
                 name="affiliateId"
                 defaultValue={order.affiliateId ?? ""}
                 aria-label={t("colAffiliate")}
-                className={`${fieldClass} max-w-sm`}
+                className={cn(fieldClass, "max-w-sm")}
               >
                 <option value="">{ta("assignNone")}</option>
                 {order.affiliate && !affiliates.some((a) => a.id === order.affiliate!.id) && (
@@ -272,7 +273,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
                     max={i.qty - i.returnedQty}
                     defaultValue={0}
                     aria-label={`${t("ret.title")} ${i.sku}`}
-                    className={`${fieldClass} w-20`}
+                    className={cn(fieldClass, "w-20")}
                   />
                   <span>
                     <span className="font-mono text-xs">{i.sku}</span> {i.name}{" "}
@@ -286,12 +287,12 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
             <div className="flex flex-wrap items-end gap-3">
               <label className="space-y-1 text-xs">
                 <span className="text-muted-foreground">{t("ret.reason")}</span>
-                <input name="reason" required maxLength={500} className={`${fieldClass} w-64`} />
+                <input name="reason" required maxLength={500} className={cn(fieldClass, "w-64")} />
               </label>
               {qcLocations.length > 1 && (
                 <label className="space-y-1 text-xs">
                   <span className="text-muted-foreground">{t("ret.location")}</span>
-                  <select name="toLocationId" className={`${fieldClass} w-48`}>
+                  <select name="toLocationId" className={cn(fieldClass, "w-48")}>
                     {qcLocations.map((l) => (
                       <option key={l.id} value={l.id}>
                         {l.code} — {l.name}

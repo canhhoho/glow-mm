@@ -36,7 +36,18 @@ export function LinkButton({
   );
 }
 
-export function DataTable({ head, children, empty }: { head: React.ReactNode[]; children: React.ReactNode; empty?: string }) {
+/** `numeric`: chỉ số các cột số — tiêu đề căn phải cho thẳng với số (ô dữ liệu tự đặt `text-right`). */
+export function DataTable({
+  head,
+  children,
+  empty,
+  numeric = [],
+}: {
+  head: React.ReactNode[];
+  children: React.ReactNode;
+  empty?: string;
+  numeric?: number[];
+}) {
   const hasRows = Array.isArray(children) ? children.length > 0 : !!children;
   return (
     <div className="overflow-x-auto rounded-lg border">
@@ -44,7 +55,7 @@ export function DataTable({ head, children, empty }: { head: React.ReactNode[]; 
         <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
           <tr>
             {head.map((h, i) => (
-              <th key={i} className="px-3 py-2 font-medium whitespace-nowrap">
+              <th key={i} className={cn("px-3 py-2 font-medium whitespace-nowrap", numeric.includes(i) && "text-right")}>
                 {h}
               </th>
             ))}

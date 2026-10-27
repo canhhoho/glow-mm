@@ -3,6 +3,7 @@ import createMiddleware from "next-intl/middleware";
 import { hasLocale } from "next-intl";
 import { PORTAL_HEADER, routing } from "./i18n/routing";
 import { normalizeRefCode, REF_COOKIE, REF_MAX_AGE_S, REF_PARAM } from "./server/affiliates/referral";
+import { loginRedirectFor } from "./server/auth/session-cookie";
 import { isKnownStorePath, parseStoreSlugPath, storeSlugExists } from "./server/catalog/store-slugs";
 
 const intl = createMiddleware(routing);
@@ -15,6 +16,11 @@ const intl = createMiddleware(routing);
  * KHÔNG phải lớp bảo mật — quyền được kiểm tra trong từng Server Action/route.
  */
 export default async function proxy(req: NextRequest) {
+  // Admin / cổng CTV chưa có cookie phiên → về trang đăng nhập ngay (307), không render trang trắng.
+  const login = loginRedirectFor(req.nextUrl.pathname, req.cookies.getAll().map((c) => c.name));
+  if (login) return NextResponse.redirect(new URL(login, req.url));
+  if (req.nextUrl.pathname === "/admin" || req.nextUrl.pathname.startsWith("/admin/")) return NextResponse.next();
+
   // Cổng CTV: không qua next-intl storefront; gắn header để i18n chọn ngôn ngữ của cổng CTV.
   if (req.nextUrl.pathname === "/ctv" || req.nextUrl.pathname.startsWith("/ctv/")) {
     const headers = new Headers(req.headers);
@@ -52,6 +58,6 @@ export default async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  // Bỏ qua admin, api, file tĩnh và tài nguyên nội bộ của Next.
-  matcher: ["/((?!admin|api|_next|_vercel|.*\\..*).*)"],
+  // Storefront + cổng CTV: bỏ qua admin, api, file tĩnh, tài nguyên nội bộ của Next. Admin chỉ để kiểm cookie phiên.
+  matcher: ["/((?!admin|api|_next|_vercel|.*\\..*).*)", "/admin", "/admin/:path*"],
 };

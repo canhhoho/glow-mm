@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { fieldClass } from "@/components/admin/ui";
 import { transitionOrderAction } from "@/server/orders/actions";
+import { cn } from "@/lib/utils";
 
 export type TransitionField = {
   name: "reason" | "carrier" | "trackingNo" | "fromLocationId" | "note";
@@ -46,7 +47,7 @@ export function TransitionForm({
         <label key={f.name} className="space-y-1 text-xs">
           <span className="text-muted-foreground">{f.label}</span>
           {f.options ? (
-            <select name={f.name} required={f.required} defaultValue={f.defaultValue} className={`${fieldClass} w-48`}>
+            <select name={f.name} required={f.required} defaultValue={f.defaultValue} className={cn(fieldClass, "w-48")}>
               {f.options.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
@@ -54,7 +55,7 @@ export function TransitionForm({
               ))}
             </select>
           ) : (
-            <input name={f.name} required={f.required} defaultValue={f.defaultValue} className={`${fieldClass} w-48`} />
+            <input name={f.name} required={f.required} defaultValue={f.defaultValue} className={cn(fieldClass, "w-48")} />
           )}
         </label>
       ))}

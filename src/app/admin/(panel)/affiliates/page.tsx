@@ -62,6 +62,7 @@ export default async function AffiliatesPage({ searchParams }: PageProps<"/admin
       <DataTable
         empty={t("empty")}
         head={[t("colCtv"), t("colCode"), t("colPercent"), t("colMonthSales"), t("colPending"), t("colPayable"), t("colPaid")]}
+        numeric={[3, 4, 5, 6]}
       >
         {affiliates.map((a) => (
           <tr key={a.id} data-testid="affiliate-row">
@@ -76,7 +77,7 @@ export default async function AffiliatesPage({ searchParams }: PageProps<"/admin
             <Td className="tabular-nums">{bpToPercent(a.commissionRateBp)}%</Td>
             <Td className="text-right tabular-nums whitespace-nowrap">
               {fmtInt(a.summary.monthSalesMmk)}
-              <div className="text-xs text-muted-foreground">{a.summary.monthOrders}</div>
+              <div className="text-xs text-muted-foreground">{t("ordersCount", { count: a.summary.monthOrders })}</div>
             </Td>
             <Td className="text-right tabular-nums">{fmtInt(a.summary.pendingMmk)}</Td>
             <Td className="text-right font-medium tabular-nums">{fmtInt(a.summary.payableMmk)}</Td>

@@ -111,6 +111,7 @@
     "Affiliates.errors.tooShort",
     "Affiliates.filter",
     "Affiliates.holdHint",
+    "Affiliates.inviteLink",
     "Affiliates.lineKind.SALE",
     "Affiliates.lineKind.UPLINE",
     "Affiliates.lock",

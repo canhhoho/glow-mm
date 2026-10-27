@@ -977,7 +977,8 @@
       "upline": "Hoa hồng tuyến dưới (chờ / đến hạn / đã trả)"
     },
     "teamOrders": "Đơn tuyến dưới (hưởng tầng trên)",
-    "colUpline": "Hoa hồng tầng trên"
+    "colUpline": "Hoa hồng tầng trên",
+    "inviteLink": "Link mời làm CTV"
   },
   "Ctv": {
     "metaTitle": "Cổng CTV — Glow VN",

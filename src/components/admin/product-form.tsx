@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { fieldClass } from "@/components/admin/ui";
 import { saveProductAction } from "@/server/catalog/actions";
 import type { ProductEditData } from "@/server/catalog/admin-queries";
+import { cn } from "@/lib/utils";
 
 type Options = {
   brands: { id: string; name: string }[];
@@ -84,7 +85,7 @@ export function ProductForm({ initial, options }: { initial: ProductEditData | n
       rows={rows}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className={`${fieldClass} h-auto py-2`}
+      className={cn(fieldClass, "h-auto py-2")}
     />
   );
 
@@ -243,7 +244,7 @@ export function ProductForm({ initial, options }: { initial: ProductEditData | n
                           components: v.components.map((x, j) => (j === i ? { ...x, qty: Number(e.target.value) } : x)),
                         })
                       }
-                      className={`${fieldClass} w-24`}
+                      className={cn(fieldClass, "w-24")}
                     />
                     <Button type="button" size="sm" variant="outline" onClick={() => setVar(v.key, { components: v.components.filter((_, j) => j !== i) })}>
                       {td("remove")}

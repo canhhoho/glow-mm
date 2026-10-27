@@ -5,6 +5,7 @@ import { getAllSettings, PERCENT_SETTING_KEYS, type NumericSettingKey } from "@/
 import { saveSettingsAction } from "@/server/settings-actions";
 import { ActionForm } from "@/components/admin/action-form";
 import { fieldClass, PageHeader } from "@/components/admin/ui";
+import { cn } from "@/lib/utils";
 
 const GROUPS: { title: string; keys: NumericSettingKey[] }[] = [
   { title: "expiry", keys: ["expiry.blockDays", "expiry.warnDays"] },
@@ -64,7 +65,7 @@ export default async function SettingsPage() {
               rows={3}
               maxLength={1000}
               defaultValue={settings.bankInstructions}
-              className={`${fieldClass} h-auto py-2`}
+              className={cn(fieldClass, "h-auto py-2")}
             />
           </label>
         </fieldset>
