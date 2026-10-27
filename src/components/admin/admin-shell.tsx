@@ -14,6 +14,7 @@ import {
   House,
   Image,
   Layers,
+  MapPinned,
   Menu,
   Package,
   Settings,
@@ -47,6 +48,7 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   chart: ChartColumn,
   users: Users,
   handshake: Handshake,
+  map: MapPinned,
   gear: Settings,
 };
 

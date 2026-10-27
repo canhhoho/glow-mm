@@ -31,7 +31,8 @@
     "menu": "Mở menu",
     "closeMenu": "Đóng menu",
     "breadcrumb": "Vị trí trang",
-    "affiliates": "Cộng tác viên"
+    "affiliates": "Cộng tác viên",
+    "locations": "Địa bàn giao hàng"
   },
   "Login": {
     "title": "Đăng nhập quản trị",
@@ -1096,5 +1097,24 @@
     },
     "split": "Bán hàng: chờ {salePending} · đến hạn {salePayable} — Tuyến dưới: chờ {teamPending} · đến hạn {teamPayable} (MMK)",
     "payoutLines": "{sale} đơn bán · {team} đơn tuyến dưới"
+  },
+  "Locations": {
+    "title": "Địa bàn giao hàng (VTP)",
+    "hint": "Danh mục địa chỉ theo VTP Myanmar: Vùng → Huyện → Thị trấn. Mã VTP không sửa. Bỏ tick \"Đang giao\" để ẩn khỏi form chọn địa chỉ (tắt vùng/huyện thì cả cấp dưới bị ẩn). Tên Myanmar là bản nháp, cần người bản ngữ duyệt.",
+    "code": "Mã VTP",
+    "nameEn": "Tên (VTP, tiếng Anh)",
+    "nameMy": "Tên tiếng Myanmar",
+    "active": "Đang giao",
+    "children": "Huyện / thị trấn",
+    "path": "Thuộc",
+    "townships": "{districts} huyện · {active}/{total} thị trấn đang giao",
+    "allStates": "Tất cả vùng",
+    "search": "Tìm thị trấn (tên hoặc mã)",
+    "find": "Tìm",
+    "noResults": "Không tìm thấy.",
+    "save": "Lưu thay đổi",
+    "saved": "Đã lưu {n} thay đổi",
+    "invalid": "Tên không được để trống (tối đa 100 ký tự).",
+    "stateOff": "Vùng đang tắt"
   }
 }

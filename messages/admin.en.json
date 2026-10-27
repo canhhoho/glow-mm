@@ -31,7 +31,8 @@
     "menu": "Open menu",
     "closeMenu": "Close menu",
     "breadcrumb": "Breadcrumb",
-    "affiliates": "Affiliates"
+    "affiliates": "Affiliates",
+    "locations": "Delivery areas"
   },
   "Login": {
     "title": "Admin sign in",
@@ -1096,5 +1097,24 @@
     },
     "split": "Sales: pending {salePending} · payable {salePayable} — Team: pending {teamPending} · payable {teamPayable} (MMK)",
     "payoutLines": "{sale} sales orders · {team} team orders"
+  },
+  "Locations": {
+    "title": "Delivery areas (VTP)",
+    "hint": "Address catalog from VTP Myanmar: State/Region → District → Township. VTP codes are read-only. Untick \"Delivering\" to hide an area from address forms (turning off a state/district hides everything below it). Myanmar names are drafts awaiting native review.",
+    "code": "VTP code",
+    "nameEn": "Name (VTP, English)",
+    "nameMy": "Myanmar name",
+    "active": "Delivering",
+    "children": "Districts / townships",
+    "path": "In",
+    "townships": "{districts} districts · {active}/{total} townships delivering",
+    "allStates": "All states",
+    "search": "Find township (name or code)",
+    "find": "Find",
+    "noResults": "Nothing found.",
+    "save": "Save changes",
+    "saved": "Saved {n} changes",
+    "invalid": "Names cannot be empty (max 100 characters).",
+    "stateOff": "State turned off"
   }
 }
