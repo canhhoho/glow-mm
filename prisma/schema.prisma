@@ -19,6 +19,8 @@ enum Role {
   ORDER_STAFF
   /// Cộng tác viên bán hàng (P10): chỉ vào cổng /ctv, không vào /admin.
   AFFILIATE
+  /// Khách hàng tự đăng ký trên storefront (P14): chỉ dùng instance auth khách (/api/customer-auth).
+  CUSTOMER
 }
 
 model User {
@@ -27,7 +29,8 @@ model User {
   email         String     @unique
   emailVerified Boolean    @default(false)
   image         String?
-  role          Role       @default(ORDER_STAFF)
+  /// Mặc định quyền thấp nhất; nhân viên/CTV luôn được tạo với role tường minh.
+  role          Role       @default(CUSTOMER)
   locale        String     @default("vi")
   active        Boolean    @default(true)
   createdAt     DateTime   @default(now())
@@ -35,6 +38,9 @@ model User {
   sessions      Session[]
   accounts      Account[]
   affiliate     Affiliate?
+  /// Tài khoản khách (P14): đơn thuộc tài khoản + sổ địa chỉ.
+  orders        Order[]          @relation("AccountOrders")
+  addresses     AccountAddress[]
 
   @@map("user")
 }
@@ -94,6 +100,16 @@ model RateLimit {
   lastRequest BigInt
 
   @@map("rateLimit")
+}
+
+/// Bộ đếm của instance auth khách (P14) — tách bảng vì khoá `ip|path` trùng với instance nhân viên.
+model CustomerRateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("customerRateLimit")
 }
 
 model AuditLog {
@@ -586,6 +602,25 @@ model Address {
   orders     Order[]
 }
 
+/// Sổ địa chỉ của tài khoản khách (P14) — tự điền khi thanh toán. Tách khỏi Address (gắn theo SĐT, snapshot đơn).
+model AccountAddress {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipientName String
+  /// SĐT đã chuẩn hoá 09xxxxxxxx.
+  phone         String
+  zoneId        String
+  zone          ShippingZone @relation(fields: [zoneId], references: [id])
+  line          String
+  note          String?
+  isDefault     Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([userId])
+}
+
 /// Vùng giao hàng (region/township).
 model ShippingZone {
   id        String         @id @default(cuid())
@@ -597,6 +632,7 @@ model ShippingZone {
   active    Boolean        @default(true)
   rates     ShippingRate[]
   addresses Address[]
+  accountAddresses AccountAddress[]
 }
 
 model ShippingRate {
@@ -677,6 +713,9 @@ model Order {
   uplineAffiliateId String?
   uplineAffiliate   Affiliate?            @relation("OrderUpline", fields: [uplineAffiliateId], references: [id])
   uplineRateBp      Int?
+  /// Tài khoản khách sở hữu đơn (P14): đặt khi đăng nhập hoặc nhận lại đơn cũ (mã + SĐT). Null = khách vãng lai / đơn ngoài web.
+  accountId         String?
+  account           User?                 @relation("AccountOrders", fields: [accountId], references: [id], onDelete: SetNull)
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
   items             OrderItem[]
@@ -692,6 +731,7 @@ model Order {
   @@index([customerId])
   @@index([affiliateId, createdAt])
   @@index([uplineAffiliateId, createdAt])
+  @@index([accountId, createdAt])
 }
 
 // ───────────────────────── Cộng tác viên (P10) ─────────────────────────

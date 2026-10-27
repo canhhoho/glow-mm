@@ -52,6 +52,14 @@ export function isRole(value: unknown): value is Role {
   return typeof value === "string" && (ROLES as readonly string[]).includes(value);
 }
 
+/** Mã lỗi instance nhân viên trả khi tài khoản không thuộc cổng nhân viên/CTV (vd khách hàng — P14). */
+export const NOT_STAFF = "NOT_STAFF";
+
+/** Cổng đăng nhập nào nhận role nào (allow-list): /admin = nhân viên, /ctv = CTV. Role khác (khách) bị từ chối. */
+export function portalAllowsRole(portal: "admin" | "ctv", role: unknown): boolean {
+  return portal === "ctv" ? role === AFFILIATE_ROLE : isRole(role);
+}
+
 export function can(role: Role | null | undefined, permission: Permission): boolean {
   if (!role) return false;
   return (PERMISSIONS[permission] as readonly Role[]).includes(role);

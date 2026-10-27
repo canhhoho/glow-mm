@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-import { AFFILIATE_ROLE, USER_INACTIVE } from "@/server/auth/roles";
+import { NOT_STAFF, portalAllowsRole, USER_INACTIVE } from "@/server/auth/roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,10 +32,12 @@ export function LoginForm({ portal }: { portal: "admin" | "ctv" }) {
     });
     if (error) {
       setPending(false);
-      return setError(error.status === 429 ? "tooMany" : error.code === USER_INACTIVE ? "locked" : "error");
+      return setError(
+        error.status === 429 ? "tooMany" : error.code === USER_INACTIVE ? "locked" : error.code === NOT_STAFF ? "wrongPortal" : "error",
+      );
     }
-    const role = (data?.user as { role?: string } | undefined)?.role;
-    if (role && (role === AFFILIATE_ROLE) !== (portal === "ctv")) {
+    // Allow-list theo cổng: nhân viên ở /admin, CTV ở /ctv (khách hàng đã bị server từ chối với NOT_STAFF).
+    if (!portalAllowsRole(portal, (data?.user as { role?: string } | undefined)?.role)) {
       await authClient.signOut();
       setPending(false);
       return setError("wrongPortal");

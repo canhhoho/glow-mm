@@ -13,6 +13,7 @@ async function resetLoginRateLimit() {
   await client.connect();
   try {
     await client.query('DELETE FROM "rateLimit"');
+    await client.query('DELETE FROM "customerRateLimit"');
   } finally {
     await client.end();
   }

@@ -17,10 +17,26 @@ const schema = z
     LOCAL_STORAGE_DIR: z.string().default("./storage"),
     FB_PAGE_USERNAME: z.string().optional(),
     VIBER_CHAT_URI: z.string().optional(),
+    /** Gửi email (P14): none = tắt đăng ký/đăng nhập khách bằng email; outbox = ghi file (dev/E2E); resend = gửi thật. */
+    EMAIL_DRIVER: z.enum(["none", "outbox", "resend"]).default("none"),
+    RESEND_API_KEY: z.string().optional(),
+    EMAIL_FROM: z.string().optional(),
+    EMAIL_OUTBOX_DIR: z.string().default("./storage/outbox"),
+    /** Đăng nhập Google cho khách (P14) — để trống cả hai = ẩn nút Google. */
+    GOOGLE_CLIENT_ID: z.string().optional(),
+    GOOGLE_CLIENT_SECRET: z.string().optional(),
   })
   .refine((e) => e.STORAGE_DRIVER !== "vercel-blob" || !!e.BLOB_READ_WRITE_TOKEN, {
     message: "BLOB_READ_WRITE_TOKEN là bắt buộc khi STORAGE_DRIVER=vercel-blob",
     path: ["BLOB_READ_WRITE_TOKEN"],
+  })
+  .refine((e) => e.EMAIL_DRIVER !== "resend" || (!!e.RESEND_API_KEY && !!e.EMAIL_FROM), {
+    message: "RESEND_API_KEY và EMAIL_FROM là bắt buộc khi EMAIL_DRIVER=resend",
+    path: ["RESEND_API_KEY"],
+  })
+  .refine((e) => !e.GOOGLE_CLIENT_ID === !e.GOOGLE_CLIENT_SECRET, {
+    message: "GOOGLE_CLIENT_ID và GOOGLE_CLIENT_SECRET phải đặt đủ cả hai (hoặc để trống cả hai)",
+    path: ["GOOGLE_CLIENT_ID"],
   });
 
 export type Env = z.infer<typeof schema>;
@@ -37,3 +53,9 @@ export function env(): Env {
   }
   return cached;
 }
+
+/** Khách đăng ký/đăng nhập bằng email được không (cần gửi được email xác minh + đặt lại mật khẩu). */
+export const emailAuthEnabled = () => env().EMAIL_DRIVER !== "none";
+
+/** Có nút "Đăng nhập bằng Google" không. */
+export const googleAuthEnabled = () => !!env().GOOGLE_CLIENT_ID;

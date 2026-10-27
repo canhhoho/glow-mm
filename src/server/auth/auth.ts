@@ -5,10 +5,11 @@ import { nextCookies } from "better-auth/next-js";
 import { APIError } from "better-auth/api";
 import { prisma } from "@/lib/db";
 import { USER_INACTIVE } from "./roles";
+import { NOT_STAFF, staffSessionDecision } from "./customer-policy";
 
 /**
- * Better Auth — chỉ dành cho NHÂN VIÊN (khách hàng định danh bằng SĐT, không đăng nhập).
- * Tự đăng ký bị tắt; admin tạo tài khoản nhân viên.
+ * Better Auth cho NHÂN VIÊN + CTV (/api/auth). Tự đăng ký bị tắt; admin tạo tài khoản (Prisma trực tiếp).
+ * Khách hàng dùng instance riêng `customer-auth.ts` (P14) — hook dưới đây từ chối tạo phiên cho role khác.
  */
 export const auth = betterAuth({
   baseURL: process.env.APP_URL,
@@ -42,12 +43,22 @@ export const auth = betterAuth({
     },
   },
   databaseHooks: {
+    user: {
+      create: {
+        // Không có đường tạo user qua API ở instance này (nhân viên/CTV tạo bằng Prisma) — chặn hẳn để chắc chắn.
+        async before() {
+          throw APIError.from("FORBIDDEN", { message: "Không được tự đăng ký", code: NOT_STAFF });
+        },
+      },
+    },
     session: {
       create: {
-        // Tài khoản bị khoá (P8) không tạo được phiên mới → đăng nhập bị từ chối.
+        // Chỉ nhân viên + CTV; tài khoản bị khoá (P8) không tạo được phiên mới → đăng nhập bị từ chối.
         async before(session) {
-          const user = await prisma.user.findUnique({ where: { id: session.userId }, select: { active: true } });
-          if (!user?.active) throw APIError.from("FORBIDDEN", { message: "Tài khoản đã bị khoá", code: USER_INACTIVE });
+          const user = await prisma.user.findUnique({ where: { id: session.userId }, select: { role: true, active: true } });
+          const decision = staffSessionDecision(user);
+          if (decision === "inactive") throw APIError.from("FORBIDDEN", { message: "Tài khoản đã bị khoá", code: USER_INACTIVE });
+          if (decision !== "ok") throw APIError.from("FORBIDDEN", { message: "Sai cổng đăng nhập", code: NOT_STAFF });
         },
       },
     },
