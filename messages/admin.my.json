@@ -452,7 +452,8 @@
       "done": "မှတ်တမ်းတင်ပြီး"
     },
     "colAffiliate": "ကိုယ်စားလှယ်",
-    "allAffiliates": "ကိုယ်စားလှယ် အားလုံး"
+    "allAffiliates": "ကိုယ်စားလှယ် အားလုံး",
+    "customerAccount": "ဖောက်သည် အကောင့်"
   },
   "Settings": {
     "title": "ဆက်တင်များ",

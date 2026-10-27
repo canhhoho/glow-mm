@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { signInAtPrompt } from "./helpers";
 
 // Bố cục desktop (project "desktop", 1280×800). Mobile được các spec còn lại kiểm tra.
 
@@ -89,7 +90,9 @@ test("trang SP 2 cột; Mua ngay → checkout; giỏ có cột tóm tắt bên p
   expect(title.y).toBeLessThan(img.y + img.height);
   await page.screenshot({ path: "test-results/screens/desktop-product.png", fullPage: true });
 
+  // Mua ngay → chưa đăng nhập → trang đăng nhập → quay lại checkout, giỏ giữ nguyên (P14c).
   await page.getByRole("button", { name: "Buy now" }).click();
+  await signInAtPrompt(page);
   await expect(page).toHaveURL(/\/en\/checkout$/);
   await expect(page.getByTestId("cart-count")).toHaveText("1");
 

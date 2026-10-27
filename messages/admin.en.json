@@ -452,7 +452,8 @@
       "done": "Return recorded"
     },
     "colAffiliate": "Affiliate",
-    "allAffiliates": "All affiliates"
+    "allAffiliates": "All affiliates",
+    "customerAccount": "Customer account"
   },
   "Settings": {
     "title": "Settings",

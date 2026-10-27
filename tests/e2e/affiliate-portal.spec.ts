@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import pg from "pg";
-import { login, loginCtv, PASSWORD } from "./helpers";
+import { login, loginCtv, PASSWORD, signInAtPrompt } from "./helpers";
 
 // P10c: cổng CTV — khách đặt qua link → đơn hiện ở cổng CTV; CTV tự lên đơn; tách biệt với admin.
 
@@ -23,6 +23,7 @@ test("khách mở link CTV rồi đặt hàng → đơn hiện trong cổng CTV 
   await expect(page).toHaveURL(/\/en\/p\/sen-viet-sunscreen-spf50$/);
   await page.getByRole("button", { name: "Add to cart" }).click();
   await page.getByRole("link", { name: "Checkout" }).click();
+  await signInAtPrompt(page); // cookie CTV từ link vẫn còn sau khi đăng nhập
   await page.getByLabel("Full name").fill("Ma Ref");
   await page.getByLabel("Phone number").fill("09 7812 7777");
   await page.getByLabel("Township").selectOption({ index: 1 });

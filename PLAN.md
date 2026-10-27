@@ -13,7 +13,7 @@
 | 8 | Combo/Tester | Combo cố định trừ kho thành phần; tester/quà = loại tồn riêng trên cùng lô |
 | 9 | COD | Gọi xác nhận; tự huỷ/nhả sau 24h (cấu hình) |
 | 10 | Ship | Bảng phí theo vùng/township + mã vận đơn tay; adapter cho API hãng sau |
-| 11 | Khách | Định danh SĐT, không OTP; tra đơn = mã đơn + SĐT |
+| 11 | Khách | Xem hàng không cần đăng nhập; **đặt hàng trên web bắt buộc tài khoản khách** (P14: Google + email/mật khẩu); đơn ngoài web vẫn tra bằng mã đơn + SĐT, không OTP |
 | 12 | Admin i18n | vi + en + my |
 | 13 | Chat | FB Page + Viber; link cấu hình qua env/admin |
 | 14 | Myanmar text | Bộ phát hiện Zawgyi của Google (vendored) + Rabbit + Noto Sans Myanmar tự host |
@@ -114,7 +114,7 @@ Dockerfile  docker-compose.yml  docker-compose.prod.yml  .env.example
 
 ## 4. Roadmap (dừng chờ duyệt sau mỗi phase)
 
-Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ · P9 ✅ (2026-10-19) · P10 CTV ✅ (2026-10-26, đã lên production) · P11 CTV 2 tầng (code xong 2026-10-26, chờ duyệt) · P4b chờ server + domain Myanmar.
+Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ · P9 ✅ (2026-10-19) · P10 CTV ✅ (2026-10-26, đã lên production) · P11 CTV 2 tầng ✅ · P12 sửa UI ✅ · P13 chỉnh % hoa hồng ✅ (2026-10-27) · P14 tài khoản khách (code xong 2026-10-27) · P4b chờ server + domain Myanmar.
 
 | Phase | Nội dung | Hoàn thành khi |
 |---|---|---|
@@ -130,6 +130,7 @@ Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 
 | **P8 Quản lý nhân viên** ✅ (2026-10-16) | `/admin/users` (ADMIN): tạo nhân viên + mật khẩu tạm, đổi tên/vai trò, khoá/mở khoá, đặt lại mật khẩu; khoá/đặt lại → xoá mọi phiên; tài khoản bị khoá không đăng nhập được (hook Better Auth); luôn còn ≥ 1 ADMIN; không tự khoá/tự đổi vai trò; ghi AuditLog. Không cần migration | Toàn bộ test xanh (integration + E2E tạo → đăng nhập đúng quyền → khoá → bị đăng xuất) |
 | **P9 Giao diện admin + Tồn kho** ✅ (2026-10-19) | Khung admin mới (menu nhóm + icon + badge + trang đang mở, ngăn kéo trên mobile, breadcrumb) và trang Tồn kho mới (ô số tổng, tab vị trí, xem theo sản phẩm/theo lô, lọc hạn dùng/loại tồn, phân trang, trang lịch sử lô) theo mẫu `docs/mockups/p9-admin-kho.html` | Toàn bộ test xanh (unit tổng hợp tồn, integration số liệu khớp ledger, E2E mobile: menu ngăn kéo, lọc/phân trang, mở lô, lịch sử lô) |
 | **P10 Cộng tác viên (CTV) + hoa hồng** (2026-10-26) | Link giới thiệu `?ref=CODE`, CTV tự lên đơn, nhân viên gán CTV; hoa hồng % theo CTV chốt trên đơn; admin quản lý CTV + ghi nhận chi trả; cổng `/ctv` cho CTV xem đơn/hoa hồng/thanh toán | Toàn bộ test xanh (unit hoa hồng, integration gắn đơn/chi trả song song/cô lập CTV, E2E link → đơn → cổng CTV, admin chi trả, tách cổng) |
+| **P14 Tài khoản khách** (2026-10-27) | Khách đăng ký/đăng nhập bằng Google hoặc email/mật khẩu (xác minh email, quên mật khẩu qua Resend); xem hàng không cần đăng nhập, **checkout bắt buộc đăng nhập**; khu `/account`: đơn của tôi, sổ địa chỉ (tự điền khi thanh toán), hồ sơ + đổi mật khẩu; đơn cũ đã chứng minh mã + SĐT tự gắn vào tài khoản; admin thấy tài khoản khách trên đơn | Toàn bộ test xanh (unit policy tách cổng, integration đăng ký/xác minh/tách cổng/sổ địa chỉ/nhận đơn, E2E đăng ký → xác minh → đặt hàng, quên mật khẩu, sổ địa chỉ, tách cổng) |
 | **P11 CTV hai tầng** (2026-10-26) | CTV tuyển CTV qua link mời `/ctv/join?inv=CODE` → admin duyệt; cấp trên trực tiếp hưởng thêm % tầng trên (shop trả, mặc định 2%) trên đơn của người mình tuyển; trang Tuyến dưới trong cổng CTV (chỉ số tổng, không thông tin khách); admin đổi cấp trên | Toàn bộ test xanh (unit hai tầng + chống vòng, integration chốt cấp trên/chi trả theo loại/đăng ký-duyệt/chống spam, E2E đăng ký → duyệt → đăng nhập, tuyến dưới) |
 
 **P9 — kế hoạch (mẫu đã duyệt 2026-10-17):**
@@ -154,6 +155,13 @@ Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 
 - Chi trả: admin chuyển tiền ngoài hệ thống rồi "Ghi nhận đã trả" → `AffiliatePayout` + `AffiliatePayoutLine` theo đơn (chỉ ghi thêm); trả hàng sau khi đã chi → số âm, trừ vào lần chi sau. Khoá dòng CTV khi ghi để không trùng.
 - CTV là user Better Auth role AFFILIATE (không thuộc ROLES nhân viên → không vào /admin); admin tạo tài khoản; đăng nhập email + mật khẩu ở `/ctv/login` (đăng nhập nhầm cổng bị từ chối). Cổng CTV mặc định tiếng Myanmar (cookie `CTV_LOCALE`), xem đủ tên/SĐT/địa chỉ khách trong đơn của mình, không thấy giá vốn/kho, không tra cứu khách theo SĐT.
 - Báo cáo: thêm hoa hồng CTV (theo ngày hoàn tất) + lợi nhuận sau hoa hồng. Seed: CTV mẫu `ctv@glow.local` (mã MAUNG).
+
+**P14 — quyết định (2026-10-27):**
+- Đăng nhập: Google + email/mật khẩu. Email gửi qua Resend (xác minh email bắt buộc, quên mật khẩu). Chưa có tên miền → production tạm chỉ Google (`EMAIL_DRIVER=none` ẩn email); có tên miền thì đặt biến Resend là bật **[CẦN XÁC MINH: tên miền]**.
+- Instance Better Auth riêng cho khách (`/api/customer-auth`, cookie `glow-customer`, phiên 30 ngày); nhân viên/CTV không đăng nhập được ở đó và ngược lại; Google không liên kết được vào tài khoản nhân viên/CTV.
+- Checkout bắt buộc đăng nhập; đơn gắn `Order.accountId`. Đơn ngoài web (Facebook/Viber/nhân viên/CTV) vẫn tra bằng mã + SĐT; tra được (hoặc đơn trong cookie trình duyệt) thì tự gắn vào tài khoản khi đăng nhập. Không gắn đơn theo SĐT đơn thuần (không OTP).
+- Sổ địa chỉ tối đa 10, địa chỉ mặc định tự điền khi thanh toán. Đăng xuất xoá cookie nhớ đơn (máy dùng chung).
+- Facebook login có thể cần ở Myanmar **[CẦN XÁC MINH]** — thêm sau vào `socialProviders`.
 
 **P11 — quyết định (2026-10-26):**
 - 2 tầng: người bán nhận % của mình như P10; cấp trên trực tiếp nhận thêm `affiliate.uplineRateBp` (mặc định 2%) tiền hàng thực thu — shop trả, không trừ vào người bán; không hưởng tiếp xuống tầng dưới nữa. Cấp trên + % chốt vào đơn lúc gắn CTV (`Order.uplineAffiliateId/uplineRateBp`); cấp trên bị khoá → đơn mới không tính.
@@ -254,7 +262,7 @@ Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 
 - URL gốc lấy từ `APP_URL` lúc build (Docker: build arg) qua `src/lib/site.ts`, không qua `env()` (build không có secret).
 - 404 cho đường dẫn lạ: proxy rewrite sang `/<locale>/404` (trang tĩnh, HTTP 404 thật, có header/footer) theo danh sách dạng route `isKnownStorePath`; không dùng `globalNotFound` (còn experimental). Unit test quét `src/app/[locale]` để danh sách không lệch route.
 - Bản dịch: `npm run i18n:export` ra CSV (Excel) cho người bản ngữ, `npm run i18n:import` ghi lại cột `my` (giữ biến ICU, chuyển Zawgyi → Unicode); key cần duyệt liệt kê trong `messages/review-my.json`.
-- Ngoài phạm vi: mã giảm giá, tài khoản khách, Telegram, Search Console/Analytics (cần tài khoản + domain, làm ở P4b) **[CẦN XÁC MINH]**.
+- Ngoài phạm vi: mã giảm giá, tài khoản khách (đã làm ở P14), Telegram, Search Console/Analytics (cần tài khoản + domain, làm ở P4b) **[CẦN XÁC MINH]**.
 
 ## 5. Giao diện
 - **Storefront:** tươi sáng, hồng đào. Màu chính `#E8657A`, màu phụ xanh lá nhạt `#7FB89A`, nền kem `#FFF8F5`, chữ `#2B2B2B`. Mobile-first, nút bấm cao ít nhất 44px.

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { login } from "./helpers";
+import { login, signInAtPrompt } from "./helpers";
 
 test("admin: lưu cài đặt; tính giá mới (xem trước) rồi huỷ", async ({ page }) => {
   await login(page, "admin@glow.local");
@@ -43,15 +43,17 @@ test("admin tắt nhận đơn web → trang checkout báo tạm ngừng → b�
     await page.goto("/en/p/sen-viet-sunscreen-spf50");
     await page.getByRole("button", { name: "Add to cart" }).click();
     await page.getByRole("link", { name: "Checkout" }).click();
+    await signInAtPrompt(page);
     await expect(page.getByRole("alert").filter({ hasText: "temporarily not accepting online orders" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Place order" })).toHaveCount(0);
   } finally {
     await toggle(true);
   }
-  // login() xoá cookie (giỏ) → thêm lại hàng rồi kiểm tra form đặt hàng hiện lại.
+  // login() xoá cookie (giỏ + phiên khách) → thêm lại hàng, đăng nhập rồi kiểm tra form đặt hàng hiện lại.
   await page.goto("/en/p/sen-viet-sunscreen-spf50");
   await page.getByRole("button", { name: "Add to cart" }).click();
   await page.getByRole("link", { name: "Checkout" }).click();
+  await signInAtPrompt(page);
   await expect(page.getByRole("button", { name: "Place order" })).toBeVisible();
   // Dọn giỏ để không ảnh hưởng test khác (giỏ nằm trong cookie của context này).
   await page.context().clearCookies();

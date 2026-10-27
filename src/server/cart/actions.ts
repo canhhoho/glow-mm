@@ -2,6 +2,7 @@
 
 import { refresh } from "next/cache";
 import { cookies } from "next/headers";
+import { redirect as nextRedirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { hasLocale } from "next-intl";
 import { z, ZodError } from "zod";
@@ -10,7 +11,8 @@ import { routing, type StoreLocale } from "@/i18n/routing";
 import { claimOrders } from "@/server/accounts/claims";
 import { customerOrder } from "@/server/accounts/order-access";
 import { normalizeRefCode, REF_COOKIE } from "@/server/affiliates/referral";
-import { getCustomerUser } from "@/server/auth/customer-session";
+import { createAddress } from "@/server/accounts/accounts";
+import { getCustomerUser, requireCustomer } from "@/server/auth/customer-session";
 import { OrderError } from "@/server/orders/errors";
 import { createOrder, findOrderForCustomer } from "@/server/orders/orders";
 import { submitPaymentProof } from "@/server/orders/payments";
@@ -79,6 +81,11 @@ export async function addToCartAction(formData: FormData) {
   const locale = localeOf(formData);
   const intent = addIntent.parse(formData.get("intent") ?? "cart");
   await writeCart(addLine(await readCart(), String(formData.get("variantId")), Number(formData.get("qty") ?? 1)));
+  if (intent === "buy" && !(await getCustomerUser())) {
+    // Redirect của Server Action render thẳng trang đích, không qua proxy → tự chuyển tới đăng nhập (P14c).
+    const prefix = locale === "en" ? "/en" : "";
+    nextRedirect(`${prefix}/login?next=${encodeURIComponent(`${prefix}/checkout`)}`);
+  }
   redirect({ href: intent === "buy" ? "/checkout" : "/cart", locale });
 }
 
@@ -87,8 +94,10 @@ export async function setCartQtyAction(formData: FormData) {
   await writeCart(setLine(await readCart(), String(formData.get("variantId")), Number(formData.get("qty"))));
 }
 
+/** Đặt hàng trên web: bắt buộc tài khoản khách (P14c) — đơn gắn `accountId`, tuỳ chọn lưu địa chỉ vào sổ. */
 export async function placeOrderAction(_prev: StoreActionState, formData: FormData): Promise<StoreActionState> {
   const locale = localeOf(formData);
+  const user = await requireCustomer(locale, "/checkout");
   const items = await readCart();
   let order;
   try {
@@ -106,13 +115,22 @@ export async function placeOrderAction(_prev: StoreActionState, formData: FormDa
         items,
         idempotencyKey: formData.get("idempotencyKey") || undefined,
       },
-      { userId: null, affiliate: await referralFromCookie() },
+      { userId: null, accountId: user.id, affiliate: await referralFromCookie() },
     );
   } catch (e) {
     return { error: await errorText(e, locale) };
   }
   await writeCart([]);
-  await rememberOrder(order.code, order.recipientPhone);
+  // Đơn thuộc tài khoản → không cần nhớ mã + SĐT trong cookie. Lưu sổ địa chỉ lỗi (vd đã đủ 10) không chặn đặt hàng.
+  if (formData.get("saveAddress") === "on") {
+    await createAddress(user.id, {
+      recipientName: order.recipientName,
+      phone: order.recipientPhone,
+      zoneId: formData.get("zoneId"),
+      line: order.addressText,
+      note: formData.get("note") || undefined,
+    }).catch(() => {});
+  }
   redirect({ href: { pathname: `/order/${order.code}`, query: { placed: "1" } }, locale });
 }
 

@@ -44,9 +44,11 @@ export type CreateOrderInput = z.input<typeof createOrderSchema>;
  * `userId` = nhân viên / CTV tạo đơn tay; null = khách đặt trên web (kênh luôn là WEB).
  * `affiliate` (P10): mã từ cookie link giới thiệu (khách web — mã sai/CTV đã khoá thì bỏ qua),
  * hoặc id CTV khi CTV tự lên đơn / nhân viên gán (không hợp lệ → lỗi).
+ * `accountId` (P14): tài khoản khách đặt đơn trên web (Server Action bắt buộc đăng nhập; domain không ép).
  */
 export type CreateOrderContext = {
   userId: string | null;
+  accountId?: string | null;
   now?: Date;
   affiliate?: { source: "LINK"; code: string } | { source: "AFFILIATE" | "STAFF"; id: string };
 };
@@ -120,6 +122,7 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
             note: input.note || null,
             idempotencyKey: input.idempotencyKey,
             createdById: ctx.userId,
+            accountId: ctx.accountId ?? null,
             createdAt: now,
             ...(affiliate && {
               affiliateId: affiliate.id,

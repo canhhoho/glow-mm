@@ -126,3 +126,17 @@ export async function loginCustomer(page: Page, email: string, password = CUSTOM
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
 }
+
+/**
+ * Đang ở trang đăng nhập khách do bị chặn (vd bấm Checkout khi chưa đăng nhập — P14c): đăng nhập bằng khách seed
+ * rồi chờ quay lại trang đích (`?next=`). Giỏ hàng + cookie CTV giữ nguyên qua bước này.
+ */
+export async function signInAtPrompt(page: Page, email = "khach@glow.local", password = PASSWORD) {
+  await resetLoginRateLimit();
+  await expect(page).toHaveURL(/\/login\?next=/);
+  const next = decodeURIComponent(new URL(page.url()).searchParams.get("next")!);
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.waitForURL((u) => u.pathname === next);
+}

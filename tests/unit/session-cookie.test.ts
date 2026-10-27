@@ -30,6 +30,8 @@ describe("Khu tài khoản khách ở proxy (P14)", () => {
     expect(customerLoginRedirectFor("/en/account/addresses", "?edit=1", ["better-auth.session_token"])).toBe(
       "/en/login?next=%2Fen%2Faccount%2Faddresses%3Fedit%3D1",
     );
+    expect(customerLoginRedirectFor("/checkout", "", ["glow_ref"])).toBe("/login?next=%2Fcheckout");
+    expect(customerLoginRedirectFor("/en/checkout", "", [])).toBe("/en/login?next=%2Fen%2Fcheckout");
   });
 
   it("đã có cookie khách / trang khác → không chuyển", () => {
@@ -38,5 +40,6 @@ describe("Khu tài khoản khách ở proxy (P14)", () => {
     expect(customerLoginRedirectFor("/login", "", [])).toBeNull();
     expect(customerLoginRedirectFor("/accounts", "", [])).toBeNull();
     expect(customerLoginRedirectFor("/en/cart", "", [])).toBeNull();
+    expect(customerLoginRedirectFor("/en/checkouts", "", [])).toBeNull();
   });
 });

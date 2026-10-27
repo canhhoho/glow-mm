@@ -118,6 +118,14 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
           <dd>{fmtDateTime(order.createdAt)}</dd>
           <dt className="text-muted-foreground">{t("createdBy")}</dt>
           <dd>{order.createdById ? who(order.createdById) : t("customerSelf")}</dd>
+          {order.account && (
+            <>
+              <dt className="text-muted-foreground">{t("customerAccount")}</dt>
+              <dd data-testid="order-account">
+                {order.account.name} · <span className="font-mono">{order.account.email}</span>
+              </dd>
+            </>
+          )}
           {order.status === "PENDING" && (
             <>
               <dt className="text-muted-foreground">{t("holdUntil")}</dt>

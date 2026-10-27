@@ -59,6 +59,9 @@ Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong bi�
    - Secret chỉ dùng ký tự ASCII (dùng lệnh tạo ngẫu nhiên). Có chữ tiếng Việt có dấu trong `CRON_SECRET` → build lỗi ngay ("not valid in HTTP headers").
    - Biến Preview chọn **Preview Branches → `dev`** (bỏ tick Production) để mỗi bộ biến chỉ áp cho đúng môi trường.
    | `FB_PAGE_USERNAME`, `VIBER_CHAT_URI` | tuỳ chọn | tuỳ chọn |
+   | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | OAuth client (xem §1.4) | để trống (URL preview không khớp redirect) |
+   | `EMAIL_DRIVER` | `none` tới khi có tên miền, sau đó `resend` | `none` |
+   | `RESEND_API_KEY`, `EMAIL_FROM` | khi `EMAIL_DRIVER=resend` | — |
 
 5. **Cron:** `vercel.json` khai báo 3 job, đều chạy 1 lần/ngày, vì gói Hobby chỉ cho cron hằng ngày **[CẦN XÁC MINH theo gói hiện tại]**.
    - Vercel tự gửi `Authorization: Bearer $CRON_SECRET`.
@@ -80,7 +83,31 @@ Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong bi�
 7. **Kiểm tra sau deploy:**
    - `GET /api/health` trả `{"ok":true}`;
    - `/` hiển thị tiếng Myanmar;
-   - đăng nhập `/admin` được.
+   - đăng nhập `/admin` được;
+   - `/login` có nút Google (nếu đã đặt biến), đăng nhập → `/account`.
+
+### 1.4 Đăng nhập khách: Google OAuth + email (P14)
+Khách bắt buộc có tài khoản khi đặt hàng. Không có Google lẫn email thì trang đăng nhập báo "chưa thể đăng nhập" → **phải cấu hình ít nhất Google trước khi mở bán**.
+
+**Google OAuth client** (Google Cloud Console, tài khoản Google của shop):
+1. Tạo project (vd `glow-vn`) → **APIs & Services → OAuth consent screen**:
+   - User type **External**; tên app "Glow VN", email hỗ trợ, logo (tuỳ chọn), link chính sách bảo mật `https://<domain>/info/privacy`.
+   - Scopes: `openid`, `email`, `profile` (mặc định, không cần duyệt thêm).
+   - **Publish app** (chuyển khỏi chế độ Testing, nếu không chỉ tài khoản test mới đăng nhập được).
+2. **Credentials → Create credentials → OAuth client ID → Web application**:
+   - Authorized JavaScript origins: `https://glow-mm.vercel.app`, `http://localhost:3000`.
+   - Authorized redirect URIs (khớp tuyệt đối, kể cả `https`):
+     - `https://glow-mm.vercel.app/api/customer-auth/callback/google`
+     - `http://localhost:3000/api/customer-auth/callback/google`
+     - sau này thêm `https://<domain Myanmar>/api/customer-auth/callback/google`.
+3. Chép Client ID + Client secret → Vercel (Production) `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` → Redeploy. Local: thêm vào `.env`. Không commit.
+4. Kiểm tra: `/login` có nút "Google ဖြင့် ဆက်လုပ်မည်" → đăng nhập → về `/account`. Tài khoản Google trùng email nhân viên/CTV bị từ chối (đúng thiết kế).
+
+**Email (Resend)** — cần tên miền riêng, `*.vercel.app` không gửi được **[CẦN XÁC MINH: tên miền]**:
+1. resend.com → Domains → thêm tên miền → thêm bản ghi DNS (SPF, DKIM, tuỳ chọn DMARC) → chờ Verified.
+2. API Keys → tạo key quyền "Sending access".
+3. Đặt `EMAIL_DRIVER=resend`, `RESEND_API_KEY`, `EMAIL_FROM="Glow VN <no-reply@<tên miền>>"` → Redeploy. Trang đăng nhập hiện thêm form email, đăng ký, quên mật khẩu.
+4. Local/dev dùng `EMAIL_DRIVER=outbox`: email ghi ra `./storage/outbox/*.json` (mở file để lấy link xác minh).
 
 ---
 
@@ -153,6 +180,7 @@ Làm trong giờ thấp điểm, khoảng 15–30 phút ngừng ghi dữ liệu.
 - [ ] Storefront `/` (Myanmar) và `/en` hiển thị đúng; ảnh sản phẩm tải được.
 - [ ] Đăng nhập admin bằng cả 3 vai trò; đổi mật khẩu mặc định (bấm tên mình ở góc trên → `/admin/account`).
 - [ ] Cài đặt → bật lại "Nhận đơn trên web".
+- [ ] Google OAuth: thêm redirect URI của domain mới (§1.4); `EMAIL_DRIVER=resend` + DNS Resend cho domain; thử đăng ký email + quên mật khẩu + đăng nhập Google.
 - [ ] Tồn kho trùng khớp: tổng `StockBalance` theo biến thể = số liệu trước khi chuyển.
 - [ ] Đặt thử 1 đơn COD và 1 đơn chuyển khoản (upload biên lai → duyệt) rồi huỷ.
 - [ ] Gọi tay từng cron với `CRON_SECRET` → 200; không có secret → 401.

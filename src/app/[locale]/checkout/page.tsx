@@ -6,6 +6,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import type { StoreLocale } from "@/i18n/routing";
 import { formatMmk } from "@/lib/money";
+import { listAddresses } from "@/server/accounts/accounts";
+import { requireCustomer } from "@/server/auth/customer-session";
 import { CART_COOKIE, parseCart } from "@/server/cart/cart";
 import { getCartDetails, storeShippingZones } from "@/server/catalog/store-queries";
 import { getBoolSetting } from "@/server/settings";
@@ -23,15 +25,18 @@ export default function CheckoutPage(props: PageProps<"/[locale]/checkout">) {
   );
 }
 
+/** Đặt hàng bắt buộc có tài khoản khách (P14c) — proxy đã chuyển trang đăng nhập khi chưa có cookie phiên. */
 async function CheckoutContent({ params }: PageProps<"/[locale]/checkout">) {
   const { locale } = (await params) as { locale: StoreLocale };
   setRequestLocale(locale);
+  const user = await requireCustomer(locale, "/checkout");
   const lines = parseCart((await cookies()).get(CART_COOKIE)?.value);
-  const [t, cart, zones, checkoutEnabled] = await Promise.all([
+  const [t, cart, zones, checkoutEnabled, addresses] = await Promise.all([
     getTranslations({ locale, namespace: "Checkout" }),
     getCartDetails(lines, locale),
     storeShippingZones(locale),
     getBoolSetting("store.checkoutEnabled"),
+    listAddresses(user.id),
   ]);
   if (!cart.ok) redirect({ href: "/cart", locale });
 
@@ -44,10 +49,23 @@ async function CheckoutContent({ params }: PageProps<"/[locale]/checkout">) {
     }`,
   }));
 
+  const saved = addresses.map((a) => ({
+    id: a.id,
+    label: [a.recipientName, a.phone, a.line].join(" · "),
+    recipientName: a.recipientName,
+    phone: a.phone,
+    zoneId: a.zoneId,
+    line: a.line,
+    note: a.note,
+  }));
+
   return (
     <div className="space-y-4 lg:grid lg:grid-cols-[1fr_22rem] lg:items-start lg:gap-6 lg:space-y-0">
       <div className="lg:col-span-2">
         <PageTitle>{t("title")}</PageTitle>
+        <p className="-mt-2 text-sm text-muted-foreground" data-testid="ordering-as">
+          {t("orderingAs", { email: user.email })}
+        </p>
       </div>
       <section
         aria-labelledby="sum-h"
@@ -73,7 +91,13 @@ async function CheckoutContent({ params }: PageProps<"/[locale]/checkout">) {
       </section>
       <div className="lg:col-start-1 lg:row-start-2 lg:rounded-xl lg:bg-card lg:p-4 lg:ring-1 lg:ring-border">
         {checkoutEnabled ? (
-          <CheckoutForm locale={locale} zones={zoneOptions} idempotencyKey={randomUUID()} />
+          <CheckoutForm
+            locale={locale}
+            zones={zoneOptions}
+            idempotencyKey={randomUUID()}
+            addresses={saved}
+            accountName={user.name}
+          />
         ) : (
           <p role="alert" className="rounded-lg border border-border bg-card p-3 text-sm">
             {t("err.checkout_disabled")}

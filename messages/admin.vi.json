@@ -452,7 +452,8 @@
       "done": "Đã ghi nhận trả hàng"
     },
     "colAffiliate": "CTV",
-    "allAffiliates": "Mọi CTV"
+    "allAffiliates": "Mọi CTV",
+    "customerAccount": "Tài khoản khách"
   },
   "Settings": {
     "title": "Cài đặt",

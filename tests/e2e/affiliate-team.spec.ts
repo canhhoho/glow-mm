@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { login, loginCtv } from "./helpers";
+import { login, loginCtv, signInAtPrompt } from "./helpers";
 
 // P11c: khách đặt qua link CTV cấp dưới LINN → MAUNG (cấp trên) thấy hoa hồng tuyến dưới ở /ctv/team,
 // không thấy thông tin khách; admin chi trả cho MAUNG có phần "tuyến dưới".
@@ -20,6 +20,7 @@ test("tuyến dưới: đơn của CTV cấp dưới → cấp trên thấy hoa 
   await page.goto("/en/p/sen-viet-sunscreen-spf50?ref=LINN");
   await page.getByRole("button", { name: "Add to cart" }).click();
   await page.getByRole("link", { name: "Checkout" }).click();
+  await signInAtPrompt(page);
   await page.getByLabel("Full name").fill(customer);
   await page.getByLabel("Phone number").fill("09 7812 6666");
   await page.getByLabel("Township").selectOption({ index: 1 });

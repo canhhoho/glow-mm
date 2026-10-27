@@ -126,7 +126,11 @@
       "forbidden": "Not allowed",
       "unknown": "Something went wrong, please try again",
       "checkout_disabled": "We are temporarily not accepting online orders. Please try again later or message us on Viber/Messenger."
-    }
+    },
+    "savedAddress": "Deliver to",
+    "newAddress": "A new address",
+    "saveToBook": "Save to my address book",
+    "orderingAs": "Ordering as {email}"
   },
   "Order": {
     "thanks": "Thank you! Your order has been placed.",

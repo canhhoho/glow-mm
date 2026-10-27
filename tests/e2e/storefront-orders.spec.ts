@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import Rabbit from "rabbit-node";
-import { login } from "./helpers";
+import { login, signInAtPrompt } from "./helpers";
 
 const PRODUCT = "/en/p/sen-viet-sunscreen-spf50";
 // PNG 1×1 tối thiểu làm "biên lai".
@@ -16,7 +16,9 @@ async function addToCartAndCheckout(page: Page, method: "Cash on delivery" | "Ba
   await expect(page.getByTestId("cart-line")).toHaveCount(1);
   await expect(page.getByTestId("cart-count")).toHaveText("1");
 
+  // Đặt hàng bắt buộc tài khoản (P14c): Checkout → đăng nhập → quay lại checkout, giỏ còn nguyên.
   await page.getByRole("link", { name: "Checkout" }).click();
+  await signInAtPrompt(page);
   await page.getByLabel("Full name").fill("Ma Thandar");
   await page.getByLabel("Phone number").fill(phone);
   await page.getByLabel("Township").selectOption({ index: 1 });
@@ -59,6 +61,7 @@ test("khách đặt COD trên web → nhân viên gọi xác nhận", async ({ p
   await login(page, "donhang@glow.local");
   await openAdminOrder(page, code);
   await expect(page.getByText("Khách tự đặt").filter({ visible: true }).first()).toBeVisible();
+  await expect(page.getByTestId("order-account")).toContainText("khach@glow.local");
   await page.getByRole("button", { name: "Đã gọi xác nhận COD" }).click();
   await expect(page.getByTestId("order-status")).toContainText("Đã xác nhận COD");
   await cancelInAdmin(page); // nhả hàng để lần chạy sau vẫn còn tồn

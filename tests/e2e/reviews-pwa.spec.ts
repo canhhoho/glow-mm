@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { login } from "./helpers";
+import { login, signInAtPrompt } from "./helpers";
 
 const PRODUCT = "/en/p/moc-lan-rose-toner";
 
@@ -16,10 +16,11 @@ test("khách đánh giá sau khi nhận hàng → admin duyệt → hiện trên
   test.setTimeout(120_000); // nhiều lần đổi vai trò nhân viên
   const comment = `Rất thích ${Date.now()}`;
 
-  // Khách đặt COD (cookie đơn nằm trong context của khách).
+  // Khách (đã đăng nhập — P14c) đặt COD; phiên khách nằm trong context của khách.
   await page.goto(PRODUCT);
   await page.getByRole("button", { name: "Add to cart" }).click();
   await page.getByRole("link", { name: "Checkout" }).click();
+  await signInAtPrompt(page);
   await page.getByLabel("Full name").fill("Ma Review");
   await page.getByLabel("Phone number").fill("09 4400 5566");
   await page.getByLabel("Township").selectOption({ index: 1 });

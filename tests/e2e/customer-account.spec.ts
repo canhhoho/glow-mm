@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import Rabbit from "rabbit-node";
-import { CUSTOMER_PASSWORD, emailLink, loginCustomer, PASSWORD, registerCustomer } from "./helpers";
+import { CUSTOMER_PASSWORD, emailLink, login, loginCustomer, PASSWORD, registerCustomer } from "./helpers";
 
 /** Lời chào đang hiển thị (Next giữ trang trước ở trạng thái ẩn → có thể có bản thứ hai không hiển thị). */
 const hello = (page: Page) => page.getByTestId("account-hello").filter({ visible: true });
@@ -110,27 +110,87 @@ test("hồ sơ: đổi tên + đổi mật khẩu", async ({ page }) => {
   await expect(page).toHaveURL(/\/en\/account$/);
 });
 
-test("đơn đặt trước khi có tài khoản (cookie mã + SĐT) được gắn vào tài khoản khi đăng ký/đăng nhập", async ({ page }) => {
-  await page.goto("/en/p/sen-viet-sunscreen-spf50");
-  await page.getByRole("button", { name: "Add to cart" }).click();
-  await page.getByRole("link", { name: "Checkout" }).click();
-  await page.getByLabel("Full name").fill("Ma Claim");
-  await page.getByLabel("Phone number").fill("09 7812 7777");
-  await page.getByLabel("Township").selectOption({ index: 1 });
-  await page.getByLabel("Address (house no., street, ward)").fill("No. 1, Claim Road");
-  await page.getByText("Cash on delivery", { exact: true }).click();
-  await page.getByRole("button", { name: "Place order" }).click();
-  await expect(page).toHaveURL(/\/en\/order\/OD-/);
-  const code = (await page.getByTestId("order-code").textContent())!.trim();
+const VARIANT = "SV-SUN-50 — Sunscreen SPF50 PA++++ (50ml)";
+
+/** Huỷ đơn trong admin (nhả hàng giữ chỗ để lần chạy sau vẫn còn tồn). */
+async function cancelOrder(page: Page, code: string) {
+  await login(page, "donhang@glow.local");
+  await page.goto(`/admin/orders?q=${code}`);
+  await page.getByRole("link", { name: code }).click();
+  page.once("dialog", (d) => d.accept());
+  await page.getByRole("button", { name: "Huỷ đơn" }).click();
+  await expect(page.getByTestId("order-status")).toContainText("Đã huỷ");
+}
+
+test("đơn ngoài web (nhân viên tạo) → khách tra mã + SĐT → đăng ký → đơn vào tài khoản", async ({ page }) => {
+  test.setTimeout(120_000);
+  await login(page, "donhang@glow.local");
+  await page.goto("/admin/orders/new?phone=09%207812%207777");
+  await page.getByLabel("Tên người nhận").fill("Ma Claim");
+  await page.getByLabel("Khu vực").selectOption({ index: 1 });
+  await page.getByLabel("Địa chỉ").fill("No. 1, Claim Road");
+  const option = page.getByLabel("Biến thể").locator("option", { hasText: VARIANT });
+  await page.getByLabel("Biến thể").selectOption((await option.getAttribute("value"))!);
+  await page.getByLabel("SL").fill("1");
+  await page.getByRole("button", { name: "Tạo đơn" }).click();
+  await expect(page).toHaveURL(/\/admin\/orders\/[^/]+$/);
+  // Next giữ trang "Tạo đơn" ở trạng thái ẩn → lấy đúng tiêu đề chứa mã đơn.
+  const heading = page.getByRole("heading", { level: 1 }).filter({ hasText: /OD-/ });
+  const code = (await heading.textContent())!.match(/OD-[\w-]+/)![0];
+
+  // Khách (chưa có tài khoản) tra đơn bằng mã + SĐT → trình duyệt nhớ đơn → đăng ký thì đơn gắn vào tài khoản.
+  await page.context().clearCookies();
+  await page.goto(`/en/track?code=${code}`);
+  await page.getByLabel("Phone number used for the order").fill("09 7812 7777");
+  await page.getByRole("button", { name: "Find order" }).click();
+  await expect(page.getByTestId("order-code")).toHaveText(code);
 
   await registerCustomer(page);
   const row = page.getByTestId("account-order").filter({ hasText: code });
-  await expect(row).toBeVisible();
   await expect(row).toContainText("Waiting for confirmation");
   // Mở được đơn từ tài khoản dù đã xoá cookie nhớ đơn.
   await page.context().clearCookies({ name: "my_orders" });
   await row.click();
   await expect(page.getByTestId("order-code")).toHaveText(code);
+
+  await cancelOrder(page, code);
+});
+
+test("đặt hàng khi đã đăng nhập: địa chỉ mới được lưu vào sổ, lần sau tự điền; đơn hiện trong tài khoản", async ({ page }) => {
+  test.setTimeout(120_000);
+  const email = await registerCustomer(page);
+  await page.goto("/en/p/sen-viet-sunscreen-spf50");
+  await page.getByRole("button", { name: "Add to cart" }).click();
+  await page.getByRole("link", { name: "Checkout" }).click();
+  await expect(page).toHaveURL(/\/en\/checkout$/);
+  await expect(page.getByTestId("ordering-as")).toContainText(email);
+  await expect(page.getByLabel("Full name")).toHaveValue("Ma E2E");
+  await page.getByLabel("Phone number").fill("09 7812 5151");
+  await page.getByLabel("Township").selectOption({ index: 1 });
+  await page.getByLabel("Address (house no., street, ward)").fill("No. 51, Saved Road");
+  await expect(page.getByLabel("Save to my address book")).toBeChecked();
+  await page.getByText("Cash on delivery", { exact: true }).click();
+  await page.getByRole("button", { name: "Place order" }).click();
+  await expect(page).toHaveURL(/\/en\/order\/OD-/);
+  const code = (await page.getByTestId("order-code").textContent())!.trim();
+
+  await page.goto("/en/account");
+  await expect(page.getByTestId("account-order").filter({ hasText: code })).toBeVisible();
+  await page.goto("/en/account/addresses");
+  await expect(page.getByTestId("address").filter({ hasText: "0978125151" })).toContainText("No. 51, Saved Road");
+
+  // Lần sau: chọn sẵn địa chỉ mặc định, các ô được điền.
+  await page.goto("/en/p/sen-viet-sunscreen-spf50");
+  await page.getByRole("button", { name: "Buy now" }).click();
+  await expect(page).toHaveURL(/\/en\/checkout$/);
+  await expect(page.getByLabel("Deliver to")).toContainText("0978125151");
+  await expect(page.getByLabel("Phone number")).toHaveValue("0978125151");
+  await expect(page.getByLabel("Address (house no., street, ward)")).toHaveValue("No. 51, Saved Road");
+  await expect(page.getByLabel("Township")).not.toHaveValue("");
+  await page.getByLabel("Deliver to").selectOption({ label: "A new address" });
+  await expect(page.getByLabel("Phone number")).toHaveValue("");
+
+  await cancelOrder(page, code);
 });
 
 test("tách cổng: nhân viên không đăng nhập ở cổng khách; khách không vào được admin", async ({ page }) => {

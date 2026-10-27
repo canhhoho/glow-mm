@@ -91,4 +91,12 @@ describe("Đơn của tài khoản (P14b)", () => {
     expect((await accountOrders(u.id)).map((o) => o.code)).toEqual([order.code]);
     expect(await accountOrders(other.id)).toEqual([]);
   });
+
+  it("đơn đặt trên web khi đăng nhập lưu accountId (P14c)", async () => {
+    const { f } = await zoneId();
+    const u = await customer();
+    const order = await createOrder(orderInput(f, 1), { userId: null, accountId: u.id });
+    expect(order).toMatchObject({ accountId: u.id, createdById: null, channel: "WEB" });
+    expect((await accountOrders(u.id)).map((o) => o.id)).toEqual([order.id]);
+  });
 });
