@@ -1,3 +1,4 @@
+import path from "node:path";
 import { config } from "dotenv";
 import { defineConfig, devices } from "@playwright/test";
 
@@ -6,6 +7,8 @@ config({ path: ".env.test", override: true, quiet: true });
 // Cho phép trỏ DB test khác (vd khi không có Docker) mà không đụng DATABASE_URL của dev.
 if (process.env.E2E_DATABASE_URL) process.env.DATABASE_URL = process.env.E2E_DATABASE_URL;
 process.env.DIRECT_DATABASE_URL = "";
+// Server standalone chạy với cwd .next/standalone → đường dẫn outbox email (P14) phải tuyệt đối để test đọc được.
+process.env.EMAIL_OUTBOX_DIR = path.resolve(process.env.EMAIL_OUTBOX_DIR ?? "storage-test/outbox");
 
 export default defineConfig({
   testDir: "tests/e2e",

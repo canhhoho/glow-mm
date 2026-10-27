@@ -20,7 +20,8 @@ const STORE_PATH = /^\/([^/]+)\/(p|c|info|collection)\/([^/]+)\/?$/;
 const L = routing.locales.join("|");
 const KNOWN_STORE_PATHS = [
   new RegExp(`^/(${L})/?$`),
-  new RegExp(`^/(${L})/(cart|checkout|search|track|404)/?$`),
+  new RegExp(`^/(${L})/(cart|checkout|search|track|404|login|register|forgot-password|reset-password|account)/?$`),
+  new RegExp(`^/(${L})/account/(addresses|profile)/?$`),
   new RegExp(`^/(${L})/(p|c|info|collection|order)/[^/]+/?$`),
 ];
 

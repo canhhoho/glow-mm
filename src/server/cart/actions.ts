@@ -7,7 +7,10 @@ import { hasLocale } from "next-intl";
 import { z, ZodError } from "zod";
 import { redirect } from "@/i18n/navigation";
 import { routing, type StoreLocale } from "@/i18n/routing";
+import { claimOrders } from "@/server/accounts/claims";
+import { customerOrder } from "@/server/accounts/order-access";
 import { normalizeRefCode, REF_COOKIE } from "@/server/affiliates/referral";
+import { getCustomerUser } from "@/server/auth/customer-session";
 import { OrderError } from "@/server/orders/errors";
 import { createOrder, findOrderForCustomer } from "@/server/orders/orders";
 import { submitPaymentProof } from "@/server/orders/payments";
@@ -22,7 +25,7 @@ import {
   setLine,
 } from "./cart";
 
-/** Server Action của storefront (khách không đăng nhập). Mọi dữ liệu được kiểm lại ở domain. */
+/** Server Action của storefront. Mọi dữ liệu được kiểm lại ở domain. */
 
 export type StoreActionState = { error?: string; ok?: boolean } | undefined;
 
@@ -122,6 +125,9 @@ export async function trackOrderAction(_prev: StoreActionState, formData: FormDa
     return { error: t("notFound") };
   }
   await rememberOrder(order.code, order.recipientPhone);
+  // Đang đăng nhập: đơn vừa chứng minh được (mã + SĐT) gắn luôn vào tài khoản.
+  const user = await getCustomerUser();
+  if (user) await claimOrders(user.id, [{ c: order.code, p: order.recipientPhone }]);
   redirect({ href: `/order/${order.code}`, locale });
 }
 
@@ -129,13 +135,13 @@ export async function uploadProofAction(_prev: StoreActionState, formData: FormD
   const locale = localeOf(formData);
   const code = String(formData.get("code") ?? "");
   try {
-    const access = parseOrderAccess((await cookies()).get(ORDERS_COOKIE)?.value).find((a) => a.c === code);
-    if (!access) throw new OrderError("not_found", "Không có quyền với đơn này");
+    const order = await customerOrder(code);
+    if (!order) throw new OrderError("not_found", "Không có quyền với đơn này");
     const file = formData.get("file");
     if (!(file instanceof File)) throw new OrderError("invalid_file", "Thiếu file");
     await submitPaymentProof({
-      orderCode: code,
-      phone: access.p,
+      orderCode: order.code,
+      phone: order.recipientPhone,
       file: { data: Buffer.from(await file.arrayBuffer()), mime: file.type },
     });
   } catch (e) {

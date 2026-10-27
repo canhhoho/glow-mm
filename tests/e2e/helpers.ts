@@ -1,4 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
+import { readdir, readFile } from "node:fs/promises";
+import path from "node:path";
 import zlib from "node:zlib";
 import pg from "pg";
 
@@ -74,4 +76,53 @@ export function solidPng(size: number): Buffer {
     chunk("IDAT", zlib.deflateSync(raw)),
     chunk("IEND", Buffer.alloc(0)),
   ]);
+}
+
+/** Link trong email mới nhất gửi tới `to` (EMAIL_DRIVER=outbox — playwright.config đặt EMAIL_OUTBOX_DIR tuyệt đối). */
+export async function emailLink(to: string, since = 0): Promise<string> {
+  const dir = process.env.EMAIL_OUTBOX_DIR!;
+  let found: string | undefined;
+  await expect
+    .poll(
+      async () => {
+        const files = (await readdir(dir).catch(() => [] as string[]))
+          .filter((f) => f.endsWith(`-${to}.json`) && Number(f.split("-")[0]) >= since)
+          .sort();
+        found = files.at(-1);
+        return !!found;
+      },
+      { timeout: 15_000 },
+    )
+    .toBe(true);
+  const mail = JSON.parse(await readFile(path.join(dir, found!), "utf8")) as { text: string };
+  return mail.text.match(/https?:\/\/\S+/)![0];
+}
+
+export const CUSTOMER_PASSWORD = "e2e-customer-pass-1";
+
+/** Đăng ký khách mới bằng email (giao diện tiếng Anh) + mở link xác minh → đã đăng nhập, đang ở `next`. */
+export async function registerCustomer(page: Page, next = "/en/account") {
+  await resetLoginRateLimit();
+  const email = `e2e-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}@glow.local`;
+  const since = Date.now();
+  await page.goto(`/en/register?next=${encodeURIComponent(next)}`);
+  await page.getByLabel("Full name").fill("Ma E2E");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(CUSTOMER_PASSWORD);
+  await page.getByLabel("Confirm password").fill(CUSTOMER_PASSWORD);
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page.getByText(`We sent a confirmation link to ${email}`)).toBeVisible();
+  await page.goto(await emailLink(email, since));
+  // Link xác minh → /login (đã có phiên) → trang `next` (chuyển hướng phía client sau khi trang stream xong).
+  await page.waitForURL((u) => u.pathname === next);
+  return email;
+}
+
+/** Đăng nhập khách bằng email trên /en/login. */
+export async function loginCustomer(page: Page, email: string, password = CUSTOMER_PASSWORD, next = "/en/account") {
+  await resetLoginRateLimit();
+  await page.goto(`/en/login?next=${encodeURIComponent(next)}`);
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
 }

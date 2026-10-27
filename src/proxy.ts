@@ -3,7 +3,7 @@ import createMiddleware from "next-intl/middleware";
 import { hasLocale } from "next-intl";
 import { PORTAL_HEADER, routing } from "./i18n/routing";
 import { normalizeRefCode, REF_COOKIE, REF_MAX_AGE_S, REF_PARAM } from "./server/affiliates/referral";
-import { loginRedirectFor } from "./server/auth/session-cookie";
+import { customerLoginRedirectFor, loginRedirectFor } from "./server/auth/session-cookie";
 import { isKnownStorePath, parseStoreSlugPath, storeSlugExists } from "./server/catalog/store-slugs";
 
 const intl = createMiddleware(routing);
@@ -37,6 +37,14 @@ export default async function proxy(req: NextRequest) {
     if (code) res.cookies.set(REF_COOKIE, code, { httpOnly: true, sameSite: "lax", path: "/", maxAge: REF_MAX_AGE_S });
     return res;
   }
+
+  // Khu tài khoản khách (P14) chưa có cookie phiên khách → trang đăng nhập (sau khối ?ref để cookie CTV vẫn được ghi).
+  const customerLogin = customerLoginRedirectFor(
+    req.nextUrl.pathname,
+    req.nextUrl.search,
+    req.cookies.getAll().map((c) => c.name),
+  );
+  if (customerLogin) return NextResponse.redirect(new URL(customerLogin, req.url));
 
   const res = intl(req);
   if (res.headers.has("location")) return res; // next-intl chuyển hướng

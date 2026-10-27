@@ -557,6 +557,31 @@ async function seedAffiliateOrders() {
   );
 }
 
+/** Khách mẫu (P14): khach@glow.local (đã xác minh email) + 1 địa chỉ mặc định; mật khẩu = SEED_STAFF_PASSWORD. */
+const CUSTOMER = { id: "seed-customer", email: "khach@glow.local", name: "Ma Khin (Khách)" } as const;
+
+async function seedCustomer() {
+  const password = process.env.SEED_STAFF_PASSWORD;
+  if (!password) throw new Error("Thiếu SEED_STAFF_PASSWORD trong .env");
+  const zone = await prisma.shippingZone.findUniqueOrThrow({ where: { code: "YGN-KMY" } });
+  await prisma.user.create({
+    data: {
+      id: CUSTOMER.id,
+      email: CUSTOMER.email,
+      name: CUSTOMER.name,
+      role: "CUSTOMER",
+      locale: "my",
+      emailVerified: true,
+      accounts: {
+        create: { id: `${CUSTOMER.id}-cred`, accountId: CUSTOMER.id, providerId: "credential", password: await hashPassword(password) },
+      },
+      addresses: {
+        create: { recipientName: "Ma Khin", phone: "0978300000", zoneId: zone.id, line: "No. 8, Pyay Road", isDefault: true },
+      },
+    },
+  });
+}
+
 async function main() {
   if (await prisma.user.findUnique({ where: { email: STAFF[0].email } })) {
     console.log("• Nhân viên + catalog: đã có → bỏ qua");
@@ -589,6 +614,12 @@ async function main() {
     await seedSubAffiliate();
     console.log("• CTV cấp dưới mẫu: xong (ctv2@glow.local, mã LINN, dưới MAUNG)");
   }
+  if (await prisma.user.findUnique({ where: { email: CUSTOMER.email } })) {
+    console.log("• Khách mẫu: đã có → bỏ qua");
+  } else {
+    await seedCustomer();
+    console.log("• Khách mẫu: xong (khach@glow.local, có địa chỉ mặc định)");
+  }
   // Các bước dưới gọi hàm nghiệp vụ (src/server, kết nối qua DATABASE_URL) → bỏ qua khi seed qua WebSocket.
   if (process.env.SEED_VIA_WEBSOCKET === "1") {
     console.log("• Landed cost + đơn mẫu: bỏ qua (SEED_VIA_WEBSOCKET)");
@@ -618,7 +649,7 @@ async function main() {
       console.log("• Đơn mẫu CTV cấp dưới: xong (LINN bán, MAUNG hưởng tầng trên)");
     }
   }
-  console.log("Seed xong: 3 nhân viên, 2 CTV (2 tầng), 6 sản phẩm (1 combo), 8 lô, 4 vùng giao hàng, đơn mẫu.");
+  console.log("Seed xong: 3 nhân viên, 2 CTV (2 tầng), 1 khách, 6 sản phẩm (1 combo), 8 lô, 4 vùng giao hàng, đơn mẫu.");
 }
 
 main()

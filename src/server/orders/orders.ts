@@ -192,19 +192,25 @@ async function priceLines(tx: Tx, items: { variantId: string; qty: number }[], l
   });
 }
 
+/** Phần đơn khách được xem (trang đơn storefront). */
+const customerOrderInclude = {
+  items: true,
+  paymentProofs: { orderBy: { createdAt: "desc" }, select: { id: true, status: true, createdAt: true } },
+  deliveries: { orderBy: { createdAt: "desc" } },
+  history: { orderBy: { createdAt: "asc" }, select: { toStatus: true, createdAt: true } },
+  reservations: { where: { status: "ACTIVE" }, select: { expiresAt: true }, take: 1 },
+} satisfies Prisma.OrderInclude;
+
 /** Tra đơn cho khách: phải khớp cả mã đơn và SĐT. */
 export async function findOrderForCustomer(code: string, phoneInput: string) {
   const phone = normalizeMmPhone(phoneInput);
   if (!phone) return null;
-  const order = await prisma.order.findUnique({
-    where: { code: code.trim().toUpperCase() },
-    include: {
-      items: true,
-      paymentProofs: { orderBy: { createdAt: "desc" }, select: { id: true, status: true, createdAt: true } },
-      deliveries: { orderBy: { createdAt: "desc" } },
-      history: { orderBy: { createdAt: "asc" }, select: { toStatus: true, createdAt: true } },
-      reservations: { where: { status: "ACTIVE" }, select: { expiresAt: true }, take: 1 },
-    },
-  });
+  const order = await prisma.order.findUnique({ where: { code: code.trim().toUpperCase() }, include: customerOrderInclude });
   return order && order.recipientPhone === phone ? order : null;
+}
+
+/** Đơn thuộc tài khoản khách đang đăng nhập (P14). */
+export async function findOrderForAccount(code: string, userId: string) {
+  const order = await prisma.order.findUnique({ where: { code: code.trim().toUpperCase() }, include: customerOrderInclude });
+  return order && order.accountId === userId ? order : null;
 }

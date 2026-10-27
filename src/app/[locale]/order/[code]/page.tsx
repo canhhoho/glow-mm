@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { cookies } from "next/headers";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import type { StoreLocale } from "@/i18n/routing";
 import { fmtDateTime } from "@/lib/format";
 import { formatMmk } from "@/lib/money";
-import { ORDERS_COOKIE, parseOrderAccess } from "@/server/cart/cart";
-import { findOrderForCustomer } from "@/server/orders/orders";
+import { customerOrder } from "@/server/accounts/order-access";
 import { reviewablesForOrder } from "@/server/reviews/reviews";
 import { getStringSetting } from "@/server/settings";
 import { ContactLinks } from "@/components/store/contact-links";
@@ -26,13 +24,12 @@ export default function OrderPage(props: PageProps<"/[locale]/order/[code]">) {
   );
 }
 
-/** Trang đơn của khách: chỉ mở được khi trình duyệt đã đặt/tra cứu đơn này (cookie mã đơn + SĐT). */
+/** Trang đơn của khách: mở được khi trình duyệt đã đặt/tra cứu đơn này (cookie mã đơn + SĐT) hoặc đơn thuộc tài khoản (P14). */
 async function OrderContent({ params, searchParams }: PageProps<"/[locale]/order/[code]">) {
   const { locale, code } = (await params) as { locale: StoreLocale; code: string };
   setRequestLocale(locale);
   const { placed } = await searchParams;
-  const access = parseOrderAccess((await cookies()).get(ORDERS_COOKIE)?.value).find((a) => a.c === code);
-  const order = access ? await findOrderForCustomer(code, access.p) : null;
+  const order = await customerOrder(code);
   if (!order) return redirect({ href: { pathname: "/track", query: { code } }, locale });
 
   const [t, tr, bankInstructions, reviewables] = await Promise.all([

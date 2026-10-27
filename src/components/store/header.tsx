@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
-import { PackageSearch, Search, ShoppingBag } from "lucide-react";
+import { PackageSearch, Search, ShoppingBag, UserRound } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getPathname, Link } from "@/i18n/navigation";
 import { routing, type StoreLocale } from "@/i18n/routing";
@@ -52,8 +52,9 @@ async function HeaderContact({ locale }: { locale: string }) {
 
 /**
  * Header 2 tầng (theo bố cục mẫu đã duyệt):
- * - Mobile: tầng 1 (màu thương hiệu) logo giữa + ngôn ngữ; tầng 2 (trắng) menu · ô tìm kiếm · giỏ.
- * - lg: tầng 1 logo · ô tìm kiếm + nút · ngôn ngữ · giỏ; tầng 2 nút "Danh mục" · tra cứu đơn + liên hệ.
+ * - Mobile: tầng 1 (màu thương hiệu) tài khoản · logo giữa · ngôn ngữ; tầng 2 (trắng) menu · ô tìm kiếm · giỏ.
+ * - lg: tầng 1 logo · ô tìm kiếm + nút · ngôn ngữ · tài khoản · giỏ; tầng 2 nút "Danh mục" · tra cứu đơn + liên hệ.
+ * Link tài khoản là link tĩnh (không đọc phiên → giữ static shell); chưa đăng nhập thì proxy chuyển tới trang đăng nhập.
  * Chỉ có MỘT form tìm kiếm và MỘT link giỏ: đổi vị trí bằng CSS grid, dải màu tầng 1 là ::before.
  */
 export async function StoreHeader({ locale }: { locale: StoreLocale }) {
@@ -62,7 +63,7 @@ export async function StoreHeader({ locale }: { locale: StoreLocale }) {
 
   return (
     <header className="sticky top-0 z-30 bg-card shadow-sm before:absolute before:inset-x-0 before:top-0 before:h-12 before:bg-brand lg:before:h-16">
-      <div className="relative mx-auto grid max-w-6xl grid-cols-[auto_1fr_auto] grid-rows-[3rem_auto] items-center gap-x-1 pr-2 pl-1 lg:grid-cols-[auto_1fr_auto_auto] lg:grid-rows-[4rem_3rem] lg:gap-x-4 lg:px-4">
+      <div className="relative mx-auto grid max-w-6xl grid-cols-[auto_1fr_auto] grid-rows-[3rem_auto] items-center gap-x-1 pr-2 pl-1 lg:grid-cols-[auto_1fr_auto_auto_auto] lg:grid-rows-[4rem_3rem] lg:gap-x-4 lg:px-4">
         <Link
           href="/"
           className="col-start-2 row-start-1 justify-self-center text-lg font-medium text-brand-foreground lg:col-start-1 lg:justify-self-start lg:text-2xl"
@@ -102,9 +103,18 @@ export async function StoreHeader({ locale }: { locale: StoreLocale }) {
         </form>
 
         <Link
+          href="/account"
+          aria-label={t("account")}
+          data-testid="account-link"
+          className="col-start-1 row-start-1 grid size-11 place-items-center text-brand-foreground lg:col-start-4"
+        >
+          <UserRound className="size-5 lg:size-6" aria-hidden />
+        </Link>
+
+        <Link
           href="/cart"
           aria-label={t("cart")}
-          className="relative col-start-3 row-start-2 grid size-11 place-items-center justify-self-end lg:col-start-4 lg:row-start-1 lg:text-brand-foreground"
+          className="relative col-start-3 row-start-2 grid size-11 place-items-center justify-self-end lg:col-start-5 lg:row-start-1 lg:text-brand-foreground"
         >
           <ShoppingBag className="size-5 lg:size-6" aria-hidden />
           <Suspense>
@@ -112,7 +122,7 @@ export async function StoreHeader({ locale }: { locale: StoreLocale }) {
           </Suspense>
         </Link>
 
-        <div className="col-span-3 col-start-2 row-start-2 hidden items-center justify-end gap-5 text-sm lg:flex">
+        <div className="col-span-4 col-start-2 row-start-2 hidden items-center justify-end gap-5 text-sm lg:flex">
           <Link href="/track" className="inline-flex min-h-11 items-center gap-1.5 hover:text-brand">
             <PackageSearch className="size-4" aria-hidden />
             {t("orderLookup")}

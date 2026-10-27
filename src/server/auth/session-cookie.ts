@@ -18,3 +18,20 @@ export function loginRedirectFor(pathname: string, cookieNames: string[]): strin
   if (cookieNames.some((n) => SESSION_COOKIES.includes(n))) return null;
   return `/${area}/login`;
 }
+
+/** Cookie phiên của instance auth khách (P14, `cookiePrefix: "glow-customer"`). */
+export const CUSTOMER_SESSION_COOKIES = ["glow-customer.session_token", "__Secure-glow-customer.session_token"];
+
+/** Trang storefront cần tài khoản khách (có/không tiền tố /en). Checkout thêm ở P14c. */
+const CUSTOMER_AREA = /^(\/en)?\/account(\/.*)?$/;
+
+/**
+ * Storefront: trang cần đăng nhập mà chưa có cookie phiên khách → `/(en/)login?next=<đường dẫn + query>`, ngược lại null.
+ * Như trên: chỉ để tránh trang trắng, quyền kiểm ở `requireCustomer`.
+ */
+export function customerLoginRedirectFor(pathname: string, search: string, cookieNames: string[]): string | null {
+  const m = CUSTOMER_AREA.exec(pathname);
+  if (!m) return null;
+  if (cookieNames.some((n) => CUSTOMER_SESSION_COOKIES.includes(n))) return null;
+  return `${m[1] ?? ""}/login?next=${encodeURIComponent(pathname + search)}`;
+}

@@ -71,3 +71,21 @@ export function decodeCookieValue(raw: string | null | undefined): string | null
     return null;
   }
 }
+
+/** Mã lỗi Better Auth gắn vào `?error=` khi chuyển về trang đăng nhập (Google, link xác minh) → khoá chuỗi `Auth.err.*`. */
+export function authRedirectErrorKey(code: string): string {
+  switch (code) {
+    case "account_not_linked":
+      return "notLinked";
+    case NOT_CUSTOMER:
+      return "notCustomer";
+    case "USER_INACTIVE":
+      return "locked";
+    case "TOKEN_EXPIRED":
+    case "INVALID_TOKEN":
+    case "invalid_token":
+      return "invalidLink";
+    default:
+      return "unknown";
+  }
+}

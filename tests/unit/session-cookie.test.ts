@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loginRedirectFor } from "@/server/auth/session-cookie";
+import { customerLoginRedirectFor, loginRedirectFor } from "@/server/auth/session-cookie";
 
 describe("Chuyển về trang đăng nhập ở proxy (P12)", () => {
   it("admin / cổng CTV chưa có cookie phiên → trang đăng nhập tương ứng", () => {
@@ -21,5 +21,22 @@ describe("Chuyển về trang đăng nhập ở proxy (P12)", () => {
     expect(loginRedirectFor("/", [])).toBeNull();
     expect(loginRedirectFor("/en/cart", [])).toBeNull();
     expect(loginRedirectFor("/adminx", [])).toBeNull();
+  });
+});
+
+describe("Khu tài khoản khách ở proxy (P14)", () => {
+  it("chưa có cookie phiên khách → login cùng ngôn ngữ, giữ đường dẫn + query trong ?next", () => {
+    expect(customerLoginRedirectFor("/account", "", [])).toBe("/login?next=%2Faccount");
+    expect(customerLoginRedirectFor("/en/account/addresses", "?edit=1", ["better-auth.session_token"])).toBe(
+      "/en/login?next=%2Fen%2Faccount%2Faddresses%3Fedit%3D1",
+    );
+  });
+
+  it("đã có cookie khách / trang khác → không chuyển", () => {
+    expect(customerLoginRedirectFor("/account", "", ["glow-customer.session_token"])).toBeNull();
+    expect(customerLoginRedirectFor("/en/account", "", ["__Secure-glow-customer.session_token"])).toBeNull();
+    expect(customerLoginRedirectFor("/login", "", [])).toBeNull();
+    expect(customerLoginRedirectFor("/accounts", "", [])).toBeNull();
+    expect(customerLoginRedirectFor("/en/cart", "", [])).toBeNull();
   });
 });

@@ -28,7 +28,7 @@ const myanmarFont = localFont({
 });
 
 /** Chỉ gửi xuống client các namespace mà Client Component storefront dùng (giảm kích thước trang). */
-const CLIENT_NAMESPACES = ["Checkout", "Order", "Track", "Review"] as const;
+const CLIENT_NAMESPACES = ["Checkout", "Order", "Track", "Review", "Auth", "Account"] as const;
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
