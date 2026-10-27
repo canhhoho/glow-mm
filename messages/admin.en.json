@@ -940,7 +940,8 @@
       "app_email_taken": "Email already has an account",
       "app_duplicate": "An application is already pending",
       "app_too_many": "Too many applications",
-      "app_invalid_phone": "Invalid phone number"
+      "app_invalid_phone": "Invalid phone number",
+      "uplinePercent": "Upline share must be 0–20% (max 2 decimals)"
     },
     "lineKind": {
       "SALE": "sales",
@@ -964,7 +965,8 @@
         "APPROVED": "Approved",
         "REJECTED": "Rejected"
       },
-      "approvedNote": "Approved. The affiliate signs in at /ctv/login with the email + password they chose."
+      "approvedNote": "Approved. The affiliate signs in at /ctv/login with the email + password they chose.",
+      "pendingTotal": "Pending: {count} (showing the {shown} newest)"
     },
     "tree": {
       "parent": "Upline",
@@ -978,7 +980,18 @@
     },
     "teamOrders": "Team orders (upline share)",
     "colUpline": "Upline commission",
-    "inviteLink": "Affiliate invite link"
+    "inviteLink": "Affiliate invite link",
+    "uplinePercent": "Share of recruits' orders (%)",
+    "uplinePercentDefault": "Default {percent}%",
+    "uplinePercentHint": "% of goods this affiliate earns on orders of people they recruited. Leave blank to use the global {percent}%. New orders only.",
+    "uplineShort": "upline {percent}%",
+    "orderRates": {
+      "save": "Save %",
+      "saved": "Rates updated",
+      "hint": "Adjust the commission rates locked on this order (only before payout). Commission is recalculated immediately.",
+      "sale": "Affiliate %",
+      "upline": "Upline %"
+    }
   },
   "Ctv": {
     "metaTitle": "Affiliate portal — Glow VN",

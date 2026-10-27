@@ -16,6 +16,7 @@ import {
   recordPayout,
   setAffiliateActive,
   setAffiliateParent,
+  setOrderCommissionRates,
   updateAffiliate,
 } from "./affiliates";
 import { ApplicationError, approveApplication, rejectApplication } from "./applications";
@@ -35,6 +36,7 @@ async function message(e: unknown): Promise<string> {
       return t("errors.tooShort", { min: MIN_STAFF_PASSWORD });
     }
     if (field === "commissionPercent") return t("errors.percent");
+    if (field === "uplinePercent") return t("errors.uplinePercent");
     return t("errors.invalid");
   }
   return e instanceof Error ? e.message : String(e);
@@ -45,6 +47,7 @@ const profile = (fd: FormData) => ({
   phone: String(fd.get("phone") ?? ""),
   code: String(fd.get("code") ?? ""),
   commissionPercent: String(fd.get("commissionPercent") ?? ""),
+  uplinePercent: String(fd.get("uplinePercent") ?? ""),
   payoutInfo: String(fd.get("payoutInfo") ?? ""),
 });
 
@@ -167,6 +170,24 @@ export async function rejectApplicationAction(_prev: ActionState, fd: FormData):
   }
   revalidatePath("/admin/affiliates", "layout");
   return { ok: "rejected" };
+}
+
+/** Chỉnh % hoa hồng chốt trên đơn chưa chi trả (P13, chỉ admin). */
+export async function setOrderCommissionRatesAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  const orderId = String(fd.get("orderId"));
+  try {
+    const user = await requirePermission("affiliates:manage");
+    await setOrderCommissionRates(
+      orderId,
+      { commissionPercent: String(fd.get("commissionPercent") ?? ""), uplinePercent: String(fd.get("uplinePercent") ?? "") },
+      { userId: user.id, role: user.role },
+    );
+  } catch (e) {
+    return { error: await message(e) };
+  }
+  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath("/admin/affiliates", "layout");
+  return { ok: "rates" };
 }
 
 /** `affiliateId` rỗng = bỏ CTV khỏi đơn. */

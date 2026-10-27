@@ -3,6 +3,7 @@ import {
   bpToPercent,
   commissionBaseMmk,
   commissionMmk,
+  effectiveUplineRateBp,
   orderCommission,
   payoutLines,
   percentToBp,
@@ -136,5 +137,13 @@ describe("Hoa hồng hai tầng (P11)", () => {
       { orderId: "b", kind: "UPLINE", amountMmk: -600 },
     ]);
     expect(mixed.totalMmk).toBe(2400);
+  });
+});
+
+describe("% tầng trên riêng (P13)", () => {
+  it("có % riêng thì dùng, không có thì dùng % chung; 0% riêng vẫn là 0", () => {
+    expect(effectiveUplineRateBp({ uplineRateBp: 300 }, 200)).toBe(300);
+    expect(effectiveUplineRateBp({ uplineRateBp: null }, 200)).toBe(200);
+    expect(effectiveUplineRateBp({ uplineRateBp: 0 }, 200)).toBe(0);
   });
 });

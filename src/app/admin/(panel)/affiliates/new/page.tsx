@@ -10,16 +10,21 @@ import { fieldClass, LinkButton, PageHeader } from "@/components/admin/ui";
 
 export default async function NewAffiliatePage() {
   await requirePagePermission("affiliates:manage");
-  const [t, options, defaultBp] = await Promise.all([
+  const [t, options, defaultBp, uplineBp] = await Promise.all([
     getTranslations("Affiliates"),
     affiliateOptions(),
     getNumberSetting("affiliate.defaultRateBp"),
+    getNumberSetting("affiliate.uplineRateBp"),
   ]);
   return (
     <div className="max-w-md">
       <PageHeader title={t("new")} actions={<LinkButton href="/admin/affiliates">← {t("back")}</LinkButton>} />
       <ActionForm action={createAffiliateAction} submitLabel={t("create")} className="space-y-3">
-        <AffiliateFields withLogin values={{ code: suggestAffiliateCode(), commissionPercent: bpToPercent(defaultBp) }} />
+        <AffiliateFields
+          withLogin
+          values={{ code: suggestAffiliateCode(), commissionPercent: bpToPercent(defaultBp) }}
+          globalUplinePercent={bpToPercent(uplineBp)}
+        />
         <label className="block space-y-1 text-sm">
           <span>{t("tree.parentOptional")}</span>
           <select name="parentId" defaultValue="" className={fieldClass}>

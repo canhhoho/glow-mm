@@ -940,7 +940,8 @@
       "app_email_taken": "Email đã có tài khoản",
       "app_duplicate": "Đã có đơn chờ duyệt",
       "app_too_many": "Quá nhiều đơn",
-      "app_invalid_phone": "Số điện thoại không hợp lệ"
+      "app_invalid_phone": "Số điện thoại không hợp lệ",
+      "uplinePercent": "% tầng trên từ 0 đến 20 (tối đa 2 số lẻ)"
     },
     "lineKind": {
       "SALE": "bán hàng",
@@ -964,7 +965,8 @@
         "APPROVED": "Đã duyệt",
         "REJECTED": "Từ chối"
       },
-      "approvedNote": "Đã duyệt. CTV đăng nhập ở /ctv/login bằng email + mật khẩu họ đã đặt khi đăng ký."
+      "approvedNote": "Đã duyệt. CTV đăng nhập ở /ctv/login bằng email + mật khẩu họ đã đặt khi đăng ký.",
+      "pendingTotal": "Đang chờ duyệt: {count} đơn (hiện {shown} đơn mới nhất)"
     },
     "tree": {
       "parent": "Cấp trên",
@@ -978,7 +980,18 @@
     },
     "teamOrders": "Đơn tuyến dưới (hưởng tầng trên)",
     "colUpline": "Hoa hồng tầng trên",
-    "inviteLink": "Link mời làm CTV"
+    "inviteLink": "Link mời làm CTV",
+    "uplinePercent": "% hưởng từ tuyến dưới",
+    "uplinePercentDefault": "Mặc định {percent}%",
+    "uplinePercentHint": "% tiền hàng CTV này nhận trên đơn của người mình tuyển. Để trống = dùng % chung ({percent}%). Chỉ áp cho đơn mới.",
+    "uplineShort": "tầng trên {percent}%",
+    "orderRates": {
+      "save": "Lưu %",
+      "saved": "Đã cập nhật %",
+      "hint": "Chỉnh % hoa hồng chốt trên đơn này (chỉ khi chưa chi trả). Hoa hồng tính lại ngay.",
+      "sale": "% hoa hồng CTV",
+      "upline": "% tầng trên"
+    }
   },
   "Ctv": {
     "metaTitle": "Cổng CTV — Glow VN",

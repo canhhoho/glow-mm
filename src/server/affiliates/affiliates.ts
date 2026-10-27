@@ -15,6 +15,7 @@ import { getNumberSetting } from "@/server/settings";
 import { uplineSnapshot } from "./upline";
 import {
   commissionBaseMmk,
+  effectiveUplineRateBp,
   payoutLines,
   percentToBp,
   splitCommissions,
@@ -53,12 +54,21 @@ export class AffiliateError extends Error {
 
 const text = (max: number) => z.string().trim().max(max).transform(toUnicode);
 
+/** % hưởng từ tuyến dưới (P13) — trống = dùng % chung trong Cài đặt. */
+export const uplinePercentSchema = z
+  .string()
+  .trim()
+  .optional()
+  .transform((v) => (v ? Number(v) : null))
+  .pipe(z.number().min(0).max(20).multipleOf(0.01).nullable());
+
 const profileSchema = z.object({
   name: text(100).pipe(z.string().min(1)),
   phone: z.string().trim().min(1).max(30),
   code: z.string(),
   /** % hoa hồng, tối đa 2 chữ số thập phân (vd 12.5). */
   commissionPercent: z.coerce.number().min(0).max(50).multipleOf(0.01),
+  uplinePercent: uplinePercentSchema,
   payoutInfo: text(500).optional(),
 });
 
@@ -75,7 +85,14 @@ export function parseProfile<T extends z.ZodType<z.infer<typeof profileSchema>>>
   if (!code) throw new AffiliateError("invalid_code", "Mã CTV 4–12 ký tự A–Z, 0–9");
   const phone = normalizeMmPhone(input.phone);
   if (!phone) throw new AffiliateError("invalid_phone", "Số điện thoại không hợp lệ");
-  return { ...input, code, phone, commissionRateBp: percentToBp(input.commissionPercent), payoutInfo: input.payoutInfo || null };
+  return {
+    ...input,
+    code,
+    phone,
+    commissionRateBp: percentToBp(input.commissionPercent),
+    uplineRateBp: input.uplinePercent == null ? null : percentToBp(input.uplinePercent),
+    payoutInfo: input.payoutInfo || null,
+  };
 }
 
 export function uniqueError(e: unknown): never {
@@ -98,6 +115,7 @@ export type NewAffiliate = {
   phone: string;
   code: string;
   commissionRateBp: number;
+  uplineRateBp?: number | null;
   payoutInfo: string | null;
   parentId: string | null;
   passwordHash: string;
@@ -125,6 +143,7 @@ export async function insertAffiliate(tx: Tx, input: NewAffiliate, actorId: stri
       code: input.code,
       phone: input.phone,
       commissionRateBp: input.commissionRateBp,
+      uplineRateBp: input.uplineRateBp ?? null,
       payoutInfo: input.payoutInfo,
       parentId: input.parentId,
     },
@@ -162,7 +181,13 @@ export async function updateAffiliate(id: string, raw: unknown, actorId: string)
       await tx.user.update({ where: { id: cur.userId }, data: { name: input.name } });
       const updated = await tx.affiliate.update({
         where: { id },
-        data: { code: input.code, phone: input.phone, commissionRateBp: input.commissionRateBp, payoutInfo: input.payoutInfo },
+        data: {
+          code: input.code,
+          phone: input.phone,
+          commissionRateBp: input.commissionRateBp,
+          uplineRateBp: input.uplineRateBp,
+          payoutInfo: input.payoutInfo,
+        },
       });
       await tx.auditLog.create({
         data: {
@@ -174,6 +199,7 @@ export async function updateAffiliate(id: string, raw: unknown, actorId: string)
             name: input.name,
             code: { from: cur.code, to: input.code },
             commissionRateBp: { from: cur.commissionRateBp, to: input.commissionRateBp },
+            uplineRateBp: { from: cur.uplineRateBp, to: input.uplineRateBp },
           },
         },
       });
@@ -393,7 +419,7 @@ export async function teamOrders(affiliateId: string, now = new Date()) {
  * Hoa hồng từ người đã chuyển sang tuyến khác vẫn tính (đơn đã chốt) → gộp vào `former`.
  */
 export async function teamOverview(affiliateId: string, now = new Date()) {
-  const [children, upline, pendingApplications, uplineRateBp] = await Promise.all([
+  const [children, upline, pendingApplications, globalUplineBp, self] = await Promise.all([
     prisma.affiliate.findMany({
       where: { parentId: affiliateId },
       select: { id: true, code: true, active: true, createdAt: true, user: { select: { name: true } } },
@@ -402,7 +428,9 @@ export async function teamOverview(affiliateId: string, now = new Date()) {
     teamOrders(affiliateId, now),
     prisma.affiliateApplication.count({ where: { inviterId: affiliateId, status: "PENDING" } }),
     getNumberSetting("affiliate.uplineRateBp"),
+    prisma.affiliate.findUnique({ where: { id: affiliateId }, select: { uplineRateBp: true } }),
   ]);
+  const uplineRateBp = effectiveUplineRateBp({ uplineRateBp: self?.uplineRateBp ?? null }, globalUplineBp);
   const childIds = new Set(children.map((c) => c.id));
   const month = monthRange(currentMonth(now))!;
   const commissionOf = (orders: AffiliateOrder[]) =>
@@ -480,6 +508,48 @@ export async function assignOrderAffiliate(
         entity: "Order",
         entityId: orderId,
         data: { code: order.code, from: order.affiliateId, to: affiliateId },
+      },
+    });
+    return updated;
+  });
+}
+
+// ── Chỉnh % trên từng đơn (P13) ──
+
+const orderRatesSchema = z.object({
+  commissionPercent: z.coerce.number().min(0).max(50).multipleOf(0.01),
+  uplinePercent: uplinePercentSchema,
+});
+
+/**
+ * Admin chỉnh % hoa hồng đã chốt trên một đơn (người bán + tầng trên nếu đơn có cấp trên).
+ * Chỉ khi đơn chưa có dòng chi trả nào — đơn đã chi trả thì khoá để sổ chi trả không lệch.
+ */
+export async function setOrderCommissionRates(orderId: string, raw: unknown, actor: { userId: string; role: Role }) {
+  if (!can(actor.role, "affiliates:manage")) throw new AffiliateError("forbidden", "Không có quyền chỉnh hoa hồng");
+  const input = orderRatesSchema.parse(raw);
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT "id" FROM "Order" WHERE "id" = ${orderId} FOR UPDATE`;
+    const order = await tx.order.findUnique({ where: { id: orderId }, include: { _count: { select: { payoutLines: true } } } });
+    if (!order?.affiliateId) throw new AffiliateError("not_found", "Đơn không có CTV");
+    if (order._count.payoutLines > 0) throw new AffiliateError("order_paid", "Đơn đã chi trả hoa hồng — không chỉnh % được");
+    const data = {
+      commissionRateBp: percentToBp(input.commissionPercent),
+      // Đơn không có cấp trên → bỏ qua % tầng trên; có cấp trên mà để trống → giữ nguyên.
+      uplineRateBp: order.uplineAffiliateId && input.uplinePercent != null ? percentToBp(input.uplinePercent) : order.uplineRateBp,
+    };
+    const updated = await tx.order.update({ where: { id: orderId }, data });
+    await tx.auditLog.create({
+      data: {
+        userId: actor.userId,
+        action: "order.setCommissionRates",
+        entity: "Order",
+        entityId: orderId,
+        data: {
+          code: order.code,
+          commissionRateBp: { from: order.commissionRateBp, to: data.commissionRateBp },
+          uplineRateBp: { from: order.uplineRateBp, to: data.uplineRateBp },
+        },
       },
     });
     return updated;

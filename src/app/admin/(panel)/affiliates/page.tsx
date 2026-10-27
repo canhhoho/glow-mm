@@ -74,7 +74,12 @@ export default async function AffiliatesPage({ searchParams }: PageProps<"/admin
               {!a.active && <Badge tone="danger">{t("locked")}</Badge>}
             </Td>
             <Td className="font-mono text-xs">{a.code}</Td>
-            <Td className="tabular-nums">{bpToPercent(a.commissionRateBp)}%</Td>
+            <Td className="tabular-nums">
+              {bpToPercent(a.commissionRateBp)}%
+              {a.uplineRateBp != null && (
+                <div className="text-xs text-muted-foreground">{t("uplineShort", { percent: bpToPercent(a.uplineRateBp) })}</div>
+              )}
+            </Td>
             <Td className="text-right tabular-nums whitespace-nowrap">
               {fmtInt(a.summary.monthSalesMmk)}
               <div className="text-xs text-muted-foreground">{t("ordersCount", { count: a.summary.monthOrders })}</div>

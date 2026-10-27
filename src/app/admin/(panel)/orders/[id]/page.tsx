@@ -5,7 +5,7 @@ import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { getOrderAdmin, quarantineLocations, sellableLocations } from "@/server/orders/admin-queries";
 import { returnItemsAction, reviewProofAction } from "@/server/orders/actions";
-import { assignOrderAffiliateAction } from "@/server/affiliates/actions";
+import { assignOrderAffiliateAction, setOrderCommissionRatesAction } from "@/server/affiliates/actions";
 import { affiliateOptions } from "@/server/affiliates/affiliates";
 import { bpToPercent, splitCommissions } from "@/server/affiliates/commission";
 import { getNumberSetting } from "@/server/settings";
@@ -193,6 +193,50 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
               </select>
             </ActionForm>
           ))}
+        {can(user.role, "affiliates:manage") && order.affiliate && !affiliatePaid && (
+          <ActionForm
+            action={setOrderCommissionRatesAction}
+            submitLabel={ta("orderRates.save")}
+            okText={ta("orderRates.saved")}
+            variant="outline"
+            className="space-y-2 border-t pt-3"
+          >
+            <input type="hidden" name="orderId" value={order.id} />
+            <p className="text-xs text-muted-foreground">{ta("orderRates.hint")}</p>
+            <div className="flex flex-wrap gap-3" data-testid="order-rates">
+              <label className="flex flex-col gap-1 text-sm">
+                <span>{ta("orderRates.sale")}</span>
+                <input
+                  name="commissionPercent"
+                  type="number"
+                  required
+                  min={0}
+                  max={50}
+                  step={0.01}
+                  inputMode="decimal"
+                  defaultValue={bpToPercent(order.commissionRateBp ?? 0)}
+                  className={cn(fieldClass, "w-28")}
+                />
+              </label>
+              {order.uplineAffiliate && (
+                <label className="flex flex-col gap-1 text-sm">
+                  <span>{ta("orderRates.upline")}</span>
+                  <input
+                    name="uplinePercent"
+                    type="number"
+                    required
+                    min={0}
+                    max={20}
+                    step={0.01}
+                    inputMode="decimal"
+                    defaultValue={bpToPercent(order.uplineRateBp ?? 0)}
+                    className={cn(fieldClass, "w-28")}
+                  />
+                </label>
+              )}
+            </div>
+          </ActionForm>
+        )}
       </section>
 
       <section className="space-y-2">

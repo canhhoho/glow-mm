@@ -18,11 +18,21 @@ export type AffiliateFieldValues = {
   phone: string;
   code: string;
   commissionPercent: number;
+  /** % hưởng từ tuyến dưới (P13); null = dùng % chung. */
+  uplinePercent: number | null;
   payoutInfo: string | null;
 };
 
-/** Ô nhập hồ sơ CTV (tạo mới thêm email + mật khẩu tạm). */
-export async function AffiliateFields({ values, withLogin }: { values?: Partial<AffiliateFieldValues>; withLogin?: boolean }) {
+/** Ô nhập hồ sơ CTV (tạo mới thêm email + mật khẩu tạm). `globalUplinePercent` = % tầng trên chung (gợi ý khi để trống). */
+export async function AffiliateFields({
+  values,
+  withLogin,
+  globalUplinePercent,
+}: {
+  values?: Partial<AffiliateFieldValues>;
+  withLogin?: boolean;
+  globalUplinePercent: number;
+}) {
   const t = await getTranslations("Affiliates");
   return (
     <>
@@ -68,6 +78,21 @@ export async function AffiliateFields({ values, withLogin }: { values?: Partial<
           className={fieldClass}
         />
         <span className="block text-xs text-muted-foreground">{t("percentHint")}</span>
+      </label>
+      <label className="block space-y-1 text-sm">
+        <span>{t("uplinePercent")}</span>
+        <input
+          name="uplinePercent"
+          type="number"
+          min={0}
+          max={20}
+          step={0.01}
+          inputMode="decimal"
+          defaultValue={values?.uplinePercent ?? ""}
+          placeholder={t("uplinePercentDefault", { percent: globalUplinePercent })}
+          className={fieldClass}
+        />
+        <span className="block text-xs text-muted-foreground">{t("uplinePercentHint", { percent: globalUplinePercent })}</span>
       </label>
       <label className="block space-y-1 text-sm">
         <span>{t("payoutInfo")}</span>

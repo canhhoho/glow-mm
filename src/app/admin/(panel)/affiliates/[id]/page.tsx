@@ -33,7 +33,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
   const month = str(sp.month) || currentMonth();
   const rawState = str(sp.state);
   const state = (STATES as string[]).includes(rawState) ? (rawState as CommissionState) : undefined;
-  const [t, tc, a, orders, holdDays, options, team] = await Promise.all([
+  const [t, tc, a, orders, holdDays, options, team, uplineBp] = await Promise.all([
     getTranslations("Affiliates"),
     getTranslations("Ctv"),
     getAffiliate(id),
@@ -41,6 +41,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
     getNumberSetting("affiliate.holdDays"),
     affiliateOptions(),
     teamOrders(id),
+    getNumberSetting("affiliate.uplineRateBp"),
   ]);
   if (!a) notFound();
   const refLink = `${siteUrl()}/?ref=${a.code}`;
@@ -312,8 +313,10 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
                 phone: a.phone,
                 code: a.code,
                 commissionPercent: bpToPercent(a.commissionRateBp),
+                uplinePercent: a.uplineRateBp == null ? null : bpToPercent(a.uplineRateBp),
                 payoutInfo: a.payoutInfo,
               }}
+              globalUplinePercent={bpToPercent(uplineBp)}
             />
           </ActionForm>
         </section>

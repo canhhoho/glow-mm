@@ -717,6 +717,8 @@ model Affiliate {
   /// Thông tin nhận tiền (ngân hàng / KBZPay / Wave…), chỉ để admin chuyển khoản.
   payoutInfo       String?
   active           Boolean                @default(true)
+  /// % cấp trên này hưởng trên đơn của tuyến dưới (P13, phần vạn); null = dùng % chung trong Cài đặt.
+  uplineRateBp     Int?
   /// Cấp trên trực tiếp (P11 — 2 tầng): người tuyển CTV này, hưởng % tầng trên trên đơn của CTV này.
   parentId         String?
   parent           Affiliate?             @relation("AffiliateTree", fields: [parentId], references: [id])

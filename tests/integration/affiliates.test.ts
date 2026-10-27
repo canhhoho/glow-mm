@@ -9,7 +9,9 @@ import {
   listAffiliates,
   recordPayout,
   setAffiliateParent,
+  setOrderCommissionRates,
   teamOverview,
+  updateAffiliate,
 } from "@/server/affiliates/affiliates";
 import {
   approveApplication,
@@ -388,5 +390,57 @@ describe("Tuyến dưới (P11c)", () => {
     expect(team.former).toMatchObject({ pendingMmk: 200 });
     expect(team.total).toMatchObject({ payableMmk: 400, pendingMmk: 200 });
     expect(JSON.stringify(team)).not.toMatch(/Ma Hla|0978123456|Bo Aung Kyaw/);
+  });
+});
+
+describe("Admin chỉnh % (P13)", () => {
+  it("% tầng trên riêng của cấp trên được chốt vào đơn; để trống → % chung; đổi sau không ảnh hưởng đơn cũ", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 10 }]);
+    const up = await makeAffiliate(f, { suffix: "P" });
+    const down = await makeAffiliate(f, { suffix: "D", parentId: up.id });
+    await prisma.affiliate.update({ where: { id: up.id }, data: { uplineRateBp: 300 } });
+    const o1 = await createOrder(orderInput(f, 1), { userId: null, affiliate: { source: "LINK", code: down.code } });
+    expect(o1.uplineRateBp).toBe(300);
+
+    // Admin để trống ô % tầng trên qua form hồ sơ → quay về % chung.
+    await updateAffiliate(
+      up.id,
+      { name: "Up", phone: "0911111111", code: up.code, commissionPercent: "10", uplinePercent: "" },
+      f.userId,
+    );
+    expect((await prisma.affiliate.findUniqueOrThrow({ where: { id: up.id } })).uplineRateBp).toBeNull();
+    const o2 = await createOrder(orderInput(f, 1), { userId: null, affiliate: { source: "LINK", code: down.code } });
+    expect(o2.uplineRateBp).toBe(200);
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: o1.id } })).uplineRateBp).toBe(300);
+
+    await updateAffiliate(up.id, { name: "Up", phone: "0911111111", code: up.code, commissionPercent: "10", uplinePercent: "4.5" }, f.userId);
+    expect((await prisma.affiliate.findUniqueOrThrow({ where: { id: up.id } })).uplineRateBp).toBe(450);
+  });
+
+  it("chỉnh % trên đơn chưa chi trả → hoa hồng tính lại; đơn đã chi trả bị khoá; NV đơn hàng không có quyền", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 10 }]);
+    const up = await makeAffiliate(f, { suffix: "P" });
+    const down = await makeAffiliate(f, { suffix: "D", parentId: up.id });
+    const solo = await makeAffiliate(f, { suffix: "S" });
+    const order = await completedOrder(f, down.code, 2, 10); // 20 000
+
+    await expect(
+      setOrderCommissionRates(order.id, { commissionPercent: "15" }, { userId: f.userId, role: "ORDER_STAFF" }),
+    ).rejects.toMatchObject({ code: "forbidden" });
+
+    await setOrderCommissionRates(order.id, { commissionPercent: "15", uplinePercent: "5" }, admin(f));
+    const mine = (await affiliateOrders(down.id)).find((o) => o.id === order.id)!;
+    expect(mine.commission.commissionMmk).toBe(3000);
+    expect(mine.uplineCommission!.commissionMmk).toBe(1000);
+
+    // Đơn không có cấp trên: % tầng trên bị bỏ qua.
+    const plain = await createOrder(orderInput(f, 1), { userId: null, affiliate: { source: "LINK", code: solo.code } });
+    expect(await setOrderCommissionRates(plain.id, { commissionPercent: "8", uplinePercent: "9" }, admin(f))).toMatchObject({
+      commissionRateBp: 800,
+      uplineRateBp: null,
+    });
+
+    await recordPayout(down.id, {}, f.userId);
+    await expect(setOrderCommissionRates(order.id, { commissionPercent: "20" }, admin(f))).rejects.toMatchObject({ code: "order_paid" });
   });
 });

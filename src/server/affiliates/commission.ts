@@ -114,6 +114,11 @@ export function payoutLines<T extends PayoutEntry>(entries: T[]) {
   };
 }
 
+/** % tầng trên áp dụng cho một cấp trên (P13): % riêng của người đó, không có thì % chung trong Cài đặt. */
+export function effectiveUplineRateBp(affiliate: { uplineRateBp: number | null }, globalBp: number): number {
+  return affiliate.uplineRateBp ?? globalBp;
+}
+
 /** "10" / "12.5" (%) ⇄ phần vạn. */
 export function percentToBp(percent: number): number {
   return Math.round(percent * 100);

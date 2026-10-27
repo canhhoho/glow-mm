@@ -5,7 +5,7 @@ import { requirePagePermission } from "@/server/auth/session";
 import { bpToPercent } from "@/server/affiliates/commission";
 import { approveApplicationAction, rejectApplicationAction } from "@/server/affiliates/actions";
 import { suggestAffiliateCode } from "@/server/affiliates/affiliates";
-import { listApplications } from "@/server/affiliates/applications";
+import { listApplications, pendingApplicationsCount } from "@/server/affiliates/applications";
 import { getNumberSetting } from "@/server/settings";
 import { ActionForm } from "@/components/admin/action-form";
 import { Badge, DataTable, fieldClass, LinkButton, PageHeader, Td } from "@/components/admin/ui";
@@ -14,17 +14,23 @@ import { cn } from "@/lib/utils";
 /** Duyệt đơn đăng ký CTV qua link mời (P11b). */
 export default async function AffiliateApplicationsPage() {
   await requirePagePermission("affiliates:manage");
-  const [t, pending, decided, defaultBp] = await Promise.all([
+  const [t, pending, decided, defaultBp, pendingTotal] = await Promise.all([
     getTranslations("Affiliates"),
     listApplications("PENDING"),
     listApplications("DECIDED"),
     getNumberSetting("affiliate.defaultRateBp"),
+    pendingApplicationsCount(),
   ]);
 
   return (
     <div className="max-w-5xl space-y-6">
       <PageHeader title={t("apps.title")} actions={<LinkButton href="/admin/affiliates">← {t("back")}</LinkButton>} />
       <p className="text-sm text-muted-foreground">{t("apps.hint")}</p>
+      {pendingTotal > 0 && (
+        <p className="text-sm font-medium" data-testid="apps-pending-total">
+          {t("apps.pendingTotal", { count: pendingTotal, shown: pending.length })}
+        </p>
+      )}
 
       {pending.length === 0 ? (
         <p className="rounded-lg border p-6 text-center text-sm text-muted-foreground">{t("apps.empty")}</p>

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { toUnicode } from "@/lib/myanmar";
 import { MIN_STAFF_PASSWORD } from "@/server/auth/roles";
 import { normalizeMmPhone } from "@/server/orders/pricing";
-import { AffiliateError, insertAffiliate, parseProfile, uniqueError } from "./affiliates";
+import { AffiliateError, insertAffiliate, parseProfile, uniqueError, uplinePercentSchema } from "./affiliates";
 import { normalizeRefCode } from "./referral";
 
 /**
@@ -116,7 +116,8 @@ export async function listApplications(status: "PENDING" | "DECIDED" = "PENDING"
       affiliateId: true,
       inviter: { select: { id: true, code: true, user: { select: { name: true } } } },
     },
-    orderBy: { createdAt: status === "PENDING" ? "asc" : "desc" },
+    // Mới nhất trước: danh sách giới hạn 200 dòng, xếp cũ trước thì đơn mới gửi bị khuất khi tồn nhiều đơn chờ.
+    orderBy: { createdAt: "desc" },
     take: 200,
   });
 }
@@ -138,7 +139,7 @@ export async function approveApplication(id: string, raw: unknown, actorId: stri
       const app = await tx.affiliateApplication.findUnique({ where: { id } });
       if (!app) throw new AffiliateError("not_found", "Không tìm thấy đơn đăng ký");
       if (app.status !== "PENDING" || !app.passwordHash) throw new ApplicationError("not_pending", "Đơn đã được xử lý");
-      const profile = parseProfile(approveSchema.extend({ name: z.string(), phone: z.string() }), {
+      const profile = parseProfile(approveSchema.extend({ name: z.string(), phone: z.string(), uplinePercent: uplinePercentSchema }), {
         ...input,
         name: app.name,
         phone: app.phone,
