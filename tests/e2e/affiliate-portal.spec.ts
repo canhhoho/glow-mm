@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import pg from "pg";
-import { login, loginCtv, PASSWORD, signInAtPrompt } from "./helpers";
+import { login, loginCtv, PASSWORD, pickAddress, pickAddressAdmin, signInAtPrompt } from "./helpers";
 
 // P10c: cổng CTV — khách đặt qua link → đơn hiện ở cổng CTV; CTV tự lên đơn; tách biệt với admin.
 
@@ -26,7 +26,7 @@ test("khách mở link CTV rồi đặt hàng → đơn hiện trong cổng CTV 
   await signInAtPrompt(page); // cookie CTV từ link vẫn còn sau khi đăng nhập
   await page.getByLabel("Full name").fill("Ma Ref");
   await page.getByLabel("Phone number").fill("09 7812 7777");
-  await page.getByLabel("Township").selectOption({ index: 1 });
+  await pickAddress(page);
   await page.getByLabel("Address (house no., street, ward)").fill("No. 9, Inya Road");
   await page.getByText("Cash on delivery", { exact: true }).click();
   await page.getByRole("button", { name: "Place order" }).click();
@@ -50,7 +50,7 @@ test("CTV tự lên đơn cho khách; không xem được đơn không phải c�
   await page.getByRole("link", { name: "Tạo đơn" }).click();
   await page.getByLabel("SĐT", { exact: true }).fill("09 7812 8888");
   await page.getByLabel("Tên người nhận").fill("Ko CTV Khach");
-  await page.getByLabel("Khu vực").selectOption({ index: 1 });
+  await pickAddressAdmin(page);
   await page.getByLabel("Địa chỉ").fill("No. 3, Strand Rd");
   const option = page.getByLabel("Biến thể").locator("option", { hasText: VARIANT });
   await page.getByLabel("Biến thể").selectOption((await option.getAttribute("value"))!);

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import Rabbit from "rabbit-node";
-import { CUSTOMER_PASSWORD, emailLink, login, loginCustomer, PASSWORD, registerCustomer } from "./helpers";
+import { CUSTOMER_PASSWORD, emailLink, login, loginCustomer, PASSWORD, pickAddress, pickAddressAdmin, registerCustomer } from "./helpers";
 
 /** Lời chào đang hiển thị (Next giữ trang trước ở trạng thái ẩn → có thể có bản thứ hai không hiển thị). */
 const hello = (page: Page) => page.getByTestId("account-hello").filter({ visible: true });
@@ -55,7 +55,7 @@ test("sổ địa chỉ: thêm (Zawgyi → Unicode), sửa, đặt mặc định
     const form = page.getByTestId("address-form");
     await form.getByLabel("Recipient name").fill(name);
     await form.getByLabel("Phone number").fill(phone);
-    await form.getByLabel("Township").selectOption({ index: 1 });
+    await pickAddress(form);
     await form.getByLabel("Address (house no., street, ward)").fill("No. 9, Inya Road");
     await form.getByRole("button", { name: "Save" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
@@ -127,7 +127,7 @@ test("đơn ngoài web (nhân viên tạo) → khách tra mã + SĐT → đăng 
   await login(page, "donhang@glow.local");
   await page.goto("/admin/orders/new?phone=09%207812%207777");
   await page.getByLabel("Tên người nhận").fill("Ma Claim");
-  await page.getByLabel("Khu vực").selectOption({ index: 1 });
+  await pickAddressAdmin(page);
   await page.getByLabel("Địa chỉ").fill("No. 1, Claim Road");
   const option = page.getByLabel("Biến thể").locator("option", { hasText: VARIANT });
   await page.getByLabel("Biến thể").selectOption((await option.getAttribute("value"))!);
@@ -166,7 +166,9 @@ test("đặt hàng khi đã đăng nhập: địa chỉ mới được lưu vào
   await expect(page.getByTestId("ordering-as")).toContainText(email);
   await expect(page.getByLabel("Full name")).toHaveValue("Ma E2E");
   await page.getByLabel("Phone number").fill("09 7812 5151");
-  await page.getByLabel("Township").selectOption({ index: 1 });
+  await page.getByLabel("Alternative phone (optional)").fill("09 7812 5252");
+  await pickAddress(page);
+  await expect(page.getByTestId("shipping-note")).toContainText("paid to the courier on delivery");
   await page.getByLabel("Address (house no., street, ward)").fill("No. 51, Saved Road");
   await expect(page.getByLabel("Save to my address book")).toBeChecked();
   await page.getByText("Cash on delivery", { exact: true }).click();
@@ -190,7 +192,11 @@ test("đặt hàng khi đã đăng nhập: địa chỉ mới được lưu vào
   await page.getByLabel("Deliver to").selectOption({ label: "A new address" });
   await expect(page.getByLabel("Phone number")).toHaveValue("");
 
+  // Admin: địa chỉ VTP đủ 3 cấp + SĐT phụ; tổng tiền không có phí ship.
   await cancelOrder(page, code);
+  await expect(page.getByText("Kamaryut, Yangon (West), Yangon (ကမာရွတ်)")).toBeVisible();
+  await expect(page.getByTestId("order-phone2")).toContainText("0978125252");
+  await expect(page.getByText("Phí ship do đơn vị vận chuyển thu khi giao")).toBeVisible();
 });
 
 test("tách cổng: nhân viên không đăng nhập ở cổng khách; khách không vào được admin", async ({ page }) => {

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import Rabbit from "rabbit-node";
-import { login, signInAtPrompt } from "./helpers";
+import { login, pickAddress, signInAtPrompt } from "./helpers";
 
 const PRODUCT = "/en/p/sen-viet-sunscreen-spf50";
 // PNG 1×1 tối thiểu làm "biên lai".
@@ -21,7 +21,7 @@ async function addToCartAndCheckout(page: Page, method: "Cash on delivery" | "Ba
   await signInAtPrompt(page);
   await page.getByLabel("Full name").fill("Ma Thandar");
   await page.getByLabel("Phone number").fill(phone);
-  await page.getByLabel("Township").selectOption({ index: 1 });
+  await pickAddress(page);
   await page.getByLabel("Address (house no., street, ward)").fill("No. 7, Pyay Road");
   await page.getByText(method, { exact: true }).click();
   await page.getByRole("button", { name: "Place order" }).click();

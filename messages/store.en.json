@@ -99,8 +99,6 @@
     "name": "Full name",
     "phone": "Phone number",
     "phoneHint": "e.g. 09 7xx xxx xxx",
-    "zone": "Township",
-    "chooseZone": "Choose township",
     "address": "Address (house no., street, ward)",
     "note": "Note (optional)",
     "payment": "Payment",
@@ -110,7 +108,6 @@
     "bankHint": "Transfer and upload the receipt after ordering",
     "summary": "Order summary",
     "shipping": "Shipping",
-    "shippingByZone": "{fee} · free from {free}",
     "total": "Total (before shipping)",
     "place": "Place order",
     "err": {
@@ -210,7 +207,7 @@
     "shipping": {
       "title": "Shipping",
       "body": [
-        "We deliver within Myanmar. The shipping fee and any free-shipping threshold depend on your township and are shown at checkout before you place the order.",
+        "We deliver within Myanmar through our courier partner. The shipping fee is not included in your order total — you pay it directly to the courier when your parcel arrives.",
         "After your order is confirmed we pack it and hand it to the courier. You can follow its status on the Track order page with your order code and phone number."
       ]
     },
@@ -320,8 +317,6 @@
     "recipientName": "Recipient name",
     "phone": "Phone number",
     "phoneHint": "e.g. 09 7xx xxx xxx",
-    "zone": "Township",
-    "chooseZone": "Choose township",
     "line": "Address (house no., street, ward)",
     "note": "Delivery note (optional)",
     "makeDefault": "Use as default address",
@@ -355,5 +350,15 @@
       "tooShort": "Password must be at least {min} characters.",
       "wrongCurrent": "Current password is incorrect."
     }
+  },
+  "Address": {
+    "state": "State / Region",
+    "district": "District",
+    "township": "Township",
+    "chooseState": "Choose state / region",
+    "chooseDistrict": "Choose district",
+    "chooseTownship": "Choose township",
+    "phone2": "Alternative phone (optional)",
+    "shippingNote": "Shipping fee is paid to the courier on delivery."
   }
 }

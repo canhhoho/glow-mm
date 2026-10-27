@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { loadAddressCatalog } from "@/server/locations/locations";
 import type { OrderChannel, OrderStatus, Prisma } from "@/generated/prisma/client";
 import { salesBlockDays } from "@/server/inventory/documents";
 import { productName } from "@/server/inventory/queries";
@@ -81,14 +82,10 @@ export async function getOrderAdmin(id: string, now = new Date()) {
 }
 export type OrderAdminDetail = NonNullable<Awaited<ReturnType<typeof getOrderAdmin>>>;
 
-/** Dữ liệu cho form tạo đơn tay: vùng giao + phí, biến thể đang bán + tồn khả dụng. */
-export async function orderFormOptions(now = new Date()) {
-  const [zones, variants, blockDays] = await Promise.all([
-    prisma.shippingZone.findMany({
-      where: { active: true },
-      orderBy: [{ region: "asc" }, { township: "asc" }],
-      include: { rates: { take: 1 } },
-    }),
+/** Dữ liệu cho form tạo đơn tay: danh mục địa chỉ VTP (theo ngôn ngữ giao diện), biến thể đang bán + tồn khả dụng. */
+export async function orderFormOptions(locale: string, now = new Date()) {
+  const [catalog, variants, blockDays] = await Promise.all([
+    loadAddressCatalog(locale),
     prisma.variant.findMany({
       where: { active: true, product: { published: true } },
       orderBy: { sku: "asc" },
@@ -99,12 +96,7 @@ export async function orderFormOptions(now = new Date()) {
   const ids = variants.map((v) => v.id);
   const avail = await prisma.$transaction((tx) => availableToSell(tx, ids, { now, blockDays }));
   return {
-    zones: zones.map((z) => ({
-      id: z.id,
-      label: `${z.region} · ${z.township} (${z.nameMy})`,
-      feeMmk: z.rates[0]?.feeMmk ?? null,
-      freeFromMmk: z.rates[0]?.freeFromMmk ?? null,
-    })),
+    catalog,
     variants: variants.map((v) => ({
       id: v.id,
       label: `${v.sku} — ${productName(v.product.translations, v.product.slug)} (${v.label})`,

@@ -92,7 +92,8 @@ export async function saveAddressAction(_prev: StoreActionState, formData: FormD
   const raw = {
     recipientName: formData.get("recipientName"),
     phone: formData.get("phone"),
-    zoneId: formData.get("zoneId"),
+    phone2: formData.get("phone2") ?? undefined,
+    townshipId: formData.get("townshipId"),
     line: formData.get("line"),
     note: formData.get("note") ?? undefined,
     isDefault: formData.get("isDefault"),

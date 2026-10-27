@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { requireAffiliate } from "@/server/auth/session";
 import { createAffiliateOrderAction } from "@/server/affiliates/portal-actions";
 import { orderFormOptions } from "@/server/orders/admin-queries";
@@ -10,7 +10,7 @@ import { OrderForm } from "@/components/admin/order-form";
  */
 export default async function CtvNewOrderPage() {
   await requireAffiliate();
-  const [t, options] = await Promise.all([getTranslations("Ctv"), orderFormOptions()]);
+  const [t, options] = await Promise.all([getTranslations("Ctv"), getLocale().then(orderFormOptions)]);
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">{t("newTitle")}</h1>
@@ -18,7 +18,7 @@ export default async function CtvNewOrderPage() {
       <div className="rounded-2xl border bg-card p-4">
         <OrderForm
           options={options}
-          initial={{ phone: "", name: "", zoneId: "", addressLine: "" }}
+          initial={{ phone: "", phone2: "", name: "", townshipId: "", addressLine: "" }}
           action={createAffiliateOrderAction}
         />
       </div>

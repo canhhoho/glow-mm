@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { login, signInAtPrompt } from "./helpers";
+import { login, pickAddress, signInAtPrompt } from "./helpers";
 
 const PRODUCT = "/en/p/moc-lan-rose-toner";
 
@@ -23,7 +23,7 @@ test("khách đánh giá sau khi nhận hàng → admin duyệt → hiện trên
   await signInAtPrompt(page);
   await page.getByLabel("Full name").fill("Ma Review");
   await page.getByLabel("Phone number").fill("09 4400 5566");
-  await page.getByLabel("Township").selectOption({ index: 1 });
+  await pickAddress(page);
   await page.getByLabel("Address (house no., street, ward)").fill("No. 9, Inya Road");
   await page.getByRole("button", { name: "Place order" }).click();
   await expect(page).toHaveURL(/\/en\/order\/OD-/);

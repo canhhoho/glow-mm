@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { login } from "./helpers";
+import { login, pickAddressAdmin } from "./helpers";
 
 const VARIANT = "SV-SUN-50 — Sunscreen SPF50 PA++++ (50ml)";
 
@@ -15,7 +15,7 @@ test("đơn thủ công (Facebook, COD): tạo → xác nhận → đóng gói F
   await expect(page.getByTestId("customer-lookup")).toBeVisible();
 
   await page.getByLabel("Tên người nhận").fill("Ma Hla Hla");
-  await page.getByLabel("Khu vực").selectOption({ index: 1 });
+  await pickAddressAdmin(page);
   await page.getByLabel("Địa chỉ").fill("No. 12, Bo Aung Kyaw St");
   const option = page.getByLabel("Biến thể").locator("option", { hasText: VARIANT });
   await page.getByLabel("Biến thể").selectOption((await option.getAttribute("value"))!);
@@ -95,7 +95,7 @@ test("huỷ đơn thủ công nhả hàng; lỗi hiển thị khi đặt quá t�
   await page.goto("/admin/orders/new");
   await page.getByLabel("Tên người nhận").fill("Ko Aung");
   await page.getByLabel("SĐT", { exact: true }).fill("09 4500 1234");
-  await page.getByLabel("Khu vực").selectOption({ index: 1 });
+  await pickAddressAdmin(page);
   await page.getByLabel("Địa chỉ").fill("Hlaing Township");
   // ML-LIP-02 chỉ có 4 cái trong seed và không test nào bán → luôn vượt tồn được, không phụ thuộc lần chạy trước.
   const option = page.getByLabel("Biến thể").locator("option", { hasText: "ML-LIP-02" });

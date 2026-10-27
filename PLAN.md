@@ -82,7 +82,7 @@
 
 **Bán hàng**
 - `Customer` (phone unique, name) + `Address` (region, township, text)
-- `ShippingZone` / `ShippingRate`
+- `MmState` / `MmDistrict` / `MmTownship` (danh mục địa chỉ VTP, P15 — thay `ShippingZone` / `ShippingRate`)
 - `Order`:
   - code, status, paymentMethod COD | BANK_TRANSFER, paymentStatus, subtotal, shippingFee, total, locale, codConfirmedAt
 - `OrderItem` (variant, qty, unitPriceMmk)
@@ -114,7 +114,7 @@ Dockerfile  docker-compose.yml  docker-compose.prod.yml  .env.example
 
 ## 4. Roadmap (dừng chờ duyệt sau mỗi phase)
 
-Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ · P9 ✅ (2026-10-19) · P10 CTV ✅ (2026-10-26, đã lên production) · P11 CTV 2 tầng ✅ · P12 sửa UI ✅ · P13 chỉnh % hoa hồng ✅ (2026-10-27) · P14 tài khoản khách (code xong 2026-10-27) · P4b chờ server + domain Myanmar.
+Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ · P9 ✅ (2026-10-19) · P10 CTV ✅ (2026-10-26, đã lên production) · P11 CTV 2 tầng ✅ · P12 sửa UI ✅ · P13 chỉnh % hoa hồng ✅ (2026-10-27) · P14 tài khoản khách (code xong 2026-10-27) · P15 địa chỉ VTP (đang làm) · P4b chờ server + domain Myanmar.
 
 | Phase | Nội dung | Hoàn thành khi |
 |---|---|---|
@@ -130,6 +130,7 @@ Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 
 | **P8 Quản lý nhân viên** ✅ (2026-10-16) | `/admin/users` (ADMIN): tạo nhân viên + mật khẩu tạm, đổi tên/vai trò, khoá/mở khoá, đặt lại mật khẩu; khoá/đặt lại → xoá mọi phiên; tài khoản bị khoá không đăng nhập được (hook Better Auth); luôn còn ≥ 1 ADMIN; không tự khoá/tự đổi vai trò; ghi AuditLog. Không cần migration | Toàn bộ test xanh (integration + E2E tạo → đăng nhập đúng quyền → khoá → bị đăng xuất) |
 | **P9 Giao diện admin + Tồn kho** ✅ (2026-10-19) | Khung admin mới (menu nhóm + icon + badge + trang đang mở, ngăn kéo trên mobile, breadcrumb) và trang Tồn kho mới (ô số tổng, tab vị trí, xem theo sản phẩm/theo lô, lọc hạn dùng/loại tồn, phân trang, trang lịch sử lô) theo mẫu `docs/mockups/p9-admin-kho.html` | Toàn bộ test xanh (unit tổng hợp tồn, integration số liệu khớp ledger, E2E mobile: menu ngăn kéo, lọc/phân trang, mở lô, lịch sử lô) |
 | **P10 Cộng tác viên (CTV) + hoa hồng** (2026-10-26) | Link giới thiệu `?ref=CODE`, CTV tự lên đơn, nhân viên gán CTV; hoa hồng % theo CTV chốt trên đơn; admin quản lý CTV + ghi nhận chi trả; cổng `/ctv` cho CTV xem đơn/hoa hồng/thanh toán | Toàn bộ test xanh (unit hoa hồng, integration gắn đơn/chi trả song song/cô lập CTV, E2E link → đơn → cổng CTV, admin chi trả, tách cổng) |
+| **P15 Địa chỉ VTP Myanmar** (2026-10-28) | Địa chỉ người nhận theo danh mục VTP 3 cấp (15 vùng / 74 huyện / 329 thị trấn, có mã VTP) ở checkout, sổ địa chỉ, đơn admin/CTV; SĐT phụ; bỏ phí ship (VTP thu khi giao); admin sửa tên Myanmar + bật/tắt địa bàn | Toàn bộ test xanh (unit parser danh mục, integration snapshot mã VTP/địa bàn bị tắt, E2E chọn 3 cấp → đơn hiện đủ địa chỉ + SĐT phụ) |
 | **P14 Tài khoản khách** (2026-10-27) | Khách đăng ký/đăng nhập bằng Google hoặc email/mật khẩu (xác minh email, quên mật khẩu qua Resend); xem hàng không cần đăng nhập, **checkout bắt buộc đăng nhập**; khu `/account`: đơn của tôi, sổ địa chỉ (tự điền khi thanh toán), hồ sơ + đổi mật khẩu; đơn cũ đã chứng minh mã + SĐT tự gắn vào tài khoản; admin thấy tài khoản khách trên đơn | Toàn bộ test xanh (unit policy tách cổng, integration đăng ký/xác minh/tách cổng/sổ địa chỉ/nhận đơn, E2E đăng ký → xác minh → đặt hàng, quên mật khẩu, sổ địa chỉ, tách cổng) |
 | **P11 CTV hai tầng** (2026-10-26) | CTV tuyển CTV qua link mời `/ctv/join?inv=CODE` → admin duyệt; cấp trên trực tiếp hưởng thêm % tầng trên (shop trả, mặc định 2%) trên đơn của người mình tuyển; trang Tuyến dưới trong cổng CTV (chỉ số tổng, không thông tin khách); admin đổi cấp trên | Toàn bộ test xanh (unit hai tầng + chống vòng, integration chốt cấp trên/chi trả theo loại/đăng ký-duyệt/chống spam, E2E đăng ký → duyệt → đăng nhập, tuyến dưới) |
 
@@ -155,6 +156,12 @@ Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 
 - Chi trả: admin chuyển tiền ngoài hệ thống rồi "Ghi nhận đã trả" → `AffiliatePayout` + `AffiliatePayoutLine` theo đơn (chỉ ghi thêm); trả hàng sau khi đã chi → số âm, trừ vào lần chi sau. Khoá dòng CTV khi ghi để không trùng.
 - CTV là user Better Auth role AFFILIATE (không thuộc ROLES nhân viên → không vào /admin); admin tạo tài khoản; đăng nhập email + mật khẩu ở `/ctv/login` (đăng nhập nhầm cổng bị từ chối). Cổng CTV mặc định tiếng Myanmar (cookie `CTV_LOCALE`), xem đủ tên/SĐT/địa chỉ khách trong đơn của mình, không thấy giá vốn/kho, không tra cứu khách theo SĐT.
 - Báo cáo: thêm hoa hồng CTV (theo ngày hoàn tất) + lợi nhuận sau hoa hồng. Seed: CTV mẫu `ctv@glow.local` (mã MAUNG).
+
+**P15 — quyết định (2026-10-28):**
+- Địa chỉ theo file VTP OMS (`vtp_myanmar_receiver_address.md`): Liên bang/Vùng → Huyện → Thị trấn (form VTP ghi ô 3 là "Ward" nhưng dữ liệu là Township). Lưu cả tên tiếng Anh + mã VTP; tên Myanmar là bản nháp **[CẦN XÁC MINH]**.
+- Phí ship do đơn vị vận chuyển thu trực tiếp khi giao → đơn web/admin/CTV chỉ tính tiền hàng; đơn cũ giữ phí đã chốt.
+- 1 SĐT phụ tuỳ chọn cho người nhận; tra đơn vẫn chỉ theo SĐT chính.
+- Xuất/đẩy đơn sang VTP OMS: để sau (cần mẫu file import hoặc API key VTP **[CẦN XÁC MINH]**).
 
 **P14 — quyết định (2026-10-27):**
 - Đăng nhập: Google + email/mật khẩu. Email gửi qua Resend (xác minh email bắt buộc, quên mật khẩu). Chưa có tên miền → production tạm chỉ Google (`EMAIL_DRIVER=none` ẩn email); có tên miền thì đặt biến Resend là bật **[CẦN XÁC MINH: tên miền]**.

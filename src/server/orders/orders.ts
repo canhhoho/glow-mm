@@ -3,10 +3,10 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { toUnicode } from "@/lib/myanmar";
-import { manualShipping } from "@/server/adapters/shipping";
 import { uplineSnapshot } from "@/server/affiliates/upline";
 import { newCode } from "@/server/codes";
 import { salesBlockDays } from "@/server/inventory/documents";
+import { findActiveTownship, townshipLabel, vtpCodes } from "@/server/locations/locations";
 import type { Tx } from "@/server/inventory/ledger";
 import { getBoolSetting, getNumberSetting } from "@/server/settings";
 import { OrderError } from "./errors";
@@ -28,7 +28,10 @@ export const createOrderSchema = z.object({
   paymentMethod: z.enum(["COD", "BANK_TRANSFER"]),
   name: text(100).pipe(z.string().min(1)),
   phone: z.string().trim().min(1).max(30),
-  zoneId: id,
+  /** SĐT phụ người nhận (P15, không bắt buộc). */
+  phone2: z.string().trim().max(30).optional(),
+  /** Thị trấn VTP (P15) — server tra lại cả 3 cấp. */
+  townshipId: id,
   addressLine: text(500).pipe(z.string().min(3)),
   note: text(500).optional(),
   locale: z.enum(["my", "en"]).default("my"),
@@ -61,6 +64,8 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
   }
   const phone = normalizeMmPhone(input.phone);
   if (!phone) throw new OrderError("invalid_phone", "Số điện thoại không hợp lệ");
+  const phone2 = input.phone2 ? normalizeMmPhone(input.phone2) : null;
+  if (input.phone2 && !phone2) throw new OrderError("invalid_phone", "Số điện thoại phụ không hợp lệ");
 
   if (input.idempotencyKey) {
     const existing = await prisma.order.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
@@ -82,16 +87,10 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
     return await prisma.$transaction(
       async (tx) => {
         const lines = await priceLines(tx, items, input.locale);
-        const zone = await tx.shippingZone.findFirst({ where: { id: input.zoneId, active: true } });
-        if (!zone) throw new OrderError("invalid_zone", "Vùng giao hàng không hợp lệ");
-
-        const shipping = manualShipping(async (zoneId) =>
-          tx.shippingRate.findFirst({ where: { zoneId }, select: { feeMmk: true, freeFromMmk: true, etaDays: true } }),
-        );
-        const subtotal = orderTotals(lines, 0).subtotalMmk;
-        const quote = await shipping.quote({ zoneId: zone.id, subtotalMmk: subtotal });
-        if (!quote) throw new OrderError("invalid_zone", "Vùng giao hàng chưa có bảng phí");
-        const totals = orderTotals(lines, quote.feeMmk);
+        const township = await findActiveTownship(input.townshipId, tx);
+        if (!township) throw new OrderError("invalid_zone", "Địa chỉ giao hàng không hợp lệ");
+        // P15: phí ship do đơn vị vận chuyển (VTP) thu trực tiếp khi giao → đơn chỉ tính tiền hàng.
+        const totals = orderTotals(lines, 0);
         const affiliate = await resolveAffiliate(tx, ctx.affiliate);
 
         const customer = await tx.customer.upsert({
@@ -101,8 +100,9 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
         });
         const address =
           (await tx.address.findFirst({
-            where: { customerId: customer.id, zoneId: zone.id, line: input.addressLine },
-          })) ?? (await tx.address.create({ data: { customerId: customer.id, zoneId: zone.id, line: input.addressLine } }));
+            where: { customerId: customer.id, townshipId: township.id, line: input.addressLine },
+          })) ??
+          (await tx.address.create({ data: { customerId: customer.id, townshipId: township.id, line: input.addressLine } }));
 
         const order = await tx.order.create({
           data: {
@@ -111,8 +111,11 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
             addressId: address.id,
             recipientName: input.name,
             recipientPhone: phone,
+            recipientPhone2: phone2 && phone2 !== phone ? phone2 : null,
             addressText: input.addressLine,
-            zoneName: `${zone.nameMy} / ${zone.nameEn}`,
+            zoneName: townshipLabel(township),
+            townshipId: township.id,
+            ...vtpCodes(township),
             channel,
             paymentMethod: input.paymentMethod,
             subtotalMmk: totals.subtotalMmk,

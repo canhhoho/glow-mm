@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import zlib from "node:zlib";
@@ -139,4 +139,18 @@ export async function signInAtPrompt(page: Page, email = "khach@glow.local", pas
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL((u) => u.pathname === next);
+}
+
+/** Chọn địa chỉ VTP 3 cấp (P15) trong form storefront tiếng Anh — mặc định Yangon → Yangon (West) → Kamaryut. */
+export async function pickAddress(scope: Page | Locator, path = { state: "Yangon", district: "Yangon (West)", township: "Kamaryut" }) {
+  await scope.getByLabel("State / Region").selectOption({ label: path.state });
+  await scope.getByLabel("District").selectOption({ label: path.district });
+  await scope.getByLabel("Township").selectOption({ label: path.township });
+}
+
+/** Như trên cho form tạo đơn admin / cổng CTV (giao diện tiếng Việt, tên địa danh tiếng Anh như VTP). */
+export async function pickAddressAdmin(scope: Page | Locator, path = { state: "Yangon", district: "Yangon (West)", township: "Kamaryut" }) {
+  await scope.getByLabel("Vùng / Bang").selectOption({ label: path.state });
+  await scope.getByLabel("Huyện").selectOption({ label: path.district });
+  await scope.getByLabel("Thị trấn").selectOption({ label: path.township });
 }

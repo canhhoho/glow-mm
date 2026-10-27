@@ -592,11 +592,12 @@ model Customer {
 }
 
 model Address {
-  id         String       @id @default(cuid())
+  id         String      @id @default(cuid())
   customerId String
-  customer   Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  zoneId     String
-  zone       ShippingZone @relation(fields: [zoneId], references: [id])
+  customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  /// Thị trấn VTP (P15). Null = địa chỉ cũ trước P15 không khớp danh mục VTP.
+  townshipId String?
+  township   MmTownship? @relation(fields: [townshipId], references: [id])
   line       String
   note       String?
   orders     Order[]
@@ -608,10 +609,11 @@ model AccountAddress {
   userId        String
   user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   recipientName String
-  /// SĐT đã chuẩn hoá 09xxxxxxxx.
+  /// SĐT đã chuẩn hoá 09xxxxxxxx; `phone2` = SĐT phụ (P15, không bắt buộc).
   phone         String
-  zoneId        String
-  zone          ShippingZone @relation(fields: [zoneId], references: [id])
+  phone2        String?
+  townshipId    String
+  township      MmTownship   @relation(fields: [townshipId], references: [id])
   line          String
   note          String?
   isDefault     Boolean      @default(false)
@@ -622,27 +624,48 @@ model AccountAddress {
 }
 
 /// Vùng giao hàng (region/township).
-model ShippingZone {
-  id        String         @id @default(cuid())
-  code      String         @unique
-  region    String
-  township  String
-  nameMy    String
+/// Danh mục địa chỉ người nhận theo VTP Myanmar (P15): Liên bang/Vùng → Huyện → Thị trấn.
+/// Dữ liệu chèn bằng migration từ prisma/data/vtp-myanmar-addresses.json; id ổn định (st-YGN, ds-YGN-WYG, tw-YGN-WYG-KMY).
+/// Mã VTP không duy nhất toàn cục → unique theo cấp cha. `nameMy` là bản nháp [CẦN XÁC MINH], admin sửa được.
+/// `active = false` → không còn trong form chọn địa chỉ (tạm ngừng giao).
+model MmState {
+  id        String       @id
+  code      String       @unique
   nameEn    String
-  active    Boolean        @default(true)
-  rates     ShippingRate[]
-  addresses Address[]
-  accountAddresses AccountAddress[]
+  nameMy    String
+  sortOrder Int          @default(0)
+  active    Boolean      @default(true)
+  districts MmDistrict[]
 }
 
-model ShippingRate {
-  id          String       @id @default(cuid())
-  zoneId      String
-  zone        ShippingZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
-  feeMmk      Int
-  /// Miễn phí ship khi tổng đơn >= ngưỡng (null = không áp dụng).
-  freeFromMmk Int?
-  etaDays     Int?
+model MmDistrict {
+  id        String       @id
+  stateId   String
+  state     MmState      @relation(fields: [stateId], references: [id])
+  code      String
+  nameEn    String
+  nameMy    String
+  sortOrder Int          @default(0)
+  active    Boolean      @default(true)
+  townships MmTownship[]
+
+  @@unique([stateId, code])
+}
+
+model MmTownship {
+  id               String           @id
+  districtId       String
+  district         MmDistrict       @relation(fields: [districtId], references: [id])
+  code             String
+  nameEn           String
+  nameMy           String
+  sortOrder        Int              @default(0)
+  active           Boolean          @default(true)
+  addresses        Address[]
+  accountAddresses AccountAddress[]
+  orders           Order[]
+
+  @@unique([districtId, code])
 }
 
 enum OrderStatus {
@@ -686,13 +709,23 @@ model Order {
   /// Snapshot lúc đặt — sửa khách/địa chỉ sau này không đổi đơn cũ.
   recipientName     String
   recipientPhone    String
+  /// SĐT phụ người nhận (P15, không bắt buộc).
+  recipientPhone2   String?
   addressText       String
+  /// Chuỗi hiển thị "Thị trấn, Huyện, Vùng" (đơn trước P15: "tên Myanmar / tên Anh" của khu vực cũ).
   zoneName          String
+  /// Thị trấn VTP + mã VTP 3 cấp chốt lúc đặt (P15) — để đẩy/xuất đơn sang VTP sau này.
+  townshipId        String?
+  township          MmTownship?           @relation(fields: [townshipId], references: [id])
+  stateCode         String?
+  districtCode      String?
+  townshipCode      String?
   channel           OrderChannel          @default(WEB)
   status            OrderStatus           @default(PENDING)
   paymentMethod     PaymentMethod
   paymentStatus     PaymentStatus         @default(UNPAID)
   subtotalMmk       Int
+  /// Từ P15 luôn 0: phí ship do đơn vị vận chuyển (VTP) thu trực tiếp khi giao. Đơn cũ giữ phí đã chốt.
   shippingFeeMmk    Int
   totalMmk          Int
   locale            String                @default("my")

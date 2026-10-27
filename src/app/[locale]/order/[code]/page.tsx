@@ -32,9 +32,10 @@ async function OrderContent({ params, searchParams }: PageProps<"/[locale]/order
   const order = await customerOrder(code);
   if (!order) return redirect({ href: { pathname: "/track", query: { code } }, locale });
 
-  const [t, tr, bankInstructions, reviewables] = await Promise.all([
+  const [t, tr, ta, bankInstructions, reviewables] = await Promise.all([
     getTranslations({ locale, namespace: "Order" }),
     getTranslations({ locale, namespace: "Review" }),
+    getTranslations({ locale, namespace: "Address" }),
     order.paymentMethod === "BANK_TRANSFER" ? getStringSetting("payment.bankInstructions") : "",
     order.status === "COMPLETED" ? reviewablesForOrder(order.id) : [],
   ]);
@@ -67,6 +68,7 @@ async function OrderContent({ params, searchParams }: PageProps<"/[locale]/order
         <dt className="text-muted-foreground">{t("deliverTo")}</dt>
         <dd>
           {order.recipientName} · {order.recipientPhone}
+          {order.recipientPhone2 && <> · {order.recipientPhone2}</>}
           <br />
           {order.addressText}
           <br />
@@ -115,12 +117,17 @@ async function OrderContent({ params, searchParams }: PageProps<"/[locale]/order
         <dl className="mt-2 grid grid-cols-[1fr_auto] gap-y-1 border-t border-border pt-2 text-sm">
           <dt>{t("subtotal")}</dt>
           <dd className="text-right">{formatMmk(order.subtotalMmk, locale)}</dd>
-          <dt>{t("shipping")}</dt>
-          <dd className="text-right">{order.shippingFeeMmk === 0 ? t("free") : formatMmk(order.shippingFeeMmk, locale)}</dd>
+          {order.shippingFeeMmk > 0 && (
+            <>
+              <dt>{t("shipping")}</dt>
+              <dd className="text-right">{formatMmk(order.shippingFeeMmk, locale)}</dd>
+            </>
+          )}
           <dt className="font-medium">{t("total")}</dt>
           <dd className="text-right font-medium" data-testid="order-total">
             {total}
           </dd>
+          {order.shippingFeeMmk === 0 && <dd className="col-span-2 text-xs text-muted-foreground">{ta("shippingNote")}</dd>}
         </dl>
       </section>
 

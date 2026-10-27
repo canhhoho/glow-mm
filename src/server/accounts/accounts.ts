@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { toUnicode } from "@/lib/myanmar";
+import { findActiveTownship } from "@/server/locations/locations";
 import { normalizeMmPhone } from "@/server/orders/pricing";
 
 /**
@@ -56,7 +57,13 @@ export function accountOrders(userId: string, take = 50) {
 export const addressSchema = z.object({
   recipientName: z.string().trim().min(1).max(100).transform(toUnicode),
   phone: z.string().trim().min(1).max(30),
-  zoneId: z.string().min(1),
+  phone2: z
+    .string()
+    .trim()
+    .max(30)
+    .optional()
+    .transform((v) => v || null),
+  townshipId: z.string().min(1),
   line: z.string().trim().min(3).max(500).transform(toUnicode),
   note: z
     .string()
@@ -72,16 +79,17 @@ async function parseAddress(raw: unknown) {
   const input = addressSchema.parse(raw);
   const phone = normalizeMmPhone(input.phone);
   if (!phone) throw new AccountError("invalid_phone", "Số điện thoại không hợp lệ");
-  const zone = await prisma.shippingZone.findFirst({ where: { id: input.zoneId, active: true }, select: { id: true } });
-  if (!zone) throw new AccountError("invalid_zone", "Khu vực không hợp lệ");
-  return { ...input, phone };
+  const phone2 = input.phone2 ? normalizeMmPhone(input.phone2) : null;
+  if (input.phone2 && !phone2) throw new AccountError("invalid_phone", "Số điện thoại phụ không hợp lệ");
+  if (!(await findActiveTownship(input.townshipId))) throw new AccountError("invalid_zone", "Địa chỉ không hợp lệ");
+  return { ...input, phone, phone2: phone2 && phone2 !== phone ? phone2 : null };
 }
 
 export function listAddresses(userId: string) {
   return prisma.accountAddress.findMany({
     where: { userId },
     orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
-    include: { zone: { select: { nameMy: true, nameEn: true, active: true } } },
+    include: { township: { include: { district: { include: { state: true } } } } },
   });
 }
 

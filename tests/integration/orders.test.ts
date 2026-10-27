@@ -14,20 +14,45 @@ const DAY = 24 * 60 * 60 * 1000;
 afterAll(unpublishTestProducts);
 
 describe("Tạo đơn + giữ hàng", () => {
-  it("tạo đơn: giá/phí ship từ DB, snapshot, giữ hàng làm giảm khả dụng", async () => {
+  it("tạo đơn: giá từ DB, không tính phí ship (VTP thu khi giao), snapshot địa chỉ VTP, giữ hàng làm giảm khả dụng", async () => {
     const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 10 }]);
-    const order = await createOrder(orderInput(f, 3), { userId: null });
+    const order = await createOrder(orderInput(f, 3, { phone2: "09 4000 1111" }), { userId: null });
     expect(order).toMatchObject({
       status: "PENDING",
       channel: "WEB",
       recipientPhone: "0978123456",
+      recipientPhone2: "0940001111",
       subtotalMmk: 30_000,
-      shippingFeeMmk: 2500,
-      totalMmk: 32_500,
+      shippingFeeMmk: 0,
+      totalMmk: 30_000,
+      townshipId: "tw-YGN-WYG-KMY",
+      stateCode: "YGN",
+      districtCode: "WYG",
+      townshipCode: "KMY",
     });
+    expect(order.zoneName).toBe("Kamaryut, Yangon (West), Yangon (ကမာရွတ်)");
+    const address = await prisma.address.findUniqueOrThrow({ where: { id: order.addressId } });
+    expect(address.townshipId).toBe("tw-YGN-WYG-KMY");
     const items = await prisma.orderItem.findMany({ where: { orderId: order.id } });
     expect(items[0]).toMatchObject({ sku: `IT-${f.tag}`, qty: 3, unitPriceMmk: 10_000 });
     expect(await avail(f.variantId)).toBe(7);
+  });
+
+  it("địa chỉ VTP không hợp lệ / thị trấn hoặc cấp trên bị tắt → invalid_zone; SĐT phụ sai → invalid_phone", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
+    await expect(createOrder(orderInput(f, 1, { townshipId: "tw-khong-co" }), { userId: null })).rejects.toMatchObject({
+      code: "invalid_zone",
+    });
+    await expect(createOrder(orderInput(f, 1, { phone2: "12345" }), { userId: null })).rejects.toMatchObject({ code: "invalid_phone" });
+    // Tắt huyện Yangon (South) → thị trấn Dala thuộc huyện đó không đặt được.
+    await prisma.mmDistrict.update({ where: { id: "ds-YGN-SYG" }, data: { active: false } });
+    try {
+      await expect(createOrder(orderInput(f, 1, { townshipId: "tw-YGN-SYG-DLA" }), { userId: null })).rejects.toMatchObject({
+        code: "invalid_zone",
+      });
+    } finally {
+      await prisma.mmDistrict.update({ where: { id: "ds-YGN-SYG" }, data: { active: true } });
+    }
   });
 
   it("đặt quá tồn → out_of_stock, không tạo đơn", async () => {

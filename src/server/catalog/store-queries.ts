@@ -219,18 +219,3 @@ export async function getCartDetails(lines: CartLine[], locale: string) {
     ok: rows.length > 0 && rows.every((r) => r.ok),
   };
 }
-
-export async function storeShippingZones(locale: string) {
-  const zones = await prisma.shippingZone.findMany({
-    where: { active: true, rates: { some: {} } },
-    orderBy: [{ region: "asc" }, { township: "asc" }],
-    include: { rates: { take: 1 } },
-  });
-  return zones.map((z) => ({
-    id: z.id,
-    name: locale === "my" ? z.nameMy : z.nameEn,
-    region: z.region,
-    feeMmk: z.rates[0].feeMmk,
-    freeFromMmk: z.rates[0].freeFromMmk,
-  }));
-}

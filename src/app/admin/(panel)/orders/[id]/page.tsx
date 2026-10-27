@@ -97,7 +97,10 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
           <dt className="text-muted-foreground">{t("recipient")}</dt>
           <dd>{order.recipientName}</dd>
           <dt className="text-muted-foreground">{t("phone")}</dt>
-          <dd className="font-mono">{order.recipientPhone}</dd>
+          <dd className="font-mono">
+            {order.recipientPhone}
+            {order.recipientPhone2 && <span data-testid="order-phone2"> · {order.recipientPhone2}</span>}
+          </dd>
           <dt className="text-muted-foreground">{t("address")}</dt>
           <dd>{order.addressText}</dd>
           <dt className="text-muted-foreground">{t("zone")}</dt>
@@ -273,12 +276,17 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
         <dl className="ml-auto grid max-w-xs grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm">
           <dt>{t("subtotal")}</dt>
           <dd className="text-right tabular-nums">{fmtInt(order.subtotalMmk)} MMK</dd>
-          <dt>{t("shipping")}</dt>
-          <dd className="text-right tabular-nums">{fmtInt(order.shippingFeeMmk)} MMK</dd>
+          {order.shippingFeeMmk > 0 && (
+            <>
+              <dt>{t("shipping")}</dt>
+              <dd className="text-right tabular-nums">{fmtInt(order.shippingFeeMmk)} MMK</dd>
+            </>
+          )}
           <dt className="font-medium">{t("total")}</dt>
           <dd className="text-right font-medium tabular-nums" data-testid="order-total">
             {fmtInt(order.totalMmk)} MMK
           </dd>
+          {order.shippingFeeMmk === 0 && <dd className="col-span-2 text-xs text-muted-foreground">{t("shippingNote")}</dd>}
         </dl>
       </section>
 

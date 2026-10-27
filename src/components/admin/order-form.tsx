@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { AddressPicker } from "@/components/address-picker";
 import { Button } from "@/components/ui/button";
 import { fieldClass } from "@/components/admin/ui";
 import { createOrderAction } from "@/server/orders/actions";
@@ -9,14 +10,15 @@ import type { OrderFormOptions } from "@/server/orders/admin-queries";
 import type { ActionState } from "@/server/inventory/actions";
 
 type Line = { key: number; variantId: string; qty: string };
-export type OrderFormInitial = { phone: string; name: string; zoneId: string; addressLine: string };
+export type OrderFormInitial = { phone: string; phone2: string; name: string; townshipId: string; addressLine: string };
 
 let seq = 0;
 const blank = (): Line => ({ key: ++seq, variantId: "", qty: "1" });
 const fmt = (n: number) => new Intl.NumberFormat("en-US").format(n);
 
 /**
- * Form tạo đơn tay (đơn từ FB/Viber/điện thoại). Gửi JSON; giá, phí ship, tồn được kiểm lại ở server.
+ * Form tạo đơn tay (đơn từ FB/Viber/điện thoại). Gửi JSON; giá, tồn được kiểm lại ở server.
+ * Địa chỉ theo danh mục VTP (P15); phí ship do đơn vị vận chuyển thu khi giao → tổng = tiền hàng.
  * `affiliates`: danh sách CTV để nhân viên gán (P10) — không truyền thì không hiện ô chọn.
  * `action`: mặc định tạo đơn admin; cổng CTV truyền action riêng (đơn gắn CTV đang đăng nhập).
  */
@@ -39,7 +41,8 @@ export function OrderForm({
   const [paymentMethod, setPaymentMethod] = useState("COD");
   const [name, setName] = useState(initial.name);
   const [phone, setPhone] = useState(initial.phone);
-  const [zoneId, setZoneId] = useState(initial.zoneId);
+  const [phone2, setPhone2] = useState(initial.phone2);
+  const [townshipId, setTownshipId] = useState(initial.townshipId);
   const [addressLine, setAddressLine] = useState(initial.addressLine);
   const [note, setNote] = useState("");
   const [lines, setLines] = useState<Line[]>([blank()]);
@@ -49,8 +52,6 @@ export function OrderForm({
     setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
 
   const subtotal = lines.reduce((s, l) => s + (variant(l.variantId)?.priceMmk ?? 0) * (Number(l.qty) || 0), 0);
-  const zone = options.zones.find((z) => z.id === zoneId);
-  const fee = zone?.feeMmk == null ? null : zone.freeFromMmk != null && subtotal >= zone.freeFromMmk ? 0 : zone.feeMmk;
 
   const payload = useMemo(
     () =>
@@ -59,14 +60,15 @@ export function OrderForm({
         paymentMethod,
         name,
         phone,
-        zoneId,
+        phone2: phone2 || undefined,
+        townshipId,
         addressLine,
         note: note || undefined,
         locale: "my",
         idempotencyKey,
         items: lines.filter((l) => l.variantId).map((l) => ({ variantId: l.variantId, qty: l.qty })),
       }),
-    [channel, paymentMethod, name, phone, zoneId, addressLine, note, idempotencyKey, lines],
+    [channel, paymentMethod, name, phone, phone2, townshipId, addressLine, note, idempotencyKey, lines],
   );
 
   return (
@@ -125,16 +127,33 @@ export function OrderForm({
           />
         </label>
         <label className="space-y-1 text-sm">
-          <span className="text-muted-foreground">{t("zone")}</span>
-          <select name="zoneId" required value={zoneId} onChange={(e) => setZoneId(e.target.value)} className={fieldClass}>
-            <option value="">{t("chooseZone")}</option>
-            {options.zones.map((z) => (
-              <option key={z.id} value={z.id}>
-                {z.label}
-              </option>
-            ))}
-          </select>
+          <span className="text-muted-foreground">{t("phone2")}</span>
+          <input
+            name="phone2"
+            type="tel"
+            inputMode="tel"
+            value={phone2}
+            onChange={(e) => setPhone2(e.target.value)}
+            className={fieldClass}
+          />
         </label>
+        <AddressPicker
+          catalog={options.catalog}
+          labels={{
+            state: t("state"),
+            district: t("district"),
+            township: t("township"),
+            chooseState: t("chooseState"),
+            chooseDistrict: t("chooseDistrict"),
+            chooseTownship: t("chooseTownship"),
+          }}
+          defaultTownshipId={initial.townshipId}
+          name="townshipIdSelect"
+          fieldClass={fieldClass}
+          labelClass="space-y-1 text-sm"
+          textClass="text-muted-foreground"
+          onTownshipChange={setTownshipId}
+        />
         <label className="space-y-1 text-sm">
           <span className="text-muted-foreground">{t("address")}</span>
           <input
@@ -212,10 +231,9 @@ export function OrderForm({
         <dt className="col-span-2 text-xs text-muted-foreground">{t("estimate")}</dt>
         <dt>{t("subtotal")}</dt>
         <dd className="text-right tabular-nums">{fmt(subtotal)} MMK</dd>
-        <dt>{t("shipping")}</dt>
-        <dd className="text-right tabular-nums">{fee == null ? "—" : fee === 0 ? t("freeShip") : `${fmt(fee)} MMK`}</dd>
         <dt className="font-medium">{t("total")}</dt>
-        <dd className="text-right font-medium tabular-nums">{fmt(subtotal + (fee ?? 0))} MMK</dd>
+        <dd className="text-right font-medium tabular-nums">{fmt(subtotal)} MMK</dd>
+        <dd className="col-span-2 text-xs text-muted-foreground">{t("shippingNote")}</dd>
       </dl>
 
       {state?.error && (

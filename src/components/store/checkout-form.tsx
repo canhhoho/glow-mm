@@ -2,10 +2,11 @@
 
 import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
+import type { AddressCatalog } from "@/server/locations/locations";
 import { placeOrderAction } from "@/server/cart/actions";
+import { AddressPicker } from "../address-picker";
 import { Notice, primaryButton, storeField } from "./ui";
-
-export type CheckoutZone = { id: string; label: string };
+import { useAddressLabels } from "./address-labels";
 
 /** Địa chỉ trong sổ địa chỉ của khách (P14c) — mặc định đứng đầu. */
 export type SavedAddress = {
@@ -13,7 +14,8 @@ export type SavedAddress = {
   label: string;
   recipientName: string;
   phone: string;
-  zoneId: string;
+  phone2: string | null;
+  townshipId: string;
   line: string;
   note: string | null;
 };
@@ -24,23 +26,23 @@ export type SavedAddress = {
  */
 export function CheckoutForm({
   locale,
-  zones,
+  catalog,
   idempotencyKey,
   addresses,
   accountName,
 }: {
   locale: string;
-  zones: CheckoutZone[];
+  catalog: AddressCatalog;
   idempotencyKey: string;
   addresses: SavedAddress[];
   accountName: string;
 }) {
   const t = useTranslations("Checkout");
+  const ta = useTranslations("Address");
+  const labels = useAddressLabels();
   const [state, action, pending] = useActionState(placeOrderAction, undefined);
   const [selected, setSelected] = useState(addresses[0]?.id ?? "new");
   const a = addresses.find((x) => x.id === selected);
-  // Khu vực của địa chỉ đã lưu có thể đã ngừng giao → để trống cho khách chọn lại.
-  const zoneId = a && zones.some((z) => z.id === a.zoneId) ? a.zoneId : "";
   return (
     <form action={action} className="space-y-4">
       <input type="hidden" name="locale" value={locale} />
@@ -86,18 +88,11 @@ export function CheckoutForm({
           />
         </label>
         <label className="block space-y-1 text-sm">
-          <span>{t("zone")}</span>
-          <select name="zoneId" required defaultValue={zoneId} className={storeField}>
-            <option value="" disabled>
-              {t("chooseZone")}
-            </option>
-            {zones.map((z) => (
-              <option key={z.id} value={z.id}>
-                {z.label}
-              </option>
-            ))}
-          </select>
+          <span>{ta("phone2")}</span>
+          <input name="phone2" type="tel" inputMode="tel" defaultValue={a?.phone2 ?? ""} className={storeField} />
         </label>
+        {/* Thị trấn của địa chỉ đã lưu có thể đã ngừng giao → picker để trống cho khách chọn lại. */}
+        <AddressPicker catalog={catalog} labels={labels} defaultTownshipId={a?.townshipId} fieldClass={storeField} />
         <label className="block space-y-1 text-sm">
           <span>{t("address")}</span>
           <textarea

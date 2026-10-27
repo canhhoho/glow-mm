@@ -6,7 +6,7 @@ import type { StoreLocale } from "@/i18n/routing";
 import { listAddresses, MAX_ADDRESSES } from "@/server/accounts/accounts";
 import { deleteAddressAction, setDefaultAddressAction } from "@/server/accounts/actions";
 import { requireCustomer } from "@/server/auth/customer-session";
-import { storeShippingZones } from "@/server/catalog/store-queries";
+import { addressCatalog } from "@/server/locations/cached";
 import { AccountShell } from "@/components/store/account-shell";
 import { AddressForm } from "@/components/store/account-forms";
 import { BlockSkeleton, Notice, storeCard } from "@/components/store/ui";
@@ -29,13 +29,12 @@ async function AddressesContent({ params, searchParams }: PageProps<"/[locale]/a
   setRequestLocale(locale);
   const user = await requireCustomer(locale, "/account/addresses");
   const { edit, saved } = await searchParams;
-  const [t, addresses, zones] = await Promise.all([
+  const [t, addresses, catalog] = await Promise.all([
     getTranslations({ locale, namespace: "Account" }),
     listAddresses(user.id),
-    storeShippingZones(locale),
+    addressCatalog(locale),
   ]);
   const editing = typeof edit === "string" ? addresses.find((a) => a.id === edit) : undefined;
-  const zoneOptions = zones.map((z) => ({ id: z.id, name: z.name }));
 
   return (
     <AccountShell user={user} locale={locale} active="addresses">
@@ -48,13 +47,16 @@ async function AddressesContent({ params, searchParams }: PageProps<"/[locale]/a
             <p className="flex flex-wrap items-center gap-2">
               <span className="font-medium">{a.recipientName}</span>
               <span>{a.phone}</span>
+              {a.phone2 && <span>· {a.phone2}</span>}
               {a.isDefault && <span className="rounded bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">{t("default")}</span>}
             </p>
             <p>
               {a.line}
               <br />
-              {locale === "my" ? a.zone.nameMy : a.zone.nameEn}
-              {!a.zone.active && <span className="text-destructive"> · {t("zoneInactive")}</span>}
+              {[a.township, a.township.district, a.township.district.state].map((x) => (locale === "my" ? x.nameMy : x.nameEn)).join(", ")}
+              {!(a.township.active && a.township.district.active && a.township.district.state.active) && (
+                <span className="text-destructive"> · {t("zoneInactive")}</span>
+              )}
             </p>
             {a.note && <p className="text-muted-foreground">{a.note}</p>}
             <div className="flex flex-wrap gap-1 border-t border-border pt-1">
@@ -88,7 +90,7 @@ async function AddressesContent({ params, searchParams }: PageProps<"/[locale]/a
             {t(editing ? "editAddress" : "addAddress")}
           </h3>
           {/* key: đổi địa chỉ đang sửa → form mới với giá trị mặc định mới. */}
-          <AddressForm key={editing?.id ?? "new"} locale={locale} zones={zoneOptions} address={editing} />
+          <AddressForm key={editing?.id ?? "new"} locale={locale} catalog={catalog} address={editing} />
         </section>
       )}
       {!editing && addresses.length >= MAX_ADDRESSES && (

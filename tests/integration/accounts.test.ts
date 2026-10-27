@@ -26,13 +26,13 @@ async function customer() {
 
 async function zoneId() {
   const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
-  return { f, zoneId: f.zoneId };
+  return { f, zoneId: f.townshipId };
 }
 
-const addr = (zoneId: string, extra: Record<string, unknown> = {}) => ({
+const addr = (townshipId: string, extra: Record<string, unknown> = {}) => ({
   recipientName: "Ma Hla",
   phone: "+95 9 7812 3456",
-  zoneId,
+  townshipId,
   line: "No. 12, Bo Aung Kyaw St",
   ...extra,
 });
@@ -41,8 +41,8 @@ describe("Sổ địa chỉ khách (P14b)", () => {
   it("địa chỉ đầu tự mặc định; đặt mặc định chỉ một; xoá mặc định → địa chỉ mới nhất lên mặc định", async () => {
     const u = await customer();
     const { zoneId: z } = await zoneId();
-    const a = await createAddress(u.id, addr(z));
-    expect(a).toMatchObject({ isDefault: true, phone: "0978123456" });
+    const a = await createAddress(u.id, addr(z, { phone2: "09 4000 2222" }));
+    expect(a).toMatchObject({ isDefault: true, phone: "0978123456", phone2: "0940002222", townshipId: "tw-YGN-WYG-KMY" });
     const b = await createAddress(u.id, addr(z, { recipientName: "Ko Ko", isDefault: "on" }));
     const c = await createAddress(u.id, addr(z, { recipientName: "Ma Ma" }));
     expect((await listAddresses(u.id)).filter((x) => x.isDefault).map((x) => x.id)).toEqual([b.id]);
@@ -67,6 +67,7 @@ describe("Sổ địa chỉ khách (P14b)", () => {
     }
     await expect(createAddress(u.id, addr(z, { phone: "12345" }))).rejects.toMatchObject({ code: "invalid_phone" });
     await expect(createAddress(u.id, addr("khong-co"))).rejects.toMatchObject({ code: "invalid_zone" });
+    await expect(createAddress(u.id, addr(z, { phone2: "12" }))).rejects.toMatchObject({ code: "invalid_phone" });
 
     for (let i = 1; i < MAX_ADDRESSES; i++) await createAddress(u.id, addr(z));
     await expect(createAddress(u.id, addr(z))).rejects.toBeInstanceOf(AccountError);

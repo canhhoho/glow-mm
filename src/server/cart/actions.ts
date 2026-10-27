@@ -108,7 +108,8 @@ export async function placeOrderAction(_prev: StoreActionState, formData: FormDa
         paymentMethod: formData.get("paymentMethod"),
         name: formData.get("name"),
         phone: formData.get("phone"),
-        zoneId: formData.get("zoneId"),
+        phone2: formData.get("phone2") || undefined,
+        townshipId: formData.get("townshipId"),
         addressLine: formData.get("addressLine"),
         note: formData.get("note") || undefined,
         locale,
@@ -126,7 +127,8 @@ export async function placeOrderAction(_prev: StoreActionState, formData: FormDa
     await createAddress(user.id, {
       recipientName: order.recipientName,
       phone: order.recipientPhone,
-      zoneId: formData.get("zoneId"),
+      phone2: order.recipientPhone2 ?? undefined,
+      townshipId: order.townshipId,
       line: order.addressText,
       note: formData.get("note") || undefined,
     }).catch(() => {});

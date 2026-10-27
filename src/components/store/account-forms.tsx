@@ -3,6 +3,9 @@
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import type { AddressCatalog } from "@/server/locations/locations";
+import { AddressPicker } from "../address-picker";
+import { useAddressLabels } from "./address-labels";
 import { changeCustomerPasswordAction, saveAddressAction, updateProfileAction } from "@/server/accounts/actions";
 import { Notice, outlineButton, primaryButton, storeField } from "./ui";
 
@@ -12,7 +15,8 @@ export type AddressValues = {
   id: string;
   recipientName: string;
   phone: string;
-  zoneId: string;
+  phone2: string | null;
+  townshipId: string;
   line: string;
   note: string | null;
   isDefault: boolean;
@@ -20,14 +24,16 @@ export type AddressValues = {
 
 export function AddressForm({
   locale,
-  zones,
+  catalog,
   address,
 }: {
   locale: string;
-  zones: { id: string; name: string }[];
+  catalog: AddressCatalog;
   address?: AddressValues;
 }) {
   const t = useTranslations("Account");
+  const ta = useTranslations("Address");
+  const labels = useAddressLabels();
   const [state, action, pending] = useActionState(saveAddressAction, undefined);
   return (
     <form action={action} className="space-y-3" data-testid="address-form">
@@ -51,18 +57,10 @@ export function AddressForm({
         />
       </label>
       <label className="block space-y-1 text-sm">
-        <span>{t("zone")}</span>
-        <select name="zoneId" required defaultValue={address?.zoneId ?? ""} className={storeField}>
-          <option value="" disabled>
-            {t("chooseZone")}
-          </option>
-          {zones.map((z) => (
-            <option key={z.id} value={z.id}>
-              {z.name}
-            </option>
-          ))}
-        </select>
+        <span>{ta("phone2")}</span>
+        <input name="phone2" type="tel" inputMode="tel" defaultValue={address?.phone2 ?? ""} className={storeField} />
       </label>
+      <AddressPicker catalog={catalog} labels={labels} defaultTownshipId={address?.townshipId} fieldClass={storeField} />
       <label className="block space-y-1 text-sm">
         <span>{t("line")}</span>
         <textarea

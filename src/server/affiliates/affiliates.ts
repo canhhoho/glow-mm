@@ -257,6 +257,7 @@ const orderForCommission = {
   paymentStatus: true,
   recipientName: true,
   recipientPhone: true,
+  recipientPhone2: true,
   addressText: true,
   zoneName: true,
   channel: true,

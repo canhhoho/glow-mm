@@ -6,10 +6,11 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import type { StoreLocale } from "@/i18n/routing";
 import { formatMmk } from "@/lib/money";
+import { addressCatalog } from "@/server/locations/cached";
 import { listAddresses } from "@/server/accounts/accounts";
 import { requireCustomer } from "@/server/auth/customer-session";
 import { CART_COOKIE, parseCart } from "@/server/cart/cart";
-import { getCartDetails, storeShippingZones } from "@/server/catalog/store-queries";
+import { getCartDetails } from "@/server/catalog/store-queries";
 import { getBoolSetting } from "@/server/settings";
 import { CheckoutForm } from "@/components/store/checkout-form";
 import { BlockSkeleton, PageTitle } from "@/components/store/ui";
@@ -31,30 +32,23 @@ async function CheckoutContent({ params }: PageProps<"/[locale]/checkout">) {
   setRequestLocale(locale);
   const user = await requireCustomer(locale, "/checkout");
   const lines = parseCart((await cookies()).get(CART_COOKIE)?.value);
-  const [t, cart, zones, checkoutEnabled, addresses] = await Promise.all([
+  const [t, ta, cart, catalog, checkoutEnabled, addresses] = await Promise.all([
     getTranslations({ locale, namespace: "Checkout" }),
+    getTranslations({ locale, namespace: "Address" }),
     getCartDetails(lines, locale),
-    storeShippingZones(locale),
+    addressCatalog(locale),
     getBoolSetting("store.checkoutEnabled"),
     listAddresses(user.id),
   ]);
   if (!cart.ok) redirect({ href: "/cart", locale });
-
-  const zoneOptions = zones.map((z) => ({
-    id: z.id,
-    label: `${z.name} — ${
-      z.freeFromMmk != null
-        ? t("shippingByZone", { fee: formatMmk(z.feeMmk, locale), free: formatMmk(z.freeFromMmk, locale) })
-        : formatMmk(z.feeMmk, locale)
-    }`,
-  }));
 
   const saved = addresses.map((a) => ({
     id: a.id,
     label: [a.recipientName, a.phone, a.line].join(" · "),
     recipientName: a.recipientName,
     phone: a.phone,
-    zoneId: a.zoneId,
+    phone2: a.phone2,
+    townshipId: a.townshipId,
     line: a.line,
     note: a.note,
   }));
@@ -88,12 +82,15 @@ async function CheckoutContent({ params }: PageProps<"/[locale]/checkout">) {
           <span>{t("total")}</span>
           <span>{formatMmk(cart.subtotalMmk, locale)}</span>
         </p>
+        <p className="mt-1 text-xs text-muted-foreground" data-testid="shipping-note">
+          {ta("shippingNote")}
+        </p>
       </section>
       <div className="lg:col-start-1 lg:row-start-2 lg:rounded-xl lg:bg-card lg:p-4 lg:ring-1 lg:ring-border">
         {checkoutEnabled ? (
           <CheckoutForm
             locale={locale}
-            zones={zoneOptions}
+            catalog={catalog}
             idempotencyKey={randomUUID()}
             addresses={saved}
             accountName={user.name}

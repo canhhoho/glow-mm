@@ -453,7 +453,15 @@
     },
     "colAffiliate": "CTV",
     "allAffiliates": "Mọi CTV",
-    "customerAccount": "Tài khoản khách"
+    "customerAccount": "Tài khoản khách",
+    "state": "Vùng / Bang",
+    "district": "Huyện",
+    "township": "Thị trấn",
+    "chooseState": "Chọn vùng / bang",
+    "chooseDistrict": "Chọn huyện",
+    "chooseTownship": "Chọn thị trấn",
+    "phone2": "SĐT phụ (không bắt buộc)",
+    "shippingNote": "Phí ship do đơn vị vận chuyển thu khi giao"
   },
   "Settings": {
     "title": "Cài đặt",

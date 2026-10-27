@@ -42,7 +42,10 @@ export default async function CtvOrderPage({ params, searchParams }: PageProps<"
           <dt className="text-muted-foreground">{t("customer")}</dt>
           <dd>{order.recipientName}</dd>
           <dt className="text-muted-foreground">{ta("phone")}</dt>
-          <dd className="font-mono">{order.recipientPhone}</dd>
+          <dd className="font-mono">
+            {order.recipientPhone}
+            {order.recipientPhone2 && <> · {order.recipientPhone2}</>}
+          </dd>
           <dt className="text-muted-foreground">{t("address")}</dt>
           <dd>
             {order.addressText}
@@ -84,10 +87,15 @@ export default async function CtvOrderPage({ params, searchParams }: PageProps<"
         <dl className="ml-auto grid max-w-xs grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm">
           <dt>{t("subtotal")}</dt>
           <dd className="text-right tabular-nums">{fmtInt(order.subtotalMmk)} MMK</dd>
-          <dt>{t("shipping")}</dt>
-          <dd className="text-right tabular-nums">{fmtInt(order.shippingFeeMmk)} MMK</dd>
+          {order.shippingFeeMmk > 0 && (
+            <>
+              <dt>{t("shipping")}</dt>
+              <dd className="text-right tabular-nums">{fmtInt(order.shippingFeeMmk)} MMK</dd>
+            </>
+          )}
           <dt className="font-medium">{t("total")}</dt>
           <dd className="text-right font-medium tabular-nums">{fmtInt(order.totalMmk)} MMK</dd>
+          {order.shippingFeeMmk === 0 && <dd className="col-span-2 text-xs text-muted-foreground">{to("shippingNote")}</dd>}
         </dl>
       </section>
 

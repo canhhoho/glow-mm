@@ -361,21 +361,8 @@ async function seedStock() {
   }, { maxWait: 30_000, timeout: 120_000 }); // DB ở xa (Neon Singapore) → cho thêm thời gian
 }
 
-async function seedZones() {
-  // ── Vùng giao hàng ──
-  const zones = [
-    { code: "YGN-KMY", region: "Yangon", township: "Kamayut", nameMy: "ကမာရွတ်", nameEn: "Kamayut", fee: 2500 },
-    { code: "YGN-BHN", region: "Yangon", township: "Bahan", nameMy: "ဗဟန်း", nameEn: "Bahan", fee: 2500 },
-    { code: "YGN-HLG", region: "Yangon", township: "Hlaing", nameMy: "လှိုင်", nameEn: "Hlaing", fee: 3000 },
-    { code: "MDY-CAT", region: "Mandalay", township: "Chanayethazan", nameMy: "ချမ်းအေးသာစံ", nameEn: "Chanayethazan", fee: 5000 },
-  ];
-  for (const z of zones) {
-    const { fee, ...zone } = z;
-    await prisma.shippingZone.create({
-      data: { ...zone, rates: { create: { feeMmk: fee, freeFromMmk: 100000, etaDays: z.region === "Yangon" ? 2 : 4 } } },
-    });
-  }
-}
+/** Thị trấn mẫu (danh mục VTP chèn sẵn bằng migration P15): Kamaryut, Yangon (West), Yangon. */
+const SEED_TOWNSHIP = "tw-YGN-WYG-KMY";
 
 /** Phân bổ chi phí chuyến hàng mẫu vào giá vốn lô (để báo cáo lợi nhuận có số). Dùng đúng hàm nghiệp vụ. */
 async function seedLandedCost() {
@@ -398,7 +385,6 @@ async function seedDemoOrders() {
   const DAY = 86_400_000;
   const ago = (days: number) => new Date(Date.now() - days * DAY);
   const admin = { userId: STAFF[0].id, role: "ADMIN" as const };
-  const zone = await prisma.shippingZone.findUniqueOrThrow({ where: { code: "YGN-KMY" } });
   const mm = await prisma.location.findUniqueOrThrow({ where: { code: "MM-STOCK" } });
   const qc = await prisma.location.findUniqueOrThrow({ where: { code: "MM-QC" } });
   const id = async (sku: string) => (await prisma.variant.findUniqueOrThrow({ where: { sku } })).id;
@@ -415,7 +401,7 @@ async function seedDemoOrders() {
         paymentMethod: o.method,
         name: o.name,
         phone: o.phone,
-        zoneId: zone.id,
+        townshipId: SEED_TOWNSHIP,
         addressLine: "အမှတ် ၁၂၊ ဗိုလ်အောင်ကျော်လမ်း",
         locale: "my",
         items: await Promise.all(o.items.map(async ([sku, qty]) => ({ variantId: await id(sku), qty }))),
@@ -517,14 +503,13 @@ async function completeDemo(orderId: string, days: number) {
 }
 
 async function demoOrderInput(key: string, name: string, phone: string, sku: string) {
-  const zone = await prisma.shippingZone.findUniqueOrThrow({ where: { code: "YGN-KMY" } });
   const variant = await prisma.variant.findUniqueOrThrow({ where: { sku } });
   return {
     idempotencyKey: key,
     paymentMethod: "COD" as const,
     name,
     phone,
-    zoneId: zone.id,
+    townshipId: SEED_TOWNSHIP,
     addressLine: "အမှတ် ၅၊ ပန်းဆိုးတန်းလမ်း",
     locale: "my" as const,
     items: [{ variantId: variant.id, qty: 1 }],
@@ -563,7 +548,6 @@ const CUSTOMER = { id: "seed-customer", email: "khach@glow.local", name: "Ma Khi
 async function seedCustomer() {
   const password = process.env.SEED_STAFF_PASSWORD;
   if (!password) throw new Error("Thiếu SEED_STAFF_PASSWORD trong .env");
-  const zone = await prisma.shippingZone.findUniqueOrThrow({ where: { code: "YGN-KMY" } });
   await prisma.user.create({
     data: {
       id: CUSTOMER.id,
@@ -576,7 +560,7 @@ async function seedCustomer() {
         create: { id: `${CUSTOMER.id}-cred`, accountId: CUSTOMER.id, providerId: "credential", password: await hashPassword(password) },
       },
       addresses: {
-        create: { recipientName: "Ma Khin", phone: "0978300000", zoneId: zone.id, line: "No. 8, Pyay Road", isDefault: true },
+        create: { recipientName: "Ma Khin", phone: "0978300000", townshipId: SEED_TOWNSHIP, line: "No. 8, Pyay Road", isDefault: true },
       },
     },
   });
@@ -594,13 +578,6 @@ async function main() {
   } else {
     await seedStock();
     console.log("• Tồn đầu kỳ: xong");
-  }
-  // Kiểm tra theo mã vùng mẫu (không đếm tổng): DB test có thể đã có vùng do integration test tạo.
-  if (await prisma.shippingZone.findUnique({ where: { code: "YGN-KMY" } })) {
-    console.log("• Vùng giao hàng: đã có → bỏ qua");
-  } else {
-    await seedZones();
-    console.log("• Vùng giao hàng: xong");
   }
   if (await prisma.user.findUnique({ where: { email: AFFILIATE.email } })) {
     console.log("• CTV mẫu: đã có → bỏ qua");
@@ -649,7 +626,7 @@ async function main() {
       console.log("• Đơn mẫu CTV cấp dưới: xong (LINN bán, MAUNG hưởng tầng trên)");
     }
   }
-  console.log("Seed xong: 3 nhân viên, 2 CTV (2 tầng), 1 khách, 6 sản phẩm (1 combo), 8 lô, 4 vùng giao hàng, đơn mẫu.");
+  console.log("Seed xong: 3 nhân viên, 2 CTV (2 tầng), 1 khách, 6 sản phẩm (1 combo), 8 lô, đơn mẫu.");
 }
 
 main()

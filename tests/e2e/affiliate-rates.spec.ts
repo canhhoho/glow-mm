@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { login } from "./helpers";
+import { login, pickAddressAdmin } from "./helpers";
 
 // P13: admin đặt % tầng trên riêng cho cấp trên (MAUNG) → đơn của tuyến dưới (LINN) chốt % đó;
 // admin chỉnh % trên đơn chưa chi trả → hoa hồng tính lại.
@@ -22,7 +22,7 @@ test("admin: % tầng trên riêng + chỉnh % trên đơn chưa chi trả", asy
     // Nhân viên tạo đơn tay, gán CTV cấp dưới LINN → cấp trên MAUNG hưởng 3%.
     await page.goto("/admin/orders/new?phone=09%207812%205555");
     await page.getByLabel("Tên người nhận").fill("Ma Rate");
-    await page.getByLabel("Khu vực").selectOption({ index: 1 });
+    await pickAddressAdmin(page);
     await page.getByLabel("Địa chỉ").fill("No. 3, Rate Road");
     const option = page.getByLabel("Biến thể").locator("option", { hasText: VARIANT });
     await page.getByLabel("Biến thể").selectOption((await option.getAttribute("value"))!);

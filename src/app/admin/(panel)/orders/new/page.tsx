@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { affiliateOptions } from "@/server/affiliates/affiliates";
@@ -14,15 +14,16 @@ export default async function NewOrderPage({ searchParams }: PageProps<"/admin/o
   const lookup = typeof phone === "string" && phone.trim() ? phone.trim() : undefined;
   const [t, options, customer, affiliates] = await Promise.all([
     getTranslations("Orders"),
-    orderFormOptions(),
+    orderFormOptions(await getLocale()),
     lookup ? findCustomerByPhone(lookup) : null,
     can(user.role, "orders:assign-affiliate") ? affiliateOptions() : undefined,
   ]);
   const address = customer?.addresses[0];
   const initial: OrderFormInitial = {
     phone: customer?.phone ?? lookup ?? "",
+    phone2: "",
     name: customer?.name ?? "",
-    zoneId: address?.zoneId ?? "",
+    townshipId: address?.townshipId ?? "",
     addressLine: address?.line ?? "",
   };
 

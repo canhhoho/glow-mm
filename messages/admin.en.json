@@ -453,7 +453,15 @@
     },
     "colAffiliate": "Affiliate",
     "allAffiliates": "All affiliates",
-    "customerAccount": "Customer account"
+    "customerAccount": "Customer account",
+    "state": "State / Region",
+    "district": "District",
+    "township": "Township",
+    "chooseState": "Choose state / region",
+    "chooseDistrict": "Choose district",
+    "chooseTownship": "Choose township",
+    "phone2": "Alternative phone (optional)",
+    "shippingNote": "Shipping fee collected by the courier on delivery"
   },
   "Settings": {
     "title": "Settings",

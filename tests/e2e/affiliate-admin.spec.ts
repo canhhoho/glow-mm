@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { login } from "./helpers";
+import { login, pickAddressAdmin } from "./helpers";
 
 // P10b: admin tạo CTV → gán CTV khi tạo đơn → đơn hoàn tất → (hạn giữ = 0) ghi nhận chi trả.
 
@@ -34,7 +34,7 @@ test("admin: tạo CTV, gán vào đơn, đơn hoàn tất rồi ghi nhận chi 
   // Tạo đơn tay, chọn CTV.
   await page.goto("/admin/orders/new?phone=09%207812%200000");
   await page.getByLabel("Tên người nhận").fill("Ma Aye");
-  await page.getByLabel("Khu vực").selectOption({ index: 1 });
+  await pickAddressAdmin(page);
   await page.getByLabel("Địa chỉ").fill("No. 5, Pansodan St");
   const option = page.getByLabel("Biến thể").locator("option", { hasText: VARIANT });
   await page.getByLabel("Biến thể").selectOption((await option.getAttribute("value"))!);

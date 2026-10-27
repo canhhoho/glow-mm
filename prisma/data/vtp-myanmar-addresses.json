@@ -1,0 +1,2270 @@
+[
+  {
+    "nameEn": "Sagaing",
+    "code": "SGG",
+    "nameMy": "စစ်ကိုင်း",
+    "districts": [
+      {
+        "nameEn": "Tamu",
+        "code": "TMU",
+        "nameMy": "တမူး",
+        "townships": [
+          {
+            "nameEn": "Tamu",
+            "code": "TMU",
+            "nameMy": "တမူး"
+          }
+        ]
+      },
+      {
+        "nameEn": "Sagaing",
+        "code": "SGG",
+        "nameMy": "စစ်ကိုင်း",
+        "townships": [
+          {
+            "nameEn": "Sagaing",
+            "code": "SGG",
+            "nameMy": "စစ်ကိုင်း"
+          },
+          {
+            "nameEn": "Myaung",
+            "code": "MAG",
+            "nameMy": "မြောင်"
+          },
+          {
+            "nameEn": "Myinmu",
+            "code": "MMU",
+            "nameMy": "မြင်းမူ"
+          }
+        ]
+      },
+      {
+        "nameEn": "Shwebo",
+        "code": "SBO",
+        "nameMy": "ရွှေဘို",
+        "townships": [
+          {
+            "nameEn": "Shwebo",
+            "code": "SBO",
+            "nameMy": "ရွှေဘို"
+          },
+          {
+            "nameEn": "Khin-U",
+            "code": "KNU",
+            "nameMy": "ခင်ဦး"
+          },
+          {
+            "nameEn": "Wetlet",
+            "code": "WLT",
+            "nameMy": "ဝက်လက်"
+          },
+          {
+            "nameEn": "Kanbalu",
+            "code": "KBL",
+            "nameMy": "ကန့်ဘလူ"
+          },
+          {
+            "nameEn": "Kyunhla",
+            "code": "KYL",
+            "nameMy": "ကျွန်းလှ"
+          },
+          {
+            "nameEn": "Ye-U",
+            "code": "YEU",
+            "nameMy": "ရေဦး"
+          },
+          {
+            "nameEn": "Taze",
+            "code": "TZE",
+            "nameMy": "တန့်ဆည်"
+          },
+          {
+            "nameEn": "Tabayin",
+            "code": "TBY",
+            "nameMy": "ဒီပဲယင်း"
+          }
+        ]
+      },
+      {
+        "nameEn": "Monywa",
+        "code": "MYA",
+        "nameMy": "မုံရွာ",
+        "townships": [
+          {
+            "nameEn": "Monywa",
+            "code": "MWA",
+            "nameMy": "မုံရွာ"
+          },
+          {
+            "nameEn": "Budalin",
+            "code": "BDL",
+            "nameMy": "ဘုတလင်"
+          },
+          {
+            "nameEn": "Ayadaw",
+            "code": "AYD",
+            "nameMy": "အရာတော်"
+          },
+          {
+            "nameEn": "Chaung-U",
+            "code": "CGU",
+            "nameMy": "ချောင်းဦး"
+          }
+        ]
+      },
+      {
+        "nameEn": "Katha",
+        "code": "KTA",
+        "nameMy": "ကသာ",
+        "townships": [
+          {
+            "nameEn": "Katha",
+            "code": "KTA",
+            "nameMy": "ကသာ"
+          },
+          {
+            "nameEn": "Indaw",
+            "code": "IDW",
+            "nameMy": "အင်းတော်"
+          },
+          {
+            "nameEn": "Banmauk",
+            "code": "BMK",
+            "nameMy": "ဗန်းမောက်"
+          },
+          {
+            "nameEn": "Wuntho",
+            "code": "WTO",
+            "nameMy": "ဝန်းသို"
+          },
+          {
+            "nameEn": "Pinlebu",
+            "code": "PLB",
+            "nameMy": "ပင်လည်ဘူး"
+          },
+          {
+            "nameEn": "Tigyaing",
+            "code": "TYA",
+            "nameMy": "ထီးချိုင့်"
+          },
+          {
+            "nameEn": "Kawlin",
+            "code": "KLN",
+            "nameMy": "ကောလင်း"
+          }
+        ]
+      },
+      {
+        "nameEn": "Kale",
+        "code": "KLE",
+        "nameMy": "ကလေး",
+        "townships": [
+          {
+            "nameEn": "Kale",
+            "code": "KLE",
+            "nameMy": "ကလေး"
+          },
+          {
+            "nameEn": "Kalewa",
+            "code": "KLW",
+            "nameMy": "ကလေးဝ"
+          },
+          {
+            "nameEn": "Mingin",
+            "code": "MGN",
+            "nameMy": "မင်းကင်း"
+          }
+        ]
+      },
+      {
+        "nameEn": "Mawlaik",
+        "code": "MLK",
+        "nameMy": "မော်လိုက်",
+        "townships": [
+          {
+            "nameEn": "Mawlaik",
+            "code": "MLK",
+            "nameMy": "မော်လိုက်"
+          },
+          {
+            "nameEn": "Paungbyin",
+            "code": "PBN",
+            "nameMy": "ဖောင်းပြင်"
+          }
+        ]
+      },
+      {
+        "nameEn": "Hkamti",
+        "code": "KTI",
+        "nameMy": "ခန္တီး",
+        "townships": [
+          {
+            "nameEn": "Hkamti",
+            "code": "KTI",
+            "nameMy": "ခန္တီး"
+          },
+          {
+            "nameEn": "Lay Shi",
+            "code": "LSI",
+            "nameMy": "လေရှီး"
+          },
+          {
+            "nameEn": "Nanyun",
+            "code": "NYN",
+            "nameMy": "နန်းယွန်း"
+          },
+          {
+            "nameEn": "Homalin",
+            "code": "HML",
+            "nameMy": "ဟုမ္မလင်း"
+          },
+          {
+            "nameEn": "Lahe",
+            "code": "LHE",
+            "nameMy": "လဟယ်"
+          }
+        ]
+      },
+      {
+        "nameEn": "Yinmabin",
+        "code": "YBN",
+        "nameMy": "ယင်းမာပင်",
+        "townships": [
+          {
+            "nameEn": "Yinmabin",
+            "code": "YMB",
+            "nameMy": "ယင်းမာပင်"
+          },
+          {
+            "nameEn": "Salingyi",
+            "code": "SLY",
+            "nameMy": "ဆားလင်းကြီး"
+          },
+          {
+            "nameEn": "Pale",
+            "code": "PLE",
+            "nameMy": "ပုလဲ"
+          },
+          {
+            "nameEn": "Kani",
+            "code": "KNI",
+            "nameMy": "ကနီ"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nameEn": "Magway",
+    "code": "MGY",
+    "nameMy": "မကွေး",
+    "districts": [
+      {
+        "nameEn": "Magway",
+        "code": "MGW",
+        "nameMy": "မကွေး",
+        "townships": [
+          {
+            "nameEn": "Magway",
+            "code": "MGW",
+            "nameMy": "မကွေး"
+          },
+          {
+            "nameEn": "Yenangyaung",
+            "code": "YNY",
+            "nameMy": "ရေနံချောင်း"
+          },
+          {
+            "nameEn": "Chauk",
+            "code": "CHK",
+            "nameMy": "ချောက်"
+          },
+          {
+            "nameEn": "Taungdwingyi",
+            "code": "TDG",
+            "nameMy": "တောင်တွင်းကြီး"
+          },
+          {
+            "nameEn": "Myothit",
+            "code": "MTT",
+            "nameMy": "မြို့သစ်"
+          },
+          {
+            "nameEn": "Natmauk",
+            "code": "NMK",
+            "nameMy": "နတ်မောက်"
+          }
+        ]
+      },
+      {
+        "nameEn": "Minbu",
+        "code": "MBU",
+        "nameMy": "မင်းဘူး",
+        "townships": [
+          {
+            "nameEn": "Minbu",
+            "code": "MBU",
+            "nameMy": "မင်းဘူး"
+          },
+          {
+            "nameEn": "Pwintbyu",
+            "code": "PBU",
+            "nameMy": "ပွင့်ဖြူ"
+          },
+          {
+            "nameEn": "Ngape",
+            "code": "NPE",
+            "nameMy": "ငဖဲ"
+          },
+          {
+            "nameEn": "Salin",
+            "code": "SLN",
+            "nameMy": "စလင်း"
+          },
+          {
+            "nameEn": "Sidoktaya",
+            "code": "STY",
+            "nameMy": "စေတုတ္တရာ"
+          }
+        ]
+      },
+      {
+        "nameEn": "Thayet",
+        "code": "TYT",
+        "nameMy": "သရက်",
+        "townships": [
+          {
+            "nameEn": "Thayet",
+            "code": "TYT",
+            "nameMy": "သရက်"
+          },
+          {
+            "nameEn": "Minhla",
+            "code": "MIL",
+            "nameMy": "မင်းလှ"
+          },
+          {
+            "nameEn": "Mindon",
+            "code": "MDN",
+            "nameMy": "မင်းတုန်း"
+          },
+          {
+            "nameEn": "Kamma",
+            "code": "KMA",
+            "nameMy": "ကံမ"
+          },
+          {
+            "nameEn": "Aunglan",
+            "code": "ALN",
+            "nameMy": "အောင်လံ"
+          },
+          {
+            "nameEn": "Sinbaungwe",
+            "code": "SBW",
+            "nameMy": "ဆင်ပေါင်ဝဲ"
+          }
+        ]
+      },
+      {
+        "nameEn": "Pakokku",
+        "code": "PKK",
+        "nameMy": "ပခုက္ကူ",
+        "townships": [
+          {
+            "nameEn": "Pakokku",
+            "code": "PKU",
+            "nameMy": "ပခုက္ကူ"
+          },
+          {
+            "nameEn": "Yesagyo",
+            "code": "YSG",
+            "nameMy": "ရေစကြို"
+          },
+          {
+            "nameEn": "Myaing",
+            "code": "MIG",
+            "nameMy": "မြိုင်"
+          },
+          {
+            "nameEn": "Pauk",
+            "code": "PAK",
+            "nameMy": "ပေါက်"
+          },
+          {
+            "nameEn": "Seikphyu",
+            "code": "SPU",
+            "nameMy": "ဆိပ်ဖြူ"
+          }
+        ]
+      },
+      {
+        "nameEn": "Gangaw",
+        "code": "GGW",
+        "nameMy": "ဂန့်ဂေါ",
+        "townships": [
+          {
+            "nameEn": "Gangaw",
+            "code": "GGW",
+            "nameMy": "ဂန့်ဂေါ"
+          },
+          {
+            "nameEn": "Tilin",
+            "code": "TLN",
+            "nameMy": "ထီးလင်း"
+          },
+          {
+            "nameEn": "Saw",
+            "code": "SAW",
+            "nameMy": "ဆော"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nameEn": "Kachin",
+    "code": "KCN",
+    "nameMy": "ကချင်",
+    "districts": [
+      {
+        "nameEn": "Mohnyin",
+        "code": "MHN",
+        "nameMy": "မိုးညှင်း",
+        "townships": [
+          {
+            "nameEn": "Mohnyin",
+            "code": "MNY",
+            "nameMy": "မိုးညှင်း"
+          },
+          {
+            "nameEn": "Mogaung",
+            "code": "MGG",
+            "nameMy": "မိုးကောင်း"
+          },
+          {
+            "nameEn": "Hpakant",
+            "code": "PKT",
+            "nameMy": "ဖားကန့်"
+          }
+        ]
+      },
+      {
+        "nameEn": "Myitkyina",
+        "code": "MKN",
+        "nameMy": "မြစ်ကြီးနား",
+        "townships": [
+          {
+            "nameEn": "Myitkyina",
+            "code": "MKN",
+            "nameMy": "မြစ်ကြီးနား"
+          },
+          {
+            "nameEn": "Injangyang",
+            "code": "IJG",
+            "nameMy": "အင်ဂျန်းယန်"
+          },
+          {
+            "nameEn": "Tanai",
+            "code": "TAI",
+            "nameMy": "တနိုင်း"
+          },
+          {
+            "nameEn": "Chipwi",
+            "code": "CPI",
+            "nameMy": "ချီဖွေ"
+          },
+          {
+            "nameEn": "Waingmaw",
+            "code": "WMW",
+            "nameMy": "ဝိုင်းမော်"
+          },
+          {
+            "nameEn": "Tsawlaw",
+            "code": "TLW",
+            "nameMy": "ဆော့လော်"
+          }
+        ]
+      },
+      {
+        "nameEn": "Bhamo",
+        "code": "BMO",
+        "nameMy": "ဗန်းမော်",
+        "townships": [
+          {
+            "nameEn": "Shwegu",
+            "code": "SWG",
+            "nameMy": "ရွှေကူ"
+          },
+          {
+            "nameEn": "Momauk",
+            "code": "MMK",
+            "nameMy": "မိုးမောက်"
+          },
+          {
+            "nameEn": "Mansi",
+            "code": "MSI",
+            "nameMy": "မံစီ"
+          },
+          {
+            "nameEn": "Bhamo",
+            "code": "BMO",
+            "nameMy": "ဗန်းမော်"
+          }
+        ]
+      },
+      {
+        "nameEn": "Puta-O",
+        "code": "PTO",
+        "nameMy": "ပူတာအို",
+        "townships": [
+          {
+            "nameEn": "Puta-O",
+            "code": "PTO",
+            "nameMy": "ပူတာအို"
+          },
+          {
+            "nameEn": "Sumprabum",
+            "code": "SPB",
+            "nameMy": "ဆွမ်ပရာဘွမ်"
+          },
+          {
+            "nameEn": "Machanbaw",
+            "code": "MCB",
+            "nameMy": "မချမ်းဘော"
+          },
+          {
+            "nameEn": "Khaunglanhpu",
+            "code": "KLP",
+            "nameMy": "ခေါင်လန်ဖူး"
+          },
+          {
+            "nameEn": "Nawngmun",
+            "code": "NMN",
+            "nameMy": "နောင်မွန်း"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nameEn": "Kayah",
+    "code": "KYH",
+    "nameMy": "ကယား",
+    "districts": [
+      {
+        "nameEn": "Loikaw",
+        "code": "LKW",
+        "nameMy": "လွိုင်ကော်",
+        "townships": [
+          {
+            "nameEn": "Loikaw",
+            "code": "LKW",
+            "nameMy": "လွိုင်ကော်"
+          },
+          {
+            "nameEn": "Hpruso",
+            "code": "PRS",
+            "nameMy": "ဖရူဆို"
+          },
+          {
+            "nameEn": "Shadaw",
+            "code": "SDW",
+            "nameMy": "ရှားတော"
+          },
+          {
+            "nameEn": "Demoso",
+            "code": "DMS",
+            "nameMy": "ဒီးမော့ဆို"
+          }
+        ]
+      },
+      {
+        "nameEn": "Bawlake",
+        "code": "BLK",
+        "nameMy": "ဘော်လခဲ",
+        "townships": [
+          {
+            "nameEn": "Bawlakhe",
+            "code": "BLK",
+            "nameMy": "ဘော်လခဲ"
+          },
+          {
+            "nameEn": "Hpasawng",
+            "code": "PSG",
+            "nameMy": "ဖားဆောင်း"
+          },
+          {
+            "nameEn": "Mese",
+            "code": "MSE",
+            "nameMy": "မယ်စဲ့"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nameEn": "Chin",
+    "code": "CHN",
+    "nameMy": "ချင်း",
+    "districts": [
+      {
+        "nameEn": "Hakha",
+        "code": "HKA",
+        "nameMy": "ဟားခါး",
+        "townships": [
+          {
+            "nameEn": "Hakha",
+            "code": "HKA",
+            "nameMy": "ဟားခါး"
+          },
+          {
+            "nameEn": "Thantlang",
+            "code": "TLG",
+            "nameMy": "ထန်တလန်"
+          }
+        ]
+      },
+      {
+        "nameEn": "Falam",
+        "code": "FLM",
+        "nameMy": "ဖလမ်း",
+        "townships": [
+          {
+            "nameEn": "Tedim",
+            "code": "TDM",
+            "nameMy": "တီးတိန်"
+          },
+          {
+            "nameEn": "Tonzang",
+            "code": "TZG",
+            "nameMy": "တွန်းဇံ"
+          }
+        ]
+      },
+      {
+        "nameEn": "Mindat",
+        "code": "MDT",
+        "nameMy": "မင်းတပ်",
+        "townships": [
+          {
+            "nameEn": "Mindat",
+            "code": "MDT",
+            "nameMy": "မင်းတပ်"
+          },
+          {
+            "nameEn": "Kanpetlet",
+            "code": "KPL",
+            "nameMy": "ကန်ပက်လက်"
+          },
+          {
+            "nameEn": "Paletwa",
+            "code": "PWA",
+            "nameMy": "ပလက်ဝ"
+          },
+          {
+            "nameEn": "Matupi",
+            "code": "MTP",
+            "nameMy": "မတူပီ"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nameEn": "Tanintharyi",
+    "code": "TNI",
+    "nameMy": "တနင်္သာရီ",
+    "districts": [
+      {
+        "nameEn": "Dawei",
+        "code": "DWI",
+        "nameMy": "ထားဝယ်",
+        "townships": [
+          {
+            "nameEn": "Dawei",
+            "code": "DWI",
+            "nameMy": "ထားဝယ်"
+          },
+          {
+            "nameEn": "Launglon",
+            "code": "LLN",
+            "nameMy": "လောင်းလုံ"
+          },
+          {
+            "nameEn": "Thayetchaung",
+            "code": "TYC",
+            "nameMy": "သရက်ချောင်း"
+          },
+          {
+            "nameEn": "Yebyu",
+            "code": "YBU",
+            "nameMy": "ရေဖြူ"
+          }
+        ]
+      },
+      {
+        "nameEn": "Myeik",
+        "code": "MYK",
+        "nameMy": "မြိတ်",
+        "townships": [
+          {
+            "nameEn": "Myeik",
+            "code": "MYK",
+            "nameMy": "မြိတ်"
+          },
+          {
+            "nameEn": "Kyunsu",
+            "code": "KSU",
+            "nameMy": "ကျွန်းစု"
+          },
+          {
+            "nameEn": "Tanintharyi",
+            "code": "TNI",
+            "nameMy": "တနင်္သာရီ"
+          },
+          {
+            "nameEn": "Palaw",
+            "code": "PLW",
+            "nameMy": "ပုလော"
+          }
+        ]
+      },
+      {
+        "nameEn": "Kawthoung",
+        "code": "KTO",
+        "nameMy": "ကော့သောင်း",
+        "townships": [
+          {
+            "nameEn": "Kawthoung",
+            "code": "KTG",
+            "nameMy": "ကော့သောင်း"
+          },
+          {
+            "nameEn": "Bokpyin",
+            "code": "BYN",
+            "nameMy": "ဘုတ်ပြင်း"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nameEn": "Bago",
+    "code": "BGO",
+    "nameMy": "ပဲခူး",
+    "districts": [
+      {
+        "nameEn": "Bago",
+        "code": "BGO",
+        "nameMy": "ပဲခူး",
+        "townships": [
+          {
+            "nameEn": "Bago",
+            "code": "BGO",
+            "nameMy": "ပဲခူး"
+          },
+          {
+            "nameEn": "Thanatpin",
+            "code": "TNP",
+            "nameMy": "သနပ်ပင်"
+          },
+          {
+            "nameEn": "Kawa",
+            "code": "KWA",
+            "nameMy": "ကဝ"
+          },
+          {
+            "nameEn": "Waw",
+            "code": "WAW",
+            "nameMy": "ဝေါ"
+          },
+          {
+            "nameEn": "Nyaunglebin",
+            "code": "NLB",
+            "nameMy": "ညောင်လေးပင်"
+          },
+          {
+            "nameEn": "Kyauktaga",
+            "code": "KGA",
+            "nameMy": "ကျောက်တံခါး"
+          },
+          {
+            "nameEn": "Daik-U",
+            "code": "DKU",
+            "nameMy": "ဒိုက်ဦး"
+          },
+          {
+            "nameEn": "Shwegyin",
+            "code": "SGN",
+            "nameMy": "ရွှေကျင်"
+          }
+        ]
+      },
+      {
+        "nameEn": "Taungoo",
+        "code": "TGO",
+        "nameMy": "တောင်ငူ",
+        "townships": [
+          {
+            "nameEn": "Taungoo",
+            "code": "TGO",
+            "nameMy": "တောင်ငူ"
+          },
+          {
+            "nameEn": "Yedashe",
+            "code": "YDS",
+            "nameMy": "ရေတာရှည်"
+          },
+          {
+            "nameEn": "Kyaukkyi",
+            "code": "KKI",
+            "nameMy": "ကျောက်ကြီး"
+          },
+          {
+            "nameEn": "Phyu",
+            "code": "PHU",
+            "nameMy": "ဖြူး"
+          },
+          {
+            "nameEn": "Oktwin",
+            "code": "OTN",
+            "nameMy": "အုတ်တွင်း"
+          },
+          {
+            "nameEn": "Htantabin",
+            "code": "TAB",
+            "nameMy": "ထန်းတပင်"
+          }
+        ]
+      },
+      {
+        "nameEn": "Pyay",
+        "code": "PYY",
+        "nameMy": "ပြည်",
+        "townships": [
+          {
+            "nameEn": "Pyay",
+            "code": "PYY",
+            "nameMy": "ပြည်"
+          },
+          {
+            "nameEn": "Paukkhaung",
+            "code": "PKG",
+            "nameMy": "ပေါက်ခေါင်း"
+          },
+          {
+            "nameEn": "Paungde",
+            "code": "PDE",
+            "nameMy": "ပေါင်းတည်"
+          },
+          {
+            "nameEn": "Shwedaung",
+            "code": "SDA",
+            "nameMy": "ရွှေတောင်"
+          },
+          {
+            "nameEn": "Padaung",
+            "code": "PDG",
+            "nameMy": "ပန်းတောင်း"
+          },
+          {
+            "nameEn": "Thegon",
+            "code": "TGN",
+            "nameMy": "သဲကုန်း"
+          }
+        ]
+      },
+      {
+        "nameEn": "Thayarwady",
+        "code": "TWY",
+        "nameMy": "သာယာဝတီ",
+        "townships": [
+          {
+            "nameEn": "Thayarwady",
+            "code": "TWD",
+            "nameMy": "သာယာဝတီ"
+          },
+          {
+            "nameEn": "Letpadan",
+            "code": "LPD",
+            "nameMy": "လက်ပံတန်း"
+          },
+          {
+            "nameEn": "Okpho",
+            "code": "OPO",
+            "nameMy": "အုတ်ဖို"
+          },
+          {
+            "nameEn": "Zigon",
+            "code": "ZGN",
+            "nameMy": "ဇီးကုန်း"
+          },
+          {
+            "nameEn": "Nattalin",
+            "code": "NTL",
+            "nameMy": "နတ်တလင်း"
+          },
+          {
+            "nameEn": "Gyobingauk",
+            "code": "GBA",
+            "nameMy": "ကြို့ပင်ကောက်"
+          },
+          {
+            "nameEn": "Minhla",
+            "code": "MLA",
+            "nameMy": "မင်းလှ"
+          },
+          {
+            "nameEn": "Monyo",
+            "code": "MYO",
+            "nameMy": "မိုးညို"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nameEn": "Shan",
+    "code": "SHN",
+    "nameMy": "ရှမ်း",
+    "districts": [
+      {
+        "nameEn": "Kunlong",
+        "code": "KLG",
+        "nameMy": "ကွမ်းလုံ",
+        "townships": [
+          {
+            "nameEn": "Kunlong",
+            "code": "KLG",
+            "nameMy": "ကွမ်းလုံ"
+          }
+        ]
+      },
+      {
+        "nameEn": "Matman",
+        "code": "MMN",
+        "nameMy": "မက်မန်း",
+        "townships": [
+          {
+            "nameEn": "Matman",
+            "code": "MMN",
+            "nameMy": "မက်မန်း"
+          },
+          {
+            "nameEn": "Pangsang",
+            "code": "PSA",
+            "nameMy": "ပန်ဆန်း"
+          },
+          {
+            "nameEn": "Narphan",
+            "code": "NPN",
+            "nameMy": "နားဖန်း"
+          }
+        ]
+      },
+      {
+        "nameEn": "Monghpyak",
+        "code": "MGP",
+        "nameMy": "မိုင်းဖြတ်",
+        "townships": [
+          {
+            "nameEn": "Monghpyak",
+            "code": "MPK",
+            "nameMy": "မိုင်းဖြတ်"
+          },
+          {
+            "nameEn": "Mongyawng",
+            "code": "MYW",
+            "nameMy": "မိုင်းယောင်း"
+          }
+        ]
+      },
+      {
+        "nameEn": "Taunggyi",
+        "code": "TGG",
+        "nameMy": "တောင်ကြီး",
+        "townships": [
+          {
+            "nameEn": "Taunggyi",
+            "code": "TGI",
+            "nameMy": "တောင်ကြီး"
+          },
+          {
+            "nameEn": "Nyaungshwe",
+            "code": "NSE",
+            "nameMy": "ညောင်ရွှေ"
+          },
+          {
+            "nameEn": "Hopong",
+            "code": "HPG",
+            "nameMy": "ဟိုပုံး"
+          },
+          {
+            "nameEn": "Hsihseng",
+            "code": "HHG",
+            "nameMy": "ဆီဆိုင်"
+          },
+          {
+            "nameEn": "Kalaw",
+            "code": "KLA",
+            "nameMy": "ကလော"
+          },
+          {
+            "nameEn": "Pindaya",
+            "code": "PDY",
+            "nameMy": "ပင်းတယ"
+          },
+          {
+            "nameEn": "Ywangan",
+            "code": "YWG",
+            "nameMy": "ရွာငံ"
+          },
+          {
+            "nameEn": "Lawksawk",
+            "code": "LSK",
+            "nameMy": "ရပ်စောက်"
+          },
+          {
+            "nameEn": "Pinlaung",
+            "code": "PLG",
+            "nameMy": "ပင်လောင်း"
+          },
+          {
+            "nameEn": "Pekon",
+            "code": "PKN",
+            "nameMy": "ဖယ်ခုံ"
+          }
+        ]
+      },
+      {
+        "nameEn": "Loilen",
+        "code": "LLN",
+        "nameMy": "လွိုင်လင်",
+        "townships": [
+          {
+            "nameEn": "Loilen",
+            "code": "LLE",
+            "nameMy": "လွိုင်လင်"
+          },
+          {
+            "nameEn": "Laihka",
+            "code": "LKA",
+            "nameMy": "လဲချား"
+          },
+          {
+            "nameEn": "Nansang",
+            "code": "NSG",
+            "nameMy": "နမ့်စန်"
+          },
+          {
+            "nameEn": "Kunhing",
+            "code": "KHG",
+            "nameMy": "ကွန်ဟိန်း"
+          },
+          {
+            "nameEn": "Kyethi",
+            "code": "KTH",
+            "nameMy": "ကျေးသီး"
+          },
+          {
+            "nameEn": "Mongkaing",
+            "code": "MKG",
+            "nameMy": "မိုင်းကိုင်"
+          },
+          {
+            "nameEn": "Monghsu",
+            "code": "MSU",
+            "nameMy": "မိုင်းရှူး"
+          }
+        ]
+      },
+      {
+        "nameEn": "Langkho",
+        "code": "LKO",
+        "nameMy": "လင်းခေး",
+        "townships": [
+          {
+            "nameEn": "Langkho",
+            "code": "LKO",
+            "nameMy": "လင်းခေး"
+          },
+          {
+            "nameEn": "Mongnai",
+            "code": "MNI",
+            "nameMy": "မိုးနဲ"
+          },
+          {
+            "nameEn": "Mawkmai",
+            "code": "MMI",
+            "nameMy": "မောက်မယ်"
+          },
+          {
+            "nameEn": "Mongpan",
+            "code": "MPN",
+            "nameMy": "မိုင်းပန်"
+          }
+        ]
+      },
+      {
+        "nameEn": "Lashio",
+        "code": "LSH",
+        "nameMy": "လားရှိုး",
+        "townships": [
+          {
+            "nameEn": "Lashio",
+            "code": "LSO",
+            "nameMy": "လားရှိုး"
+          },
+          {
+            "nameEn": "Hseni",
+            "code": "SNI",
+            "nameMy": "သိန္နီ"
+          },
+          {
+            "nameEn": "Mongyai",
+            "code": "MYI",
+            "nameMy": "မိုင်းရယ်"
+          },
+          {
+            "nameEn": "Tangyan",
+            "code": "TYN",
+            "nameMy": "တန့်ယန်း"
+          }
+        ]
+      },
+      {
+        "nameEn": "Muse",
+        "code": "MSE",
+        "nameMy": "မူဆယ်",
+        "townships": [
+          {
+            "nameEn": "Muse",
+            "code": "MUS",
+            "nameMy": "မူဆယ်"
+          },
+          {
+            "nameEn": "Namhkan",
+            "code": "NKN",
+            "nameMy": "နမ့်ခမ်း"
+          },
+          {
+            "nameEn": "Kutkai",
+            "code": "KKA",
+            "nameMy": "ကွတ်ခိုင်"
+          }
+        ]
+      },
+      {
+        "nameEn": "Kyaukme",
+        "code": "KKM",
+        "nameMy": "ကျောက်မဲ",
+        "townships": [
+          {
+            "nameEn": "Kyaukme",
+            "code": "KME",
+            "nameMy": "ကျောက်မဲ"
+          },
+          {
+            "nameEn": "Nawnghkio",
+            "code": "NKO",
+            "nameMy": "နောင်ချို"
+          },
+          {
+            "nameEn": "Hsipaw",
+            "code": "SPW",
+            "nameMy": "သီပေါ"
+          },
+          {
+            "nameEn": "Namtu",
+            "code": "NTU",
+            "nameMy": "နမ္မတူ"
+          },
+          {
+            "nameEn": "Namhsan",
+            "code": "NSN",
+            "nameMy": "နမ့်ဆန်"
+          },
+          {
+            "nameEn": "Mongmit",
+            "code": "MMT",
+            "nameMy": "မိုးမိတ်"
+          },
+          {
+            "nameEn": "Mabein",
+            "code": "MAB",
+            "nameMy": "မဘိမ်း"
+          },
+          {
+            "nameEn": "Manton",
+            "code": "MAT",
+            "nameMy": "မန်တုံ"
+          }
+        ]
+      },
+      {
+        "nameEn": "Laukkaing",
+        "code": "LKK",
+        "nameMy": "လောက်ကိုင်",
+        "townships": [
+          {
+            "nameEn": "Laukkaing",
+            "code": "LKG",
+            "nameMy": "လောက်ကိုင်"
+          },
+          {
+            "nameEn": "Konkyan",
+            "code": "KKN",
+            "nameMy": "ကုန်းကြမ်း"
+          }
+        ]
+      },
+      {
+        "nameEn": "Hopang",
+        "code": "HPG",
+        "nameMy": "ဟိုပန်",
+        "townships": [
+          {
+            "nameEn": "Hopang",
+            "code": "HPA",
+            "nameMy": "ဟိုပန်"
+          },
+          {
+            "nameEn": "Mongmao",
+            "code": "MMO",
+            "nameMy": "မိုင်းမော"
+          },
+          {
+            "nameEn": "Pangwaun",
+            "code": "PWN",
+            "nameMy": "ပန်ဝိုင်"
+          }
+        ]
+      },
+      {
+        "nameEn": "Kengtung",
+        "code": "KTG",
+        "nameMy": "ကျိုင်းတုံ",
+        "townships": [
+          {
+            "nameEn": "Kengtung",
+            "code": "KTU",
+            "nameMy": "ကျိုင်းတုံ"
+          },
+          {
+            "nameEn": "Mongkhet",
+            "code": "MKT",
+            "nameMy": "မိုင်းခတ်"
+          },
+          {
+            "nameEn": "Mongyang",
+            "code": "MNG",
+            "nameMy": "မိုင်းယန်း"
+          },
+          {
+            "nameEn": "Mongla",
+            "code": "MGA",
+            "nameMy": "မိုင်းလား"
+          }
+        ]
+      },
+      {
+        "nameEn": "Monghsat",
+        "code": "MGS",
+        "nameMy": "မိုင်းဆတ်",
+        "townships": [
+          {
+            "nameEn": "Monghsat",
+            "code": "MST",
+            "nameMy": "မိုင်းဆတ်"
+          },
+          {
+            "nameEn": "Mongping",
+            "code": "MPG",
+            "nameMy": "မိုင်းပျဉ်း"
+          },
+          {
+            "nameEn": "Mongton",
+            "code": "MTO",
+            "nameMy": "မိုင်းတုံ"
+          }
+        ]
+      },
+      {
+        "nameEn": "Tachileik",
+        "code": "TCL",
+        "nameMy": "တာချီလိတ်",
+        "townships": [
+          {
+            "nameEn": "Tachileik",
+            "code": "TCL",
+            "nameMy": "တာချီလိတ်"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nameEn": "Kayin",
+    "code": "KYN",
+    "nameMy": "ကရင်",
+    "districts": [
+      {
+        "nameEn": "Hpa-An",
+        "code": "PAN",
+        "nameMy": "ဘားအံ",
+        "townships": [
+          {
+            "nameEn": "Hpa-An",
+            "code": "PAN",
+            "nameMy": "ဘားအံ"
+          },
+          {
+            "nameEn": "Hlaingbwe",
+            "code": "LBE",
+            "nameMy": "လှိုင်းဘွဲ့"
+          },
+          {
+            "nameEn": "Thandaunggyi",
+            "code": "TDA",
+            "nameMy": "သံတောင်ကြီး"
+          }
+        ]
+      },
+      {
+        "nameEn": "Hpapun",
+        "code": "PUN",
+        "nameMy": "ဖာပွန်",
+        "townships": [
+          {
+            "nameEn": "Hpapun",
+            "code": "PUN",
+            "nameMy": "ဖာပွန်"
+          }
+        ]
+      },
+      {
+        "nameEn": "Myawaddy",
+        "code": "MWD",
+        "nameMy": "မြဝတီ",
+        "townships": [
+          {
+            "nameEn": "Myawaddy",
+            "code": "MWD",
+            "nameMy": "မြဝတီ"
+          }
+        ]
+      },
+      {
+        "nameEn": "Kawkareik",
+        "code": "KKR",
+        "nameMy": "ကော့ကရိတ်",
+        "townships": [
+          {
+            "nameEn": "Kyainseikgyi",
+            "code": "KSK",
+            "nameMy": "ကြာအင်းဆိပ်ကြီး"
+          },
+          {
+            "nameEn": "Kawkareik",
+            "code": "KKR",
+            "nameMy": "ကော့ကရိတ်"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nameEn": "Mandalay",
+    "code": "MDY",
+    "nameMy": "မန္တလေး",
+    "districts": [
+      {
+        "nameEn": "Mandalay",
+        "code": "MDY",
+        "nameMy": "မန္တလေး",
+        "townships": [
+          {
+            "nameEn": "Aungmyaythazan",
+            "code": "ATZ",
+            "nameMy": "အောင်မြေသာဇံ"
+          },
+          {
+            "nameEn": "Chanayethazan",
+            "code": "CTZ",
+            "nameMy": "ချမ်းအေးသာဇံ"
+          },
+          {
+            "nameEn": "Mahaaungmyay",
+            "code": "MAM",
+            "nameMy": "မဟာအောင်မြေ"
+          },
+          {
+            "nameEn": "Chanmyathazi",
+            "code": "CMT",
+            "nameMy": "ချမ်းမြသာစည်"
+          },
+          {
+            "nameEn": "Pyigyitagon",
+            "code": "PGT",
+            "nameMy": "ပြည်ကြီးတံခွန်"
+          },
+          {
+            "nameEn": "Amarapura",
+            "code": "APR",
+            "nameMy": "အမရပူရ"
+          },
+          {
+            "nameEn": "Patheingyi",
+            "code": "PTG",
+            "nameMy": "ပုသိမ်ကြီး"
+          }
+        ]
+      },
+      {
+        "nameEn": "Pyinoolwin",
+        "code": "POL",
+        "nameMy": "ပြင်ဦးလွင်",
+        "townships": [
+          {
+            "nameEn": "Pyinoolwin",
+            "code": "POL",
+            "nameMy": "ပြင်ဦးလွင်"
+          },
+          {
+            "nameEn": "Madaya",
+            "code": "MYA",
+            "nameMy": "မတ္တရာ"
+          },
+          {
+            "nameEn": "Singu",
+            "code": "SGU",
+            "nameMy": "စဉ့်ကူး"
+          },
+          {
+            "nameEn": "Mogoke",
+            "code": "MGE",
+            "nameMy": "မိုးကုတ်"
+          },
+          {
+            "nameEn": "Thabeikkyin",
+            "code": "TBK",
+            "nameMy": "သပိတ်ကျင်း"
+          }
+        ]
+      },
+      {
+        "nameEn": "Kyaukse",
+        "code": "KKS",
+        "nameMy": "ကျောက်ဆည်",
+        "townships": [
+          {
+            "nameEn": "Kyaukse",
+            "code": "KSE",
+            "nameMy": "ကျောက်ဆည်"
+          },
+          {
+            "nameEn": "Sintgaing",
+            "code": "SGA",
+            "nameMy": "စဉ့်ကိုင်"
+          },
+          {
+            "nameEn": "Myittha",
+            "code": "MYT",
+            "nameMy": "မြစ်သား"
+          },
+          {
+            "nameEn": "Tada-U",
+            "code": "TDU",
+            "nameMy": "တံတားဦး"
+          }
+        ]
+      },
+      {
+        "nameEn": "Myingyan",
+        "code": "MGY",
+        "nameMy": "မြင်းခြံ",
+        "townships": [
+          {
+            "nameEn": "Myingyan",
+            "code": "MYN",
+            "nameMy": "မြင်းခြံ"
+          },
+          {
+            "nameEn": "Taungtha",
+            "code": "TTA",
+            "nameMy": "တောင်သာ"
+          },
+          {
+            "nameEn": "Natogyi",
+            "code": "NTG",
+            "nameMy": "နွားထိုးကြီး"
+          },
+          {
+            "nameEn": "Kyaukpadaung",
+            "code": "KPD",
+            "nameMy": "ကျောက်ပန်းတောင်း"
+          },
+          {
+            "nameEn": "Ngazun",
+            "code": "NZN",
+            "nameMy": "ငါန်းဇွန်"
+          }
+        ]
+      },
+      {
+        "nameEn": "Nyaung-U",
+        "code": "NYU",
+        "nameMy": "ညောင်ဦး",
+        "townships": [
+          {
+            "nameEn": "Nyaung-U",
+            "code": "NYU",
+            "nameMy": "ညောင်ဦး"
+          }
+        ]
+      },
+      {
+        "nameEn": "Yamethin",
+        "code": "YMT",
+        "nameMy": "ရမည်းသင်း",
+        "townships": [
+          {
+            "nameEn": "Yamethin",
+            "code": "YMT",
+            "nameMy": "ရမည်းသင်း"
+          },
+          {
+            "nameEn": "Pyawbwe",
+            "code": "PBE",
+            "nameMy": "ပျော်ဘွယ်"
+          }
+        ]
+      },
+      {
+        "nameEn": "Meiktila",
+        "code": "MTL",
+        "nameMy": "မိတ္ထီလာ",
+        "townships": [
+          {
+            "nameEn": "Meiktila",
+            "code": "MTL",
+            "nameMy": "မိတ္ထီလာ"
+          },
+          {
+            "nameEn": "Thazi",
+            "code": "TZI",
+            "nameMy": "သာစည်"
+          },
+          {
+            "nameEn": "Wundwin",
+            "code": "WDW",
+            "nameMy": "ဝမ်းတွင်း"
+          },
+          {
+            "nameEn": "Mahlaing",
+            "code": "MLG",
+            "nameMy": "မလှိုင်"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nameEn": "Mon",
+    "code": "MON",
+    "nameMy": "မွန်",
+    "districts": [
+      {
+        "nameEn": "Mawlamyine",
+        "code": "MLM",
+        "nameMy": "မော်လမြိုင်",
+        "townships": [
+          {
+            "nameEn": "Mawlamyine",
+            "code": "MLY",
+            "nameMy": "မော်လမြိုင်"
+          },
+          {
+            "nameEn": "Kyaikmaraw",
+            "code": "KMR",
+            "nameMy": "ကျိုက်မရော"
+          },
+          {
+            "nameEn": "Chaungzon",
+            "code": "CZN",
+            "nameMy": "ချောင်းဆုံ"
+          },
+          {
+            "nameEn": "Thanbyuzayat",
+            "code": "TZY",
+            "nameMy": "သံဖြူဇရပ်"
+          },
+          {
+            "nameEn": "Mudon",
+            "code": "MDO",
+            "nameMy": "မုဒုံ"
+          },
+          {
+            "nameEn": "Ye",
+            "code": "YEE",
+            "nameMy": "ရေး"
+          }
+        ]
+      },
+      {
+        "nameEn": "Thaton",
+        "code": "TTN",
+        "nameMy": "သထုံ",
+        "townships": [
+          {
+            "nameEn": "Thaton",
+            "code": "TTN",
+            "nameMy": "သထုံ"
+          },
+          {
+            "nameEn": "Paung",
+            "code": "PAG",
+            "nameMy": "ပေါင်"
+          },
+          {
+            "nameEn": "Kyaikto",
+            "code": "KTO",
+            "nameMy": "ကျိုက်ထို"
+          },
+          {
+            "nameEn": "Bilin",
+            "code": "BLN",
+            "nameMy": "ဘီးလင်း"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nameEn": "Rakhine",
+    "code": "RKE",
+    "nameMy": "ရခိုင်",
+    "districts": [
+      {
+        "nameEn": "Mrauk-U",
+        "code": "MRU",
+        "nameMy": "မြောက်ဦး",
+        "townships": [
+          {
+            "nameEn": "Mrauk-U",
+            "code": "MRU",
+            "nameMy": "မြောက်ဦး"
+          },
+          {
+            "nameEn": "Kyauktaw",
+            "code": "KTW",
+            "nameMy": "ကျောက်တော်"
+          },
+          {
+            "nameEn": "Myebon",
+            "code": "MBN",
+            "nameMy": "မြေပုံ"
+          },
+          {
+            "nameEn": "Minbya",
+            "code": "MBA",
+            "nameMy": "မင်းပြား"
+          }
+        ]
+      },
+      {
+        "nameEn": "Sittwe",
+        "code": "STW",
+        "nameMy": "စစ်တွေ",
+        "townships": [
+          {
+            "nameEn": "Sittwe",
+            "code": "STE",
+            "nameMy": "စစ်တွေ"
+          },
+          {
+            "nameEn": "Ponnagyun",
+            "code": "PNY",
+            "nameMy": "ပုဏ္ဏားကျွန်း"
+          },
+          {
+            "nameEn": "Pauktaw",
+            "code": "PTA",
+            "nameMy": "ပေါက်တော"
+          },
+          {
+            "nameEn": "Rathedaung",
+            "code": "RTD",
+            "nameMy": "ရသေ့တောင်"
+          }
+        ]
+      },
+      {
+        "nameEn": "Maungdaw",
+        "code": "MDW",
+        "nameMy": "မောင်တော",
+        "townships": [
+          {
+            "nameEn": "Maungdaw",
+            "code": "MDW",
+            "nameMy": "မောင်တော"
+          },
+          {
+            "nameEn": "Buthidaung",
+            "code": "BTD",
+            "nameMy": "ဘူးသီးတောင်"
+          }
+        ]
+      },
+      {
+        "nameEn": "Kyaukpyu",
+        "code": "KKP",
+        "nameMy": "ကျောက်ဖြူ",
+        "townships": [
+          {
+            "nameEn": "Kyaukpyu",
+            "code": "KPU",
+            "nameMy": "ကျောက်ဖြူ"
+          },
+          {
+            "nameEn": "Munaung",
+            "code": "MAU",
+            "nameMy": "မာန်အောင်"
+          },
+          {
+            "nameEn": "Ramree",
+            "code": "RRE",
+            "nameMy": "ရမ်းဗြဲ"
+          },
+          {
+            "nameEn": "Ann",
+            "code": "ANN",
+            "nameMy": "အမ်း"
+          }
+        ]
+      },
+      {
+        "nameEn": "Thandwe",
+        "code": "TWE",
+        "nameMy": "သံတွဲ",
+        "townships": [
+          {
+            "nameEn": "Thandwe",
+            "code": "TDE",
+            "nameMy": "သံတွဲ"
+          },
+          {
+            "nameEn": "Toungup",
+            "code": "TGP",
+            "nameMy": "တောင်ကုတ်"
+          },
+          {
+            "nameEn": "Gwa",
+            "code": "GWA",
+            "nameMy": "ဂွ"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nameEn": "Yangon",
+    "code": "YGN",
+    "nameMy": "ရန်ကုန်",
+    "districts": [
+      {
+        "nameEn": "Yangon (East)",
+        "code": "EYG",
+        "nameMy": "ရန်ကုန် (အရှေ့ပိုင်း)",
+        "townships": [
+          {
+            "nameEn": "Thingangyun",
+            "code": "TYG",
+            "nameMy": "သင်္ဃန်းကျွန်း"
+          },
+          {
+            "nameEn": "Yankin",
+            "code": "YKN",
+            "nameMy": "ရန်ကင်း"
+          },
+          {
+            "nameEn": "South Okkalapa",
+            "code": "SOK",
+            "nameMy": "တောင်ဥက္ကလာပ"
+          },
+          {
+            "nameEn": "North Okkalapa",
+            "code": "NOK",
+            "nameMy": "မြောက်ဥက္ကလာပ"
+          },
+          {
+            "nameEn": "Thaketa",
+            "code": "TKT",
+            "nameMy": "သာကေတ"
+          },
+          {
+            "nameEn": "Dawbon",
+            "code": "DBN",
+            "nameMy": "ဒေါပုံ"
+          },
+          {
+            "nameEn": "Tamwe",
+            "code": "TWE",
+            "nameMy": "တာမွေ"
+          },
+          {
+            "nameEn": "Pazundaung",
+            "code": "PZD",
+            "nameMy": "ပုဇွန်တောင်"
+          },
+          {
+            "nameEn": "Botahtaung",
+            "code": "BTT",
+            "nameMy": "ဗိုလ်တထောင်"
+          },
+          {
+            "nameEn": "Dagon Myothit (South)",
+            "code": "SDG",
+            "nameMy": "ဒဂုံမြို့သစ် (တောင်ပိုင်း)"
+          },
+          {
+            "nameEn": "Dagon Myothit (North)",
+            "code": "NDG",
+            "nameMy": "ဒဂုံမြို့သစ် (မြောက်ပိုင်း)"
+          },
+          {
+            "nameEn": "Dagon Myothit (East)",
+            "code": "EDG",
+            "nameMy": "ဒဂုံမြို့သစ် (အရှေ့ပိုင်း)"
+          },
+          {
+            "nameEn": "Dagon Myothit (Seikkan)",
+            "code": "DKS",
+            "nameMy": "ဒဂုံမြို့သစ် (ဆိပ်ကမ်း)"
+          },
+          {
+            "nameEn": "Mingalartaungnyunt",
+            "code": "MTN",
+            "nameMy": "မင်္ဂလာတောင်ညွန့်"
+          }
+        ]
+      },
+      {
+        "nameEn": "Yangon (North)",
+        "code": "NYG",
+        "nameMy": "ရန်ကုန် (မြောက်ပိုင်း)",
+        "townships": [
+          {
+            "nameEn": "Insein",
+            "code": "ISN",
+            "nameMy": "အင်းစိန်"
+          },
+          {
+            "nameEn": "Mingaladon",
+            "code": "MGL",
+            "nameMy": "မင်္ဂလာဒုံ"
+          },
+          {
+            "nameEn": "Hmawbi",
+            "code": "MBI",
+            "nameMy": "မှော်ဘီ"
+          },
+          {
+            "nameEn": "Hlegu",
+            "code": "LGU",
+            "nameMy": "လှည်းကူး"
+          },
+          {
+            "nameEn": "Htantabin",
+            "code": "TTB",
+            "nameMy": "ထန်းတပင်"
+          },
+          {
+            "nameEn": "Hlaingtharya",
+            "code": "LTY",
+            "nameMy": "လှိုင်သာယာ"
+          },
+          {
+            "nameEn": "Taikkyi",
+            "code": "TKI",
+            "nameMy": "တိုက်ကြီး"
+          },
+          {
+            "nameEn": "Shwepyithar",
+            "code": "SPT",
+            "nameMy": "ရွှေပြည်သာ"
+          }
+        ]
+      },
+      {
+        "nameEn": "Yangon (South)",
+        "code": "SYG",
+        "nameMy": "ရန်ကုန် (တောင်ပိုင်း)",
+        "townships": [
+          {
+            "nameEn": "Thanlyin",
+            "code": "TLY",
+            "nameMy": "သန်လျင်"
+          },
+          {
+            "nameEn": "Kyauktan",
+            "code": "KTN",
+            "nameMy": "ကျောက်တန်း"
+          },
+          {
+            "nameEn": "Thongwa",
+            "code": "TWA",
+            "nameMy": "သုံးခွ"
+          },
+          {
+            "nameEn": "Kayan",
+            "code": "KYN",
+            "nameMy": "ခရမ်း"
+          },
+          {
+            "nameEn": "Twantay",
+            "code": "TTY",
+            "nameMy": "တွံတေး"
+          },
+          {
+            "nameEn": "Kawhmu",
+            "code": "KMU",
+            "nameMy": "ကော့မှူး"
+          },
+          {
+            "nameEn": "Kungyangon",
+            "code": "KYG",
+            "nameMy": "ကွမ်းခြံကုန်း"
+          },
+          {
+            "nameEn": "Dala",
+            "code": "DLA",
+            "nameMy": "ဒလ"
+          },
+          {
+            "nameEn": "Seikgyikanaungto",
+            "code": "SNT",
+            "nameMy": "ဆိပ်ကြီးခနောင်တို"
+          },
+          {
+            "nameEn": "Cocokyun",
+            "code": "CKN",
+            "nameMy": "ကိုကိုးကျွန်း"
+          }
+        ]
+      },
+      {
+        "nameEn": "Yangon (West)",
+        "code": "WYG",
+        "nameMy": "ရန်ကုန် (အနောက်ပိုင်း)",
+        "townships": [
+          {
+            "nameEn": "Kyauktada",
+            "code": "KTD",
+            "nameMy": "ကျောက်တံတား"
+          },
+          {
+            "nameEn": "Pabedan",
+            "code": "PBD",
+            "nameMy": "ပန်းဘဲတန်း"
+          },
+          {
+            "nameEn": "Lanmadaw",
+            "code": "LMD",
+            "nameMy": "လမ်းမတော်"
+          },
+          {
+            "nameEn": "Latha",
+            "code": "LTA",
+            "nameMy": "လသာ"
+          },
+          {
+            "nameEn": "Ahlone",
+            "code": "ALE",
+            "nameMy": "အလုံ"
+          },
+          {
+            "nameEn": "Kyeemyindaing",
+            "code": "KMD",
+            "nameMy": "ကြည့်မြင်တိုင်"
+          },
+          {
+            "nameEn": "Sanchaung",
+            "code": "SCG",
+            "nameMy": "စမ်းချောင်း"
+          },
+          {
+            "nameEn": "Hlaing",
+            "code": "HLG",
+            "nameMy": "လှိုင်"
+          },
+          {
+            "nameEn": "Kamaryut",
+            "code": "KMY",
+            "nameMy": "ကမာရွတ်"
+          },
+          {
+            "nameEn": "Mayangone",
+            "code": "MYG",
+            "nameMy": "မရမ်းကုန်း"
+          },
+          {
+            "nameEn": "Dagon",
+            "code": "DGN",
+            "nameMy": "ဒဂုံ"
+          },
+          {
+            "nameEn": "Bahan",
+            "code": "BHN",
+            "nameMy": "ဗဟန်း"
+          },
+          {
+            "nameEn": "Seikkan",
+            "code": "SKN",
+            "nameMy": "ဆိပ်ကမ်း"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nameEn": "Ayeyarwady",
+    "code": "AYY",
+    "nameMy": "ဧရာဝတီ",
+    "districts": [
+      {
+        "nameEn": "Labutta",
+        "code": "LBT",
+        "nameMy": "လပွတ္တာ",
+        "townships": [
+          {
+            "nameEn": "Mawlamyinegyun",
+            "code": "MLM",
+            "nameMy": "မော်လမြိုင်ကျွန်း"
+          },
+          {
+            "nameEn": "Labutta",
+            "code": "LBT",
+            "nameMy": "လပွတ္တာ"
+          }
+        ]
+      },
+      {
+        "nameEn": "Hinthada",
+        "code": "HTD",
+        "nameMy": "ဟင်္သာတ",
+        "townships": [
+          {
+            "nameEn": "Kyangin",
+            "code": "KGI",
+            "nameMy": "ကြံခင်း"
+          },
+          {
+            "nameEn": "Zalun",
+            "code": "ZLN",
+            "nameMy": "ဇလွန်"
+          },
+          {
+            "nameEn": "Myanaung",
+            "code": "MYU",
+            "nameMy": "မြန်အောင်"
+          },
+          {
+            "nameEn": "Lemyethna",
+            "code": "LMT",
+            "nameMy": "လေးမျက်နှာ"
+          },
+          {
+            "nameEn": "Hinthada",
+            "code": "HTD",
+            "nameMy": "ဟင်္သာတ"
+          },
+          {
+            "nameEn": "Ingapu",
+            "code": "IGP",
+            "nameMy": "အင်္ဂပူ"
+          }
+        ]
+      },
+      {
+        "nameEn": "Pathein",
+        "code": "PTN",
+        "nameMy": "ပုသိမ်",
+        "townships": [
+          {
+            "nameEn": "Kangyidaunt",
+            "code": "KYD",
+            "nameMy": "ကန်ကြီးထောင့်"
+          },
+          {
+            "nameEn": "Kyaunggon",
+            "code": "KGN",
+            "nameMy": "ကျောင်းကုန်း"
+          },
+          {
+            "nameEn": "Kyonpyaw",
+            "code": "KPW",
+            "nameMy": "ကျုံပျော်"
+          },
+          {
+            "nameEn": "Ngapudaw",
+            "code": "NPD",
+            "nameMy": "ငပုတော"
+          },
+          {
+            "nameEn": "Pathein",
+            "code": "PTN",
+            "nameMy": "ပုသိမ်"
+          },
+          {
+            "nameEn": "Yegyi",
+            "code": "YGI",
+            "nameMy": "ရေကြည်"
+          },
+          {
+            "nameEn": "Thabaung",
+            "code": "TBG",
+            "nameMy": "သာပေါင်း"
+          }
+        ]
+      },
+      {
+        "nameEn": "Pyapon",
+        "code": "PYP",
+        "nameMy": "ဖျာပုံ",
+        "townships": [
+          {
+            "nameEn": "Kyaiklat",
+            "code": "KLT",
+            "nameMy": "ကျိုက်လတ်"
+          },
+          {
+            "nameEn": "Dedaye",
+            "code": "DDE",
+            "nameMy": "ဒေးဒရဲ"
+          },
+          {
+            "nameEn": "Pyapon",
+            "code": "PPN",
+            "nameMy": "ဖျာပုံ"
+          },
+          {
+            "nameEn": "Bogale",
+            "code": "BGL",
+            "nameMy": "ဘိုကလေး"
+          }
+        ]
+      },
+      {
+        "nameEn": "Maubin",
+        "code": "MBN",
+        "nameMy": "မအူပင်",
+        "townships": [
+          {
+            "nameEn": "Nyaungdon",
+            "code": "NDN",
+            "nameMy": "ညောင်တုန်း"
+          },
+          {
+            "nameEn": "Danubyu",
+            "code": "DBU",
+            "nameMy": "ဓနုဖြူ"
+          },
+          {
+            "nameEn": "Pantanaw",
+            "code": "PTW",
+            "nameMy": "ပန်းတနော်"
+          },
+          {
+            "nameEn": "Maubin",
+            "code": "MIN",
+            "nameMy": "မအူပင်"
+          }
+        ]
+      },
+      {
+        "nameEn": "Myaungmya",
+        "code": "MMA",
+        "nameMy": "မြောင်းမြ",
+        "townships": [
+          {
+            "nameEn": "Myaungmya",
+            "code": "MMA",
+            "nameMy": "မြောင်းမြ"
+          },
+          {
+            "nameEn": "Wakema",
+            "code": "WKM",
+            "nameMy": "ဝါးခယ်မ"
+          },
+          {
+            "nameEn": "Einme",
+            "code": "EME",
+            "nameMy": "အိမ်မဲ"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nameEn": "Nay Pyi Taw",
+    "code": "NPW",
+    "nameMy": "နေပြည်တော်",
+    "districts": [
+      {
+        "nameEn": "Nay Pyi Taw (North)",
+        "code": "NNW",
+        "nameMy": "နေပြည်တော် (မြောက်ပိုင်း)",
+        "townships": [
+          {
+            "nameEn": "Tatkon",
+            "code": "TKN",
+            "nameMy": "တပ်ကုန်း"
+          },
+          {
+            "nameEn": "Zay Yar Thi Ri",
+            "code": "ZYT",
+            "nameMy": "ဇေယျာသီရိ"
+          },
+          {
+            "nameEn": "Oke Ta Ra Thi Ri",
+            "code": "OTR",
+            "nameMy": "ဥတ္တရသီရိ"
+          },
+          {
+            "nameEn": "Poke Ba Thi Ri",
+            "code": "PBT",
+            "nameMy": "ပုဗ္ဗသီရိ"
+          }
+        ]
+      },
+      {
+        "nameEn": "Nay Pyi Taw (South)",
+        "code": "SNW",
+        "nameMy": "နေပြည်တော် (တောင်ပိုင်း)",
+        "townships": [
+          {
+            "nameEn": "Pyinmana",
+            "code": "PMN",
+            "nameMy": "ပျဉ်းမနား"
+          },
+          {
+            "nameEn": "Lewe",
+            "code": "LWE",
+            "nameMy": "လယ်ဝေး"
+          },
+          {
+            "nameEn": "Za Bu Thi Ri",
+            "code": "ZBT",
+            "nameMy": "ဇမ္ဗူသီရိ"
+          },
+          {
+            "nameEn": "Det Khi Na Thi Ri",
+            "code": "DKN",
+            "nameMy": "ဒက္ခိဏသီရိ"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -72,17 +72,8 @@ export async function saleFixture(lots: { lot: string; expiryInDays: number; qty
     f.userId,
   );
   await postDocument(doc.id, f.userId);
-  const zone = await prisma.shippingZone.create({
-    data: {
-      code: `IT-${f.tag}`,
-      region: "Yangon",
-      township: "IT",
-      nameMy: "စမ်းသပ်",
-      nameEn: "Test",
-      rates: { create: { feeMmk: 2500, freeFromMmk: 100_000 } },
-    },
-  });
-  return { ...f, zoneId: zone.id };
+  // Thị trấn VTP có sẵn từ migration P15 (Kamaryut, Yangon West).
+  return { ...f, townshipId: "tw-YGN-WYG-KMY" };
 }
 export type SaleFixture = Awaited<ReturnType<typeof saleFixture>>;
 
@@ -93,7 +84,7 @@ export function orderInput(f: SaleFixture, qty: number, extra: Record<string, un
     paymentMethod: "COD",
     name: "Ma Hla",
     phone: "+95 9 7812 3456",
-    zoneId: f.zoneId,
+    townshipId: f.townshipId,
     addressLine: "No. 12, Bo Aung Kyaw St",
     items: [{ variantId: f.variantId, qty }],
     ...extra,

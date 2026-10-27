@@ -31,7 +31,10 @@ export default async function OrderLabelPage({ params }: PageProps<"/admin/order
         <section>
           <div className="text-xs text-muted-foreground">{t("recipient")}</div>
           <div className="text-lg font-bold">{order.recipientName}</div>
-          <div className="font-mono text-lg">{order.recipientPhone}</div>
+          <div className="font-mono text-lg">
+            {order.recipientPhone}
+            {order.recipientPhone2 && <span className="text-base"> / {order.recipientPhone2}</span>}
+          </div>
           <div>{order.addressText}</div>
           <div className="font-medium">{order.zoneName}</div>
         </section>
@@ -44,6 +47,7 @@ export default async function OrderLabelPage({ params }: PageProps<"/admin/order
           ) : (
             <div className="text-base font-bold">{t("prepaid")}</div>
           )}
+          {order.shippingFeeMmk === 0 && <div className="text-xs">{t("shippingNote")}</div>}
         </section>
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 text-xs">
           <dt>{t("itemsCount")}</dt>
