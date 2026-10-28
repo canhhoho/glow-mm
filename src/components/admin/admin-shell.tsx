@@ -23,6 +23,7 @@ import {
   Star,
   Tag,
   Truck,
+  UserRound,
   Users,
   X,
   type LucideIcon,
@@ -48,6 +49,7 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   chart: ChartColumn,
   users: Users,
   handshake: Handshake,
+  userCircle: UserRound,
   map: MapPinned,
   gear: Settings,
 };

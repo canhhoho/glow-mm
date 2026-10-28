@@ -1,21 +1,98 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refresh, revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { isAPIError } from "better-auth/api";
 import { z, ZodError } from "zod";
+import { redirect as nextRedirect } from "next/navigation";
 import { redirect } from "@/i18n/navigation";
 import { routing, type StoreLocale } from "@/i18n/routing";
 import { prisma } from "@/lib/db";
 import { customerAuth } from "@/server/auth/customer-auth";
+import { safeNextPath } from "@/server/auth/customer-policy";
 import { requireCustomer } from "@/server/auth/customer-session";
+import { requirePermission } from "@/server/auth/session";
+import type { ActionState } from "@/server/inventory/actions";
+import { normalizeMmPhone } from "@/server/orders/pricing";
 import { ORDERS_COOKIE } from "@/server/cart/cart";
 import type { StoreActionState } from "@/server/cart/actions";
 import { AccountError, createAddress, deleteAddress, setDefaultAddress, updateAddress, updateProfile } from "./accounts";
+import { CustomerAccountError, resetCustomerPassword, setCustomerActive } from "./admin";
+import { consumePhoneLoginLimit, MIN_CUSTOMER_PASSWORD, PhoneAccountError, registerPhoneCustomer } from "./phone";
 
-/** Server Action khu tài khoản khách (P14b). `requireCustomer` → userId lấy từ phiên, không từ form. */
+/** Server Action khu tài khoản khách (P14b) + đăng ký/đăng nhập bằng SĐT (P17). `requireCustomer` → userId lấy từ phiên. */
+
+async function clientIp() {
+  const h = await headers();
+  return h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "";
+}
+
+/** Mã lỗi SĐT / Better Auth → khoá chuỗi `Auth.err.*`. */
+function phoneErrorKey(e: unknown): string {
+  if (e instanceof PhoneAccountError) return e.code === "too_many" ? "tooMany" : e.code === "phone_taken" ? "phoneTaken" : "invalidPhone";
+  if (e instanceof ZodError) {
+    const issue = e.issues[0];
+    if (issue?.message === "mismatch") return "mismatch";
+    if (issue?.path[0] === "password") return "tooShort";
+    return "unknown";
+  }
+  if (isAPIError(e)) {
+    const code = e.body?.code;
+    if (code === "USER_INACTIVE") return "locked";
+    if (code === "NOT_CUSTOMER") return "notCustomer";
+    return "invalidPhoneLogin";
+  }
+  console.error(e);
+  return "unknown";
+}
+
+async function signInWithPhone(phone: string, password: string) {
+  await customerAuth.api.signInPhoneNumber({ body: { phoneNumber: phone, password }, headers: await headers() });
+}
+
+const phoneLoginSchema = z.object({ phone: z.string().trim().min(1).max(30), password: z.string().min(1).max(128) });
+
+/**
+ * Đăng nhập SĐT + mật khẩu (gọi trực tiếp từ form đăng nhập — ô nhập không có "@"). Thành công → chuyển tới `next`
+ * (đường dẫn nội bộ, đã có tiền tố ngôn ngữ); lỗi → khoá chuỗi `Auth.err.*`.
+ */
+export async function phoneSignInAction(raw: { phone: string; password: string; next: string; locale: string }): Promise<{ error?: string }> {
+  const prefix = raw.locale === "en" ? "/en" : "";
+  try {
+    const input = phoneLoginSchema.parse(raw);
+    const phone = normalizeMmPhone(input.phone);
+    if (!phone) return { error: "invalidPhone" };
+    await consumePhoneLoginLimit(await clientIp(), phone);
+    await signInWithPhone(phone, input.password);
+  } catch (e) {
+    return { error: phoneErrorKey(e) };
+  }
+  nextRedirect(safeNextPath(raw.next, `${prefix}/account`));
+}
+
+/** Đăng ký bằng SĐT + mật khẩu rồi đăng nhập luôn. */
+export async function phoneRegisterAction(_prev: StoreActionState, formData: FormData): Promise<StoreActionState> {
+  const locale = localeOf(formData);
+  const prefix = locale === "en" ? "/en" : "";
+  try {
+    const { phone } = await registerPhoneCustomer(
+      {
+        name: formData.get("name"),
+        phone: formData.get("phone"),
+        password: formData.get("password"),
+        confirmPassword: formData.get("confirmPassword"),
+        locale,
+      },
+      { ip: await clientIp() },
+    );
+    await signInWithPhone(phone, String(formData.get("password")));
+  } catch (e) {
+    return { error: phoneErrorKey(e) };
+  }
+  nextRedirect(safeNextPath(formData.get("next"), `${prefix}/account`));
+}
 
 function localeOf(fd: FormData): StoreLocale {
   const l = fd.get("locale");
@@ -119,4 +196,36 @@ export async function deleteAddressAction(formData: FormData) {
   const user = await requireCustomer(locale, "/account/addresses");
   await deleteAddress(user.id, String(formData.get("id") ?? "")).catch(() => {});
   refresh();
+}
+
+// ── Admin: tài khoản khách (P17, quyền users:manage) ──
+
+const adminIdSchema = z.string().min(1);
+
+/** Đặt mật khẩu tạm cho khách (khách SĐT quên mật khẩu nhắn shop) — thu hồi mọi phiên của khách. */
+export async function resetCustomerPasswordAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const t = await getTranslations("Customers");
+  try {
+    const user = await requirePermission("users:manage");
+    await resetCustomerPassword(adminIdSchema.parse(formData.get("id")), formData.get("password"), user.id);
+  } catch (e) {
+    if (e instanceof CustomerAccountError) return { error: t(`err.${e.code}`) };
+    if (e instanceof ZodError) return { error: t("err.password", { min: MIN_CUSTOMER_PASSWORD }) };
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+  revalidatePath("/admin/customer-accounts");
+  return { ok: t("passwordReset") };
+}
+
+export async function setCustomerActiveAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const t = await getTranslations("Customers");
+  try {
+    const user = await requirePermission("users:manage");
+    await setCustomerActive(adminIdSchema.parse(formData.get("id")), formData.get("active") === "true", user.id);
+  } catch (e) {
+    if (e instanceof CustomerAccountError) return { error: t(`err.${e.code}`) };
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+  revalidatePath("/admin/customer-accounts");
+  return { ok: t("saved") };
 }

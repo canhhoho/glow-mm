@@ -30,12 +30,15 @@ export function CheckoutForm({
   idempotencyKey,
   addresses,
   accountName,
+  accountPhone,
 }: {
   locale: string;
   catalog: AddressCatalog;
   idempotencyKey: string;
   addresses: SavedAddress[];
   accountName: string;
+  /** SĐT của tài khoản SĐT (P17) — điền sẵn khi chưa có địa chỉ đã lưu. */
+  accountPhone?: string | null;
 }) {
   const t = useTranslations("Checkout");
   const ta = useTranslations("Address");
@@ -83,7 +86,7 @@ export function CheckoutForm({
             inputMode="tel"
             autoComplete="tel"
             placeholder={t("phoneHint")}
-            defaultValue={a?.phone}
+            defaultValue={a?.phone ?? accountPhone ?? undefined}
             className={storeField}
           />
         </label>

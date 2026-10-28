@@ -293,8 +293,16 @@
       "mismatch": "Passwords do not match.",
       "tooShort": "Password must be at least {min} characters.",
       "invalidLink": "This link is invalid or has expired. Please request a new one.",
-      "unknown": "Something went wrong. Please try again."
-    }
+      "unknown": "Something went wrong. Please try again.",
+      "invalidPhone": "Invalid phone number.",
+      "phoneTaken": "This phone number already has an account — please sign in.",
+      "invalidPhoneLogin": "Wrong phone number or password."
+    },
+    "emailOrPhone": "Email or phone number",
+    "phone": "Phone number",
+    "phoneHint": "e.g. 09 7xx xxx xxx",
+    "forgotPhone": "Forgot your password? Message the shop on Viber or Messenger and we will reset it for you.",
+    "registerWithEmail": "Register with email instead"
   },
   "Account": {
     "title": "My account",

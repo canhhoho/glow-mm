@@ -28,6 +28,11 @@ model User {
   name          String
   email         String     @unique
   emailVerified Boolean    @default(false)
+  /// Khách đăng ký bằng SĐT + mật khẩu (P17, plugin phoneNumber của Better Auth): lưu dạng chuẩn 09xxxxxxxx.
+  /// Tài khoản SĐT không có email thật → `email` là địa chỉ nội bộ <SĐT>@phone.glow.invalid (không bao giờ gửi mail).
+  phoneNumber         String?  @unique
+  /// Luôn false (không có OTP) — SĐT chưa xác minh nên KHÔNG dùng để gắn đơn cũ.
+  phoneNumberVerified Boolean? @default(false)
   image         String?
   /// Mặc định quyền thấp nhất; nhân viên/CTV luôn được tạo với role tường minh.
   role          Role       @default(CUSTOMER)

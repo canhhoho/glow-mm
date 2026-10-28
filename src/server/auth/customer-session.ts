@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { customerAuth } from "./customer-auth";
 import { AFFILIATE_ROLE } from "./roles";
-import { STOREFRONT_ROLES, safeNextPath } from "./customer-policy";
+import { isPhoneEmail, STOREFRONT_ROLES, safeNextPath } from "./customer-policy";
 
 export type CustomerUser = {
   id: string;
@@ -12,6 +12,10 @@ export type CustomerUser = {
   email: string;
   locale: string;
   hasPassword: boolean;
+  /** SĐT tài khoản (đăng ký bằng SĐT — P17) hoặc null. */
+  phone: string | null;
+  /** Hiển thị cho khách: SĐT với tài khoản SĐT (email nội bộ không hiện), còn lại email. */
+  contact: string;
   /** Đăng nhập bằng tài khoản CTV đang hoạt động → đơn đặt trên web tính cho CTV này. */
   affiliate: { id: string; code: string } | null;
 };
@@ -31,7 +35,17 @@ export async function getCustomerUser(): Promise<CustomerUser | null> {
       : null,
   ]);
   if (u.role === AFFILIATE_ROLE && !affiliate) return null; // hồ sơ CTV bị khoá → không mua thay mặt CTV
-  return { id: u.id, name: u.name, email: u.email, locale: String(u.locale ?? "my"), hasPassword: credential > 0, affiliate };
+  const phone = typeof u.phoneNumber === "string" ? u.phoneNumber : null;
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    locale: String(u.locale ?? "my"),
+    hasPassword: credential > 0,
+    phone,
+    contact: isPhoneEmail(u.email) && phone ? phone : u.email,
+    affiliate,
+  };
 }
 
 /** Trang storefront cần đăng nhập: chưa đăng nhập → /(en/)login?next=<trang hiện tại>. */

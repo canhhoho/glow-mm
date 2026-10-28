@@ -32,7 +32,8 @@
     "closeMenu": "Đóng menu",
     "breadcrumb": "Vị trí trang",
     "affiliates": "Cộng tác viên",
-    "locations": "Địa bàn giao hàng"
+    "locations": "Địa bàn giao hàng",
+    "customers": "Tài khoản khách"
   },
   "Login": {
     "title": "Đăng nhập quản trị",
@@ -1116,5 +1117,35 @@
     "saved": "Đã lưu {n} thay đổi",
     "invalid": "Tên không được để trống (tối đa 100 ký tự).",
     "stateOff": "Vùng đang tắt"
+  },
+  "Customers": {
+    "title": "Tài khoản khách",
+    "hint": "Khách đăng ký trên web (SĐT + mật khẩu, Google, email). Khách SĐT quên mật khẩu → đặt mật khẩu tạm rồi báo khách qua Viber/Messenger; khách nên đổi lại trong Tài khoản → Hồ sơ.",
+    "search": "Tìm (SĐT, email, tên)",
+    "find": "Tìm",
+    "empty": "Không có tài khoản khách.",
+    "name": "Tên",
+    "contact": "SĐT / Email",
+    "method": "Đăng nhập bằng",
+    "orders": "Đơn",
+    "createdAt": "Tạo lúc",
+    "status": "Trạng thái",
+    "actions": "Thao tác",
+    "byPhone": "SĐT + mật khẩu",
+    "byEmail": "Email + mật khẩu",
+    "active": "Đang dùng",
+    "locked": "Đã khoá",
+    "resetPassword": "Đặt lại mật khẩu",
+    "tempPassword": "Mật khẩu tạm (≥ {min} ký tự)",
+    "passwordReset": "Đã đặt mật khẩu tạm — khách bị đăng xuất khỏi mọi thiết bị",
+    "lock": "Khoá",
+    "unlock": "Mở khoá",
+    "lockConfirm": "Khoá tài khoản {name}? Khách sẽ bị đăng xuất và không đăng nhập được.",
+    "saved": "Đã lưu",
+    "err": {
+      "not_found": "Không tìm thấy tài khoản khách",
+      "no_password": "Tài khoản đăng nhập bằng Google, không có mật khẩu",
+      "password": "Mật khẩu tạm cần ít nhất {min} ký tự"
+    }
   }
 }

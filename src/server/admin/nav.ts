@@ -22,6 +22,7 @@ export type NavIcon =
   | "chart"
   | "users"
   | "handshake"
+  | "userCircle"
   | "map"
   | "gear";
 
@@ -84,6 +85,7 @@ export const NAV: NavGroup[] = [
     items: [
       { href: "/admin/reports", key: "reports", permission: "reports:view", icon: "chart" },
       { href: "/admin/users", key: "users", permission: "users:manage", icon: "users" },
+      { href: "/admin/customer-accounts", key: "customers", permission: "users:manage", icon: "userCircle" },
       { href: "/admin/settings", key: "settings", permission: "settings:manage", icon: "gear" },
       { href: "/admin/settings/locations", key: "locations", permission: "settings:manage", icon: "map" },
     ],

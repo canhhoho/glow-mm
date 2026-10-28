@@ -43,28 +43,27 @@ async function LoginContent({ params, searchParams }: PageProps<"/[locale]/login
       {error && <Notice tone="error">{t(`err.${error}`, { min: 8 })}</Notice>}
       {sp.verified && !error && <Notice tone="success">{t("verified")}</Notice>}
       {googleOn && <GoogleButton prefix={prefix} next={next} />}
-      {googleOn && emailOn && <OrDivider label={t("or")} />}
-      {emailOn ? (
-        <>
-          <LoginForm prefix={prefix} next={next} />
-          <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-            <Link href="/forgot-password" className="inline-flex min-h-11 items-center text-accent-foreground hover:underline">
-              {t("forgot")}
-            </Link>
-            <span>
-              {t("noAccount")}{" "}
-              <Link
-                href={{ pathname: "/register", query: { next } }}
-                className="inline-flex min-h-11 items-center font-medium text-brand hover:underline"
-              >
-                {t("createAccount")}
-              </Link>
-            </span>
-          </div>
-        </>
-      ) : (
-        <p className="text-sm text-muted-foreground">{t(googleOn ? "emailOff" : "noMethod")}</p>
-      )}
+      {googleOn && <OrDivider label={t("or")} />}
+      {/* SĐT + mật khẩu luôn có (P17); email thêm vào cùng ô khi bật gửi email. */}
+      <LoginForm prefix={prefix} next={next} emailEnabled={emailOn} />
+      <div className="space-y-1 text-sm">
+        {emailOn ? (
+          <Link href="/forgot-password" className="inline-flex min-h-11 items-center text-accent-foreground hover:underline">
+            {t("forgot")}
+          </Link>
+        ) : (
+          <p className="text-muted-foreground">{t("forgotPhone")}</p>
+        )}
+        <p>
+          {t("noAccount")}{" "}
+          <Link
+            href={{ pathname: "/register", query: { next } }}
+            className="inline-flex min-h-11 items-center font-medium text-brand hover:underline"
+          >
+            {t("createAccount")}
+          </Link>
+        </p>
+      </div>
     </AuthCard>
   );
 }

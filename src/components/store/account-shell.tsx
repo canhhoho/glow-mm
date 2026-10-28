@@ -30,7 +30,7 @@ export async function AccountShell({
         <div className="min-w-0">
           <h1 className="text-lg font-medium">{t("title")}</h1>
           <p className="text-sm break-words text-muted-foreground" data-testid="account-hello">
-            {t("hello", { name: user.name })} · {user.email}
+            {t("hello", { name: user.name })} · {user.contact}
           </p>
         </div>
         <form action={signOutCustomerAction}>

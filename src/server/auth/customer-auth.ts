@@ -2,6 +2,7 @@ import "server-only";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
+import { phoneNumber } from "better-auth/plugins/phone-number";
 import { APIError } from "better-auth/api";
 import { prisma } from "@/lib/db";
 import { toUnicode } from "@/lib/myanmar";
@@ -9,6 +10,7 @@ import { claimOrders } from "@/server/accounts/claims";
 import { authEmail, type AuthEmailKind } from "@/server/accounts/emails";
 import { email } from "@/server/adapters/email";
 import { ORDERS_COOKIE, parseOrderAccess } from "@/server/cart/cart";
+import { normalizeMmPhone } from "@/server/orders/pricing";
 import { USER_INACTIVE } from "./roles";
 import {
   CUSTOMER_AUTH_BASE_PATH,
@@ -18,6 +20,7 @@ import {
   customerSessionDecision,
   decodeCookieValue,
   deriveCustomerSecret,
+  isPhoneEmail,
   localeFromCallback,
   NOT_CUSTOMER,
   STOREFRONT_ROLES,
@@ -38,7 +41,8 @@ const googleSecret = process.env.GOOGLE_CLIENT_SECRET;
 /** Gửi email xác minh / đặt lại mật khẩu — chỉ cho khách + CTV (instance này không bao giờ gửi link cho nhân viên). */
 async function sendAuthEmail(kind: AuthEmailKind, userId: string, url: string) {
   const u = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true, locale: true, role: true } });
-  if (!u || !STOREFRONT_ROLES.includes(u.role)) return;
+  // Tài khoản SĐT (P17) chỉ có email nội bộ → không gửi.
+  if (!u || !STOREFRONT_ROLES.includes(u.role) || isPhoneEmail(u.email)) return;
   await (await email()).send(authEmail(kind, u, url));
 }
 
@@ -114,11 +118,16 @@ export const customerAuth = betterAuth({
     user: {
       create: {
         // Mọi user tạo qua instance này là khách — client không gửi được role (input: false), hook ép thêm lần nữa.
+        // Bỏ SĐT client gửi kèm (vd đăng ký email kèm phoneNumber của người khác): tài khoản SĐT chỉ tạo qua
+        // `registerPhoneCustomer` (P17), không qua API Better Auth.
         async before(user, ctx) {
           const body = ctx?.body as { callbackURL?: unknown } | undefined;
           return {
             data: {
               ...user,
+              // Better Auth gộp kết quả hook vào dữ liệu gốc → phải ghi đè null, không xoá khoá được.
+              phoneNumber: null,
+              phoneNumberVerified: false,
               name: toUnicode(String(user.name ?? "")).trim(),
               role: CUSTOMER_ROLE,
               active: true,
@@ -144,5 +153,21 @@ export const customerAuth = betterAuth({
       },
     },
   },
-  plugins: [nextCookies()],
+  // Không OTP: chỉ dùng đường đăng nhập SĐT + mật khẩu; các endpoint gửi/xác minh/đặt lại bằng OTP bị tắt.
+  disabledPaths: [
+    "/phone-number/send-otp",
+    "/phone-number/verify",
+    "/phone-number/request-password-reset",
+    "/phone-number/reset-password",
+  ],
+  plugins: [
+    phoneNumber({
+      requireVerification: false,
+      phoneNumberValidator: (p) => normalizeMmPhone(p) === p,
+      sendOTP: () => {
+        throw new Error("Chưa hỗ trợ OTP qua SMS");
+      },
+    }),
+    nextCookies(),
+  ],
 });

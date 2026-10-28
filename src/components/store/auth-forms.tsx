@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Eye, EyeOff } from "lucide-react";
 import { customerAuthClient } from "@/lib/customer-auth-client";
+import { phoneRegisterAction, phoneSignInAction } from "@/server/accounts/actions";
 import { Notice, outlineButton, primaryButton, storeField } from "./ui";
 
 /**
@@ -104,7 +105,11 @@ export function GoogleButton({ prefix, next }: { prefix: string; next: string })
   );
 }
 
-export function LoginForm({ prefix, next }: { prefix: string; next: string }) {
+/**
+ * Đăng nhập bằng SĐT (P17, luôn có) hoặc email (khi bật gửi email): ô nhập có "@" → email, còn lại → SĐT.
+ * SĐT đi qua Server Action (chuẩn hoá số, giới hạn số lần thử) rồi server chuyển trang.
+ */
+export function LoginForm({ prefix, next, emailEnabled }: { prefix: string; next: string; emailEnabled: boolean }) {
   const t = useTranslations("Auth");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -112,11 +117,20 @@ export function LoginForm({ prefix, next }: { prefix: string; next: string }) {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
+    const id = String(form.get("identifier")).trim();
+    const password = String(form.get("password"));
     setPending(true);
     setError(null);
+    if (!(emailEnabled && id.includes("@"))) {
+      const res = await phoneSignInAction({ phone: id, password, next, locale: prefix ? "en" : "my" });
+      // Thành công thì server đã chuyển trang; chỉ quay lại đây khi lỗi.
+      setPending(false);
+      if (res?.error) setError(res.error);
+      return;
+    }
     const { error } = await customerAuthClient.signIn.email({
-      email: String(form.get("email")),
-      password: String(form.get("password")),
+      email: id,
+      password,
       callbackURL: loginUrl(prefix, next),
     });
     if (error) {
@@ -128,11 +142,59 @@ export function LoginForm({ prefix, next }: { prefix: string; next: string }) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-3">
-      <EmailInput />
+      <label className="block space-y-1 text-sm">
+        <span>{t(emailEnabled ? "emailOrPhone" : "phone")}</span>
+        <input
+          name="identifier"
+          required
+          maxLength={200}
+          type={emailEnabled ? "text" : "tel"}
+          inputMode={emailEnabled ? "text" : "tel"}
+          autoComplete="username"
+          placeholder={emailEnabled ? undefined : t("phoneHint")}
+          className={storeField}
+        />
+      </label>
       <PasswordInput name="password" autoComplete="current-password" label={t("password")} />
       {error && <Notice tone="error">{t(`err.${error}`, { min: 8 })}</Notice>}
       <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
         {t("submitLogin")}
+      </button>
+    </form>
+  );
+}
+
+/** Đăng ký bằng SĐT + mật khẩu (P17) — Server Action tạo tài khoản rồi đăng nhập, chuyển tới `next`. */
+export function PhoneRegisterForm({ locale, next }: { locale: string; next: string }) {
+  const t = useTranslations("Auth");
+  const [state, action, pending] = useActionState(phoneRegisterAction, undefined);
+  return (
+    <form action={action} className="space-y-3">
+      <input type="hidden" name="locale" value={locale} />
+      <input type="hidden" name="next" value={next} />
+      <label className="block space-y-1 text-sm">
+        <span>{t("name")}</span>
+        <input name="name" required maxLength={100} autoComplete="name" className={storeField} />
+      </label>
+      <label className="block space-y-1 text-sm">
+        <span>{t("phone")}</span>
+        <input
+          name="phone"
+          required
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          maxLength={30}
+          placeholder={t("phoneHint")}
+          className={storeField}
+        />
+      </label>
+      <PasswordInput name="password" autoComplete="new-password" label={t("password")} />
+      <p className="-mt-2 text-xs text-muted-foreground">{t("passwordHint")}</p>
+      <PasswordInput name="confirmPassword" autoComplete="new-password" label={t("confirmPassword")} />
+      {state?.error && <Notice tone="error">{t(`err.${state.error}`, { min: 8 })}</Notice>}
+      <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
+        {t("submitRegister")}
       </button>
     </form>
   );

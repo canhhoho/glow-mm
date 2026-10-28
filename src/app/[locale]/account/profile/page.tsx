@@ -33,7 +33,7 @@ async function ProfileContent({ params }: PageProps<"/[locale]/account/profile">
           {t("profileTitle")}
         </h2>
         <p className="text-sm">
-          <span className="text-muted-foreground">{t("email")}:</span> {user.email}
+          <span className="text-muted-foreground">{t(user.contact === user.phone ? "phone" : "email")}:</span> {user.contact}
         </p>
         <ProfileForm locale={locale} name={user.name} />
       </section>

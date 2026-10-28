@@ -157,6 +157,8 @@ Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 
 - CTV là user Better Auth role AFFILIATE (không thuộc ROLES nhân viên → không vào /admin); admin tạo tài khoản; đăng nhập email + mật khẩu ở `/ctv/login` (đăng nhập nhầm cổng bị từ chối). Cổng CTV mặc định tiếng Myanmar (cookie `CTV_LOCALE`), xem đủ tên/SĐT/địa chỉ khách trong đơn của mình, không thấy giá vốn/kho, không tra cứu khách theo SĐT.
 - Báo cáo: thêm hoa hồng CTV (theo ngày hoàn tất) + lợi nhuận sau hoa hồng. Seed: CTV mẫu `ctv@glow.local` (mã MAUNG).
 
+**P17 — quyết định (2026-10-28):** Khách đăng ký / đăng nhập bằng SĐT + mật khẩu, không OTP (chưa có dịch vụ SMS **[CẦN XÁC MINH]**). SĐT chưa xác minh → không dùng để gắn đơn cũ, không tự lấy lại mật khẩu: khách nhắn shop, admin đặt mật khẩu tạm ở "Tài khoản khách" (`users:manage`), có khoá/mở khoá. Giới hạn: 10 đăng ký / giờ / IP; đăng nhập 20 lần / phút / IP và 10 lần / 10 phút / SĐT.
+
 **P16 — quyết định (2026-10-28):** CTV đăng nhập storefront bằng chính tài khoản CTV (email/mật khẩu hoặc Google cùng email; email CTV do admin nhập/duyệt coi như đã xác minh). Đơn CTV đặt trên web (mua cho mình hoặc đặt hộ khách) tự gắn CTV đó, nguồn "CTV tự lên đơn", tính doanh thu + hoa hồng như đơn bán; bỏ qua cookie link giới thiệu của CTV khác. Nhân viên không dùng email nhân viên để mua trên storefront.
 
 **P15 — quyết định (2026-10-28):**

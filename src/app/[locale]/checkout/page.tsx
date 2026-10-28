@@ -58,7 +58,7 @@ async function CheckoutContent({ params }: PageProps<"/[locale]/checkout">) {
       <div className="lg:col-span-2">
         <PageTitle>{t("title")}</PageTitle>
         <p className="-mt-2 text-sm text-muted-foreground" data-testid="ordering-as">
-          {t("orderingAs", { email: user.email })}
+          {t("orderingAs", { email: user.contact })}
         </p>
         {user.affiliate && (
           <p className="mt-1 rounded-lg bg-secondary px-3 py-2 text-sm text-secondary-foreground" data-testid="ordering-as-affiliate">
@@ -99,6 +99,7 @@ async function CheckoutContent({ params }: PageProps<"/[locale]/checkout">) {
             idempotencyKey={randomUUID()}
             addresses={saved}
             accountName={user.name}
+            accountPhone={user.phone}
           />
         ) : (
           <p role="alert" className="rounded-lg border border-border bg-card p-3 text-sm">

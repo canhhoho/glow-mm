@@ -32,7 +32,8 @@
     "closeMenu": "Close menu",
     "breadcrumb": "Breadcrumb",
     "affiliates": "Affiliates",
-    "locations": "Delivery areas"
+    "locations": "Delivery areas",
+    "customers": "Customer accounts"
   },
   "Login": {
     "title": "Admin sign in",
@@ -1116,5 +1117,35 @@
     "saved": "Saved {n} changes",
     "invalid": "Names cannot be empty (max 100 characters).",
     "stateOff": "State turned off"
+  },
+  "Customers": {
+    "title": "Customer accounts",
+    "hint": "Customers registered on the website (phone + password, Google, email). A phone customer who forgot their password → set a temporary password and tell them via Viber/Messenger; they should change it in Account → Profile.",
+    "search": "Search (phone, email, name)",
+    "find": "Find",
+    "empty": "No customer accounts.",
+    "name": "Name",
+    "contact": "Phone / Email",
+    "method": "Signs in with",
+    "orders": "Orders",
+    "createdAt": "Created",
+    "status": "Status",
+    "actions": "Actions",
+    "byPhone": "Phone + password",
+    "byEmail": "Email + password",
+    "active": "Active",
+    "locked": "Locked",
+    "resetPassword": "Reset password",
+    "tempPassword": "Temporary password (≥ {min} chars)",
+    "passwordReset": "Temporary password set — the customer was signed out everywhere",
+    "lock": "Lock",
+    "unlock": "Unlock",
+    "lockConfirm": "Lock {name}'s account? They will be signed out and cannot sign in.",
+    "saved": "Saved",
+    "err": {
+      "not_found": "Customer account not found",
+      "no_password": "This account signs in with Google and has no password",
+      "password": "Temporary password needs at least {min} characters"
+    }
   }
 }

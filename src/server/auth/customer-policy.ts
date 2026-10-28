@@ -41,6 +41,11 @@ export function customerIdentityDecision(action: string, existingRole: string | 
   return existingRole && STOREFRONT_ROLES.includes(existingRole) ? undefined : { error: NOT_CUSTOMER };
 }
 
+/** Email nội bộ của tài khoản SĐT (P17) — tên miền `.invalid` không bao giờ nhận mail. */
+export const PHONE_EMAIL_DOMAIN = "phone.glow.invalid";
+export const phoneEmail = (phone: string) => `${phone}@${PHONE_EMAIL_DOMAIN}`;
+export const isPhoneEmail = (email: string) => email.toLowerCase().endsWith(`@${PHONE_EMAIL_DOMAIN}`);
+
 /** Secret riêng cho instance khách (suy ra từ BETTER_AUTH_SECRET) → token phiên chép sang cookie bên kia không hợp lệ. */
 export function deriveCustomerSecret(secret: string): string {
   return createHmac("sha256", secret).update("glow-customer-auth").digest("hex");

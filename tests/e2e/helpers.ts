@@ -106,11 +106,14 @@ export async function registerCustomer(page: Page, next = "/en/account") {
   const email = `e2e-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}@glow.local`;
   const since = Date.now();
   await page.goto(`/en/register?next=${encodeURIComponent(next)}`);
-  await page.getByLabel("Full name").fill("Ma E2E");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(CUSTOMER_PASSWORD);
-  await page.getByLabel("Confirm password").fill(CUSTOMER_PASSWORD);
-  await page.getByRole("button", { name: "Create account" }).click();
+  // Mặc định là form SĐT (P17); form email nằm trong mục "Register with email instead".
+  await page.getByText("Register with email instead").click();
+  const form = page.locator("details");
+  await form.getByLabel("Full name").fill("Ma E2E");
+  await form.getByLabel("Email").fill(email);
+  await form.getByLabel("Password", { exact: true }).fill(CUSTOMER_PASSWORD);
+  await form.getByLabel("Confirm password").fill(CUSTOMER_PASSWORD);
+  await form.getByRole("button", { name: "Create account" }).click();
   await expect(page.getByText(`We sent a confirmation link to ${email}`)).toBeVisible();
   await page.goto(await emailLink(email, since));
   // Link xác minh → /login (đã có phiên) → trang `next` (chuyển hướng phía client sau khi trang stream xong).
