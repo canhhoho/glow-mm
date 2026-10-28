@@ -8,6 +8,8 @@ import { AFFILIATE_ROLE, NOT_STAFF, ROLES } from "./roles";
 export { NOT_STAFF };
 
 export const CUSTOMER_ROLE = "CUSTOMER";
+/** Role được đăng nhập storefront: khách + CTV (CTV mua cho mình / đặt hộ khách, đơn tính hoa hồng cho CTV). Nhân viên thì không. */
+export const STOREFRONT_ROLES: readonly string[] = [CUSTOMER_ROLE, AFFILIATE_ROLE];
 export const CUSTOMER_AUTH_BASE_PATH = "/api/customer-auth";
 export const CUSTOMER_COOKIE_PREFIX = "glow-customer";
 /** Mã lỗi trả về client (trang đăng nhập khách / staff map sang chuỗi giao diện). */
@@ -23,20 +25,20 @@ export function staffSessionDecision(user: SessionUser): SessionDecision {
   return user.active ? "ok" : "inactive";
 }
 
-/** Instance khách (/api/customer-auth): chỉ khách. */
+/** Instance khách (/api/customer-auth): khách + CTV, không nhân viên. */
 export function customerSessionDecision(user: SessionUser): SessionDecision {
-  if (!user || user.role !== CUSTOMER_ROLE) return "forbidden";
+  if (!user || !STOREFRONT_ROLES.includes(user.role)) return "forbidden";
   return user.active ? "ok" : "inactive";
 }
 
 /**
  * Gate `user.validateUserInfo` của instance khách: tạo user mới luôn được (hook ép role CUSTOMER);
- * liên kết Google / đăng nhập lại vào user đã có chỉ khi user đó là khách — chặn Google cùng email chiếm tài khoản
- * nhân viên/CTV (nhân viên có emailVerified=true nên Better Auth sẽ tự liên kết nếu không chặn).
+ * liên kết Google / đăng nhập lại vào user đã có chỉ khi user đó là khách hoặc CTV — chặn Google cùng email chiếm
+ * tài khoản nhân viên (nhân viên có emailVerified=true nên Better Auth sẽ tự liên kết nếu không chặn).
  */
 export function customerIdentityDecision(action: string, existingRole: string | null): { error: string } | undefined {
   if (action === "create-user") return undefined;
-  return existingRole === CUSTOMER_ROLE ? undefined : { error: NOT_CUSTOMER };
+  return existingRole && STOREFRONT_ROLES.includes(existingRole) ? undefined : { error: NOT_CUSTOMER };
 }
 
 /** Secret riêng cho instance khách (suy ra từ BETTER_AUTH_SECRET) → token phiên chép sang cookie bên kia không hợp lệ. */

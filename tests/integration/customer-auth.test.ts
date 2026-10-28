@@ -7,6 +7,7 @@ import { claimOrders } from "@/server/accounts/claims";
 import { auth } from "@/server/auth/auth";
 import { customerAuth } from "@/server/auth/customer-auth";
 import { createOrder } from "@/server/orders/orders";
+import { createAffiliate } from "@/server/affiliates/affiliates";
 import { createStaff } from "@/server/users/users";
 import { orderInput, saleFixture, unpublishTestProducts } from "./fixtures";
 
@@ -94,6 +95,25 @@ describe("Tài khoản khách (P14)", () => {
     const source = { action: "link-account" as const, method: "oauth", oauth: { providerId: "google" } };
     expect(await validate({ user: { id: staff.id, email: staffEmail }, source })).toEqual({ error: "NOT_CUSTOMER" });
     expect(await validate({ user: { id: customer.id, email: customer.email }, source })).toBeUndefined();
+  });
+
+  it("CTV đăng nhập storefront bằng chính tài khoản CTV (P16): email đã xác minh, Google liên kết được", async () => {
+    const t = tag();
+    const a = await createAffiliate(
+      { name: "Ko CTV", phone: "09 7812 3456", commissionPercent: "10", password: "it-ctv-password-1", email: `it-ctv-shop-${t}@glow.local`, code: `S${t}`.slice(0, 10) },
+      await itActor(),
+    );
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: a!.userId } });
+    expect(user).toMatchObject({ role: "AFFILIATE", emailVerified: true });
+    expect((await customerAuth.api.signInEmail({ body: { email: user.email, password: "it-ctv-password-1" } })).token).toBeTruthy();
+    const validate = customerAuth.options.user!.validateUserInfo!;
+    const source = { action: "link-account" as const, method: "oauth", oauth: { providerId: "google" } };
+    expect(await validate({ user: { id: user.id, email: user.email }, source })).toBeUndefined();
+    // Tài khoản CTV bị khoá → không đăng nhập storefront được.
+    await prisma.user.update({ where: { id: user.id }, data: { active: false } });
+    await expect(customerAuth.api.signInEmail({ body: { email: user.email, password: "it-ctv-password-1" } })).rejects.toMatchObject({
+      body: { code: "USER_INACTIVE" },
+    });
   });
 
   it("quên mật khẩu: gửi link, đặt lại được, mật khẩu cũ hết hiệu lực", async () => {

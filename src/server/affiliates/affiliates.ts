@@ -134,6 +134,8 @@ export async function insertAffiliate(tx: Tx, input: NewAffiliate, actorId: stri
       email: input.email,
       role: "AFFILIATE",
       locale: "my",
+      // Email do admin nhập / duyệt → coi như đã xác minh: CTV đăng nhập storefront bằng Google cùng email được (P16).
+      emailVerified: true,
       accounts: { create: { id: randomUUID(), accountId: userId, providerId: "credential", password: input.passwordHash } },
     },
   });

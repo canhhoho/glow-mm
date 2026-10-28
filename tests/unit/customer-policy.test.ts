@@ -26,21 +26,23 @@ describe("Tách phiên khách / nhân viên (P14)", () => {
     expect(staffSessionDecision(null)).toBe("forbidden");
   });
 
-  it("instance khách: chỉ CUSTOMER; khách bị khoá → inactive", () => {
+  it("instance khách: khách + CTV (P16); nhân viên bị từ chối; bị khoá → inactive", () => {
     expect(customerSessionDecision({ role: "CUSTOMER", active: true })).toBe("ok");
+    expect(customerSessionDecision({ role: "AFFILIATE", active: true })).toBe("ok");
     expect(customerSessionDecision({ role: "CUSTOMER", active: false })).toBe("inactive");
-    for (const role of ["ADMIN", "ORDER_STAFF", "AFFILIATE"]) {
+    for (const role of ["ADMIN", "WAREHOUSE_MANAGER", "ORDER_STAFF"]) {
       expect(customerSessionDecision({ role, active: true })).toBe("forbidden");
     }
     expect(customerSessionDecision(undefined)).toBe("forbidden");
   });
 
-  it("Google: tạo user mới được; liên kết / đăng nhập vào user không phải khách bị chặn", () => {
+  it("Google: tạo user mới được; liên kết vào khách / CTV được; vào nhân viên bị chặn", () => {
     expect(customerIdentityDecision("create-user", null)).toBeUndefined();
     expect(customerIdentityDecision("link-account", "CUSTOMER")).toBeUndefined();
     expect(customerIdentityDecision("sign-in", "CUSTOMER")).toBeUndefined();
     expect(customerIdentityDecision("link-account", "ADMIN")).toEqual({ error: NOT_CUSTOMER });
-    expect(customerIdentityDecision("sign-in", "AFFILIATE")).toEqual({ error: NOT_CUSTOMER });
+    expect(customerIdentityDecision("sign-in", "AFFILIATE")).toBeUndefined();
+    expect(customerIdentityDecision("link-account", "ORDER_STAFF")).toEqual({ error: NOT_CUSTOMER });
     expect(customerIdentityDecision("link-account", null)).toEqual({ error: NOT_CUSTOMER });
   });
 

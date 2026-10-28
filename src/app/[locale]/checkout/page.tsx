@@ -60,6 +60,11 @@ async function CheckoutContent({ params }: PageProps<"/[locale]/checkout">) {
         <p className="-mt-2 text-sm text-muted-foreground" data-testid="ordering-as">
           {t("orderingAs", { email: user.email })}
         </p>
+        {user.affiliate && (
+          <p className="mt-1 rounded-lg bg-secondary px-3 py-2 text-sm text-secondary-foreground" data-testid="ordering-as-affiliate">
+            {t("orderingAsAffiliate", { code: user.affiliate.code })}
+          </p>
+        )}
       </div>
       <section
         aria-labelledby="sum-h"

@@ -127,7 +127,8 @@
     "savedAddress": "Deliver to",
     "newAddress": "A new address",
     "saveToBook": "Save to my address book",
-    "orderingAs": "Ordering as {email}"
+    "orderingAs": "Ordering as {email}",
+    "orderingAsAffiliate": "You are ordering with affiliate account {code} — this order counts towards your sales and commission."
   },
   "Order": {
     "thanks": "Thank you! Your order has been placed.",
@@ -287,8 +288,8 @@
       "notVerified": "Your email is not confirmed yet. We sent a new confirmation link — please check your inbox.",
       "tooMany": "Too many attempts. Please wait a minute and try again.",
       "locked": "This account is locked. Please contact the shop.",
-      "notCustomer": "This email belongs to a staff or affiliate account. Please use another email.",
-      "notLinked": "This email is registered with a password but not confirmed yet. Confirm it from your inbox, then try Google again.",
+      "notCustomer": "This email belongs to a staff account and cannot be used to shop. Please choose another Google account.",
+      "notLinked": "This email already has an account that is not confirmed yet (or is a staff account). Confirm it from your inbox, or choose another Google account.",
       "mismatch": "Passwords do not match.",
       "tooShort": "Password must be at least {min} characters.",
       "invalidLink": "This link is invalid or has expired. Please request a new one.",

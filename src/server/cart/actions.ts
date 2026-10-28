@@ -116,7 +116,12 @@ export async function placeOrderAction(_prev: StoreActionState, formData: FormDa
         items,
         idempotencyKey: formData.get("idempotencyKey") || undefined,
       },
-      { userId: null, accountId: user.id, affiliate: await referralFromCookie() },
+      // Đăng nhập bằng tài khoản CTV → đơn tính cho chính CTV đó (mua cho mình / đặt hộ khách), bỏ qua link giới thiệu.
+      {
+        userId: null,
+        accountId: user.id,
+        affiliate: user.affiliate ? { source: "AFFILIATE", id: user.affiliate.id } : await referralFromCookie(),
+      },
     );
   } catch (e) {
     return { error: await errorText(e, locale) };

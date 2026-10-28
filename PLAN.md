@@ -157,6 +157,8 @@ Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 
 - CTV là user Better Auth role AFFILIATE (không thuộc ROLES nhân viên → không vào /admin); admin tạo tài khoản; đăng nhập email + mật khẩu ở `/ctv/login` (đăng nhập nhầm cổng bị từ chối). Cổng CTV mặc định tiếng Myanmar (cookie `CTV_LOCALE`), xem đủ tên/SĐT/địa chỉ khách trong đơn của mình, không thấy giá vốn/kho, không tra cứu khách theo SĐT.
 - Báo cáo: thêm hoa hồng CTV (theo ngày hoàn tất) + lợi nhuận sau hoa hồng. Seed: CTV mẫu `ctv@glow.local` (mã MAUNG).
 
+**P16 — quyết định (2026-10-28):** CTV đăng nhập storefront bằng chính tài khoản CTV (email/mật khẩu hoặc Google cùng email; email CTV do admin nhập/duyệt coi như đã xác minh). Đơn CTV đặt trên web (mua cho mình hoặc đặt hộ khách) tự gắn CTV đó, nguồn "CTV tự lên đơn", tính doanh thu + hoa hồng như đơn bán; bỏ qua cookie link giới thiệu của CTV khác. Nhân viên không dùng email nhân viên để mua trên storefront.
+
 **P15 — quyết định (2026-10-28):**
 - Địa chỉ theo file VTP OMS (`vtp_myanmar_receiver_address.md`): Liên bang/Vùng → Huyện → Thị trấn (form VTP ghi ô 3 là "Ward" nhưng dữ liệu là Township). Lưu cả tên tiếng Anh + mã VTP; tên Myanmar là bản nháp **[CẦN XÁC MINH]**.
 - Phí ship do đơn vị vận chuyển thu trực tiếp khi giao → đơn web/admin/CTV chỉ tính tiền hàng; đơn cũ giữ phí đã chốt.

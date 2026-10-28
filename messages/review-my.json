@@ -103,6 +103,7 @@
     "Catalog.seeMore",
     "Checkout.newAddress",
     "Checkout.orderingAs",
+    "Checkout.orderingAsAffiliate",
     "Checkout.saveToBook",
     "Checkout.savedAddress",
     "Email.greeting",

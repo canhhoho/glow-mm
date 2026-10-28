@@ -44,6 +44,30 @@ test("khách mở link CTV rồi đặt hàng → đơn hiện trong cổng CTV 
   await expect(page.getByTestId("ctv-order-commission")).toContainText("10%");
 });
 
+test("CTV đăng nhập storefront bằng tài khoản CTV → đơn đặt trên web tính cho chính CTV (bỏ qua link của người khác)", async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.goto("/en/p/sen-viet-sunscreen-spf50?ref=LINN");
+  await page.getByRole("button", { name: "Add to cart" }).click();
+  await page.getByRole("link", { name: "Checkout" }).click();
+  await signInAtPrompt(page, "ctv@glow.local", PASSWORD);
+  await expect(page.getByTestId("ordering-as-affiliate")).toContainText("MAUNG");
+  await page.getByLabel("Full name").fill("Ma Hộ");
+  await page.getByLabel("Phone number").fill("09 7812 4545");
+  await pickAddress(page);
+  await page.getByLabel("Address (house no., street, ward)").fill("No. 45, Order Road");
+  await page.getByText("Cash on delivery", { exact: true }).click();
+  await page.getByRole("button", { name: "Place order" }).click();
+  await expect(page).toHaveURL(/\/en\/order\/OD-/);
+  const code = (await page.getByTestId("order-code").textContent())!.trim();
+
+  await loginCtv(page);
+  await page.getByRole("link", { name: "Đơn của tôi" }).click();
+  const row = page.getByTestId("ctv-order").filter({ hasText: code });
+  await expect(row).toContainText("CTV tự lên đơn");
+  await row.click();
+  await expect(page.getByTestId("ctv-order-commission")).toContainText("10%");
+});
+
 test("CTV tự lên đơn cho khách; không xem được đơn không phải của mình", async ({ page }) => {
   test.setTimeout(90_000);
   await loginCtv(page);

@@ -201,7 +201,7 @@ test("đặt hàng khi đã đăng nhập: địa chỉ mới được lưu vào
 
 test("tách cổng: nhân viên không đăng nhập ở cổng khách; khách không vào được admin", async ({ page }) => {
   await loginCustomer(page, "admin@glow.local", PASSWORD);
-  await expect(page.getByRole("alert").filter({ hasText: "staff or affiliate account" })).toBeVisible();
+  await expect(page.getByRole("alert").filter({ hasText: "staff account" })).toBeVisible();
 
   await loginCustomer(page, "khach@glow.local", PASSWORD);
   await expect(page).toHaveURL(/\/en\/account$/);

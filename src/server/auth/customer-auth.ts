@@ -20,12 +20,14 @@ import {
   deriveCustomerSecret,
   localeFromCallback,
   NOT_CUSTOMER,
+  STOREFRONT_ROLES,
 } from "./customer-policy";
 
 /**
  * Better Auth cho KHÁCH HÀNG storefront (P14) — instance riêng, tách khỏi nhân viên/CTV (`auth.ts`):
  * đường dẫn /api/customer-auth, cookie tiền tố `glow-customer`, secret suy ra riêng, phiên 30 ngày, bảng rate limit riêng.
- * Dùng chung bảng user/session/account/verification; hook bảo đảm chỉ role CUSTOMER tạo được phiên ở đây.
+ * Dùng chung bảng user/session/account/verification; hook bảo đảm chỉ khách (CUSTOMER) và CTV (AFFILIATE) tạo được
+ * phiên ở đây — CTV mua/đặt hộ trên storefront bằng chính tài khoản CTV (email/mật khẩu hoặc Google cùng email).
  * Đăng ký/đăng nhập email chỉ bật khi gửi được email (EMAIL_DRIVER ≠ none); Google chỉ bật khi có GOOGLE_CLIENT_ID/SECRET.
  */
 
@@ -33,10 +35,10 @@ const emailOn = process.env.EMAIL_DRIVER === "outbox" || process.env.EMAIL_DRIVE
 const googleId = process.env.GOOGLE_CLIENT_ID;
 const googleSecret = process.env.GOOGLE_CLIENT_SECRET;
 
-/** Gửi email xác minh / đặt lại mật khẩu — chỉ cho khách (instance này không bao giờ gửi link cho nhân viên/CTV). */
+/** Gửi email xác minh / đặt lại mật khẩu — chỉ cho khách + CTV (instance này không bao giờ gửi link cho nhân viên). */
 async function sendAuthEmail(kind: AuthEmailKind, userId: string, url: string) {
   const u = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true, locale: true, role: true } });
-  if (u?.role !== CUSTOMER_ROLE) return;
+  if (!u || !STOREFRONT_ROLES.includes(u.role)) return;
   await (await email()).send(authEmail(kind, u, url));
 }
 
