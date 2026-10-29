@@ -19,6 +19,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # URL gốc cho metadata tĩnh (canonical, hreflang, Open Graph) — phần trang prerender lúc build. Không phải secret.
 ARG APP_URL=http://localhost:3000
 ENV APP_URL=${APP_URL}
+# Khoá mã hoá Server Action cố định giữa các lần build (base64, 32 byte) → tab đang mở không lỗi
+# "Failed to find Server Action" sau mỗi lần deploy. Để trống = Next tự sinh mỗi build. Được nhúng vào bản build.
+ARG NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=
+ENV NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY}
+# Mã phiên bản deploy (vd git SHA) → client cũ tự tải lại trang khi app đã lên bản mới. Để trống = tắt.
+ARG NEXT_DEPLOYMENT_ID=
+ENV NEXT_DEPLOYMENT_ID=${NEXT_DEPLOYMENT_ID}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate && npm run build
@@ -40,8 +47,9 @@ ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \
     HOSTNAME=0.0.0.0
+# /app/.next/cache: cache ảnh next/image — compose gắn volume để không mã hoá lại AVIF sau mỗi lần deploy.
 RUN addgroup -S -g 1001 nodejs && adduser -S -u 1001 -G nodejs nextjs \
- && mkdir -p /app/storage && chown nextjs:nodejs /app/storage
+ && mkdir -p /app/storage /app/.next/cache && chown nextjs:nodejs /app/storage /app/.next /app/.next/cache
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static

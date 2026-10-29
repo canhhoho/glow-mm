@@ -38,6 +38,10 @@ services:
       args:
         # Metadata tĩnh (canonical/Open Graph) cần URL gốc lúc build.
         APP_URL: ${APP_URL:-http://localhost:3000}
+        # Cố định khoá Server Action giữa các lần deploy (openssl rand -base64 32). Để trống = sinh mới mỗi build.
+        NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY:-}
+        # Git SHA của bản build (Coolify cung cấp SOURCE_COMMIT [CẦN XÁC MINH]) → client cũ tự tải lại khi có bản mới.
+        NEXT_DEPLOYMENT_ID: ${SOURCE_COMMIT:-}
     restart: unless-stopped
     env_file:
       - path: .env.prod
@@ -47,14 +51,25 @@ services:
       APP_URL: ${APP_URL:-http://localhost:3000}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Cần đặt BETTER_AUTH_SECRET}
       CRON_SECRET: ${CRON_SECRET:?Cần đặt CRON_SECRET}
+      DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-20}
       FB_PAGE_USERNAME: ${FB_PAGE_USERNAME:-}
       VIBER_CHAT_URI: ${VIBER_CHAT_URI:-}
       STORAGE_DRIVER: local
       LOCAL_STORAGE_DIR: /app/storage
+      # Email khách (xác minh / quên mật khẩu): none | resend. resend cần RESEND_API_KEY + EMAIL_FROM.
+      EMAIL_DRIVER: ${EMAIL_DRIVER:-none}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      # Đăng nhập Google cho khách — để trống cả hai = ẩn nút Google.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+    # Chỉ mở cho localhost: crontab trên host gọi /api/cron; khách vào qua proxy HTTPS của Coolify (Traefik).
+    # Docker bỏ qua ufw với cổng đã publish → KHÔNG đổi thành "3000:3000".
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     volumes:
       - uploads:/app/storage
+      - next-cache:/app/.next/cache
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -67,3 +82,4 @@ services:
 volumes:
   pgdata:
   uploads:
+  next-cache:
