@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { Link } from "@/i18n/navigation";
 import type { StoreLocale } from "@/i18n/routing";
 import { emailAuthEnabled } from "@/lib/env";
@@ -23,6 +24,8 @@ export default function ForgotPasswordPage(props: PageProps<"/[locale]/forgot-pa
 async function ForgotContent({ params }: PageProps<"/[locale]/forgot-password">) {
   const { locale } = (await params) as { locale: StoreLocale };
   setRequestLocale(locale);
+  // Đọc env lúc chạy, không lúc build (Docker build không có secret; EMAIL_DRIVER đổi không cần build lại).
+  await connection();
   if (!emailAuthEnabled()) notFound();
   const t = await getTranslations({ locale, namespace: "Auth" });
   return (
