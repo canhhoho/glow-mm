@@ -86,7 +86,8 @@ describe("Email tài khoản khách (P14)", () => {
     expect(emailLocale("en")).toBe("en");
     expect(emailLocale("vi")).toBe("my");
     const en = authEmail("reset", { email: "a@x.test", name: "<b>Ann</b>", locale: "en" }, "https://shop.test/reset?t=1&x=2");
-    expect(en.subject).toContain("reset your password");
+    expect(en.subject).toBe("T&C Cosmetics — reset your password");
+    expect(en.html).toContain(">T&amp;C Cosmetics</p>");
     expect(en.html).toContain("&lt;b&gt;Ann&lt;/b&gt;");
     expect(en.html).toContain("https://shop.test/reset?t=1&amp;x=2");
     expect(en.text).toContain("https://shop.test/reset?t=1&x=2");

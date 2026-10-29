@@ -22,7 +22,7 @@ test("đường dẫn lạ → HTTP 404 có header/footer + noindex", async ({ p
 
 test("trang SP: title template, canonical + hreflang, Open Graph, JSON-LD Product", async ({ page }) => {
   await page.goto(PRODUCT);
-  await expect(page).toHaveTitle(/· Glow VN$/);
+  await expect(page).toHaveTitle(/· T&C Cosmetics$/);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/en\/p\/sen-viet-sunscreen-spf50$/);
   await expect(page.locator('link[rel="alternate"][hreflang="my"]')).toHaveAttribute("href", /\/p\/sen-viet-sunscreen-spf50$/);
   await expect(page.locator('link[rel="alternate"][hreflang="x-default"]')).toHaveAttribute("href", /\/p\/sen-viet-sunscreen-spf50$/);

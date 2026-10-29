@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { BRAND_NAME } from "@/lib/brand";
 import { env } from "@/lib/env";
 import { INFO_PAGES } from "@/lib/info-pages";
 import { ContactLinks } from "./contact-links";
@@ -52,7 +53,7 @@ export async function StoreFooter({ locale }: { locale: string }) {
             </li>
           </ul>
         </nav>
-        <p className="lg:text-right">© Glow VN · {t("rights")}</p>
+        <p className="lg:text-right">© {BRAND_NAME} · {t("rights")}</p>
       </div>
     </footer>
   );

@@ -1,4 +1,5 @@
 import { ADMIN_LOCALES } from "@/i18n/routing";
+import { BRAND_MARK, BRAND_NAME } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -40,10 +41,10 @@ export function LoginScreen({
 
       <main className="flex flex-1 flex-col items-center justify-center py-8">
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
-          <div className="grid size-12 place-items-center rounded-2xl bg-brand text-xl font-bold text-brand-foreground shadow-md shadow-brand/30">
-            G
+          <div className="grid size-12 place-items-center rounded-2xl bg-brand text-sm font-bold text-brand-foreground shadow-md shadow-brand/30">
+            {BRAND_MARK}
           </div>
-          <div className="text-xl font-semibold">Glow VN</div>
+          <div className="text-xl font-semibold">{BRAND_NAME}</div>
           <div className="text-sm text-muted-foreground">{brandSubtitle}</div>
         </div>
 
@@ -54,7 +55,7 @@ export function LoginScreen({
         </div>
       </main>
 
-      <p className="pb-4 text-center text-xs text-muted-foreground">© Glow VN</p>
+      <p className="pb-4 text-center text-xs text-muted-foreground">© {BRAND_NAME}</p>
     </div>
   );
 }

@@ -73,7 +73,7 @@ test("PWA: manifest có icon, service worker không cache, trang offline", async
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute("href", /manifest\.webmanifest/);
 
   const manifest = await (await request.get("/manifest.webmanifest")).json();
-  expect(manifest).toMatchObject({ short_name: "Glow VN", display: "standalone", start_url: "/" });
+  expect(manifest).toMatchObject({ short_name: "T&C Cosmetics", display: "standalone", start_url: "/" });
   expect(manifest.icons.map((i: { sizes: string }) => i.sizes)).toEqual(expect.arrayContaining(["192x192", "512x512"]));
   for (const icon of manifest.icons) expect((await request.get(icon.src)).status()).toBe(200);
 

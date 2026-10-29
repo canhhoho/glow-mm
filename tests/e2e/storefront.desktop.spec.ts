@@ -30,7 +30,7 @@ test("không cuộn ngang ở mọi trang chính", async ({ page }) => {
 
 test("header 2 tầng: ô tìm kiếm cùng hàng logo, nút Danh mục mở dropdown", async ({ page }) => {
   await page.goto("/en");
-  const logo = await box(page, page.getByRole("link", { name: "Glow VN" }));
+  const logo = await box(page, page.getByRole("link", { name: "T&C Cosmetics" }));
   const search = await box(page, page.getByRole("searchbox"));
   expect(Math.abs(search.y + search.height / 2 - (logo.y + logo.height / 2))).toBeLessThan(12);
   expect(search.x).toBeGreaterThan(logo.x + logo.width);

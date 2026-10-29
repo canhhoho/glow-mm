@@ -4,6 +4,7 @@ import { UserRound } from "lucide-react";
 import { requireAffiliate } from "@/server/auth/session";
 import { CtvNav } from "@/components/ctv/ctv-nav";
 import { CtvLocaleSwitch, CtvSignOut } from "@/components/ctv/ctv-session-controls";
+import { BRAND_MARK, BRAND_NAME } from "@/lib/brand";
 
 /**
  * Khung cổng CTV (P10c): chỉ CTV đang hoạt động. Mobile: thanh mục ở đáy + nút Tài khoản trên header
@@ -28,9 +29,9 @@ export default async function CtvPortalLayout({ children }: LayoutProps<"/ctv">)
     <div data-theme="store" className="min-h-dvh bg-background">
       <header className="sticky top-0 z-30 border-b bg-card/95 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center gap-2 px-4 py-2">
-          <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand text-sm font-bold text-brand-foreground">G</div>
+          <div className="grid h-8 min-w-8 shrink-0 place-items-center rounded-lg bg-brand px-1 text-[11px] font-bold text-brand-foreground">{BRAND_MARK}</div>
           <div className="min-w-0 leading-tight">
-            <div className="text-sm font-semibold">Glow VN</div>
+            <div className="text-sm font-semibold">{BRAND_NAME}</div>
             <div className="truncate text-xs text-muted-foreground" data-testid="ctv-user">
               {user.name} · {user.code}
             </div>

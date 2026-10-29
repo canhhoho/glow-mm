@@ -114,7 +114,7 @@ Dockerfile  docker-compose.yml  docker-compose.prod.yml  .env.example
 
 ## 4. Roadmap (dừng chờ duyệt sau mỗi phase)
 
-Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ · P9 ✅ (2026-10-19) · P10 CTV ✅ (2026-10-26, đã lên production) · P11 CTV 2 tầng ✅ · P12 sửa UI ✅ · P13 chỉnh % hoa hồng ✅ (2026-10-27) · P14 tài khoản khách (code xong 2026-10-27) · P15 địa chỉ VTP (code xong 2026-10-28) · P4b chờ server + domain Myanmar.
+Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ · P9 ✅ (2026-10-19) · P10 CTV ✅ (2026-10-26, đã lên production) · P11 CTV 2 tầng ✅ · P12 sửa UI ✅ · P13 chỉnh % hoa hồng ✅ (2026-10-27) · P14 tài khoản khách (code xong 2026-10-27) · P15 địa chỉ VTP (code xong 2026-10-28) · P16–P17 ✅ (production 2026-10-28) · P18 đổi thương hiệu T&C Cosmetics (2026-10-29) · P4b chờ server + domain Myanmar.
 
 | Phase | Nội dung | Hoàn thành khi |
 |---|---|---|
@@ -156,6 +156,8 @@ Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 
 - Chi trả: admin chuyển tiền ngoài hệ thống rồi "Ghi nhận đã trả" → `AffiliatePayout` + `AffiliatePayoutLine` theo đơn (chỉ ghi thêm); trả hàng sau khi đã chi → số âm, trừ vào lần chi sau. Khoá dòng CTV khi ghi để không trùng.
 - CTV là user Better Auth role AFFILIATE (không thuộc ROLES nhân viên → không vào /admin); admin tạo tài khoản; đăng nhập email + mật khẩu ở `/ctv/login` (đăng nhập nhầm cổng bị từ chối). Cổng CTV mặc định tiếng Myanmar (cookie `CTV_LOCALE`), xem đủ tên/SĐT/địa chỉ khách trong đơn của mình, không thấy giá vốn/kho, không tra cứu khách theo SĐT.
 - Báo cáo: thêm hoa hồng CTV (theo ngày hoàn tất) + lợi nhuận sau hoa hồng. Seed: CTV mẫu `ctv@glow.local` (mã MAUNG).
+
+**P18 — đổi thương hiệu (2026-10-29):** "Glow VN" → **T&C Cosmetics**. Chỉ đổi phần hiển thị (header/footer, metadata, manifest, email, admin, cổng CTV, nhãn in, icon + ảnh OG logo tạm chữ "T&C"); mọi ngôn ngữ (cả Myanmar) viết Latin. Giữ định danh kỹ thuật `glow` (cookie, DB, repo, email nội bộ) và URL `glow-mm.vercel.app` tới khi có tên miền riêng. Ngoài code: đổi tên app trên màn hình xin quyền Google OAuth; rà dữ liệu đã nhập trên production; kiểm tra nhãn hiệu tại Myanmar **[CẦN XÁC MINH]**.
 
 **P17 — quyết định (2026-10-28):** Khách đăng ký / đăng nhập bằng SĐT + mật khẩu, không OTP (chưa có dịch vụ SMS **[CẦN XÁC MINH]**). SĐT chưa xác minh → không dùng để gắn đơn cũ, không tự lấy lại mật khẩu: khách nhắn shop, admin đặt mật khẩu tạm ở "Tài khoản khách" (`users:manage`), có khoá/mở khoá. Giới hạn: 10 đăng ký / giờ / IP; đăng nhập 20 lần / phút / IP và 10 lần / 10 phút / SĐT.
 

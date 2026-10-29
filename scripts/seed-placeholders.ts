@@ -22,8 +22,8 @@ const log = (msg: string) => console.log(msg);
 const webp = async (svg: string) => ({ data: await toWebp(svg), mime: "image/webp" });
 
 const BANNERS = [
-  { title: "Quality-checked cosmetics", subtitle: "Direct from Vietnam", hue: 350, alt: "Glow VN — demo banner 1" },
-  { title: "New arrivals every month", subtitle: "Skincare · Makeup · Body care", hue: 150, alt: "Glow VN — demo banner 2" },
+  { title: "Quality-checked cosmetics", subtitle: "Direct from Vietnam", hue: 350, alt: "T&C Cosmetics — demo banner 1" },
+  { title: "New arrivals every month", subtitle: "Skincare · Makeup · Body care", hue: 150, alt: "T&C Cosmetics — demo banner 2" },
 ];
 
 function dbHost() {

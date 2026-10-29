@@ -2,6 +2,7 @@ import { createTranslator } from "next-intl";
 import en from "../../../messages/store.en.json";
 import my from "../../../messages/store.my.json";
 import type { EmailMessage } from "@/server/adapters/email/types";
+import { BRAND_NAME } from "@/lib/brand";
 
 /** Nội dung email tài khoản khách (P14) theo ngôn ngữ của khách (my mặc định). Hàm thuần — test được. */
 
@@ -25,7 +26,7 @@ export function authEmail(kind: AuthEmailKind, to: { email: string; name: string
   const ignore = t(`${kind}.ignore`);
   const html = `<!doctype html><html lang="${locale}"><body style="margin:0;padding:24px;background:#FFF8F5;font-family:'Noto Sans Myanmar',Arial,sans-serif;color:#3b2f33">
 <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:12px;padding:24px">
-<p style="font-size:20px;font-weight:600;color:#E8657A;margin:0 0 16px">Glow VN</p>
+<p style="font-size:20px;font-weight:600;color:#E8657A;margin:0 0 16px">${escapeHtml(BRAND_NAME)}</p>
 <p>${escapeHtml(greeting)}</p>
 <p>${escapeHtml(body)}</p>
 <p style="margin:24px 0"><a href="${escapeHtml(url)}" style="display:inline-block;background:#E8657A;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600">${escapeHtml(cta)}</a></p>

@@ -1,6 +1,6 @@
 /**
  * Sinh icon PWA vào public/icons/ (chạy tay khi đổi logo: `node scripts/generate-icons.mjs`; ảnh được commit).
- * Dùng sharp (đi kèm Next). Logo tạm: chữ "G" trắng trên nền màu chính (#E8657A) — thay khi có logo thật.
+ * Dùng sharp (đi kèm Next). Logo tạm (P18): chữ "T&C" trắng trên nền màu chính (#E8657A) — thay khi có logo thật.
  */
 import { mkdir } from "node:fs/promises";
 import sharp from "sharp";
@@ -8,13 +8,13 @@ import sharp from "sharp";
 const BRAND = "#E8657A";
 const CREAM = "#FFF8F5";
 
-/** `pad`: tỉ lệ vùng an toàn (icon maskable cần chữ nằm trong ~80% giữa). */
+/** `pad`: tỉ lệ vùng an toàn (icon maskable cần chữ nằm trong ~80% giữa). "T&C" rộng ~2 em → cỡ chữ 32 để vừa vòng tròn. */
 const svg = (size, { rounded, pad }) => `
 <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 100 100">
   <rect width="100" height="100" rx="${rounded ? 22 : 0}" fill="${BRAND}"/>
   <circle cx="50" cy="50" r="${32 * pad}" fill="${CREAM}" fill-opacity="0.18"/>
   <text x="50" y="50" dy="0.35em" text-anchor="middle" font-family="Arial, Helvetica, sans-serif"
-        font-weight="700" font-size="${62 * pad}" fill="#FFFFFF">G</text>
+        font-weight="700" font-size="${32 * pad}" fill="#FFFFFF">T&amp;C</text>
 </svg>`;
 
 const out = [

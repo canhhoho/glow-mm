@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Web bán mỹ phẩm B2C nhập từ Việt Nam, bán tại Myanmar. Kế hoạch chi tiết: [PLAN.md](PLAN.md). Triển khai: [DEPLOY.md](DEPLOY.md).
+Web bán mỹ phẩm B2C **T&C Cosmetics** (tên cũ Glow VN, đổi ở P18) nhập từ Việt Nam, bán tại Myanmar. Kế hoạch chi tiết: [PLAN.md](PLAN.md). Triển khai: [DEPLOY.md](DEPLOY.md).
 
 ## Cách làm việc
 - Trả lời bằng **tiếng Việt**, ngắn gọn.
@@ -36,6 +36,7 @@ Next.js 16 có API mới (proxy thay middleware, Cache Components bật) → đ�
 - Chữ Myanmar dùng Unicode. Input tìm kiếm/form đi qua `src/lib/myanmar` (phát hiện + chuyển Zawgyi → Unicode).
 - Storefront: ưu tiên Server Components, JS client tối thiểu, `next/image` (AVIF/WebP, lazy). Phải dùng được trên Slow 3G.
 - Admin: URL `/admin/...`, locale lấy từ cookie `ADMIN_LOCALE`; storefront: `/` (my) và `/en`.
+- Tên thương hiệu hiển thị lấy từ `src/lib/brand.ts` (`BRAND_NAME`, `BRAND_MARK`); messages viết thẳng tên; icon/ảnh OG sinh bằng `scripts/generate-icons.mjs` / `generate-og.mjs`. Tiền tố kỹ thuật `glow` (cookie `glow-customer`/`glow_ref`, header `x-glow-portal`, `phone.glow.invalid`, DB `glow`, repo `glow-mm`, `*@glow.local`, `/opt/glow`) **cố ý giữ** — đổi sẽ đăng xuất khách/mất link CTV.
 - Màu dùng design token trong `globals.css` (màu chính `#E8657A`, phụ `#7FB89A`, nền `#FFF8F5`); không hardcode màu trong component.
 
 ## Kiến trúc

@@ -5,6 +5,7 @@ import { getOrderAdmin } from "@/server/orders/admin-queries";
 import { PrintButton } from "@/components/admin/print-button";
 import { LinkButton } from "@/components/admin/ui";
 import { fmtDateTime, fmtInt } from "@/lib/format";
+import { BRAND_NAME } from "@/lib/brand";
 
 /** Nhãn ship khổ A6 (in từ trình duyệt). Nằm ngoài layout panel để bản in không có menu. */
 export default async function OrderLabelPage({ params }: PageProps<"/admin/orders/[id]/label">) {
@@ -25,7 +26,7 @@ export default async function OrderLabelPage({ params }: PageProps<"/admin/order
       </div>
       <article className="mx-auto max-w-[105mm] space-y-3 rounded-lg border-2 border-foreground p-4 text-sm print:max-w-none print:rounded-none">
         <header className="flex items-baseline justify-between border-b pb-2">
-          <span className="text-lg font-bold">Glow VN</span>
+          <span className="text-lg font-bold">{BRAND_NAME}</span>
           <span className="font-mono text-base font-bold">{order.code}</span>
         </header>
         <section>

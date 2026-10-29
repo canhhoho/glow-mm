@@ -6,6 +6,7 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { ogLocale, siteUrl } from "@/lib/site";
+import { BRAND_NAME } from "@/lib/brand";
 import { StoreHeader } from "@/components/store/header";
 import { StoreFooter } from "@/components/store/footer";
 import { ChatFab } from "@/components/store/chat-fab";
@@ -41,16 +42,16 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
   // canonical/hreflang đặt ở từng trang (alternates); ảnh OG mặc định là file tĩnh để trang SP ghi đè được.
   return {
     metadataBase: siteUrl(),
-    title: { default: t("title"), template: "%s · Glow VN" },
+    title: { default: t("title"), template: `%s · ${BRAND_NAME}` },
     description: t("description"),
     icons: { icon: "/icons/icon-192.png", apple: "/icons/apple-touch-icon.png" },
     openGraph: {
       type: "website",
-      siteName: "Glow VN",
+      siteName: BRAND_NAME,
       locale: ogLocale(locale),
       title: t("title"),
       description: t("description"),
-      images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "Glow VN" }],
+      images: [{ url: "/og-default.png", width: 1200, height: 630, alt: BRAND_NAME }],
     },
     twitter: { card: "summary_large_image" },
   };

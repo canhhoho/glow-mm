@@ -5,6 +5,7 @@ import { PackageSearch, Search, ShoppingBag, UserRound } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getPathname, Link } from "@/i18n/navigation";
 import { routing, type StoreLocale } from "@/i18n/routing";
+import { BRAND_NAME } from "@/lib/brand";
 import { env } from "@/lib/env";
 import { CART_COOKIE, cartCount, parseCart } from "@/server/cart/cart";
 import { CategoryMenu } from "./category-menu";
@@ -68,7 +69,7 @@ export async function StoreHeader({ locale }: { locale: StoreLocale }) {
           href="/"
           className="col-start-2 row-start-1 justify-self-center text-lg font-medium text-brand-foreground lg:col-start-1 lg:justify-self-start lg:text-2xl"
         >
-          Glow VN
+          {BRAND_NAME}
         </Link>
 
         {/* lang theo ngôn ngữ đích: chữ Myanmar cần line-height cao (trang /en có lang="en"). Fallback = về trang chủ. */}

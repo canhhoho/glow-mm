@@ -1,4 +1,4 @@
-# DEPLOY — Triển khai Glow VN
+# DEPLOY — Triển khai T&C Cosmetics
 
 Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong biến môi trường (xem `.env.example`).
 
@@ -91,7 +91,7 @@ Khách bắt buộc có tài khoản khi đặt hàng. Không có Google lẫn e
 
 **Google OAuth client** (Google Cloud Console, tài khoản Google của shop):
 1. Tạo project (vd `glow-vn`) → **APIs & Services → OAuth consent screen**:
-   - User type **External**; tên app "Glow VN", email hỗ trợ, logo (tuỳ chọn), link chính sách bảo mật `https://<domain>/info/privacy`.
+   - User type **External**; tên app "T&C Cosmetics", email hỗ trợ, logo (tuỳ chọn), link chính sách bảo mật `https://<domain>/info/privacy`.
    - Scopes: `openid`, `email`, `profile` (mặc định, không cần duyệt thêm).
    - **Publish app** (chuyển khỏi chế độ Testing, nếu không chỉ tài khoản test mới đăng nhập được).
 2. **Credentials → Create credentials → OAuth client ID → Web application**:
@@ -106,7 +106,7 @@ Khách bắt buộc có tài khoản khi đặt hàng. Không có Google lẫn e
 **Email (Resend)** — cần tên miền riêng, `*.vercel.app` không gửi được **[CẦN XÁC MINH: tên miền]**:
 1. resend.com → Domains → thêm tên miền → thêm bản ghi DNS (SPF, DKIM, tuỳ chọn DMARC) → chờ Verified.
 2. API Keys → tạo key quyền "Sending access".
-3. Đặt `EMAIL_DRIVER=resend`, `RESEND_API_KEY`, `EMAIL_FROM="Glow VN <no-reply@<tên miền>>"` → Redeploy. Trang đăng nhập hiện thêm form email, đăng ký, quên mật khẩu.
+3. Đặt `EMAIL_DRIVER=resend`, `RESEND_API_KEY`, `EMAIL_FROM="T&C Cosmetics <no-reply@<tên miền>>"` → Redeploy. Trang đăng nhập hiện thêm form email, đăng ký, quên mật khẩu.
 4. Local/dev dùng `EMAIL_DRIVER=outbox`: email ghi ra `./storage/outbox/*.json` (mở file để lấy link xác minh).
 
 ---

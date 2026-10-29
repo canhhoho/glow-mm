@@ -1,4 +1,4 @@
-# Glow VN — Web bán mỹ phẩm VN → Myanmar
+# T&C Cosmetics — Web bán mỹ phẩm VN → Myanmar
 
 - Kế hoạch: [PLAN.md](PLAN.md) · Quy tắc & lệnh: [CLAUDE.md](CLAUDE.md) · Triển khai: [DEPLOY.md](DEPLOY.md)
 

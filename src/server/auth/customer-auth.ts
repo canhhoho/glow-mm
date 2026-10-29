@@ -5,6 +5,7 @@ import { nextCookies } from "better-auth/next-js";
 import { phoneNumber } from "better-auth/plugins/phone-number";
 import { APIError } from "better-auth/api";
 import { prisma } from "@/lib/db";
+import { BRAND_NAME } from "@/lib/brand";
 import { toUnicode } from "@/lib/myanmar";
 import { claimOrders } from "@/server/accounts/claims";
 import { authEmail, type AuthEmailKind } from "@/server/accounts/emails";
@@ -47,7 +48,7 @@ async function sendAuthEmail(kind: AuthEmailKind, userId: string, url: string) {
 }
 
 export const customerAuth = betterAuth({
-  appName: "Glow VN",
+  appName: BRAND_NAME,
   baseURL: process.env.APP_URL,
   basePath: CUSTOMER_AUTH_BASE_PATH,
   secret: deriveCustomerSecret(process.env.BETTER_AUTH_SECRET ?? ""),

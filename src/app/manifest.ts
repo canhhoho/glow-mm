@@ -1,10 +1,11 @@
 import type { MetadataRoute } from "next";
+import { BRAND_NAME } from "@/lib/brand";
 
 /** Web app manifest (PWA): cài lên màn hình chính. Icon sinh bằng scripts/generate-icons.mjs. */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Glow VN — ဗီယက်နမ် အလှကုန်",
-    short_name: "Glow VN",
+    name: `${BRAND_NAME} — ဗီယက်နမ် အလှကုန်`,
+    short_name: BRAND_NAME,
     description: "ဗီယက်နမ်မှ တိုက်ရိုက် အရည်အသွေးစစ် အလှကုန်",
     lang: "my",
     start_url: "/",

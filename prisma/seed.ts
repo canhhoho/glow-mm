@@ -61,7 +61,7 @@ async function seedCatalog() {
     "reservation.transferHours": 24,
     "cod.confirmHours": 24,
     "pricing.roundTo": 100,
-    "payment.bankInstructions": "KBZ Bank · 999-000-0000 · Glow VN (mẫu)",
+    "payment.bankInstructions": "KBZ Bank · 999-000-0000 · T&C Cosmetics (mẫu)",
   };
   // upsert không ghi đè: giữ giá trị đã có (đã sửa ở /admin/settings hoặc do test ghi trước).
   for (const [key, value] of Object.entries(settings)) {

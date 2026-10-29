@@ -21,6 +21,7 @@ import {
   storeField,
 } from "@/components/store/ui";
 import { absoluteUrl, alternates, localizedPath, ogLocale } from "@/lib/site";
+import { BRAND_NAME } from "@/lib/brand";
 import { breadcrumbJsonLd, jsonLdScript, productJsonLd } from "@/server/catalog/structured-data";
 
 // Metadata và trang dùng chung một lần truy vấn trong cùng request.
@@ -39,13 +40,13 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/p/[slug]
     alternates: alternates(locale, `/p/${slug}`),
     openGraph: {
       type: "website",
-      siteName: "Glow VN",
+      siteName: BRAND_NAME,
       locale: ogLocale(locale),
       title,
       description,
       images: p.images[0]
         ? [{ url: p.images[0].url, alt: p.images[0].alt ?? p.name }]
-        : [{ url: "/og-default.png", width: 1200, height: 630, alt: "Glow VN" }],
+        : [{ url: "/og-default.png", width: 1200, height: 630, alt: BRAND_NAME }],
     },
   };
 }

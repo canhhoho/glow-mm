@@ -31,6 +31,7 @@ import {
 import { activeHref, type NavIcon } from "@/server/admin/nav";
 import { TONES } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
+import { BRAND_MARK, BRAND_NAME } from "@/lib/brand";
 
 const ICONS: Record<NavIcon, LucideIcon> = {
   home: House,
@@ -118,9 +119,9 @@ export function AdminShell({
         )}
       >
         <div className="flex h-14 flex-none items-center gap-2 border-b px-4">
-          <div className="grid size-7 place-items-center rounded-md bg-primary text-xs font-bold text-primary-foreground">G</div>
+          <div className="grid h-7 min-w-7 flex-none place-items-center rounded-md bg-primary px-1 text-[10px] font-bold text-primary-foreground">{BRAND_MARK}</div>
           <div className="leading-tight">
-            <div className="font-semibold">Glow VN</div>
+            <div className="font-semibold">{BRAND_NAME}</div>
             <div className="text-[11px] text-muted-foreground">{labels.subtitle}</div>
           </div>
           <button

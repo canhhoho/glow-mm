@@ -5,7 +5,7 @@
  *  - Không đụng /admin, /api, POST (Server Action) — luôn đi mạng.
  * Đổi VERSION khi sửa file này để xoá cache cũ.
  */
-const VERSION = "v1";
+const VERSION = "v2";
 const STATIC_CACHE = `glow-static-${VERSION}`;
 const OFFLINE_URL = "/offline.html";
 
