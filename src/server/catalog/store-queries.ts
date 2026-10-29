@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { searchVariants } from "@/lib/myanmar";
@@ -22,9 +23,13 @@ export type ProductListQuery = {
   take?: number;
 };
 
+/** Ngưỡng hạn dùng đọc một lần mỗi request (trang chủ gọi `availability` cho nhiều dải SP cùng lúc). */
+const storeBlockDays = cache(salesBlockDays);
+
+/** Chỉ đọc → không cần transaction (giữ pool DB rảnh khi nhiều dải SP chạy song song). */
 async function availability(variantIds: string[]) {
-  const blockDays = await salesBlockDays();
-  return prisma.$transaction((tx) => availableToSell(tx, variantIds, { now: new Date(), blockDays }));
+  const blockDays = await storeBlockDays();
+  return availableToSell(prisma, variantIds, { now: new Date(), blockDays });
 }
 
 /** Điều kiện "SP hiển thị trên storefront" — dùng chung cho danh sách, bộ sưu tập, proxy 404. */
@@ -144,7 +149,7 @@ export async function getStoreProduct(slug: string, locale: string, now = new Da
   if (!p || p.variants.length === 0) return null;
 
   const ids = p.variants.map((v) => v.id);
-  const blockDays = await salesBlockDays();
+  const blockDays = await storeBlockDays();
   const [avail, lots] = await Promise.all([
     prisma.$transaction((tx) => availableToSell(tx, ids, { now, blockDays })),
     // Hạn dùng của lô sẽ xuất tiếp theo (FEFO) — chỉ lô còn bán được ở kho bán.

@@ -9,6 +9,8 @@ const schema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     DATABASE_URL: z.string().url(),
+    /** Số kết nối tối đa của pool pg (đọc trực tiếp ở src/lib/db.ts) — server riêng ~20, Vercel/Neon để mặc định 10. */
+    DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).optional(),
     APP_URL: z.string().url(),
     BETTER_AUTH_SECRET: z.string().min(32),
     CRON_SECRET: z.string().min(16),
