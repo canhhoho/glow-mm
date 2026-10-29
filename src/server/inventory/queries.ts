@@ -25,24 +25,6 @@ export async function listVariantsForPicker() {
   }));
 }
 
-/** Lô đang có tồn tại một vị trí (cho phiếu chuyển/xuất/điều chỉnh). */
-export async function batchesAtLocation(locationId: string) {
-  const rows = await prisma.stockBalance.findMany({
-    where: { locationId, qty: { gt: 0 } },
-    include: { batch: { include: { variant: true } } },
-    orderBy: [{ batch: { expiryDate: "asc" } }],
-  });
-  return rows.map((r) => ({
-    batchId: r.batchId,
-    variantId: r.batch.variantId,
-    sku: r.batch.variant.sku,
-    lotNo: r.batch.lotNo,
-    expiryDate: r.batch.expiryDate,
-    stockType: r.stockType,
-    qty: r.qty,
-  }));
-}
-
 /** Mọi lô (kèm tồn theo vị trí) — dữ liệu cho form phiếu kho. */
 export async function batchesForForms() {
   const batches = await prisma.batch.findMany({
@@ -79,15 +61,6 @@ export async function getDocument(id: string) {
         orderBy: { id: "asc" },
       },
     },
-  });
-}
-
-/** Lịch sử biến động (ledger) của một lô. */
-export async function batchHistory(batchId: string) {
-  return prisma.stockLedger.findMany({
-    where: { batchId },
-    orderBy: { createdAt: "asc" },
-    include: { document: true, location: true },
   });
 }
 

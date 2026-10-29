@@ -5,7 +5,7 @@ import type { OrderChannel, OrderStatus, Prisma } from "@/generated/prisma/clien
 import { salesBlockDays } from "@/server/inventory/documents";
 import { productName } from "@/server/inventory/queries";
 import { availableToSell } from "./availability";
-import { normalizeMmPhone } from "./pricing";
+import { normalizeMmPhone } from "@/lib/phone";
 import { ORDER_STATUSES } from "./state-machine";
 
 /** Truy vấn cho admin đơn hàng (đọc, không thay đổi dữ liệu). */
@@ -80,7 +80,6 @@ export async function getOrderAdmin(id: string, now = new Date()) {
     overdue: order.status === "PENDING" && !!holdExpiresAt && holdExpiresAt <= now,
   };
 }
-export type OrderAdminDetail = NonNullable<Awaited<ReturnType<typeof getOrderAdmin>>>;
 
 /** Dữ liệu cho form tạo đơn tay: danh mục địa chỉ VTP (theo ngôn ngữ giao diện), biến thể đang bán + tồn khả dụng. */
 export async function orderFormOptions(locale: string, now = new Date()) {

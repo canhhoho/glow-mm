@@ -114,7 +114,6 @@ export async function salesReport(range: Range, opts: { topN?: number } = {}) {
     missingCostOrders,
   };
 }
-export type SalesReport = Awaited<ReturnType<typeof salesReport>>;
 
 /** Còn hàng bán được nhưng không bán được cái nào trong N ngày gần nhất. */
 export async function slowMovers(now = new Date()) {

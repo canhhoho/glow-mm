@@ -1,7 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import type { OrderAccess } from "@/server/cart/cart";
-import { normalizeMmPhone } from "@/server/orders/pricing";
+import { normalizeMmPhone } from "@/lib/phone";
 
 /**
  * Nhận đơn cũ vào tài khoản khách (P14): chỉ các đơn khách đã chứng minh trên trình duyệt này (mã + SĐT khớp —

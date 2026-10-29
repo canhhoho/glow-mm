@@ -4,7 +4,7 @@ import { hashPassword } from "better-auth/crypto";
 import { prisma } from "@/lib/db";
 import { toUnicode } from "@/lib/myanmar";
 import { MIN_STAFF_PASSWORD } from "@/server/auth/roles";
-import { normalizeMmPhone } from "@/server/orders/pricing";
+import { normalizeMmPhone } from "@/lib/phone";
 import { hitRateLimit } from "@/server/rate-limit";
 import { AffiliateError, insertAffiliate, parseProfile, uniqueError, uplinePercentSchema } from "./affiliates";
 import { normalizeRefCode } from "./referral";

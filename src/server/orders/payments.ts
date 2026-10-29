@@ -5,7 +5,7 @@ import { storage } from "@/server/adapters/storage";
 import { can } from "@/server/auth/roles";
 import { salesBlockDays } from "@/server/inventory/documents";
 import { OrderError } from "./errors";
-import { normalizeMmPhone } from "./pricing";
+import { normalizeMmPhone } from "@/lib/phone";
 import { holdIndefinitely } from "./reservations";
 import { transitionInTx, type Actor } from "./transitions";
 

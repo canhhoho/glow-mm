@@ -129,7 +129,6 @@ export async function computeAlerts(now = new Date()) {
     },
   };
 }
-export type AlertsResult = Awaited<ReturnType<typeof computeAlerts>>;
 
 /** Cron: tính cảnh báo và ghi tóm tắt vào AuditLog (thông báo Telegram/Viber nằm ngoài phạm vi hiện tại). */
 export async function runComputeAlerts(now = new Date()) {

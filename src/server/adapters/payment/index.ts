@@ -1,6 +1,7 @@
 /**
  * Adapter thanh toán. Phase 1: COD + chuyển khoản thủ công (upload biên lai, nhân viên duyệt).
  * Cổng thanh toán / ví điện tử sau này: thêm một PaymentProvider mới, không sửa luồng đơn.
+ * Hiện chưa có chỗ nào import (P19 giữ lại làm hợp đồng cho cổng thanh toán sau này).
  */
 export type PaymentMethodCode = "COD" | "BANK_TRANSFER";
 

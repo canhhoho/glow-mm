@@ -16,7 +16,7 @@ import { safeNextPath } from "@/server/auth/customer-policy";
 import { requireCustomer } from "@/server/auth/customer-session";
 import { requirePermission } from "@/server/auth/session";
 import type { ActionState } from "@/server/inventory/actions";
-import { normalizeMmPhone } from "@/server/orders/pricing";
+import { normalizeMmPhone } from "@/lib/phone";
 import { ORDERS_COOKIE } from "@/server/cart/cart";
 import type { StoreActionState } from "@/server/cart/actions";
 import { AccountError, createAddress, deleteAddress, setDefaultAddress, updateAddress, updateProfile } from "./accounts";

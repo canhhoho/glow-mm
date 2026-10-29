@@ -85,7 +85,6 @@ export const documentSchema = z.discriminatedUnion("type", [
   adjustSchema,
   returnSchema,
 ]);
-export type DocumentInput = z.infer<typeof documentSchema>;
 
 export class DocumentError extends Error {
   constructor(message: string) {

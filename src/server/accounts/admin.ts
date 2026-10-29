@@ -4,7 +4,7 @@ import { hashPassword } from "better-auth/crypto";
 import { prisma } from "@/lib/db";
 import { toUnicode } from "@/lib/myanmar";
 import { CUSTOMER_ROLE } from "@/server/auth/customer-policy";
-import { normalizeMmPhone } from "@/server/orders/pricing";
+import { normalizeMmPhone } from "@/lib/phone";
 import { MIN_CUSTOMER_PASSWORD } from "./phone";
 
 /**

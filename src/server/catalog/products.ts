@@ -43,7 +43,6 @@ export const productSchema = z.object({
   tagIds: z.array(z.string()).default([]),
   variants: z.array(variantSchema).min(1),
 });
-export type ProductInput = z.infer<typeof productSchema>;
 
 export class CatalogError extends Error {
   constructor(message: string) {

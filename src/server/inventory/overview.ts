@@ -23,7 +23,6 @@ import {
 
 export const PAGE_SIZE = 25;
 export const STOCK_TABS = ["all", ...LOCATION_TYPES] as const;
-export type StockTab = (typeof STOCK_TABS)[number];
 /** near = cận hạn; blocked = ngừng bán (gồm hết hạn); expired = đã hết hạn. */
 export const EXPIRY_FILTERS = ["near", "blocked", "expired"] as const;
 export type ExpiryFilter = (typeof EXPIRY_FILTERS)[number];
@@ -122,7 +121,6 @@ export async function stockSummary(opts: { q?: string; now?: Date } = {}) {
     thresholds: t,
   };
 }
-export type StockSummaryResult = Awaited<ReturnType<typeof stockSummary>>;
 
 type Page<T> = { rows: T[]; total: number; page: number; pageCount: number };
 const pageOf = <T>(rows: T[], total: number, page: number): Page<T> => ({

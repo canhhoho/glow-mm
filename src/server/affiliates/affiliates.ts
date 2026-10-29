@@ -9,7 +9,7 @@ import { yangonDayKey, yangonDayStart } from "@/lib/time";
 import { storage } from "@/server/adapters/storage";
 import { can, MIN_STAFF_PASSWORD, type Role } from "@/server/auth/roles";
 import type { Tx } from "@/server/inventory/ledger";
-import { normalizeMmPhone } from "@/server/orders/pricing";
+import { normalizeMmPhone } from "@/lib/phone";
 import { PROOF_MAX_BYTES, PROOF_MIME } from "@/server/orders/payments";
 import { getNumberSetting } from "@/server/settings";
 import { uplineSnapshot } from "./upline";
@@ -402,7 +402,6 @@ export async function getAffiliate(id: string, now = new Date()) {
   const due = payoutLines(entriesFor(id, orders));
   return { ...affiliate, summary: summarize(id, orders, now), due: { totalMmk: due.totalMmk, entries: due.entries } };
 }
-export type AffiliateDetail = NonNullable<Awaited<ReturnType<typeof getAffiliate>>>;
 
 /** Đơn tuyến dưới mà CTV `affiliateId` hưởng hoa hồng tầng trên (admin xem chi tiết; cổng CTV chỉ dùng số tổng). */
 export async function teamOrders(affiliateId: string, now = new Date()) {

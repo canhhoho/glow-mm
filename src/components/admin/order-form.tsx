@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { AddressPicker } from "@/components/address-picker";
 import { Button } from "@/components/ui/button";
 import { fieldClass } from "@/components/admin/ui";
+import { fmtInt } from "@/lib/format";
 import { createOrderAction } from "@/server/orders/actions";
 import type { OrderFormOptions } from "@/server/orders/admin-queries";
 import type { ActionState } from "@/server/inventory/actions";
@@ -14,7 +15,6 @@ export type OrderFormInitial = { phone: string; phone2: string; name: string; to
 
 let seq = 0;
 const blank = (): Line => ({ key: ++seq, variantId: "", qty: "1" });
-const fmt = (n: number) => new Intl.NumberFormat("en-US").format(n);
 
 /**
  * Form tạo đơn tay (đơn từ FB/Viber/điện thoại). Gửi JSON; giá, tồn được kiểm lại ở server.
@@ -191,7 +191,7 @@ export function OrderForm({
                   <option value="">—</option>
                   {options.variants.map((o) => (
                     <option key={o.id} value={o.id} disabled={o.available <= 0}>
-                      {o.label} · {fmt(o.priceMmk)} MMK · {t("available")}: {o.available}
+                      {o.label} · {fmtInt(o.priceMmk)} MMK · {t("available")}: {o.available}
                     </option>
                   ))}
                 </select>
@@ -230,9 +230,9 @@ export function OrderForm({
       <dl className="grid max-w-xs grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm" aria-label={t("estimate")}>
         <dt className="col-span-2 text-xs text-muted-foreground">{t("estimate")}</dt>
         <dt>{t("subtotal")}</dt>
-        <dd className="text-right tabular-nums">{fmt(subtotal)} MMK</dd>
+        <dd className="text-right tabular-nums">{fmtInt(subtotal)} MMK</dd>
         <dt className="font-medium">{t("total")}</dt>
-        <dd className="text-right font-medium tabular-nums">{fmt(subtotal)} MMK</dd>
+        <dd className="text-right font-medium tabular-nums">{fmtInt(subtotal)} MMK</dd>
         <dd className="col-span-2 text-xs text-muted-foreground">{t("shippingNote")}</dd>
       </dl>
 

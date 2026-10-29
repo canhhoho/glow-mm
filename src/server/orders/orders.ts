@@ -10,7 +10,8 @@ import { findActiveTownship, townshipLabel, vtpCodes } from "@/server/locations/
 import type { Tx } from "@/server/inventory/ledger";
 import { getBoolSetting, getNumberSetting } from "@/server/settings";
 import { OrderError } from "./errors";
-import { normalizeMmPhone, orderTotals } from "./pricing";
+import { normalizeMmPhone } from "@/lib/phone";
+import { orderTotals } from "./pricing";
 import { reserveForOrder } from "./reservations";
 
 /**
@@ -41,7 +42,6 @@ export const createOrderSchema = z.object({
     .max(50),
   idempotencyKey: z.string().min(8).max(100).optional(),
 });
-export type CreateOrderInput = z.input<typeof createOrderSchema>;
 
 /**
  * `userId` = nhân viên / CTV tạo đơn tay; null = khách đặt trên web (kênh luôn là WEB).

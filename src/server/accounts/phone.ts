@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 import { toUnicode } from "@/lib/myanmar";
 import { CUSTOMER_ROLE, phoneEmail } from "@/server/auth/customer-policy";
 import { hitRateLimit } from "@/server/rate-limit";
-import { normalizeMmPhone } from "@/server/orders/pricing";
+import { normalizeMmPhone } from "@/lib/phone";
 
 /**
  * Tài khoản khách bằng SĐT + mật khẩu (P17) — không OTP, nên SĐT chưa được xác minh:

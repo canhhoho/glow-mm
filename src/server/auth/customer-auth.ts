@@ -12,7 +12,7 @@ import { claimOrders } from "@/server/accounts/claims";
 import { authEmail, type AuthEmailKind } from "@/server/accounts/emails";
 import { email } from "@/server/adapters/email";
 import { ORDERS_COOKIE, parseOrderAccess } from "@/server/cart/cart";
-import { normalizeMmPhone } from "@/server/orders/pricing";
+import { normalizeMmPhone } from "@/lib/phone";
 import { USER_INACTIVE } from "./roles";
 import {
   CUSTOMER_AUTH_BASE_PATH,

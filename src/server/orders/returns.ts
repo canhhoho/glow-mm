@@ -28,7 +28,6 @@ export const returnSchema = z.object({
   toLocationId: id.optional(),
   refunded: z.coerce.boolean().default(false),
 });
-export type ReturnInput = z.input<typeof returnSchema>;
 
 export async function returnItems(orderId: string, raw: unknown, actor: { userId: string; role: Role }) {
   const input = returnSchema.parse(raw);

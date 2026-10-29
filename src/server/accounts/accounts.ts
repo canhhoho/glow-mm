@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { toUnicode } from "@/lib/myanmar";
 import { findActiveTownship } from "@/server/locations/locations";
-import { normalizeMmPhone } from "@/server/orders/pricing";
+import { normalizeMmPhone } from "@/lib/phone";
 
 /**
  * Tài khoản khách (P14b): hồ sơ, đơn của tôi, sổ địa chỉ. Mọi hàm nhận `userId` từ `getCustomerUser()` —

@@ -6,7 +6,8 @@ import {
   holdsReservation,
   TransitionError,
 } from "@/server/orders/state-machine";
-import { normalizeMmPhone, orderTotals } from "@/server/orders/pricing";
+import { normalizeMmPhone } from "@/lib/phone";
+import { orderTotals } from "@/server/orders/pricing";
 
 describe("Máy trạng thái đơn", () => {
   const cod = (status: Parameters<typeof canTransition>[1]["status"]) => ({ status, paymentMethod: "COD" as const });
