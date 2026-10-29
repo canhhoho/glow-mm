@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { listCustomerAccounts, resetCustomerPassword, setCustomerActive } from "@/server/accounts/admin";
 import { consumeRateLimit, registerPhoneCustomer } from "@/server/accounts/phone";
 import { customerAuth } from "@/server/auth/customer-auth";
+import { hitRateLimit } from "@/server/rate-limit";
 import { createStaff } from "@/server/users/users";
 
 const PASSWORD = "it-phone-pass-1";
@@ -107,5 +108,13 @@ describe("Tài khoản khách bằng SĐT + mật khẩu (P17)", () => {
     await consumeRateLimit(key, 2, 60_000, now);
     await expect(consumeRateLimit(key, 2, 60_000, now)).rejects.toMatchObject({ code: "too_many" });
     await consumeRateLimit(key, 2, 60_000, new Date(now.getTime() + 61_000)); // sang cửa sổ mới
+  });
+
+  it("giới hạn tần suất nguyên tử: 10 request song song, max 3 → đúng 3 lượt qua (P19)", async () => {
+    const key = `it-race:${randomBytes(3).toString("hex")}`;
+    const now = new Date();
+    const results = await Promise.all(Array.from({ length: 10 }, () => hitRateLimit(key, 3, 60_000, now)));
+    expect(results.filter(Boolean)).toHaveLength(3);
+    await prisma.rateLimit.delete({ where: { key } });
   });
 });

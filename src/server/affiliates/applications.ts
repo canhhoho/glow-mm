@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { toUnicode } from "@/lib/myanmar";
 import { MIN_STAFF_PASSWORD } from "@/server/auth/roles";
 import { normalizeMmPhone } from "@/server/orders/pricing";
+import { hitRateLimit } from "@/server/rate-limit";
 import { AffiliateError, insertAffiliate, parseProfile, uniqueError, uplinePercentSchema } from "./affiliates";
 import { normalizeRefCode } from "./referral";
 
@@ -86,18 +87,8 @@ export async function submitApplication(raw: unknown, ctx: { ip: string; honeypo
 
 /** Tối đa MAX_PER_IP_PER_HOUR đơn / giờ / IP (cửa sổ cố định 1 giờ). */
 async function hitIpLimit(ip: string, now: Date) {
-  const key = `ctv-join:${ip || "unknown"}`;
-  const t = BigInt(now.getTime());
-  const row = await prisma.rateLimit.findUnique({ where: { key } });
-  if (row && t - row.lastRequest < BigInt(HOUR_MS)) {
-    if (row.count >= MAX_PER_IP_PER_HOUR) throw new ApplicationError("too_many", "Gửi quá nhiều đơn, thử lại sau");
-    await prisma.rateLimit.update({ where: { key }, data: { count: { increment: 1 } } });
-  } else {
-    await prisma.rateLimit.upsert({
-      where: { key },
-      update: { count: 1, lastRequest: t },
-      create: { id: key, key, count: 1, lastRequest: t },
-    });
+  if (!(await hitRateLimit(`ctv-join:${ip || "unknown"}`, MAX_PER_IP_PER_HOUR, HOUR_MS, now))) {
+    throw new ApplicationError("too_many", "Gửi quá nhiều đơn, thử lại sau");
   }
 }
 

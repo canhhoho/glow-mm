@@ -5,6 +5,7 @@ import { hashPassword } from "better-auth/crypto";
 import { prisma } from "@/lib/db";
 import { toUnicode } from "@/lib/myanmar";
 import { CUSTOMER_ROLE, phoneEmail } from "@/server/auth/customer-policy";
+import { hitRateLimit } from "@/server/rate-limit";
 import { normalizeMmPhone } from "@/server/orders/pricing";
 
 /**
@@ -41,18 +42,11 @@ export const registerPhoneSchema = z
   .refine((d) => d.password === d.confirmPassword, { path: ["confirmPassword"], message: "mismatch" });
 
 /**
- * Bộ đếm cửa sổ cố định trong bảng RateLimit (dùng chung với Better Auth, khoá riêng). Vượt `max` trong `windowMs` → too_many.
- * Cần cho đường SĐT vì gọi `customerAuth.api.*` từ server không đi qua rate limit HTTP của Better Auth.
+ * Vượt `max` trong `windowMs` → too_many. Cần cho đường SĐT vì gọi `customerAuth.api.*` từ server không đi qua
+ * rate limit HTTP của Better Auth.
  */
 export async function consumeRateLimit(key: string, max: number, windowMs: number, now = new Date()) {
-  const t = BigInt(now.getTime());
-  const row = await prisma.rateLimit.findUnique({ where: { key } });
-  if (row && t - row.lastRequest < BigInt(windowMs)) {
-    if (row.count >= max) throw new PhoneAccountError("too_many", "Thử quá nhiều lần, thử lại sau");
-    await prisma.rateLimit.update({ where: { key }, data: { count: { increment: 1 } } });
-  } else {
-    await prisma.rateLimit.upsert({ where: { key }, update: { count: 1, lastRequest: t }, create: { id: key, key, count: 1, lastRequest: t } });
-  }
+  if (!(await hitRateLimit(key, max, windowMs, now))) throw new PhoneAccountError("too_many", "Thử quá nhiều lần, thử lại sau");
 }
 
 /** Đăng nhập SĐT: tối đa 20 lần / phút / IP và 10 lần / 10 phút / SĐT (chống dò mật khẩu một số cụ thể). */

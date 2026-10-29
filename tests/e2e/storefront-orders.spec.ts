@@ -93,6 +93,8 @@ test("khách chuyển khoản → upload biên lai → nhân viên duyệt; tra 
   const proofUrl = await page.getByRole("link", { name: "Xem file" }).getAttribute("href");
   expect((await page.request.get(proofUrl!)).status()).toBe(200);
   expect((await guest.request.get(proofUrl!)).status()).toBe(404);
+  // Key không chuẩn ("./proofs/…") không lách được kiểm tra quyền (P19).
+  expect((await guest.request.get(proofUrl!.replace("/api/files/", "/api/files/.%2F"))).status()).toBe(404);
   await other.close();
 
   await page.getByRole("button", { name: "Duyệt" }).click();

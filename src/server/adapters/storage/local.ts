@@ -8,7 +8,10 @@ export class LocalDiskStorage implements StorageAdapter {
 
   private resolve(key: string) {
     assertSafeKey(key);
-    return path.join(path.resolve(this.root), key);
+    const root = path.resolve(this.root);
+    const file = path.resolve(root, key);
+    if (!file.startsWith(root + path.sep)) throw new Error(`Storage key không hợp lệ: ${key}`);
+    return file;
   }
 
   async put(key: string, data: Buffer, mime: string): Promise<StoredFile> {

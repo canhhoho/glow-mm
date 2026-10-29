@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { ZodError } from "zod";
+import { clientIp } from "@/lib/client-ip";
 import { requireAffiliate } from "@/server/auth/session";
 import type { ActionState } from "@/server/inventory/actions";
 import { OrderError } from "@/server/orders/errors";
@@ -35,8 +36,7 @@ export async function createAffiliateOrderAction(_prev: ActionState, formData: F
 export async function submitApplicationAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
   const t = await getTranslations("Ctv");
   try {
-    const h = await headers();
-    const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "";
+    const ip = clientIp(await headers());
     await submitApplication(
       {
         invite: String(fd.get("invite") ?? ""),

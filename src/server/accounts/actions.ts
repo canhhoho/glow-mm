@@ -9,6 +9,7 @@ import { z, ZodError } from "zod";
 import { redirect as nextRedirect } from "next/navigation";
 import { redirect } from "@/i18n/navigation";
 import { routing, type StoreLocale } from "@/i18n/routing";
+import { clientIp } from "@/lib/client-ip";
 import { prisma } from "@/lib/db";
 import { customerAuth } from "@/server/auth/customer-auth";
 import { safeNextPath } from "@/server/auth/customer-policy";
@@ -23,11 +24,6 @@ import { CustomerAccountError, resetCustomerPassword, setCustomerActive } from "
 import { consumePhoneLoginLimit, MIN_CUSTOMER_PASSWORD, PhoneAccountError, registerPhoneCustomer } from "./phone";
 
 /** Server Action khu tài khoản khách (P14b) + đăng ký/đăng nhập bằng SĐT (P17). `requireCustomer` → userId lấy từ phiên. */
-
-async function clientIp() {
-  const h = await headers();
-  return h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "";
-}
 
 /** Mã lỗi SĐT / Better Auth → khoá chuỗi `Auth.err.*`. */
 function phoneErrorKey(e: unknown): string {
@@ -64,7 +60,7 @@ export async function phoneSignInAction(raw: { phone: string; password: string; 
     const input = phoneLoginSchema.parse(raw);
     const phone = normalizeMmPhone(input.phone);
     if (!phone) return { error: "invalidPhone" };
-    await consumePhoneLoginLimit(await clientIp(), phone);
+    await consumePhoneLoginLimit(clientIp(await headers()), phone);
     await signInWithPhone(phone, input.password);
   } catch (e) {
     return { error: phoneErrorKey(e) };
@@ -85,7 +81,7 @@ export async function phoneRegisterAction(_prev: StoreActionState, formData: For
         confirmPassword: formData.get("confirmPassword"),
         locale,
       },
-      { ip: await clientIp() },
+      { ip: clientIp(await headers()) },
     );
     await signInWithPhone(phone, String(formData.get("password")));
   } catch (e) {

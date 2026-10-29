@@ -3,6 +3,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { APIError } from "better-auth/api";
+import { IP_HEADERS } from "@/lib/client-ip";
 import { prisma } from "@/lib/db";
 import { USER_INACTIVE } from "./roles";
 import { NOT_STAFF, staffSessionDecision } from "./customer-policy";
@@ -15,6 +16,8 @@ export const auth = betterAuth({
   baseURL: process.env.APP_URL,
   secret: process.env.BETTER_AUTH_SECRET,
   database: prismaAdapter(prisma, { provider: "postgresql" }),
+  // IP cho rate limit: header do proxy đặt (Traefik/Vercel), xem src/lib/client-ip.ts.
+  advanced: { ipAddress: { ipAddressHeaders: IP_HEADERS } },
   emailAndPassword: {
     enabled: true,
     disableSignUp: true,

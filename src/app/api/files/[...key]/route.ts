@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { storage } from "@/server/adapters/storage";
+import { assertSafeKey } from "@/server/adapters/storage/types";
 import { can } from "@/server/auth/roles";
 import { getStaffUser } from "@/server/auth/session";
 
@@ -9,6 +10,12 @@ import { getStaffUser } from "@/server/auth/session";
  */
 export async function GET(_req: Request, ctx: RouteContext<"/api/files/[...key]">) {
   const key = (await ctx.params).key.join("/");
+  // Key phải ở dạng chuẩn trước khi xét quyền (chặn "./proofs/…" lách kiểm tra "proofs/").
+  try {
+    assertSafeKey(key);
+  } catch {
+    return new Response("Not found", { status: 404 });
+  }
   const meta = await prisma.fileObject.findUnique({ where: { key }, select: { visibility: true } });
   const isPrivate = meta?.visibility === "PRIVATE" || key.startsWith("proofs/");
   if (isPrivate) {

@@ -4,6 +4,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { phoneNumber } from "better-auth/plugins/phone-number";
 import { APIError } from "better-auth/api";
+import { IP_HEADERS } from "@/lib/client-ip";
 import { prisma } from "@/lib/db";
 import { BRAND_NAME } from "@/lib/brand";
 import { toUnicode } from "@/lib/myanmar";
@@ -53,7 +54,7 @@ export const customerAuth = betterAuth({
   basePath: CUSTOMER_AUTH_BASE_PATH,
   secret: deriveCustomerSecret(process.env.BETTER_AUTH_SECRET ?? ""),
   database: prismaAdapter(prisma, { provider: "postgresql" }),
-  advanced: { cookiePrefix: CUSTOMER_COOKIE_PREFIX },
+  advanced: { cookiePrefix: CUSTOMER_COOKIE_PREFIX, ipAddress: { ipAddressHeaders: IP_HEADERS } },
   emailAndPassword: {
     enabled: emailOn,
     minPasswordLength: 8,
