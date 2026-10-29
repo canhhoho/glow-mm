@@ -114,7 +114,7 @@ Dockerfile  docker-compose.yml  docker-compose.prod.yml  .env.example
 
 ## 4. Roadmap (dừng chờ duyệt sau mỗi phase)
 
-Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ · P9 ✅ (2026-10-19) · P10 CTV ✅ (2026-10-26, đã lên production) · P11 CTV 2 tầng ✅ · P12 sửa UI ✅ · P13 chỉnh % hoa hồng ✅ (2026-10-27) · P14 tài khoản khách (code xong 2026-10-27) · P15 địa chỉ VTP (code xong 2026-10-28) · P16–P17 ✅ (production 2026-10-28) · P18 đổi thương hiệu T&C Cosmetics (2026-10-29) · P4b chờ server + domain Myanmar.
+Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ · P9 ✅ (2026-10-19) · P10 CTV ✅ (2026-10-26, đã lên production) · P11 CTV 2 tầng ✅ · P12 sửa UI ✅ · P13 chỉnh % hoa hồng ✅ (2026-10-27) · P14 tài khoản khách (code xong 2026-10-27) · P15 địa chỉ VTP (code xong 2026-10-28) · P16–P17 ✅ (production 2026-10-28) · P18 đổi thương hiệu T&C Cosmetics (2026-10-29) · P19 dọn dẹp + chuẩn bị server Linux (2026-10-29) · P4b chờ server + domain Myanmar.
 
 | Phase | Nội dung | Hoàn thành khi |
 |---|---|---|
@@ -158,6 +158,8 @@ Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 
 - Báo cáo: thêm hoa hồng CTV (theo ngày hoàn tất) + lợi nhuận sau hoa hồng. Seed: CTV mẫu `ctv@glow.local` (mã MAUNG).
 
 **P18 — đổi thương hiệu (2026-10-29):** "Glow VN" → **T&C Cosmetics**. Chỉ đổi phần hiển thị (header/footer, metadata, manifest, email, admin, cổng CTV, nhãn in, icon + ảnh OG logo tạm chữ "T&C"); mọi ngôn ngữ (cả Myanmar) viết Latin. Giữ định danh kỹ thuật `glow` (cookie, DB, repo, email nội bộ) và URL `glow-mm.vercel.app` tới khi có tên miền riêng. Ngoài code: đổi tên app trên màn hình xin quyền Google OAuth; rà dữ liệu đã nhập trên production; kiểm tra nhãn hiệu tại Myanmar **[CẦN XÁC MINH]**.
+
+**P19 — dọn dẹp + chuẩn bị server Linux (2026-10-29):** chỉ phần cần thiết + dọn nhẹ, giữ code Vercel tới khi chuyển xong (danh sách xoá sau ở DEPLOY.md §5). Bảo mật: key `/api/files` phải chuẩn (chặn `./proofs/…`), IP thật qua `x-real-ip`, rate limit nguyên tử. DB: pool rõ ràng, trang chủ bỏ transaction chỉ đọc, migration `p19_indexes` (chỉ CREATE INDEX). Cron `cleanup` + lỗi cron trả 500. Docker: compose đủ biến email/Google/pool, cổng 3000 chỉ localhost, volume cache ảnh, khoá Server Action cố định, `.dockerignore` bỏ `.claude`. next.config: Permissions-Policy, HSTS khi https, cache icon/OG. Không làm đợt này: gộp schema Zod trùng lặp, cache storefront bằng `"use cache"`, CSP, log có cấu trúc.
 
 **P17 — quyết định (2026-10-28):** Khách đăng ký / đăng nhập bằng SĐT + mật khẩu, không OTP (chưa có dịch vụ SMS **[CẦN XÁC MINH]**). SĐT chưa xác minh → không dùng để gắn đơn cũ, không tự lấy lại mật khẩu: khách nhắn shop, admin đặt mật khẩu tạm ở "Tài khoản khách" (`users:manage`), có khoá/mở khoá. Giới hạn: 10 đăng ký / giờ / IP; đăng nhập 20 lần / phút / IP và 10 lần / 10 phút / SĐT.
 

@@ -87,7 +87,7 @@ Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong bi�
    - `/login` có nút Google (nếu đã đặt biến), đăng nhập → `/account`.
 
 ### 1.4 Đăng nhập khách: Google OAuth + email (P14)
-Khách bắt buộc có tài khoản khi đặt hàng. Không có Google lẫn email thì trang đăng nhập báo "chưa thể đăng nhập" → **phải cấu hình ít nhất Google trước khi mở bán**.
+Khách bắt buộc có tài khoản khi đặt hàng. Đăng ký/đăng nhập bằng **SĐT + mật khẩu luôn bật** (P17); Google và email là tuỳ chọn, bật khi đặt biến bên dưới.
 
 **Google OAuth client** (Google Cloud Console, tài khoản Google của shop):
 1. Tạo project (vd `glow-vn`) → **APIs & Services → OAuth consent screen**:
@@ -130,9 +130,13 @@ Khách bắt buộc có tài khoản khi đặt hàng. Không có Google lẫn e
    - `POSTGRES_PASSWORD` (mạnh);
    - `APP_URL=https://<domain>` (dùng cả lúc build qua build arg cho canonical/Open Graph — đổi domain thì phải **build lại**, không chỉ restart);
    - `BETTER_AUTH_SECRET`, `CRON_SECRET` (giá trị **mới**, khác Vercel);
-   - `FB_PAGE_USERNAME`, `VIBER_CHAT_URI`.
+   - `FB_PAGE_USERNAME`, `VIBER_CHAT_URI`;
+   - `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` (`openssl rand -base64 32`, **giữ cố định** — đổi thì tab khách đang mở lỗi gửi form sau deploy). Dùng lúc build: trong Coolify đánh dấu là biến build **[CẦN XÁC MINH tên tuỳ chọn trong Coolify]**;
+   - `DATABASE_POOL_MAX` (mặc định 20 trong compose);
+   - tuỳ chọn: `EMAIL_DRIVER=resend` + `RESEND_API_KEY` + `EMAIL_FROM`; `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` (§1.4).
+   - `NEXT_DEPLOYMENT_ID` lấy từ `SOURCE_COMMIT` mà Coolify truyền lúc build **[CẦN XÁC MINH]**; không có thì chỉ tắt tính năng tự tải lại khi có bản mới.
 4. Persistent storage:
-   - volume `pgdata` (DB) và `uploads` (`/app/storage`) đã khai báo sẵn;
+   - volume `pgdata` (DB), `uploads` (`/app/storage`) và `next-cache` (cache ảnh `/_next/image`) đã khai báo sẵn. Dùng **named volume** như compose; nếu Coolify đổi sang thư mục host thì phải `chown 1001:1001` thư mục đó, nếu không app không ghi được file;
    - ghi lại **tên volume thật** mà Coolify tạo (`docker volume ls`) để dùng cho backup.
 5. Deploy. Kiểm tra `docker ps`: `app` ở trạng thái healthy, `migrate` exited (0).
 
@@ -140,7 +144,7 @@ Khách bắt buộc có tài khoản khi đặt hàng. Không có Google lẫn e
 1. DNS: bản ghi `A` của `<domain>` (và `www` nếu cần) trỏ về IP server.
 2. Coolify → service `app` → Domains: `https://<domain>`. Coolify (Traefik) tự xin chứng chỉ Let's Encrypt; cần cổng 80/443 mở.
 3. Cập nhật `APP_URL=https://<domain>` → Redeploy (build lại image để metadata SEO dùng domain mới). Kiểm tra `https://<domain>/robots.txt` và `/sitemap.xml` trỏ đúng domain.
-4. Bỏ `ports: "3000:3000"` của `app` nếu Coolify định tuyến qua proxy nội bộ, để không lộ cổng 3000 **[CẦN XÁC MINH theo cách Coolify xử lý compose]**.
+4. Compose chỉ mở `127.0.0.1:3000` (cho crontab trên host gọi `/api/cron`); khách vào qua Traefik của Coolify. Kiểm tra từ máy khác: `curl http://<IP server>:3000` phải **không** kết nối được. Coolify có thể tự bỏ/ghi đè `ports` **[CẦN XÁC MINH]** → khi đó cron dùng `docker exec <app> wget -qO- …` (xem ghi chú đầu `ops/cron.example`).
 
 ### 2.4 Chuyển dữ liệu từ Neon
 Làm trong giờ thấp điểm, khoảng 15–30 phút ngừng ghi dữ liệu.
@@ -171,8 +175,10 @@ Làm trong giờ thấp điểm, khoảng 15–30 phút ngừng ghi dữ liệu.
      Tên mạng/volume/image xem bằng `docker network ls`, `docker volume ls`, `docker image ls` **[CẦN XÁC MINH tên do Coolify đặt]**.
    - Kiểm tra vài ảnh sản phẩm và biên lai.
 6. **Cron:**
-   - copy `ops/cron.example` vào crontab (hoặc Coolify → Scheduled Tasks);
-   - tạo `/opt/glow/cron.env` (chmod 600).
+   - copy `ops/cron.example` vào crontab của root (`sudo crontab -e`) — gồm 4 job app (giữ hàng, COD, cảnh báo, `cleanup` dọn rate limit/phiên hết hạn) + backup;
+   - tạo `/opt/glow/cron.env` (chmod 600, §3.1);
+   - lỗi cron ghi ở `/var/log/glow-cron.log`.
+   - Tài khoản nhân viên/CTV/khách và cài đặt đi theo bản dump Neon — **không chạy `db:seed` trên server** (seed tạo dữ liệu mẫu).
 7. **Chuyển DNS/thông báo** domain mới. Giữ Vercel ở chế độ chỉ đọc vài ngày rồi tắt.
 
 ### 2.5 Checklist sau khi chuyển
@@ -183,7 +189,9 @@ Làm trong giờ thấp điểm, khoảng 15–30 phút ngừng ghi dữ liệu.
 - [ ] Google OAuth: thêm redirect URI của domain mới (§1.4); `EMAIL_DRIVER=resend` + DNS Resend cho domain; thử đăng ký email + quên mật khẩu + đăng nhập Google.
 - [ ] Tồn kho trùng khớp: tổng `StockBalance` theo biến thể = số liệu trước khi chuyển.
 - [ ] Đặt thử 1 đơn COD và 1 đơn chuyển khoản (upload biên lai → duyệt) rồi huỷ.
-- [ ] Gọi tay từng cron với `CRON_SECRET` → 200; không có secret → 401.
+- [ ] Gọi tay từng cron (kể cả `cleanup`) với `CRON_SECRET` qua `http://127.0.0.1:3000` → 200; không có secret → 401.
+- [ ] `curl -sI https://<domain>/` có `Strict-Transport-Security`, `Permissions-Policy`; `curl -sI https://<domain>/icons/icon-192.png` có `Cache-Control: public, max-age=86400…`.
+- [ ] Đăng nhập sai mật khẩu nhiều lần từ 2 mạng khác nhau: chỉ mạng bị dò mới bị chặn (rate limit theo IP thật qua `x-real-ip`).
 - [ ] Backup đầu tiên chạy thành công, file có trên off-site (§3).
 - [ ] **Khôi phục thử** backup đó vào một DB tạm (§3.3) → OK.
 - [ ] Firewall chỉ mở 22/80/443 (`sudo ufw status`), không lộ cổng DB/3000/8000.
@@ -223,14 +231,13 @@ Chạy lại khi đổi `Dockerfile`, `docker-compose.prod.yml`, `ops/*.sh` ho�
 sudo apt install -y rclone age
 age-keygen -o ~/glow-backup.key        # GIỮ private key ở nơi an toàn NGOÀI server (password manager)
 grep 'public key' ~/glow-backup.key    # → AGE_RECIPIENT=age1...
-rclone config                          # tạo remote, vd tên "b2" → RCLONE_REMOTE=b2:glow-backups
+sudo rclone config                     # tạo remote dưới root (cron chạy bằng root), vd tên "b2" → RCLONE_REMOTE=b2:glow-backups
 sudo mkdir -p /opt/glow && sudo cp ops/backup.sh ops/restore.sh /opt/glow/ && sudo chmod 700 /opt/glow/*.sh
 ```
 
 `/opt/glow/cron.env` (chmod 600):
 ```
 CRON_SECRET=...
-APP_URL=https://<domain>
 DB_CONTAINER=<tên container postgres, xem docker ps>
 UPLOADS_VOLUME=<tên volume uploads, xem docker volume ls>
 RCLONE_REMOTE=b2:glow-backups
@@ -249,7 +256,7 @@ Sau khi cài, **xoá private key khỏi server**: server chỉ cần public key 
 3. **Khôi phục thử** (khuyến nghị mỗi tháng), vào một DB tạm:
    ```bash
    docker run -d --name glow-restore-test -e POSTGRES_USER=glow -e POSTGRES_PASSWORD=x -e POSTGRES_DB=glow postgres:17.6-alpine
-   DB_CONTAINER=glow-restore-test AGE_KEY_FILE=./glow-backup.key /opt/glow/restore.sh db-<stamp>.dump.age
+   sudo DB_CONTAINER=glow-restore-test AGE_KEY_FILE=./glow-backup.key /opt/glow/restore.sh db-<stamp>.dump.age
    docker exec glow-restore-test psql -U glow -d glow -c 'SELECT count(*) FROM "Order";'
    docker rm -f glow-restore-test
    ```
@@ -308,3 +315,13 @@ sudo timedatectl set-timezone UTC && timedatectl status
   - cập nhật Coolify;
   - khôi phục thử backup (§3.3);
   - xem `/var/log/glow-backup.log`.
+
+---
+
+## 5. Dọn sau khi tắt hẳn Vercel (P19 ghi lại, chưa làm)
+Chỉ làm khi đã chuyển xong dữ liệu (§2.4) và không còn dùng Vercel Preview:
+- Storage: `src/server/adapters/storage/vercel-blob.ts`, nhánh `vercel-blob` trong `storage/index.ts` + `env.ts`, gói `@vercel/blob`, `images.remotePatterns` trong `next.config.ts`.
+- Script chuyển file: `scripts/migrate-blob-to-local.mjs`, dòng `COPY` trong `Dockerfile` (stage `migrator`), test `tests/integration/files.test.ts` (giữ phần test `LocalDiskStorage`).
+- Neon: `@neondatabase/serverless`, `@prisma/adapter-neon`, nhánh `SEED_VIA_WEBSOCKET` trong `prisma/seed.ts`.
+- Preview: `scripts/seed-preview.ps1` + `npm run seed:preview`, `scripts/seed-placeholders.ts` + `scripts/lib/placeholder-art.ts` + test, `npm run db:seed:placeholders`.
+- Vercel: `vercel.json`, script `vercel-build`, mục §1 của file này; pattern `sharp-win32` trong `outputFileTracingIncludes` (chỉ cần khi build trên Windows).
