@@ -55,4 +55,8 @@ test("cron yêu cầu CRON_SECRET", async ({ request }) => {
     headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` },
   });
   expect(ok.status()).toBe(200);
+  // P19: job dọn dữ liệu tạm.
+  const cleanup = await request.get("/api/cron/cleanup", { headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` } });
+  expect(cleanup.status()).toBe(200);
+  expect(await cleanup.json()).toMatchObject({ job: "cleanup", sessions: expect.any(Number) });
 });

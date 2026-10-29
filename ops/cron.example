@@ -1,12 +1,18 @@
-# Crontab trên server Myanmar (sudo crontab -e) — hoặc nhập tương đương vào Coolify "Scheduled Tasks".
+# Crontab trên server Myanmar (sudo crontab -e). Ưu tiên crontab host thay vì Coolify "Scheduled Tasks":
+# task của Coolify chạy trong container app (alpine, không có curl, không thấy /opt/glow) — nếu vẫn dùng, thay curl bằng
+#   wget -qO- --header "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/<job>
 # Server để múi giờ UTC (DEPLOY.md §4) → lịch dưới đây tính theo UTC (Yangon = UTC+6:30).
-# File /opt/glow/cron.env (chmod 600) chứa: CRON_SECRET=..., APP_URL=https://<domain>, và biến cho backup.sh.
+# File /opt/glow/cron.env (chmod 600, owner root) chứa: CRON_SECRET=... và biến cho backup.sh.
+# Gọi app qua 127.0.0.1:3000 (docker-compose.prod.yml chỉ mở cổng này cho localhost) → không đi vòng qua Internet/HTTPS.
+# Lỗi (HTTP ≠ 2xx) → curl -f in ra stderr → ghi vào /var/log/glow-cron.log.
 
 # Nhả hàng giữ quá hạn (đơn chuyển khoản chưa thanh toán) — mỗi 15 phút
-*/15 * * * * set -a && . /opt/glow/cron.env && curl -fsS -m 60 -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/cron/release-reservations" >/dev/null
+*/15 * * * * set -a && . /opt/glow/cron.env && curl -fsS -m 60 -o /dev/null -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/release-reservations 2>> /var/log/glow-cron.log
 # Huỷ đơn COD chưa gọi xác nhận quá hạn — mỗi 15 phút
-*/15 * * * * set -a && . /opt/glow/cron.env && curl -fsS -m 60 -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/cron/cancel-unconfirmed-cod" >/dev/null
+*/15 * * * * set -a && . /opt/glow/cron.env && curl -fsS -m 60 -o /dev/null -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/cancel-unconfirmed-cod 2>> /var/log/glow-cron.log
 # Tính cảnh báo tồn thấp / cận hạn — 23:30 UTC = 06:00 Yangon
-30 23 * * * set -a && . /opt/glow/cron.env && curl -fsS -m 120 -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/cron/compute-alerts" >/dev/null
+30 23 * * * set -a && . /opt/glow/cron.env && curl -fsS -m 120 -o /dev/null -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/compute-alerts 2>> /var/log/glow-cron.log
+# Dọn bộ đếm rate limit cũ, phiên/mã xác minh hết hạn — 21:00 UTC = 03:30 Yangon
+0 21 * * * set -a && . /opt/glow/cron.env && curl -fsS -m 120 -o /dev/null -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/cleanup 2>> /var/log/glow-cron.log
 # Backup DB + upload ra off-site — 20:00 UTC = 02:30 Yangon
 0 20 * * * set -a && . /opt/glow/cron.env && /opt/glow/backup.sh >> /var/log/glow-backup.log 2>&1
