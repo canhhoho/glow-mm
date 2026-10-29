@@ -60,3 +60,12 @@ test("cron yêu cầu CRON_SECRET", async ({ request }) => {
   expect(cleanup.status()).toBe(200);
   expect(await cleanup.json()).toMatchObject({ job: "cleanup", sessions: expect.any(Number) });
 });
+
+test("header bảo mật + cache file tĩnh (P19)", async ({ request }) => {
+  const home = await request.get("/en");
+  expect(home.headers()["permissions-policy"]).toContain("camera=()");
+  expect(home.headers()["x-powered-by"]).toBeUndefined();
+  const icon = await request.get("/icons/icon-192.png");
+  expect(icon.status()).toBe(200);
+  expect(icon.headers()["cache-control"]).toContain("max-age=86400");
+});
