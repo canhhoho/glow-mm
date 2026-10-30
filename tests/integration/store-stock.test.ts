@@ -1,5 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { listStoreProducts, loadCardRows, sortCards, withStock } from "@/server/catalog/store-queries";
+import { saleFixture, unpublishTestProducts } from "./fixtures";
+
+// CI chạy integration trên DB trống (trước seed) → tự tạo SP đã đăng, có tồn.
+beforeAll(async () => {
+  await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
+  await saleFixture([{ lot: "B", expiryInDays: 400, qty: 3 }]);
+  await saleFixture([{ lot: "C", expiryInDays: 400, qty: 1 }]);
+});
+afterAll(unpublishTestProducts);
 
 describe("Thẻ SP: nội dung tách khỏi tồn (P20)", () => {
   it("withStock gộp nhiều nhóm cho kết quả giống tính từng nhóm, giữ thứ tự và bỏ variantIds", async () => {
