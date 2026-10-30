@@ -38,6 +38,7 @@ export type AffiliateErrorCode =
   | "not_found"
   | "forbidden"
   | "order_paid"
+  | "order_cancelled"
   | "nothing_due"
   | "invalid_file"
   | "cycle";
@@ -473,7 +474,7 @@ export async function affiliateOptions() {
 
 // ── Gán CTV cho đơn ──
 
-/** Gán / đổi / bỏ CTV (nguồn STAFF, chốt % hiện tại). Đơn đã có dòng chi trả thì không đổi được. */
+/** Gán / đổi / bỏ CTV (nguồn STAFF, chốt % hiện tại). Đơn đã có dòng chi trả hoặc đã huỷ thì không đổi được. */
 export async function assignOrderAffiliate(
   orderId: string,
   affiliateId: string | null,
@@ -485,6 +486,7 @@ export async function assignOrderAffiliate(
     const order = await tx.order.findUnique({ where: { id: orderId }, include: { _count: { select: { payoutLines: true } } } });
     if (!order) throw new AffiliateError("not_found", "Không tìm thấy đơn");
     if (order._count.payoutLines > 0) throw new AffiliateError("order_paid", "Đơn đã chi trả hoa hồng — không đổi CTV được");
+    if (order.status === "CANCELLED") throw new AffiliateError("order_cancelled", "Đơn đã huỷ — không đổi CTV được");
     if (order.affiliateId === affiliateId) return order;
 
     let data: Prisma.OrderUncheckedUpdateInput = {
@@ -537,6 +539,7 @@ export async function setOrderCommissionRates(orderId: string, raw: unknown, act
     const order = await tx.order.findUnique({ where: { id: orderId }, include: { _count: { select: { payoutLines: true } } } });
     if (!order?.affiliateId) throw new AffiliateError("not_found", "Đơn không có CTV");
     if (order._count.payoutLines > 0) throw new AffiliateError("order_paid", "Đơn đã chi trả hoa hồng — không chỉnh % được");
+    if (order.status === "CANCELLED") throw new AffiliateError("order_cancelled", "Đơn đã huỷ — không chỉnh % được");
     const data = {
       commissionRateBp: percentToBp(input.commissionPercent),
       // Đơn không có cấp trên → bỏ qua % tầng trên; có cấp trên mà để trống → giữ nguyên.

@@ -64,7 +64,7 @@ export async function getOrderAdmin(id: string, now = new Date()) {
       affiliate: { select: { id: true, code: true, user: { select: { name: true } } } },
       payoutLines: { select: { amountMmk: true, kind: true } },
       uplineAffiliate: { select: { id: true, code: true, user: { select: { name: true } } } },
-      account: { select: { name: true, email: true } },
+      account: { select: { name: true, email: true, phoneNumber: true } },
     },
   });
   if (!order) return null;

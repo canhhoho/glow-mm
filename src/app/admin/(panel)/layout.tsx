@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { UserRound } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ADMIN_LOCALES } from "@/i18n/routing";
 import { requireStaff } from "@/server/auth/session";
@@ -46,12 +47,15 @@ export default async function PanelLayout({ children }: LayoutProps<"/admin">) {
               </Button>
             ))}
           </form>
+          {/* Điện thoại: chỉ icon (tên chiếm chỗ làm tiêu đề trang bị cắt "Đơn ..."). */}
           <Link
             href="/admin/account"
             title={t("account")}
-            className="max-w-24 truncate text-muted-foreground hover:underline md:max-w-48"
+            aria-label={`${t("account")}: ${user.name}`}
+            className="flex min-w-0 items-center text-muted-foreground hover:underline"
           >
-            {user.name}
+            <UserRound className="size-5 sm:hidden" aria-hidden />
+            <span className="hidden max-w-24 truncate sm:inline md:max-w-48">{user.name}</span>
           </Link>
           <form action={signOutAction}>
             <Button type="submit" size="sm" variant="outline">

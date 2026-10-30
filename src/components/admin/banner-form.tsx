@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { FileField } from "@/components/admin/file-field";
 import { Button } from "@/components/ui/button";
 import { fieldClass } from "@/components/admin/ui";
 import { saveBannerAction } from "@/server/content/actions";
@@ -49,7 +50,7 @@ export function BannerForm({ banner }: { banner?: BannerFormValue }) {
         <div className="space-y-2">
           <label className="block space-y-1 text-sm">
             <span className="text-muted-foreground">{t("desktopImage")}</span>
-            <input type="file" name="desktop" required={!banner} accept="image/jpeg,image/png,image/webp" className="block text-sm" />
+            <FileField name="desktop" required={!banner} accept="image/jpeg,image/png,image/webp" />
           </label>
           {banner && (
             <>
@@ -63,7 +64,7 @@ export function BannerForm({ banner }: { banner?: BannerFormValue }) {
         <div className="space-y-2">
           <label className="block space-y-1 text-sm">
             <span className="text-muted-foreground">{t("mobileImage")}</span>
-            <input type="file" name="mobile" accept="image/jpeg,image/png,image/webp" className="block text-sm" />
+            <FileField name="mobile" accept="image/jpeg,image/png,image/webp" />
           </label>
           {banner?.mobileUrl && (
             <>

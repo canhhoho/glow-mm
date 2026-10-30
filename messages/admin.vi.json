@@ -74,7 +74,13 @@
     "ORDER_STAFF": "Nhân viên đơn hàng"
   },
   "Common": {
-    "comingSoon": "Đang xây dựng"
+    "comingSoon": "Đang xây dựng",
+    "notFoundTitle": "Không tìm thấy trang",
+    "notFoundHint": "Đường dẫn sai hoặc trang đã bị xoá.",
+    "backToDashboard": "Về Tổng quan",
+    "chooseFile": "Chọn tệp",
+    "noFile": "Chưa chọn tệp",
+    "filesChosen": "Đã chọn {n} tệp"
   },
   "Inventory": {
     "title": "Tồn kho",
@@ -463,7 +469,9 @@
     "chooseDistrict": "Chọn huyện",
     "chooseTownship": "Chọn thị trấn",
     "phone2": "SĐT phụ (không bắt buộc)",
-    "shippingNote": "Phí ship do đơn vị vận chuyển thu khi giao"
+    "shippingNote": "Phí ship do đơn vị vận chuyển thu khi giao",
+    "emptyFiltered": "Không có đơn nào khớp bộ lọc",
+    "clearFilters": "Xoá bộ lọc"
   },
   "Settings": {
     "title": "Cài đặt",
@@ -952,7 +960,8 @@
       "app_duplicate": "Đã có đơn chờ duyệt",
       "app_too_many": "Quá nhiều đơn",
       "app_invalid_phone": "Số điện thoại không hợp lệ",
-      "uplinePercent": "% tầng trên từ 0 đến 20 (tối đa 2 số lẻ)"
+      "uplinePercent": "% tầng trên từ 0 đến 20 (tối đa 2 số lẻ)",
+      "order_cancelled": "Đơn đã huỷ — không đổi CTV được"
     },
     "lineKind": {
       "SALE": "bán hàng",
@@ -1002,7 +1011,8 @@
       "hint": "Chỉnh % hoa hồng chốt trên đơn này (chỉ khi chưa chi trả). Hoa hồng tính lại ngay.",
       "sale": "% hoa hồng CTV",
       "upline": "% tầng trên"
-    }
+    },
+    "cancelledLocked": "Đơn đã huỷ — không đổi CTV được."
   },
   "Ctv": {
     "metaTitle": "Cổng CTV — T&C Cosmetics",

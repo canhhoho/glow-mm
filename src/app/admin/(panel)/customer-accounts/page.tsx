@@ -33,6 +33,7 @@ export default async function CustomerAccountsPage({ searchParams }: PageProps<"
         </Button>
       </form>
       <DataTable
+        stack
         empty={t("empty")}
         numeric={[3]}
         head={[t("name"), t("contact"), t("method"), t("orders"), t("createdAt"), t("status"), t("actions")]}
@@ -41,24 +42,28 @@ export default async function CustomerAccountsPage({ searchParams }: PageProps<"
           const hasPassword = a.providers.includes("credential");
           return (
             <tr key={a.id} data-testid="customer-row">
-              <Td>{a.name}</Td>
-              <Td className="font-mono text-xs">
+              <Td className="font-medium md:font-normal">{a.name}</Td>
+              <Td label={t("contact")} className="font-mono text-xs">
                 {a.phoneNumber && <div>{a.phoneNumber}</div>}
                 {!isPhoneEmail(a.email) && <div>{a.email}</div>}
               </Td>
-              <Td>
+              <Td label={t("method")}>
                 <div className="flex flex-wrap gap-1">
                   {a.providers.includes("google") && <Badge>Google</Badge>}
                   {hasPassword && <Badge>{a.phoneNumber ? t("byPhone") : t("byEmail")}</Badge>}
                 </div>
               </Td>
-              <Td className="text-right tabular-nums">{a._count.orders}</Td>
-              <Td className="text-xs whitespace-nowrap">{fmtDateTime(a.createdAt)}</Td>
-              <Td>
+              <Td label={t("orders")} className="text-right tabular-nums">
+                {a._count.orders}
+              </Td>
+              <Td label={t("createdAt")} className="text-xs whitespace-nowrap">
+                {fmtDateTime(a.createdAt)}
+              </Td>
+              <Td label={t("status")}>
                 <Badge tone={a.active ? "success" : "danger"}>{a.active ? t("active") : t("locked")}</Badge>
               </Td>
               <Td>
-                <div className="flex min-w-60 flex-col gap-2">
+                <div className="flex w-full flex-col gap-2 md:w-auto md:min-w-60">
                   {hasPassword && (
                     <ActionForm action={resetCustomerPasswordAction} submitLabel={t("resetPassword")} variant="outline" className="space-y-1">
                       <input type="hidden" name="id" value={a.id} />

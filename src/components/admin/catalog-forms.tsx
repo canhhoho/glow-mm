@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
+import { FileField } from "@/components/admin/file-field";
 import { Button } from "@/components/ui/button";
 import { fieldClass } from "@/components/admin/ui";
 import {
@@ -128,7 +129,7 @@ export function ImportForm({ kind }: { kind: "products" | "stock" }) {
   return (
     <form action={action} className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <input type="file" name="file" accept=".csv,text/csv" required aria-label={kind === "products" ? t("importProducts") : t("importStock")} className="text-sm" />
+        <FileField name="file" accept=".csv,text/csv" required aria-label={kind === "products" ? t("importProducts") : t("importStock")} className="max-w-72" />
         <Button type="submit" disabled={pending}>
           {t("upload")}
         </Button>

@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
+import { FileField } from "@/components/admin/file-field";
 import { Button } from "@/components/ui/button";
 import { addProductImagesAction } from "@/server/catalog/actions";
 import type { ActionState } from "@/server/inventory/actions";
@@ -33,15 +34,7 @@ export function ProductImageUpload({ productId }: { productId: string }) {
   return (
     <form action={action} className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
-        <input
-          type="file"
-          name="files"
-          multiple
-          required
-          accept="image/jpeg,image/png,image/webp"
-          aria-label={t("imagesUpload")}
-          className="text-sm"
-        />
+        <FileField name="files" multiple required accept="image/jpeg,image/png,image/webp" aria-label={t("imagesUpload")} className="max-w-72" />
         <Button type="submit" disabled={pending}>
           {pending ? t("imagesUploading") : t("upload")}
         </Button>

@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
+import { FileField } from "@/components/admin/file-field";
 import { Button } from "@/components/ui/button";
 import { setCategoryIconAction } from "@/server/catalog/actions";
 import type { ActionState } from "@/server/inventory/actions";
@@ -22,7 +23,7 @@ export function CategoryIconUpload({ categoryId }: { categoryId: string }) {
     <form action={action} className="space-y-1">
       <input type="hidden" name="categoryId" value={categoryId} />
       <div className="flex flex-wrap items-center gap-2">
-        <input type="file" name="icon" required accept="image/jpeg,image/png,image/webp" aria-label={t("iconUpload")} className="max-w-56 text-sm" />
+        <FileField name="icon" required accept="image/jpeg,image/png,image/webp" aria-label={t("iconUpload")} className="max-w-64" />
         <Button type="submit" variant="outline" disabled={pending}>
           {t("iconUploadBtn")}
         </Button>

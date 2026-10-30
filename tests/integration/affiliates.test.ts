@@ -151,6 +151,14 @@ describe("Quản lý CTV + chi trả (P10b)", () => {
     await expect(assignOrderAffiliate(order.id, locked.id, staff)).rejects.toMatchObject({ code: "not_found" });
     expect(await assignOrderAffiliate(order.id, a.id, staff)).toMatchObject({ affiliateId: a.id, affiliateSource: "STAFF", commissionRateBp: 900 });
     expect(await assignOrderAffiliate(order.id, null, staff)).toMatchObject({ affiliateId: null, commissionRateBp: null });
+
+    // Đơn đã huỷ: không gán / đổi CTV, không chỉnh %.
+    await assignOrderAffiliate(order.id, a.id, staff);
+    await transitionOrder(order.id, "cancel", staff, { reason: "Khách huỷ" });
+    await expect(assignOrderAffiliate(order.id, null, staff)).rejects.toMatchObject({ code: "order_cancelled" });
+    await expect(setOrderCommissionRates(order.id, { commissionPercent: "20" }, admin(f))).rejects.toMatchObject({
+      code: "order_cancelled",
+    });
   });
 
   it("chi trả: chỉ đơn qua hạn giữ; bấm 2 lần đồng thời chỉ ghi 1; không còn gì → nothing_due; đơn đã trả khoá gán CTV", async () => {

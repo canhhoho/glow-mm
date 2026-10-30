@@ -17,6 +17,7 @@ import { affiliateOptions, affiliateOrders, currentMonth, getAffiliate, teamOrde
 import { getNumberSetting } from "@/server/settings";
 import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
+import { FileField } from "@/components/admin/file-field";
 import { AffiliateFields, CommissionBadge } from "@/components/admin/affiliate-parts";
 import { OrderStatusBadge } from "@/components/admin/order-badges";
 import { Badge, DataTable, fieldClass, LinkButton, PageHeader, Stat, Td } from "@/components/admin/ui";
@@ -171,7 +172,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
                 </label>
                 <label className="block space-y-1 text-sm">
                   <span>{t("payProof")}</span>
-                  <input name="proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" className="block text-sm" />
+                  <FileField name="proof" accept="image/jpeg,image/png,image/webp,application/pdf" />
                 </label>
               </ActionForm>
             )}

@@ -119,8 +119,8 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
         />
       </div>
 
-      {/* Tab vị trí */}
-      <nav aria-label={t("tabs")} className="-mx-4 flex gap-1 overflow-x-auto border-b px-4 text-sm md:mx-0 md:px-0">
+      {/* Tab vị trí. Viền dưới vẽ bằng shadow: border-b + -mb-px làm khung dư 1px → hiện thanh cuộn dọc ▲▼ trên Windows. */}
+      <nav aria-label={t("tabs")} className="-mx-4 flex gap-1 overflow-x-auto overflow-y-hidden px-4 text-sm shadow-[inset_0_-1px_0_var(--color-border)] md:mx-0 md:px-0">
         {STOCK_TABS.map((tab) => {
           const active = f.tab === tab;
           return (
@@ -129,7 +129,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
               href={href({ tab })}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "-mb-px border-b-2 px-3 py-2 whitespace-nowrap",
+                "border-b-2 px-3 py-2 whitespace-nowrap",
                 active ? "border-primary font-medium text-primary" : "border-transparent text-muted-foreground hover:text-foreground",
               )}
             >

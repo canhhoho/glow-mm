@@ -74,7 +74,13 @@
     "ORDER_STAFF": "Order staff"
   },
   "Common": {
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming soon",
+    "notFoundTitle": "Page not found",
+    "notFoundHint": "The link is wrong or the page was removed.",
+    "backToDashboard": "Back to dashboard",
+    "chooseFile": "Choose file",
+    "noFile": "No file chosen",
+    "filesChosen": "{n} files chosen"
   },
   "Inventory": {
     "title": "Stock",
@@ -463,7 +469,9 @@
     "chooseDistrict": "Choose district",
     "chooseTownship": "Choose township",
     "phone2": "Alternative phone (optional)",
-    "shippingNote": "Shipping fee collected by the courier on delivery"
+    "shippingNote": "Shipping fee collected by the courier on delivery",
+    "emptyFiltered": "No orders match the filters",
+    "clearFilters": "Clear filters"
   },
   "Settings": {
     "title": "Settings",
@@ -952,7 +960,8 @@
       "app_duplicate": "An application is already pending",
       "app_too_many": "Too many applications",
       "app_invalid_phone": "Invalid phone number",
-      "uplinePercent": "Upline share must be 0–20% (max 2 decimals)"
+      "uplinePercent": "Upline share must be 0–20% (max 2 decimals)",
+      "order_cancelled": "Order cancelled — affiliate can't be changed"
     },
     "lineKind": {
       "SALE": "sales",
@@ -1002,7 +1011,8 @@
       "hint": "Adjust the commission rates locked on this order (only before payout). Commission is recalculated immediately.",
       "sale": "Affiliate %",
       "upline": "Upline %"
-    }
+    },
+    "cancelledLocked": "Order cancelled — affiliate can't be changed."
   },
   "Ctv": {
     "metaTitle": "Affiliate portal — T&C Cosmetics",

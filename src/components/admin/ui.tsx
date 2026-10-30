@@ -36,23 +36,29 @@ export function LinkButton({
   );
 }
 
-/** `numeric`: chỉ số các cột số — tiêu đề căn phải cho thẳng với số (ô dữ liệu tự đặt `text-right`). */
+/**
+ * `numeric`: chỉ số các cột số — tiêu đề căn phải cho thẳng với số (ô dữ liệu tự đặt `text-right`).
+ * `stack`: dưới md mỗi dòng thành một thẻ, mỗi ô một hàng "nhãn: giá trị" (nhãn lấy từ `<Td label>`;
+ * ô không có nhãn chiếm cả hàng — dùng cho tiêu đề thẻ / nút thao tác). Bảng nhiều cột khỏi phải cuộn ngang trên điện thoại.
+ */
 export function DataTable({
   head,
   children,
   empty,
   numeric = [],
+  stack = false,
 }: {
   head: React.ReactNode[];
   children: React.ReactNode;
   empty?: string;
   numeric?: number[];
+  stack?: boolean;
 }) {
   const hasRows = Array.isArray(children) ? children.length > 0 : !!children;
   return (
     <div className="overflow-x-auto rounded-lg border">
-      <table className="w-full text-sm">
-        <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
+      <table className={cn("w-full text-sm", stack && STACK)}>
+        <thead className={cn("bg-muted/50 text-left text-xs text-muted-foreground", stack && "max-md:hidden")}>
           <tr>
             {head.map((h, i) => (
               <th key={i} className={cn("px-3 py-2 font-medium whitespace-nowrap", numeric.includes(i) && "text-right")}>
@@ -77,8 +83,22 @@ export function DataTable({
   );
 }
 
-export function Td({ children, className }: { children?: React.ReactNode; className?: string }) {
-  return <td className={cn("px-3 py-2 align-top", className)}>{children}</td>;
+/** Lớp cho `DataTable stack`: dòng → thẻ, ô → hàng flex có nhãn `data-label` bên trái (chỉ dưới md). */
+const STACK = [
+  "max-md:block max-md:[&_tbody]:block max-md:[&_tr]:block max-md:[&_tr]:space-y-1.5 max-md:[&_tr]:p-3",
+  "max-md:[&_td]:flex max-md:[&_td]:gap-3 max-md:[&_td]:p-0 max-md:[&_td]:text-left",
+  "max-md:[&_td[data-label]]:before:w-24 max-md:[&_td[data-label]]:before:flex-none max-md:[&_td[data-label]]:before:text-xs",
+  "max-md:[&_td[data-label]]:before:text-muted-foreground max-md:[&_td[data-label]]:before:content-[attr(data-label)]",
+].join(" ");
+
+/** `label`: nhãn hiện trước ô khi bảng `stack` xếp thành thẻ trên điện thoại. */
+export function Td({ children, className, label }: { children?: React.ReactNode; className?: string; label?: string }) {
+  return (
+    <td data-label={label} className={cn("px-3 py-2 align-top", className)}>
+      {/* Bọc 1 lớp: ở chế độ thẻ ô là flex → nội dung nhiều dòng (tên + SĐT) vẫn xếp dọc. */}
+      <div className="min-w-0 flex-1">{children}</div>
+    </td>
+  );
 }
 
 export const TONES = {

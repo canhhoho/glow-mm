@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
+import { isPhoneEmail } from "@/server/auth/customer-policy";
 import { getOrderAdmin, quarantineLocations, sellableLocations } from "@/server/orders/admin-queries";
 import { returnItemsAction, reviewProofAction } from "@/server/orders/actions";
 import { assignOrderAffiliateAction, setOrderCommissionRatesAction } from "@/server/affiliates/actions";
@@ -35,6 +36,8 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
   if (!order) notFound();
   const { commission, uplineCommission } = splitCommissions({ ...order, lines: order.payoutLines }, { now: new Date(), holdDays });
   const affiliatePaid = order.payoutLines.length > 0;
+  // Đơn huỷ không phát sinh hoa hồng → khoá đổi CTV / % (server cũng chặn).
+  const affiliateCancelled = order.status === "CANCELLED";
 
   // "returned" chỉ qua form Trả hàng (kèm phiếu nhập hàng trả vào Chờ kiểm tra).
   const transitions = availableTransitions(order).filter(
@@ -125,7 +128,11 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
             <>
               <dt className="text-muted-foreground">{t("customerAccount")}</dt>
               <dd data-testid="order-account">
-                {order.account.name} · <span className="font-mono">{order.account.email}</span>
+                {/* Khách SĐT có email nội bộ <SĐT>@phone.glow.invalid → chỉ hiện SĐT. */}
+                {order.account.name} ·{" "}
+                <span className="font-mono">
+                  {isPhoneEmail(order.account.email) ? (order.account.phoneNumber ?? order.account.email.split("@")[0]) : order.account.email}
+                </span>
               </dd>
             </>
           )}
@@ -179,8 +186,8 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
           <p className="text-sm text-muted-foreground">{ta("none")}</p>
         )}
         {canAssign &&
-          (affiliatePaid ? (
-            <p className="text-xs text-muted-foreground">{ta("paidLocked")}</p>
+          (affiliatePaid || affiliateCancelled ? (
+            <p className="text-xs text-muted-foreground">{affiliatePaid ? ta("paidLocked") : ta("cancelledLocked")}</p>
           ) : (
             <ActionForm action={assignOrderAffiliateAction} submitLabel={ta("assign")} okText={ta("assigned")} variant="outline">
               <input type="hidden" name="orderId" value={order.id} />
@@ -204,7 +211,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
               </select>
             </ActionForm>
           ))}
-        {can(user.role, "affiliates:manage") && order.affiliate && !affiliatePaid && (
+        {can(user.role, "affiliates:manage") && order.affiliate && !affiliatePaid && !affiliateCancelled && (
           <ActionForm
             action={setOrderCommissionRatesAction}
             submitLabel={ta("orderRates.save")}

@@ -29,7 +29,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
       <form role="search" className="flex gap-2">
         <input name="q" defaultValue={query} placeholder={t("search")} className={cn(fieldClass, "max-w-xs")} />
       </form>
-      <DataTable empty={t("empty")} head={[t("colName"), t("colBrand"), t("colCategory"), t("colVariants"), t("colStatus")]}>
+      <DataTable stack empty={t("empty")} head={[t("colName"), t("colBrand"), t("colCategory"), t("colVariants"), t("colStatus")]}>
         {products.map((p) => (
           <tr key={p.id}>
             <Td>
@@ -38,9 +38,9 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
               </Link>
               <div className="font-mono text-xs text-muted-foreground">{p.slug}</div>
             </Td>
-            <Td>{p.brand}</Td>
-            <Td>{p.category}</Td>
-            <Td>
+            <Td label={t("colBrand")}>{p.brand}</Td>
+            <Td label={t("colCategory")}>{p.category}</Td>
+            <Td label={t("colVariants")}>
               <ul className="space-y-0.5 text-xs">
                 {p.variants.map((v) => (
                   <li key={v.sku}>
@@ -50,7 +50,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
                 ))}
               </ul>
             </Td>
-            <Td>
+            <Td label={t("colStatus")}>
               <Badge tone={p.published ? "success" : "neutral"}>{p.published ? t("published") : t("hidden")}</Badge>
             </Td>
           </tr>

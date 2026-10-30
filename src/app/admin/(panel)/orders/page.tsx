@@ -25,6 +25,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
     affiliateId: str(sp.affiliate),
   };
   const [t, orders, affiliates] = await Promise.all([getTranslations("Orders"), listOrdersAdmin(filter), affiliateOptions()]);
+  const filtered = !!(filter.status || filter.channel || filter.q || filter.overdue || filter.affiliateId);
 
   return (
     <div className="space-y-4">
@@ -76,9 +77,10 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
       </form>
 
       <DataTable
-        empty={t("empty")}
+        empty={filtered ? t("emptyFiltered") : t("empty")}
         head={[t("colCode"), t("colCreated"), t("colCustomer"), t("colChannel"), t("colPayment"), t("colTotal"), t("colStatus")]}
         numeric={[5]}
+        stack
       >
         {orders.map((o) => (
           <tr key={o.id}>
@@ -90,12 +92,14 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
                 {o._count.items} {t("colItems")}
               </div>
             </Td>
-            <Td className="whitespace-nowrap">{fmtDate(o.createdAt)}</Td>
-            <Td>
+            <Td label={t("colCreated")} className="whitespace-nowrap">
+              {fmtDate(o.createdAt)}
+            </Td>
+            <Td label={t("colCustomer")}>
               {o.recipientName}
               <div className="font-mono text-xs text-muted-foreground">{o.recipientPhone}</div>
             </Td>
-            <Td>
+            <Td label={t("colChannel")}>
               {t(`channel.${o.channel}`)}
               {o.affiliate && (
                 <div className="font-mono text-xs text-muted-foreground" title={t("colAffiliate")}>
@@ -103,14 +107,16 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
                 </div>
               )}
             </Td>
-            <Td>
+            <Td label={t("colPayment")}>
               <div className="flex flex-col items-start gap-1">
                 <span className="text-xs">{t(`method.${o.paymentMethod}`)}</span>
                 <PaymentStatusBadge status={o.paymentStatus} />
               </div>
             </Td>
-            <Td className="text-right tabular-nums whitespace-nowrap">{fmtInt(o.totalMmk)} MMK</Td>
-            <Td>
+            <Td label={t("colTotal")} className="text-right tabular-nums whitespace-nowrap">
+              {fmtInt(o.totalMmk)} MMK
+            </Td>
+            <Td label={t("colStatus")}>
               <div className="flex flex-col items-start gap-1">
                 <OrderStatusBadge status={o.status} />
                 {o.overdue && <Badge tone="danger">{t("overdue")}</Badge>}
@@ -119,6 +125,9 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
           </tr>
         ))}
       </DataTable>
+      {filtered && orders.length === 0 && (
+        <LinkButton href="/admin/orders">{t("clearFilters")}</LinkButton>
+      )}
     </div>
   );
 }
