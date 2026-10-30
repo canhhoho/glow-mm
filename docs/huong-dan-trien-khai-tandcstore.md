@@ -1,6 +1,6 @@
 # Hướng dẫn đưa T&C Cosmetics lên tandcstore.com và server 10.201.42.65
 
-> Cập nhật: 2026-10-30. Runbook làm theo từng bước; tài liệu tham khảo chi tiết: [DEPLOY.md](../DEPLOY.md).
+> Cập nhật: 2026-10-30. **Đang làm theo cách đi thẳng lên server (không qua giai đoạn A): dùng danh sách lệnh [lenh-trien-khai-tandcstore.md](lenh-trien-khai-tandcstore.md).** File này giải thích chi tiết + xử lý sự cố (PHẦN F); tham khảo thêm [DEPLOY.md](../DEPLOY.md).
 > Đánh dấu `[x]` khi xong từng ô. `<...>` = chỗ cần điền. **[CẦN XÁC MINH]** = giao diện/chính sách dịch vụ ngoài có thể đã đổi — làm theo màn hình thật.
 
 ## Thông số hệ thống
@@ -215,7 +215,7 @@ cd /var/www/tandc && git log --oneline -1
 
 Sinh các secret (chạy từng lệnh, chép kết quả):
 ```bash
-openssl rand -base64 24   # → POSTGRES_PASSWORD
+openssl rand -hex 24      # → POSTGRES_PASSWORD (hex: không có / + làm hỏng chuỗi kết nối DB)
 openssl rand -base64 32   # → BETTER_AUTH_SECRET
 openssl rand -hex 24      # → CRON_SECRET (chỉ chữ/số)
 openssl rand -base64 32   # → NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
