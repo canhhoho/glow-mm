@@ -7,9 +7,10 @@
 
 | Hạng mục | Giá trị |
 |---|---|
-| Server | Ubuntu, IP nội bộ `10.201.42.65` — **dùng chung** với web VCM XDDD (`cons.viettelconstructionmyanmar.com`) |
+| Server App&DB | Ubuntu, IP nội bộ `10.201.42.65` — **24 vCPU, 48 GB RAM, 1000 GB SSD** — **dùng chung** với web VCM XDDD (`cons.viettelconstructionmyanmar.com`) |
+| Máy mạng phía trước | Máy riêng **Load Balancer / Firewall ảo / OpenVPN** (16 vCPU, 32 GB RAM, 300 GB) — giữ IP công cộng, chuyển 80/443 vào `10.201.42.65`; SSH vào server qua OpenVPN |
 | User SSH | `vcm_aio` (rồi `sudo su -`) |
-| IP công cộng | IP mà `cons.viettelconstructionmyanmar.com` đang trỏ tới (đã NAT 80/443 về `10.201.42.65`) → `<IP_CONG_CONG>` |
+| IP công cộng | IP của máy LB/Firewall — chính là IP mà `cons.viettelconstructionmyanmar.com` đang trỏ tới → `<IP_CONG_CONG>` |
 | Thư mục mã nguồn | `/var/www/tandc` |
 | Repo GitHub | `https://github.com/canhhoho/glow-mm.git` (private, nhánh `main`) |
 | Cách chạy | **Docker Compose**, project `tandc`, file `docker-compose.prod.yml` (3 service: `db` Postgres 17, `migrate`, `app` Next.js) |
@@ -117,7 +118,7 @@ ssh vcm_aio@10.201.42.65
 sudo su -
 ```
 
-Tài nguyên — build Next.js cần ~2–3 GB RAM trống, dữ liệu + image Docker cần ≥ 15 GB đĩa trống:
+Tài nguyên — server có 24 vCPU / 48 GB RAM / 1000 GB, dư cho cả hai web (build Next.js cần ~2–3 GB RAM, dữ liệu + image Docker vài chục GB). Xác nhận còn trống:
 ```bash
 nproc && free -h && df -h /
 ```
@@ -138,12 +139,29 @@ nslookup cons.viettelconstructionmyanmar.com
 ```
 → ghi địa chỉ vào `<IP_CONG_CONG>`.
 
-- [ ] Nếu `free -h` cho thấy RAM < 4 GB và chưa có swap → thêm swap 4 GB (an toàn, không ảnh hưởng web VCM):
-  ```bash
-  fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' >> /etc/fstab && free -h
-  ```
+- [ ] RAM trống (`available` trong `free -h`) ≥ 8 GB và đĩa trống ≥ 50 GB — với cấu hình 48 GB/1000 GB là thoả; **không cần swap**.
 - [ ] Nếu cổng 3000 **đã bị chiếm** → dừng lại, báo Claude đổi cổng (sửa `docker-compose.prod.yml` và Nginx).
 - [ ] `ufw status`: đã có `OpenSSH` và `Nginx Full` (từ web VCM) là đủ — **không** mở thêm cổng 3000/5432.
+
+### B1.1 Hỏi bộ phận hạ tầng về máy LB/Firewall/OpenVPN
+Khách đi theo đường: **Internet → máy LB/Firewall (IP công cộng) → Nginx trên `10.201.42.65` → app**. Cần biết rõ 4 điều (ghi câu trả lời vào đây):
+
+- [ ] **Kiểu chuyển tiếp 80/443:** chỉ NAT/chuyển cổng (L4 — giữ nguyên IP khách) hay reverse proxy/load balancer HTTP (L7 — đổi IP nguồn thành IP của máy LB)? → quyết định có cần cấu hình *real IP* ở B6.2 không.
+- [ ] **HTTPS kết thúc ở đâu:** chuyển nguyên 443 vào server (Certbot trên server như web VCM — hướng dẫn này giả định cách này) hay LB tự giữ chứng chỉ? Nếu LB giữ chứng chỉ → báo Claude, bước B6.3/C6 sẽ khác.
+- [ ] **Tên miền mới có đi vào được không:** NAT theo IP thì `tandcstore.com` tự đi vào như web VCM; nếu LB/firewall lọc theo tên miền (Host/SNI) thì phải **thêm `tandcstore.com`, `www.tandcstore.com`, `moi.tandcstore.com`**.
+- [ ] **Chiều ra Internet (outbound) từ `10.201.42.65` được phép tới:**
+
+  | Đích | Dùng cho |
+  |---|---|
+  | `github.com` (443) | `git pull` |
+  | `registry-1.docker.io`, `production.cloudflare.docker.com`, `registry.npmjs.org`, `binaries.prisma.sh` (443) | Build image (tải Node, thư viện, Prisma) |
+  | `acme-v02.api.letsencrypt.org` (443) | Certbot cấp/gia hạn chứng chỉ |
+  | `api.resend.com` (443) | Gửi email |
+  | `oauth2.googleapis.com`, `www.googleapis.com` (443) | Đăng nhập Google (server đổi mã lấy thông tin tài khoản) |
+  | `*.neon.tech` (5432), `*.public.blob.vercel-storage.com` (443) | Chỉ khi chuyển dữ liệu (B6.4, PHẦN C) |
+  | Backblaze B2 / Cloudflare R2 (443) | Backup hằng đêm (B7) |
+
+- [ ] SSH vào server qua **OpenVPN** như hiện tại — không mở cổng 22 ra Internet.
 
 ## B2. Cài Docker (bỏ qua nếu `docker compose version` đã chạy)
 
@@ -163,10 +181,11 @@ Giới hạn dung lượng log của container (nếu `/etc/docker/daemon.json` 
 echo '{"log-driver":"json-file","log-opts":{"max-size":"10m","max-file":"3"}}' > /etc/docker/daemon.json && systemctl restart docker
 ```
 
-Kiểm tra server tải được những thứ cần để build:
+Kiểm tra chiều ra Internet (mỗi dòng phải có mã HTTP, không bị treo/timeout):
 ```bash
-curl -sI https://github.com https://registry.npmjs.org https://registry-1.docker.io/v2/ | grep HTTP
+for u in https://github.com https://registry.npmjs.org https://registry-1.docker.io/v2/ https://binaries.prisma.sh https://acme-v02.api.letsencrypt.org/directory https://api.resend.com https://oauth2.googleapis.com; do printf '%-50s ' "$u"; curl -s -o /dev/null -m 10 -w '%{http_code}\n' "$u" || echo LỖI; done
 ```
+Dòng nào `000`/`LỖI` → nhờ bộ phận hạ tầng mở trên firewall (bảng ở B1.1).
 
 ## B3. Clone mã nguồn
 
@@ -278,6 +297,19 @@ server {
     }
 }
 ```
+
+**Chỉ khi máy LB là reverse proxy HTTP (L7, câu hỏi đầu tiên ở B1.1):** IP Nginx thấy là IP của máy LB, không phải của khách → mọi khách dùng chung một IP, chống dò mật khẩu sẽ chặn nhầm cả loạt. Thêm vào trong khối `server` (ngay dưới `client_max_body_size`):
+```nginx
+    # Tin IP khách do máy LB gửi (X-Forwarded-For) — chỉ tin từ IP nội bộ của máy LB
+    set_real_ip_from <IP_NOI_BO_MAY_LB>;
+    real_ip_header   X-Forwarded-For;
+    real_ip_recursive on;
+```
+Cách kiểm tra (làm sau B6.3): mở `https://moi.tandcstore.com` bằng điện thoại dùng 4G, rồi trên server:
+```bash
+tail -5 /var/log/nginx/access.log
+```
+Cột đầu tiên phải là **IP công cộng của điện thoại** (xem tại trang whatismyip trên điện thoại). Nếu là IP `10.x` của máy LB → cần đoạn cấu hình trên (hỏi bộ phận hạ tầng IP nội bộ của máy LB), rồi `nginx -t && systemctl reload nginx` và kiểm tra lại.
 Bật site (**không** xoá site khác), kiểm tra cú pháp rồi nạp lại:
 ```bash
 ln -sf /etc/nginx/sites-available/tandc /etc/nginx/sites-enabled/tandc && nginx -t && systemctl reload nginx
@@ -595,8 +627,8 @@ docker compose -p tandc ps -a && docker logs tandc-app-1 --tail 100
 - `tandc-migrate-1` **Exited (1)** → migration lỗi, app không khởi động: xem `docker logs tandc-migrate-1`, gửi cho Claude. **Không** xoá volume.
 - Thiếu biến môi trường → log báo `Biến môi trường không hợp lệ` → sửa `.env.prod`, chạy lại lệnh build.
 
-## F.2 Build bị dừng giữa chừng / server đơ khi build
-Thiếu RAM. Thêm swap (B1), chạy lại. Có thể build vào giờ ít khách. Web VCM có thể chậm trong lúc build — đây là lý do nên cập nhật ngoài giờ cao điểm.
+## F.2 Build bị dừng giữa chừng
+Với 48 GB RAM hiếm khi do thiếu bộ nhớ — thường là **mất kết nối ra Internet** khi tải thư viện (`npm ci`, Docker Hub, Prisma). Xem dòng lỗi cuối trong log build; chạy lại lệnh kiểm tra chiều ra ở B2; nhờ hạ tầng mở firewall (bảng B1.1). Build lại là an toàn — bản đang chạy vẫn phục vụ khách.
 
 ## F.3 Certbot không cấp được chứng chỉ
 DNS chưa trỏ về `<IP_CONG_CONG>` (kiểm `nslookup` từ máy bạn), hoặc NAT cổng 80 chưa áp cho tên miền mới (hỏi bộ phận hạ tầng — NAT theo IP nên thường đã có sẵn từ web VCM).
@@ -641,6 +673,9 @@ df -h / && docker system df
 docker image prune -f && docker builder prune -f
 ```
 **Không** dùng `docker system prune --volumes` hay `docker volume prune` — xoá dữ liệu.
+
+## F.12a Mọi khách đều bị báo "thử quá nhiều lần" khi đăng nhập
+App đang thấy mọi khách cùng một IP (IP của máy LB) → rate limit gộp chung. Làm phần *real IP* ở B6.2 và kiểm tra `access.log` như hướng dẫn ở đó.
 
 ## F.12 Web VCM bị ảnh hưởng
 Gần như luôn do Nginx: khôi phục bằng cách tắt site mới rồi nạp lại:
