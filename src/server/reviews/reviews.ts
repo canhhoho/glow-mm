@@ -11,6 +11,9 @@ import { findOrderForCustomer } from "@/server/orders/orders";
  * 1 đánh giá / sản phẩm / đơn, chờ nhân viên duyệt (PENDING → APPROVED/REJECTED) mới hiện trên trang SP.
  */
 
+/** Tag cache đánh giá đã duyệt trên trang SP (P20) — duyệt/từ chối gọi `updateTag(REVIEWS_TAG)`. */
+export const REVIEWS_TAG = "reviews";
+
 export const reviewSchema = z.object({
   productId: z.string().min(1),
   rating: z.coerce.number().int().min(1).max(5),

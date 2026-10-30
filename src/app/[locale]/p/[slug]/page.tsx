@@ -7,8 +7,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { fmtDate, fmtDay } from "@/lib/format";
 import { formatMmk } from "@/lib/money";
 import { addToCartAction } from "@/server/cart/actions";
-import { getStoreProduct, listStoreProducts } from "@/server/catalog/store-queries";
-import { productReviews } from "@/server/reviews/reviews";
+import { storeProduct, storeProducts, storeReviews } from "@/server/catalog/cached";
 import { ContactLinks } from "@/components/store/contact-links";
 import { ProductRail } from "@/components/store/product-card";
 import {
@@ -25,7 +24,7 @@ import { BRAND_NAME } from "@/lib/brand";
 import { breadcrumbJsonLd, jsonLdScript, productJsonLd } from "@/server/catalog/structured-data";
 
 // Metadata và trang dùng chung một lần truy vấn trong cùng request.
-const loadProduct = cache((slug: string, locale: string) => getStoreProduct(slug, locale));
+const loadProduct = cache((slug: string, locale: string) => storeProduct(slug, locale));
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/p/[slug]">): Promise<Metadata> {
   const { locale, slug } = await params;
@@ -53,7 +52,8 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/p/[slug]
 
 /**
  * Render chặn (không stream sau static shell): HTML trả về đã có đủ tên/giá/tồn → LCP sớm trên mạng 3G.
- * Trang luôn động (tồn kho + hạn dùng lô tính lúc request) nên không có static shell để validate.
+ * Trang luôn động (tồn kho + hạn dùng lô tính lúc request) nên không có static shell để validate. Nội dung SP và
+ * đánh giá lấy từ cache (P20, `catalog/cached.ts`).
  */
 export const instant = false;
 
@@ -65,7 +65,7 @@ async function RelatedProducts({ locale, category, exclude }: { locale: string; 
   const [t, tc, list] = await Promise.all([
     getTranslations({ locale, namespace: "Product" }),
     getTranslations({ locale, namespace: "Catalog" }),
-    listStoreProducts({ locale, category, sort: "new", take: RELATED + 1 }),
+    storeProducts({ locale, category, sort: "new", take: RELATED + 1 }),
   ]);
   const products = list.filter((x) => x.slug !== exclude).slice(0, RELATED);
   if (products.length === 0) return null;
@@ -87,7 +87,7 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
     loadProduct(slug, locale),
   ]);
   if (!p) notFound();
-  const [reviews, tr] = await Promise.all([productReviews(p.id), getTranslations({ locale, namespace: "Review" })]);
+  const [reviews, tr] = await Promise.all([storeReviews(p.id), getTranslations({ locale, namespace: "Review" })]);
   const firstAvailable = p.variants.find((v) => v.available > 0);
   const minPrice = Math.min(...p.variants.map((v) => v.priceMmk));
   const sections = [

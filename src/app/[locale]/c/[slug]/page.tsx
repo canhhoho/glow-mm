@@ -4,14 +4,14 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { getStoreCategory, listStoreProducts } from "@/server/catalog/store-queries";
+import { storeCategory, storeProducts } from "@/server/catalog/cached";
 import { CatalogFilters, parseCatalogParams } from "@/components/store/catalog-filters";
 import { ProductGrid } from "@/components/store/product-card";
 import { Breadcrumb, storeCard } from "@/components/store/ui";
 import { alternates } from "@/lib/site";
 
 // Metadata và trang dùng chung một lần truy vấn trong cùng request.
-const loadCategory = cache((slug: string, locale: string) => getStoreCategory(slug, locale));
+const loadCategory = cache((slug: string, locale: string) => storeCategory(slug, locale));
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/c/[slug]">): Promise<Metadata> {
   const { locale, slug } = await params;
@@ -31,7 +31,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps<"
     getTranslations({ locale, namespace: "Catalog" }),
     getTranslations({ locale, namespace: "Nav" }),
     loadCategory(slug, locale),
-    listStoreProducts({ locale, category: slug, brand: current.brand, tags: current.tags, sort: current.sort }),
+    storeProducts({ locale, category: slug, brand: current.brand, tags: current.tags, sort: current.sort }),
   ]);
   if (!category) notFound();
 

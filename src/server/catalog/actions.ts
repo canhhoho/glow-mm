@@ -36,6 +36,7 @@ export async function createBrandAction(_prev: ActionState, formData: FormData):
   } catch (e) {
     return { error: message(e) };
   }
+  updateTag(CATALOG_TAG); // bộ lọc thương hiệu storefront
   revalidatePath("/admin/products");
   return { ok: "brand" };
 }
@@ -118,9 +119,10 @@ export async function removeCategoryIconAction(_prev: ActionState, formData: For
 
 const id = z.string().trim().min(1).max(40);
 
+/** Ảnh hiện trên trang SP và thẻ SP (ảnh đầu) ở mọi danh sách → xoá cache catalog storefront (P20). */
 function revalidateProduct(productId: string) {
   revalidatePath(`/admin/products/${productId}`);
-  revalidatePath("/[locale]/p/[slug]", "page");
+  updateTag(CATALOG_TAG);
 }
 
 export async function addProductImagesAction(_prev: ActionState, formData: FormData): Promise<ActionState> {

@@ -1,10 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { ZodError } from "zod";
 import { requirePermission } from "@/server/auth/session";
+import { CATALOG_TAG } from "@/server/catalog/category-tree";
 import type { ActionState } from "@/server/inventory/actions";
 import { applyRun, cancelRun, createRate, previewRun } from "./runs";
 
@@ -65,6 +66,7 @@ export async function applyRunAction(_prev: ActionState, formData: FormData): Pr
   } catch (e) {
     return { error: message(e) };
   }
+  updateTag(CATALOG_TAG); // giá mới hiện ngay trên storefront (P20)
   revalidatePath(`/admin/pricing/runs/${runId}`);
   revalidatePath("/admin/pricing");
   return { ok };

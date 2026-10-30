@@ -3,9 +3,9 @@ import { connection } from "next/server";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import type { StoreLocale } from "@/i18n/routing";
-import { listRootCategories } from "@/server/catalog/queries";
-import { listStoreProducts } from "@/server/catalog/store-queries";
-import { homeCollections } from "@/server/content/collections";
+import { cachedCardRows, cachedHomeCollectionRows, storeRootCategories } from "@/server/catalog/cached";
+import { withStock } from "@/server/catalog/store-queries";
+import { visibleCollections } from "@/server/content/collections";
 import { ProductRail } from "./product-card";
 import { ListSkeleton, StoreSection, storeCard } from "./ui";
 
@@ -14,19 +14,24 @@ const RAIL_SIZE = 10;
 /**
  * Phần dữ liệu (DB) của trang chủ — render lúc request, stream sau static shell.
  * Nhóm hàng (danh mục gốc, có icon) → các bộ sưu tập (admin chọn tay) → "Sản phẩm mới" → mỗi danh mục gốc một dải.
+ * Nội dung các dải lấy từ cache (P20); lịch bộ sưu tập + tồn kho tính lúc request, tồn gộp MỘT lần cho mọi dải.
  */
 export async function HomeCatalog({ locale }: { locale: StoreLocale }) {
   await connection();
   const [t, tc, categories] = await Promise.all([
     getTranslations({ locale, namespace: "Home" }),
     getTranslations({ locale, namespace: "Catalog" }),
-    listRootCategories(locale),
+    storeRootCategories(locale),
   ]);
-  const [collections, newest, ...byCategory] = await Promise.all([
-    homeCollections(locale, new Date(), RAIL_SIZE),
-    listStoreProducts({ locale, sort: "new", take: RAIL_SIZE }),
-    ...categories.map((c) => listStoreProducts({ locale, category: c.slug, sort: "new", take: RAIL_SIZE })),
+  const [collectionRows, newestRows, ...categoryRows] = await Promise.all([
+    cachedHomeCollectionRows(locale, RAIL_SIZE),
+    cachedCardRows({ locale, take: RAIL_SIZE }),
+    ...categories.map((c) => cachedCardRows({ locale, category: c.slug, take: RAIL_SIZE })),
   ]);
+  const visible = visibleCollections(collectionRows, new Date());
+  const [newest, ...rest] = await withStock([newestRows, ...categoryRows, ...visible.map((c) => c.products)]);
+  const byCategory = rest.slice(0, categories.length);
+  const collections = visible.map((c, i) => ({ slug: c.slug, name: c.name, products: rest[categories.length + i] }));
 
   if (newest.length === 0) return <p className="text-sm text-muted-foreground">{t("empty")}</p>;
 

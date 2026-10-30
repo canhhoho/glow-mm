@@ -2,12 +2,13 @@ import type { MetadataRoute } from "next";
 import { connection } from "next/server";
 import { routing } from "@/i18n/routing";
 import { absoluteUrl, localizedPath } from "@/lib/site";
-import { sitemapEntries } from "@/server/catalog/sitemap";
+import { cachedSitemapRows } from "@/server/catalog/cached";
+import { sitemapPaths } from "@/server/catalog/sitemap";
 
-/** sitemap.xml: mỗi trang công khai một URL (locale mặc định) kèm hreflang my/en. Đọc DB lúc request. */
+/** sitemap.xml: mỗi trang công khai một URL (locale mặc định) kèm hreflang my/en. Dữ liệu cache (P20), lịch xét lúc request. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   await connection();
-  const entries = await sitemapEntries(new Date());
+  const entries = sitemapPaths(await cachedSitemapRows(), new Date());
   return entries.map((e) => ({
     url: absoluteUrl(localizedPath(routing.defaultLocale, e.path)),
     ...(e.lastModified ? { lastModified: e.lastModified } : {}),

@@ -3,13 +3,13 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { getStoreCollection } from "@/server/content/collections";
+import { storeCollection } from "@/server/catalog/cached";
 import { ProductGrid } from "@/components/store/product-card";
 import { Breadcrumb, storeCard } from "@/components/store/ui";
 import { alternates } from "@/lib/site";
 
 // Metadata và trang dùng chung một lần truy vấn trong cùng request.
-const loadCollection = cache((slug: string, locale: string) => getStoreCollection(slug, locale, new Date()));
+const loadCollection = cache((slug: string, locale: string) => storeCollection(slug, locale, new Date()));
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/collection/[slug]">): Promise<Metadata> {
   const { locale, slug } = await params;

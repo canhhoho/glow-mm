@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
-import { storeFilterOptions, type StoreSort } from "@/server/catalog/store-queries";
+import { storeFilters } from "@/server/catalog/cached";
+import type { StoreSort } from "@/server/catalog/store-queries";
 import { outlineButton, storeField } from "./ui";
 
 export type CatalogParams = { q?: string; brand?: string; tags: string[]; sort: StoreSort };
@@ -19,7 +20,7 @@ export function parseCatalogParams(sp: Record<string, string | string[] | undefi
  * (::details-content — trình duyệt cũ chưa hỗ trợ thì vẫn bấm mở như mobile).
  */
 export async function CatalogFilters({ locale, current }: { locale: string; current: CatalogParams }) {
-  const [t, options] = await Promise.all([getTranslations({ locale, namespace: "Catalog" }), storeFilterOptions(locale)]);
+  const [t, options] = await Promise.all([getTranslations({ locale, namespace: "Catalog" }), storeFilters(locale)]);
   const groups = [
     { kind: "SKIN_TYPE", label: t("skinType") },
     { kind: "CONCERN", label: t("concern") },

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { listStoreProducts } from "@/server/catalog/store-queries";
+import { storeProducts } from "@/server/catalog/cached";
 import { CatalogFilters, parseCatalogParams } from "@/components/store/catalog-filters";
 import { ProductGrid } from "@/components/store/product-card";
 import { ListSkeleton, primaryButton, storeCard, storeField } from "@/components/store/ui";
@@ -21,10 +21,10 @@ async function SearchContent({ params, searchParams }: PageProps<"/[locale]/sear
   const { locale } = await params;
   setRequestLocale(locale);
   const current = parseCatalogParams(await searchParams);
-  // Tìm kiếm: chuỗi Zawgyi được nhận dạng và chuyển Unicode trong listStoreProducts (searchVariants).
+  // Tìm kiếm: chuỗi Zawgyi được nhận dạng và chuyển Unicode trong loadCardRows (searchVariants); có `q` → không cache.
   const [t, products] = await Promise.all([
     getTranslations({ locale, namespace: "Search" }),
-    listStoreProducts({ locale, q: current.q, brand: current.brand, tags: current.tags, sort: current.sort }),
+    storeProducts({ locale, q: current.q, brand: current.brand, tags: current.tags, sort: current.sort }),
   ]);
 
   return (

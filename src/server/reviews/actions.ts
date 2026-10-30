@@ -1,6 +1,6 @@
 "use server";
 
-import { refresh, revalidatePath } from "next/cache";
+import { refresh, revalidatePath, updateTag } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { hasLocale } from "next-intl";
 import { ZodError } from "zod";
@@ -10,7 +10,7 @@ import { customerOrder } from "@/server/accounts/order-access";
 import type { StoreActionState } from "@/server/cart/actions";
 import type { ActionState } from "@/server/inventory/actions";
 import { OrderError } from "@/server/orders/errors";
-import { moderateReview, submitReview } from "./reviews";
+import { moderateReview, REVIEWS_TAG, submitReview } from "./reviews";
 
 /** Khách gửi đánh giá từ trang đơn (quyền truy cập đơn = cookie mã đơn + SĐT hoặc tài khoản, như upload biên lai). */
 export async function submitReviewAction(_prev: StoreActionState, formData: FormData): Promise<StoreActionState> {
@@ -41,6 +41,7 @@ export async function moderateReviewAction(_prev: ActionState, formData: FormDat
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
   }
+  updateTag(REVIEWS_TAG); // trang SP hiện/ẩn đánh giá ngay (P20)
   revalidatePath("/admin/reviews");
   return { ok: "done" };
 }

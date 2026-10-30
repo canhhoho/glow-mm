@@ -1,6 +1,9 @@
 /** Dựng cây danh mục 2 cấp cho menu storefront (hàm thuần, test bằng Vitest). */
 
-/** Tag cache của menu danh mục storefront — action admin đổi catalog gọi `updateTag(CATALOG_TAG)`. */
+/**
+ * Tag cache dữ liệu catalog storefront (menu danh mục, thẻ/trang SP, bộ lọc, sitemap — P20). Action admin đổi SP,
+ * danh mục, thương hiệu, ảnh, giá gọi `updateTag(CATALOG_TAG)`.
+ */
 export const CATALOG_TAG = "catalog";
 
 export type CategoryRow = {
