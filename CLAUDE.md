@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Web bán mỹ phẩm B2C **T&C Cosmetics** (tên cũ Glow VN, đổi ở P18) nhập từ Việt Nam, bán tại Myanmar. Kế hoạch chi tiết: [PLAN.md](PLAN.md). Triển khai: [DEPLOY.md](DEPLOY.md); runbook tên miền **tandcstore.com** (DNS ở inet.vn) + server riêng: [docs/huong-dan-trien-khai-tandcstore.md](docs/huong-dan-trien-khai-tandcstore.md).
+Web bán mỹ phẩm B2C **T&C Cosmetics** (tên cũ Glow VN, đổi ở P18) nhập từ Việt Nam, bán tại Myanmar. Kế hoạch chi tiết: [PLAN.md](PLAN.md). Triển khai: [DEPLOY.md](DEPLOY.md); runbook tên miền **tandcstore.com** (DNS ở inet.vn) + server `10.201.42.65` (dùng chung với web VCM: Docker Compose project `tandc` sau Nginx/Certbot sẵn có, cổng `127.0.0.1:3000`, **không** Coolify): [docs/huong-dan-trien-khai-tandcstore.md](docs/huong-dan-trien-khai-tandcstore.md).
 
 ## Cách làm việc
 - Trả lời bằng **tiếng Việt**, ngắn gọn.
@@ -15,7 +15,7 @@ Next.js App Router (TS, `output: "standalone"`) · Tailwind + shadcn/ui · Postg
 Next.js 16 có API mới (proxy thay middleware, Cache Components bật) → đọc `node_modules/next/dist/docs/` trước khi viết code Next (xem AGENTS.md).
 
 ## Quy tắc bắt buộc
-**Portability (Vercel/Neon ↔ server Myanmar/Coolify, cùng một code)**
+**Portability (Vercel/Neon ↔ server riêng chạy Docker Compose, cùng một code)**
 - Chỉ dùng PostgreSQL chuẩn qua Prisma; không dùng tính năng riêng của nhà cung cấp.
 - Không dùng tính năng chỉ có trên Vercel trong logic lõi. Lưu file qua adapter `STORAGE_DRIVER=vercel-blob|local`.
 - Tác vụ định kỳ = route `GET/POST /api/cron/<job>`, header `Authorization: Bearer <CRON_SECRET>` (Vercel Cron gửi sẵn).

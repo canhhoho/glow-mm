@@ -1,4 +1,4 @@
-# Crontab trên server Myanmar (sudo crontab -e). Ưu tiên crontab host thay vì Coolify "Scheduled Tasks":
+# Crontab trên server (sudo crontab -e). Ưu tiên crontab host thay vì "Scheduled Tasks" của Coolify (nếu có dùng Coolify):
 # task của Coolify chạy trong container app (alpine, không có curl, không thấy /opt/glow) — nếu vẫn dùng, thay curl bằng
 #   wget -qO- --header "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/<job>
 # Server để múi giờ UTC (DEPLOY.md §4) → lịch dưới đây tính theo UTC (Yangon = UTC+6:30).

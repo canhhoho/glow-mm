@@ -2,14 +2,14 @@
 
 Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong biến môi trường (xem `.env.example`).
 
-> **Làm theo từng bước cho tên miền `tandcstore.com` + server riêng:** [docs/huong-dan-trien-khai-tandcstore.md](docs/huong-dan-trien-khai-tandcstore.md). File này là tài liệu tham khảo chi tiết.
+> **Làm theo từng bước cho tên miền `tandcstore.com` + server `10.201.42.65`:** [docs/huong-dan-trien-khai-tandcstore.md](docs/huong-dan-trien-khai-tandcstore.md). Server đó đang chạy web VCM với Nginx trên 80/443 → **không cài Coolify** (Traefik sẽ chiếm 80/443); chạy `docker-compose.prod.yml` (project `tandc`) sau Nginx dùng chung. File này là tài liệu tham khảo chi tiết.
 
 | | Testing | Production (sau) |
 |---|---|---|
-| App | Vercel (functions `sin1` Singapore) | Server Myanmar, Coolify + Docker |
+| App | Vercel (functions `sin1` Singapore) | Server `10.201.42.65` (dùng chung với web VCM): **Docker Compose + Nginx/Certbot sẵn có** — xem runbook. Coolify (§2) chỉ dùng khi có server riêng biệt |
 | DB | Neon Singapore (2 DB: preview, main) | PostgreSQL 17 trong Docker |
 | File | Vercel Blob (`STORAGE_DRIVER=vercel-blob`) | Ổ đĩa/volume (`STORAGE_DRIVER=local`) |
-| Cron | Vercel Cron (`vercel.json`) | crontab / Coolify Scheduled Tasks (`ops/cron.example`) |
+| Cron | Vercel Cron (`vercel.json`) | crontab trên host (`ops/cron.example`) |
 | Deploy từ | `main` → Production, nhánh khác → Preview | `main` |
 
 > Các mục ghi **[CẦN XÁC MINH]** là giao diện/chính sách của dịch vụ bên ngoài có thể đã đổi. Kiểm tra tài liệu chính thức trước khi làm.
@@ -115,7 +115,7 @@ Khách bắt buộc có tài khoản khi đặt hàng. Đăng ký/đăng nhập 
 
 ## 2. Chuyển sang server riêng (Coolify + Docker)
 
-Trình tự cụ thể cho tandcstore.com (chạy thử trên `moi.tandcstore.com`, ngày chuyển, quay lại): [docs/huong-dan-trien-khai-tandcstore.md](docs/huong-dan-trien-khai-tandcstore.md) — giai đoạn B.
+> Mục này mô tả cách dùng **Coolify trên một server riêng biệt**. Server hiện có (`10.201.42.65`, dùng chung với web VCM) dùng **Docker Compose + Nginx** theo [docs/huong-dan-trien-khai-tandcstore.md](docs/huong-dan-trien-khai-tandcstore.md) (PHẦN B–D). Các phần chuyển dữ liệu (§2.4), checklist (§2.5), backup (§3) dùng chung cho cả hai cách.
 
 ### 2.1 Chuẩn bị server
 - **Cấu hình khuyến nghị:** Ubuntu Server 24.04 LTS, ≥ 2 vCPU, 4 GB RAM, ≥ 40 GB SSD, IP tĩnh.
