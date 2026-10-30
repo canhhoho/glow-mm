@@ -10,7 +10,7 @@
 | Server App&DB | Ubuntu, IP nội bộ `10.201.42.65` — **24 vCPU, 48 GB RAM, 1000 GB SSD** — **dùng chung** với web VCM XDDD (`cons.viettelconstructionmyanmar.com`) |
 | Máy mạng phía trước | Máy riêng **Load Balancer / Firewall ảo / OpenVPN** (16 vCPU, 32 GB RAM, 300 GB) — giữ IP công cộng, chuyển 80/443 vào `10.201.42.65`; SSH vào server qua OpenVPN |
 | User SSH | `vcm_aio` (rồi `sudo su -`) |
-| IP công cộng | IP của máy LB/Firewall — chính là IP mà `cons.viettelconstructionmyanmar.com` đang trỏ tới → `<IP_CONG_CONG>` |
+| IP công cộng | IP của máy LB/Firewall — chính là IP mà `cons.viettelconstructionmyanmar.com` đang trỏ tới → `65.18.117.228` |
 | Thư mục mã nguồn | `/var/www/tandc` |
 | Repo GitHub | `https://github.com/canhhoho/glow-mm.git` (private, nhánh `main`) |
 | Cách chạy | **Docker Compose**, project `tandc`, file `docker-compose.prod.yml` (3 service: `db` Postgres 17, `migrate`, `app` Next.js) |
@@ -145,7 +145,7 @@ IP công cộng — chạy trên **máy tính của bạn** (cùng IP mà web VC
 ```bash
 nslookup cons.viettelconstructionmyanmar.com
 ```
-→ ghi địa chỉ vào `<IP_CONG_CONG>`.
+→ ghi địa chỉ vào `65.18.117.228`.
 
 - [ ] RAM trống (`available` trong `free -h`) ≥ 8 GB và đĩa trống ≥ 50 GB — với cấu hình 48 GB/1000 GB là thoả; **không cần swap**.
 - [ ] Nếu cổng 3000 **đã bị chiếm** → dừng lại, báo Claude đổi cổng (sửa `docker-compose.prod.yml` và Nginx).
@@ -274,7 +274,7 @@ curl -s http://127.0.0.1:3000/api/health
 ## B6. Chạy thử trên `moi.tandcstore.com`
 
 ### B6.1 DNS
-- [ ] inet.vn: thêm `A`, Host `moi`, giá trị `<IP_CONG_CONG>`, TTL 300. Kiểm tra từ máy bạn: `nslookup moi.tandcstore.com`.
+- [ ] inet.vn: thêm `A`, Host `moi`, giá trị `65.18.117.228`, TTL 300. Kiểm tra từ máy bạn: `nslookup moi.tandcstore.com`.
 
 ### B6.2 Nginx (site mới, không đụng site VCM)
 ```bash
@@ -490,7 +490,7 @@ Chọn giờ ít khách (vd 22:00 Yangon). Ngừng ghi khoảng **30–60 phút*
    ```bash
    SOURCE_COMMIT=$(git rev-parse --short HEAD) docker compose -p tandc -f docker-compose.prod.yml --env-file .env.prod up -d --build
    ```
-5. [ ] inet.vn: `A @` → `<IP_CONG_CONG>` (thay `76.76.21.21`); `www`: xoá CNAME Vercel, thêm `A www` → `<IP_CONG_CONG>`. Giữ nguyên bản ghi Google TXT (và Resend nếu có). Chờ `nslookup tandcstore.com` ra `<IP_CONG_CONG>`.
+5. [ ] inet.vn: `A @` → `65.18.117.228` (thay `76.76.21.21`); `www`: xoá CNAME Vercel, thêm `A www` → `65.18.117.228`. Giữ nguyên bản ghi Google TXT (và Resend nếu có). Chờ `nslookup tandcstore.com` ra `65.18.117.228`.
 6. [ ] Thêm tên miền chính vào Nginx (tạm thời ở HTTP để Certbot xác thực):
    ```bash
    nano /etc/nginx/sites-available/tandc
@@ -638,7 +638,7 @@ docker compose -p tandc ps -a && docker logs tandc-app-1 --tail 100
 Với 48 GB RAM hiếm khi do thiếu bộ nhớ — thường là **mất kết nối ra Internet** khi tải thư viện (`npm ci`, Docker Hub, Prisma). Xem dòng lỗi cuối trong log build; chạy lại lệnh kiểm tra chiều ra ở B2; nhờ hạ tầng mở firewall (bảng B1.1). Build lại là an toàn — bản đang chạy vẫn phục vụ khách.
 
 ## F.3 Certbot không cấp được chứng chỉ
-DNS chưa trỏ về `<IP_CONG_CONG>` (kiểm `nslookup` từ máy bạn), hoặc NAT cổng 80 chưa áp cho tên miền mới (hỏi bộ phận hạ tầng — NAT theo IP nên thường đã có sẵn từ web VCM).
+DNS chưa trỏ về `65.18.117.228` (kiểm `nslookup` từ máy bạn), hoặc NAT cổng 80 chưa áp cho tên miền mới (hỏi bộ phận hạ tầng — NAT theo IP nên thường đã có sẵn từ web VCM).
 ```bash
 certbot renew --dry-run
 ```
@@ -697,9 +697,9 @@ Sau đó kiểm tra lại cấu hình `tandc` trước khi bật lại.
 
 | Loại | Host | Giai đoạn A (Vercel) | Sau PHẦN C (server) |
 |---|---|---|---|
-| A | `@` | `76.76.21.21` | `<IP_CONG_CONG>` |
-| CNAME / A | `www` | CNAME `cname.vercel-dns.com` | A `<IP_CONG_CONG>` |
-| A | `moi` | (thêm ở B6.1: `<IP_CONG_CONG>`) | xoá |
+| A | `@` | `76.76.21.21` | `65.18.117.228` |
+| CNAME / A | `www` | CNAME `cname.vercel-dns.com` | A `65.18.117.228` |
+| A | `moi` | (thêm ở B6.1: `65.18.117.228`) | xoá |
 | TXT | `@` | `google-site-verification=...` (chỉ khi làm phần tuỳ chọn của A4) | giữ |
 | TXT | `resend._domainkey` | *(chỉ khi bật email — A5)* khoá DKIM Resend | giữ |
 | MX | `send` | *(chỉ khi bật email)* `feedback-smtp.<region>.amazonses.com` (10) | giữ |

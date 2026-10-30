@@ -179,68 +179,31 @@ docker logs tandc-migrate-1 --tail 30; docker logs tandc-app-1 --tail 50
 
 📖 **ĐỌC ĐỂ HIỂU:** trong phần này web chạy trên `tandcstore.com` nhưng **chưa nhận đơn**. Khách vẫn mua trên web cũ (Vercel) cho tới **PHẦN 3**.
 
-## Bước 7. Trỏ tên miền về server
+## Bước 7. Trỏ tên miền về server — ✅ ĐÃ LÀM XONG (2026-10-30, cùng Claude)
 
-💻 **DÁN VÀO MÁY TÍNH CỦA BẠN** (PowerShell), để lấy địa chỉ IP công cộng (dùng chung với web VCM):
-```bash
-nslookup cons.viettelconstructionmyanmar.com
-```
-✅ Ghi lại địa chỉ ở dòng **`Address:` cuối cùng** (dạng `123.45.67.89`). Từ đây gọi là **IP CÔNG CỘNG**.
+📖 **ĐỌC ĐỂ HIỂU — đã làm gì:**
+- **IP CÔNG CỘNG** của server (dùng chung với web VCM) là **`65.18.117.228`**.
+- Trên inet.vn đã thêm 2 bản ghi, kiểm tra thấy cả máy chủ DNS của inet lẫn Google đều trả đúng IP:
 
-📖 **ĐỌC ĐỂ HIỂU:**
-- DNS là "danh bạ" của Internet. Bạn sẽ ghi vào danh bạ: *"tandcstore.com nằm ở IP CÔNG CỘNG"*.
-- Tên miền hiện đang dùng máy chủ DNS **`ns1.vclouddns.vn` / `ns2.vclouddns.vn`**. Đây là dịch vụ DNS đi kèm khi mua ở inet.vn, nên bản ghi được thêm **ngay trong trang quản lý của inet.vn**. **Không đổi nameserver.**
-- Chỉ cần thêm **2 bản ghi loại A**. Không cần bản ghi email (MX), không cần CNAME.
+  | Tên | Loại | Nội dung | TTL | Bảo vệ |
+  |---|---|---|---|---|
+  | `@` | A | `65.18.117.228` | 5 phút | **Tắt** (Chỉ DNS) |
+  | `www` | A | `65.18.117.228` | 5 phút | **Tắt** (Chỉ DNS) |
 
-🖱️ **LÀM TRÊN TRANG WEB inet.vn:**
+- **Giữ nguyên** 5 bản ghi của **hộp thư email** đang dùng trên tên miền (dịch vụ oxmail của inet): `@` MX `gw.oxmail.vn`, `@` TXT `v=spf1…`, `default._domainkey` TXT, `_dmarc` TXT, `mail` CNAME. **Không bao giờ xoá các bản ghi này**, nếu xoá thì email @tandcstore.com ngừng chạy.
+- Ô **"Bảo vệ"** (OneShield của inet) phải để **Tắt**. Nếu bật, khách sẽ đi vòng qua máy chủ trung gian của inet: web không thấy IP thật của khách, chứng chỉ HTTPS ở bước 8 cũng phải làm cách khác.
 
-1. Vào **inet.vn** → bấm **Đăng nhập** (góc trên). Trang đăng nhập có địa chỉ bắt đầu bằng `sso.inet.vn`.
-2. Trong trang quản lý, tìm mục **Tên miền** (có thể ghi "Quản lý tên miền" / "Tên miền của tôi" / "Danh sách tên miền") → bấm vào **`tandcstore.com`**.
-3. Trong trang của tên miền, tìm nút/tab có chữ **DNS** hoặc **Bản ghi**, ví dụ "Quản lý DNS", "Cấu hình DNS", "Bản ghi DNS", "Quản lý bản ghi" **[CẦN XÁC MINH: tên nút đúng theo màn hình inet]**. Không thấy → xem mục *Nếu bị kẹt* bên dưới.
-4. Xem danh sách bản ghi đang có:
-   - Bản ghi có **Tên/Host** là `@` (hoặc để trống, hoặc ghi `tandcstore.com`) **hoặc** `www`, với loại **A** hoặc **CNAME** → **xoá** (thường là trang "đỗ" mặc định của nhà đăng ký).
-   - Các bản ghi khác (loại **MX**, **TXT**, **NS**, **SOA**) → **giữ nguyên, không xoá**.
-5. Bấm **Thêm bản ghi** (có thể ghi "Thêm mới", "+", "Add record"). Form thường có 4 ô — điền theo bảng dưới, rồi bấm **Lưu** (hoặc "Cập nhật", "Thêm"):
+📖 **Khi cần sửa bản ghi sau này:** đăng nhập **inet.vn** → bấm tên tài khoản (góc phải) → **Danh sách dịch vụ** (mở trang **OnePortal**) → dòng `tandcstore.com` loại **Tên miền** → nút **Bản ghi** → trang **Bản ghi DNS tandcstore.com**. Tại đây:
+- thêm bản ghi mới bằng nút **Thêm bản ghi** (form gồm Loại, Tên, TTL, Trạng thái Bảo vệ, Địa chỉ IP);
+- sửa bản ghi có sẵn bằng **Chỉnh sửa** ở cuối dòng.
 
-   **Bản ghi thứ 1 — cho `tandcstore.com`:**
-
-   | Ô trên form (tên có thể khác) | Điền |
-   |---|---|
-   | **Tên / Host / Bản ghi / Tên miền con** | `@` — nếu ô không nhận `@` thì **để trống** |
-   | **Loại / Type / Kiểu** | `A` |
-   | **Giá trị / Value / Địa chỉ IP / Trỏ tới** | IP CÔNG CỘNG (chỉ dãy số, vd `123.45.67.89`, không có `http://`) |
-   | **TTL** | `300` — nếu là danh sách chọn thì chọn mức **nhỏ nhất** (vd 5 phút) |
-
-   **Bản ghi thứ 2 — cho `www.tandcstore.com`:** bấm **Thêm bản ghi** lần nữa:
-
-   | Ô trên form | Điền |
-   |---|---|
-   | Tên / Host | `www` (chỉ 3 chữ `www`, **không** gõ `www.tandcstore.com`) |
-   | Loại / Type | `A` |
-   | Giá trị / Value | IP CÔNG CỘNG (giống bản ghi 1) |
-   | TTL | `300` / mức nhỏ nhất |
-
-6. Một số giao diện cần bấm thêm nút **Lưu thay đổi** / **Cập nhật** ở cuối danh sách sau khi thêm — nếu thấy nút đó thì bấm.
-7. Kiểm tra lại danh sách: phải có đúng 2 dòng **A** — `@` và `www` — cùng trỏ về IP CÔNG CỘNG. Chụp màn hình lưu lại.
-
-⚠️ **Lỗi hay gặp:**
-- Gõ `tandcstore.com` hoặc `www.tandcstore.com` vào ô **Tên/Host** → thành `tandcstore.com.tandcstore.com` (sai). Ô Host chỉ ghi `@` (hoặc để trống) và `www`.
-- Chọn nhầm loại **CNAME** hoặc **AAAA** — phải là **A**.
-- Dán IP có khoảng trắng hoặc có `http://`.
-- Đổi **Nameserver** sang nơi khác — không làm.
-
-🆘 **Nếu bị kẹt** (không tìm thấy chỗ thêm bản ghi, form khác hẳn mô tả):
-- Gọi **tổng đài inet.vn 1900 9250** và đọc: *"Tôi cần thêm 2 bản ghi A cho tên miền tandcstore.com: Host `@` trỏ về IP `<IP CÔNG CỘNG>`, và Host `www` trỏ về cùng IP đó, TTL 300."*
-- Hoặc chụp màn hình trang quản lý tên miền gửi Claude để chỉ đúng nút.
-
-💻 **DÁN VÀO MÁY TÍNH CỦA BẠN** (kiểm tra sau 10–30 phút; `8.8.8.8` là máy hỏi DNS công cộng của Google, cho kết quả mới nhất):
+💻 **DÁN VÀO MÁY TÍNH CỦA BẠN** (kiểm tra bất cứ lúc nào):
 ```bash
 nslookup tandcstore.com 8.8.8.8
 ```
-```bash
-nslookup www.tandcstore.com 8.8.8.8
-```
-✅ **KẾT QUẢ ĐÚNG:** ở phần **sau** dòng `Name:` có `Address:` là **IP CÔNG CỘNG** (cả hai lệnh). Chưa thấy → chờ thêm 15–30 phút rồi thử lại; quá 2 giờ vẫn chưa thấy → ⛔ gửi Claude ảnh chụp danh sách bản ghi.
+✅ **KẾT QUẢ ĐÚNG:** dòng `Address:` sau dòng `Name:` là `65.18.117.228`.
+
+⚠️ **Trước khi làm xong bước 8:** ai mở `tandcstore.com` có thể thấy **web VCM** hoặc **cảnh báo chứng chỉ**. Lý do: server chưa có cấu hình cho tên miền mới, nên Nginx trả trang mặc định. Không ảnh hưởng gì; nên làm bước 1–8 sớm để hết tình trạng này.
 
 ## Bước 8. Bật HTTPS (ổ khoá) cho tandcstore.com
 
