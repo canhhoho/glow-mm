@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Web bán mỹ phẩm B2C **T&C Cosmetics** (tên cũ Glow VN, đổi ở P18) nhập từ Việt Nam, bán tại Myanmar. Kế hoạch chi tiết: [PLAN.md](PLAN.md). Triển khai: [DEPLOY.md](DEPLOY.md).
+Web bán mỹ phẩm B2C **T&C Cosmetics** (tên cũ Glow VN, đổi ở P18) nhập từ Việt Nam, bán tại Myanmar. Kế hoạch chi tiết: [PLAN.md](PLAN.md). Triển khai: [DEPLOY.md](DEPLOY.md); runbook tên miền **tandcstore.com** (DNS ở inet.vn) + server riêng: [docs/huong-dan-trien-khai-tandcstore.md](docs/huong-dan-trien-khai-tandcstore.md).
 
 ## Cách làm việc
 - Trả lời bằng **tiếng Việt**, ngắn gọn.

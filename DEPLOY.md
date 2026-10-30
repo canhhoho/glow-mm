@@ -2,6 +2,8 @@
 
 Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong biến môi trường (xem `.env.example`).
 
+> **Làm theo từng bước cho tên miền `tandcstore.com` + server riêng:** [docs/huong-dan-trien-khai-tandcstore.md](docs/huong-dan-trien-khai-tandcstore.md). File này là tài liệu tham khảo chi tiết.
+
 | | Testing | Production (sau) |
 |---|---|---|
 | App | Vercel (functions `sin1` Singapore) | Server Myanmar, Coolify + Docker |
@@ -111,7 +113,9 @@ Khách bắt buộc có tài khoản khi đặt hàng. Đăng ký/đăng nhập 
 
 ---
 
-## 2. Chuyển sang server Myanmar (Coolify + Docker)
+## 2. Chuyển sang server riêng (Coolify + Docker)
+
+Trình tự cụ thể cho tandcstore.com (chạy thử trên `moi.tandcstore.com`, ngày chuyển, quay lại): [docs/huong-dan-trien-khai-tandcstore.md](docs/huong-dan-trien-khai-tandcstore.md) — giai đoạn B.
 
 ### 2.1 Chuẩn bị server
 - **Cấu hình khuyến nghị:** Ubuntu Server 24.04 LTS, ≥ 2 vCPU, 4 GB RAM, ≥ 40 GB SSD, IP tĩnh.
