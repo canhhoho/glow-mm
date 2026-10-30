@@ -29,8 +29,10 @@
 4. **Dữ liệu nằm trong Docker volume** (`tandc_pgdata`, `tandc_uploads`). Không chạy `docker compose down -v` / `docker volume rm` — mất toàn bộ đơn hàng, tồn kho, ảnh.
 
 **Lộ trình 2 giai đoạn**
-- **Giai đoạn A — làm ngay (1–2 giờ, chủ yếu chờ DNS):** `tandcstore.com` chạy trên Vercel hiện tại; bật email; cập nhật đăng nhập Google.
+- **Giai đoạn A — làm ngay (30–60 phút, chủ yếu chờ DNS):** `tandcstore.com` chạy trên Vercel hiện tại; cập nhật đăng nhập Google.
 - **Giai đoạn B — khi sẵn sàng:** dựng app trên server, chạy thử ở `moi.tandcstore.com` với bản sao dữ liệu → chọn ngày chuyển dữ liệu + đổi DNS về server. Khách không phải đổi gì.
+
+**Tài khoản khách (đã chốt):** đăng ký/đăng nhập bằng **SĐT + mật khẩu** (chính) và **Google** (giữ cho khách đã dùng). **Không dùng email** (`EMAIL_DRIVER=none`): không cần Resend, không cần bản ghi DNS email. Khách quên mật khẩu → trang đăng nhập tự hiện *"Quên mật khẩu? Nhắn shop qua Viber hoặc Messenger…"* → nhân viên đặt lại ở **`/admin/customer-accounts`** (tìm theo SĐT → đặt mật khẩu tạm → báo khách đăng nhập rồi đổi). Tài khoản Google không có mật khẩu nên không đặt lại được — khách đó cứ đăng nhập bằng Google. Muốn bật email sau này: xem A5.
 
 > **Không dán secret** (mật khẩu, token, khoá) vào chat hay vào Git. Sinh secret **trên server** bằng các lệnh có sẵn trong hướng dẫn.
 
@@ -66,16 +68,20 @@
 - [ ] **Deployments → Redeploy** bản Production mới nhất. Bắt buộc build lại: canonical, sitemap, Open Graph và phiên đăng nhập (Better Auth) đều dùng `APP_URL`.
 - [ ] Vercel → Domains → `glow-mm.vercel.app` → **Redirect to `tandcstore.com`** **[CẦN XÁC MINH Vercel cho phép với tên miền .vercel.app]**. Link cũ (kể cả link CTV `?ref=MAUNG`) tự chuyển sang tên miền mới — đăng nhập chỉ chạy trên đúng `APP_URL`. Nếu Vercel không cho, báo Claude thêm chuyển hướng trong code.
 
-## A4. Đăng nhập Google
+## A4. Đăng nhập Google (bắt buộc — 5 phút)
 - [ ] Google Cloud Console → **Google Auth Platform → Clients** → client web hiện có → thêm (giữ URI cũ):
   - Authorized JavaScript origins: `https://tandcstore.com`
   - Authorized redirect URIs: `https://tandcstore.com/api/customer-auth/callback/google`
-  - **Save** (vài phút mới có hiệu lực).
+  - **Save** (vài phút mới có hiệu lực). Thiếu bước này → nút Google báo `redirect_uri_mismatch`.
+
+**Tuỳ chọn, làm sau cũng được** — để màn hình đăng nhập Google hiện tên "T&C Cosmetics" thay vì tên miền:
 - [ ] **Branding**: Authorized domains thêm `tandcstore.com`; App home page `https://tandcstore.com`; Privacy policy `https://tandcstore.com/info/privacy`; Terms để trống (web chưa có trang điều khoản).
 - [ ] **Xác minh sở hữu tên miền**: [Google Search Console](https://search.google.com/search-console) → Add property → **Domain** `tandcstore.com` → thêm bản ghi **TXT** Google đưa (Host `@`) ở inet.vn → Verify.
 - [ ] **Verification Center / Branding → Verify branding**. Sau khi Google duyệt, màn hình đăng nhập Google hiện tên "T&C Cosmetics" **[CẦN XÁC MINH thời gian duyệt]**. Trong lúc chờ, đăng nhập Google vẫn chạy.
 
-## A5. Email (Resend) — đăng ký/đăng nhập bằng email, quên mật khẩu
+## A5. Email (Resend) — **BỎ QUA** (chỉ làm nếu sau này muốn bật đăng ký bằng email + tự lấy lại mật khẩu qua email)
+
+Hiện dùng SĐT nên giữ `EMAIL_DRIVER=none` (mặc định) và **chuyển thẳng sang A6**. Khi cần bật:
 - [ ] resend.com → **Domains → Add Domain** → `tandcstore.com` (region gần nhất, vd Tokyo/Singapore **[CẦN XÁC MINH]**).
 - [ ] Chép **từng bản ghi** Resend hiển thị vào inet.vn, thường là **[CẦN XÁC MINH]**:
 
@@ -94,14 +100,16 @@
 - [ ] `https://tandcstore.com` hiện trang chủ tiếng Myanmar, ổ khoá HTTPS hợp lệ.
 - [ ] `https://www.tandcstore.com` và `https://glow-mm.vercel.app` → chuyển về `https://tandcstore.com`.
 - [ ] `https://tandcstore.com/sitemap.xml`, `/robots.txt` chỉ chứa `tandcstore.com`.
-- [ ] `/en/login`: đăng nhập **Google** → về `/en/account`; đăng ký **email** → nhận thư (xem cả Spam); **quên mật khẩu** → nhận link; đăng nhập SĐT + mật khẩu vẫn chạy.
+- [ ] `/en/register`: đăng ký bằng **SĐT + mật khẩu** (số thử) → vào `/en/account`; đăng xuất → `/en/login` đăng nhập lại bằng SĐT.
+- [ ] `/en/login`: **không** có form email; có dòng hướng dẫn quên mật khẩu (nhắn shop); nút **Google** → đăng nhập → về `/en/account`.
+- [ ] `/admin/customer-accounts`: tìm số thử → đặt lại mật khẩu → đăng nhập được bằng mật khẩu mới. Xong khoá/xoá tài khoản thử.
 - [ ] `/admin` (3 vai trò) và cổng `/ctv` đăng nhập được.
 - [ ] Link CTV `https://tandcstore.com/?ref=<mã CTV>` → đặt thử đơn → đơn gắn đúng CTV (rồi huỷ).
 - [ ] Header bảo mật:
   ```bash
   curl -sI https://tandcstore.com/en | grep -iE "strict-transport|content-security"
   ```
-- [ ] Search Console → **Sitemaps** → gửi `https://tandcstore.com/sitemap.xml`. Cập nhật link Facebook page, Viber, danh thiếp.
+- [ ] Cập nhật link Facebook page, Viber, danh thiếp sang `tandcstore.com`. (Nếu đã làm phần tuỳ chọn của A4: Search Console → **Sitemaps** → gửi `https://tandcstore.com/sitemap.xml`.)
 
 ---
 
@@ -156,7 +164,7 @@ Khách đi theo đường: **Internet → máy LB/Firewall (IP công cộng) →
   | `github.com` (443) | `git pull` |
   | `registry-1.docker.io`, `production.cloudflare.docker.com`, `registry.npmjs.org`, `binaries.prisma.sh` (443) | Build image (tải Node, thư viện, Prisma) |
   | `acme-v02.api.letsencrypt.org` (443) | Certbot cấp/gia hạn chứng chỉ |
-  | `api.resend.com` (443) | Gửi email |
+  | `api.resend.com` (443) | Chỉ khi bật email (A5) — hiện không cần |
   | `oauth2.googleapis.com`, `www.googleapis.com` (443) | Đăng nhập Google (server đổi mã lấy thông tin tài khoản) |
   | `*.neon.tech` (5432), `*.public.blob.vercel-storage.com` (443) | Chỉ khi chuyển dữ liệu (B6.4, PHẦN C) |
   | Backblaze B2 / Cloudflare R2 (443) | Backup hằng đêm (B7) |
@@ -230,9 +238,8 @@ DATABASE_POOL_MAX=20
 FB_PAGE_USERNAME=<như trên Vercel, có thể để trống>
 VIBER_CHAT_URI=<như trên Vercel, có thể để trống>
 
-EMAIL_DRIVER=resend
-RESEND_API_KEY=<key Resend ở A5>
-EMAIL_FROM="T&C Cosmetics <no-reply@tandcstore.com>"
+# Không dùng email (khách đăng ký bằng SĐT). Bật sau: resend + RESEND_API_KEY + EMAIL_FROM (A5)
+EMAIL_DRIVER=none
 
 GOOGLE_CLIENT_ID=<như trên Vercel>
 GOOGLE_CLIENT_SECRET=<như trên Vercel>
@@ -483,7 +490,7 @@ Chọn giờ ít khách (vd 22:00 Yangon). Ngừng ghi khoảng **30–60 phút*
    ```bash
    SOURCE_COMMIT=$(git rev-parse --short HEAD) docker compose -p tandc -f docker-compose.prod.yml --env-file .env.prod up -d --build
    ```
-5. [ ] inet.vn: `A @` → `<IP_CONG_CONG>` (thay `76.76.21.21`); `www`: xoá CNAME Vercel, thêm `A www` → `<IP_CONG_CONG>`. Giữ nguyên bản ghi Resend + Google TXT. Chờ `nslookup tandcstore.com` ra `<IP_CONG_CONG>`.
+5. [ ] inet.vn: `A @` → `<IP_CONG_CONG>` (thay `76.76.21.21`); `www`: xoá CNAME Vercel, thêm `A www` → `<IP_CONG_CONG>`. Giữ nguyên bản ghi Google TXT (và Resend nếu có). Chờ `nslookup tandcstore.com` ra `<IP_CONG_CONG>`.
 6. [ ] Thêm tên miền chính vào Nginx (tạm thời ở HTTP để Certbot xác thực):
    ```bash
    nano /etc/nginx/sites-available/tandc
@@ -609,7 +616,7 @@ docker logs tandc-app-1 --tail 50; tail -20 /var/log/glow-cron.log; tail -20 /va
 
 Trên trình duyệt (ẩn danh):
 - [ ] Trang chủ `my`/`en`, ảnh SP, tìm kiếm, giỏ hàng.
-- [ ] Đăng nhập: SĐT, email (nhận thư), Google (tới trang Google rồi quay về `/account`).
+- [ ] Đăng nhập: SĐT + mật khẩu, Google (tới trang Google rồi quay về `/account`); nhân viên đặt lại mật khẩu khách ở `/admin/customer-accounts` được.
 - [ ] Admin 3 vai trò; đổi mật khẩu mặc định nếu còn (`/admin/account`).
 - [ ] Đặt thử đơn COD + chuyển khoản → huỷ. Tồn kho khớp số liệu trước khi chuyển.
 - [ ] Cổng CTV + link `?ref=`.
@@ -642,7 +649,7 @@ Thiếu URI chính xác `https://tandcstore.com/api/customer-auth/callback/googl
 ## F.5 Đăng nhập xong vẫn như chưa đăng nhập / lỗi origin
 Đang mở tên miền khác `APP_URL` (vd `www`, `moi`, `glow-mm.vercel.app`) hoặc chưa build lại sau khi đổi `APP_URL`. Kiểm `grep ^APP_URL /var/www/tandc/.env.prod`, chạy lại lệnh build; đảm bảo `www` chuyển 301 về `tandcstore.com`.
 
-## F.6 Không nhận được email
+## F.6 Không nhận được email (chỉ khi đã bật email ở A5)
 Resend → Domains chưa **Verified**, hoặc thư vào Spam, hoặc sai `EMAIL_FROM`/`RESEND_API_KEY`. Xem Resend → Logs.
 
 ## F.7 Khách báo "Failed to find Server Action" / bấm nút không ăn
@@ -693,11 +700,11 @@ Sau đó kiểm tra lại cấu hình `tandc` trước khi bật lại.
 | A | `@` | `76.76.21.21` | `<IP_CONG_CONG>` |
 | CNAME / A | `www` | CNAME `cname.vercel-dns.com` | A `<IP_CONG_CONG>` |
 | A | `moi` | (thêm ở B6.1: `<IP_CONG_CONG>`) | xoá |
-| TXT | `resend._domainkey` | khoá DKIM Resend | giữ |
-| MX | `send` | `feedback-smtp.<region>.amazonses.com` (10) | giữ |
-| TXT | `send` | `v=spf1 include:amazonses.com ~all` | giữ |
-| TXT | `_dmarc` | `v=DMARC1; p=none;` | giữ |
-| TXT | `@` | `google-site-verification=...` | giữ |
+| TXT | `@` | `google-site-verification=...` (chỉ khi làm phần tuỳ chọn của A4) | giữ |
+| TXT | `resend._domainkey` | *(chỉ khi bật email — A5)* khoá DKIM Resend | giữ |
+| MX | `send` | *(chỉ khi bật email)* `feedback-smtp.<region>.amazonses.com` (10) | giữ |
+| TXT | `send` | *(chỉ khi bật email)* `v=spf1 include:amazonses.com ~all` | giữ |
+| TXT | `_dmarc` | *(chỉ khi bật email)* `v=DMARC1; p=none;` | giữ |
 
 Giá trị Vercel/Resend lấy theo màn hình thật **[CẦN XÁC MINH]**.
 
