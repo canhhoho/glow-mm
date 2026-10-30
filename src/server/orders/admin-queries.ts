@@ -5,7 +5,8 @@ import type { OrderChannel, OrderStatus, Prisma } from "@/generated/prisma/clien
 import { salesBlockDays } from "@/server/inventory/documents";
 import { productName } from "@/server/inventory/queries";
 import { availableToSell } from "./availability";
-import { normalizeMmPhone } from "@/lib/phone";
+import { normalizeMmPhone, phoneSearchDigits } from "@/lib/phone";
+import { toUnicode } from "@/lib/myanmar";
 import { ORDER_STATUSES } from "./state-machine";
 
 /** Truy vấn cho admin đơn hàng (đọc, không thay đổi dữ liệu). */
@@ -23,13 +24,15 @@ export async function listOrdersAdmin(filter: OrderListFilter, now = new Date())
     where.channel = filter.channel as OrderChannel;
   }
   if (filter.affiliateId) where.affiliateId = filter.affiliateId;
-  const q = filter.q?.trim();
+  const q = filter.q ? toUnicode(filter.q.trim()) : "";
   if (q) {
+    // SĐT đủ → khớp đúng; chỉ gõ số → khớp một phần; có chữ → chỉ tìm mã đơn / tên người nhận.
     const phone = normalizeMmPhone(q);
+    const digits = phone ? "" : phoneSearchDigits(q);
     where.OR = [
       { code: { contains: q.toUpperCase() } },
       { recipientName: { contains: q, mode: "insensitive" } },
-      ...(phone ? [{ recipientPhone: phone }] : [{ recipientPhone: { contains: q.replace(/\D/g, "") || q } }]),
+      ...(phone ? [{ recipientPhone: phone }] : digits ? [{ recipientPhone: { contains: digits } }] : []),
     ];
   }
   const overdueWhere: Prisma.OrderWhereInput = {

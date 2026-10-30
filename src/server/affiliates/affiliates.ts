@@ -9,7 +9,7 @@ import { yangonDayKey, yangonDayStart } from "@/lib/time";
 import { storage } from "@/server/adapters/storage";
 import { can, MIN_STAFF_PASSWORD, type Role } from "@/server/auth/roles";
 import type { Tx } from "@/server/inventory/ledger";
-import { normalizeMmPhone } from "@/lib/phone";
+import { normalizeMmPhone, phoneSearchDigits } from "@/lib/phone";
 import { PROOF_MAX_BYTES, PROOF_MIME } from "@/server/orders/payments";
 import { getNumberSetting } from "@/server/settings";
 import { uplineSnapshot } from "./upline";
@@ -359,7 +359,7 @@ async function ordersInvolving(ids: string[], now: Date) {
 export async function listAffiliates(filter: { q?: string; active?: boolean } = {}, now = new Date()) {
   const q = filter.q?.trim();
   // Chỉ tìm theo SĐT khi người dùng gõ số (tránh mã như "E2E1" khớp nhầm SĐT chứa "21").
-  const phoneDigits = q && /^[\d\s+().-]+$/.test(q) ? q.replace(/\D/g, "") : "";
+  const phoneDigits = q ? phoneSearchDigits(q) : "";
   const affiliates = await prisma.affiliate.findMany({
     where: {
       active: filter.active,

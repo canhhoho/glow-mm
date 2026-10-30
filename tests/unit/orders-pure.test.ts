@@ -6,7 +6,7 @@ import {
   holdsReservation,
   TransitionError,
 } from "@/server/orders/state-machine";
-import { normalizeMmPhone } from "@/lib/phone";
+import { normalizeMmPhone, phoneSearchDigits } from "@/lib/phone";
 import { orderTotals } from "@/server/orders/pricing";
 
 describe("Máy trạng thái đơn", () => {
@@ -76,5 +76,13 @@ describe("Tính tiền & SĐT", () => {
     expect(normalizeMmPhone("၀၉၇၈၁၂၃၄၅၆")).toBe("0978123456");
     expect(normalizeMmPhone("12345")).toBeNull();
     expect(normalizeMmPhone("0812345678")).toBeNull();
+  });
+
+  it("phoneSearchDigits: chỉ lấy số khi từ khoá toàn ký tự SĐT và ≥ 3 chữ số", () => {
+    expect(phoneSearchDigits(" 09 7812-3456 ")).toBe("0978123456");
+    expect(phoneSearchDigits("၃၄၅၆")).toBe("3456");
+    expect(phoneSearchDigits("khongtontai123")).toBe("");
+    expect(phoneSearchDigits("E2E1")).toBe("");
+    expect(phoneSearchDigits("12")).toBe("");
   });
 });

@@ -1,6 +1,7 @@
 import Rabbit from "rabbit-node";
 import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
+import { listOrdersAdmin } from "@/server/orders/admin-queries";
 import { cancelExpiredOrders } from "@/server/orders/cron";
 import { OrderError } from "@/server/orders/errors";
 import { createOrder } from "@/server/orders/orders";
@@ -297,5 +298,19 @@ describe("Chuyển khoản: biên lai → duyệt", () => {
     });
     await cancelExpiredOrders("BANK_TRANSFER");
     expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe("CANCELLED");
+  });
+});
+
+describe("Tìm đơn trong admin", () => {
+  it("gõ số → khớp một phần SĐT; từ khoá có chữ không so SĐT (\"abc123\" không ra mọi SĐT chứa 123)", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
+    const tail = String(Date.now()).slice(-7);
+    const order = await createOrder(orderInput(f, 1, { name: `Tim Kiem ${f.tag}`, phone: `09${tail}` }), { userId: null });
+    const ids = async (q: string) => (await listOrdersAdmin({ q })).map((o) => o.id);
+
+    expect(await ids(tail.slice(-5))).toContain(order.id);
+    expect(await ids(`+95 9 ${tail}`)).toContain(order.id);
+    expect(await ids(`khongtontai${tail.slice(-5)}`)).not.toContain(order.id);
+    expect(await ids(`tim kiem ${f.tag}`)).toEqual([order.id]);
   });
 });
