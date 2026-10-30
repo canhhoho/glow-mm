@@ -42,23 +42,36 @@ const CARD_INCLUDE = {
   variants: { where: { active: true }, select: { id: true, priceMmk: true } },
 } satisfies Prisma.ProductInclude;
 
-type CardRow = Prisma.ProductGetPayload<{ include: typeof CARD_INCLUDE }>;
+type CardProduct = Prisma.ProductGetPayload<{ include: typeof CARD_INCLUDE }>;
 
-async function toCards(products: CardRow[], locale: string) {
-  const avail = await availability(products.flatMap((p) => p.variants.map((v) => v.id)));
-  return products.map((p) => ({
+/**
+ * Thẻ SP **chưa có tồn** — phần nội dung (tên, giá, ảnh) cache được (`catalog/cached.ts`, P20). Tồn gắn sau mỗi
+ * request bằng `withStock` (đổi theo đơn/phiếu kho và theo thời gian nên không cache).
+ */
+export type CardRow = {
+  slug: string;
+  name: string;
+  brand: string;
+  priceMmk: number;
+  imageUrl: string | null;
+  imageAlt: string | null;
+  variantIds: string[];
+};
+
+function toCardRow(p: CardProduct, locale: string): CardRow {
+  return {
     slug: p.slug,
     name: pick(p.translations, locale)?.name ?? p.slug,
     brand: p.brand.name,
     priceMmk: Math.min(...p.variants.map((v) => v.priceMmk)),
     imageUrl: p.images[0]?.file.url ?? null,
     imageAlt: p.images[0]?.alt ?? null,
-    inStock: p.variants.some((v) => (avail.get(v.id) ?? 0) > 0),
-  }));
+    variantIds: p.variants.map((v) => v.id),
+  };
 }
 
 /** Thẻ SP theo danh sách id, giữ đúng thứ tự cho sẵn (bộ sưu tập); bỏ SP chưa đăng / không còn biến thể bán. */
-export async function listStoreProductsByIds(ids: string[], locale: string) {
+export async function loadCardRowsByIds(ids: string[], locale: string): Promise<CardRow[]> {
   if (ids.length === 0) return [];
   const products = await prisma.product.findMany({
     where: { AND: [...STORE_VISIBLE, { id: { in: ids } }] },
@@ -66,10 +79,11 @@ export async function listStoreProductsByIds(ids: string[], locale: string) {
   });
   const pos = new Map(ids.map((id, i) => [id, i]));
   products.sort((a, b) => (pos.get(a.id) ?? 0) - (pos.get(b.id) ?? 0));
-  return toCards(products, locale);
+  return products.map((p) => toCardRow(p, locale));
 }
 
-export async function listStoreProducts(query: ProductListQuery) {
+/** Thẻ SP theo bộ lọc, mới nhất trước (sắp theo giá làm ở `sortCards` sau khi gắn tồn). */
+export async function loadCardRows(query: Omit<ProductListQuery, "sort">): Promise<CardRow[]> {
   const and: Prisma.ProductWhereInput[] = [...STORE_VISIBLE];
   if (query.category) {
     and.push({ OR: [{ category: { slug: query.category } }, { category: { parent: { slug: query.category } } }] });
@@ -93,12 +107,35 @@ export async function listStoreProducts(query: ProductListQuery) {
     take: Math.min(query.take ?? 60, 60),
     include: CARD_INCLUDE,
   });
-  const cards = await toCards(products, query.locale);
-  if (query.sort === "price_asc") cards.sort((a, b) => a.priceMmk - b.priceMmk);
-  if (query.sort === "price_desc") cards.sort((a, b) => b.priceMmk - a.priceMmk);
+  return products.map((p) => toCardRow(p, query.locale));
+}
+
+export type ProductCardData = Omit<CardRow, "variantIds"> & { inStock: boolean };
+
+/** Gắn "còn hàng" cho nhiều nhóm thẻ bằng MỘT lần tính tồn (trang chủ có nhiều dải SP). */
+export async function withStock(groups: CardRow[][]): Promise<ProductCardData[][]> {
+  const ids = [...new Set(groups.flatMap((g) => g.flatMap((c) => c.variantIds)))];
+  const avail = ids.length > 0 ? await availability(ids) : new Map<string, number>();
+  return groups.map((g) =>
+    g.map(({ variantIds, ...card }) => ({ ...card, inStock: variantIds.some((id) => (avail.get(id) ?? 0) > 0) })),
+  );
+}
+
+export function sortCards(cards: ProductCardData[], sort: StoreSort | undefined) {
+  if (sort === "price_asc") cards.sort((a, b) => a.priceMmk - b.priceMmk);
+  if (sort === "price_desc") cards.sort((a, b) => b.priceMmk - a.priceMmk);
   return cards;
 }
-export type ProductCardData = Awaited<ReturnType<typeof listStoreProducts>>[number];
+
+export async function listStoreProductsByIds(ids: string[], locale: string) {
+  const [cards] = await withStock([await loadCardRowsByIds(ids, locale)]);
+  return cards;
+}
+
+export async function listStoreProducts(query: ProductListQuery) {
+  const [cards] = await withStock([await loadCardRows(query)]);
+  return sortCards(cards, query.sort);
+}
 
 /** Bộ lọc: thương hiệu + loại da + vấn đề da có trên sản phẩm đang bán. */
 export async function storeFilterOptions(locale: string) {
@@ -134,7 +171,8 @@ export async function getStoreCategory(slug: string, locale: string) {
   };
 }
 
-export async function getStoreProduct(slug: string, locale: string, now = new Date()) {
+/** Phần nội dung trang SP (cache được, P20) — chưa có tồn/hạn dùng lô. */
+export async function loadProductContent(slug: string, locale: string) {
   const p = await prisma.product.findFirst({
     where: { slug, published: true },
     include: {
@@ -147,26 +185,6 @@ export async function getStoreProduct(slug: string, locale: string, now = new Da
     },
   });
   if (!p || p.variants.length === 0) return null;
-
-  const ids = p.variants.map((v) => v.id);
-  const blockDays = await storeBlockDays();
-  const [avail, lots] = await Promise.all([
-    prisma.$transaction((tx) => availableToSell(tx, ids, { now, blockDays })),
-    // Hạn dùng của lô sẽ xuất tiếp theo (FEFO) — chỉ lô còn bán được ở kho bán.
-    prisma.stockBalance.findMany({
-      where: {
-        stockType: "SELLABLE",
-        qty: { gt: 0 },
-        location: { sellable: true },
-        batch: { variantId: { in: ids }, expiryDate: { gte: sellableCutoff(now, blockDays) } },
-      },
-      select: { batch: { select: { variantId: true, expiryDate: true } } },
-      orderBy: { batch: { expiryDate: "asc" } },
-    }),
-  ]);
-  const nextExpiry = new Map<string, Date>();
-  for (const l of lots) if (!nextExpiry.has(l.batch.variantId)) nextExpiry.set(l.batch.variantId, l.batch.expiryDate);
-
   const tr = pick(p.translations, locale);
   return {
     id: p.id,
@@ -180,15 +198,40 @@ export async function getStoreProduct(slug: string, locale: string, now = new Da
     category: { slug: p.category.slug, name: pick(p.category.translations, locale)?.name ?? p.category.slug },
     images: p.images.map((i) => ({ url: i.file.url, alt: i.alt })),
     tags: p.tags.map((t) => pick(t.tag.translations, locale)?.name ?? t.tag.slug),
-    variants: p.variants.map((v) => ({
-      id: v.id,
-      label: v.label,
-      priceMmk: v.priceMmk,
-      isBundle: v.isBundle,
-      available: avail.get(v.id) ?? 0,
-      expiryDate: nextExpiry.get(v.id) ?? null,
-    })),
+    variants: p.variants.map((v) => ({ id: v.id, label: v.label, priceMmk: v.priceMmk, isBundle: v.isBundle })),
   };
+}
+export type ProductContent = NonNullable<Awaited<ReturnType<typeof loadProductContent>>>;
+
+/** Gắn tồn khả dụng + hạn dùng lô sẽ xuất tiếp theo (FEFO) — luôn tính lúc request. */
+export async function withProductStock(content: ProductContent, now = new Date()) {
+  const ids = content.variants.map((v) => v.id);
+  const blockDays = await storeBlockDays();
+  const [avail, lots] = await Promise.all([
+    availableToSell(prisma, ids, { now, blockDays }),
+    // Chỉ lô còn bán được ở kho bán.
+    prisma.stockBalance.findMany({
+      where: {
+        stockType: "SELLABLE",
+        qty: { gt: 0 },
+        location: { sellable: true },
+        batch: { variantId: { in: ids }, expiryDate: { gte: sellableCutoff(now, blockDays) } },
+      },
+      select: { batch: { select: { variantId: true, expiryDate: true } } },
+      orderBy: { batch: { expiryDate: "asc" } },
+    }),
+  ]);
+  const nextExpiry = new Map<string, Date>();
+  for (const l of lots) if (!nextExpiry.has(l.batch.variantId)) nextExpiry.set(l.batch.variantId, l.batch.expiryDate);
+  return {
+    ...content,
+    variants: content.variants.map((v) => ({ ...v, available: avail.get(v.id) ?? 0, expiryDate: nextExpiry.get(v.id) ?? null })),
+  };
+}
+
+export async function getStoreProduct(slug: string, locale: string, now = new Date()) {
+  const content = await loadProductContent(slug, locale);
+  return content ? withProductStock(content, now) : null;
 }
 
 /** Dòng giỏ hàng kèm giá/tên hiện hành; dòng không còn bán hoặc vượt tồn bị đánh dấu. */

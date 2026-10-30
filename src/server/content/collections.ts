@@ -4,9 +4,9 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { toUnicode } from "@/lib/myanmar";
 import { pick } from "@/server/catalog/queries";
-import { listStoreProductsByIds } from "@/server/catalog/store-queries";
+import { loadCardRowsByIds, withStock } from "@/server/catalog/store-queries";
 import type { Tx } from "@/server/inventory/ledger";
-import { ContentError, directionSchema, inSchedule, moveInList, scheduleSchema, type Direction } from "./common";
+import { ContentError, directionSchema, inSchedule, isInSchedule, moveInList, scheduleSchema, type Direction } from "./common";
 
 /**
  * Bộ sưu tập sản phẩm chọn tay (vd "Hàng mới về", "Thanh lý"): tên my/en, lịch hiển thị, cờ trang chủ.
@@ -229,37 +229,64 @@ export async function getCollectionAdmin(id: string) {
 
 const visibleWhere = (now: Date) => ({ active: true, ...inSchedule(now) });
 
-/** Bộ sưu tập hiện trên trang chủ (đang bật, trong lịch, có SP hiển thị), mỗi bộ tối đa `take` thẻ SP. */
-export async function homeCollections(locale: string, now: Date, take = COLLECTION_RAIL_SIZE) {
+const ITEMS_ORDER = { orderBy: [{ sortOrder: "asc" as const }, { productId: "asc" as const }], select: { productId: true } };
+
+/**
+ * Bộ sưu tập đang bật hiện trên trang chủ, kèm lịch và thẻ SP **chưa có tồn** (cache được, P20). Lọc lịch
+ * (`visibleCollections`) và gắn tồn (`withStock`) làm lúc request.
+ */
+export async function loadHomeCollectionRows(locale: string, take = COLLECTION_RAIL_SIZE) {
   const rows = await prisma.collection.findMany({
-    where: { ...visibleWhere(now), showOnHome: true },
+    where: { active: true, showOnHome: true },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    include: { translations: true, items: { orderBy: [{ sortOrder: "asc" }, { productId: "asc" }], select: { productId: true } } },
+    include: { translations: true, items: ITEMS_ORDER },
   });
-  const out = [];
-  for (const c of rows) {
-    // Lấy dư id vì SP ẩn/hết biến thể bị lọc bỏ.
-    const products = (await listStoreProductsByIds(c.items.slice(0, take * 3).map((i) => i.productId), locale)).slice(0, take);
-    if (products.length > 0) out.push({ slug: c.slug, name: pick(c.translations, locale)?.name ?? c.slug, products });
-  }
-  return out;
+  return Promise.all(
+    rows.map(async (c) => ({
+      slug: c.slug,
+      name: pick(c.translations, locale)?.name ?? c.slug,
+      startAt: c.startAt,
+      endAt: c.endAt,
+      // Lấy dư id vì SP ẩn/hết biến thể bị lọc bỏ.
+      products: (await loadCardRowsByIds(c.items.slice(0, take * 3).map((i) => i.productId), locale)).slice(0, take),
+    })),
+  );
 }
 
-/** Trang /collection/[slug]: null nếu không có, đang tắt hoặc ngoài lịch. */
-export async function getStoreCollection(slug: string, locale: string, now: Date) {
-  const c = await prisma.collection.findFirst({
-    where: { slug, ...visibleWhere(now) },
-    include: { translations: true, items: { orderBy: [{ sortOrder: "asc" }, { productId: "asc" }], select: { productId: true } } },
-  });
+/** Bộ sưu tập đang bật theo slug (chưa xét lịch), thẻ SP chưa có tồn. */
+export async function loadCollectionRow(slug: string, locale: string) {
+  const c = await prisma.collection.findFirst({ where: { slug, active: true }, include: { translations: true, items: ITEMS_ORDER } });
   if (!c) return null;
   return {
     slug: c.slug,
     name: pick(c.translations, locale)?.name ?? c.slug,
-    products: await listStoreProductsByIds(
+    startAt: c.startAt,
+    endAt: c.endAt,
+    products: await loadCardRowsByIds(
       c.items.map((i) => i.productId),
       locale,
     ),
   };
+}
+
+/** Trong lịch tại `now` và còn SP hiển thị. */
+export function visibleCollections<T extends { startAt: Date | null; endAt: Date | null; products: unknown[] }>(rows: T[], now: Date) {
+  return rows.filter((c) => isInSchedule(c, now) && c.products.length > 0);
+}
+
+/** Bộ sưu tập hiện trên trang chủ (đang bật, trong lịch, có SP hiển thị), mỗi bộ tối đa `take` thẻ SP. */
+export async function homeCollections(locale: string, now: Date, take = COLLECTION_RAIL_SIZE) {
+  const rows = visibleCollections(await loadHomeCollectionRows(locale, take), now);
+  const stocked = await withStock(rows.map((c) => c.products));
+  return rows.map((c, i) => ({ slug: c.slug, name: c.name, products: stocked[i] }));
+}
+
+/** Trang /collection/[slug]: null nếu không có, đang tắt hoặc ngoài lịch. */
+export async function getStoreCollection(slug: string, locale: string, now: Date) {
+  const c = await loadCollectionRow(slug, locale);
+  if (!c || !isInSchedule(c, now)) return null;
+  const [products] = await withStock([c.products]);
+  return { slug: c.slug, name: c.name, products };
 }
 
 /** Cho proxy 404: bộ sưu tập có đang hiển thị không. */
