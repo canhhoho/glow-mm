@@ -11,6 +11,26 @@
 - Trước ngày chuyển, **nhận đơn trên server luôn TẮT**: dữ liệu chạy thử sẽ bị ghi đè khi chép dữ liệu lần cuối.
 - Khách đăng nhập bằng **SĐT + mật khẩu** và **Google**. Không dùng email.
 
+**Tránh va chạm với các app khác trên server** — app này được thiết kế để **tách hẳn**:
+
+| Tài nguyên | App này dùng | Vì sao không đụng app khác |
+|---|---|---|
+| Cổng 80/443 | Không chiếm — Nginx sẵn có nhận rồi chuyển vào | Chỉ thêm **một file site riêng** `/etc/nginx/sites-available/tandc`, `server_name` chỉ là `tandcstore.com`/`www` |
+| Cổng app | `127.0.0.1:3000` (chỉ trong máy) | Kiểm ở bước 2; trùng thì báo Claude đổi sang cổng khác |
+| Database | PostgreSQL **riêng trong Docker**, không mở cổng ra máy | Không đụng PostgreSQL hệ thống (cổng 5432) hay DB của app khác |
+| Node.js | Node 24 **bên trong container** | Không đụng Node/PM2 của app khác |
+| Tên Docker | Mọi thứ bắt đầu bằng `tandc` (`tandc-app-1`, volume `tandc_*`, mạng `tandc_default`) | Kiểm ở bước 2 rằng chưa có gì tên `tandc` |
+| Thư mục | `/var/www/tandc`, `/opt/glow`, `/var/log/glow-*.log` | Kiểm ở bước 2 rằng chưa tồn tại |
+| Crontab | **Thêm** 5 dòng vào crontab root, giữ nguyên dòng cũ | Bước 13e nối thêm, không ghi đè |
+| Chứng chỉ HTTPS | `certbot certonly` chỉ cho tandcstore.com | Không sửa site/chứng chỉ của app khác |
+| CPU/RAM | Build tốn ~2–3 GB RAM vài phút | Server 24 vCPU/48 GB dư; nên build ngoài giờ cao điểm |
+
+**Những lệnh có thể ảnh hưởng app khác — chỉ chạy đúng như hướng dẫn:**
+- `systemctl restart docker` (bước 3): **khởi động lại MỌI container** trên máy → chỉ chạy khi máy **chưa có Docker** (cài mới). Đã có Docker của app khác → bỏ qua cả bước 3.
+- `systemctl reload nginx`: luôn chạy **sau** `nginx -t` báo OK (lệnh trong hướng dẫn đã ghép sẵn `nginx -t && …`). `reload` không làm rớt kết nối của site khác.
+- **Không** sửa/xoá file trong `/etc/nginx/sites-enabled/` của app khác, **không** đổi `ufw`, SSH, múi giờ, PostgreSQL hệ thống, PM2.
+- **Không** chạy `docker system prune`, `docker volume prune`, `docker network prune`, `docker compose down` **không có `-p tandc`** — các lệnh này có thể xoá dữ liệu/mạng của app khác. Chỉ dùng `docker image prune -f` (xoá image rác không ai dùng).
+
 **Bạn cần chuẩn bị:**
 - [ ] OpenVPN đã kết nối, SSH được: `ssh vcm_aio@10.201.42.65`.
 - [ ] Tài khoản inet.vn (DNS), Google Cloud Console (OAuth), Neon (chuỗi kết nối DB hiện tại), GitHub.
@@ -29,15 +49,29 @@ ssh vcm_aio@10.201.42.65
 sudo su -
 ```
 
-## Bước 2. Kiểm tra server (chỉ xem)
+## Bước 2. Kiểm kê server và các app đang chạy (chỉ xem, không sửa gì)
+Chạy một lần, **chụp/lưu toàn bộ kết quả** (để đối chiếu nếu có sự cố, và gửi Claude nếu có mục nào lạ):
 ```bash
-nproc; free -h; df -h /; ss -tlnp | grep -E ':(80|443|3000|3001|5432)\b'; nginx -v; certbot --version; docker --version; docker compose version; timedatectl | grep "Time zone"
+echo "== CPU/RAM/DIA =="; nproc; free -h; df -h /
+echo "== CONG DANG NGHE =="; ss -tlnp
+echo "== SITE NGINX =="; ls -l /etc/nginx/sites-enabled/; grep -h -E "server_name|listen" /etc/nginx/sites-enabled/* | sed 's/^ *//' | sort -u
+echo "== PM2 =="; pm2 ls 2>/dev/null || echo "(khong co pm2 cho root)"
+echo "== DOCKER =="; docker --version 2>/dev/null && docker compose version && docker ps -a --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}' && docker compose ls -a && docker volume ls && docker network ls || echo "(chua co Docker)"
+echo "== MANG DOCKER (dai IP) =="; for n in $(docker network ls -q 2>/dev/null); do docker network inspect -f '{{.Name}} {{range .IPAM.Config}}{{.Subnet}} {{end}}' $n; done
+echo "== ROUTE CUA MAY =="; ip -4 route
+echo "== TEN SE DUNG (phai trong) =="; ls -d /var/www/tandc /opt/glow /var/log/glow-* 2>/dev/null; docker ps -a --format '{{.Names}}' 2>/dev/null | grep -i tandc; docker volume ls -q 2>/dev/null | grep -i tandc; echo "(het)"
+echo "== CRONTAB ROOT =="; crontab -l 2>/dev/null || echo "(trong)"
+echo "== KHAC =="; nginx -v; certbot --version; timedatectl | grep "Time zone"
 ```
 Đúng khi:
-- Nginx đang ở `:80` và `:443`, web VCM ở `:3001`.
-- **Không có gì ở `:3000`.** Có thì dừng lại, báo Claude.
+- **CỔNG:** không có tiến trình nào ở `:3000` (dòng chứa `:3000 `). Có → **dừng**, gửi kết quả cho Claude để đổi cổng.
+- **TÊN SẼ DÙNG:** giữa tiêu đề và `(het)` **không có dòng nào** (chưa có `/var/www/tandc`, `/opt/glow`, container/volume `tandc`). Có → dừng, báo Claude.
+- **SITE NGINX:** không site nào đang có `server_name` chứa `tandcstore.com`.
+- **DOCKER:**
+  - nếu đã có Docker (app khác đang dùng) → **bỏ qua bước 3**, không restart Docker;
+  - nếu chưa có → làm bước 3.
+- **MẠNG DOCKER / ROUTE:** dải IP của mạng Docker (thường `172.17–31.x.x` hoặc `192.168.x.x`) **không được trùng** với dải mạng công ty/VPN trong `ip -4 route` hoặc dải bộ phận hạ tầng đang dùng. Hỏi hạ tầng: *"Mạng nội bộ/VPN có dùng dải 172.16.0.0/12 hoặc 192.168.0.0/16 không?"*. Nếu có → báo Claude trước bước 6 để cấu hình dải riêng cho mạng `tandc`.
 - `nginx` và `certbot` có phiên bản.
-- Docker chưa có thì làm bước 3, có rồi thì bỏ qua.
 
 Kiểm tra server ra được Internet (mỗi dòng phải có số, không phải `000`):
 ```bash
@@ -45,7 +79,9 @@ for u in https://github.com https://registry.npmjs.org https://registry-1.docker
 ```
 Dòng nào `000`/`LOI` → nhờ bộ phận hạ tầng mở firewall cho địa chỉ đó (cổng 443).
 
-## Bước 3. Cài Docker (bỏ qua nếu bước 2 đã thấy `docker compose version`)
+## Bước 3. Cài Docker — CHỈ khi bước 2 báo "(chua co Docker)"
+> Máy đã có Docker (của app khác) → **bỏ qua cả bước này**. Lệnh `systemctl restart docker` bên dưới khởi động lại mọi container trên máy.
+
 ```bash
 curl -fsSL https://get.docker.com | sh && systemctl enable --now docker && docker compose version
 ```
