@@ -1,12 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import createMiddleware from "next-intl/middleware";
 import { hasLocale } from "next-intl";
+import { buildCsp, newNonce } from "./lib/csp";
 import { PORTAL_HEADER, routing } from "./i18n/routing";
 import { normalizeRefCode, REF_COOKIE, REF_MAX_AGE_S, REF_PARAM } from "./server/affiliates/referral";
 import { customerLoginRedirectFor, loginRedirectFor } from "./server/auth/session-cookie";
 import { isKnownStorePath, parseStoreSlugPath, storeSlugExists } from "./server/catalog/store-slugs";
 
 const intl = createMiddleware(routing);
+const DEV = process.env.NODE_ENV !== "production";
+const HTTPS = process.env.APP_URL?.startsWith("https://") ?? false;
 
 /**
  * Proxy: định tuyến locale cho storefront + trả HTTP 404 thật (trang có header/footer, bản dịch) cho:
@@ -19,13 +22,19 @@ export default async function proxy(req: NextRequest) {
   // Admin / cổng CTV chưa có cookie phiên → về trang đăng nhập ngay (307), không render trang trắng.
   const login = loginRedirectFor(req.nextUrl.pathname, req.cookies.getAll().map((c) => c.name));
   if (login) return NextResponse.redirect(new URL(login, req.url));
-  if (req.nextUrl.pathname === "/admin" || req.nextUrl.pathname.startsWith("/admin/")) return NextResponse.next();
-
-  // Cổng CTV: không qua next-intl storefront; gắn header để i18n chọn ngôn ngữ của cổng CTV.
-  if (req.nextUrl.pathname === "/ctv" || req.nextUrl.pathname.startsWith("/ctv/")) {
+  const path = req.nextUrl.pathname;
+  const admin = path === "/admin" || path.startsWith("/admin/");
+  const ctv = path === "/ctv" || path.startsWith("/ctv/");
+  if (admin || ctv) {
+    // CSP nonce (P21): đặt vào request để Next gắn nonce cho script của nó, và vào response cho trình duyệt.
+    const csp = buildCsp({ nonce: newNonce(), dev: DEV, https: HTTPS });
     const headers = new Headers(req.headers);
-    headers.set(PORTAL_HEADER, "ctv");
-    return NextResponse.next({ request: { headers } });
+    headers.set("content-security-policy", csp);
+    // Cổng CTV: không qua next-intl storefront; gắn header để i18n chọn ngôn ngữ của cổng CTV.
+    if (ctv) headers.set(PORTAL_HEADER, "ctv");
+    const res = NextResponse.next({ request: { headers } });
+    res.headers.set("content-security-policy", csp);
+    return res;
   }
 
   // Link giới thiệu CTV (P10): ghi cookie rồi chuyển sang URL không còn `ref` (giữ cache/canonical sạch).

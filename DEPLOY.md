@@ -190,7 +190,7 @@ Làm trong giờ thấp điểm, khoảng 15–30 phút ngừng ghi dữ liệu.
 - [ ] Tồn kho trùng khớp: tổng `StockBalance` theo biến thể = số liệu trước khi chuyển.
 - [ ] Đặt thử 1 đơn COD và 1 đơn chuyển khoản (upload biên lai → duyệt) rồi huỷ.
 - [ ] Gọi tay từng cron (kể cả `cleanup`) với `CRON_SECRET` qua `http://127.0.0.1:3000` → 200; không có secret → 401.
-- [ ] `curl -sI https://<domain>/` có `Strict-Transport-Security`, `Permissions-Policy`; `curl -sI https://<domain>/icons/icon-192.png` có `Cache-Control: public, max-age=86400…`.
+- [ ] `curl -sI https://<domain>/` có `Strict-Transport-Security`, `Permissions-Policy`, `Content-Security-Policy` (có `upgrade-insecure-requests`); `curl -sI https://<domain>/admin/login` có CSP chứa `'nonce-…'`; bấm "Đăng nhập Google" trên `/login` phải tới được trang Google (CSP `form-action` không chặn); `curl -sI https://<domain>/icons/icon-192.png` có `Cache-Control: public, max-age=86400…`.
 - [ ] Đăng nhập sai mật khẩu nhiều lần từ 2 mạng khác nhau: chỉ mạng bị dò mới bị chặn (rate limit theo IP thật qua `x-real-ip`).
 - [ ] Backup đầu tiên chạy thành công, file có trên off-site (§3).
 - [ ] **Khôi phục thử** backup đó vào một DB tạm (§3.3) → OK.

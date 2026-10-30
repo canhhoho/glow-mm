@@ -1,9 +1,11 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+import { buildCsp } from "./src/lib/csp";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const APP_URL_HTTPS = process.env.APP_URL?.startsWith("https://") ?? false;
+const DEV = process.env.NODE_ENV !== "production";
 
 const nextConfig: NextConfig = {
   // Build độc lập cho Docker/Coolify (server Myanmar).
@@ -23,6 +25,12 @@ const nextConfig: NextConfig = {
           // Tự host (Coolify/Traefik không tự thêm HSTS); chỉ khi APP_URL là https. Không includeSubDomains/preload.
           ...(APP_URL_HTTPS ? [{ key: "Strict-Transport-Security", value: "max-age=31536000" }] : []),
         ],
+      },
+      {
+        // CSP storefront + file công khai (P21, src/lib/csp.ts). Admin/CTV có CSP nonce riêng trong proxy.ts;
+        // /sw.js có CSP riêng bên dưới (hai header CSP sẽ bị áp cả hai).
+        source: "/((?!admin|ctv|sw\\.js).*)",
+        headers: [{ key: "Content-Security-Policy", value: buildCsp({ dev: DEV, https: APP_URL_HTTPS }) }],
       },
       // File tĩnh trong public/ tên không đổi (icon PWA, ảnh chia sẻ): mặc định Next trả max-age=0 → mỗi lần tải
       // trên 3G tốn một vòng hỏi lại. Cache 1 ngày, dùng bản cũ thêm 7 ngày trong lúc kiểm tra bản mới.
