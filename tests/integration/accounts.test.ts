@@ -54,6 +54,14 @@ describe("Sổ địa chỉ khách (P14b)", () => {
     expect(await prisma.accountAddress.count({ where: { userId: u.id, isDefault: true } })).toBe(1);
   });
 
+  it("ghi chú tới 500 ký tự như khi đặt hàng (P21 — trước giới hạn 300 làm lưu địa chỉ sau đặt hàng lỗi)", async () => {
+    const u = await customer();
+    const { zoneId: z } = await zoneId();
+    const note = "Gọi trước khi giao. ".repeat(20).slice(0, 400);
+    expect((await createAddress(u.id, addr(z, { note }))).note).toBe(note.trim());
+    await expect(createAddress(u.id, addr(z, { note: "x".repeat(501) }))).rejects.toThrow();
+  });
+
   it("không đụng được địa chỉ của tài khoản khác; SĐT / khu vực sai bị từ chối; tối đa 10", async () => {
     const [u, other] = [await customer(), await customer()];
     const { zoneId: z } = await zoneId();

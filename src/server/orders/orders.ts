@@ -1,8 +1,8 @@
 import "server-only";
 import { z } from "zod";
+import { localeSchema, mmText, phone2Schema, phoneSchema, rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
-import { toUnicode } from "@/lib/myanmar";
 import { uplineSnapshot } from "@/server/affiliates/upline";
 import { newCode } from "@/server/codes";
 import { salesBlockDays } from "@/server/inventory/documents";
@@ -21,23 +21,21 @@ import { reserveForOrder } from "./reservations";
  */
 
 const HOUR_MS = 60 * 60 * 1000;
-const id = z.string().min(1);
-const text = (max: number) => z.string().trim().max(max).transform(toUnicode);
 
 export const createOrderSchema = z.object({
   channel: z.enum(["WEB", "FACEBOOK", "VIBER", "PHONE"]).default("WEB"),
   paymentMethod: z.enum(["COD", "BANK_TRANSFER"]),
-  name: text(100).pipe(z.string().min(1)),
-  phone: z.string().trim().min(1).max(30),
+  name: mmText(100).pipe(z.string().min(1)),
+  phone: phoneSchema,
   /** SĐT phụ người nhận (P15, không bắt buộc). */
-  phone2: z.string().trim().max(30).optional(),
+  phone2: phone2Schema,
   /** Thị trấn VTP (P15) — server tra lại cả 3 cấp. */
-  townshipId: id,
-  addressLine: text(500).pipe(z.string().min(3)),
-  note: text(500).optional(),
-  locale: z.enum(["my", "en"]).default("my"),
+  townshipId: rawId,
+  addressLine: mmText(500).pipe(z.string().min(3)),
+  note: mmText(500).optional(),
+  locale: localeSchema.default("my"),
   items: z
-    .array(z.object({ variantId: id, qty: z.coerce.number().int().positive().max(99) }))
+    .array(z.object({ variantId: rawId, qty: z.coerce.number().int().positive().max(99) }))
     .min(1)
     .max(50),
   idempotencyKey: z.string().min(8).max(100).optional(),

@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { allocateLandedCost, vndToMmk } from "./landed-cost";
 
@@ -13,7 +14,7 @@ export const shipmentSchema = z.object({
 });
 
 export const shipmentCostSchema = z.object({
-  shipmentId: z.string().min(1),
+  shipmentId: rawId,
   type: z.enum(["SHIPPING", "TAX", "FEE"]),
   amountVnd: z.coerce.number().int().positive(),
   note: z.string().max(200).optional(),

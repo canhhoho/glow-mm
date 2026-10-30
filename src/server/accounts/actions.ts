@@ -6,6 +6,7 @@ import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { isAPIError } from "better-auth/api";
 import { z, ZodError } from "zod";
+import { confirmPasswordSchema, currentPasswordSchema, newPasswordSchema, phoneSchema, rawId, withConfirm } from "@/lib/schemas";
 import { redirect as nextRedirect } from "next/navigation";
 import { redirect } from "@/i18n/navigation";
 import { routing, type StoreLocale } from "@/i18n/routing";
@@ -48,7 +49,7 @@ async function signInWithPhone(phone: string, password: string) {
   await customerAuth.api.signInPhoneNumber({ body: { phoneNumber: phone, password }, headers: await headers() });
 }
 
-const phoneLoginSchema = z.object({ phone: z.string().trim().min(1).max(30), password: z.string().min(1).max(128) });
+const phoneLoginSchema = z.object({ phone: phoneSchema, password: currentPasswordSchema });
 
 /**
  * Đăng nhập SĐT + mật khẩu (gọi trực tiếp từ form đăng nhập — ô nhập không có "@"). Thành công → chuyển tới `next`
@@ -115,13 +116,14 @@ export async function updateProfileAction(_prev: StoreActionState, formData: For
   return { ok: true };
 }
 
-const passwordSchema = z
-  .object({
-    currentPassword: z.string().min(1).max(128),
-    newPassword: z.string().min(8).max(128),
-    confirmPassword: z.string().max(128),
-  })
-  .refine((d) => d.newPassword === d.confirmPassword, { path: ["confirmPassword"], message: "mismatch" });
+const passwordSchema = withConfirm(
+  z.object({
+    currentPassword: currentPasswordSchema,
+    newPassword: newPasswordSchema(MIN_CUSTOMER_PASSWORD),
+    confirmPassword: confirmPasswordSchema,
+  }),
+  "newPassword",
+);
 
 export async function changeCustomerPasswordAction(_prev: StoreActionState, formData: FormData): Promise<StoreActionState> {
   const locale = localeOf(formData);
@@ -196,7 +198,7 @@ export async function deleteAddressAction(formData: FormData) {
 
 // ── Admin: tài khoản khách (P17, quyền users:manage) ──
 
-const adminIdSchema = z.string().min(1);
+const adminIdSchema = rawId;
 
 /** Đặt mật khẩu tạm cho khách (khách SĐT quên mật khẩu nhắn shop) — thu hồi mọi phiên của khách. */
 export async function resetCustomerPasswordAction(_prev: ActionState, formData: FormData): Promise<ActionState> {

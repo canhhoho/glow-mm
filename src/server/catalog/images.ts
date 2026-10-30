@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { directionSchema } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { toUnicode } from "@/lib/myanmar";
 import {
@@ -63,7 +64,7 @@ async function findImage(imageId: string) {
 }
 
 export async function reorderProductImage(imageId: string, direction: "up" | "down", userId: string) {
-  const dir = z.enum(["up", "down"]).parse(direction);
+  const dir = directionSchema.parse(direction);
   const { productId } = await findImage(imageId);
   return prisma.$transaction(async (tx) => {
     await lockProduct(tx, productId);

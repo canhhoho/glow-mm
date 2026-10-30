@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { rawId, slugSchema } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { parseCsvObjects } from "@/lib/csv";
 import { normalizeForSearch, toUnicode } from "@/lib/myanmar";
@@ -8,12 +9,13 @@ import { createDocument } from "@/server/inventory/documents";
 
 /** Quản lý sản phẩm (admin). Giá đổi → ghi PriceHistory. Chữ Myanmar → Unicode trước khi lưu. */
 
-const text = (max: number) => z.string().trim().max(max).optional().default("");
+/** Chữ tuỳ chọn (rỗng → ""); toUnicode làm sau khi parse. */
+const optionalText = (max: number) => z.string().trim().max(max).optional().default("");
 
 const translation = z.object({
   name: z.string().trim().min(1).max(200),
-  description: text(5000),
-  usage: text(3000),
+  description: optionalText(5000),
+  usage: optionalText(3000),
 });
 
 const variantSchema = z.object({
@@ -27,17 +29,17 @@ const variantSchema = z.object({
   safetyStock: z.coerce.number().int().min(0).default(0),
   active: z.boolean().default(true),
   isBundle: z.boolean().default(false),
-  components: z.array(z.object({ componentId: z.string().min(1), qty: z.coerce.number().int().positive() })).default([]),
+  components: z.array(z.object({ componentId: rawId, qty: z.coerce.number().int().positive() })).default([]),
 });
 
 export const productSchema = z.object({
   id: z.string().optional(),
-  slug: z.string().trim().min(1).max(80).regex(/^[a-z0-9-]+$/, "Slug chỉ gồm a-z, 0-9 và -"),
-  brandId: z.string().min(1),
-  categoryId: z.string().min(1),
+  slug: slugSchema(80, "Slug chỉ gồm a-z, 0-9 và -"),
+  brandId: rawId,
+  categoryId: rawId,
   published: z.boolean().default(false),
-  storageNote: text(500),
-  ingredientsText: text(5000),
+  storageNote: optionalText(500),
+  ingredientsText: optionalText(5000),
   my: translation,
   en: translation,
   tagIds: z.array(z.string()).default([]),
@@ -157,7 +159,7 @@ export async function createBrand(name: string) {
 export async function createCategory(raw: unknown) {
   const input = z
     .object({
-      slug: z.string().trim().min(1).max(60).regex(/^[a-z0-9-]+$/),
+      slug: slugSchema(60),
       nameMy: z.string().trim().min(1).max(80),
       nameEn: z.string().trim().min(1).max(80),
       parentId: z.string().trim().max(40).optional().transform((v) => v || null),

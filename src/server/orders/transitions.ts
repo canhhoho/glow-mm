@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { can, type Role } from "@/server/auth/roles";
 import { candidatesAt, postDocumentTx, salesBlockDays } from "@/server/inventory/documents";
@@ -24,7 +25,7 @@ export const transitionExtraSchema = z.object({
   reason: z.string().trim().max(500).optional(),
   carrier: z.string().trim().min(1).max(100).optional(),
   trackingNo: z.string().trim().max(100).optional(),
-  fromLocationId: z.string().min(1).optional(),
+  fromLocationId: rawId.optional(),
 });
 export type TransitionExtra = z.input<typeof transitionExtraSchema>;
 

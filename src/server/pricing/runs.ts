@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { getNumberSetting } from "@/server/settings";
@@ -44,11 +45,11 @@ export async function createRate(raw: unknown, userId: string) {
 }
 
 export const previewSchema = z.object({
-  rateId: z.string().min(1),
+  rateId: rawId,
   marginPct: decimalString(2, (v) => v <= BigInt(100_000), "% lãi từ 0 đến 1000, tối đa 2 chữ số thập phân"),
   roundTo: z.coerce.number().int().min(1).max(100_000).optional(),
-  categoryId: z.string().min(1).optional(),
-  brandId: z.string().min(1).optional(),
+  categoryId: rawId.optional(),
+  brandId: rawId.optional(),
 });
 
 /** Tạo bản xem trước cho các biến thể đang bán (lọc theo danh mục/thương hiệu nếu có). */

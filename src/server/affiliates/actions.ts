@@ -3,7 +3,8 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
-import { z, ZodError } from "zod";
+import { ZodError } from "zod";
+import { formId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { requirePermission } from "@/server/auth/session";
 import { MIN_STAFF_PASSWORD } from "@/server/auth/roles";
@@ -23,7 +24,7 @@ import { ApplicationError, approveApplication, rejectApplication } from "./appli
 
 /** Server Action quản lý CTV (quyền `affiliates:manage`) + gán CTV cho đơn (`orders:assign-affiliate`). */
 
-const id = z.string().trim().min(1).max(64);
+const id = formId(64);
 
 async function message(e: unknown): Promise<string> {
   const t = await getTranslations("Affiliates");

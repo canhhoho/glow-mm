@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { Prisma, type ReviewStatus } from "@/generated/prisma/client";
 import { toUnicode } from "@/lib/myanmar";
@@ -15,7 +16,7 @@ import { findOrderForCustomer } from "@/server/orders/orders";
 export const REVIEWS_TAG = "reviews";
 
 export const reviewSchema = z.object({
-  productId: z.string().min(1),
+  productId: rawId,
   rating: z.coerce.number().int().min(1).max(5),
   body: z.string().trim().max(1000).transform(toUnicode).optional(),
 });

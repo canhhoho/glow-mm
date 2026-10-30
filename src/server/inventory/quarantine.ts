@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
+import { mmTextReq, rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
-import { toUnicode } from "@/lib/myanmar";
 import { cancelDocument, createDocument, DocumentError, postDocument } from "./documents";
 import { productName } from "./queries";
 
@@ -55,14 +55,14 @@ export async function listQuarantine() {
 }
 
 const base = z.object({
-  batchId: z.string().min(1),
-  fromId: z.string().min(1),
+  batchId: rawId,
+  fromId: rawId,
   qty: z.coerce.number().int().positive(),
   stockType: z.enum(["SELLABLE", "TESTER"]).default("SELLABLE"),
 });
 
-export const restockSchema = base.extend({ toId: z.string().min(1) });
-export const discardSchema = base.extend({ reason: z.string().trim().min(1).max(500).transform(toUnicode) });
+export const restockSchema = base.extend({ toId: rawId });
+export const discardSchema = base.extend({ reason: mmTextReq(500) });
 
 async function assertQuarantine(fromId: string) {
   const loc = await prisma.location.findUnique({ where: { id: fromId } });

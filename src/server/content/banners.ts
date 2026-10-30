@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
+import { localeSchema, mmTextReq } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
-import { toUnicode } from "@/lib/myanmar";
 import {
   deleteFileIfUnused,
   deleteStoredKeys,
@@ -21,8 +21,8 @@ const TX = { maxWait: 10_000, timeout: 30_000 };
 
 const bannerSchema = z
   .object({
-    alt: z.string().trim().min(1).max(200).transform(toUnicode),
-    locale: z.enum(["my", "en"]).nullable(),
+    alt: mmTextReq(200),
+    locale: localeSchema.nullable(),
     href: linkSchema,
     active: z.boolean(),
   })

@@ -1,10 +1,10 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
+import { emailSchema, mmTextReq, newPasswordSchema } from "@/lib/schemas";
 import { hashPassword } from "better-auth/crypto";
 import { prisma } from "@/lib/db";
 import { Prisma, type Role } from "@/generated/prisma/client";
-import { toUnicode } from "@/lib/myanmar";
 import { MIN_STAFF_PASSWORD, ROLES, type Role as StaffRole } from "@/server/auth/roles";
 
 /**
@@ -25,13 +25,13 @@ export class UserError extends Error {
   }
 }
 
-const nameSchema = z.string().trim().min(1).max(100).transform(toUnicode);
+const nameSchema = mmTextReq(100);
 const roleSchema = z.enum(ROLES);
-const passwordSchema = z.string().min(MIN_STAFF_PASSWORD).max(128);
+const passwordSchema = newPasswordSchema(MIN_STAFF_PASSWORD);
 
 export const createStaffSchema = z.object({
   name: nameSchema,
-  email: z.string().trim().toLowerCase().pipe(z.email().max(200)),
+  email: emailSchema,
   role: roleSchema,
   password: passwordSchema,
 });

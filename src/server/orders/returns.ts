@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
+import { mmTextReq, rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
-import { toUnicode } from "@/lib/myanmar";
 import { can, type Role } from "@/server/auth/roles";
 import { newCode } from "@/server/codes";
 import { postDocumentTx, salesBlockDays } from "@/server/inventory/documents";
@@ -17,14 +17,14 @@ import { transitionInTx } from "./transitions";
  * Trả hết mọi dòng → đơn chuyển RETURNED. Kiểm tra xong: nhập lại kho bán hoặc huỷ (src/server/inventory/quarantine.ts).
  */
 
-const id = z.string().min(1);
+const id = rawId;
 
 export const returnSchema = z.object({
   lines: z
     .array(z.object({ orderItemId: id, qty: z.coerce.number().int().min(0).max(999) }))
     .transform((ls) => ls.filter((l) => l.qty > 0))
     .pipe(z.array(z.object({ orderItemId: id, qty: z.number() })).min(1, "Chọn ít nhất một sản phẩm để trả")),
-  reason: z.string().trim().min(1).max(500).transform(toUnicode),
+  reason: mmTextReq(500),
   toLocationId: id.optional(),
   refunded: z.coerce.boolean().default(false),
 });

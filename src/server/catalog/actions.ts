@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath, updateTag } from "next/cache";
 import { z, ZodError } from "zod";
+import { directionSchema, formId } from "@/lib/schemas";
 import { requirePermission } from "@/server/auth/session";
 import type { ActionState } from "@/server/inventory/actions";
 import { removeCategoryIcon, setCategoryIcon, updateCategory } from "./categories";
@@ -71,7 +72,7 @@ export async function updateCategoryAction(_prev: ActionState, formData: FormDat
   try {
     const user = await requirePermission("catalog:manage");
     await updateCategory(
-      z.string().trim().min(1).max(40).parse(formData.get("categoryId")),
+      formId(40).parse(formData.get("categoryId")),
       {
         nameMy: String(formData.get("nameMy") ?? ""),
         nameEn: String(formData.get("nameEn") ?? ""),
@@ -93,7 +94,7 @@ export async function setCategoryIconAction(_prev: ActionState, formData: FormDa
     const file = formData.get("icon");
     if (!(file instanceof File) || file.size === 0) return { error: "Chưa chọn ảnh" };
     await setCategoryIcon(
-      z.string().trim().min(1).max(40).parse(formData.get("categoryId")),
+      formId(40).parse(formData.get("categoryId")),
       { data: Buffer.from(await file.arrayBuffer()), mime: file.type },
       user.id,
     );
@@ -107,7 +108,7 @@ export async function setCategoryIconAction(_prev: ActionState, formData: FormDa
 export async function removeCategoryIconAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   try {
     const user = await requirePermission("catalog:manage");
-    await removeCategoryIcon(z.string().trim().min(1).max(40).parse(formData.get("categoryId")), user.id);
+    await removeCategoryIcon(formId(40).parse(formData.get("categoryId")), user.id);
   } catch (e) {
     return { error: message(e) };
   }
@@ -117,7 +118,7 @@ export async function removeCategoryIconAction(_prev: ActionState, formData: For
 
 // ───────────────────────── Ảnh sản phẩm ─────────────────────────
 
-const id = z.string().trim().min(1).max(40);
+const id = formId(40);
 
 /** Ảnh hiện trên trang SP và thẻ SP (ảnh đầu) ở mọi danh sách → xoá cache catalog storefront (P20). */
 function revalidateProduct(productId: string) {
@@ -143,7 +144,7 @@ export async function addProductImagesAction(_prev: ActionState, formData: FormD
 export async function reorderProductImageAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   try {
     const user = await requirePermission("catalog:manage");
-    const input = z.object({ imageId: id, direction: z.enum(["up", "down"]) }).parse(Object.fromEntries(formData));
+    const input = z.object({ imageId: id, direction: directionSchema }).parse(Object.fromEntries(formData));
     const r = await reorderProductImage(input.imageId, input.direction, user.id);
     if (r.moved) revalidateProduct(r.productId);
   } catch (e) {

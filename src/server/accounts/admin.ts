@@ -1,5 +1,5 @@
 import "server-only";
-import { z } from "zod";
+import { newPasswordSchema } from "@/lib/schemas";
 import { hashPassword } from "better-auth/crypto";
 import { prisma } from "@/lib/db";
 import { toUnicode } from "@/lib/myanmar";
@@ -62,7 +62,7 @@ async function customerOrThrow(id: string) {
 
 /** Đặt mật khẩu tạm cho khách (chỉ tài khoản có mật khẩu — Google-only thì không có), thu hồi mọi phiên. */
 export async function resetCustomerPassword(id: string, rawPassword: unknown, actorId: string) {
-  const password = z.string().min(MIN_CUSTOMER_PASSWORD).max(128).parse(rawPassword);
+  const password = newPasswordSchema(MIN_CUSTOMER_PASSWORD).parse(rawPassword);
   await customerOrThrow(id);
   const hash = await hashPassword(password);
   await prisma.$transaction(async (tx) => {

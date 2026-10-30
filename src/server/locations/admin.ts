@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { toUnicode } from "@/lib/myanmar";
 
@@ -15,7 +16,7 @@ const name = z.string().trim().min(1).max(100);
 
 export const locationRowSchema = z.object({
   level: z.enum(["state", "district", "township"]),
-  id: z.string().min(1),
+  id: rawId,
   nameEn: name,
   nameMy: name.transform(toUnicode),
   active: z.boolean(),

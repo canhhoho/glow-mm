@@ -2,7 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath, updateTag } from "next/cache";
-import { z, ZodError } from "zod";
+import { ZodError } from "zod";
+import { directionSchema, formId } from "@/lib/schemas";
 import { yangonLocalToUtc } from "@/lib/time";
 import { requirePermission } from "@/server/auth/session";
 import type { ActionState } from "@/server/inventory/actions";
@@ -26,8 +27,8 @@ function message(e: unknown): string {
   return String(e);
 }
 
-const id = z.string().trim().min(1).max(40);
-const direction = z.enum(["up", "down"]);
+const id = formId(40);
+const direction = directionSchema;
 
 /** Ô datetime-local (giờ Yangon) → Date UTC; trống → null. */
 function when(v: FormDataEntryValue | null): Date | null {

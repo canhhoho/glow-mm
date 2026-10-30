@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import type { DocType, StockType } from "@/generated/prisma/client";
 import { newCode } from "@/server/codes";
@@ -14,7 +15,7 @@ import { applyMoves, type StockMove, type Tx } from "./ledger";
 
 const PREFIX: Record<DocType, string> = { RECEIVE: "RC", TRANSFER: "TF", ISSUE: "IS", ADJUST: "AJ", RETURN: "RT" };
 
-const id = z.string().min(1);
+const id = rawId;
 const qty = z.coerce.number().int().positive();
 const stockType = z.enum(["SELLABLE", "TESTER"]).default("SELLABLE");
 const day = z.coerce.date();

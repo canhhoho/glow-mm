@@ -1,12 +1,12 @@
 import "server-only";
 import { z } from "zod";
+import { confirmPasswordSchema, emailSchema, mmText, mmTextReq, newPasswordSchema, phoneSchema, withConfirm } from "@/lib/schemas";
 import { hashPassword } from "better-auth/crypto";
 import { prisma } from "@/lib/db";
-import { toUnicode } from "@/lib/myanmar";
 import { MIN_STAFF_PASSWORD } from "@/server/auth/roles";
 import { normalizeMmPhone } from "@/lib/phone";
 import { hitRateLimit } from "@/server/rate-limit";
-import { AffiliateError, insertAffiliate, parseProfile, uniqueError, uplinePercentSchema } from "./affiliates";
+import { AffiliateError, commissionPercentSchema, insertAffiliate, parseProfile, uniqueError, uplinePercentSchema } from "./affiliates";
 import { normalizeRefCode } from "./referral";
 
 /**
@@ -41,16 +41,17 @@ export async function inviterByCode(raw: unknown) {
   });
 }
 
-export const applicationSchema = z
-  .object({
+export const applicationSchema = withConfirm(
+  z.object({
     invite: z.string(),
-    name: z.string().trim().min(1).max(100).transform(toUnicode),
-    phone: z.string().trim().min(1).max(30),
-    email: z.string().trim().toLowerCase().pipe(z.email().max(200)),
-    password: z.string().min(MIN_STAFF_PASSWORD).max(128),
-    confirmPassword: z.string().max(128),
-  })
-  .refine((d) => d.password === d.confirmPassword, { path: ["confirmPassword"], message: "mismatch" });
+    name: mmTextReq(100),
+    phone: phoneSchema,
+    email: emailSchema,
+    password: newPasswordSchema(MIN_STAFF_PASSWORD),
+    confirmPassword: confirmPasswordSchema,
+  }),
+  "password",
+);
 
 /**
  * Gửi đơn đăng ký. `honeypot` có giá trị (bot điền ô ẩn) → giả vờ thành công, không lưu.
@@ -117,8 +118,8 @@ export const pendingApplicationsCount = () => prisma.affiliateApplication.count(
 
 const approveSchema = z.object({
   code: z.string(),
-  commissionPercent: z.coerce.number().min(0).max(50).multipleOf(0.01),
-  payoutInfo: z.string().trim().max(500).transform(toUnicode).optional(),
+  commissionPercent: commissionPercentSchema,
+  payoutInfo: mmText(500).optional(),
 });
 
 /** Duyệt: tạo tài khoản CTV (mật khẩu người đăng ký đã đặt) gắn dưới người mời, xoá mật khẩu băm khỏi đơn. */
@@ -163,7 +164,7 @@ export async function approveApplication(id: string, raw: unknown, actorId: stri
 }
 
 export async function rejectApplication(id: string, rawNote: unknown, actorId: string, now = new Date()) {
-  const note = z.string().trim().max(500).transform(toUnicode).parse(rawNote ?? "");
+  const note = mmText(500).parse(rawNote ?? "");
   await prisma.$transaction(async (tx) => {
     const updated = await tx.affiliateApplication.updateMany({
       where: { id, status: "PENDING" },

@@ -1,8 +1,8 @@
 import "server-only";
 import { z } from "zod";
+import { formId, mmTextReq, slugSchema } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
-import { toUnicode } from "@/lib/myanmar";
 import { pick } from "@/server/catalog/queries";
 import { loadCardRowsByIds, withStock } from "@/server/catalog/store-queries";
 import type { Tx } from "@/server/inventory/ledger";
@@ -19,8 +19,8 @@ const MAX_ITEMS = 200;
 
 const collectionSchema = z
   .object({
-    slug: z.string().trim().min(1).max(60).regex(/^[a-z0-9-]+$/, "Slug chỉ gồm a-z, 0-9 và dấu -"),
-    nameMy: z.string().trim().min(1).max(80).transform(toUnicode),
+    slug: slugSchema(60, "Slug chỉ gồm a-z, 0-9 và dấu -"),
+    nameMy: mmTextReq(80),
     nameEn: z.string().trim().min(1).max(80),
     active: z.boolean(),
     showOnHome: z.boolean(),
@@ -119,7 +119,7 @@ export async function moveCollection(id: string, direction: Direction, userId: s
 
 /** Thêm SP vào cuối bộ sưu tập (SP đã có thì bỏ qua). Trả số SP thêm mới. */
 export async function addCollectionProducts(id: string, productIds: string[], userId: string) {
-  const ids = [...new Set(z.array(z.string().trim().min(1).max(40)).min(1).max(50).parse(productIds))];
+  const ids = [...new Set(z.array(formId(40)).min(1).max(50).parse(productIds))];
   return prisma.$transaction(async (tx) => {
     await lockCollection(tx, id);
     const found = await tx.product.findMany({ where: { id: { in: ids } }, select: { id: true } });

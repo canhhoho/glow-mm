@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
+import { mmText, mmTextReq, phone2Schema, phoneSchema, rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
-import { toUnicode } from "@/lib/myanmar";
 import { findActiveTownship } from "@/server/locations/locations";
 import { normalizeMmPhone } from "@/lib/phone";
 
@@ -26,7 +26,7 @@ export const MAX_ADDRESSES = 10;
 
 // ── Hồ sơ ──
 
-export const profileSchema = z.object({ name: z.string().trim().min(1).max(100).transform(toUnicode) });
+export const profileSchema = z.object({ name: mmTextReq(100) });
 
 export async function updateProfile(userId: string, raw: unknown) {
   const { name } = profileSchema.parse(raw);
@@ -55,21 +55,13 @@ export function accountOrders(userId: string, take = 50) {
 // ── Sổ địa chỉ ──
 
 export const addressSchema = z.object({
-  recipientName: z.string().trim().min(1).max(100).transform(toUnicode),
-  phone: z.string().trim().min(1).max(30),
-  phone2: z
-    .string()
-    .trim()
-    .max(30)
-    .optional()
-    .transform((v) => v || null),
-  townshipId: z.string().min(1),
-  line: z.string().trim().min(3).max(500).transform(toUnicode),
-  note: z
-    .string()
-    .trim()
-    .max(300)
-    .transform(toUnicode)
+  recipientName: mmTextReq(100),
+  phone: phoneSchema,
+  phone2: phone2Schema.transform((v) => v || null),
+  townshipId: rawId,
+  line: mmTextReq(500, 3),
+  // Tối đa 500 như ghi chú khi đặt hàng (P21; trước là 300 → lưu địa chỉ sau đặt hàng có thể âm thầm lỗi).
+  note: mmText(500)
     .optional()
     .transform((v) => v || null),
   isDefault: z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean()).default(false),

@@ -37,8 +37,9 @@ export function isInSchedule(s: { startAt: Date | null; endAt: Date | null }, no
   return (!s.startAt || s.startAt <= now) && (!s.endAt || s.endAt > now);
 }
 
-export const directionSchema = z.enum(["up", "down"]);
-export type Direction = z.infer<typeof directionSchema>;
+/** Đã chuyển sang src/lib/schemas.ts (P21) — re-export cho banners/collections/test cũ. */
+export { directionSchema, type Direction } from "@/lib/schemas";
+import type { Direction } from "@/lib/schemas";
 
 /** Đổi chỗ phần tử `id` với phần tử kề trên/dưới; null nếu không di chuyển được. */
 export function moveInList<T>(ids: T[], id: T, direction: Direction): T[] | null {

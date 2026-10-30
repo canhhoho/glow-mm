@@ -1,10 +1,10 @@
 import "server-only";
 import { randomBytes, randomUUID } from "node:crypto";
 import { z } from "zod";
+import { emailSchema, mmText, newPasswordSchema, phoneSchema } from "@/lib/schemas";
 import { hashPassword } from "better-auth/crypto";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
-import { toUnicode } from "@/lib/myanmar";
 import { yangonDayKey, yangonDayStart } from "@/lib/time";
 import { storage } from "@/server/adapters/storage";
 import { can, MIN_STAFF_PASSWORD, type Role } from "@/server/auth/roles";
@@ -52,7 +52,9 @@ export class AffiliateError extends Error {
   }
 }
 
-const text = (max: number) => z.string().trim().max(max).transform(toUnicode);
+const text = mmText;
+/** % hoa hồng bán hàng, tối đa 2 chữ số thập phân (vd 12.5). */
+export const commissionPercentSchema = z.coerce.number().min(0).max(50).multipleOf(0.01);
 
 /** % hưởng từ tuyến dưới (P13) — trống = dùng % chung trong Cài đặt. */
 export const uplinePercentSchema = z
@@ -64,17 +66,17 @@ export const uplinePercentSchema = z
 
 const profileSchema = z.object({
   name: text(100).pipe(z.string().min(1)),
-  phone: z.string().trim().min(1).max(30),
+  phone: phoneSchema,
   code: z.string(),
   /** % hoa hồng, tối đa 2 chữ số thập phân (vd 12.5). */
-  commissionPercent: z.coerce.number().min(0).max(50).multipleOf(0.01),
+  commissionPercent: commissionPercentSchema,
   uplinePercent: uplinePercentSchema,
   payoutInfo: text(500).optional(),
 });
 
 export const createAffiliateSchema = profileSchema.extend({
-  email: z.string().trim().toLowerCase().pipe(z.email().max(200)),
-  password: z.string().min(MIN_STAFF_PASSWORD).max(128),
+  email: emailSchema,
+  password: newPasswordSchema(MIN_STAFF_PASSWORD),
   /** Cấp trên (P11) — trống = không có. */
   parentId: z.string().trim().max(64).optional(),
 });
@@ -519,7 +521,7 @@ export async function assignOrderAffiliate(
 // ── Chỉnh % trên từng đơn (P13) ──
 
 const orderRatesSchema = z.object({
-  commissionPercent: z.coerce.number().min(0).max(50).multipleOf(0.01),
+  commissionPercent: commissionPercentSchema,
   uplinePercent: uplinePercentSchema,
 });
 

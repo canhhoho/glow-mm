@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { isAPIError } from "better-auth/api";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
+import { confirmPasswordSchema, currentPasswordSchema, newPasswordSchema, withConfirm } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { ADMIN_LOCALE_COOKIE, ADMIN_LOCALES, CTV_LOCALE_COOKIE } from "@/i18n/routing";
 import type { ActionState } from "@/server/inventory/actions";
@@ -37,14 +38,14 @@ export async function setCtvLocaleAction(formData: FormData) {
   await setLocaleCookie(formData, CTV_LOCALE_COOKIE, "/ctv");
 }
 
-const changePasswordSchema = z
-  .object({
-    currentPassword: z.string().min(1).max(128),
-    newPassword: z.string().min(MIN_STAFF_PASSWORD).max(128),
-    confirmPassword: z.string().max(128),
-  })
-  .refine((d) => d.newPassword === d.confirmPassword, { path: ["confirmPassword"], message: "mismatch" })
-  .refine((d) => d.newPassword !== d.currentPassword, { path: ["newPassword"], message: "same" });
+const changePasswordSchema = withConfirm(
+  z.object({
+    currentPassword: currentPasswordSchema,
+    newPassword: newPasswordSchema(MIN_STAFF_PASSWORD),
+    confirmPassword: confirmPasswordSchema,
+  }),
+  "newPassword",
+).refine((d) => d.newPassword !== d.currentPassword, { path: ["newPassword"], message: "same" });
 
 /** Nhân viên hoặc CTV tự đổi mật khẩu; đăng xuất mọi phiên khác (thiết bị khác). */
 export async function changePasswordAction(_prev: ActionState, formData: FormData): Promise<ActionState> {

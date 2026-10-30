@@ -1,9 +1,9 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
+import { confirmPasswordSchema, localeSchema, mmTextReq, newPasswordSchema, phoneSchema, withConfirm } from "@/lib/schemas";
 import { hashPassword } from "better-auth/crypto";
 import { prisma } from "@/lib/db";
-import { toUnicode } from "@/lib/myanmar";
 import { CUSTOMER_ROLE, phoneEmail } from "@/server/auth/customer-policy";
 import { hitRateLimit } from "@/server/rate-limit";
 import { normalizeMmPhone } from "@/lib/phone";
@@ -31,15 +31,16 @@ export const MIN_CUSTOMER_PASSWORD = 8;
 export const MAX_PHONE_SIGNUPS_PER_IP_PER_HOUR = 10;
 const HOUR_MS = 60 * 60 * 1000;
 
-export const registerPhoneSchema = z
-  .object({
-    name: z.string().trim().min(1).max(100).transform(toUnicode),
-    phone: z.string().trim().min(1).max(30),
-    password: z.string().min(MIN_CUSTOMER_PASSWORD).max(128),
-    confirmPassword: z.string().max(128),
-    locale: z.enum(["my", "en"]).catch("my"),
-  })
-  .refine((d) => d.password === d.confirmPassword, { path: ["confirmPassword"], message: "mismatch" });
+export const registerPhoneSchema = withConfirm(
+  z.object({
+    name: mmTextReq(100),
+    phone: phoneSchema,
+    password: newPasswordSchema(MIN_CUSTOMER_PASSWORD),
+    confirmPassword: confirmPasswordSchema,
+    locale: localeSchema.catch("my"),
+  }),
+  "password",
+);
 
 /**
  * Vượt `max` trong `windowMs` → too_many. Cần cho đường SĐT vì gọi `customerAuth.api.*` từ server không đi qua

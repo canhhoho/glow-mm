@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
+import { mmTextReq } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
-import { toUnicode } from "@/lib/myanmar";
 import {
   deleteFileIfUnused,
   deleteStoredKeys,
@@ -19,7 +19,7 @@ import { CatalogError } from "./products";
 const TX = { maxWait: 10_000, timeout: 30_000 };
 
 const updateSchema = z.object({
-  nameMy: z.string().trim().min(1).max(80).transform(toUnicode),
+  nameMy: mmTextReq(80),
   nameEn: z.string().trim().min(1).max(80),
   parentId: z
     .string()

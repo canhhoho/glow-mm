@@ -3,7 +3,8 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
-import { z, ZodError } from "zod";
+import { ZodError } from "zod";
+import { formId } from "@/lib/schemas";
 import { requirePermission } from "@/server/auth/session";
 import { MIN_STAFF_PASSWORD } from "@/server/auth/roles";
 import type { ActionState } from "@/server/inventory/actions";
@@ -11,7 +12,7 @@ import { createStaff, resetStaffPassword, setStaffActive, updateStaff, UserError
 
 /** Server Action quản lý nhân viên (quyền `users:manage`). Lỗi trả về đã dịch theo ngôn ngữ admin. */
 
-const id = z.string().trim().min(1).max(64);
+const id = formId(64);
 
 async function message(e: unknown): Promise<string> {
   const t = await getTranslations("Users");
