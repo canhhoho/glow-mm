@@ -65,7 +65,8 @@ test("banner: tạo, báo lỗi link sai, tắt/bật, sửa, xoá", async ({ pa
   await page.getByLabel(/Ảnh mobile/).filter({ visible: true }).setInputFiles({ name: "m.png", mimeType: "image/png", buffer: solidPng(60) });
   await page.getByRole("button", { name: "Lưu" }).filter({ visible: true }).click();
   await expect(page).toHaveURL(/\/admin\/content\/banners\?saved=1$/);
-  await expect(row.getByRole("cell", { name: "Myanmar", exact: true })).toBeVisible();
+  // Bảng dạng thẻ trên điện thoại: nhãn cột (CSS content) nằm trong tên ô → so nội dung ô, không so tên ô.
+  await expect(row.getByText("Myanmar", { exact: true })).toBeVisible();
 
   page.once("dialog", (d) => d.accept());
   await row.getByRole("button", { name: "Xoá" }).click();
