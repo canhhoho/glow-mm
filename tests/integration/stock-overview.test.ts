@@ -78,6 +78,7 @@ describe("Trang Tồn kho — số liệu khớp sổ kho", () => {
     const s = await stockSummary({ q: f.tag });
     expect(s).toMatchObject({
       sellableUnits: 14,
+      heldUnits: 2, // đơn web đang giữ → ô "Bán được" hiện 14 − 2
       sellableVariants: 1,
       valueMmk: 12_000,
       unvaluedUnits: 5 + 4 + 8,

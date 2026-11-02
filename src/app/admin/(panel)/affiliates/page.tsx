@@ -54,7 +54,7 @@ export default async function AffiliatesPage({ searchParams }: PageProps<"/admin
       </FilterBar>
       <DataTable
         stack
-        empty={t("empty")}
+        empty={active === undefined ? t("empty") : t("emptyFiltered")}
         head={[t("colCtv"), t("colCode"), t("colPercent"), t("colMonthSales"), t("colPending"), t("colPayable"), t("colPaid")]}
         numeric={[3, 4, 5, 6]}
       >

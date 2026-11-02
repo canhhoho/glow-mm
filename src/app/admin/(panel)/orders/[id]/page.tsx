@@ -311,26 +311,29 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
         </dl>
       </section>
 
-      <section className="space-y-2">
-        <h2 className="font-medium">{t("actions")}</h2>
-        {transitions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("noActions")}</p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {transitions.map((n) => (
-              <TransitionForm
-                key={n}
-                orderId={order.id}
-                transition={n}
-                label={t(`t.${n}`)}
-                fields={fieldsFor(n)}
-                variant={n === "cancel" ? "destructive" : "default"}
-                confirm={n === "cancel" ? t("cancelConfirm") : undefined}
-              />
-            ))}
-          </div>
-        )}
-      </section>
+      {/* Đơn hoàn tất chỉ còn trả hàng → không hiện "Không còn thao tác nào" ngay trên form Trả hàng. */}
+      {(transitions.length > 0 || !canReturn) && (
+        <section className="space-y-2">
+          <h2 className="font-medium">{t("actions")}</h2>
+          {transitions.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("noActions")}</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {transitions.map((n) => (
+                <TransitionForm
+                  key={n}
+                  orderId={order.id}
+                  transition={n}
+                  label={t(`t.${n}`)}
+                  fields={fieldsFor(n)}
+                  variant={n === "cancel" ? "destructive" : "default"}
+                  confirm={n === "cancel" ? t("cancelConfirm") : undefined}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {canReturn && (
         <section className="space-y-2">

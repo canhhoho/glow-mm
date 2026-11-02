@@ -61,6 +61,11 @@ describe("Hoa hồng CTV", () => {
     expect(c).toMatchObject({ state: "pending", commissionMmk: 1500 });
   });
 
+  it("trả hết hàng sau khi hoàn tất, chưa chi → không tính (không còn 'chờ 0')", () => {
+    const c = orderCommission(order({ status: "RETURNED", completedAt: daysAgo(1), items: [{ qty: 2, returnedQty: 2, unitPriceMmk: 15_000 }] }), opts);
+    expect(c).toMatchObject({ state: "void", commissionMmk: 0, dueMmk: 0 });
+  });
+
   it("trả hàng sau khi đã chi → số âm, trừ vào kỳ sau", () => {
     const c = orderCommission(order({ status: "RETURNED", items: [{ qty: 2, returnedQty: 2, unitPriceMmk: 15_000 }], paidMmk: 3000 }), opts);
     expect(c).toMatchObject({ state: "payable", commissionMmk: 0, dueMmk: -3000 });

@@ -114,8 +114,18 @@ export async function stockSummary(opts: { q?: string; now?: Date } = {}) {
   const t = await loadThresholds();
   const rows = await loadRows(opts.q ? { batch: batchSearch(opts.q) } : {});
   const positive = rows.filter((r) => r.qty > 0);
+  // Hàng đơn chưa đóng gói đang giữ (cùng điều kiện cột "Đang giữ") → ô "Bán được" hiện số còn bán thật.
+  const held = await prisma.reservation.aggregate({
+    where: {
+      status: "ACTIVE",
+      OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+      ...(opts.q ? { variantId: { in: [...new Set(positive.map((r) => r.variantId))] } } : {}),
+    },
+    _sum: { qty: true },
+  });
   return {
     ...summarizeStock(rows, now, t),
+    heldUnits: held._sum.qty ?? 0,
     variants: new Set(positive.map((r) => r.variantId)).size,
     lots: new Set(positive.map((r) => r.batchId)).size,
     thresholds: t,

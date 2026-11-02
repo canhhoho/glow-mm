@@ -52,7 +52,10 @@ export function commissionState(
 }
 
 export function orderCommission(o: CommissionOrder, opts: { now: Date; holdDays: number }): OrderCommission {
-  const state = commissionState(o, opts);
+  let state = commissionState(o, opts);
+  // Trả hết hàng sau khi hoàn tất và chưa chi trả gì → không còn gì để tính hay thu hồi: "Không tính" thay vì "Chờ 0".
+  // Đã chi trả thì giữ trạng thái theo hạn để phần âm (thu hồi) vẫn vào kỳ chi trả.
+  if (o.status === "RETURNED" && o.paidMmk === 0 && commissionBaseMmk(o.items) === 0) state = "void";
   const baseMmk = state === "void" ? 0 : commissionBaseMmk(o.items);
   const amount = commissionMmk(baseMmk, o.commissionRateBp);
   const dueMmk = state === "pending" ? 0 : amount - o.paidMmk;
