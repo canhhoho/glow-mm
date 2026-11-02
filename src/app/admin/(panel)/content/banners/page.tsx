@@ -4,17 +4,9 @@ import { fmtDateTime } from "@/lib/format";
 import { requirePagePermission } from "@/server/auth/session";
 import { deleteBannerAction, moveBannerAction, toggleBannerAction } from "@/server/content/actions";
 import { listBannersAdmin } from "@/server/content/banners";
+import { SCHEDULE_TONE, scheduleStatus } from "@/server/content/common";
 import { ActionButton } from "@/components/admin/action-button";
 import { Badge, DataTable, LinkButton, Page, PageHeader, Td } from "@/components/admin/ui";
-
-function status(b: { active: boolean; startAt: Date | null; endAt: Date | null }, now: Date) {
-  if (!b.active) return "statusOff" as const;
-  if (b.startAt && b.startAt > now) return "statusScheduled" as const;
-  if (b.endAt && b.endAt <= now) return "statusEnded" as const;
-  return "statusLive" as const;
-}
-
-const TONE = { statusLive: "success", statusOff: "neutral", statusScheduled: "warning", statusEnded: "neutral" } as const;
 
 export default async function BannersPage({ searchParams }: PageProps<"/admin/content/banners">) {
   await requirePagePermission("content:manage");
@@ -40,7 +32,7 @@ export default async function BannersPage({ searchParams }: PageProps<"/admin/co
         head={[t("colImage"), t("colAlt"), t("colLocale"), t("colSchedule"), t("colStatus"), ""]}
       >
         {banners.map((b, i) => {
-          const st = status(b, now);
+          const st = scheduleStatus(b, now);
           return (
             <tr key={b.id} data-testid="banner-row">
               <Td>
@@ -57,7 +49,7 @@ export default async function BannersPage({ searchParams }: PageProps<"/admin/co
                 {b.startAt || b.endAt ? `${fmtDateTime(b.startAt)} → ${fmtDateTime(b.endAt)}` : t("always")}
               </Td>
               <Td label={t("colStatus")}>
-                <Badge tone={TONE[st]}>{t(st)}</Badge>
+                <Badge tone={SCHEDULE_TONE[st]}>{t(st)}</Badge>
               </Td>
               <Td>
                 <div className="flex flex-wrap gap-1">

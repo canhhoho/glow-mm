@@ -3,6 +3,7 @@ import { fmtDateTime } from "@/lib/format";
 import { requirePagePermission } from "@/server/auth/session";
 import { createCollectionAction, moveCollectionAction } from "@/server/content/actions";
 import { listCollectionsAdmin } from "@/server/content/collections";
+import { SCHEDULE_TONE, scheduleStatus } from "@/server/content/common";
 import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
 import { CollectionFields } from "@/components/admin/collection-fields";
@@ -22,7 +23,7 @@ export default async function CollectionsPage() {
         head={[t("colName"), t("slug"), t("colItems"), t("colHome"), t("colSchedule"), t("colStatus"), ""]}
       >
         {collections.map((c, i) => {
-          const live = c.active && (!c.startAt || c.startAt <= now) && (!c.endAt || c.endAt > now);
+          const st = scheduleStatus(c, now);
           return (
             <tr key={c.id} data-testid="collection-row">
               <Td>
@@ -38,7 +39,7 @@ export default async function CollectionsPage() {
                 {c.startAt || c.endAt ? `${fmtDateTime(c.startAt)} → ${fmtDateTime(c.endAt)}` : t("always")}
               </Td>
               <Td label={t("colStatus")}>
-                <Badge tone={live ? "success" : "neutral"}>{live ? t("statusLive") : c.active ? t("statusScheduled") : t("statusOff")}</Badge>
+                <Badge tone={SCHEDULE_TONE[st]}>{t(st)}</Badge>
               </Td>
               <Td>
                 <div className="flex flex-wrap gap-1">

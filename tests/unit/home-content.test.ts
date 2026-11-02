@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { utcToYangonLocal, yangonLocalToUtc } from "@/lib/time";
-import { isInSchedule, linkSchema, moveInList, scheduleSchema } from "@/server/content/common";
+import { isInSchedule, linkSchema, moveInList, scheduleSchema, scheduleStatus } from "@/server/content/common";
 import { checkImage, sniffImageMime } from "@/server/files/public-images";
 
 const PNG = Buffer.from("89504e470d0a1a0a0000000d49484452", "hex");
@@ -25,6 +25,15 @@ describe("Nội dung trang chủ — phần thuần", () => {
     expect(isInSchedule({ startAt: d("2026-10-21T00:00Z"), endAt: null }, now)).toBe(false);
     expect(isInSchedule({ startAt: null, endAt: now }, now)).toBe(false); // endAt là mốc loại trừ
     expect(isInSchedule({ startAt: now, endAt: null }, now)).toBe(true);
+  });
+
+  it("trạng thái admin: tắt / chờ đến lịch / hết lịch / đang hiện", () => {
+    const d = (s: string) => new Date(s);
+    const now = d("2026-11-02T12:00Z");
+    expect(scheduleStatus({ active: false, startAt: null, endAt: null }, now)).toBe("statusOff");
+    expect(scheduleStatus({ active: true, startAt: d("2026-11-03T00:00Z"), endAt: null }, now)).toBe("statusScheduled");
+    expect(scheduleStatus({ active: true, startAt: null, endAt: d("2026-11-01T00:00Z") }, now)).toBe("statusEnded");
+    expect(scheduleStatus({ active: true, startAt: null, endAt: null }, now)).toBe("statusLive");
   });
 
   it("đổi chỗ lên/xuống; không di chuyển được thì null", () => {

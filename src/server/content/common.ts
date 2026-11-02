@@ -37,6 +37,16 @@ export function isInSchedule(s: { startAt: Date | null; endAt: Date | null }, no
   return (!s.startAt || s.startAt <= now) && (!s.endAt || s.endAt > now);
 }
 
+/** Trạng thái hiển thị trong admin (banner, bộ sưu tập) — giá trị là key messages `Content.*`. */
+export function scheduleStatus(s: { active: boolean; startAt: Date | null; endAt: Date | null }, now: Date) {
+  if (!s.active) return "statusOff" as const;
+  if (s.startAt && s.startAt > now) return "statusScheduled" as const;
+  if (s.endAt && s.endAt <= now) return "statusEnded" as const;
+  return "statusLive" as const;
+}
+
+export const SCHEDULE_TONE = { statusLive: "success", statusOff: "neutral", statusScheduled: "warning", statusEnded: "neutral" } as const;
+
 /** Đã chuyển sang src/lib/schemas.ts (P21) — re-export cho banners/collections/test cũ. */
 export { directionSchema, type Direction } from "@/lib/schemas";
 import type { Direction } from "@/lib/schemas";
