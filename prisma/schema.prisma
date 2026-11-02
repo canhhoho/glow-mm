@@ -322,8 +322,12 @@ model BundleItem {
 
 model ExchangeRate {
   id          String           @id @default(cuid())
-  /// Số MMK cho 1 VND.
+  /// Số MMK cho 1 VND. Tỷ giá nhập qua USD (P23): giá trị tính sẵn (làm tròn 6 số lẻ) — công thức dùng 2 cột USD cho chính xác.
   mmkPerVnd   Decimal          @db.Decimal(14, 6)
+  /// 1 USD = ? MMK (P23). Null = tỷ giá cũ nhập thẳng MMK/VND.
+  mmkPerUsd   Decimal?         @db.Decimal(14, 2)
+  /// 1 USD = ? VND (P23).
+  vndPerUsd   Decimal?         @db.Decimal(14, 2)
   effectiveAt DateTime         @default(now())
   note        String?
   createdById String

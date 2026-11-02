@@ -5,8 +5,10 @@ import { createRateAction, previewRunAction } from "@/server/pricing/actions";
 import { listPriceHistory, listRates, listRuns, pricingFilterOptions, variantsWithoutCost } from "@/server/pricing/queries";
 import { getNumberSetting } from "@/server/settings";
 import { ActionForm } from "@/components/admin/action-form";
+import { RateInputs } from "@/components/admin/rate-inputs";
 import { Badge, DataTable, fieldClass, Page, PageHeader, Td } from "@/components/admin/ui";
-import { fmtDateTime, fmtInt } from "@/lib/format";
+import { rateDisplay } from "@/server/pricing/formula";
+import { fmtDateTime, fmtDecimal, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const RUN_TONE = { PREVIEW: "warning", APPLIED: "success", CANCELLED: "neutral" } as const;
@@ -30,20 +32,35 @@ export default async function PricingPage() {
       <section className="grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
         <div className="space-y-3">
           <h2 className="font-medium">{t("rates")}</h2>
-          <DataTable empty={t("noRate")} head={[t("rate"), t("effectiveAt"), t("note")]}>
-            {rates.map((r) => (
-              <tr key={r.id}>
-                <Td className="font-mono">{r.mmkPerVnd.toString()}</Td>
-                <Td className="whitespace-nowrap">{fmtDateTime(r.effectiveAt)}</Td>
-                <Td>{r.note}</Td>
-              </tr>
-            ))}
+          <DataTable stack empty={t("noRate")} head={[t("colUsd"), t("colCross"), t("effectiveAt"), t("note")]}>
+            {rates.map((r) => {
+              const d = rateDisplay(r);
+              return (
+                <tr key={r.id}>
+                  <Td label={t("colUsd")} className="whitespace-nowrap tabular-nums">
+                    {r.mmkPerUsd && r.vndPerUsd ? (
+                      <>
+                        <div>{fmtDecimal(r.mmkPerUsd)} MMK</div>
+                        <div>{fmtDecimal(r.vndPerUsd)} VND</div>
+                      </>
+                    ) : (
+                      "—"
+                    )}
+                  </Td>
+                  <Td label={t("colCross")} className="whitespace-nowrap tabular-nums">
+                    <div className="font-medium">1 MMK = {d.vndPerMmk} VND</div>
+                    <div className="text-xs text-muted-foreground">1 VND = {d.mmkPerVnd} MMK</div>
+                  </Td>
+                  <Td label={t("effectiveAt")} className="whitespace-nowrap">
+                    {fmtDateTime(r.effectiveAt)}
+                  </Td>
+                  <Td label={t("note")}>{r.note}</Td>
+                </tr>
+              );
+            })}
           </DataTable>
           <ActionForm action={createRateAction} submitLabel={t("addRate")} okText={t("rateAdded")} className="flex flex-wrap items-end gap-2">
-            <label className="grid content-start gap-1 text-sm">
-              <span className="text-muted-foreground">{t("rate")}</span>
-              <input name="mmkPerVnd" required inputMode="decimal" placeholder="0.170000" className={cn(fieldClass, "w-36")} />
-            </label>
+            <RateInputs />
             <label className="grid content-start gap-1 text-sm">
               <span className="text-muted-foreground">{t("note")}</span>
               <input name="note" maxLength={200} className={cn(fieldClass, "w-48")} />
@@ -63,7 +80,7 @@ export default async function PricingPage() {
                 <select name="rateId" defaultValue={rates[0].id} className={fieldClass}>
                   {rates.map((r) => (
                     <option key={r.id} value={r.id}>
-                      {r.mmkPerVnd.toString()} · {fmtDateTime(r.effectiveAt)}
+                      1 MMK = {rateDisplay(r).vndPerMmk} VND · {fmtDateTime(r.effectiveAt)}
                     </option>
                   ))}
                 </select>
@@ -118,7 +135,7 @@ export default async function PricingPage() {
                   {fmtDateTime(r.createdAt)}
                 </Link>
               </Td>
-              <Td className="font-mono">{r.rate.mmkPerVnd.toString()}</Td>
+              <Td className="tabular-nums">{rateDisplay(r.rate).vndPerMmk}</Td>
               <Td>{r.marginPct.toString()}%</Td>
               <Td className="text-right">{r._count.lines}</Td>
               <Td>

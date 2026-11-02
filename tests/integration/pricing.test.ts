@@ -22,7 +22,7 @@ describe("Cập nhật giá hàng loạt", () => {
     const f = await makeFixture();
     await receiveLot(f, "OLD", 50_000);
     const latest = await receiveLot(f, "NEW", 100_000);
-    const rate = await createRate({ mmkPerVnd: "0.2" }, f.userId);
+    const rate = await createRate({ mmkPerUsd: "5200", vndPerUsd: "26000" }, f.userId);
 
     const run1 = await previewRun({ rateId: rate.id, marginPct: "50", roundTo: 100, brandId: f.brandId }, f.userId);
     expect(await linesOf(run1.id)).toEqual([
@@ -48,13 +48,22 @@ describe("Cập nhật giá hàng loạt", () => {
   it("giá bị sửa tay sau khi xem trước → bỏ qua, không ghi đè", async () => {
     const f = await makeFixture();
     await receiveLot(f, "A", 100_000);
-    const rate = await createRate({ mmkPerVnd: "0.2" }, f.userId);
+    const rate = await createRate({ mmkPerUsd: "5200", vndPerUsd: "26000" }, f.userId);
     const run = await previewRun({ rateId: rate.id, marginPct: "50", brandId: f.brandId }, f.userId);
     await prisma.variant.update({ where: { id: f.variantId }, data: { priceMmk: 12_345 } });
 
     const res = await applyRun(run.id, [f.variantId], f.userId);
     expect(res).toEqual({ applied: 0, skipped: [`IT-${f.tag}`] });
     expect((await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).priceMmk).toBe(12_345);
+  });
+
+  it("tỷ giá USD: giá tính theo tỷ lệ chính xác", async () => {
+    const f = await makeFixture();
+    await receiveLot(f, "A", 100_000_000);
+    // 100,000,000 × 4500/26000 = 17,307,692.3 → 17,307,693 (qua số làm tròn 0.173077 sẽ ra 17,307,700).
+    const rate = await createRate({ mmkPerUsd: "4500", vndPerUsd: "26000" }, f.userId);
+    const run = await previewRun({ rateId: rate.id, marginPct: "0", roundTo: 1, brandId: f.brandId }, f.userId);
+    expect((await linesOf(run.id))[0]).toMatchObject({ costVnd: 100_000_000, newPriceMmk: 17_307_693 });
   });
 
   it("combo = tổng vốn thành phần; biến thể chưa có lô bị bỏ qua", async () => {
@@ -71,7 +80,7 @@ describe("Cập nhật giá hàng loạt", () => {
       },
     });
     await prisma.variant.create({ data: { productId: f.productId, sku: `IT-${f.tag}-NEW`, label: "new", priceMmk: 1 } });
-    const rate = await createRate({ mmkPerVnd: "0.1" }, f.userId);
+    const rate = await createRate({ mmkPerUsd: "2600", vndPerUsd: "26000" }, f.userId);
     const run = await previewRun({ rateId: rate.id, marginPct: "0", roundTo: 1, brandId: f.brandId }, f.userId);
     const lines = await linesOf(run.id);
     expect(lines).toHaveLength(2);
@@ -80,9 +89,16 @@ describe("Cập nhật giá hàng loạt", () => {
 
   it("tỷ giá/% lãi sai định dạng bị từ chối", async () => {
     const f = await makeFixture();
-    await expect(createRate({ mmkPerVnd: "0" }, f.userId)).rejects.toBeInstanceOf(ZodError);
-    await expect(createRate({ mmkPerVnd: "0.1234567" }, f.userId)).rejects.toBeInstanceOf(ZodError);
-    const rate = await createRate({ mmkPerVnd: "0.17" }, f.userId);
+    await expect(createRate({ mmkPerUsd: "0", vndPerUsd: "26000" }, f.userId)).rejects.toBeInstanceOf(ZodError);
+    await expect(createRate({ mmkPerUsd: "4420.123", vndPerUsd: "26000" }, f.userId)).rejects.toBeInstanceOf(ZodError);
+    await expect(createRate({ mmkPerUsd: "4420" }, f.userId)).rejects.toBeInstanceOf(ZodError);
+    // MMK/VND dưới 0.000001 → cột 6 số lẻ sẽ thành 0.
+    await expect(createRate({ mmkPerUsd: "0.01", vndPerUsd: "99999999" }, f.userId)).rejects.toBeInstanceOf(ZodError);
+    // Dấu phẩy phân cách nghìn được bỏ; lưu 2 tỷ giá USD + MMK/VND tính sẵn (6 số lẻ).
+    const rate = await createRate({ mmkPerUsd: "4,500", vndPerUsd: "26,000.5" }, f.userId);
+    expect(rate.mmkPerUsd?.toString()).toBe("4500");
+    expect(rate.vndPerUsd?.toString()).toBe("26000.5");
+    expect(rate.mmkPerVnd.toString()).toBe("0.173074"); // 0.1730736…
     await expect(previewRun({ rateId: rate.id, marginPct: "-5", brandId: f.brandId }, f.userId)).rejects.toBeInstanceOf(
       ZodError,
     );

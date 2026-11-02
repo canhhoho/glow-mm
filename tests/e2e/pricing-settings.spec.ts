@@ -17,6 +17,14 @@ test("admin: lưu cài đặt; tính giá mới (xem trước) rồi huỷ", asy
 
   await page.screenshot({ path: "test-results/screens/settings.png", fullPage: true });
   await page.goto("/admin/pricing");
+  // Tỷ giá nhập qua USD (P23); 4,420 / 26,000 = 0.17 như tỷ giá seed → không đổi giá vốn MMK ở test khác.
+  await page.getByLabel("1 USD = … MMK").fill("4,420");
+  await page.getByLabel("1 USD = … VND").fill("26000");
+  await expect(page.getByTestId("rate-preview")).toHaveText("1 MMK = 5.8824 VND · 1 VND = 0.170000 MMK");
+  await page.getByRole("button", { name: "Thêm tỷ giá" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Đã thêm tỷ giá" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "4,420" }).first()).toBeVisible();
+
   await page.getByLabel("% lãi").fill("40");
   await page.getByRole("button", { name: "Xem trước" }).click();
   await expect(page).toHaveURL(/\/admin\/pricing\/runs\//);

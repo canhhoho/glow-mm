@@ -4,7 +4,7 @@
 | # | Chủ đề | Chốt |
 |---|---|---|
 | 1 | Dữ liệu đầu | Import CSV/Excel (có file mẫu); tồn đầu kỳ = phiếu nhập qua ledger |
-| 2 | Giá | Tỷ giá nhập tay; giá = vốn VND × tỷ giá × (1+%lãi), làm tròn 100 MMK, xem trước → áp dụng; lưu lịch sử |
+| 2 | Giá | Tỷ giá nhập tay (P23: qua USD→MMK, USD→VND); giá = vốn VND ÷ tỷ giá VND/MMK × (1+%lãi), làm tròn 100 MMK, xem trước → áp dụng; lưu lịch sử |
 | 3 | Kho | 1 kho VN + 1 kho MM + vị trí ảo Đang vận chuyển / Hải quan / Chờ kiểm tra; hỗ trợ N kho |
 | 4 | Giữ hàng | Cấp biến thể; phân lô FEFO khi Đóng gói |
 | 5 | Hạn dùng | Ngừng bán <90 ngày, cảnh báo 180 ngày (cấu hình) |
@@ -114,7 +114,7 @@ Dockerfile  docker-compose.yml  docker-compose.prod.yml  .env.example
 
 ## 4. Roadmap (dừng chờ duyệt sau mỗi phase)
 
-Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ · P9 ✅ (2026-10-19) · P10 CTV ✅ (2026-10-26, đã lên production) · P11 CTV 2 tầng ✅ · P12 sửa UI ✅ · P13 chỉnh % hoa hồng ✅ (2026-10-27) · P14 tài khoản khách (code xong 2026-10-27) · P15 địa chỉ VTP (code xong 2026-10-28) · P16–P17 ✅ (production 2026-10-28) · P18 đổi thương hiệu T&C Cosmetics (2026-10-29) · P19 dọn dẹp + chuẩn bị server Linux (2026-10-29) · P20 cache nội dung SP storefront (2026-10-30) · P21 gộp Zod + CSP (2026-10-30) · P22 storefront tiếng Việt (2026-11-02) · P4b chờ server + domain Myanmar.
+Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 ✅ (2026-10-16) · P8 ✅ · P9 ✅ (2026-10-19) · P10 CTV ✅ (2026-10-26, đã lên production) · P11 CTV 2 tầng ✅ · P12 sửa UI ✅ · P13 chỉnh % hoa hồng ✅ (2026-10-27) · P14 tài khoản khách (code xong 2026-10-27) · P15 địa chỉ VTP (code xong 2026-10-28) · P16–P17 ✅ (production 2026-10-28) · P18 đổi thương hiệu T&C Cosmetics (2026-10-29) · P19 dọn dẹp + chuẩn bị server Linux (2026-10-29) · P20 cache nội dung SP storefront (2026-10-30) · P21 gộp Zod + CSP (2026-10-30) · P22 storefront tiếng Việt (2026-11-02) · P23 tỷ giá nhập qua USD (2026-11-02) · P4b chờ server + domain Myanmar.
 
 | Phase | Nội dung | Hoàn thành khi |
 |---|---|---|
@@ -166,6 +166,8 @@ Trạng thái: P0–P3 ✅ (2026-10-15/16) · P4a ✅ · P5 ✅ · P6 ✅ · P7 
 **P21 — gộp schema Zod + CSP (2026-10-30):** khối Zod lặp (id, chữ Myanmar, SĐT, email, slug, mật khẩu + khớp mật khẩu, locale, hướng di chuyển) gộp vào `src/lib/schemas.ts`, giữ nguyên câu báo lỗi; ghi chú sổ địa chỉ nâng 300 → 500 như đơn hàng (trước đó lưu địa chỉ sau đặt hàng có thể âm thầm lỗi). CSP kết hợp: admin + cổng CTV dùng nonce mỗi request + `'strict-dynamic'` (chặn script chèn vào trang); storefront dùng `'unsafe-inline'` để giữ static shell (P20) nhưng vẫn chặn script/khung/form/plugin từ domain lạ. E2E `csp.spec` đi qua các trang chính, yêu cầu 0 vi phạm.
 
 **P22 — tiếng Việt cho storefront (2026-11-02):** thêm locale `vi` (`/vi/...`, `messages/store.vi.json`), **giữ `my` mặc định** và ưu tiên Myanmar + English: menu ngôn ngữ thả xuống (`<details>`, không cần JS) xếp မြန်မာ → English → Tiếng Việt, `x-default` = my, không tự đoán ngôn ngữ trình duyệt. **Chỉ dịch giao diện**: không có ô nhập nội dung SP/danh mục/bộ sưu tập tiếng Việt — `pick()` fallback `locale → en → my`, nên /vi hiện tên/mô tả English (tên SP chốt vào đơn đặt từ /vi cũng là English). Tìm không dấu: `normalizeForSearch` bỏ dấu Latin (U+0300–036F, đ→d), migration `p22_search_fold` bỏ dấu `searchText` cũ. Banner chọn được "Tiếng Việt". Email khách vẫn my/en (`User.locale` mặc định "vi" của nhân viên/CTV không phản ánh lựa chọn của khách). Địa danh VTP trên /vi = tên English.
+
+**P23 — tỷ giá nhập qua USD (2026-11-02):** trang Giá & tỷ giá nhập **1 USD = ? MMK** và **1 USD = ? VND** (bỏ ô nhập thẳng MMK/VND); hệ thống tự tính và hiện hai chiều (1 MMK = ? VND, 1 VND = ? MMK) ngay khi gõ. `ExchangeRate` thêm `mmkPerUsd`/`vndPerUsd` (Decimal(14,2), migration `p23_rate_usd`, dòng cũ để null); `mmkPerVnd` vẫn lưu (tính sẵn 6 số lẻ) cho chỗ cũ. Công thức diễn đạt theo VND/MMK: giá = vốn VND ÷ (VND cho 1 MMK) × (1 + %lãi), làm tròn lên — `suggestPrice`/`vndToMmk` dùng `rateFraction` (tỷ lệ mmkPerUsd/vndPerUsd chính xác bằng BigInt, không qua số làm tròn); tỷ giá cũ vẫn tính theo `mmkPerVnd`. Ô nhập bỏ dấu phẩy phân cách nghìn; dấu chấm = thập phân.
 
 **Tên miền + server (2026-10-30):** tên miền chính `tandcstore.com` (mua và quản lý DNS tại inet.vn; `www` chuyển về apex). Server Ubuntu `10.201.42.65` (SSH `vcm_aio`), **dùng chung với web VCM XDDD** (Nginx + Certbot trên 80/443, PM2 cổng 3001, PostgreSQL hệ thống) → không dùng Coolify; app chạy bằng Docker Compose (project `tandc`, `/var/www/tandc`, `127.0.0.1:3000`) sau Nginx dùng chung, IP công cộng = IP của web VCM (đã NAT). Tài khoản khách: SĐT + mật khẩu (chính) + Google (giữ), **không dùng email** (`EMAIL_DRIVER=none`, không Resend) — quên mật khẩu: khách nhắn shop, nhân viên đặt lại ở `/admin/customer-accounts`. Lộ trình (chốt lại 2026-10-30, server đã sẵn sàng): **đi thẳng lên server**, bỏ giai đoạn Vercel — trỏ tandcstore.com về server ngay, chạy thử trên chính tên miền này với "Nhận đơn trên web" tắt; ngày chuyển = tắt nhận đơn Vercel → chép dữ liệu Neon/Blob lần cuối → bật nhận đơn trên server → chuyển hướng glow-mm.vercel.app sang tandcstore.com (Claude làm). Danh sách lệnh: `docs/lenh-trien-khai-tandcstore.md`. Runbook: `docs/huong-dan-trien-khai-tandcstore.md`.
 

@@ -6,6 +6,7 @@ import { batchDetail, loadThresholds } from "@/server/inventory/overview";
 import { ExpiryTag } from "@/components/admin/stock-parts";
 import { Badge, DataTable, Page, PageHeader, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
+import { rateDisplay } from "@/server/pricing/formula";
 import { cn } from "@/lib/utils";
 
 /** Lịch sử lô (P9c): thông tin lô, tồn hiện tại theo vị trí, các dòng sổ kho kèm tồn luỹ kế. */
@@ -29,7 +30,7 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
     [t("unitCostVnd"), fmtInt(batch.unitCostVnd)],
     [t("landedVnd"), fmtInt(batch.landedCostVnd)],
     [t("costMmk"), batch.landedCostMmk == null ? ti("unallocated") : fmtInt(batch.landedCostMmk)],
-    [t("rate"), batch.rate ? batch.rate.mmkPerVnd.toString() : "—"],
+    [t("rate"), batch.rate ? rateDisplay(batch.rate).vndPerMmk : "—"],
     [
       t("shipment"),
       batch.shipment ? (

@@ -9,6 +9,7 @@ import { ActionForm } from "@/components/admin/action-form";
 import { Badge, DataTable, Page, PageHeader, Td } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import { fmtDateTime, fmtInt } from "@/lib/format";
+import { rateDisplay } from "@/server/pricing/formula";
 
 const RUN_TONE = { PREVIEW: "warning", APPLIED: "success", CANCELLED: "neutral" } as const;
 /** Thay đổi giá vượt ngưỡng này (%) được tô nổi để kiểm tra lại. */
@@ -82,7 +83,7 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <Badge tone={RUN_TONE[run.status]}>{t(`st.${run.status}`)}</Badge>
         <span>
-          {t("rate")}: <span className="font-mono">{run.rate.mmkPerVnd.toString()}</span>
+          {t("rate")}: <span className="tabular-nums">{rateDisplay(run.rate).vndPerMmk}</span>
         </span>
         <span>
           {t("marginPct")}: {run.marginPct.toString()}%

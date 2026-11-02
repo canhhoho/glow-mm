@@ -4,6 +4,8 @@
  * Tiền là số nguyên VND; phần dư do làm tròn được dồn để TỔNG phân bổ khớp đúng tổng chi phí.
  */
 
+import { convertVndToMmk, type RateValue } from "@/server/pricing/formula";
+
 export type AllocationMethod = "BY_VALUE" | "BY_QTY";
 
 export type LandedLine = { key: string; qty: number; unitCostVnd: number };
@@ -49,9 +51,7 @@ export function allocateLandedCost(lines: LandedLine[], totalCostsVnd: number, m
   }));
 }
 
-/** Đổi VND → MMK theo tỷ giá (MMK cho 1 VND), làm tròn đến 1 MMK. */
-export function vndToMmk(amountVnd: number, mmkPerVnd: number | string): number {
-  const rate = typeof mmkPerVnd === "string" ? Number(mmkPerVnd) : mmkPerVnd;
-  if (!Number.isFinite(rate) || rate <= 0) throw new Error("Tỷ giá không hợp lệ");
-  return Math.round(amountVnd * rate);
+/** Đổi VND → MMK theo tỷ giá (bản ghi `ExchangeRate`, hoặc số MMK cho 1 VND), làm tròn đến 1 MMK. */
+export function vndToMmk(amountVnd: number, rate: RateValue | number | string): number {
+  return convertVndToMmk(amountVnd, typeof rate === "object" ? rate : { mmkPerVnd: rate });
 }

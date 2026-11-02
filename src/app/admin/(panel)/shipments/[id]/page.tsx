@@ -7,6 +7,7 @@ import { ActionButton } from "@/components/admin/action-button";
 import { AllocateForm, ShipmentCostForm } from "@/components/admin/shipment-forms";
 import { DataTable, Page, PageHeader, Td } from "@/components/admin/ui";
 import { fmtDay, fmtInt } from "@/lib/format";
+import { rateDisplay } from "@/server/pricing/formula";
 
 export default async function ShipmentPage({ params }: PageProps<"/admin/shipments/[id]">) {
   await requirePagePermission("shipment:manage");
@@ -66,7 +67,7 @@ export default async function ShipmentPage({ params }: PageProps<"/admin/shipmen
               <Td>{fmtDay(b.expiryDate)}</Td>
               <Td className="text-right tabular-nums">{fmtInt(b.unitCostVnd)}</Td>
               <Td className="text-right tabular-nums">{fmtInt(b.landedCostVnd)}</Td>
-              <Td className="text-right tabular-nums">{b.rate ? Number(b.rate.mmkPerVnd).toString() : "—"}</Td>
+              <Td className="text-right tabular-nums">{b.rate ? rateDisplay(b.rate).vndPerMmk : "—"}</Td>
               <Td className="text-right tabular-nums">{fmtInt(b.landedCostMmk)}</Td>
             </tr>
           ))}

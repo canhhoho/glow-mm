@@ -75,7 +75,7 @@ async function main() {
   const { costRatio, marginPct } = catalog.pricing;
   const costOf = (priceVnd: number) => Math.round((priceVnd * costRatio) / 1000) * 1000;
   const mmkOf = (priceVnd: number) =>
-    suggestPrice({ costVnd: costOf(priceVnd), mmkPerVnd: rate.mmkPerVnd.toString(), marginPct, roundTo });
+    suggestPrice({ ...rate, costVnd: costOf(priceVnd), marginPct, roundTo });
 
   log(`${DRY ? "[dry-run] " : ""}Demo: ${catalog.products.length} SP + ${catalog.combos.length} combo · tỷ giá ${rate.mmkPerVnd} · lãi ${marginPct}%`);
 

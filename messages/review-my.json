@@ -704,6 +704,15 @@
     "Users.unlock",
     "Users.unlockHint",
     "Users.you",
-    "Content.localeVi"
+    "Content.localeVi",
+    "Pricing.rates",
+    "Pricing.rate",
+    "Pricing.formula",
+    "Pricing.mmkPerUsd",
+    "Pricing.vndPerUsd",
+    "Pricing.ratePreview",
+    "Pricing.rateHint",
+    "Pricing.colUsd",
+    "Pricing.colCross"
   ]
 }

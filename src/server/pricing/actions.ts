@@ -23,7 +23,10 @@ const opt = (fd: FormData, k: string) => {
 export async function createRateAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   try {
     const user = await requirePermission("pricing:manage");
-    await createRate({ mmkPerVnd: formData.get("mmkPerVnd"), note: opt(formData, "note") }, user.id);
+    await createRate(
+      { mmkPerUsd: formData.get("mmkPerUsd"), vndPerUsd: formData.get("vndPerUsd"), note: opt(formData, "note") },
+      user.id,
+    );
   } catch (e) {
     return { error: message(e) };
   }

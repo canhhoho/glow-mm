@@ -84,7 +84,7 @@ export async function allocateShipment(shipmentId: string, userId: string) {
         where: { id: b.id },
         data: {
           landedCostVnd: r.landedUnitVnd,
-          landedCostMmk: b.rate ? vndToMmk(r.landedUnitVnd, b.rate.mmkPerVnd.toString()) : null,
+          landedCostMmk: b.rate ? vndToMmk(r.landedUnitVnd, b.rate) : null,
         },
       });
     }

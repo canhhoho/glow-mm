@@ -81,7 +81,8 @@ async function seedCatalog() {
 
   // ── Tỷ giá mẫu (KHÔNG phải tỷ giá thật) ──
   await prisma.exchangeRate.create({
-    data: { mmkPerVnd: "0.170000", note: "Tỷ giá mẫu cho dev", createdById: adminId },
+    // 1 USD = 4,420 MMK, 1 USD = 26,000 VND → 1 VND = 0.17 MMK.
+    data: { mmkPerUsd: "4420", vndPerUsd: "26000", mmkPerVnd: "0.170000", note: "Tỷ giá mẫu cho dev", createdById: adminId },
   });
 
   // ── Danh mục ──

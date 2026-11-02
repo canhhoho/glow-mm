@@ -14,6 +14,11 @@ export function fmtInt(n: number | null | undefined): string {
   return n == null ? "—" : new Intl.NumberFormat("en-US").format(n);
 }
 
+/** Số thập phân (Decimal/chuỗi) có phân cách nghìn, tối đa `max` chữ số lẻ: "26000.00" → "26,000". */
+export function fmtDecimal(n: { toString(): string } | null | undefined, max = 2): string {
+  return n == null ? "—" : new Intl.NumberFormat("en-US", { maximumFractionDigits: max }).format(Number(n.toString()));
+}
+
 export function fmtDateTime(d: Date | null | undefined, timeZone = "Asia/Yangon"): string {
   if (!d) return "—";
   return new Intl.DateTimeFormat("en-CA", {

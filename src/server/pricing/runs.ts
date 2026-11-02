@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { getNumberSetting } from "@/server/settings";
 import { variantCosts } from "./cost";
-import { parseScaled, suggestPrice } from "./formula";
+import { mmkPerVndFromUsd, parseScaled, suggestPrice } from "./formula";
 
 /**
  * Cập nhật giá hàng loạt: nhập tỷ giá → tạo bản XEM TRƯỚC (lưu từng dòng) → chọn dòng → ÁP DỤNG.
@@ -32,15 +32,42 @@ const decimalString = (decimals: number, check: (scaled: bigint) => boolean, mes
       }
     }, message);
 
-export const rateSchema = z.object({
-  mmkPerVnd: decimalString(6, (v) => v > BigInt(0), "Tỷ giá phải > 0, tối đa 6 chữ số thập phân"),
-  note: z.string().trim().max(200).optional(),
-});
+/** Tỷ giá USD: > 0, tối đa 2 chữ số thập phân (dấu chấm), dưới 1,000 tỷ (Decimal(14,2)); bỏ dấu phẩy/khoảng trắng phân cách nghìn. */
+const usdRate = (message: string) =>
+  z.preprocess(
+    (v) => (typeof v === "string" ? v.replace(/[,\s]/g, "") : v),
+    decimalString(2, (v) => v > BigInt(0) && v < BigInt(100_000_000_000_000), message),
+  );
+
+/** P23: nhập 1 USD = ? MMK và 1 USD = ? VND → hệ thống tự tính MMK cho 1 VND. */
+export const rateSchema = z
+  .object({
+    mmkPerUsd: usdRate("Tỷ giá USD→MMK phải > 0, tối đa 2 chữ số thập phân"),
+    vndPerUsd: usdRate("Tỷ giá USD→VND phải > 0, tối đa 2 chữ số thập phân"),
+    note: z.string().trim().max(200).optional(),
+  })
+  // Zod vẫn chạy refine khi ô USD sai → bọc try (lỗi ô đã được báo riêng).
+  .refine((v) => {
+    try {
+      return Number(mmkPerVndFromUsd(v.mmkPerUsd, v.vndPerUsd)) > 0;
+    } catch {
+      return true;
+    }
+  }, {
+    message: "Tỷ giá MMK/VND quá nhỏ (dưới 0.000001)",
+    path: ["mmkPerUsd"],
+  });
 
 export async function createRate(raw: unknown, userId: string) {
   const input = rateSchema.parse(raw);
   return prisma.exchangeRate.create({
-    data: { mmkPerVnd: input.mmkPerVnd, note: input.note || null, createdById: userId },
+    data: {
+      mmkPerUsd: input.mmkPerUsd,
+      vndPerUsd: input.vndPerUsd,
+      mmkPerVnd: mmkPerVndFromUsd(input.mmkPerUsd, input.vndPerUsd),
+      note: input.note || null,
+      createdById: userId,
+    },
   });
 }
 
@@ -74,8 +101,8 @@ export async function previewRun(raw: unknown, userId: string) {
         const cost = costs.get(v.id);
         if (!cost) return [];
         const newPriceMmk = suggestPrice({
+          ...rate,
           costVnd: cost.costVnd,
-          mmkPerVnd: rate.mmkPerVnd.toString(),
           marginPct: input.marginPct,
           roundTo,
         });
