@@ -366,7 +366,7 @@ function ProductView({
       </div>
 
       {/* Điện thoại + máy tính bảng dọc: thẻ */}
-      <div className="grid gap-2 md:grid-cols-2 lg:hidden">
+      <div className="grid gap-2 md:grid-cols-2 lg:hidden [&>*]:min-w-0">
         {page.rows.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground md:col-span-2">{t("emptyFiltered")}</p>}
         {page.rows.map((r) => {
           const c = r.cols;
