@@ -475,6 +475,9 @@
   },
   "Settings": {
     "title": "Cài đặt",
+    "accounts": "Tài khoản",
+    "accountsHint": "Thêm, sửa (tên, email, vai trò), đặt lại mật khẩu, khoá/mở khoá tài khoản.",
+    "activeCount": "{count} đang hoạt động",
     "expiry": "Hạn dùng",
     "orders": "Đơn hàng",
     "pricing": "Giá",
@@ -797,7 +800,7 @@
     "profile": "Thông tin",
     "save": "Lưu",
     "saved": "Đã lưu",
-    "selfNote": "Đây là tài khoản của bạn: không tự đổi vai trò hay khoá được. Đổi mật khẩu ở",
+    "selfNote": "Đây là tài khoản của bạn: không tự đổi vai trò, email hay khoá được (nhờ admin khác đổi email). Đổi mật khẩu ở",
     "myAccount": "Tài khoản của tôi",
     "resetTitle": "Đặt lại mật khẩu",
     "reset": "Đặt mật khẩu tạm",
@@ -815,7 +818,7 @@
       "tooShort": "Mật khẩu phải có ít nhất {min} ký tự",
       "email_taken": "Email đã được dùng cho tài khoản khác",
       "not_found": "Không tìm thấy nhân viên",
-      "self": "Không thể tự thay đổi vai trò, khoá hay đặt lại mật khẩu cho chính mình",
+      "self": "Không thể tự thay đổi vai trò, email, khoá hay đặt lại mật khẩu cho chính mình",
       "last_admin": "Phải còn ít nhất 1 quản trị viên đang hoạt động"
     }
   },

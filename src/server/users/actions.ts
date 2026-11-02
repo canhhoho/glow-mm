@@ -53,7 +53,9 @@ export async function updateStaffAction(_prev: ActionState, fd: FormData): Promi
   try {
     const user = await requirePermission("users:manage");
     const staffId = id.parse(fd.get("id"));
-    await updateStaff(staffId, fields(fd), user.id);
+    // Trang của chính mình không có ô email → giữ nguyên.
+    const email = fd.get("email");
+    await updateStaff(staffId, { ...fields(fd), email: email === null ? undefined : String(email) }, user.id);
     revalidatePath(`/admin/users/${staffId}`);
   } catch (e) {
     return { error: await message(e) };

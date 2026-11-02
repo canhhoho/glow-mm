@@ -45,6 +45,13 @@ export default async function EditUserPage({ params }: PageProps<"/admin/users/[
             <span>{t("name")}</span>
             <input name="name" required maxLength={100} defaultValue={user.name} className={fieldClass} />
           </label>
+          {/* Không tự đổi email của mình (đăng nhập bằng email) → trang của mình không có ô email. */}
+          {!self && (
+            <label className="block space-y-1 text-sm">
+              <span>{t("email")}</span>
+              <input name="email" type="email" required maxLength={254} defaultValue={user.email} className={fieldClass} />
+            </label>
+          )}
           <RoleSelect defaultValue={user.role} disabled={self} />
         </ActionForm>
       </section>

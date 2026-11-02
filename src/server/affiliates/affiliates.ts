@@ -82,6 +82,9 @@ export const createAffiliateSchema = profileSchema.extend({
   parentId: z.string().trim().max(64).optional(),
 });
 
+/** Sửa hồ sơ CTV: thêm đổi email đăng nhập (`email` bỏ trống = giữ nguyên). */
+export const updateAffiliateSchema = profileSchema.extend({ email: emailSchema.optional() });
+
 export function parseProfile<T extends z.ZodType<z.infer<typeof profileSchema>>>(schema: T, raw: unknown) {
   const input = schema.parse(raw) as z.infer<T> & z.infer<typeof profileSchema>;
   const code = normalizeRefCode(input.code);
@@ -178,12 +181,13 @@ export async function createAffiliate(raw: unknown, actorId: string) {
 }
 
 export async function updateAffiliate(id: string, raw: unknown, actorId: string) {
-  const input = parseProfile(profileSchema, raw);
+  const input = parseProfile(updateAffiliateSchema, raw);
   try {
     return await prisma.$transaction(async (tx) => {
-      const cur = await tx.affiliate.findUnique({ where: { id } });
+      const cur = await tx.affiliate.findUnique({ where: { id }, include: { user: { select: { email: true } } } });
       if (!cur) throw new AffiliateError("not_found", "Không tìm thấy CTV");
-      await tx.user.update({ where: { id: cur.userId }, data: { name: input.name } });
+      const email = input.email && input.email !== cur.user.email ? input.email : undefined;
+      await tx.user.update({ where: { id: cur.userId }, data: { name: input.name, email } });
       const updated = await tx.affiliate.update({
         where: { id },
         data: {
@@ -202,6 +206,7 @@ export async function updateAffiliate(id: string, raw: unknown, actorId: string)
           entityId: id,
           data: {
             name: input.name,
+            ...(email && { email: { from: cur.user.email, to: email } }),
             code: { from: cur.code, to: input.code },
             commissionRateBp: { from: cur.commissionRateBp, to: input.commissionRateBp },
             uplineRateBp: { from: cur.uplineRateBp, to: input.uplineRateBp },

@@ -8,7 +8,7 @@ import { Prisma, type Role } from "@/generated/prisma/client";
 import { MIN_STAFF_PASSWORD, ROLES, type Role as StaffRole } from "@/server/auth/roles";
 
 /**
- * Quản lý tài khoản nhân viên (P8): tạo, đổi tên/vai trò, khoá/mở khoá, đặt lại mật khẩu.
+ * Quản lý tài khoản nhân viên (P8): tạo, đổi tên/vai trò/email, khoá/mở khoá, đặt lại mật khẩu.
  * Mật khẩu băm bằng `better-auth/crypto` (giống seed) và lưu ở `Account` providerId "credential".
  * Khoá / đặt lại mật khẩu → xoá mọi phiên của người đó. Luôn còn ít nhất 1 ADMIN đang hoạt động.
  */
@@ -36,7 +36,8 @@ export const createStaffSchema = z.object({
   password: passwordSchema,
 });
 
-export const updateStaffSchema = z.object({ name: nameSchema, role: roleSchema });
+/** `email` bỏ trống = giữ nguyên. Admin đổi email người khác; không tự đổi email của mình. */
+export const updateStaffSchema = z.object({ name: nameSchema, role: roleSchema, email: emailSchema.optional() });
 
 export type StaffFilter = { q?: string; role?: Role; active?: boolean };
 
@@ -53,6 +54,16 @@ export async function listStaff(filter: StaffFilter = {}) {
     orderBy: [{ active: "desc" }, { name: "asc" }],
     take: 200,
   });
+}
+
+/** Số tài khoản đang hoạt động theo loại (khối "Tài khoản" ở trang Cài đặt). */
+export async function activeAccountCounts() {
+  const [staff, affiliates, customers] = await Promise.all([
+    prisma.user.count({ where: { role: { in: [...ROLES] }, active: true } }),
+    prisma.affiliate.count({ where: { active: true } }),
+    prisma.user.count({ where: { role: "CUSTOMER", active: true } }),
+  ]);
+  return { staff, affiliates, customers };
 }
 
 export async function getStaff(id: string) {
@@ -84,11 +95,16 @@ export async function createStaff(raw: unknown, actorId: string) {
       return user;
     });
   } catch (e) {
-    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-      throw new UserError("email_taken", "Email đã được dùng cho tài khoản khác");
-    }
-    throw e;
+    emailTakenError(e);
   }
+}
+
+/** Lỗi unique (email trùng) → `email_taken`; lỗi khác ném lại nguyên vẹn. */
+function emailTakenError(e: unknown): never {
+  if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+    throw new UserError("email_taken", "Email đã được dùng cho tài khoản khác");
+  }
+  throw e;
 }
 
 /**
@@ -110,26 +126,38 @@ export function assertNotLastAdmin(activeAdminIds: string[], userId: string) {
 }
 
 async function lockStaff(tx: Prisma.TransactionClient, id: string) {
-  const [row] = await tx.$queryRaw<{ id: string; role: Role; active: boolean }[]>`
-    SELECT id, role, active FROM "user" WHERE id = ${id} FOR UPDATE`;
+  const [row] = await tx.$queryRaw<{ id: string; role: Role; active: boolean; email: string }[]>`
+    SELECT id, role, active, email FROM "user" WHERE id = ${id} FOR UPDATE`;
   if (!row) throw new UserError("not_found", "Không tìm thấy nhân viên");
   return row;
 }
 
 export async function updateStaff(id: string, raw: unknown, actorId: string) {
   const input = updateStaffSchema.parse(raw);
-  return prisma.$transaction(async (tx) => {
-    const cur = await lockStaff(tx, id);
-    if (cur.role !== input.role) {
-      if (id === actorId) throw new UserError("self", "Không thể tự đổi vai trò của mình");
-      if (cur.role === "ADMIN" && cur.active) await assertOtherActiveAdmin(tx, id);
-    }
-    const user = await tx.user.update({ where: { id }, data: { name: input.name, role: input.role } });
-    await tx.auditLog.create({
-      data: { userId: actorId, action: "user.update", entity: "User", entityId: id, data: { name: input.name, role: input.role } },
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const cur = await lockStaff(tx, id);
+      if (cur.role !== input.role) {
+        if (id === actorId) throw new UserError("self", "Không thể tự đổi vai trò của mình");
+        if (cur.role === "ADMIN" && cur.active) await assertOtherActiveAdmin(tx, id);
+      }
+      const email = input.email && input.email !== cur.email ? input.email : undefined;
+      if (email && id === actorId) throw new UserError("self", "Không thể tự đổi email của mình");
+      const user = await tx.user.update({ where: { id }, data: { name: input.name, role: input.role, email } });
+      await tx.auditLog.create({
+        data: {
+          userId: actorId,
+          action: "user.update",
+          entity: "User",
+          entityId: id,
+          data: { name: input.name, role: input.role, ...(email && { email: { from: cur.email, to: email } }) },
+        },
+      });
+      return user;
     });
-    return user;
-  });
+  } catch (e) {
+    emailTakenError(e);
+  }
 }
 
 export async function setStaffActive(id: string, active: boolean, actorId: string) {

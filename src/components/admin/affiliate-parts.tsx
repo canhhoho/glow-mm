@@ -15,6 +15,8 @@ export async function CommissionBadge({ state }: { state: CommissionState }) {
 
 export type AffiliateFieldValues = {
   name: string;
+  /** Email đăng nhập (form sửa; form tạo mới để trống). */
+  email: string;
   phone: string;
   code: string;
   commissionPercent: number;
@@ -23,7 +25,7 @@ export type AffiliateFieldValues = {
   payoutInfo: string | null;
 };
 
-/** Ô nhập hồ sơ CTV (tạo mới thêm email + mật khẩu tạm). `globalUplinePercent` = % tầng trên chung (gợi ý khi để trống). */
+/** Ô nhập hồ sơ CTV, kể cả email đăng nhập (tạo mới thêm mật khẩu tạm). `globalUplinePercent` = % tầng trên chung (gợi ý khi để trống). */
 export async function AffiliateFields({
   values,
   withLogin,
@@ -40,12 +42,10 @@ export async function AffiliateFields({
         <span>{t("name")}</span>
         <input name="name" required maxLength={100} defaultValue={values?.name} className={fieldClass} />
       </label>
-      {withLogin && (
-        <label className="block space-y-1 text-sm">
-          <span>{t("email")}</span>
-          <input name="email" type="email" required maxLength={200} autoComplete="off" className={fieldClass} />
-        </label>
-      )}
+      <label className="block space-y-1 text-sm">
+        <span>{t("email")}</span>
+        <input name="email" type="email" required maxLength={200} autoComplete="off" defaultValue={values?.email} className={fieldClass} />
+      </label>
       <label className="block space-y-1 text-sm">
         <span>{t("phone")}</span>
         <input name="phone" type="tel" inputMode="tel" required maxLength={30} defaultValue={values?.phone} className={fieldClass} />

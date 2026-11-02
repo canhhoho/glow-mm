@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
+import { activeAccountCounts } from "@/server/users/users";
 import { bpToPercent } from "@/server/affiliates/commission";
 import { getAllSettings, PERCENT_SETTING_KEYS, type NumericSettingKey } from "@/server/settings";
 import { saveSettingsAction } from "@/server/settings-actions";
@@ -17,11 +19,33 @@ const GROUPS: { title: string; keys: NumericSettingKey[] }[] = [
 
 export default async function SettingsPage() {
   await requirePagePermission("settings:manage");
-  const [t, settings] = await Promise.all([getTranslations("Settings"), getAllSettings()]);
+  const [t, tn, settings, counts] = await Promise.all([
+    getTranslations("Settings"),
+    getTranslations("Nav"),
+    getAllSettings(),
+    activeAccountCounts(),
+  ]);
+  const accountLinks = [
+    { href: "/admin/users", label: tn("users"), count: counts.staff },
+    { href: "/admin/affiliates", label: tn("affiliates"), count: counts.affiliates },
+    { href: "/admin/customer-accounts", label: tn("customers"), count: counts.customers },
+  ];
 
   return (
     <div className="max-w-2xl">
       <PageHeader title={t("title")} />
+      <section className="mb-5 space-y-2 rounded-lg border p-4" data-testid="settings-accounts">
+        <h2 className="font-medium">{t("accounts")}</h2>
+        <p className="text-xs text-muted-foreground">{t("accountsHint")}</p>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {accountLinks.map((l) => (
+            <Link key={l.href} href={l.href} className="rounded-lg border p-3 text-sm hover:bg-muted">
+              <span className="block font-medium">{l.label}</span>
+              <span className="block text-xs text-muted-foreground">{t("activeCount", { count: l.count })}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
       <ActionForm action={saveSettingsAction} submitLabel={t("save")} okText={t("saved")} className="space-y-5">
         <fieldset className="space-y-2 rounded-lg border p-4">
           <legend className="px-1 font-medium">{t("store")}</legend>

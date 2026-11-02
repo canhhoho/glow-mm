@@ -357,6 +357,16 @@ docker restart tandc-app-1 && sleep 20 && curl -s http://127.0.0.1:3000/api/heal
 
 📖 **ĐỌC ĐỂ HIỂU:** dữ liệu vừa chép mang theo cài đặt "đang nhận đơn". Nếu không tắt, khách lạc vào tandcstore.com có thể đặt đơn, và đơn đó sẽ **mất** khi chép dữ liệu lần cuối ở PHẦN 3.
 
+🖥️ **DÁN VÀO SERVER** (11f — đổi đuôi email đăng nhập `@glow.local` → `@tandcstore.com` cho mọi tài khoản):
+```bash
+docker exec tandc-db-1 psql -U glow -d glow -v ON_ERROR_STOP=1 -c "BEGIN; UPDATE \"user\" SET email = replace(email, '@glow.local', '@tandcstore.com'), \"updatedAt\" = now() WHERE email LIKE '%@glow.local'; INSERT INTO \"AuditLog\" (id, action, entity, data, \"createdAt\") VALUES (gen_random_uuid()::text, 'user.bulkEmailDomain', 'User', '{\"from\":\"@glow.local\",\"to\":\"@tandcstore.com\"}'::jsonb, now()); COMMIT;" && docker exec tandc-db-1 psql -U glow -d glow -c "SELECT email, role, active FROM \"user\" WHERE role <> 'CUSTOMER' ORDER BY role, email;"
+```
+✅ **KẾT QUẢ ĐÚNG:** có dòng `UPDATE <số>` rồi `COMMIT`, bảng cuối toàn email `@tandcstore.com`. Từ giờ đăng nhập bằng `admin@tandcstore.com` (mật khẩu **giữ nguyên**).
+- Báo lỗi `duplicate key` → đã có sẵn tài khoản `@tandcstore.com` trùng tên; không có gì bị đổi → ⛔ gửi Claude.
+- Email nội bộ của khách đăng ký bằng SĐT (`…@phone.glow.invalid`) **không** bị đổi — đúng như vậy.
+
+📖 **ĐỌC ĐỂ HIỂU:** ở **bước 15** (ngày chuyển chính thức) dữ liệu được chép lại từ web cũ, **ghi đè** mọi thay đổi trên server — kể cả email và mật khẩu vừa đổi. Vì vậy sau bước 15 phải chạy lại **11f**, và nên **đổi mật khẩu sau bước 15** (đổi trước sẽ mất).
+
 ## Bước 12. Chạy thử (trên trình duyệt)
 
 🖱️ Mở **cửa sổ ẩn danh** (`Ctrl+Shift+N` trên Chrome) và kiểm tra:
@@ -463,9 +473,11 @@ Rồi làm lại lần lượt:
 - **11a**;
 - **11b** (số liệu phải giống nhau);
 - **11c** (chỉ chạy lệnh **chép thật**);
-- **11d**.
+- **11d**;
+- **11f** (đổi lại đuôi email sang `@tandcstore.com`).
 
-**Bước 16.** 🖱️ Vào `https://tandcstore.com/admin`:
+**Bước 16.** 🖱️ Vào `https://tandcstore.com/admin` (đăng nhập bằng email `@tandcstore.com`):
+- [ ] **Tài khoản của tôi** → đổi mật khẩu; **Cài đặt → Tài khoản → Nhân viên / Cộng tác viên** → đặt lại mật khẩu cho từng người, khoá tài khoản không dùng.
 - [ ] Mở vài đơn mới nhất, kiểm tra giống web cũ.
 - [ ] **Cài đặt** → **chọn "Nhận đơn trên web"** → **Lưu**.
 - [ ] Đặt thử 1 đơn COD (cửa sổ ẩn danh, đăng nhập bằng số thử), rồi vào admin **huỷ** đơn đó.
@@ -544,3 +556,4 @@ Claude sẽ nhắn: *"đã merge main, có/không thay đổi database"*. Bạn 
 | Tắt site tandc (cứu web VCM khi có sự cố) | `rm -f /etc/nginx/sites-enabled/tandc && nginx -t && systemctl reload nginx` |
 | Dung lượng ổ đĩa | `df -h /; docker system df` |
 | Sao lưu ngay | `bash -c 'set -a; . /opt/glow/cron.env; /opt/glow/backup.sh'` |
+| Xem email đăng nhập nhân viên / CTV | `docker exec tandc-db-1 psql -U glow -d glow -c "SELECT email, role, active FROM \"user\" WHERE role <> 'CUSTOMER' ORDER BY role, email;"` |

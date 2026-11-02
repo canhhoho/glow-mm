@@ -475,6 +475,9 @@
   },
   "Settings": {
     "title": "Settings",
+    "accounts": "Accounts",
+    "accountsHint": "Add, edit (name, email, role), reset passwords, lock/unlock accounts.",
+    "activeCount": "{count} active",
     "expiry": "Expiry",
     "orders": "Orders",
     "pricing": "Pricing",
@@ -797,7 +800,7 @@
     "profile": "Profile",
     "save": "Save",
     "saved": "Saved",
-    "selfNote": "This is your own account: you cannot change your role or lock it. Change your password on",
+    "selfNote": "This is your own account: you cannot change your role or email, or lock it (ask another admin to change your email). Change your password on",
     "myAccount": "My account",
     "resetTitle": "Reset password",
     "reset": "Set temporary password",
@@ -815,7 +818,7 @@
       "tooShort": "Password must be at least {min} characters",
       "email_taken": "This email is already used by another account",
       "not_found": "Staff member not found",
-      "self": "You cannot change the role of, lock, or reset the password of your own account",
+      "self": "You cannot change the role or email of, lock, or reset the password of your own account",
       "last_admin": "At least one active administrator must remain"
     }
   },

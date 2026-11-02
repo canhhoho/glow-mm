@@ -93,6 +93,34 @@ describe("Quản lý nhân viên", () => {
     await expect(setStaffActive("khong-co", false, actorId)).rejects.toMatchObject({ code: "not_found" });
   });
 
+  it("đổi email: đăng nhập bằng email mới, email cũ hết dùng; trùng email / tự đổi email → lỗi", async () => {
+    const actorId = await actor();
+    const oldEmail = `it-staff-${tag()}@glow.local`;
+    const newEmail = `it-staff-${tag()}@tandcstore.com`;
+    const user = await createStaff({ name: "Ko Aung", email: oldEmail, role: "WAREHOUSE_MANAGER", password: PASSWORD }, actorId);
+    const taken = await createStaff(
+      { name: "Ma Thida", email: `it-staff-${tag()}@glow.local`, role: "ORDER_STAFF", password: PASSWORD },
+      actorId,
+    );
+
+    expect(await updateStaff(user.id, { name: "Ko Aung", role: "WAREHOUSE_MANAGER", email: newEmail.toUpperCase() }, actorId)).toMatchObject({
+      email: newEmail,
+    });
+    expect((await signIn(newEmail)).token).toBeTruthy();
+    await expect(signIn(oldEmail)).rejects.toThrow();
+    const log = await prisma.auditLog.findFirstOrThrow({ where: { entityId: user.id, action: "user.update" } });
+    expect(log.data).toMatchObject({ email: { from: oldEmail, to: newEmail } });
+
+    await expect(updateStaff(user.id, { name: "Ko Aung", role: "WAREHOUSE_MANAGER", email: taken.email }, actorId)).rejects.toMatchObject({
+      code: "email_taken",
+    });
+    await expect(updateStaff(actorId, { name: "IT", role: "ADMIN", email: `it-${tag()}@tandcstore.com` }, actorId)).rejects.toMatchObject({
+      code: "self",
+    });
+    // Gửi lại đúng email hiện tại của mình thì không coi là đổi.
+    expect(await updateStaff(actorId, { name: "IT", role: "ADMIN", email: "it-runner@glow.local" }, actorId)).toMatchObject({ role: "ADMIN" });
+  });
+
   it("luôn còn ít nhất 1 ADMIN đang hoạt động", () => {
     expect(() => assertNotLastAdmin(["a"], "a")).toThrow(expect.objectContaining({ code: "last_admin" }));
     expect(() => assertNotLastAdmin([], "a")).toThrow(expect.objectContaining({ code: "last_admin" }));

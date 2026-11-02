@@ -138,6 +138,24 @@ describe("Quản lý CTV + chi trả (P10b)", () => {
     ).rejects.toMatchObject({ code: "invalid_code" });
   });
 
+  it("sửa CTV: đổi email đăng nhập (ghi audit), trùng email → email_taken, bỏ trống email → giữ nguyên", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 1 }]);
+    const a = await makeAffiliate(f, { suffix: "E" });
+    const other = await makeAffiliate(f, { suffix: "F" });
+    const otherEmail = (await prisma.user.findUniqueOrThrow({ where: { id: other.userId } })).email;
+    const profile = { name: "Ko Aung", phone: "0911111111", code: a.code, commissionPercent: "10" };
+    const newEmail = `ctv-moi-${f.tag.toLowerCase()}@tandcstore.com`;
+
+    await updateAffiliate(a.id, { ...profile, email: ` ${newEmail.toUpperCase()} ` }, f.userId);
+    expect(await prisma.user.findUniqueOrThrow({ where: { id: a.userId } })).toMatchObject({ email: newEmail, name: "Ko Aung" });
+    const log = await prisma.auditLog.findFirstOrThrow({ where: { entityId: a.id, action: "affiliate.update" }, orderBy: { createdAt: "desc" } });
+    expect(log.data).toMatchObject({ email: { to: newEmail } });
+
+    await expect(updateAffiliate(a.id, { ...profile, email: otherEmail }, f.userId)).rejects.toMatchObject({ code: "email_taken" });
+    await updateAffiliate(a.id, profile, f.userId);
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: a.userId } })).email).toBe(newEmail);
+  });
+
   it("gán CTV cho đơn: chốt % hiện tại, kho không có quyền, CTV bị khoá → lỗi", async () => {
     const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
     const a = await makeAffiliate(f, { rateBp: 900 });

@@ -77,7 +77,7 @@ export async function updateAffiliateAction(_prev: ActionState, fd: FormData): P
   try {
     const user = await requirePermission("affiliates:manage");
     const affiliateId = id.parse(fd.get("id"));
-    await updateAffiliate(affiliateId, profile(fd), user.id);
+    await updateAffiliate(affiliateId, { ...profile(fd), email: String(fd.get("email") ?? "") || undefined }, user.id);
     revalidatePath(`/admin/affiliates/${affiliateId}`);
   } catch (e) {
     return { error: await message(e) };

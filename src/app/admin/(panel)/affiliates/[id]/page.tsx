@@ -311,6 +311,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
             <AffiliateFields
               values={{
                 name: a.user.name,
+                email: a.user.email,
                 phone: a.phone,
                 code: a.code,
                 commissionPercent: bpToPercent(a.commissionRateBp),

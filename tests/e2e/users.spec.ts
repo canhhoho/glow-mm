@@ -64,11 +64,45 @@ test("admin tạo nhân viên → nhân viên đăng nhập đúng quyền → a
   }
 });
 
+test("Cài đặt → Nhân viên → admin đổi email nhân viên → nhân viên đăng nhập bằng email mới", async ({ page, browser }) => {
+  const tag = randomBytes(4).toString("hex");
+  const oldEmail = `e2e-mail-${tag}@glow.local`;
+  const newEmail = `e2e-mail-${tag}@tandcstore.com`;
+  const password = `E2E-tam-${randomBytes(6).toString("hex")}`;
+
+  await login(page, "admin@glow.local");
+  await page.goto("/admin/settings");
+  await page.getByTestId("settings-accounts").getByRole("link", { name: /^Nhân viên/ }).click();
+  await expect(page).toHaveURL(/\/admin\/users$/);
+  await page.getByRole("link", { name: "Thêm nhân viên" }).click();
+  await page.getByRole("textbox", { name: "Họ tên" }).fill("Ko Mail");
+  await page.getByRole("textbox", { name: "Email", exact: true }).fill(oldEmail);
+  await page.getByRole("combobox", { name: "Vai trò" }).selectOption("WAREHOUSE_MANAGER");
+  await page.getByLabel("Mật khẩu tạm").fill(password);
+  await page.getByRole("button", { name: "Tạo tài khoản" }).click();
+  await expect(page).toHaveURL(/\/admin\/users\?saved=1$/);
+
+  await page.goto(`/admin/users?q=${encodeURIComponent(oldEmail)}`);
+  await page.getByTestId("user-row").getByRole("link", { name: "Sửa" }).click();
+  await page.getByRole("textbox", { name: "Email", exact: true }).fill(newEmail);
+  await page.getByRole("button", { name: "Lưu" }).click();
+  await expect(page.getByText("Đã lưu")).toBeVisible();
+  await expect(page.getByText(newEmail).first()).toBeVisible();
+
+  const staffContext = await browser.newContext();
+  try {
+    await login(await staffContext.newPage(), newEmail, password);
+  } finally {
+    await staffContext.close();
+  }
+});
+
 test("trang của chính mình: không có nút khoá / đặt lại mật khẩu, vai trò không đổi được", async ({ page }) => {
   await login(page, "admin@glow.local");
   await page.goto("/admin/users/seed-admin");
   await expect(page.getByText("Đây là tài khoản của bạn")).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Vai trò" })).toBeDisabled();
+  await expect(page.getByRole("textbox", { name: "Email", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Khoá tài khoản" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Đặt mật khẩu tạm" })).toHaveCount(0);
 });
