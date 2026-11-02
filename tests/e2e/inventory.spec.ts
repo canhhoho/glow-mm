@@ -71,18 +71,20 @@ test("phiếu kho: lỗi server giữ lựa chọn; ghi sổ cần xác nhận; 
 
   await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "VN-STOCK — Kho VN" });
   await page.getByRole("button", { name: "Lưu nháp" }).click();
-  await expect(page.getByText("Nháp", { exact: true })).toBeVisible();
+  // Next giữ trang danh sách phiếu ẩn trong DOM (có badge "Nháp"/"Đã huỷ" của phiếu khác) → chỉ xét phần tử đang hiện.
+  const shown = (text: string | RegExp) => page.getByText(text, { exact: typeof text === "string" }).filter({ visible: true });
+  await expect(shown("Nháp")).toBeVisible();
 
   // Bấm "Ghi sổ" rồi từ chối hộp xác nhận → vẫn là nháp.
   page.once("dialog", (d) => d.dismiss());
   await page.getByRole("button", { name: "Ghi sổ" }).click();
-  await expect(page.getByText("Nháp", { exact: true })).toBeVisible();
+  await expect(shown("Nháp")).toBeVisible();
 
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Huỷ phiếu" }).click();
-  await expect(page.getByText("Đã huỷ", { exact: true })).toBeVisible();
-  await expect(page.getByText(/không ảnh hưởng tồn kho/)).toBeVisible();
-  await expect(page.getByText(/Phiếu đã ghi sổ/)).toHaveCount(0);
+  await expect(shown("Đã huỷ")).toBeVisible();
+  await expect(shown(/không ảnh hưởng tồn kho/)).toBeVisible();
+  await expect(shown(/Phiếu đã ghi sổ/)).toHaveCount(0);
 });
 
 test("nhân viên đơn hàng không tạo được phiếu nhập kho", async ({ page }) => {
