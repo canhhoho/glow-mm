@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 /** Khối giao diện nhỏ dùng chung cho các trang admin (server components). */
 
 /**
- * Khung mọi trang admin: cùng độ rộng tối đa + khoảng cách giữa các khối.
- * `narrow`: trang form/cài đặt ngắn; `default`: danh sách, chi tiết, báo cáo.
+ * Khung mọi trang admin: cùng độ rộng + khoảng cách giữa các khối.
+ * `narrow`: trang form/cài đặt ngắn (tối đa 672px); `default`: danh sách, chi tiết, báo cáo — tràn hết chiều rộng (màn lớn không bị trống bên phải).
  */
 export function Page({
   width = "default",
@@ -18,7 +18,7 @@ export function Page({
   className?: string;
   children: React.ReactNode;
 }) {
-  return <div className={cn("w-full space-y-5", width === "narrow" ? "max-w-2xl" : "max-w-7xl", className)}>{children}</div>;
+  return <div className={cn("w-full space-y-5", width === "narrow" && "max-w-2xl", className)}>{children}</div>;
 }
 
 /** Tiêu đề trang; `description` = dòng phụ dưới tiêu đề; `back` = nút quay lại (luôn đứng đầu nhóm nút). */
