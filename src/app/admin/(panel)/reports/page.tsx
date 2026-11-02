@@ -18,9 +18,9 @@ const MAX_DAYS = 366;
 
 function parseRange(sp: Record<string, string | string[] | undefined>): Range {
   const def = defaultRange();
-  const from = typeof sp.from === "string" && DAY.test(sp.from) ? sp.from : def.from;
-  const to = typeof sp.to === "string" && DAY.test(sp.to) ? sp.to : def.to;
-  if (from > to) return def;
+  let from = typeof sp.from === "string" && DAY.test(sp.from) ? sp.from : def.from;
+  let to = typeof sp.to === "string" && DAY.test(sp.to) ? sp.to : def.to;
+  if (from > to) [from, to] = [to, from]; // nhập ngược → đảo lại thay vì âm thầm về mặc định
   // Giới hạn độ dài kỳ để truy vấn nhẹ.
   return from < addDays(to, -(MAX_DAYS - 1)) ? { from: addDays(to, -(MAX_DAYS - 1)), to } : { from, to };
 }
@@ -41,7 +41,8 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
   return (
     <Page>
       <PageHeader title={t("title")} description={t("basis")} />
-      <form className="flex flex-wrap items-end gap-2">
+      {/* key theo kỳ: điều hướng phía client giữ DOM → defaultValue cũ; đổi key để ô ngày hiện kỳ đã chuẩn hoá. */}
+      <form key={`${range.from}|${range.to}`} className="flex flex-wrap items-end gap-2">
         <label className="grid content-start gap-1 text-sm">
           <span className="text-muted-foreground">{t("from")}</span>
           <input type="date" name="from" defaultValue={range.from} className={cn(fieldClass, "w-40")} />

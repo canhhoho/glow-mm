@@ -110,7 +110,11 @@ export async function salesReport(range: Range, opts: { topN?: number } = {}) {
       marginPct: totals.revenue > 0 ? Math.round((totals.profit / totals.revenue) * 1000) / 10 : null,
     },
     daily: [...days.values()],
-    topProducts: [...products.values()].sort((a, b) => b.units - a.units || b.revenue - a.revenue).slice(0, opts.topN ?? 10),
+    // Bỏ SP bị trả hết (bán ròng 0) — không phải "bán chạy".
+    topProducts: [...products.values()]
+      .filter((p) => p.units > 0)
+      .sort((a, b) => b.units - a.units || b.revenue - a.revenue)
+      .slice(0, opts.topN ?? 10),
     missingCostOrders,
   };
 }

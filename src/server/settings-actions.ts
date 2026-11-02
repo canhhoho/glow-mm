@@ -17,7 +17,8 @@ export async function saveSettingsAction(_prev: ActionState, formData: FormData)
     raw["store.checkoutEnabled"] = formData.get("store.checkoutEnabled") === "on";
     await saveSettings(raw, user.id);
   } catch (e) {
-    if (e instanceof ZodError) return { error: e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") };
+    // Key cài đặt (vd "expiry.warnDays") là tên kỹ thuật → chỉ hiện câu báo lỗi.
+    if (e instanceof ZodError) return { error: e.issues.map((i) => i.message).join("; ") };
     return { error: e instanceof Error ? e.message : String(e) };
   }
   revalidatePath("/admin/settings");

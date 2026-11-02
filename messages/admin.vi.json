@@ -648,7 +648,7 @@
     "costs": "Chi phí chuyến (VND)",
     "stock": "Tồn kho theo vị trí",
     "locType": "Loại vị trí",
-    "qty": "Bán được",
+    "qty": "Hàng để bán (cả lô ngừng bán)",
     "tester": "Tester",
     "value": "Giá trị (MMK)",
     "noCost": "SL chưa có giá vốn",

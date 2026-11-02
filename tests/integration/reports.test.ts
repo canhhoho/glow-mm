@@ -67,6 +67,7 @@ describe("Báo cáo khớp sổ kho", () => {
     // Đơn của fixture: 5 × 10,000 − 1 trả = 40,000; giá vốn A3×4,000 + B2×6,000 − trả 1×4,000 = 20,000.
     const mine = report.topProducts.find((p) => p.sku === `IT-${f.tag}`);
     expect(mine).toMatchObject({ units: 4, revenue: 40_000, profit: 20_000 });
+    expect(report.topProducts.every((p) => p.units > 0)).toBe(true); // SP trả hết không vào "Bán chạy"
 
     const stock = await stockByLocationType();
     const ledgerByType = await prisma.$queryRaw<{ type: string; qty: bigint }[]>`

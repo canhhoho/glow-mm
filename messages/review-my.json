@@ -667,6 +667,7 @@
     "Reports.commission",
     "Reports.profitAfterCommission",
     "Reports.uplineCommission",
+    "Reports.qty",
     "Settings.affiliate",
     "Settings.keys.affiliate.defaultRateBp",
     "Settings.keys.affiliate.holdDays",

@@ -13,7 +13,10 @@ test("admin: lưu cài đặt; tính giá mới (xem trước) rồi huỷ", asy
   // Ràng buộc: cảnh báo cận date phải ≥ ngừng bán.
   await page.getByLabel("Cảnh báo cận date dưới (ngày)").fill("10");
   await page.getByRole("button", { name: "Lưu cài đặt" }).click();
-  await expect(page.getByRole("alert").filter({ hasText: "expiry.warnDays" })).toBeVisible();
+  const warnError = page.getByRole("alert").filter({ hasText: "Ngưỡng cảnh báo phải ≥ ngưỡng ngừng bán" });
+  await expect(warnError).toBeVisible();
+  await expect(warnError).not.toContainText("expiry."); // không lộ tên key kỹ thuật
+  await expect(page.getByLabel("Cảnh báo cận date dưới (ngày)")).toHaveValue("10"); // lỗi → giữ số vừa nhập
 
   await page.screenshot({ path: "test-results/screens/settings.png", fullPage: true });
   await page.goto("/admin/pricing");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { startTransition, useActionState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import type { ActionState } from "@/server/inventory/actions";
@@ -28,11 +28,20 @@ export function ActionForm({
 }) {
   const t = useTranslations("Docs");
   const [state, formAction, pending] = useActionState(action, undefined);
+  const formRef = useRef<HTMLFormElement>(null);
+  // `action={…}` làm React reset form sau MỌI lần gửi → lỗi thì mất số vừa nhập. Gửi qua onSubmit và
+  // chỉ reset khi thành công (ô nhập về defaultValue mới sau revalidate, form tạo mới được xoá trắng).
+  useEffect(() => {
+    if (state?.ok && !state.error) formRef.current?.reset();
+  }, [state]);
   return (
     <form
-      action={formAction}
+      ref={formRef}
       onSubmit={(e) => {
-        if (confirm && !window.confirm(confirm)) e.preventDefault();
+        e.preventDefault();
+        if (confirm && !window.confirm(confirm)) return;
+        const fd = new FormData(e.currentTarget, (e.nativeEvent as SubmitEvent).submitter);
+        startTransition(() => formAction(fd));
       }}
       className={className ?? "space-y-3"}
     >

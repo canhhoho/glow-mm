@@ -648,7 +648,7 @@
     "costs": "Shipment costs (VND)",
     "stock": "Stock by location",
     "locType": "Location type",
-    "qty": "Sellable",
+    "qty": "Sale stock (incl. blocked lots)",
     "tester": "Tester",
     "value": "Value (MMK)",
     "noCost": "Qty without cost",
