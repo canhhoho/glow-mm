@@ -2,7 +2,7 @@ import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { rootCategories } from "@/server/catalog/admin-queries";
-import { removeCategoryIconAction, updateCategoryAction } from "@/server/catalog/actions";
+import { deleteCategoryAction, removeCategoryIconAction, updateCategoryAction } from "@/server/catalog/actions";
 import { listCategoriesAdmin } from "@/server/catalog/categories";
 import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
@@ -90,6 +90,15 @@ export default async function CategoriesPage({ searchParams }: PageProps<"/admin
                       label={t("iconRemove")}
                       variant="destructive"
                       confirm={t("iconRemoveConfirm")}
+                    />
+                  )}
+                  {c.products === 0 && c.children === 0 && (
+                    <ActionButton
+                      action={deleteCategoryAction}
+                      fields={{ categoryId: c.id }}
+                      label={t("delete")}
+                      variant="destructive"
+                      confirm={t("deleteConfirm", { slug: c.slug })}
                     />
                   )}
                 </div>

@@ -6,7 +6,7 @@ import { z, ZodError } from "zod";
 import { directionSchema, formId } from "@/lib/schemas";
 import { requirePermission } from "@/server/auth/session";
 import type { ActionState } from "@/server/inventory/actions";
-import { removeCategoryIcon, setCategoryIcon, updateCategory } from "./categories";
+import { deleteCategory, removeCategoryIcon, setCategoryIcon, updateCategory } from "./categories";
 import { CATALOG_TAG } from "./category-tree";
 import { addProductImages, deleteProductImage, reorderProductImage, updateProductImageAlt } from "./images";
 import { createBrand, createCategory, importOpeningStockCsv, importProductsCsv, saveProduct, type ImportResult } from "./products";
@@ -114,6 +114,18 @@ export async function removeCategoryIconAction(_prev: ActionState, formData: For
   }
   categoriesChanged();
   return { ok: "removed" };
+}
+
+export async function deleteCategoryAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("catalog:manage");
+    await deleteCategory(formId(40).parse(formData.get("categoryId")), user.id);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  categoriesChanged();
+  revalidatePath("/admin/products"); // ô chọn danh mục ở form SP
+  return { ok: "deleted" };
 }
 
 // ───────────────────────── Ảnh sản phẩm ─────────────────────────

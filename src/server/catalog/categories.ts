@@ -121,6 +121,29 @@ export async function setCategoryIcon(id: string, upload: ImageUpload, userId: s
   }
 }
 
+/**
+ * Xoá danh mục trống (không SP — kể cả SP ẩn — và không danh mục con); bản dịch xoá theo cascade, icon không còn dùng thì dọn.
+ * Kiểm tra trong transaction; FK Product → Category vẫn chặn nếu có SP được gán cùng lúc.
+ */
+export async function deleteCategory(id: string, userId: string) {
+  const orphan = await prisma.$transaction(async (tx) => {
+    const category = await tx.category.findUnique({
+      where: { id },
+      include: { _count: { select: { products: true, children: true } } },
+    });
+    if (!category) throw new CatalogError("Không tìm thấy danh mục");
+    if (category._count.products > 0) throw new CatalogError("Danh mục còn sản phẩm, chuyển sản phẩm sang danh mục khác trước");
+    if (category._count.children > 0) throw new CatalogError("Danh mục còn danh mục con, xoá hoặc chuyển danh mục con trước");
+    await tx.category.delete({ where: { id: category.id } });
+    const key = category.iconFileId ? await deleteFileIfUnused(tx, category.iconFileId) : null;
+    await tx.auditLog.create({
+      data: { userId, action: "category.delete", entity: "Category", entityId: category.id, data: { slug: category.slug } },
+    });
+    return key;
+  }, TX);
+  await deleteStoredKeys([orphan]);
+}
+
 export async function removeCategoryIcon(id: string, userId: string) {
   const category = await findCategory(id);
   if (!category.iconFileId) return;

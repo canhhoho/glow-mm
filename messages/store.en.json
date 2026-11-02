@@ -70,7 +70,7 @@
     "sortPriceDesc": "Price: high to low",
     "empty": "No products found",
     "from": "from {price}",
-    "count": "{count} products",
+    "count": "{count, plural, one {# product} other {# products}}",
     "choose": "Choose",
     "seeMore": "See more"
   },

@@ -695,7 +695,7 @@
   },
   "Categories": {
     "title": "Categories",
-    "intro": "Up to 2 levels. Root category icons appear in the “Shop by category” tiles on the home page.",
+    "intro": "Up to 2 levels. Root category icons appear in the “Shop by category” tiles on the home page. Categories without published products are hidden on the storefront.",
     "empty": "No categories yet.",
     "colIcon": "Icon",
     "colName": "Name",
@@ -712,6 +712,8 @@
     "iconUploaded": "Icon uploaded.",
     "iconRemove": "Remove icon",
     "iconRemoveConfirm": "Remove this category's icon?",
+    "delete": "Delete category",
+    "deleteConfirm": "Delete category “{slug}”? This cannot be undone.",
     "iconHelp": "Square JPG/PNG/WebP, max 5MB (256×256 recommended).",
     "iconTooBig": "Image too large (max 5MB)",
     "noIcon": "None",

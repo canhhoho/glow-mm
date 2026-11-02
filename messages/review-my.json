@@ -335,6 +335,8 @@
     "Categories.colIcon",
     "Categories.colName",
     "Categories.colProducts",
+    "Categories.delete",
+    "Categories.deleteConfirm",
     "Categories.empty",
     "Categories.iconHelp",
     "Categories.iconRemove",

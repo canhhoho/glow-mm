@@ -695,7 +695,7 @@
   },
   "Categories": {
     "title": "Danh mục",
-    "intro": "Tối đa 2 cấp. Icon của danh mục gốc hiện ở ô “Nhóm hàng” trên trang chủ.",
+    "intro": "Tối đa 2 cấp. Icon của danh mục gốc hiện ở ô “Nhóm hàng” trên trang chủ. Danh mục chưa có sản phẩm đang bán sẽ không hiện trên web bán hàng.",
     "empty": "Chưa có danh mục.",
     "colIcon": "Icon",
     "colName": "Tên",
@@ -712,6 +712,8 @@
     "iconUploaded": "Đã tải icon.",
     "iconRemove": "Xoá icon",
     "iconRemoveConfirm": "Xoá icon của danh mục này?",
+    "delete": "Xoá danh mục",
+    "deleteConfirm": "Xoá danh mục “{slug}”? Không hoàn tác được.",
     "iconHelp": "Ảnh vuông JPG/PNG/WebP, tối đa 5MB (nên dùng 256×256).",
     "iconTooBig": "Ảnh quá lớn (tối đa 5MB)",
     "noIcon": "Chưa có",

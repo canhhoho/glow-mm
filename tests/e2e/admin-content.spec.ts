@@ -24,6 +24,24 @@ test("danh mục: lưu, tải icon (hiện ảnh), xoá icon", async ({ page }) 
   page.once("dialog", (d) => d.accept());
   await row.getByRole("button", { name: "Xoá icon" }).click();
   await expect(row.getByRole("img", { name: /Icon/ })).toHaveCount(0, { timeout: 20_000 });
+  await expect(row.getByRole("button", { name: "Xoá danh mục" })).toHaveCount(0); // còn SP → không xoá được
+});
+
+test("danh mục: thêm danh mục trống rồi xoá", async ({ page }) => {
+  test.setTimeout(90_000);
+  const slug = `e2e-cat-${Date.now()}`;
+  await login(page, "admin@glow.local");
+  await page.goto(`/admin/categories?q=${slug}`);
+  await page.getByLabel("Slug danh mục").fill(slug);
+  await page.getByLabel("Tên (Myanmar)").last().fill("စမ်းသပ်");
+  await page.getByLabel("Tên (English)").last().fill("E2E category");
+  await page.getByRole("button", { name: "Thêm", exact: true }).click();
+  const row = page.getByTestId("category-row").filter({ has: page.getByText(slug, { exact: true }) });
+  await expect(row).toHaveCount(1, { timeout: 20_000 });
+
+  page.once("dialog", (d) => d.accept());
+  await row.getByRole("button", { name: "Xoá danh mục" }).click();
+  await expect(row).toHaveCount(0, { timeout: 20_000 });
 });
 
 test("banner: tạo, báo lỗi link sai, tắt/bật, sửa, xoá", async ({ page }) => {

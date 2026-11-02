@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { LocalDiskStorage } from "@/server/adapters/storage/local";
-import { removeCategoryIcon, setCategoryIcon, updateCategory } from "@/server/catalog/categories";
+import { deleteCategory, removeCategoryIcon, setCategoryIcon, updateCategory } from "@/server/catalog/categories";
 import { listRootCategories } from "@/server/catalog/queries";
 import { activeBanners, createBanner, deleteBanner, moveBanner, setBannerActive, updateBanner } from "@/server/content/banners";
 import {
@@ -173,5 +173,31 @@ describe("Danh mục: sửa + icon", () => {
     await removeCategoryIcon(f.categoryId, f.userId);
     expect(await disk().get(second.icon!.key)).toBeNull();
     expect(await prisma.fileObject.findUnique({ where: { id: second.icon!.id } })).toBeNull();
+  });
+
+  it("xoá chỉ khi trống (không SP, không con); dọn bản dịch + icon; ghi audit", async () => {
+    const f = await makeFixture();
+    const child = await makeFixture();
+    await prisma.product.update({ where: { id: child.productId }, data: { categoryId: f.categoryId } }); // child trống SP
+    const input = { nameMy: "အမျိုးအစား", nameEn: "child", parentId: f.categoryId, sortOrder: 0 };
+    await updateCategory(child.categoryId, input, f.userId);
+
+    await expect(deleteCategory(f.categoryId, f.userId)).rejects.toThrow(/còn sản phẩm/);
+    await prisma.product.updateMany({ where: { categoryId: f.categoryId }, data: { categoryId: child.categoryId } });
+    await expect(deleteCategory(f.categoryId, f.userId)).rejects.toThrow(/danh mục con/);
+    await expect(deleteCategory("khong-co", f.userId)).rejects.toThrow(/Không tìm thấy/);
+
+    // Danh mục gốc trống, có icon → xoá được, icon + bản dịch đi theo.
+    const empty = await prisma.category.create({
+      data: { slug: `it-empty-${f.tag}`, translations: { create: [{ locale: "en", name: "Empty" }] } },
+    });
+    await setCategoryIcon(empty.id, png, f.userId);
+    const icon = (await prisma.category.findUniqueOrThrow({ where: { id: empty.id }, include: { icon: true } })).icon!;
+    await deleteCategory(empty.id, f.userId);
+    expect(await prisma.category.findUnique({ where: { id: empty.id } })).toBeNull();
+    expect(await prisma.categoryTranslation.count({ where: { categoryId: empty.id } })).toBe(0);
+    expect(await prisma.fileObject.findUnique({ where: { id: icon.id } })).toBeNull();
+    expect(await disk().get(icon.key)).toBeNull();
+    expect(await prisma.auditLog.count({ where: { action: "category.delete", entityId: empty.id } })).toBe(1);
   });
 });
