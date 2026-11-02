@@ -16,5 +16,6 @@ describe("money", () => {
   it("định dạng MMK theo locale", () => {
     expect(formatMmk(25000, "my")).toBe("25,000 ကျပ်");
     expect(formatMmk(25000, "en")).toBe("25,000 MMK");
+    expect(formatMmk(25000, "vi")).toBe("25.000 MMK");
   });
 });

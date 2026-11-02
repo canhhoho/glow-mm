@@ -33,11 +33,20 @@ export function toUnicode(text: string): string {
   return isZawgyi(normalized) ? Rabbit.zg2uni(normalized) : normalized;
 }
 
-function clean(text: string): string {
-  return text.normalize("NFC").replace(/\s+/g, " ").trim().toLowerCase();
+/**
+ * Bỏ dấu chữ Latin (tiếng Việt: "chống nắng" → "chong nang", đ → d) để tìm không dấu (P22).
+ * Chỉ xoá dải dấu Latin U+0300–036F → dấu chữ Myanmar (U+102B…) giữ nguyên.
+ * Dữ liệu cũ đã được bỏ dấu bằng migration `p22_search_fold` (cùng bảng ký tự).
+ */
+export function foldLatin(text: string): string {
+  return text.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").normalize("NFC");
 }
 
-/** Chuẩn hoá để tìm kiếm: Unicode, gộp khoảng trắng, lowercase phần Latin. */
+function clean(text: string): string {
+  return foldLatin(text.normalize("NFC").replace(/\s+/g, " ").trim().toLowerCase());
+}
+
+/** Chuẩn hoá để tìm kiếm: Unicode, gộp khoảng trắng, lowercase + bỏ dấu phần Latin. */
 export function normalizeForSearch(text: string): string {
   return clean(toUnicode(text));
 }

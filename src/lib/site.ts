@@ -16,12 +16,17 @@ export function localizedPath(locale: string, path: string): string {
   return locale === routing.defaultLocale ? clean || "/" : `/${locale}${clean}`;
 }
 
+/** Tiền tố URL của locale: "" (my mặc định) hoặc "/en", "/vi"; locale lạ → "" (an toàn khi ghép vào redirect). */
+export function localePrefix(locale: string): string {
+  return locale !== routing.defaultLocale && (routing.locales as readonly string[]).includes(locale) ? `/${locale}` : "";
+}
+
 /** Biến URL tương đối (ảnh /api/files/..., đường dẫn trang) thành tuyệt đối theo siteUrl(). */
 export function absoluteUrl(pathOrUrl: string): string {
   return /^https?:\/\//i.test(pathOrUrl) ? pathOrUrl : `${siteUrl()}${pathOrUrl.startsWith("/") ? "" : "/"}${pathOrUrl}`;
 }
 
-/** canonical + hreflang (my, en, x-default = my) cho một trang storefront. */
+/** canonical + hreflang (my, en, vi, x-default = my) cho một trang storefront. */
 export function alternates(locale: string, path: string) {
   return {
     canonical: localizedPath(locale, path),
@@ -34,5 +39,5 @@ export function alternates(locale: string, path: string) {
 
 /** Locale Open Graph theo locale storefront. */
 export function ogLocale(locale: string): string {
-  return locale === "en" ? "en_US" : "my_MM";
+  return locale === "en" ? "en_US" : locale === "vi" ? "vi_VN" : "my_MM";
 }

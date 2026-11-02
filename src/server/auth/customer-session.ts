@@ -2,6 +2,7 @@ import "server-only";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { localePrefix } from "@/lib/site";
 import { customerAuth } from "./customer-auth";
 import { AFFILIATE_ROLE } from "./roles";
 import { isPhoneEmail, STOREFRONT_ROLES, safeNextPath } from "./customer-policy";
@@ -48,11 +49,11 @@ export async function getCustomerUser(): Promise<CustomerUser | null> {
   };
 }
 
-/** Trang storefront cần đăng nhập: chưa đăng nhập → /(en/)login?next=<trang hiện tại>. */
+/** Trang storefront cần đăng nhập: chưa đăng nhập → /(en|vi/)login?next=<trang hiện tại>. */
 export async function requireCustomer(locale: string, next: string): Promise<CustomerUser> {
   const user = await getCustomerUser();
   if (!user) {
-    const prefix = locale === "en" ? "/en" : "";
+    const prefix = localePrefix(locale);
     redirect(`${prefix}/login?next=${encodeURIComponent(safeNextPath(next))}`);
   }
   return user;

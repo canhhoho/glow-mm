@@ -32,6 +32,7 @@ describe("Khu tài khoản khách ở proxy (P14)", () => {
     );
     expect(customerLoginRedirectFor("/checkout", "", ["glow_ref"])).toBe("/login?next=%2Fcheckout");
     expect(customerLoginRedirectFor("/en/checkout", "", [])).toBe("/en/login?next=%2Fen%2Fcheckout");
+    expect(customerLoginRedirectFor("/vi/checkout", "", [])).toBe("/vi/login?next=%2Fvi%2Fcheckout");
   });
 
   it("đã có cookie khách / trang khác → không chuyển", () => {

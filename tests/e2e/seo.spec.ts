@@ -52,6 +52,7 @@ test("robots.txt + sitemap.xml", async ({ request }) => {
   const r = await robots.text();
   expect(r).toContain("Disallow: /admin");
   expect(r).toContain("Disallow: /en/checkout");
+  expect(r).toContain("Disallow: /vi/checkout");
   expect(r).toMatch(/Sitemap: https?:\/\/\S+\/sitemap\.xml/);
 
   const sitemap = await request.get("/sitemap.xml");
@@ -59,34 +60,58 @@ test("robots.txt + sitemap.xml", async ({ request }) => {
   const s = await sitemap.text();
   expect(s).toContain("/p/sen-viet-sunscreen-spf50</loc>");
   expect(s).toContain('hreflang="en"');
+  expect(s).toContain('hreflang="vi"');
   expect(s).not.toContain("/cart");
 });
 
-test("nút đổi ngôn ngữ: chữ Myanmar không tràn khung", async ({ page }) => {
+// P22: menu ngôn ngữ thả xuống — Myanmar, English trước, Tiếng Việt cuối.
+test("menu ngôn ngữ: 3 lựa chọn theo thứ tự, chữ Myanmar không tràn khung", async ({ page }) => {
   await page.goto("/en");
-  // Lúc stream, nút thật (sau Suspense) có thể còn nằm ẩn cạnh nút fallback → chỉ lấy nút đang hiện.
-  const sw = page.getByTestId("language-switch").filter({ visible: true });
-  await expect(sw).toHaveText("မြန်မာ");
-  await expect(sw).toHaveAttribute("lang", "my");
-  const fits = await sw.evaluate((el) => el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1);
+  // Next giữ trang trước (ẩn) trong DOM sau khi điều hướng → chỉ lấy phần tử đang hiện.
+  const menu = page.getByTestId("language-menu").filter({ visible: true });
+  await expect(menu.getByTestId("language-switch")).toHaveText("EN");
+  await menu.getByTestId("language-switch").click();
+  const items = menu.getByRole("link").filter({ visible: true });
+  await expect(items).toHaveText(["မြန်မာ", "English", "Tiếng Việt"]);
+  await expect(items.first()).toHaveAttribute("lang", "my");
+  await expect(items.nth(1)).toHaveAttribute("aria-current", "true");
+  const fits = await items.first().evaluate((el) => el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1);
   expect(fits).toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(items).toHaveCount(0);
 });
 
 test("đổi ngôn ngữ giữ nguyên trang đang xem (kể cả query)", async ({ page }) => {
-  // Next giữ trang trước (ẩn) trong DOM sau khi điều hướng → chỉ lấy nút đang hiện.
-  const sw = page.getByTestId("language-switch").filter({ visible: true });
+  const menu = page.getByTestId("language-menu").filter({ visible: true });
+  /** Mở menu, chờ link có href đúng (sau hydrate), rồi bấm. */
+  const choose = async (name: string, href: RegExp) => {
+    await menu.getByTestId("language-switch").click();
+    const link = menu.getByRole("link", { name, exact: true }).filter({ visible: true });
+    await expect(link).toHaveAttribute("href", href);
+    await link.click();
+  };
+
   await page.goto("/en/c/skincare");
-  await expect(sw).toHaveAttribute("href", /\/c\/skincare$/); // href đúng sau khi hydrate
-  await sw.click();
+  await choose("Tiếng Việt", /\/vi\/c\/skincare$/);
+  await expect(page).toHaveURL(/\/vi\/c\/skincare$/);
+  await expect(page.locator("html")).toHaveAttribute("lang", "vi");
+  await expect(menu.getByTestId("language-switch")).toHaveText("VI");
+  await choose("မြန်မာ", /\/c\/skincare$/); // next-intl ghi /my/... cho locale mặc định rồi chuyển về /c/...
   await expect(page).toHaveURL(/\/c\/skincare$/);
   await expect(page.locator("html")).toHaveAttribute("lang", "my");
-  await expect(sw).toHaveAttribute("href", /\/en\/c\/skincare$/);
-  await sw.click();
-  await expect(page).toHaveURL(/\/en\/c\/skincare$/);
 
   await page.goto("/en/search?q=Sunscreen");
-  await expect(sw).toHaveAttribute("href", /\/search\?q=Sunscreen$/);
-  await sw.click();
-  await expect(page).toHaveURL(/\/search\?q=Sunscreen$/);
-  await expect(page.locator('a[href="/p/sen-viet-sunscreen-spf50"]').first()).toBeVisible();
+  await choose("Tiếng Việt", /\/vi\/search\?q=Sunscreen$/);
+  await expect(page).toHaveURL(/\/vi\/search\?q=Sunscreen$/);
+  await expect(page.locator('a[href="/vi/p/sen-viet-sunscreen-spf50"]').first()).toBeVisible();
+});
+
+test("trang tiếng Việt: giao diện tiếng Việt, nội dung SP chưa dịch hiện bản English", async ({ page }) => {
+  await page.goto("/vi/p/sen-viet-sunscreen-spf50");
+  await expect(page.locator("html")).toHaveAttribute("lang", "vi");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/Sunscreen SPF50 PA\+\+\+\+/);
+  await expect(page.getByRole("button", { name: "Thêm vào giỏ" })).toBeVisible();
+  await expect(page.locator('meta[property="og:locale"]')).toHaveAttribute("content", "vi_VN");
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/vi\/p\/sen-viet-sunscreen-spf50$/);
+  await expect(page.locator('link[rel="alternate"][hreflang="vi"]')).toHaveAttribute("href", /\/vi\/p\/sen-viet-sunscreen-spf50$/);
 });

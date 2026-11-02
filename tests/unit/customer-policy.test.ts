@@ -65,6 +65,7 @@ describe("Tách phiên khách / nhân viên (P14)", () => {
   it("ngôn ngữ từ callbackURL; ?next chỉ nhận đường dẫn nội bộ; giải mã cookie", () => {
     expect(localeFromCallback("/en/login")).toBe("en");
     expect(localeFromCallback("http://localhost:3000/en")).toBe("en");
+    expect(localeFromCallback("/vi/account")).toBe("vi");
     expect(localeFromCallback("/login")).toBe("my");
     expect(localeFromCallback("/english")).toBe("my");
     expect(localeFromCallback(undefined)).toBe("my");

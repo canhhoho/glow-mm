@@ -1,0 +1,373 @@
+{
+  "Meta": {
+    "title": "T&C Cosmetics — Mỹ phẩm Việt Nam",
+    "description": "Mỹ phẩm chất lượng nhập trực tiếp từ Việt Nam"
+  },
+  "Nav": {
+    "search": "Tìm kiếm",
+    "cart": "Giỏ hàng",
+    "categories": "Danh mục",
+    "orderLookup": "Tra cứu đơn",
+    "language": "Ngôn ngữ",
+    "home": "Trang chủ",
+    "menu": "Menu",
+    "allIn": "Tất cả {name}",
+    "breadcrumb": "Đường dẫn",
+    "account": "Tài khoản"
+  },
+  "Home": {
+    "heroKicker": "Nhập trực tiếp từ Việt Nam",
+    "heroTitle": "Mỹ phẩm đã kiểm tra chất lượng",
+    "categories": "Danh mục",
+    "empty": "Sản phẩm sắp có",
+    "newArrivals": "Hàng mới về",
+    "bannerCta": "Mua ngay",
+    "bannerRegion": "Khuyến mãi",
+    "bannerPrev": "Banner trước",
+    "bannerNext": "Banner tiếp theo",
+    "bannerGoTo": "Xem banner {n}"
+  },
+  "Product": {
+    "addToCart": "Thêm vào giỏ",
+    "askViber": "Hỏi qua Viber",
+    "askMessenger": "Hỏi qua Messenger",
+    "expiry": "Hạn sử dụng",
+    "ingredients": "Thành phần",
+    "usage": "Cách dùng",
+    "outOfStock": "Hết hàng",
+    "brand": "Thương hiệu",
+    "variant": "Phân loại",
+    "qty": "Số lượng",
+    "inStock": "Còn hàng",
+    "lowStock": "Chỉ còn {count}",
+    "expiryNote": "Hạn dùng của lô bạn sẽ nhận",
+    "description": "Mô tả",
+    "storage": "Bảo quản",
+    "bundle": "Bộ",
+    "buyNow": "Mua ngay",
+    "related": "Cùng danh mục"
+  },
+  "Footer": {
+    "contact": "Liên hệ",
+    "rights": "Bảo lưu mọi quyền",
+    "info": "Thông tin"
+  },
+  "NotFound": {
+    "title": "Không tìm thấy trang",
+    "back": "Về trang chủ"
+  },
+  "Catalog": {
+    "all": "Tất cả sản phẩm",
+    "filter": "Lọc",
+    "apply": "Áp dụng",
+    "brand": "Thương hiệu",
+    "allBrands": "Mọi thương hiệu",
+    "skinType": "Loại da",
+    "concern": "Vấn đề da",
+    "sort": "Sắp xếp",
+    "sortNew": "Mới nhất",
+    "sortPriceAsc": "Giá: thấp đến cao",
+    "sortPriceDesc": "Giá: cao đến thấp",
+    "empty": "Không tìm thấy sản phẩm",
+    "from": "từ {price}",
+    "count": "{count} sản phẩm",
+    "choose": "Chọn",
+    "seeMore": "Xem thêm"
+  },
+  "Search": {
+    "title": "Tìm kiếm",
+    "placeholder": "Sản phẩm, thương hiệu…",
+    "submit": "Tìm",
+    "results": "Kết quả cho “{q}”"
+  },
+  "Cart": {
+    "title": "Giỏ hàng của bạn",
+    "empty": "Giỏ hàng trống",
+    "continue": "Tiếp tục mua sắm",
+    "update": "Cập nhật",
+    "remove": "Xoá",
+    "subtotal": "Tạm tính",
+    "shippingNote": "Phí giao hàng tính ở bước thanh toán",
+    "checkout": "Thanh toán",
+    "unavailable": "Không còn bán",
+    "onlyLeft": "Chỉ còn {count}",
+    "fix": "Vui lòng điều chỉnh các sản phẩm được đánh dấu đỏ"
+  },
+  "Checkout": {
+    "title": "Thanh toán",
+    "contact": "Thông tin giao hàng",
+    "name": "Họ và tên",
+    "phone": "Số điện thoại",
+    "phoneHint": "VD: 09 7xx xxx xxx",
+    "address": "Địa chỉ (số nhà, đường, phường)",
+    "note": "Ghi chú (không bắt buộc)",
+    "payment": "Thanh toán",
+    "cod": "Thanh toán khi nhận hàng",
+    "codHint": "Chúng tôi sẽ gọi điện để xác nhận đơn",
+    "bank": "Chuyển khoản ngân hàng",
+    "bankHint": "Chuyển khoản và tải ảnh biên lai sau khi đặt hàng",
+    "summary": "Tóm tắt đơn hàng",
+    "shipping": "Phí giao hàng",
+    "total": "Tổng (chưa gồm phí giao)",
+    "place": "Đặt hàng",
+    "err": {
+      "invalid_phone": "Vui lòng nhập số di động Myanmar hợp lệ",
+      "invalid_zone": "Vui lòng chọn thị trấn",
+      "variant_unavailable": "Một số sản phẩm không còn bán — vui lòng kiểm tra giỏ hàng",
+      "out_of_stock": "Một số sản phẩm không đủ hàng — vui lòng kiểm tra giỏ hàng",
+      "invalid_form": "Vui lòng kiểm tra thông tin đã nhập",
+      "not_found": "Không tìm thấy đơn hàng",
+      "invalid_file": "Vui lòng tải ảnh JPG, PNG, WebP hoặc PDF tối đa 5MB",
+      "proof_not_allowed": "Đơn này không chờ biên lai",
+      "invalid_transition": "Đơn này không thể thay đổi nữa",
+      "forbidden": "Không được phép",
+      "unknown": "Đã có lỗi, vui lòng thử lại",
+      "checkout_disabled": "Cửa hàng tạm ngưng nhận đơn trực tuyến. Vui lòng thử lại sau hoặc nhắn tin cho chúng tôi qua Viber/Messenger."
+    },
+    "savedAddress": "Giao đến",
+    "newAddress": "Địa chỉ mới",
+    "saveToBook": "Lưu vào sổ địa chỉ",
+    "orderingAs": "Đặt hàng bằng tài khoản {email}",
+    "orderingAsAffiliate": "Bạn đang đặt hàng bằng tài khoản cộng tác viên {code} — đơn này được tính vào doanh số và hoa hồng của bạn."
+  },
+  "Order": {
+    "thanks": "Cảm ơn bạn! Đơn hàng đã được đặt.",
+    "code": "Mã đơn",
+    "keepCode": "Giữ mã này để tra cứu đơn hàng",
+    "status": "Trạng thái",
+    "items": "Sản phẩm",
+    "subtotal": "Tạm tính",
+    "shipping": "Phí giao hàng",
+    "free": "Miễn phí",
+    "total": "Tổng cộng",
+    "deliverTo": "Giao đến",
+    "payment": "Thanh toán",
+    "tracking": "Mã vận đơn",
+    "codInfo": "Thanh toán {total} bằng tiền mặt khi nhận hàng. Chúng tôi sẽ gọi điện để xác nhận.",
+    "bankInfo": "Vui lòng chuyển khoản {total} đến:",
+    "bankRef": "Ghi mã đơn {code} vào nội dung chuyển khoản.",
+    "holdUntil": "Chúng tôi giữ hàng cho bạn đến {time}.",
+    "uploadTitle": "Tải biên lai chuyển khoản",
+    "uploadHint": "Ảnh chụp hoặc ảnh màn hình, JPG/PNG/WebP/PDF, tối đa 5MB",
+    "upload": "Gửi biên lai",
+    "uploaded": "Đã nhận biên lai — chúng tôi sẽ xác nhận sớm.",
+    "rejected": "Biên lai trước chưa xác minh được. Vui lòng tải lại.",
+    "st": {
+      "PENDING": "Chờ xác nhận",
+      "PAYMENT_CONFIRMED": "Đã xác nhận thanh toán",
+      "COD_CONFIRMED": "Đã xác nhận",
+      "PACKING": "Đang đóng gói",
+      "SHIPPING": "Đang giao",
+      "COMPLETED": "Đã giao",
+      "CANCELLED": "Đã huỷ",
+      "RETURNED": "Đã trả hàng"
+    },
+    "pay": {
+      "UNPAID": "Chưa thanh toán",
+      "PROOF_SUBMITTED": "Đã gửi biên lai",
+      "PAID": "Đã thanh toán",
+      "REJECTED": "Biên lai bị từ chối",
+      "REFUNDED": "Đã hoàn tiền"
+    },
+    "askHelp": "Cần hỗ trợ? Liên hệ chúng tôi"
+  },
+  "Track": {
+    "title": "Tra cứu đơn hàng",
+    "code": "Mã đơn",
+    "phone": "Số điện thoại đặt hàng",
+    "submit": "Tìm đơn",
+    "notFound": "Không có đơn nào khớp mã đơn và số điện thoại này"
+  },
+  "Review": {
+    "title": "Đánh giá sản phẩm",
+    "rating": "Số sao",
+    "stars": "{n} sao",
+    "body": "Nhận xét (không bắt buộc)",
+    "submit": "Gửi đánh giá",
+    "pending": "Cảm ơn bạn! Đánh giá đang chờ duyệt.",
+    "approved": "Đánh giá của bạn đã được đăng.",
+    "rejected": "Đánh giá của bạn không được đăng.",
+    "errRating": "Vui lòng chọn từ 1 đến 5 sao",
+    "errGeneric": "Không gửi được đánh giá này",
+    "heading": "Đánh giá",
+    "summary": "{avg} / 5 · {count} đánh giá",
+    "none": "Chưa có đánh giá"
+  },
+  "Chat": {
+    "label": "Chat với chúng tôi"
+  },
+  "Info": {
+    "about": {
+      "title": "Về chúng tôi",
+      "body": [
+        "T&C Cosmetics mang mỹ phẩm và sản phẩm chăm sóc da sản xuất tại Việt Nam đến trực tiếp khách hàng ở Myanmar.",
+        "Mọi sản phẩm đều do chúng tôi nhập khẩu, lưu tại kho ở Yangon và được kiểm tra hạn sử dụng trước khi giao.",
+        "Có câu hỏi về sản phẩm? Liên hệ chúng tôi qua Viber hoặc Messenger — chúng tôi sẵn lòng tư vấn."
+      ]
+    },
+    "shipping": {
+      "title": "Giao hàng",
+      "body": [
+        "Chúng tôi giao hàng trong Myanmar qua đối tác vận chuyển. Phí giao hàng không nằm trong tổng đơn — bạn trả trực tiếp cho người giao khi nhận hàng.",
+        "Sau khi đơn được xác nhận, chúng tôi đóng gói và giao cho đơn vị vận chuyển. Bạn có thể theo dõi trạng thái ở trang Tra cứu đơn bằng mã đơn và số điện thoại."
+      ]
+    },
+    "payment": {
+      "title": "Thanh toán",
+      "body": [
+        "Thanh toán khi nhận hàng (COD): trả tiền cho người giao khi nhận hàng. Chúng tôi gọi điện xác nhận đơn trước.",
+        "Chuyển khoản ngân hàng: sau khi đặt hàng, chuyển khoản tổng tiền và tải ảnh biên lai ở trang đơn hàng. Chúng tôi giao hàng khi đã kiểm tra thanh toán.",
+        "Đơn chuyển khoản chưa thanh toán được giữ trong thời gian có hạn, sau đó tự động huỷ."
+      ]
+    },
+    "returns": {
+      "title": "Đổi trả",
+      "body": [
+        "Nếu sản phẩm bị hỏng, giao sai hoặc gần hết hạn, hãy liên hệ chúng tôi trong vài ngày sau khi nhận, kèm mã đơn và ảnh chụp.",
+        "Hàng trả về được kiểm tra trước. Khi chấp nhận đổi trả, chúng tôi hoàn tiền cho sản phẩm trả lại hoặc gửi sản phẩm thay thế.",
+        "Vì lý do vệ sinh, sản phẩm đã mở không được trả lại trừ khi bị lỗi."
+      ]
+    },
+    "privacy": {
+      "title": "Quyền riêng tư",
+      "body": [
+        "Chúng tôi chỉ thu thập thông tin cần để giao đơn: họ tên, số điện thoại và địa chỉ.",
+        "Thông tin của bạn được dùng để xử lý, giao đơn và liên hệ về đơn hàng. Chúng tôi không bán thông tin cho bất kỳ ai."
+      ]
+    }
+  },
+  "Email": {
+    "greeting": "Xin chào {name},",
+    "verify": {
+      "subject": "T&C Cosmetics — xác nhận email",
+      "body": "Bấm nút bên dưới để hoàn tất tạo tài khoản T&C Cosmetics. Liên kết có hiệu lực trong 24 giờ.",
+      "cta": "Xác nhận email",
+      "ignore": "Nếu bạn không tạo tài khoản, hãy bỏ qua email này."
+    },
+    "reset": {
+      "subject": "T&C Cosmetics — đặt lại mật khẩu",
+      "body": "Bấm nút bên dưới để đặt mật khẩu mới. Liên kết có hiệu lực trong 1 giờ.",
+      "cta": "Đặt lại mật khẩu",
+      "ignore": "Nếu bạn không yêu cầu, hãy bỏ qua email này — mật khẩu của bạn không đổi."
+    }
+  },
+  "Auth": {
+    "loginTitle": "Đăng nhập",
+    "loginIntro": "Đăng nhập để đặt hàng và theo dõi đơn ở một nơi.",
+    "google": "Tiếp tục với Google",
+    "or": "hoặc",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "confirmPassword": "Nhập lại mật khẩu",
+    "name": "Họ và tên",
+    "submitLogin": "Đăng nhập",
+    "noAccount": "Bạn mới đến?",
+    "createAccount": "Tạo tài khoản",
+    "haveAccount": "Đã có tài khoản?",
+    "signInLink": "Đăng nhập",
+    "forgot": "Quên mật khẩu?",
+    "registerTitle": "Tạo tài khoản",
+    "submitRegister": "Tạo tài khoản",
+    "passwordHint": "Ít nhất 8 ký tự",
+    "checkEmail": "Chúng tôi đã gửi liên kết xác nhận đến {email}. Mở liên kết để hoàn tất tạo tài khoản (kiểm tra cả thư mục Spam).",
+    "forgotTitle": "Đặt lại mật khẩu",
+    "forgotIntro": "Nhập email tài khoản, chúng tôi sẽ gửi liên kết để đặt mật khẩu mới.",
+    "sendLink": "Gửi liên kết",
+    "forgotSent": "Nếu có tài khoản với {email}, liên kết đặt lại đang được gửi.",
+    "resetTitle": "Đặt mật khẩu mới",
+    "newPassword": "Mật khẩu mới",
+    "savePassword": "Lưu mật khẩu",
+    "resetDone": "Đã đổi mật khẩu. Vui lòng đăng nhập bằng mật khẩu mới.",
+    "verified": "Đã xác nhận email. Chào mừng bạn!",
+    "emailOff": "Chưa thể đăng nhập bằng email — vui lòng dùng Google.",
+    "noMethod": "Hiện chưa thể đăng nhập. Vui lòng liên hệ cửa hàng để đặt hàng.",
+    "showPassword": "Hiện mật khẩu",
+    "hidePassword": "Ẩn mật khẩu",
+    "err": {
+      "invalid": "Sai email hoặc mật khẩu.",
+      "notVerified": "Email của bạn chưa được xác nhận. Chúng tôi đã gửi liên kết xác nhận mới — vui lòng kiểm tra hộp thư.",
+      "tooMany": "Thử quá nhiều lần. Vui lòng đợi một phút rồi thử lại.",
+      "locked": "Tài khoản này đã bị khoá. Vui lòng liên hệ cửa hàng.",
+      "notCustomer": "Email này thuộc tài khoản nhân viên, không dùng để mua hàng được. Vui lòng chọn tài khoản Google khác.",
+      "notLinked": "Email này đã có tài khoản chưa xác nhận (hoặc là tài khoản nhân viên). Hãy xác nhận từ hộp thư, hoặc chọn tài khoản Google khác.",
+      "mismatch": "Mật khẩu không khớp.",
+      "tooShort": "Mật khẩu phải có ít nhất {min} ký tự.",
+      "invalidLink": "Liên kết không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu liên kết mới.",
+      "unknown": "Đã có lỗi. Vui lòng thử lại.",
+      "invalidPhone": "Số điện thoại không hợp lệ.",
+      "phoneTaken": "Số điện thoại này đã có tài khoản — vui lòng đăng nhập.",
+      "invalidPhoneLogin": "Sai số điện thoại hoặc mật khẩu."
+    },
+    "emailOrPhone": "Email hoặc số điện thoại",
+    "phone": "Số điện thoại",
+    "phoneHint": "VD: 09 7xx xxx xxx",
+    "forgotPhone": "Quên mật khẩu? Nhắn tin cho cửa hàng qua Viber hoặc Messenger, chúng tôi sẽ đặt lại giúp bạn.",
+    "registerWithEmail": "Đăng ký bằng email"
+  },
+  "Account": {
+    "title": "Tài khoản của tôi",
+    "nav": {
+      "orders": "Đơn hàng",
+      "addresses": "Địa chỉ",
+      "profile": "Hồ sơ"
+    },
+    "hello": "Xin chào, {name}",
+    "ordersTitle": "Đơn hàng của tôi",
+    "noOrders": "Bạn chưa có đơn hàng nào.",
+    "shopNow": "Bắt đầu mua sắm",
+    "items": "{n, plural, other {# sản phẩm}}",
+    "missingOrder": "Đặt hàng trước khi đăng nhập, hoặc qua điện thoại/Facebook? Tra cứu bằng mã đơn và số điện thoại — đơn sẽ được thêm vào tài khoản của bạn.",
+    "trackLink": "Tra cứu đơn",
+    "signOut": "Đăng xuất",
+    "addressesTitle": "Sổ địa chỉ",
+    "noAddresses": "Chưa có địa chỉ nào.",
+    "addAddress": "Thêm địa chỉ",
+    "editAddress": "Sửa địa chỉ",
+    "recipientName": "Tên người nhận",
+    "phone": "Số điện thoại",
+    "phoneHint": "VD: 09 7xx xxx xxx",
+    "line": "Địa chỉ (số nhà, đường, phường)",
+    "note": "Ghi chú giao hàng (không bắt buộc)",
+    "makeDefault": "Dùng làm địa chỉ mặc định",
+    "default": "Mặc định",
+    "setDefault": "Đặt làm mặc định",
+    "edit": "Sửa",
+    "delete": "Xoá",
+    "save": "Lưu",
+    "cancel": "Huỷ",
+    "saved": "Đã lưu.",
+    "maxAddresses": "Bạn có thể lưu tối đa {n} địa chỉ.",
+    "zoneInactive": "Không còn giao đến",
+    "profileTitle": "Hồ sơ",
+    "email": "Email",
+    "name": "Họ và tên",
+    "passwordTitle": "Đổi mật khẩu",
+    "currentPassword": "Mật khẩu hiện tại",
+    "newPassword": "Mật khẩu mới",
+    "confirmPassword": "Nhập lại mật khẩu mới",
+    "changePassword": "Đổi mật khẩu",
+    "passwordChanged": "Đã đổi mật khẩu. Các thiết bị khác đã bị đăng xuất.",
+    "googleOnly": "Bạn đăng nhập bằng Google nên tài khoản này không có mật khẩu.",
+    "err": {
+      "not_found": "Không tìm thấy địa chỉ.",
+      "too_many": "Bạn có thể lưu tối đa 10 địa chỉ.",
+      "invalid_phone": "Số điện thoại không hợp lệ.",
+      "invalid_zone": "Vui lòng chọn thị trấn.",
+      "invalid_form": "Vui lòng kiểm tra thông tin đã nhập.",
+      "unknown": "Đã có lỗi. Vui lòng thử lại.",
+      "mismatch": "Mật khẩu không khớp.",
+      "tooShort": "Mật khẩu phải có ít nhất {min} ký tự.",
+      "wrongCurrent": "Mật khẩu hiện tại không đúng."
+    }
+  },
+  "Address": {
+    "state": "Bang / Vùng",
+    "district": "Quận / Huyện",
+    "township": "Thị trấn",
+    "chooseState": "Chọn bang / vùng",
+    "chooseDistrict": "Chọn quận / huyện",
+    "chooseTownship": "Chọn thị trấn",
+    "phone2": "Số điện thoại phụ (không bắt buộc)",
+    "shippingNote": "Phí giao hàng trả cho người giao khi nhận hàng."
+  }
+}

@@ -24,6 +24,10 @@ describe("Zawgyi → Unicode", () => {
     expect(hasMyanmar("Sunscreen SPF50")).toBe(false);
     expect(toUnicode("Sunscreen SPF50")).toBe("Sunscreen SPF50");
     expect(normalizeForSearch("  Sunscreen   SPF50 ")).toBe("sunscreen spf50");
+    // P22: tìm không dấu — bỏ dấu tiếng Việt (cả đ), chữ Myanmar giữ nguyên.
+    expect(normalizeForSearch("Kem Chống Nắng Sen Việt ĐẸP")).toBe("kem chong nang sen viet dep");
+    expect(normalizeForSearch("နေရောင်ကာ ခရင်မ်")).toBe("နေရောင်ကာ ခရင်မ်");
+    expect(searchVariants("kem chống nắng")).toEqual(["kem chong nang"]);
   });
 
   it("truy vấn ngắn mơ hồ → tìm cả hai dạng", () => {

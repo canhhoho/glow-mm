@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
-import { toUnicode } from "@/lib/myanmar";
+import { normalizeForSearch, toUnicode } from "@/lib/myanmar";
 import { availableToSell } from "@/server/orders/availability";
 import { getNumberSetting } from "@/server/settings";
 import { sellableCutoff } from "./fefo";
@@ -61,7 +61,7 @@ export async function loadThresholds(): Promise<Thresholds> {
 
 const contains = (q: string) => ({ contains: q, mode: "insensitive" as const });
 const productSearch = (q: string): Prisma.ProductWhereInput => ({
-  translations: { some: { OR: [{ name: contains(q) }, { searchText: contains(q) }] } },
+  translations: { some: { OR: [{ name: contains(q) }, { searchText: contains(normalizeForSearch(q)) }] } },
 });
 
 /** Lô khớp từ khoá: số lô, SKU hoặc tên sản phẩm. */

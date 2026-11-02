@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
-import { searchVariants } from "@/lib/myanmar";
+import { normalizeForSearch, searchVariants } from "@/lib/myanmar";
 import type { CartLine } from "@/server/cart/cart";
 import { salesBlockDays } from "@/server/inventory/documents";
 import { sellableCutoff } from "@/server/inventory/fefo";
@@ -96,6 +96,8 @@ export async function loadCardRows(query: Omit<ProductListQuery, "sort">): Promi
       OR: [
         ...searchVariants(q).map((v) => ({ translations: { some: { searchText: { contains: v } } } })),
         { brand: { name: { contains: q, mode: "insensitive" } } },
+        // Tìm không dấu theo slug thương hiệu: "sen viet" → "sen-viet" (tên "Sen Việt" có dấu, SQL không bỏ dấu được).
+        { brand: { slug: { contains: normalizeForSearch(q).replace(/ /g, "-") } } },
         { variants: { some: { sku: { contains: q.toUpperCase() } } } },
       ],
     });

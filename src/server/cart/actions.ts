@@ -8,6 +8,7 @@ import { hasLocale } from "next-intl";
 import { z, ZodError } from "zod";
 import { redirect } from "@/i18n/navigation";
 import { routing, type StoreLocale } from "@/i18n/routing";
+import { localePrefix } from "@/lib/site";
 import { claimOrders } from "@/server/accounts/claims";
 import { customerOrder } from "@/server/accounts/order-access";
 import { normalizeRefCode, REF_COOKIE } from "@/server/affiliates/referral";
@@ -83,7 +84,7 @@ export async function addToCartAction(formData: FormData) {
   await writeCart(addLine(await readCart(), String(formData.get("variantId")), Number(formData.get("qty") ?? 1)));
   if (intent === "buy" && !(await getCustomerUser())) {
     // Redirect của Server Action render thẳng trang đích, không qua proxy → tự chuyển tới đăng nhập (P14c).
-    const prefix = locale === "en" ? "/en" : "";
+    const prefix = localePrefix(locale);
     nextRedirect(`${prefix}/login?next=${encodeURIComponent(`${prefix}/checkout`)}`);
   }
   redirect({ href: intent === "buy" ? "/checkout" : "/cart", locale });

@@ -20,7 +20,8 @@ export default async function BannersPage({ searchParams }: PageProps<"/admin/co
   await requirePagePermission("content:manage");
   const [{ saved }, t, banners] = await Promise.all([searchParams, getTranslations("Content"), listBannersAdmin()]);
   const now = new Date();
-  const localeLabel = (l: string | null) => (l === "my" ? t("localeMy") : l === "en" ? t("localeEn") : t("localeAll"));
+  const localeLabel = (l: string | null) =>
+    l === "my" ? t("localeMy") : l === "en" ? t("localeEn") : l === "vi" ? t("localeVi") : t("localeAll");
 
   return (
     <Page>

@@ -7,6 +7,7 @@ import { uplineSnapshot } from "@/server/affiliates/upline";
 import { newCode } from "@/server/codes";
 import { salesBlockDays } from "@/server/inventory/documents";
 import { findActiveTownship, townshipLabel, vtpCodes } from "@/server/locations/locations";
+import { pick } from "@/server/catalog/queries";
 import type { Tx } from "@/server/inventory/ledger";
 import { getBoolSetting, getNumberSetting } from "@/server/settings";
 import { OrderError } from "./errors";
@@ -185,7 +186,7 @@ async function priceLines(tx: Tx, items: { variantId: string; qty: number }[], l
   return items.map((i) => {
     const v = byId.get(i.variantId);
     if (!v) throw new OrderError("variant_unavailable", "Sản phẩm không còn bán", { variantId: i.variantId });
-    const tr = v.product.translations.find((t) => t.locale === locale) ?? v.product.translations[0];
+    const tr = pick(v.product.translations, locale);
     return {
       variantId: v.id,
       sku: v.sku,

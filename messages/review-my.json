@@ -703,6 +703,7 @@
     "Users.title",
     "Users.unlock",
     "Users.unlockHint",
-    "Users.you"
+    "Users.you",
+    "Content.localeVi"
   ]
 }

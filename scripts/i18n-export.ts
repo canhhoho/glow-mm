@@ -5,7 +5,7 @@ import { buildExportRows, toCsv, type ExportInput, type ReviewList } from "@/lib
 
 const read = (f: string) => JSON.parse(readFileSync(`messages/${f}`, "utf8"));
 const files: ExportInput = {
-  store: { en: read("store.en.json"), my: read("store.my.json") },
+  store: { en: read("store.en.json"), my: read("store.my.json"), vi: read("store.vi.json") },
   admin: { en: read("admin.en.json"), my: read("admin.my.json"), vi: read("admin.vi.json") },
 };
 const review: ReviewList = read("review-my.json");

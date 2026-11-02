@@ -22,8 +22,8 @@ export function loginRedirectFor(pathname: string, cookieNames: string[]): strin
 /** Cookie phiên của instance auth khách (P14, `cookiePrefix: "glow-customer"`). */
 export const CUSTOMER_SESSION_COOKIES = ["glow-customer.session_token", "__Secure-glow-customer.session_token"];
 
-/** Trang storefront cần tài khoản khách (có/không tiền tố /en): khu tài khoản + thanh toán (P14c). */
-const CUSTOMER_AREA = /^(\/en)?\/(account(\/.*)?|checkout\/?)$/;
+/** Trang storefront cần tài khoản khách (có/không tiền tố /en, /vi — khớp `routing.locales`): khu tài khoản + thanh toán (P14c). */
+const CUSTOMER_AREA = /^(\/(?:en|vi))?\/(account(\/.*)?|checkout\/?)$/;
 
 /**
  * Storefront: trang cần đăng nhập mà chưa có cookie phiên khách → `/(en/)login?next=<đường dẫn + query>`, ngược lại null.

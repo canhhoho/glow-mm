@@ -1,8 +1,11 @@
 import { defineRouting } from "next-intl/routing";
 
-/** Storefront: tiếng Myanmar mặc định + tiếng Anh, locale nằm trong URL. */
+/**
+ * Storefront: tiếng Myanmar mặc định + tiếng Anh; tiếng Việt (P22) là lựa chọn thêm, xếp cuối.
+ * Locale nằm trong URL. Thứ tự này = thứ tự trong menu ngôn ngữ.
+ */
 export const routing = defineRouting({
-  locales: ["my", "en"],
+  locales: ["my", "en", "vi"],
   defaultLocale: "my",
   localePrefix: "as-needed",
   // Không tự đổi theo ngôn ngữ trình duyệt: khách Myanmar hay để máy tiếng Anh nhưng đọc tiếng Myanmar.

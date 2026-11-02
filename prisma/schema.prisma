@@ -998,7 +998,7 @@ model Banner {
   mobileFileId  String?
   mobileFile    FileObject? @relation("BannerMobile", fields: [mobileFileId], references: [id])
   alt           String
-  /// null = hiện cho mọi ngôn ngữ; "my" | "en" khi ảnh có chữ theo ngôn ngữ.
+  /// null = hiện cho mọi ngôn ngữ; "my" | "en" | "vi" khi ảnh có chữ theo ngôn ngữ.
   locale        String?
   /// Đường dẫn nội bộ (`/c/...`) hoặc URL `https://`.
   href          String?

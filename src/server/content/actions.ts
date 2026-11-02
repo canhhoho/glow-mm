@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath, updateTag } from "next/cache";
 import { ZodError } from "zod";
-import { directionSchema, formId } from "@/lib/schemas";
+import { directionSchema, formId, localeSchema } from "@/lib/schemas";
 import { yangonLocalToUtc } from "@/lib/time";
 import { requirePermission } from "@/server/auth/session";
 import type { ActionState } from "@/server/inventory/actions";
@@ -55,7 +55,7 @@ function bannerFields(fd: FormData) {
   const locale = String(fd.get("locale") ?? "");
   return {
     alt: String(fd.get("alt") ?? ""),
-    locale: locale === "my" || locale === "en" ? locale : null,
+    locale: localeSchema.safeParse(locale).data ?? null,
     href: String(fd.get("href") ?? ""),
     active: checked(fd, "active"),
     startAt: when(fd.get("startAt")),

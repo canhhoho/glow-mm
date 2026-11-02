@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Link } from "@/i18n/navigation";
 import type { StoreLocale } from "@/i18n/routing";
+import { localePrefix } from "@/lib/site";
 import { emailAuthEnabled } from "@/lib/env";
 import { AuthCard } from "@/components/store/auth-card";
 import { ForgotPasswordForm } from "@/components/store/auth-forms";
@@ -30,7 +31,7 @@ async function ForgotContent({ params }: PageProps<"/[locale]/forgot-password">)
   const t = await getTranslations({ locale, namespace: "Auth" });
   return (
     <AuthCard title={t("forgotTitle")} intro={t("forgotIntro")}>
-      <ForgotPasswordForm prefix={locale === "en" ? "/en" : ""} />
+      <ForgotPasswordForm prefix={localePrefix(locale)} />
       <Link href="/login" className="inline-flex min-h-11 items-center text-sm text-accent-foreground hover:underline">
         {t("signInLink")}
       </Link>

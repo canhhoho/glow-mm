@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
-import { PackageSearch, Search, ShoppingBag, UserRound } from "lucide-react";
+import { Languages, PackageSearch, Search, ShoppingBag, UserRound } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getPathname, Link } from "@/i18n/navigation";
 import { routing, type StoreLocale } from "@/i18n/routing";
@@ -9,11 +9,51 @@ import { BRAND_NAME } from "@/lib/brand";
 import { env } from "@/lib/env";
 import { CART_COOKIE, cartCount, parseCart } from "@/server/cart/cart";
 import { CategoryMenu } from "./category-menu";
+import { CloseOnNavigate } from "./close-on-navigate";
 import { LanguageSwitch } from "./language-switch";
 import { storeField } from "./ui";
 
 const langClass =
-  "col-start-3 row-start-1 inline-flex min-h-8 items-center justify-self-end rounded px-2 py-0.5 text-sm leading-[1.8] whitespace-nowrap text-brand-foreground ring-1 ring-white/50";
+  "inline-flex min-h-8 cursor-pointer list-none items-center gap-1 rounded px-2 py-0.5 text-sm leading-[1.8] whitespace-nowrap text-brand-foreground ring-1 ring-white/50 [&::-webkit-details-marker]:hidden";
+const langItem =
+  "flex min-h-11 items-center px-4 text-sm leading-[1.8] hover:bg-accent aria-[current=true]:font-medium aria-[current=true]:text-brand";
+
+/** Tên ngôn ngữ viết bằng chính ngôn ngữ đó (menu) + mã ngắn (nút). Thứ tự = `routing.locales`: my, en, vi. */
+const LOCALE_NAMES: Record<StoreLocale, string> = { my: "မြန်မာ", en: "English", vi: "Tiếng Việt" };
+const LOCALE_CODES: Record<StoreLocale, string> = { my: "MY", en: "EN", vi: "VI" };
+
+/**
+ * Menu ngôn ngữ (P22): <details> mở/đóng không cần JS; mỗi mục giữ trang đang xem khi đã tải JS
+ * (fallback = trang chủ của ngôn ngữ đó). Tiếng Việt chỉ là lựa chọn thêm, xếp cuối.
+ */
+function LanguageMenu({ locale, label }: { locale: StoreLocale; label: string }) {
+  return (
+    <details className="relative col-start-3 row-start-1 justify-self-end" data-testid="language-menu">
+      <summary className={langClass} aria-label={`${label}: ${LOCALE_NAMES[locale]}`} data-testid="language-switch">
+        <Languages className="size-4" aria-hidden />
+        {LOCALE_CODES[locale]}
+      </summary>
+      <Suspense>
+        <CloseOnNavigate dismissible />
+      </Suspense>
+      <ul className="absolute top-full right-0 z-40 mt-1 min-w-40 overflow-hidden rounded-lg border border-border bg-card py-1 text-foreground shadow-lg">
+        {routing.locales.map((l) => (
+          <li key={l}>
+            <Suspense
+              fallback={
+                <Link href="/" locale={l} lang={l} hrefLang={l} aria-current={l === locale ? "true" : undefined} className={langItem}>
+                  {LOCALE_NAMES[l]}
+                </Link>
+              }
+            >
+              <LanguageSwitch to={l} name={LOCALE_NAMES[l]} current={l === locale} className={langItem} />
+            </Suspense>
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
 
 /** Số món trong giỏ (đọc cookie lúc request → nằm trong Suspense để header vẫn thuộc static shell). */
 async function CartBadge() {
@@ -60,7 +100,6 @@ async function HeaderContact({ locale }: { locale: string }) {
  */
 export async function StoreHeader({ locale }: { locale: StoreLocale }) {
   const [t, ts] = await Promise.all([getTranslations("Nav"), getTranslations("Search")]);
-  const other = routing.locales.find((l) => l !== locale) ?? routing.defaultLocale;
 
   return (
     <header className="sticky top-0 z-30 bg-card shadow-sm before:absolute before:inset-x-0 before:top-0 before:h-12 before:bg-brand lg:before:h-16">
@@ -72,16 +111,7 @@ export async function StoreHeader({ locale }: { locale: StoreLocale }) {
           {BRAND_NAME}
         </Link>
 
-        {/* lang theo ngôn ngữ đích: chữ Myanmar cần line-height cao (trang /en có lang="en"). Fallback = về trang chủ. */}
-        <Suspense
-          fallback={
-            <Link href="/" locale={other} lang={other} className={langClass} aria-label={t("language")} data-testid="language-switch">
-              {other === "my" ? "မြန်မာ" : "EN"}
-            </Link>
-          }
-        >
-          <LanguageSwitch to={other} label={t("language")} className={langClass} />
-        </Suspense>
+        <LanguageMenu locale={locale} label={t("language")} />
 
         <div className="col-start-1 row-start-2 lg:row-start-2">
           <CategoryMenu locale={locale} />

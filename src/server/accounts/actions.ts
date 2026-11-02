@@ -11,6 +11,7 @@ import { redirect as nextRedirect } from "next/navigation";
 import { redirect } from "@/i18n/navigation";
 import { routing, type StoreLocale } from "@/i18n/routing";
 import { clientIp } from "@/lib/client-ip";
+import { localePrefix } from "@/lib/site";
 import { prisma } from "@/lib/db";
 import { customerAuth } from "@/server/auth/customer-auth";
 import { safeNextPath } from "@/server/auth/customer-policy";
@@ -56,7 +57,7 @@ const phoneLoginSchema = z.object({ phone: phoneSchema, password: currentPasswor
  * (đường dẫn nội bộ, đã có tiền tố ngôn ngữ); lỗi → khoá chuỗi `Auth.err.*`.
  */
 export async function phoneSignInAction(raw: { phone: string; password: string; next: string; locale: string }): Promise<{ error?: string }> {
-  const prefix = raw.locale === "en" ? "/en" : "";
+  const prefix = localePrefix(raw.locale);
   try {
     const input = phoneLoginSchema.parse(raw);
     const phone = normalizeMmPhone(input.phone);
@@ -72,7 +73,7 @@ export async function phoneSignInAction(raw: { phone: string; password: string; 
 /** Đăng ký bằng SĐT + mật khẩu rồi đăng nhập luôn. */
 export async function phoneRegisterAction(_prev: StoreActionState, formData: FormData): Promise<StoreActionState> {
   const locale = localeOf(formData);
-  const prefix = locale === "en" ? "/en" : "";
+  const prefix = localePrefix(locale);
   try {
     const { phone } = await registerPhoneCustomer(
       {

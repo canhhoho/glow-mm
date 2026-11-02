@@ -51,8 +51,8 @@ export function deriveCustomerSecret(secret: string): string {
   return createHmac("sha256", secret).update("glow-customer-auth").digest("hex");
 }
 
-/** Ngôn ngữ của khách khi tạo tài khoản, đoán từ callbackURL (storefront: /en/... = en, còn lại my). */
-export function localeFromCallback(callbackURL: unknown): "my" | "en" {
+/** Ngôn ngữ của khách khi tạo tài khoản, đoán từ callbackURL (storefront: /en/... = en, /vi/... = vi, còn lại my). */
+export function localeFromCallback(callbackURL: unknown): "my" | "en" | "vi" {
   if (typeof callbackURL !== "string") return "my";
   let path = callbackURL;
   try {
@@ -60,7 +60,8 @@ export function localeFromCallback(callbackURL: unknown): "my" | "en" {
   } catch {
     return "my";
   }
-  return path === "/en" || path.startsWith("/en/") ? "en" : "my";
+  const first = path.split("/")[1];
+  return first === "en" || first === "vi" ? first : "my";
 }
 
 /** `?next=` chỉ nhận đường dẫn nội bộ (chống open redirect); sai → fallback. */

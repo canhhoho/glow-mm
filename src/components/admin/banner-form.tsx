@@ -95,6 +95,7 @@ export function BannerForm({ banner }: { banner?: BannerFormValue }) {
             <option value="">{t("localeAll")}</option>
             <option value="my">{t("localeMy")}</option>
             <option value="en">{t("localeEn")}</option>
+            <option value="vi">{t("localeVi")}</option>
           </select>
         </label>
         <label className="flex items-center gap-2 self-end pb-2 text-sm">

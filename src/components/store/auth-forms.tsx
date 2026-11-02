@@ -9,7 +9,7 @@ import { Notice, outlineButton, primaryButton, storeField } from "./ui";
 
 /**
  * Form đăng nhập / đăng ký / quên & đặt lại mật khẩu của khách (P14b) — gọi /api/customer-auth qua client Better Auth.
- * `prefix`: "" (my) hoặc "/en" — ghép vào URL Better Auth chuyển về sau khi xác minh/đặt lại.
+ * `prefix`: "" (my) hoặc "/en", "/vi" (`localePrefix`) — ghép vào URL Better Auth chuyển về sau khi xác minh/đặt lại.
  */
 
 type AuthErr = { status?: number; code?: string } | null | undefined;

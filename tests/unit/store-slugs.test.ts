@@ -53,7 +53,7 @@ describe("Slug storefront cho proxy 404", () => {
     const routes = storeRoutes();
     expect(routes.length).toBeGreaterThan(8);
     for (const r of routes) {
-      for (const locale of ["my", "en"]) {
+      for (const locale of ["my", "en", "vi"]) {
         const p = r === "/" ? `/${locale}` : `/${locale}${r}`;
         expect(isKnownStorePath(p), p).toBe(true);
       }
@@ -64,7 +64,7 @@ describe("Slug storefront cho proxy 404", () => {
     for (const p of ["/en/foo", "/en/p/a/b", "/my/khong-co", "/fr/p/a", "/en/cart/x", "/en/order", "/en/p/"]) {
       expect(isKnownStorePath(p), p).toBe(false);
     }
-    for (const p of ["/en", "/my/", "/en/cart", "/my/order/OD-1", "/en/collection/sale/"]) {
+    for (const p of ["/en", "/my/", "/en/cart", "/my/order/OD-1", "/en/collection/sale/", "/vi", "/vi/p/a"]) {
       expect(isKnownStorePath(p), p).toBe(true);
     }
   });

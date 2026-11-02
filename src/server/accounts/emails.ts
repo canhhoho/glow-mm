@@ -10,6 +10,10 @@ export type AuthEmailKind = "verify" | "reset";
 
 const MESSAGES = { my, en } as const;
 
+/**
+ * Chỉ my/en: `User.locale` mặc định "vi" (nhân viên/CTV — CTV cũng nhận email này) nên "vi" không chắc là khách
+ * chọn tiếng Việt → gửi tiếng Myanmar như trước P22.
+ */
 export const emailLocale = (locale: string | null | undefined): "my" | "en" => (locale === "en" ? "en" : "my");
 
 // Email client không đọc CSS variable → dùng mã hex của design token (globals.css: primary, background).

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { absoluteUrl, alternates, localizedPath, siteUrl } from "@/lib/site";
+import { absoluteUrl, alternates, localePrefix, localizedPath, ogLocale, siteUrl } from "@/lib/site";
 import { breadcrumbJsonLd, jsonLdScript, productJsonLd } from "@/server/catalog/structured-data";
 
 afterEach(() => vi.unstubAllEnvs());
@@ -16,14 +16,24 @@ describe("URL gốc + hreflang", () => {
     expect(siteUrl()).toBe("http://localhost:3000");
   });
 
-  it("locale mặc định (my) không có tiền tố; canonical + hreflang my/en/x-default", () => {
+  it("locale mặc định (my) không có tiền tố; canonical + hreflang my/en/vi/x-default", () => {
     expect(localizedPath("my", "/")).toBe("/");
     expect(localizedPath("en", "/")).toBe("/en");
     expect(localizedPath("en", "/p/a")).toBe("/en/p/a");
+    expect(localizedPath("vi", "/p/a")).toBe("/vi/p/a");
     expect(alternates("en", "/p/a")).toEqual({
       canonical: "/en/p/a",
-      languages: { my: "/p/a", en: "/en/p/a", "x-default": "/p/a" },
+      languages: { my: "/p/a", en: "/en/p/a", vi: "/vi/p/a", "x-default": "/p/a" },
     });
+    expect(alternates("vi", "/").canonical).toBe("/vi");
+  });
+
+  it("tiền tố URL + og:locale theo locale; locale lạ → không tiền tố", () => {
+    expect(localePrefix("my")).toBe("");
+    expect(localePrefix("en")).toBe("/en");
+    expect(localePrefix("vi")).toBe("/vi");
+    expect(localePrefix("//evil.com")).toBe("");
+    expect([ogLocale("my"), ogLocale("en"), ogLocale("vi")]).toEqual(["my_MM", "en_US", "vi_VN"]);
   });
 });
 

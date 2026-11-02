@@ -51,7 +51,7 @@ export function withConfirm<S extends z.ZodType<{ confirmPassword: string } & Re
 }
 
 /** Ngôn ngữ storefront (khớp `routing.locales` — có unit test). Mỗi nơi tự thêm `.default` / `.catch` / `.nullable`. */
-export const localeSchema = z.enum(["my", "en"]);
+export const localeSchema = z.enum(["my", "en", "vi"]);
 
 /** Di chuyển phần tử lên/xuống trong danh sách có thứ tự. */
 export const directionSchema = z.enum(["up", "down"]);

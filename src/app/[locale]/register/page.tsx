@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import type { StoreLocale } from "@/i18n/routing";
+import { localePrefix } from "@/lib/site";
 import { emailAuthEnabled, googleAuthEnabled } from "@/lib/env";
 import { safeNextPath } from "@/server/auth/customer-policy";
 import { getCustomerUser } from "@/server/auth/customer-session";
@@ -26,7 +27,7 @@ async function RegisterContent({ params, searchParams }: PageProps<"/[locale]/re
   const { locale } = (await params) as { locale: StoreLocale };
   setRequestLocale(locale);
   const sp = await searchParams;
-  const prefix = locale === "en" ? "/en" : "";
+  const prefix = localePrefix(locale);
   const next = safeNextPath(sp.next, `${prefix}/account`);
   if (await getCustomerUser()) redirect(next);
 
