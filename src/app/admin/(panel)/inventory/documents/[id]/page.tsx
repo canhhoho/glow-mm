@@ -36,7 +36,7 @@ export default async function DocumentPage({ params }: PageProps<"/admin/invento
         )}
         {doc.to && (
           <>
-            <dt className="text-muted-foreground">{t("to")}</dt>
+            <dt className="text-muted-foreground">{doc.type === "ADJUST" ? t("location") : t("to")}</dt>
             <dd className="font-mono text-xs">
               {doc.to.code} — {doc.to.name}
             </dd>
@@ -75,11 +75,22 @@ export default async function DocumentPage({ params }: PageProps<"/admin/invento
 
       {doc.status === "DRAFT" ? (
         <div className="flex flex-wrap gap-3">
-          <ActionButton action={postDocumentAction} fields={{ id: doc.id }} label={t("post")} />
-          <ActionButton action={cancelDocumentAction} fields={{ id: doc.id }} label={t("cancel")} variant="outline" />
+          <ActionButton
+            action={postDocumentAction}
+            fields={{ id: doc.id }}
+            label={t("post")}
+            confirm={t("postConfirm", { code: doc.code })}
+          />
+          <ActionButton
+            action={cancelDocumentAction}
+            fields={{ id: doc.id }}
+            label={t("cancel")}
+            variant="outline"
+            confirm={t("cancelConfirm", { code: doc.code })}
+          />
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">{t("postedNote")}</p>
+        <p className="text-sm text-muted-foreground">{doc.status === "CANCELLED" ? t("cancelledNote") : t("postedNote")}</p>
       )}
     </Page>
   );

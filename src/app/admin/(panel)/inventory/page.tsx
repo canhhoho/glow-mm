@@ -1,9 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
-import { ChevronDown, Clock, FileText, Plus } from "lucide-react";
+import { Clock, FileText } from "lucide-react";
 import { requirePagePermission } from "@/server/auth/session";
-import { can, type Permission } from "@/server/auth/roles";
 import { classifyExpiry, daysLeft } from "@/server/alerts/compute";
 import {
   EXPIRY_FILTERS,
@@ -18,20 +17,12 @@ import {
 } from "@/server/inventory/overview";
 import type { BalanceRow, Thresholds } from "@/server/inventory/stock-summary";
 import { ExpandableRow } from "@/components/admin/expandable-row";
-import { ExpiryTag, Pager, stockHref, type StockView } from "@/components/admin/stock-parts";
+import { ExpiryTag, NewDocMenu, Pager, stockHref, type StockView } from "@/components/admin/stock-parts";
 import { Badge, DataTable, fieldClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, TabNav, Td } from "@/components/admin/ui";
-import { buttonVariants } from "@/components/ui/button";
 import { fmtDay, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type T = Awaited<ReturnType<typeof getTranslations>>;
-
-const NEW_DOCS: [type: string, permission: Permission][] = [
-  ["RECEIVE", "stock:receive"],
-  ["TRANSFER", "stock:transfer"],
-  ["ISSUE", "stock:issue"],
-  ["ADJUST", "stock:adjust"],
-];
 
 /** Số gọn cho ô tổng: 38.200.000 → "38,2 tr" (vi) / "38.2M" (en, my). */
 function compact(n: number, locale: string) {
@@ -54,7 +45,6 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
   ]);
   const th = summary.thresholds;
   const href = (patch: Partial<StockFilter> & { view?: StockView } = {}) => stockHref(f, view, patch);
-  const newDocs = NEW_DOCS.filter(([, p]) => can(user.role, p));
   const filtered = f.tab !== "all" || !!f.q || !!f.expiry || !!f.stockType;
 
   return (
@@ -68,22 +58,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
             <FileText aria-hidden />
             {t("documents")}
           </LinkButton>
-          {newDocs.length > 0 && (
-            <details className="group relative">
-              <summary className={cn(buttonVariants({ size: "lg" }), "cursor-pointer list-none [&::-webkit-details-marker]:hidden")}>
-                <Plus className="size-4" aria-hidden />
-                {t("newDoc")}
-                <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden />
-              </summary>
-              <div className="absolute right-0 z-20 mt-1 w-48 rounded-lg border bg-popover p-1 text-sm shadow-md">
-                {newDocs.map(([type]) => (
-                  <Link key={type} href={`/admin/inventory/documents/new?type=${type}`} className="block rounded-md px-3 py-2 hover:bg-muted">
-                    {td(type)}
-                  </Link>
-                ))}
-              </div>
-            </details>
-          )}
+          <NewDocMenu role={user.role} label={t("newDoc")} td={td} />
           </>
         }
       />

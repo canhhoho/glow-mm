@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { startTransition, useActionState, useMemo, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { fieldClass } from "@/components/admin/ui";
@@ -105,8 +105,16 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
     </label>
   );
 
+  // Gửi qua onSubmit thay vì `action={…}`: React tự reset form sau action, làm các <select> có state về "—"
+  // khi server báo lỗi (state vẫn giữ → lệch). Trình duyệt vẫn kiểm tra `required` trước sự kiện submit.
+  const submit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    startTransition(() => action(fd));
+  };
+
   return (
-    <form action={action} className="space-y-4">
+    <form onSubmit={submit} className="space-y-4">
       <input type="hidden" name="payload" value={payload} />
       <div className="grid gap-3 sm:grid-cols-3">
         {needsFrom && locSelect(fromId, setFromId, t("chooseFrom"), "fromId")}

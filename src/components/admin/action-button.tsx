@@ -27,7 +27,7 @@ export function ActionButton({
       onSubmit={(e) => {
         if (confirm && !window.confirm(confirm)) e.preventDefault();
       }}
-      className="inline-flex flex-col gap-1"
+      className="inline-flex flex-col items-start gap-1"
     >
       {Object.entries(fields).map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />

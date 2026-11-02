@@ -1,9 +1,12 @@
 import Link from "next/link";
 import type { getTranslations } from "next-intl/server";
+import { ChevronDown, Plus } from "lucide-react";
 import { classifyExpiry, daysLeft } from "@/server/alerts/compute";
+import { can, type Permission, type Role } from "@/server/auth/roles";
 import type { StockFilter } from "@/server/inventory/overview";
 import type { Thresholds } from "@/server/inventory/stock-summary";
 import { Badge } from "@/components/admin/ui";
+import { buttonVariants } from "@/components/ui/button";
 import { fmtDay } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +14,35 @@ import { cn } from "@/lib/utils";
 
 type T = Awaited<ReturnType<typeof getTranslations>>;
 export type StockView = "products" | "lots";
+
+const NEW_DOCS: [type: string, permission: Permission][] = [
+  ["RECEIVE", "stock:receive"],
+  ["TRANSFER", "stock:transfer"],
+  ["ISSUE", "stock:issue"],
+  ["ADJUST", "stock:adjust"],
+];
+
+/** Nút "Tạo phiếu" mở danh sách loại phiếu theo quyền (trang Tồn kho + danh sách phiếu). `td` = namespace Docs. */
+export function NewDocMenu({ role, label, td }: { role: Role; label: string; td: T }) {
+  const types = NEW_DOCS.filter(([, p]) => can(role, p));
+  if (types.length === 0) return null;
+  return (
+    <details className="group relative">
+      <summary className={cn(buttonVariants({ size: "lg" }), "cursor-pointer list-none [&::-webkit-details-marker]:hidden")}>
+        <Plus className="size-4" aria-hidden />
+        {label}
+        <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden />
+      </summary>
+      <div className="absolute right-0 z-20 mt-1 w-48 rounded-lg border bg-popover p-1 text-sm shadow-md">
+        {types.map(([type]) => (
+          <Link key={type} href={`/admin/inventory/documents/new?type=${type}`} className="block rounded-md px-3 py-2 hover:bg-muted">
+            {td(type)}
+          </Link>
+        ))}
+      </div>
+    </details>
+  );
+}
 
 /** URL trang Tồn kho giữ bộ lọc hiện tại; `patch` ghi đè (page về 1 nếu không chỉ định). */
 export function stockHref(f: StockFilter, view: StockView, patch: Partial<StockFilter> & { view?: StockView } = {}) {

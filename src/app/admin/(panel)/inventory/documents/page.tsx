@@ -2,17 +2,22 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { listDocuments } from "@/server/inventory/queries";
+import { NewDocMenu } from "@/components/admin/stock-parts";
 import { Badge, DataTable, Page, PageHeader, Td } from "@/components/admin/ui";
 import { fmtDate } from "@/lib/format";
 
 const STATUS_TONE = { DRAFT: "warning", POSTED: "success", CANCELLED: "neutral" } as const;
 
 export default async function DocumentsPage() {
-  await requirePagePermission("stock:view");
+  const user = await requirePagePermission("stock:view");
   const [t, docs] = await Promise.all([getTranslations("Docs"), listDocuments({})]);
   return (
     <Page>
-      <PageHeader title={t("title")} back={{ href: "/admin/inventory", label: t("back") }} />
+      <PageHeader
+        title={t("title")}
+        back={{ href: "/admin/inventory", label: t("back") }}
+        actions={<NewDocMenu role={user.role} label={t("new")} td={t} />}
+      />
       <DataTable
         stack
         empty={t("empty")}
