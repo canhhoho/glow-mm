@@ -78,7 +78,7 @@ test("CTV tự lên đơn cho khách; không xem được đơn không phải c�
   await page.getByLabel("Địa chỉ").fill("No. 3, Strand Rd");
   const option = page.getByLabel("Biến thể").locator("option", { hasText: VARIANT });
   await page.getByLabel("Biến thể").selectOption((await option.getAttribute("value"))!);
-  await page.getByLabel("SL").fill("1");
+  await page.getByLabel("SL", { exact: true }).fill("1");
   await page.getByRole("button", { name: "Tạo đơn" }).click();
   await expect(page).toHaveURL(/\/ctv\/orders\/[^/]+\?created=1$/);
   await expect(page.getByRole("status")).toContainText("Đã tạo đơn");

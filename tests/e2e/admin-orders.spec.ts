@@ -19,7 +19,7 @@ test("đơn thủ công (Facebook, COD): tạo → xác nhận → đóng gói F
   await page.getByLabel("Địa chỉ").fill("No. 12, Bo Aung Kyaw St");
   const option = page.getByLabel("Biến thể").locator("option", { hasText: VARIANT });
   await page.getByLabel("Biến thể").selectOption((await option.getAttribute("value"))!);
-  await page.getByLabel("SL").fill("1");
+  await page.getByLabel("SL", { exact: true }).fill("1");
   await page.getByRole("button", { name: "Tạo đơn" }).click();
 
   await expect(page).toHaveURL(/\/admin\/orders\/[^/]+$/);
@@ -102,12 +102,12 @@ test("huỷ đơn thủ công nhả hàng; lỗi hiển thị khi đặt quá t�
   await page.getByLabel("Biến thể").selectOption((await option.getAttribute("value"))!);
 
   // Vượt tồn: bỏ giới hạn max của ô số lượng để kiểm tra lỗi từ server.
-  await page.getByLabel("SL").evaluate((el) => el.removeAttribute("max"));
-  await page.getByLabel("SL").fill("5");
+  await page.getByLabel("SL", { exact: true }).evaluate((el) => el.removeAttribute("max"));
+  await page.getByLabel("SL", { exact: true }).fill("5");
   await page.getByRole("button", { name: "Tạo đơn" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Không đủ hàng" })).toBeVisible();
 
-  await page.getByLabel("SL").fill("1");
+  await page.getByLabel("SL", { exact: true }).fill("1");
   await page.getByRole("button", { name: "Tạo đơn" }).click();
   await expectStatus(page, "Chờ xác nhận");
   page.once("dialog", (d) => d.accept());

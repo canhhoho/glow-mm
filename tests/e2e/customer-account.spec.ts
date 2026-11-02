@@ -131,7 +131,7 @@ test("đơn ngoài web (nhân viên tạo) → khách tra mã + SĐT → đăng 
   await page.getByLabel("Địa chỉ").fill("No. 1, Claim Road");
   const option = page.getByLabel("Biến thể").locator("option", { hasText: VARIANT });
   await page.getByLabel("Biến thể").selectOption((await option.getAttribute("value"))!);
-  await page.getByLabel("SL").fill("1");
+  await page.getByLabel("SL", { exact: true }).fill("1");
   await page.getByRole("button", { name: "Tạo đơn" }).click();
   await expect(page).toHaveURL(/\/admin\/orders\/[^/]+$/);
   // Next giữ trang "Tạo đơn" ở trạng thái ẩn → lấy đúng tiêu đề chứa mã đơn.

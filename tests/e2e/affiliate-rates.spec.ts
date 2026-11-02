@@ -26,7 +26,7 @@ test("admin: % tầng trên riêng + chỉnh % trên đơn chưa chi trả", asy
     await page.getByLabel("Địa chỉ").fill("No. 3, Rate Road");
     const option = page.getByLabel("Biến thể").locator("option", { hasText: VARIANT });
     await page.getByLabel("Biến thể").selectOption((await option.getAttribute("value"))!);
-    await page.getByLabel("SL").fill("1");
+    await page.getByLabel("SL", { exact: true }).fill("1");
     await page.getByLabel("CTV (không bắt buộc)").selectOption({ label: "LINN — Ko Lin (CTV cấp dưới)" });
     await page.getByRole("button", { name: "Tạo đơn" }).click();
     await expect(page).toHaveURL(/\/admin\/orders\/[^/]+$/);
