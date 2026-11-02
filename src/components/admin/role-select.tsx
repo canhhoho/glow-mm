@@ -6,7 +6,7 @@ import { fieldClass } from "@/components/admin/ui";
 export async function RoleSelect({ defaultValue = "ORDER_STAFF", disabled }: { defaultValue?: Role; disabled?: boolean }) {
   const [t, tr] = await Promise.all([getTranslations("Users"), getTranslations("Role")]);
   return (
-    <label className="block space-y-1 text-sm">
+    <label className="grid content-start gap-1 text-sm">
       <span>{t("role")}</span>
       <select name="role" defaultValue={defaultValue} disabled={disabled} className={fieldClass}>
         {ROLES.map((r) => (

@@ -37,8 +37,9 @@ export function ActionForm({
       className={className ?? "space-y-3"}
     >
       {children}
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" variant={variant} disabled={pending}>
+      {/* self-end: form dạng lưới/flex → nút nằm đáy ô, thẳng hàng với ô nhập cùng hàng (nút cao bằng ô: size lg). */}
+      <div className="flex flex-wrap items-center gap-3 self-end">
+        <Button size="lg" type="submit" variant={variant} disabled={pending}>
           {submitLabel}
         </Button>
         {state?.ok && !state.error && (
@@ -48,7 +49,7 @@ export function ActionForm({
         )}
       </div>
       {state?.error && (
-        <p role="alert" className="max-w-2xl text-sm text-destructive">
+        <p role="alert" className="col-span-full max-w-2xl text-sm text-destructive">
           {t("error")}: {state.error}
         </p>
       )}

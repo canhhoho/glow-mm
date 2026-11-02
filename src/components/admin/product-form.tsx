@@ -3,7 +3,7 @@
 import { useActionState, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { fieldClass } from "@/components/admin/ui";
+import { fieldClass, fieldLabelClass } from "@/components/admin/ui";
 import { saveProductAction } from "@/server/catalog/actions";
 import type { ProductEditData } from "@/server/catalog/admin-queries";
 import { cn } from "@/lib/utils";
@@ -49,7 +49,7 @@ const EMPTY: ProductEditData = {
 
 function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
   return (
-    <label className={`space-y-1 text-sm ${className ?? ""}`}>
+    <label className={cn(fieldLabelClass, className)}>
       <span className="text-muted-foreground">{label}</span>
       {children}
     </label>
@@ -206,7 +206,7 @@ export function ProductForm({ initial, options }: { initial: ProductEditData | n
                 {t("isBundle")}
               </label>
               {!v.id && variants.length > 1 && (
-                <Button type="button" size="sm" variant="outline" onClick={() => setVariants((vs) => vs.filter((x) => x.key !== v.key))}>
+                <Button type="button" size="lg" variant="outline" onClick={() => setVariants((vs) => vs.filter((x) => x.key !== v.key))}>
                   {td("remove")}
                 </Button>
               )}
@@ -246,19 +246,19 @@ export function ProductForm({ initial, options }: { initial: ProductEditData | n
                       }
                       className={cn(fieldClass, "w-24")}
                     />
-                    <Button type="button" size="sm" variant="outline" onClick={() => setVar(v.key, { components: v.components.filter((_, j) => j !== i) })}>
+                    <Button type="button" size="lg" variant="outline" onClick={() => setVar(v.key, { components: v.components.filter((_, j) => j !== i) })}>
                       {td("remove")}
                     </Button>
                   </div>
                 ))}
-                <Button type="button" size="sm" variant="outline" onClick={() => setVar(v.key, { components: [...v.components, { componentId: "", qty: 1 }] })}>
+                <Button type="button" size="lg" variant="outline" onClick={() => setVar(v.key, { components: [...v.components, { componentId: "", qty: 1 }] })}>
                   + {t("addComponent")}
                 </Button>
               </div>
             )}
           </fieldset>
         ))}
-        <Button type="button" variant="outline" onClick={() => setVariants((vs) => [...vs, blankVariant()])}>
+        <Button size="lg" type="button" variant="outline" onClick={() => setVariants((vs) => [...vs, blankVariant()])}>
           + {t("addVariant")}
         </Button>
       </section>
@@ -268,7 +268,7 @@ export function ProductForm({ initial, options }: { initial: ProductEditData | n
           {td("error")}: {state.error}
         </p>
       )}
-      <Button type="submit" disabled={pending}>
+      <Button size="lg" type="submit" disabled={pending}>
         {t("save")}
       </Button>
     </form>

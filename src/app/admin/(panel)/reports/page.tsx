@@ -42,11 +42,11 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
     <Page>
       <PageHeader title={t("title")} description={t("basis")} />
       <form className="flex flex-wrap items-end gap-2">
-        <label className="space-y-1 text-sm">
+        <label className="grid content-start gap-1 text-sm">
           <span className="text-muted-foreground">{t("from")}</span>
           <input type="date" name="from" defaultValue={range.from} className={cn(fieldClass, "w-40")} />
         </label>
-        <label className="space-y-1 text-sm">
+        <label className="grid content-start gap-1 text-sm">
           <span className="text-muted-foreground">{t("to")}</span>
           <input type="date" name="to" defaultValue={range.to} className={cn(fieldClass, "w-40")} />
         </label>

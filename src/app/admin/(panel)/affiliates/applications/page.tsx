@@ -57,7 +57,7 @@ export default async function AffiliateApplicationsPage() {
                 <ActionForm action={approveApplicationAction} submitLabel={t("apps.approve")} className="space-y-2">
                   <input type="hidden" name="id" value={a.id} />
                   <div className="grid gap-2 sm:grid-cols-2">
-                    <label className="block space-y-1 text-sm">
+                    <label className="grid content-start gap-1 text-sm">
                       <span>{t("code")}</span>
                       <input
                         name="code"
@@ -69,7 +69,7 @@ export default async function AffiliateApplicationsPage() {
                         className={cn(fieldClass, "font-mono uppercase")}
                       />
                     </label>
-                    <label className="block space-y-1 text-sm">
+                    <label className="grid content-start gap-1 text-sm">
                       <span>{t("percent")}</span>
                       <input
                         name="commissionPercent"
@@ -83,7 +83,7 @@ export default async function AffiliateApplicationsPage() {
                       />
                     </label>
                   </div>
-                  <label className="block space-y-1 text-sm">
+                  <label className="grid content-start gap-1 text-sm">
                     <span>{t("payoutInfo")}</span>
                     <input name="payoutInfo" maxLength={500} className={fieldClass} />
                   </label>
@@ -97,7 +97,7 @@ export default async function AffiliateApplicationsPage() {
                   className="space-y-2"
                 >
                   <input type="hidden" name="id" value={a.id} />
-                  <label className="block space-y-1 text-sm">
+                  <label className="grid content-start gap-1 text-sm">
                     <span>{t("apps.reason")}</span>
                     <input name="note" maxLength={500} className={fieldClass} />
                   </label>

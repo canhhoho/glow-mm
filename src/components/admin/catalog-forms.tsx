@@ -31,11 +31,11 @@ export function BrandForm() {
   const [state, action, pending] = useActionState(createBrandAction, undefined);
   return (
     <form action={action} className="flex flex-wrap items-end gap-2">
-      <label className="space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span className="text-muted-foreground">{t("brandName")}</span>
         <input name="name" required className={fieldClass} />
       </label>
-      <Button type="submit" variant="outline" disabled={pending}>
+      <Button size="lg" type="submit" variant="outline" disabled={pending}>
         {t("add")}
       </Button>
       <div className="w-full">
@@ -50,19 +50,19 @@ export function CategoryForm({ parents }: { parents: { id: string; name: string 
   const [state, action, pending] = useActionState(createCategoryAction, undefined);
   return (
     <form action={action} className="flex flex-wrap items-end gap-2">
-      <label className="space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span className="text-muted-foreground">{t("catSlug")}</span>
         <input name="slug" required pattern="[a-z0-9\-]+" className={fieldClass} />
       </label>
-      <label className="space-y-1 text-sm" lang="my">
+      <label className="grid content-start gap-1 text-sm" lang="my">
         <span className="text-muted-foreground">{t("catNameMy")}</span>
         <input name="nameMy" required className={fieldClass} />
       </label>
-      <label className="space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span className="text-muted-foreground">{t("catNameEn")}</span>
         <input name="nameEn" required className={fieldClass} />
       </label>
-      <label className="space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span className="text-muted-foreground">{t("catParent")}</span>
         <select name="parentId" defaultValue="" className={fieldClass}>
           <option value="">{t("catNoParent")}</option>
@@ -73,7 +73,7 @@ export function CategoryForm({ parents }: { parents: { id: string; name: string 
           ))}
         </select>
       </label>
-      <Button type="submit" variant="outline" disabled={pending}>
+      <Button size="lg" type="submit" variant="outline" disabled={pending}>
         {t("add")}
       </Button>
       <div className="w-full">
@@ -130,7 +130,7 @@ export function ImportForm({ kind }: { kind: "products" | "stock" }) {
     <form action={action} className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <FileField name="file" accept=".csv,text/csv" required aria-label={kind === "products" ? t("importProducts") : t("importStock")} className="max-w-72" />
-        <Button type="submit" disabled={pending}>
+        <Button size="lg" type="submit" disabled={pending}>
           {t("upload")}
         </Button>
         <a href={`/api/templates/${kind}.csv`} className="text-sm text-primary underline">

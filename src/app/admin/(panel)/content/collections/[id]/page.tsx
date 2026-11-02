@@ -96,7 +96,7 @@ export default async function EditCollectionPage({ params, searchParams }: PageP
         </h2>
         <form className="mb-3 flex flex-wrap gap-2">
           <input name="q" type="search" defaultValue={query} placeholder={t("searchProducts")} aria-label={t("searchProducts")} className={cn(fieldClass, "max-w-sm")} />
-          <Button type="submit" variant="outline">
+          <Button size="lg" type="submit" variant="outline">
             {t("search")}
           </Button>
         </form>

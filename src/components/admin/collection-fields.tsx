@@ -18,23 +18,23 @@ export async function CollectionFields({ value }: { value?: CollectionFieldsValu
   const local = (d: Date | null | undefined) => (d ? utcToYangonLocal(d) : "");
   return (
     <div className="grid gap-3 sm:grid-cols-3">
-      <label className="space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span className="text-muted-foreground">{t("slug")}</span>
         <input name="slug" required pattern="[a-z0-9\-]+" maxLength={60} defaultValue={value?.slug} className={fieldClass} />
       </label>
-      <label className="space-y-1 text-sm" lang="my">
+      <label className="grid content-start gap-1 text-sm" lang="my">
         <span className="text-muted-foreground">{t("nameMy")}</span>
         <input name="nameMy" required maxLength={80} defaultValue={value?.nameMy} className={fieldClass} />
       </label>
-      <label className="space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span className="text-muted-foreground">{t("nameEn")}</span>
         <input name="nameEn" required maxLength={80} defaultValue={value?.nameEn} className={fieldClass} />
       </label>
-      <label className="space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span className="text-muted-foreground">{t("startAt")}</span>
         <input type="datetime-local" name="startAt" defaultValue={local(value?.startAt)} className={fieldClass} />
       </label>
-      <label className="space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span className="text-muted-foreground">{t("endAt")}</span>
         <input type="datetime-local" name="endAt" defaultValue={local(value?.endAt)} className={fieldClass} />
       </label>

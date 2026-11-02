@@ -21,7 +21,7 @@ export default async function CtvAccountPage() {
         <h2 className="mb-3 font-medium">{t("title")}</h2>
         <ActionForm action={changePasswordAction} submitLabel={t("submit")} okText={t("changed")} className="space-y-3">
           {(["currentPassword", "newPassword", "confirmPassword"] as const).map((name) => (
-            <label key={name} className="block space-y-1 text-sm">
+            <label key={name} className="grid content-start gap-1 text-sm">
               <span>{t(name)}</span>
               <input
                 name={name}

@@ -4,7 +4,7 @@ import { useActionState, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AddressPicker } from "@/components/address-picker";
 import { Button } from "@/components/ui/button";
-import { fieldClass } from "@/components/admin/ui";
+import { fieldClass, fieldLabelClass } from "@/components/admin/ui";
 import { fmtInt } from "@/lib/format";
 import { createOrderAction } from "@/server/orders/actions";
 import type { OrderFormOptions } from "@/server/orders/admin-queries";
@@ -75,7 +75,7 @@ export function OrderForm({
     <form action={action} className="space-y-4">
       <input type="hidden" name="payload" value={payload} />
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="space-y-1 text-sm">
+        <label className="grid content-start gap-1 text-sm">
           <span className="text-muted-foreground">{t("channelLabel")}</span>
           <select name="channel" value={channel} onChange={(e) => setChannel(e.target.value)} className={fieldClass}>
             {(["FACEBOOK", "VIBER", "PHONE", "WEB"] as const).map((c) => (
@@ -85,7 +85,7 @@ export function OrderForm({
             ))}
           </select>
         </label>
-        <label className="space-y-1 text-sm">
+        <label className="grid content-start gap-1 text-sm">
           <span className="text-muted-foreground">{t("paymentMethod")}</span>
           <select
             name="paymentMethod"
@@ -98,7 +98,7 @@ export function OrderForm({
           </select>
         </label>
         {affiliates && affiliates.length > 0 && (
-          <label className="space-y-1 text-sm">
+          <label className="grid content-start gap-1 text-sm">
             <span className="text-muted-foreground">{ta("pickLabel")}</span>
             <select name="affiliateId" defaultValue="" className={fieldClass}>
               <option value="">{ta("assignNone")}</option>
@@ -110,11 +110,11 @@ export function OrderForm({
             </select>
           </label>
         )}
-        <label className="space-y-1 text-sm">
+        <label className="grid content-start gap-1 text-sm">
           <span className="text-muted-foreground">{t("name")}</span>
           <input name="name" required value={name} onChange={(e) => setName(e.target.value)} className={fieldClass} />
         </label>
-        <label className="space-y-1 text-sm">
+        <label className="grid content-start gap-1 text-sm">
           <span className="text-muted-foreground">{t("phone")}</span>
           <input
             name="phone"
@@ -126,7 +126,7 @@ export function OrderForm({
             className={fieldClass}
           />
         </label>
-        <label className="space-y-1 text-sm">
+        <label className="grid content-start gap-1 text-sm">
           <span className="text-muted-foreground">{t("phone2")}</span>
           <input
             name="phone2"
@@ -150,11 +150,11 @@ export function OrderForm({
           defaultTownshipId={initial.townshipId}
           name="townshipIdSelect"
           fieldClass={fieldClass}
-          labelClass="space-y-1 text-sm"
+          labelClass={fieldLabelClass}
           textClass="text-muted-foreground"
           onTownshipChange={setTownshipId}
         />
-        <label className="space-y-1 text-sm">
+        <label className="grid content-start gap-1 text-sm">
           <span className="text-muted-foreground">{t("address")}</span>
           <input
             name="addressLine"
@@ -164,7 +164,7 @@ export function OrderForm({
             className={fieldClass}
           />
         </label>
-        <label className="space-y-1 text-sm sm:col-span-2">
+        <label className="grid content-start gap-1 text-sm sm:col-span-2">
           <span className="text-muted-foreground">{t("note")}</span>
           <input name="note" value={note} onChange={(e) => setNote(e.target.value)} className={fieldClass} />
         </label>
@@ -179,7 +179,7 @@ export function OrderForm({
               aria-label={`${t("line")} ${i + 1}`}
               className="grid items-end gap-2 rounded-lg border p-3 sm:grid-cols-[1fr_6rem_auto]"
             >
-              <label className="space-y-1 text-xs">
+              <label className="grid content-start gap-1 text-xs">
                 <span className="text-muted-foreground">{t("variant")}</span>
                 <select
                   name={`variant-${i}`}
@@ -196,7 +196,7 @@ export function OrderForm({
                   ))}
                 </select>
               </label>
-              <label className="space-y-1 text-xs">
+              <label className="grid content-start gap-1 text-xs">
                 <span className="text-muted-foreground">{t("qty")}</span>
                 <input
                   name={`qty-${i}`}
@@ -211,7 +211,7 @@ export function OrderForm({
                   className={fieldClass}
                 />
               </label>
-              <Button
+              <Button size="lg"
                 type="button"
                 variant="outline"
                 disabled={lines.length === 1}
@@ -222,7 +222,7 @@ export function OrderForm({
             </fieldset>
           );
         })}
-        <Button type="button" variant="outline" onClick={() => setLines((ls) => [...ls, blank()])}>
+        <Button size="lg" type="button" variant="outline" onClick={() => setLines((ls) => [...ls, blank()])}>
           {t("addLine")}
         </Button>
       </div>
@@ -241,7 +241,7 @@ export function OrderForm({
           {t("error")}: {state.error}
         </p>
       )}
-      <Button type="submit" disabled={pending}>
+      <Button size="lg" type="submit" disabled={pending}>
         {t("create")}
       </Button>
     </form>

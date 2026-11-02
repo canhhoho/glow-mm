@@ -270,8 +270,12 @@ export function Badge({ tone = "neutral", children }: { tone?: keyof typeof TONE
   return <span className={cn("inline-flex rounded px-1.5 py-0.5 text-xs whitespace-nowrap", TONES[tone])}>{children}</span>;
 }
 
+/** Ô nhập admin cao 36px (h-9) — nút cạnh ô dùng `size="lg"` (cũng h-9) để thẳng hàng. */
 export const fieldClass =
   "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+
+/** Nhãn trường: chữ nằm TRÊN ô (grid). Không dùng `space-y-1` — span + ô inline sẽ đứng cạnh nhau khi ô không `w-full`. */
+export const fieldLabelClass = "grid content-start gap-1 text-sm";
 
 /** Ô chỉ số trên dashboard/báo cáo; có `href` thì bấm được. */
 export function Stat({

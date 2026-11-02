@@ -24,7 +24,7 @@ export function CategoryIconUpload({ categoryId }: { categoryId: string }) {
       <input type="hidden" name="categoryId" value={categoryId} />
       <div className="flex flex-wrap items-center gap-2">
         <FileField name="icon" required accept="image/jpeg,image/png,image/webp" aria-label={t("iconUpload")} className="max-w-64" />
-        <Button type="submit" variant="outline" disabled={pending}>
+        <Button size="lg" type="submit" variant="outline" disabled={pending}>
           {t("iconUploadBtn")}
         </Button>
       </div>

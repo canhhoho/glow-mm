@@ -31,11 +31,11 @@ export default async function NewOrderPage({ searchParams }: PageProps<"/admin/o
     <Page>
       <PageHeader title={t("new")} back={{ href: "/admin/orders", label: t("back") }} />
       <form role="search" className="flex flex-wrap items-end gap-2">
-        <label className="space-y-1 text-sm">
+        <label className="grid content-start gap-1 text-sm">
           <span className="text-muted-foreground">{t("lookupPhone")}</span>
           <input name="phone" type="tel" inputMode="tel" defaultValue={lookup} className={cn(fieldClass, "w-56")} />
         </label>
-        <Button type="submit" variant="outline">
+        <Button size="lg" type="submit" variant="outline">
           {t("lookup")}
         </Button>
         {lookup && (

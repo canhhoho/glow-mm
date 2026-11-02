@@ -92,7 +92,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
   }, [type, reason, fromId, toId, shipmentId, lines, needsFrom, needsTo]);
 
   const locSelect = (value: string, onChange: (v: string) => void, label: string, name: string) => (
-    <label className="space-y-1 text-sm">
+    <label className="grid content-start gap-1 text-sm">
       <span className="text-muted-foreground">{label}</span>
       <select name={name} required value={value} onChange={(e) => onChange(e.target.value)} className={fieldClass}>
         <option value="">—</option>
@@ -112,7 +112,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
         {needsFrom && locSelect(fromId, setFromId, t("chooseFrom"), "fromId")}
         {needsTo && locSelect(toId, setToId, type === "ADJUST" ? t("chooseLocation") : t("chooseTo"), "toId")}
         {type === "RECEIVE" && (
-          <label className="space-y-1 text-sm">
+          <label className="grid content-start gap-1 text-sm">
             <span className="text-muted-foreground">{t("shipment")}</span>
             <select value={shipmentId} onChange={(e) => setShipmentId(e.target.value)} className={fieldClass}>
               <option value="">{t("none")}</option>
@@ -124,7 +124,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
             </select>
           </label>
         )}
-        <label className="space-y-1 text-sm sm:col-span-3">
+        <label className="grid content-start gap-1 text-sm sm:col-span-3">
           <span className="text-muted-foreground">{t("reason")}</span>
           <input
             value={reason}
@@ -143,7 +143,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
           );
           return (
             <fieldset key={l.key} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-6" aria-label={`${t("line")} ${i + 1}`}>
-              <label className="space-y-1 text-xs sm:col-span-2">
+              <label className="grid content-start gap-1 text-xs sm:col-span-2">
                 <span className="text-muted-foreground">{t("variant")}</span>
                 <select
                   required
@@ -163,25 +163,25 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
 
               {type === "RECEIVE" ? (
                 <>
-                  <label className="space-y-1 text-xs">
+                  <label className="grid content-start gap-1 text-xs">
                     <span className="text-muted-foreground">{t("lotNo")}</span>
                     <input required name={`lot-${i}`} value={l.lotNo} onChange={(e) => update(l.key, { lotNo: e.target.value })} className={fieldClass} />
                   </label>
-                  <label className="space-y-1 text-xs">
+                  <label className="grid content-start gap-1 text-xs">
                     <span className="text-muted-foreground">{t("expiry")}</span>
                     <input required type="date" name={`expiry-${i}`} value={l.expiryDate} onChange={(e) => update(l.key, { expiryDate: e.target.value })} className={fieldClass} />
                   </label>
-                  <label className="space-y-1 text-xs">
+                  <label className="grid content-start gap-1 text-xs">
                     <span className="text-muted-foreground">{t("mfg")}</span>
                     <input type="date" name={`mfg-${i}`} value={l.mfgDate} onChange={(e) => update(l.key, { mfgDate: e.target.value })} className={fieldClass} />
                   </label>
-                  <label className="space-y-1 text-xs">
+                  <label className="grid content-start gap-1 text-xs">
                     <span className="text-muted-foreground">{t("unitCost")}</span>
                     <input required type="number" min={0} step={1} inputMode="numeric" name={`cost-${i}`} value={l.unitCostVnd} onChange={(e) => update(l.key, { unitCostVnd: e.target.value })} className={fieldClass} />
                   </label>
                 </>
               ) : (
-                <label className="space-y-1 text-xs sm:col-span-2">
+                <label className="grid content-start gap-1 text-xs sm:col-span-2">
                   <span className="text-muted-foreground">{t("batch")}</span>
                   <select
                     name={`batch-${i}`}
@@ -200,7 +200,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
                 </label>
               )}
 
-              <label className="space-y-1 text-xs">
+              <label className="grid content-start gap-1 text-xs">
                 <span className="text-muted-foreground">{type === "ADJUST" ? t("qtySigned") : t("qty")}</span>
                 <input
                   required
@@ -214,7 +214,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
                   className={fieldClass}
                 />
               </label>
-              <label className="space-y-1 text-xs">
+              <label className="grid content-start gap-1 text-xs">
                 <span className="text-muted-foreground">{t("stockType")}</span>
                 <select
                   name={`stockType-${i}`}
@@ -228,7 +228,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
               </label>
               {lines.length > 1 && (
                 <div className="flex items-end">
-                  <Button type="button" variant="outline" size="sm" onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))}>
+                  <Button type="button" variant="outline" size="lg" onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))}>
                     {t("remove")}
                   </Button>
                 </div>
@@ -236,7 +236,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
             </fieldset>
           );
         })}
-        <Button type="button" variant="outline" onClick={() => setLines((ls) => [...ls, blank()])}>
+        <Button size="lg" type="button" variant="outline" onClick={() => setLines((ls) => [...ls, blank()])}>
           + {t("addLine")}
         </Button>
       </div>
@@ -246,7 +246,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
           {t("error")}: {state.error}
         </p>
       )}
-      <Button type="submit" disabled={pending}>
+      <Button size="lg" type="submit" disabled={pending}>
         {t("saveDraft")}
       </Button>
     </form>

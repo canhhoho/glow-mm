@@ -20,28 +20,28 @@ export function ShipmentCreateForm() {
   const [state, action, pending] = useActionState(createShipmentAction, undefined);
   return (
     <form action={action} className="grid gap-3 sm:grid-cols-2">
-      <label className="space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span className="text-muted-foreground">{t("code")}</span>
         <input name="code" required placeholder="SH-2026-002" className={fieldClass} />
       </label>
-      <label className="space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span className="text-muted-foreground">{t("method")}</span>
         <select name="allocationMethod" className={fieldClass} defaultValue="BY_VALUE">
           <option value="BY_VALUE">{t("BY_VALUE")}</option>
           <option value="BY_QTY">{t("BY_QTY")}</option>
         </select>
       </label>
-      <label className="space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span className="text-muted-foreground">{t("departedAt")}</span>
         <input name="departedAt" type="date" className={fieldClass} />
       </label>
-      <label className="space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span className="text-muted-foreground">{t("note")}</span>
         <input name="note" className={fieldClass} />
       </label>
       <div className="sm:col-span-2">
         <ErrorText error={state?.error} />
-        <Button type="submit" disabled={pending}>
+        <Button size="lg" type="submit" disabled={pending}>
           {t("create")}
         </Button>
       </div>
@@ -55,7 +55,7 @@ export function ShipmentCostForm({ shipmentId }: { shipmentId: string }) {
   return (
     <form action={action} className="flex flex-wrap items-end gap-2">
       <input type="hidden" name="shipmentId" value={shipmentId} />
-      <label className="space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span className="text-muted-foreground">{t("costs")}</span>
         <select name="type" className={fieldClass} defaultValue="SHIPPING">
           <option value="SHIPPING">{t("SHIPPING")}</option>
@@ -63,15 +63,15 @@ export function ShipmentCostForm({ shipmentId }: { shipmentId: string }) {
           <option value="FEE">{t("FEE")}</option>
         </select>
       </label>
-      <label className="space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span className="text-muted-foreground">{t("amount")}</span>
         <input name="amountVnd" type="number" min={1} step={1} inputMode="numeric" required className={fieldClass} />
       </label>
-      <label className="space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span className="text-muted-foreground">{t("note")}</span>
         <input name="note" className={fieldClass} />
       </label>
-      <Button type="submit" disabled={pending}>
+      <Button size="lg" type="submit" disabled={pending}>
         {t("addCost")}
       </Button>
       <div className="w-full">
@@ -87,14 +87,14 @@ export function AllocateForm({ shipmentId, method }: { shipmentId: string; metho
   return (
     <form action={action} className="flex flex-wrap items-end gap-2">
       <input type="hidden" name="shipmentId" value={shipmentId} />
-      <label className="space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span className="text-muted-foreground">{t("method")}</span>
         <select name="allocationMethod" className={fieldClass} defaultValue={method}>
           <option value="BY_VALUE">{t("BY_VALUE")}</option>
           <option value="BY_QTY">{t("BY_QTY")}</option>
         </select>
       </label>
-      <Button type="submit" disabled={pending}>
+      <Button size="lg" type="submit" disabled={pending}>
         {t("allocate")}
       </Button>
       <div className="w-full">

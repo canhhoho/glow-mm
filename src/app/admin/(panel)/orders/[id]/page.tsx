@@ -366,12 +366,12 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
               ))}
             </ul>
             <div className="flex flex-wrap items-end gap-3">
-              <label className="space-y-1 text-xs">
+              <label className="grid content-start gap-1 text-xs">
                 <span className="text-muted-foreground">{t("ret.reason")}</span>
                 <input name="reason" required maxLength={500} className={cn(fieldClass, "w-64")} />
               </label>
               {qcLocations.length > 1 && (
-                <label className="space-y-1 text-xs">
+                <label className="grid content-start gap-1 text-xs">
                   <span className="text-muted-foreground">{t("ret.location")}</span>
                   <select name="toLocationId" className={cn(fieldClass, "w-48")}>
                     {qcLocations.map((l) => (

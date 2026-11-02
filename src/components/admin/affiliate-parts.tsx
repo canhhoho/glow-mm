@@ -38,19 +38,19 @@ export async function AffiliateFields({
   const t = await getTranslations("Affiliates");
   return (
     <>
-      <label className="block space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span>{t("name")}</span>
         <input name="name" required maxLength={100} defaultValue={values?.name} className={fieldClass} />
       </label>
-      <label className="block space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span>{t("email")}</span>
         <input name="email" type="email" required maxLength={200} autoComplete="off" defaultValue={values?.email} className={fieldClass} />
       </label>
-      <label className="block space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span>{t("phone")}</span>
         <input name="phone" type="tel" inputMode="tel" required maxLength={30} defaultValue={values?.phone} className={fieldClass} />
       </label>
-      <label className="block space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span>{t("code")}</span>
         <input
           name="code"
@@ -64,7 +64,7 @@ export async function AffiliateFields({
         />
         <span className="block text-xs text-muted-foreground">{t("codeHint")}</span>
       </label>
-      <label className="block space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span>{t("percent")}</span>
         <input
           name="commissionPercent"
@@ -79,7 +79,7 @@ export async function AffiliateFields({
         />
         <span className="block text-xs text-muted-foreground">{t("percentHint")}</span>
       </label>
-      <label className="block space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span>{t("uplinePercent")}</span>
         <input
           name="uplinePercent"
@@ -94,13 +94,13 @@ export async function AffiliateFields({
         />
         <span className="block text-xs text-muted-foreground">{t("uplinePercentHint", { percent: globalUplinePercent })}</span>
       </label>
-      <label className="block space-y-1 text-sm">
+      <label className="grid content-start gap-1 text-sm">
         <span>{t("payoutInfo")}</span>
         <textarea name="payoutInfo" rows={2} maxLength={500} defaultValue={values?.payoutInfo ?? ""} className={cn(fieldClass, "h-auto py-1.5")} />
         <span className="block text-xs text-muted-foreground">{t("payoutInfoHint")}</span>
       </label>
       {withLogin && (
-        <label className="block space-y-1 text-sm">
+        <label className="grid content-start gap-1 text-sm">
           <span>{t("tempPassword")}</span>
           <input
             name="password"

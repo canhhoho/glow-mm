@@ -166,11 +166,11 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
               >
                 <input type="hidden" name="id" value={a.id} />
                 {a.payoutInfo && <p className="text-sm whitespace-pre-line">{a.payoutInfo}</p>}
-                <label className="block space-y-1 text-sm">
+                <label className="grid content-start gap-1 text-sm">
                   <span>{t("payNote")}</span>
                   <input name="note" maxLength={500} className={fieldClass} />
                 </label>
-                <label className="block space-y-1 text-sm">
+                <label className="grid content-start gap-1 text-sm">
                   <span>{t("payProof")}</span>
                   <FileField name="proof" accept="image/jpeg,image/png,image/webp,application/pdf" />
                 </label>
@@ -183,11 +183,11 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
       <section className="space-y-2">
         <h2 className="font-medium">{t("orders")}</h2>
         <form className="flex flex-wrap items-end gap-2" role="search">
-          <label className="space-y-1 text-sm">
+          <label className="grid content-start gap-1 text-sm">
             <span className="text-muted-foreground">{t("month")}</span>
             <input name="month" type="month" defaultValue={month === "all" ? "" : month} className={cn(fieldClass, "w-44")} />
           </label>
-          <label className="space-y-1 text-sm">
+          <label className="grid content-start gap-1 text-sm">
             <span className="text-muted-foreground">{t("state")}</span>
             <select name="state" defaultValue={state ?? ""} className={cn(fieldClass, "w-auto")}>
               <option value="">{t("allStates")}</option>
@@ -198,7 +198,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
               ))}
             </select>
           </label>
-          <Button type="submit" variant="outline">
+          <Button size="lg" type="submit" variant="outline">
             {t("filter")}
           </Button>
         </form>
@@ -327,7 +327,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
             <h2 className="font-medium">{t("resetTitle")}</h2>
             <ActionForm action={resetAffiliatePasswordAction} submitLabel={t("reset")} okText={t("resetDone")} className="space-y-3">
               <input type="hidden" name="id" value={a.id} />
-              <label className="block space-y-1 text-sm">
+              <label className="grid content-start gap-1 text-sm">
                 <span>{t("tempPassword")}</span>
                 <input
                   name="password"

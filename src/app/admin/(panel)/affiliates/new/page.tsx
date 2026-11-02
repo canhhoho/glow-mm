@@ -25,7 +25,7 @@ export default async function NewAffiliatePage() {
           values={{ code: suggestAffiliateCode(), commissionPercent: bpToPercent(defaultBp) }}
           globalUplinePercent={bpToPercent(uplineBp)}
         />
-        <label className="block space-y-1 text-sm">
+        <label className="grid content-start gap-1 text-sm">
           <span>{t("tree.parentOptional")}</span>
           <select name="parentId" defaultValue="" className={fieldClass}>
             <option value="">{t("tree.noParent")}</option>

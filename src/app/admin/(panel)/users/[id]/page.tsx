@@ -41,13 +41,13 @@ export default async function EditUserPage({ params }: PageProps<"/admin/users/[
         <h2 className="font-medium">{t("profile")}</h2>
         <ActionForm action={updateStaffAction} submitLabel={t("save")} okText={t("saved")} className="space-y-3">
           <input type="hidden" name="id" value={user.id} />
-          <label className="block space-y-1 text-sm">
+          <label className="grid content-start gap-1 text-sm">
             <span>{t("name")}</span>
             <input name="name" required maxLength={100} defaultValue={user.name} className={fieldClass} />
           </label>
           {/* Không tự đổi email của mình (đăng nhập bằng email) → trang của mình không có ô email. */}
           {!self && (
-            <label className="block space-y-1 text-sm">
+            <label className="grid content-start gap-1 text-sm">
               <span>{t("email")}</span>
               <input name="email" type="email" required maxLength={254} defaultValue={user.email} className={fieldClass} />
             </label>
@@ -62,7 +62,7 @@ export default async function EditUserPage({ params }: PageProps<"/admin/users/[
             <h2 className="font-medium">{t("resetTitle")}</h2>
             <ActionForm action={resetStaffPasswordAction} submitLabel={t("reset")} okText={t("resetDone")} className="space-y-3">
               <input type="hidden" name="id" value={user.id} />
-              <label className="block space-y-1 text-sm">
+              <label className="grid content-start gap-1 text-sm">
                 <span>{t("tempPassword")}</span>
                 <input
                   name="password"

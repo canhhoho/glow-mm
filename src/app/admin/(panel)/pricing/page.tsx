@@ -40,11 +40,11 @@ export default async function PricingPage() {
             ))}
           </DataTable>
           <ActionForm action={createRateAction} submitLabel={t("addRate")} okText={t("rateAdded")} className="flex flex-wrap items-end gap-2">
-            <label className="space-y-1 text-sm">
+            <label className="grid content-start gap-1 text-sm">
               <span className="text-muted-foreground">{t("rate")}</span>
               <input name="mmkPerVnd" required inputMode="decimal" placeholder="0.170000" className={cn(fieldClass, "w-36")} />
             </label>
-            <label className="space-y-1 text-sm">
+            <label className="grid content-start gap-1 text-sm">
               <span className="text-muted-foreground">{t("note")}</span>
               <input name="note" maxLength={200} className={cn(fieldClass, "w-48")} />
             </label>
@@ -58,7 +58,7 @@ export default async function PricingPage() {
             <p className="text-sm text-muted-foreground">{t("noRate")}</p>
           ) : (
             <ActionForm action={previewRunAction} submitLabel={t("preview")} className="grid gap-2 sm:grid-cols-2">
-              <label className="space-y-1 text-sm">
+              <label className="grid content-start gap-1 text-sm">
                 <span className="text-muted-foreground">{t("rate")}</span>
                 <select name="rateId" defaultValue={rates[0].id} className={fieldClass}>
                   {rates.map((r) => (
@@ -68,15 +68,15 @@ export default async function PricingPage() {
                   ))}
                 </select>
               </label>
-              <label className="space-y-1 text-sm">
+              <label className="grid content-start gap-1 text-sm">
                 <span className="text-muted-foreground">{t("marginPct")}</span>
                 <input name="marginPct" required inputMode="decimal" placeholder="40" className={fieldClass} />
               </label>
-              <label className="space-y-1 text-sm">
+              <label className="grid content-start gap-1 text-sm">
                 <span className="text-muted-foreground">{t("roundTo")}</span>
                 <input name="roundTo" type="number" min={1} defaultValue={roundTo} className={fieldClass} />
               </label>
-              <label className="space-y-1 text-sm">
+              <label className="grid content-start gap-1 text-sm">
                 <span className="text-muted-foreground">{t("category")}</span>
                 <select name="categoryId" defaultValue="" className={fieldClass}>
                   <option value="">{t("all")}</option>
@@ -87,7 +87,7 @@ export default async function PricingPage() {
                   ))}
                 </select>
               </label>
-              <label className="space-y-1 text-sm">
+              <label className="grid content-start gap-1 text-sm">
                 <span className="text-muted-foreground">{t("brand")}</span>
                 <select name="brandId" defaultValue="" className={fieldClass}>
                   <option value="">{t("all")}</option>

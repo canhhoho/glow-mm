@@ -49,7 +49,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
                     className="flex flex-wrap items-end gap-2"
                   >
                     <input type="hidden" name="imageId" value={img.id} />
-                    <label className="space-y-1 text-sm">
+                    <label className="grid content-start gap-1 text-sm">
                       <span className="text-muted-foreground">{t("imagesAlt")}</span>
                       <input name="alt" defaultValue={img.alt} maxLength={200} className={fieldClass} />
                     </label>

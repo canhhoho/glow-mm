@@ -44,7 +44,7 @@ export function TransitionForm({
       <input type="hidden" name="id" value={orderId} />
       <input type="hidden" name="transition" value={transition} />
       {fields.map((f) => (
-        <label key={f.name} className="space-y-1 text-xs">
+        <label key={f.name} className="grid content-start gap-1 text-xs">
           <span className="text-muted-foreground">{f.label}</span>
           {f.options ? (
             <select name={f.name} required={f.required} defaultValue={f.defaultValue} className={cn(fieldClass, "w-48")}>
@@ -59,7 +59,7 @@ export function TransitionForm({
           )}
         </label>
       ))}
-      <Button type="submit" variant={variant} disabled={pending}>
+      <Button size="lg" type="submit" variant={variant} disabled={pending}>
         {label}
       </Button>
       {state?.error && (

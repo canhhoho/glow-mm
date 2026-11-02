@@ -84,7 +84,7 @@ export default async function SettingsPage() {
           ))}
           <fieldset className="space-y-2 rounded-lg border p-4 lg:col-span-2">
             <legend className="px-1 font-medium">{t("payment")}</legend>
-            <label className="block space-y-1 text-sm">
+            <label className="grid content-start gap-1 text-sm">
               <span>{t("keys.payment.bankInstructions")}</span>
               <textarea
                 name="payment.bankInstructions"

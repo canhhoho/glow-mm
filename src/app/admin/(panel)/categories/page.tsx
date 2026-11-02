@@ -63,19 +63,19 @@ export default async function CategoriesPage({ searchParams }: PageProps<"/admin
                   className="grid gap-2 sm:grid-cols-2"
                 >
                   <input type="hidden" name="categoryId" value={c.id} />
-                  <label className="space-y-1 text-sm" lang="my">
+                  <label className="grid content-start gap-1 text-sm" lang="my">
                     <span className="text-muted-foreground">{t("nameMy")}</span>
                     <input name="nameMy" required defaultValue={c.nameMy} className={fieldClass} />
                   </label>
-                  <label className="space-y-1 text-sm">
+                  <label className="grid content-start gap-1 text-sm">
                     <span className="text-muted-foreground">{t("nameEn")}</span>
                     <input name="nameEn" required defaultValue={c.nameEn} className={fieldClass} />
                   </label>
-                  <label className="space-y-1 text-sm">
+                  <label className="grid content-start gap-1 text-sm">
                     <span className="text-muted-foreground">{t("parent")}</span>
                     <ParentSelect roots={roots} value={c.parentId} excludeId={c.id} noParentLabel={t("noParent")} />
                   </label>
-                  <label className="space-y-1 text-sm">
+                  <label className="grid content-start gap-1 text-sm">
                     <span className="text-muted-foreground">{t("sortOrder")}</span>
                     <input name="sortOrder" type="number" min={0} max={9999} defaultValue={c.sortOrder} className={fieldClass} />
                   </label>

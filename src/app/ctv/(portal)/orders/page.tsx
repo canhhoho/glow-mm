@@ -28,7 +28,7 @@ export default async function CtvOrdersPage({ searchParams }: PageProps<"/ctv/or
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">{t("nav.orders")}</h1>
       <form className="grid grid-cols-2 gap-2 sm:flex sm:items-end" role="search">
-        <label className="min-w-0 space-y-1 text-sm">
+        <label className="grid content-start gap-1 min-w-0 text-sm">
           <span className="block text-muted-foreground">{ta("month")}</span>
           {/* iOS Safari tự bung rộng + căn giữa input tháng nếu không bỏ appearance. */}
           <input
@@ -38,7 +38,7 @@ export default async function CtvOrdersPage({ searchParams }: PageProps<"/ctv/or
             className={cn(fieldClass, "h-10 min-w-0 appearance-none text-left sm:w-44 [&::-webkit-date-and-time-value]:text-left")}
           />
         </label>
-        <label className="min-w-0 space-y-1 text-sm">
+        <label className="grid content-start gap-1 min-w-0 text-sm">
           <span className="block text-muted-foreground">{ta("state")}</span>
           <select name="state" defaultValue={state ?? ""} className={cn(fieldClass, "h-10 min-w-0 sm:w-auto")}>
             <option value="">{ta("allStates")}</option>
