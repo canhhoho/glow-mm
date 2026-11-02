@@ -1,9 +1,7 @@
-import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { computeAlerts } from "@/server/alerts/queries";
-import { Badge, DataTable, PageHeader, Td } from "@/components/admin/ui";
-import { cn } from "@/lib/utils";
+import { Badge, DataTable, Page, PageHeader, TabNav, Td } from "@/components/admin/ui";
 import { fmtDay, fmtInt } from "@/lib/format";
 
 const TABS = ["low", "expiry", "reorder"] as const;
@@ -29,32 +27,26 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
   );
 
   return (
-    <div className="max-w-6xl space-y-4">
-      <PageHeader title={t("title")} />
-      <nav className="flex flex-wrap gap-2" aria-label={t("title")}>
-        {TABS.map((k) => (
-          <Link
-            key={k}
-            href={`/admin/alerts?tab=${k}`}
-            aria-current={k === tab ? "page" : undefined}
-            className={cn(
-              "inline-flex h-8 items-center gap-2 rounded-lg border px-3 text-sm",
-              k === tab ? "border-primary bg-primary/10 text-primary" : "hover:bg-muted",
-            )}
-          >
-            {tabLabel[k]}
-            <Badge tone={tabCount[k] > 0 ? "danger" : "neutral"}>{tabCount[k]}</Badge>
-          </Link>
-        ))}
-      </nav>
-      <p className="text-xs text-muted-foreground">
-        {t("note", {
+    <Page>
+      <PageHeader
+        title={t("title")}
+        description={t("note", {
           block: settings.blockDays,
           warn: settings.warnDays,
           window: settings.salesWindowDays,
           cover: settings.coverDays,
         })}
-      </p>
+      />
+      <TabNav
+        label={t("title")}
+        tabs={TABS.map((k) => ({
+          href: `/admin/alerts?tab=${k}`,
+          active: k === tab,
+          label: tabLabel[k],
+          count: tabCount[k],
+          tone: tabCount[k] > 0 ? "danger" : "neutral",
+        }))}
+      />
 
       {tab === "low" && (
         <DataTable empty={t("empty")} head={[t("product"), t("available"), t("threshold"), t("vn"), t("inbound")]}>
@@ -122,6 +114,6 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
           </DataTable>
         </>
       )}
-    </div>
+    </Page>
   );
 }

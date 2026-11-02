@@ -3,14 +3,14 @@ import { requireStaff } from "@/server/auth/session";
 import { changePasswordAction } from "@/server/auth/actions";
 import { MIN_STAFF_PASSWORD } from "@/server/auth/roles";
 import { ActionForm } from "@/components/admin/action-form";
-import { fieldClass, PageHeader } from "@/components/admin/ui";
+import { fieldClass, Page, PageHeader } from "@/components/admin/ui";
 
 export default async function AccountPage() {
   const user = await requireStaff();
   const t = await getTranslations("Account");
 
   return (
-    <div className="max-w-md">
+    <Page width="narrow">
       <PageHeader title={t("title")} />
       <p className="mb-4 text-sm text-muted-foreground">
         {user.name} · {user.email}
@@ -32,6 +32,6 @@ export default async function AccountPage() {
         ))}
         <p className="text-xs text-muted-foreground">{t("hint", { min: MIN_STAFF_PASSWORD })}</p>
       </ActionForm>
-    </div>
+    </Page>
   );
 }

@@ -6,7 +6,7 @@ import { listCollectionsAdmin } from "@/server/content/collections";
 import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
 import { CollectionFields } from "@/components/admin/collection-fields";
-import { Badge, DataTable, LinkButton, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, LinkButton, Page, PageHeader, Td } from "@/components/admin/ui";
 
 export default async function CollectionsPage() {
   await requirePagePermission("content:manage");
@@ -14,9 +14,10 @@ export default async function CollectionsPage() {
   const now = new Date();
 
   return (
-    <div className="max-w-6xl space-y-6">
+    <Page>
       <PageHeader title={t("collectionsTitle")} />
       <DataTable
+        stack
         empty={t("collectionsEmpty")}
         head={[t("colName"), t("slug"), t("colItems"), t("colHome"), t("colSchedule"), t("colStatus"), ""]}
       >
@@ -30,13 +31,13 @@ export default async function CollectionsPage() {
                   {c.nameMy}
                 </p>
               </Td>
-              <Td className="font-mono text-xs">{c.slug}</Td>
-              <Td>{c.items}</Td>
-              <Td>{c.showOnHome ? t("yes") : t("no")}</Td>
-              <Td className="text-xs whitespace-nowrap">
+              <Td label={t("slug")} className="font-mono text-xs">{c.slug}</Td>
+              <Td label={t("colItems")}>{c.items}</Td>
+              <Td label={t("colHome")}>{c.showOnHome ? t("yes") : t("no")}</Td>
+              <Td label={t("colSchedule")} className="text-xs whitespace-nowrap">
                 {c.startAt || c.endAt ? `${fmtDateTime(c.startAt)} → ${fmtDateTime(c.endAt)}` : t("always")}
               </Td>
-              <Td>
+              <Td label={t("colStatus")}>
                 <Badge tone={live ? "success" : "neutral"}>{live ? t("statusLive") : c.active ? t("statusScheduled") : t("statusOff")}</Badge>
               </Td>
               <Td>
@@ -61,6 +62,6 @@ export default async function CollectionsPage() {
           <CollectionFields />
         </ActionForm>
       </section>
-    </div>
+    </Page>
   );
 }

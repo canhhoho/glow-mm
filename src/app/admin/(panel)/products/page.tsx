@@ -3,32 +3,37 @@ import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { listProductsAdmin } from "@/server/catalog/admin-queries";
 import { BrandForm } from "@/components/admin/catalog-forms";
-import { Badge, DataTable, fieldClass, LinkButton, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Section, Td } from "@/components/admin/ui";
 import { fmtInt } from "@/lib/format";
-import { cn } from "@/lib/utils";
 
 export default async function ProductsPage({ searchParams }: PageProps<"/admin/products">) {
   await requirePagePermission("catalog:manage");
   const { q } = await searchParams;
   const query = typeof q === "string" ? q : undefined;
-  const [t, tn, products] = await Promise.all([getTranslations("Products"), getTranslations("Nav"), listProductsAdmin(query)]);
+  const [t, tn, tc, products] = await Promise.all([
+    getTranslations("Products"),
+    getTranslations("Nav"),
+    getTranslations("Common"),
+    listProductsAdmin(query),
+  ]);
 
   return (
-    <div className="space-y-6">
+    <Page>
       <PageHeader
         title={t("title")}
         actions={[
-          <LinkButton key="new" href="/admin/products/new" variant="primary">
-            + {t("new")}
-          </LinkButton>,
           <LinkButton key="import" href="/admin/products/import">
             {t("import")}
           </LinkButton>,
+          <LinkButton key="new" href="/admin/products/new" variant="primary" icon="new">
+            {t("new")}
+          </LinkButton>,
         ]}
       />
-      <form role="search" className="flex gap-2">
-        <input name="q" defaultValue={query} placeholder={t("search")} className={cn(fieldClass, "max-w-xs")} />
-      </form>
+      <FilterBar>
+        <SearchInput label={t("search")} defaultValue={query} />
+        <FilterButton>{tc("filter")}</FilterButton>
+      </FilterBar>
       <DataTable stack empty={t("empty")} head={[t("colName"), t("colBrand"), t("colCategory"), t("colVariants"), t("colStatus")]}>
         {products.map((p) => (
           <tr key={p.id}>
@@ -56,17 +61,15 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
           </tr>
         ))}
       </DataTable>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-lg border p-4">
-          <h2 className="mb-3 font-medium">{t("newBrand")}</h2>
+      <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
+        <Section title={t("newBrand")}>
           <BrandForm />
-        </section>
-        <section className="rounded-lg border p-4">
-          <h2 className="mb-3 font-medium">{t("newCategory")}</h2>
+        </Section>
+        <Section title={t("newCategory")}>
           {/* Thêm/sửa danh mục + icon: trang Danh mục (P6). */}
           <LinkButton href="/admin/categories">{tn("categories")} →</LinkButton>
-        </section>
+        </Section>
       </div>
-    </div>
+    </Page>
   );
 }

@@ -6,7 +6,7 @@ import { changePct } from "@/server/pricing/formula";
 import { getRun } from "@/server/pricing/queries";
 import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
-import { Badge, DataTable, LinkButton, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, Page, PageHeader, Td } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import { fmtDateTime, fmtInt } from "@/lib/format";
 
@@ -74,10 +74,10 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
   );
 
   return (
-    <div className="max-w-5xl space-y-4">
+    <Page>
       <PageHeader
         title={t("runTitle", { date: fmtDateTime(run.createdAt) })}
-        actions={<LinkButton href="/admin/pricing">← {t("back")}</LinkButton>}
+        back={{ href: "/admin/pricing", label: t("back") }}
       />
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <Badge tone={RUN_TONE[run.status]}>{t(`st.${run.status}`)}</Badge>
@@ -102,6 +102,6 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
       ) : (
         table
       )}
-    </div>
+    </Page>
   );
 }

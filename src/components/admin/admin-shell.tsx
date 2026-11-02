@@ -65,7 +65,7 @@ export type ShellGroup = { label: string | null; items: ShellItem[] };
 
 /**
  * Khung admin (P9a): menu nhóm + icon + badge, đánh dấu trang đang mở, breadcrumb "Nhóm › Mục".
- * Mobile (< md): menu là ngăn kéo trái — đóng khi đổi trang, bấm nền hoặc Esc.
+ * Điện thoại + máy tính bảng dọc (< lg): menu là ngăn kéo trái — đóng khi đổi trang, bấm nền hoặc Esc.
  * `header` (đổi ngôn ngữ, tài khoản, đăng xuất) do layout server truyền vào.
  */
 export function AdminShell({
@@ -100,21 +100,21 @@ export function AdminShell({
   const item = group?.items.find((i) => i.href === current);
 
   return (
-    <div className="min-h-dvh md:flex">
+    <div className="min-h-dvh lg:flex">
       {open && (
         <button
           type="button"
           aria-label={labels.close}
           tabIndex={-1}
           onClick={close}
-          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
         />
       )}
       <aside
         id="admin-nav"
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r bg-background shadow-xl transition-[translate,visibility] duration-200",
-          "md:sticky md:top-0 md:visible md:h-dvh md:w-60 md:flex-none md:translate-x-0 md:bg-muted/40 md:shadow-none",
+          "lg:sticky lg:top-0 lg:visible lg:h-dvh lg:w-60 lg:flex-none lg:translate-x-0 lg:bg-muted/40 lg:shadow-none",
           open ? "visible translate-x-0" : "invisible -translate-x-full",
         )}
       >
@@ -128,7 +128,7 @@ export function AdminShell({
             type="button"
             onClick={close}
             aria-label={labels.close}
-            className="ml-auto rounded-md p-1.5 text-muted-foreground hover:bg-muted md:hidden"
+            className="ml-auto rounded-md p-1.5 text-muted-foreground hover:bg-muted lg:hidden"
           >
             <X className="size-5" aria-hidden />
           </button>
@@ -149,13 +149,13 @@ export function AdminShell({
                         href={i.href}
                         aria-current={active ? "page" : undefined}
                         className={cn(
-                          "relative flex items-center gap-3 rounded-md px-2 py-2.5 md:gap-2 md:py-1.5",
+                          "relative flex items-center gap-3 rounded-md px-2 py-2.5 lg:gap-2 lg:py-1.5",
                           active
-                            ? "bg-primary/10 font-medium text-primary md:bg-background md:shadow-sm md:ring-1 md:ring-border"
+                            ? "bg-primary/10 font-medium text-primary lg:bg-background lg:shadow-sm lg:ring-1 lg:ring-border"
                             : "hover:bg-muted",
                         )}
                       >
-                        {active && <span className="absolute inset-y-1 -left-3 hidden w-[3px] rounded-r bg-primary md:block" />}
+                        {active && <span className="absolute inset-y-1 -left-3 hidden w-[3px] rounded-r bg-primary lg:block" />}
                         <Icon className="size-4 flex-none" aria-hidden />
                         {i.label}
                         {i.badge && (
@@ -183,7 +183,7 @@ export function AdminShell({
             aria-label={labels.menu}
             aria-expanded={open}
             aria-controls="admin-nav"
-            className="-ml-1 rounded-md p-1.5 hover:bg-muted md:hidden"
+            className="-ml-1 rounded-md p-1.5 hover:bg-muted lg:hidden"
           >
             <Menu className="size-5" aria-hidden />
           </button>
@@ -198,7 +198,7 @@ export function AdminShell({
               <span className="truncate font-medium text-foreground">{item.label}</span>
             </nav>
           )}
-          <div className="ml-auto flex flex-none items-center gap-2">{header}</div>
+          <div className="ml-auto flex flex-none items-center gap-1 sm:gap-2">{header}</div>
         </header>
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </div>

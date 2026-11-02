@@ -128,7 +128,7 @@ export function ProductForm({ initial, options }: { initial: ProductEditData | n
         <Field label={t("ingredients")}>{textarea(p.ingredientsText, (v) => set("ingredientsText", v), 2)}</Field>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
         {(["my", "en"] as const).map((loc) => (
           <section key={loc} className="space-y-3 rounded-lg border p-4" lang={loc}>
             <h2 className="font-medium">{loc === "my" ? t("contentMy") : t("contentEn")}</h2>

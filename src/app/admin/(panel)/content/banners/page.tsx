@@ -5,7 +5,7 @@ import { requirePagePermission } from "@/server/auth/session";
 import { deleteBannerAction, moveBannerAction, toggleBannerAction } from "@/server/content/actions";
 import { listBannersAdmin } from "@/server/content/banners";
 import { ActionButton } from "@/components/admin/action-button";
-import { Badge, DataTable, LinkButton, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, LinkButton, Page, PageHeader, Td } from "@/components/admin/ui";
 
 function status(b: { active: boolean; startAt: Date | null; endAt: Date | null }, now: Date) {
   if (!b.active) return "statusOff" as const;
@@ -23,7 +23,7 @@ export default async function BannersPage({ searchParams }: PageProps<"/admin/co
   const localeLabel = (l: string | null) => (l === "my" ? t("localeMy") : l === "en" ? t("localeEn") : t("localeAll"));
 
   return (
-    <div className="max-w-6xl space-y-4">
+    <Page>
       <PageHeader
         title={t("bannersTitle")}
         actions={
@@ -34,6 +34,7 @@ export default async function BannersPage({ searchParams }: PageProps<"/admin/co
       />
       {saved && <p className="text-sm text-emerald-700 dark:text-emerald-400">{t("saved")}</p>}
       <DataTable
+        stack
         empty={t("bannersEmpty")}
         head={[t("colImage"), t("colAlt"), t("colLocale"), t("colSchedule"), t("colStatus"), ""]}
       >
@@ -46,15 +47,15 @@ export default async function BannersPage({ searchParams }: PageProps<"/admin/co
                   <Image src={b.desktopFile.url} alt={b.alt} fill sizes="160px" className="object-cover" />
                 </div>
               </Td>
-              <Td>
+              <Td label={t("colAlt")}>
                 <p>{b.alt}</p>
                 {b.href && <p className="font-mono text-xs text-muted-foreground">{b.href}</p>}
               </Td>
-              <Td>{localeLabel(b.locale)}</Td>
-              <Td className="text-xs whitespace-nowrap">
+              <Td label={t("colLocale")}>{localeLabel(b.locale)}</Td>
+              <Td label={t("colSchedule")} className="text-xs whitespace-nowrap">
                 {b.startAt || b.endAt ? `${fmtDateTime(b.startAt)} → ${fmtDateTime(b.endAt)}` : t("always")}
               </Td>
-              <Td>
+              <Td label={t("colStatus")}>
                 <Badge tone={TONE[st]}>{t(st)}</Badge>
               </Td>
               <Td>
@@ -77,6 +78,6 @@ export default async function BannersPage({ searchParams }: PageProps<"/admin/co
           );
         })}
       </DataTable>
-    </div>
+    </Page>
   );
 }

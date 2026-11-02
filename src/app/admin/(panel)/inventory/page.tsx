@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
-import { ChevronDown, Clock, FileText, Plus, Search } from "lucide-react";
+import { ChevronDown, Clock, FileText, Plus } from "lucide-react";
 import { requirePagePermission } from "@/server/auth/session";
 import { can, type Permission } from "@/server/auth/roles";
 import { classifyExpiry, daysLeft } from "@/server/alerts/compute";
@@ -19,7 +19,8 @@ import {
 import type { BalanceRow, Thresholds } from "@/server/inventory/stock-summary";
 import { ExpandableRow } from "@/components/admin/expandable-row";
 import { ExpiryTag, Pager, stockHref, type StockView } from "@/components/admin/stock-parts";
-import { Badge, DataTable, fieldClass, LinkButton, Td } from "@/components/admin/ui";
+import { Badge, DataTable, fieldClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, TabNav, Td } from "@/components/admin/ui";
+import { buttonVariants } from "@/components/ui/button";
 import { fmtDay, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -57,20 +58,19 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
   const filtered = f.tab !== "all" || !!f.q || !!f.expiry || !!f.stockType;
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-medium">{t("title")}</h1>
-          <p className="text-sm text-muted-foreground">{t("subtitle", { variants: summary.variants, lots: summary.lots })}</p>
-        </div>
-        <div className="flex gap-2">
+    <Page>
+      <PageHeader
+        title={t("title")}
+        description={t("subtitle", { variants: summary.variants, lots: summary.lots })}
+        actions={
+          <>
           <LinkButton href="/admin/inventory/documents">
-            <FileText className="mr-1.5 size-4" aria-hidden />
+            <FileText aria-hidden />
             {t("documents")}
           </LinkButton>
           {newDocs.length > 0 && (
             <details className="group relative">
-              <summary className="inline-flex h-8 cursor-pointer list-none items-center gap-1 rounded-lg bg-primary px-3 text-sm font-medium whitespace-nowrap text-primary-foreground hover:bg-primary/80 [&::-webkit-details-marker]:hidden">
+              <summary className={cn(buttonVariants({ size: "lg" }), "cursor-pointer list-none [&::-webkit-details-marker]:hidden")}>
                 <Plus className="size-4" aria-hidden />
                 {t("newDoc")}
                 <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden />
@@ -84,8 +84,9 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
               </div>
             </details>
           )}
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Ô số tổng (mobile: cuộn ngang) */}
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:-mx-6 md:px-6 lg:mx-0 lg:grid lg:grid-cols-5 lg:gap-3 lg:overflow-visible lg:px-0">
@@ -119,37 +120,23 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
         />
       </div>
 
-      {/* Tab vị trí. Viền dưới vẽ bằng shadow: border-b + -mb-px làm khung dư 1px → hiện thanh cuộn dọc ▲▼ trên Windows. */}
-      <nav aria-label={t("tabs")} className="-mx-4 flex gap-1 overflow-x-auto overflow-y-hidden px-4 text-sm shadow-[inset_0_-1px_0_var(--color-border)] md:mx-0 md:px-0">
-        {STOCK_TABS.map((tab) => {
-          const active = f.tab === tab;
-          return (
-            <Link
-              key={tab}
-              href={href({ tab })}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "border-b-2 px-3 py-2 whitespace-nowrap",
-                active ? "border-primary font-medium text-primary" : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {tab === "all" ? t("tabAll") : t(`loc.${tab}`)}
-              {tab !== "all" && <span className="ml-1 text-xs text-muted-foreground tabular-nums">{fmtInt(summary.byLocationType[tab])}</span>}
-            </Link>
-          );
-        })}
-      </nav>
+      <TabNav
+        label={t("tabs")}
+        tabs={STOCK_TABS.map((tab) => ({
+          href: href({ tab }),
+          active: f.tab === tab,
+          label: tab === "all" ? t("tabAll") : t(`loc.${tab}`),
+          count: tab === "all" ? undefined : fmtInt(summary.byLocationType[tab]),
+        }))}
+      />
 
       {/* Bộ lọc (GET, chạy không cần JS) + cách xem */}
       <div className="flex flex-wrap items-center gap-2">
         {/* key theo bộ lọc: điều hướng phía client giữ nguyên DOM → defaultValue cũ; đổi key để form dựng lại. */}
-        <form key={`${f.tab}|${f.q}|${f.expiry}|${f.stockType}|${view}`} role="search" className="flex flex-1 flex-wrap items-center gap-2">
+        <FilterBar key={`${f.tab}|${f.q}|${f.expiry}|${f.stockType}|${view}`} className="flex-1">
           {f.tab !== "all" && <input type="hidden" name="tab" value={f.tab} />}
           {view === "lots" && <input type="hidden" name="view" value="lots" />}
-          <div className="relative w-full sm:w-72">
-            <Search className="pointer-events-none absolute top-2.5 left-2.5 size-4 text-muted-foreground" aria-hidden />
-            <input name="q" defaultValue={f.q} placeholder={t("search")} aria-label={t("search")} className={cn(fieldClass, "pl-8")} />
-          </div>
+          <SearchInput label={t("search")} defaultValue={f.q} />
           <select name="expiry" defaultValue={f.expiry ?? ""} aria-label={t("expiryFilter")} className={cn(fieldClass, "w-auto")}>
             <option value="">{t("expiryAll")}</option>
             {EXPIRY_FILTERS.map((e) => (
@@ -163,13 +150,13 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
             <option value="SELLABLE">{t("SELLABLE")}</option>
             <option value="TESTER">{t("TESTER")}</option>
           </select>
-          <button className="h-9 rounded-lg border px-3 text-sm hover:bg-muted">{t("filter")}</button>
+          <FilterButton>{t("filter")}</FilterButton>
           {filtered && (
             <Link href={view === "lots" ? "/admin/inventory?view=lots" : "/admin/inventory"} className="text-sm text-muted-foreground underline">
               {t("clear")}
             </Link>
           )}
-        </form>
+        </FilterBar>
         <div role="group" aria-label={t("view")} className="inline-flex rounded-lg border p-0.5 text-sm">
           {(["products", "lots"] as const).map((v) => (
             <Link
@@ -194,7 +181,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
         href={(page) => href({ page })}
         t={t}
       />
-    </div>
+    </Page>
   );
 }
 
@@ -329,7 +316,7 @@ function ProductView({
   return (
     <>
       {/* Desktop: bảng */}
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         <DataTable head={head} empty={t("emptyFiltered")}>
           {page.rows.map((r) => {
             const c = r.cols;
@@ -378,9 +365,9 @@ function ProductView({
         </DataTable>
       </div>
 
-      {/* Mobile: thẻ */}
-      <div className="space-y-2 md:hidden">
-        {page.rows.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">{t("emptyFiltered")}</p>}
+      {/* Điện thoại + máy tính bảng dọc: thẻ */}
+      <div className="grid gap-2 md:grid-cols-2 lg:hidden">
+        {page.rows.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground md:col-span-2">{t("emptyFiltered")}</p>}
         {page.rows.map((r) => {
           const c = r.cols;
           const e = c?.earliest;

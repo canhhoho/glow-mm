@@ -4,7 +4,7 @@ import { requirePagePermission } from "@/server/auth/session";
 import { getDocument, productName } from "@/server/inventory/queries";
 import { cancelDocumentAction, postDocumentAction } from "@/server/inventory/actions";
 import { ActionButton } from "@/components/admin/action-button";
-import { Badge, DataTable, LinkButton, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, Page, PageHeader, Td } from "@/components/admin/ui";
 import { fmtDate, fmtDay, fmtInt } from "@/lib/format";
 
 const STATUS_TONE = { DRAFT: "warning", POSTED: "success", CANCELLED: "neutral" } as const;
@@ -16,10 +16,10 @@ export default async function DocumentPage({ params }: PageProps<"/admin/invento
   if (!doc) notFound();
 
   return (
-    <div className="max-w-5xl space-y-4">
+    <Page>
       <PageHeader
         title={`${t(doc.type)} · ${doc.code}`}
-        actions={<LinkButton href="/admin/inventory/documents">← {t("back")}</LinkButton>}
+        back={{ href: "/admin/inventory/documents", label: t("back") }}
       />
       <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-[auto_1fr]">
         <dt className="text-muted-foreground">{t("status")}</dt>
@@ -81,6 +81,6 @@ export default async function DocumentPage({ params }: PageProps<"/admin/invento
       ) : (
         <p className="text-sm text-muted-foreground">{t("postedNote")}</p>
       )}
-    </div>
+    </Page>
   );
 }

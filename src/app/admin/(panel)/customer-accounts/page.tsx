@@ -6,8 +6,7 @@ import { listCustomerAccounts } from "@/server/accounts/admin";
 import { resetCustomerPasswordAction, setCustomerActiveAction } from "@/server/accounts/actions";
 import { MIN_CUSTOMER_PASSWORD } from "@/server/accounts/phone";
 import { ActionForm } from "@/components/admin/action-form";
-import { Badge, DataTable, fieldClass, PageHeader, Td } from "@/components/admin/ui";
-import { Button } from "@/components/ui/button";
+import { Badge, DataTable, fieldClass, FilterBar, FilterButton, Page, PageHeader, SearchInput, Td } from "@/components/admin/ui";
 
 /**
  * Tài khoản khách storefront (P17): tìm theo SĐT / email / tên; đặt lại mật khẩu tạm (khách SĐT quên mật khẩu nhắn shop);
@@ -20,18 +19,12 @@ export default async function CustomerAccountsPage({ searchParams }: PageProps<"
   const [t, accounts] = await Promise.all([getTranslations("Customers"), listCustomerAccounts(q)]);
 
   return (
-    <div className="max-w-6xl space-y-4">
-      <PageHeader title={t("title")} />
-      <p className="text-sm text-muted-foreground">{t("hint")}</p>
-      <form role="search" className="flex flex-wrap items-end gap-2">
-        <label className="space-y-1 text-sm">
-          <span className="text-muted-foreground">{t("search")}</span>
-          <input name="q" defaultValue={q} placeholder="09… / email / tên" className={fieldClass} />
-        </label>
-        <Button type="submit" variant="outline">
-          {t("find")}
-        </Button>
-      </form>
+    <Page>
+      <PageHeader title={t("title")} description={t("hint")} />
+      <FilterBar>
+        <SearchInput label={t("search")} defaultValue={q} />
+        <FilterButton>{t("find")}</FilterButton>
+      </FilterBar>
       <DataTable
         stack
         empty={t("empty")}
@@ -95,6 +88,6 @@ export default async function CustomerAccountsPage({ searchParams }: PageProps<"
           );
         })}
       </DataTable>
-    </div>
+    </Page>
   );
 }

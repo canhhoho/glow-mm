@@ -4,7 +4,7 @@ import { requirePagePermission } from "@/server/auth/session";
 import { getLocationState, listLocationStates, searchTownships, type LocationLevel } from "@/server/locations/admin";
 import { saveLocationsAction } from "@/server/locations/actions";
 import { ActionForm } from "@/components/admin/action-form";
-import { Badge, fieldClass, LinkButton, PageHeader } from "@/components/admin/ui";
+import { Badge, fieldClass, FilterBar, FilterButton, Page, PageHeader, SearchInput } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 
 type Row = { level: LocationLevel; id: string; code: string; nameEn: string; nameMy: string; active: boolean };
@@ -134,24 +134,17 @@ export default async function LocationsPage({ searchParams }: PageProps<"/admin/
   }
 
   return (
-    <div className="max-w-4xl space-y-4">
+    <Page>
       <PageHeader
         title={t("title")}
-        actions={
-          stateId || q ? <LinkButton href="/admin/settings/locations">← {t("allStates")}</LinkButton> : undefined
-        }
+        description={t("hint")}
+        back={stateId || q ? { href: "/admin/settings/locations", label: t("allStates") } : undefined}
       />
-      <p className="text-sm text-muted-foreground">{t("hint")}</p>
-      <form role="search" className="flex flex-wrap items-end gap-2">
-        <label className="space-y-1 text-sm">
-          <span className="text-muted-foreground">{t("search")}</span>
-          <input name="q" defaultValue={q} placeholder="Kamaryut / ကမာရွတ် / KMY" className={cn(fieldClass, "w-64")} />
-        </label>
-        <button type="submit" className="h-9 rounded-lg border px-3 text-sm hover:bg-muted">
-          {t("find")}
-        </button>
-      </form>
+      <FilterBar>
+        <SearchInput label={t("search")} defaultValue={q} />
+        <FilterButton>{t("find")}</FilterButton>
+      </FilterBar>
       {body}
-    </div>
+    </Page>
   );
 }

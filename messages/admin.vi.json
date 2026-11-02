@@ -80,7 +80,8 @@
     "backToDashboard": "Về Tổng quan",
     "chooseFile": "Chọn tệp",
     "noFile": "Chưa chọn tệp",
-    "filesChosen": "Đã chọn {n} tệp"
+    "filesChosen": "Đã chọn {n} tệp",
+    "filter": "Lọc"
   },
   "Inventory": {
     "title": "Tồn kho",

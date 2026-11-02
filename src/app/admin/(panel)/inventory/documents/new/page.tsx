@@ -4,7 +4,7 @@ import { requirePagePermission } from "@/server/auth/session";
 import type { Permission } from "@/server/auth/roles";
 import { batchesForForms, listLocations, listShipments, listVariantsForPicker } from "@/server/inventory/queries";
 import { DocumentForm } from "@/components/admin/document-form";
-import { LinkButton, PageHeader } from "@/components/admin/ui";
+import { Page, PageHeader } from "@/components/admin/ui";
 
 const TYPES: Record<string, Permission> = {
   RECEIVE: "stock:receive",
@@ -25,8 +25,8 @@ export default async function NewDocumentPage({ searchParams }: PageProps<"/admi
     listShipments(),
   ]);
   return (
-    <div className="max-w-5xl">
-      <PageHeader title={`${t("new")}: ${t(type)}`} actions={<LinkButton href="/admin/inventory">← {t("back")}</LinkButton>} />
+    <Page>
+      <PageHeader title={`${t("new")}: ${t(type)}`} back={{ href: "/admin/inventory", label: t("back") }} />
       <DocumentForm
         type={type as "RECEIVE" | "TRANSFER" | "ISSUE" | "ADJUST"}
         data={{
@@ -36,6 +36,6 @@ export default async function NewDocumentPage({ searchParams }: PageProps<"/admi
           shipments: shipments.map((s) => ({ id: s.id, code: s.code })),
         }}
       />
-    </div>
+    </Page>
   );
 }

@@ -6,8 +6,7 @@ import { affiliateOptions } from "@/server/affiliates/affiliates";
 import { listOrdersAdmin } from "@/server/orders/admin-queries";
 import { ORDER_STATUSES } from "@/server/orders/state-machine";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/admin/order-badges";
-import { Badge, DataTable, fieldClass, LinkButton, PageHeader, Td } from "@/components/admin/ui";
-import { Button } from "@/components/ui/button";
+import { Badge, DataTable, fieldClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Td } from "@/components/admin/ui";
 import { fmtDate, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -28,19 +27,19 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
   const filtered = !!(filter.status || filter.channel || filter.q || filter.overdue || filter.affiliateId);
 
   return (
-    <div className="space-y-4">
+    <Page>
       <PageHeader
         title={t("title")}
         actions={
           can(user.role, "orders:create") && (
-            <LinkButton href="/admin/orders/new" variant="primary">
-              + {t("new")}
+            <LinkButton href="/admin/orders/new" variant="primary" icon="new">
+              {t("new")}
             </LinkButton>
           )
         }
       />
-      <form role="search" className="flex flex-wrap items-center gap-2">
-        <input name="q" defaultValue={filter.q} placeholder={t("search")} className={cn(fieldClass, "max-w-60")} />
+      <FilterBar>
+        <SearchInput label={t("search")} defaultValue={filter.q} />
         <select name="status" defaultValue={filter.status ?? ""} aria-label={t("colStatus")} className={cn(fieldClass, "w-auto")}>
           <option value="">{t("allStatuses")}</option>
           {ORDER_STATUSES.map((s) => (
@@ -71,10 +70,8 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
           <input type="checkbox" name="overdue" value="1" defaultChecked={filter.overdue} />
           {t("overdueOnly")}
         </label>
-        <Button type="submit" variant="outline">
-          {t("filter")}
-        </Button>
-      </form>
+        <FilterButton>{t("filter")}</FilterButton>
+      </FilterBar>
 
       <DataTable
         empty={filtered ? t("emptyFiltered") : t("empty")}
@@ -85,7 +82,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
         {orders.map((o) => (
           <tr key={o.id}>
             <Td>
-              <Link href={`/admin/orders/${o.id}`} className="font-mono text-xs text-primary underline">
+              <Link href={`/admin/orders/${o.id}`} className="font-mono text-xs whitespace-nowrap text-primary underline">
                 {o.code}
               </Link>
               <div className="text-xs text-muted-foreground">
@@ -128,6 +125,6 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
       {filtered && orders.length === 0 && (
         <LinkButton href="/admin/orders">{t("clearFilters")}</LinkButton>
       )}
-    </div>
+    </Page>
   );
 }

@@ -8,7 +8,7 @@ import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
 import { ProductForm } from "@/components/admin/product-form";
 import { ProductImageUpload } from "@/components/admin/product-images";
-import { Badge, fieldClass, LinkButton, PageHeader } from "@/components/admin/ui";
+import { Badge, fieldClass, Page, PageHeader } from "@/components/admin/ui";
 
 export default async function EditProductPage({ params, searchParams }: PageProps<"/admin/products/[id]">) {
   await requirePagePermission("catalog:manage");
@@ -22,8 +22,8 @@ export default async function EditProductPage({ params, searchParams }: PageProp
   ]);
   if (!product) notFound();
   return (
-    <div className="max-w-6xl">
-      <PageHeader title={product.en.name || product.slug} actions={<LinkButton href="/admin/products">← {td("back")}</LinkButton>} />
+    <Page>
+      <PageHeader title={product.en.name || product.slug} back={{ href: "/admin/products", label: td("back") }} />
       {saved && <p className="mb-3 text-sm text-emerald-700 dark:text-emerald-400">{t("saved")}</p>}
       <section aria-labelledby="product-images" className="mb-6 rounded-lg border p-4">
         <h2 id="product-images" className="mb-3 font-medium">
@@ -77,6 +77,6 @@ export default async function EditProductPage({ params, searchParams }: PageProp
       </section>
       {/* key: nạp lại state form sau khi lưu */}
       <ProductForm key={JSON.stringify(product)} initial={product} options={options} />
-    </div>
+    </Page>
   );
 }

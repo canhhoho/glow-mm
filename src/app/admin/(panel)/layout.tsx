@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { UserRound } from "lucide-react";
+import { LogOut, UserRound } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ADMIN_LOCALES } from "@/i18n/routing";
 import { requireStaff } from "@/server/auth/session";
@@ -40,9 +40,9 @@ export default async function PanelLayout({ children }: LayoutProps<"/admin">) {
       labels={{ subtitle: t("subtitle"), menu: t("menu"), close: t("closeMenu"), breadcrumb: t("breadcrumb") }}
       header={
         <>
-          <form action={setAdminLocaleAction} className="flex gap-1" aria-label={t("language")}>
+          <form action={setAdminLocaleAction} className="flex sm:gap-1" aria-label={t("language")}>
             {ADMIN_LOCALES.map((l) => (
-              <Button key={l} type="submit" name="locale" value={l} size="sm" variant={l === locale ? "secondary" : "ghost"}>
+              <Button key={l} type="submit" name="locale" value={l} size="sm" variant={l === locale ? "secondary" : "ghost"} className="max-sm:px-2">
                 {l.toUpperCase()}
               </Button>
             ))}
@@ -57,9 +57,11 @@ export default async function PanelLayout({ children }: LayoutProps<"/admin">) {
             <UserRound className="size-5 sm:hidden" aria-hidden />
             <span className="hidden max-w-24 truncate sm:inline md:max-w-48">{user.name}</span>
           </Link>
+          {/* Điện thoại: chỉ icon (chữ sr-only) để tiêu đề trang không bị cắt. */}
           <form action={signOutAction}>
-            <Button type="submit" size="sm" variant="outline">
-              {t("logout")}
+            <Button type="submit" size="sm" variant="outline" title={t("logout")} className="max-sm:size-7 max-sm:px-0">
+              <LogOut className="sm:hidden" aria-hidden />
+              <span className="max-sm:sr-only">{t("logout")}</span>
             </Button>
           </form>
         </>

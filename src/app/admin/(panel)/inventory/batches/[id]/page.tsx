@@ -4,7 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { batchDetail, loadThresholds } from "@/server/inventory/overview";
 import { ExpiryTag } from "@/components/admin/stock-parts";
-import { Badge, DataTable, LinkButton, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, Page, PageHeader, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -44,10 +44,10 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
   ];
 
   return (
-    <div className="max-w-5xl space-y-5">
+    <Page>
       <PageHeader
         title={t("title", { lotNo: batch.lotNo })}
-        actions={<LinkButton href={`/admin/inventory?q=${encodeURIComponent(batch.lotNo)}&view=lots`}>← {ti("title")}</LinkButton>}
+        back={{ href: `/admin/inventory?q=${encodeURIComponent(batch.lotNo)}&view=lots`, label: ti("title") }}
       />
       <p className="-mt-3 text-sm text-muted-foreground">
         {detail.name} ({batch.variant.label}) · <span className="font-mono">{batch.variant.sku}</span>
@@ -116,6 +116,6 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
           ))}
         </DataTable>
       </section>
-    </div>
+    </Page>
   );
 }

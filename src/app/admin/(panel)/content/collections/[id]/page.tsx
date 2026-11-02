@@ -13,7 +13,7 @@ import { getCollectionAdmin } from "@/server/content/collections";
 import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
 import { CollectionFields } from "@/components/admin/collection-fields";
-import { Badge, fieldClass, LinkButton, PageHeader } from "@/components/admin/ui";
+import { Badge, fieldClass, LinkButton, Page, PageHeader } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -33,17 +33,11 @@ export default async function EditCollectionPage({ params, searchParams }: PageP
   const inCollection = new Set(collection.items.map((i) => i.productId));
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <Page>
       <PageHeader
         title={`${t("collectionEdit")}: ${collection.nameEn}`}
-        actions={[
-          <LinkButton key="store" href={`/en/collection/${collection.slug}`}>
-            {t("viewOnStore")}
-          </LinkButton>,
-          <LinkButton key="back" href="/admin/content/collections">
-            ← {td("back")}
-          </LinkButton>,
-        ]}
+        back={{ href: "/admin/content/collections", label: td("back") }}
+        actions={<LinkButton href={`/en/collection/${collection.slug}`}>{t("viewOnStore")}</LinkButton>}
       />
 
       <section className="rounded-lg border p-4">
@@ -132,6 +126,6 @@ export default async function EditCollectionPage({ params, searchParams }: PageP
         variant="destructive"
         confirm={t("deleteCollectionConfirm")}
       />
-    </div>
+    </Page>
   );
 }

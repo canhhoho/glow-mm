@@ -5,7 +5,7 @@ import { createRateAction, previewRunAction } from "@/server/pricing/actions";
 import { listPriceHistory, listRates, listRuns, pricingFilterOptions, variantsWithoutCost } from "@/server/pricing/queries";
 import { getNumberSetting } from "@/server/settings";
 import { ActionForm } from "@/components/admin/action-form";
-import { Badge, DataTable, fieldClass, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, fieldClass, Page, PageHeader, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -24,10 +24,10 @@ export default async function PricingPage() {
   ]);
 
   return (
-    <div className="max-w-5xl space-y-8">
+    <Page>
       <PageHeader title={t("title")} />
 
-      <section className="grid gap-6 lg:grid-cols-2">
+      <section className="grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
         <div className="space-y-3">
           <h2 className="font-medium">{t("rates")}</h2>
           <DataTable empty={t("noRate")} head={[t("rate"), t("effectiveAt"), t("note")]}>
@@ -145,6 +145,6 @@ export default async function PricingPage() {
           ))}
         </DataTable>
       </section>
-    </div>
+    </Page>
   );
 }

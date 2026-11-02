@@ -6,7 +6,7 @@ import { bpToPercent } from "@/server/affiliates/commission";
 import { getNumberSetting } from "@/server/settings";
 import { ActionForm } from "@/components/admin/action-form";
 import { AffiliateFields } from "@/components/admin/affiliate-parts";
-import { fieldClass, LinkButton, PageHeader } from "@/components/admin/ui";
+import { fieldClass, Page, PageHeader } from "@/components/admin/ui";
 
 export default async function NewAffiliatePage() {
   await requirePagePermission("affiliates:manage");
@@ -17,8 +17,8 @@ export default async function NewAffiliatePage() {
     getNumberSetting("affiliate.uplineRateBp"),
   ]);
   return (
-    <div className="max-w-md">
-      <PageHeader title={t("new")} actions={<LinkButton href="/admin/affiliates">← {t("back")}</LinkButton>} />
+    <Page width="narrow">
+      <PageHeader title={t("new")} back={{ href: "/admin/affiliates", label: t("back") }} />
       <ActionForm action={createAffiliateAction} submitLabel={t("create")} className="space-y-3">
         <AffiliateFields
           withLogin
@@ -37,6 +37,6 @@ export default async function NewAffiliatePage() {
           </select>
         </label>
       </ActionForm>
-    </div>
+    </Page>
   );
 }

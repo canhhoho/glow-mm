@@ -20,7 +20,7 @@ import { ActionForm } from "@/components/admin/action-form";
 import { FileField } from "@/components/admin/file-field";
 import { AffiliateFields, CommissionBadge } from "@/components/admin/affiliate-parts";
 import { OrderStatusBadge } from "@/components/admin/order-badges";
-import { Badge, DataTable, fieldClass, LinkButton, PageHeader, Stat, Td } from "@/components/admin/ui";
+import { Badge, DataTable, fieldClass, Page, PageHeader, Stat, Td } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ctv/copy-button";
 import { cn } from "@/lib/utils";
@@ -48,8 +48,8 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
   const refLink = `${siteUrl()}/?ref=${a.code}`;
 
   return (
-    <div className="max-w-5xl space-y-6">
-      <PageHeader title={a.user.name} actions={<LinkButton href="/admin/affiliates">← {t("back")}</LinkButton>} />
+    <Page>
+      <PageHeader title={a.user.name} back={{ href: "/admin/affiliates", label: t("back") }} />
       {sp.created && <p className="text-sm text-emerald-700 dark:text-emerald-400">{t("created")}</p>}
       {sp.approved && <p className="text-sm text-emerald-700 dark:text-emerald-400">{t("apps.approvedNote")}</p>}
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -303,7 +303,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
         </DataTable>
       </section>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 [&>*]:min-w-0">
         <section className="space-y-2">
           <h2 className="font-medium">{t("profile")}</h2>
           <ActionForm action={updateAffiliateAction} submitLabel={t("save")} okText={t("saved")} className="space-y-3">
@@ -354,6 +354,6 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
           </section>
         </div>
       </div>
-    </div>
+    </Page>
   );
 }

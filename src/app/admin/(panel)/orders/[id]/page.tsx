@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Printer } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
@@ -16,7 +17,7 @@ import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/admin/order-badges";
 import { TransitionForm, type TransitionField } from "@/components/admin/transition-form";
-import { Badge, DataTable, fieldClass, LinkButton, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, fieldClass, LinkButton, Page, PageHeader, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -74,19 +75,18 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
   const who = (userId: string | null) => (userId ? (order.userNames[userId] ?? userId) : t("system"));
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <Page>
       <PageHeader
         title={`${t("colCode")} ${order.code}`}
-        actions={[
+        back={{ href: "/admin/orders", label: t("back") }}
+        actions={
           showLabel && (
-            <LinkButton key="label" href={`/admin/orders/${order.id}/label`}>
+            <LinkButton href={`/admin/orders/${order.id}/label`}>
+              <Printer aria-hidden />
               {t("printLabel")}
             </LinkButton>
-          ),
-          <LinkButton key="back" href="/admin/orders">
-            ← {t("back")}
-          </LinkButton>,
-        ]}
+          )
+        }
       />
 
       <div className="flex flex-wrap items-center gap-2" data-testid="order-status">
@@ -95,7 +95,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
         {order.overdue && <Badge tone="danger">{t("overdue")}</Badge>}
       </div>
 
-      <section className="grid gap-6 md:grid-cols-2">
+      <section className="grid gap-6 md:grid-cols-2 [&>*]:min-w-0">
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
           <dt className="text-muted-foreground">{t("recipient")}</dt>
           <dd>{order.recipientName}</dd>
@@ -259,16 +259,30 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
 
       <section className="space-y-2">
         <h2 className="font-medium">{t("items")}</h2>
-        <DataTable head={[t("sku"), t("product"), t("qty"), t("ret.returned"), t("unitPrice"), t("lineTotal"), t("lots")]}>
+        <DataTable
+          stack
+          numeric={[2, 3, 4, 5]}
+          head={[t("sku"), t("product"), t("qty"), t("ret.returned"), t("unitPrice"), t("lineTotal"), t("lots")]}
+        >
           {order.items.map((i) => (
             <tr key={i.id}>
-              <Td className="font-mono text-xs">{i.sku}</Td>
-              <Td>{i.name}</Td>
-              <Td className="text-right tabular-nums">{fmtInt(i.qty)}</Td>
-              <Td className="text-right tabular-nums">{i.returnedQty > 0 ? fmtInt(i.returnedQty) : "—"}</Td>
-              <Td className="text-right tabular-nums">{fmtInt(i.unitPriceMmk)}</Td>
-              <Td className="text-right tabular-nums">{fmtInt(i.qty * i.unitPriceMmk)}</Td>
-              <Td className="text-xs">
+              <Td label={t("sku")} className="font-mono text-xs">
+                {i.sku}
+              </Td>
+              <Td className="max-md:font-medium">{i.name}</Td>
+              <Td label={t("qty")} className="text-right tabular-nums">
+                {fmtInt(i.qty)}
+              </Td>
+              <Td label={t("ret.returned")} className="text-right tabular-nums">
+                {i.returnedQty > 0 ? fmtInt(i.returnedQty) : "—"}
+              </Td>
+              <Td label={t("unitPrice")} className="text-right tabular-nums">
+                {fmtInt(i.unitPriceMmk)}
+              </Td>
+              <Td label={t("lineTotal")} className="text-right tabular-nums">
+                {fmtInt(i.qty * i.unitPriceMmk)}
+              </Td>
+              <Td label={t("lots")} className="text-xs">
                 {i.allocations.length === 0
                   ? "—"
                   : i.allocations.map((a) => (
@@ -459,6 +473,6 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
           ))}
         </ol>
       </section>
-    </div>
+    </Page>
   );
 }

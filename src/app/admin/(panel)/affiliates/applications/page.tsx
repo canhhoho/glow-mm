@@ -8,7 +8,7 @@ import { suggestAffiliateCode } from "@/server/affiliates/affiliates";
 import { listApplications, pendingApplicationsCount } from "@/server/affiliates/applications";
 import { getNumberSetting } from "@/server/settings";
 import { ActionForm } from "@/components/admin/action-form";
-import { Badge, DataTable, fieldClass, LinkButton, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, fieldClass, Page, PageHeader, Td } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 
 /** Duyệt đơn đăng ký CTV qua link mời (P11b). */
@@ -23,8 +23,8 @@ export default async function AffiliateApplicationsPage() {
   ]);
 
   return (
-    <div className="max-w-5xl space-y-6">
-      <PageHeader title={t("apps.title")} actions={<LinkButton href="/admin/affiliates">← {t("back")}</LinkButton>} />
+    <Page>
+      <PageHeader title={t("apps.title")} back={{ href: "/admin/affiliates", label: t("back") }} />
       <p className="text-sm text-muted-foreground">{t("apps.hint")}</p>
       {pendingTotal > 0 && (
         <p className="text-sm font-medium" data-testid="apps-pending-total">
@@ -110,19 +110,19 @@ export default async function AffiliateApplicationsPage() {
 
       <section className="space-y-2">
         <h2 className="font-medium">{t("apps.decided")}</h2>
-        <DataTable empty={t("apps.decidedEmpty")} head={[t("name"), t("apps.invitedBy"), t("status"), t("apps.reviewedAt"), ""]}>
+        <DataTable stack empty={t("apps.decidedEmpty")} head={[t("name"), t("apps.invitedBy"), t("status"), t("apps.reviewedAt"), ""]}>
           {decided.map((a) => (
             <tr key={a.id}>
               <Td>
                 {a.name}
                 <div className="text-xs text-muted-foreground">{a.email}</div>
               </Td>
-              <Td className="font-mono text-xs">{a.inviter.code}</Td>
-              <Td>
+              <Td label={t("apps.invitedBy")} className="font-mono text-xs">{a.inviter.code}</Td>
+              <Td label={t("status")}>
                 <Badge tone={a.status === "APPROVED" ? "success" : "danger"}>{t(`apps.status.${a.status}`)}</Badge>
                 {a.note && <div className="text-xs text-muted-foreground">{a.note}</div>}
               </Td>
-              <Td className="text-xs whitespace-nowrap">{fmtDateTime(a.reviewedAt)}</Td>
+              <Td label={t("apps.reviewedAt")} className="text-xs whitespace-nowrap">{fmtDateTime(a.reviewedAt)}</Td>
               <Td>
                 {a.affiliateId && (
                   <Link href={`/admin/affiliates/${a.affiliateId}`} className="text-sm text-primary underline">
@@ -134,6 +134,6 @@ export default async function AffiliateApplicationsPage() {
           ))}
         </DataTable>
       </section>
-    </div>
+    </Page>
   );
 }

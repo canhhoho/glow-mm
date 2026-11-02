@@ -9,7 +9,7 @@ import { getStaff } from "@/server/users/users";
 import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
 import { RoleSelect } from "@/components/admin/role-select";
-import { Badge, fieldClass, LinkButton, PageHeader } from "@/components/admin/ui";
+import { Badge, fieldClass, Page, PageHeader } from "@/components/admin/ui";
 
 export default async function EditUserPage({ params }: PageProps<"/admin/users/[id]">) {
   const me = await requirePagePermission("users:manage");
@@ -19,8 +19,8 @@ export default async function EditUserPage({ params }: PageProps<"/admin/users/[
   const self = user.id === me.id;
 
   return (
-    <div className="max-w-md space-y-6">
-      <PageHeader title={user.name} actions={<LinkButton href="/admin/users">← {td("back")}</LinkButton>} />
+    <Page width="narrow">
+      <PageHeader title={user.name} back={{ href: "/admin/users", label: td("back") }} />
       <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <span className="font-mono">{user.email}</span>
         <Badge tone={user.active ? "success" : "danger"}>{user.active ? t("active") : t("locked")}</Badge>
@@ -91,6 +91,6 @@ export default async function EditUserPage({ params }: PageProps<"/admin/users/[
           </section>
         </>
       )}
-    </div>
+    </Page>
   );
 }

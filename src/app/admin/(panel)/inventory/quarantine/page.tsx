@@ -6,7 +6,7 @@ import { discardAction, restockAction } from "@/server/inventory/actions";
 import { listQuarantine } from "@/server/inventory/quarantine";
 import { sellableLocations } from "@/server/orders/admin-queries";
 import { ActionForm } from "@/components/admin/action-form";
-import { DataTable, fieldClass, LinkButton, PageHeader, Td } from "@/components/admin/ui";
+import { DataTable, fieldClass, Page, PageHeader, Td } from "@/components/admin/ui";
 import { fmtDay, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -22,10 +22,10 @@ export default async function QuarantinePage() {
   const canDiscard = can(user.role, "stock:issue");
 
   return (
-    <div className="max-w-6xl space-y-4">
-      <PageHeader title={t("title")} actions={<LinkButton href="/admin/inventory">← {ti("title")}</LinkButton>} />
+    <Page>
+      <PageHeader title={t("title")} back={{ href: "/admin/inventory", label: ti("title") }} />
       <p className="text-sm text-muted-foreground">{t("hint")}</p>
-      <DataTable empty={t("empty")} head={[t("product"), t("lot"), t("qty"), t("orders"), ""]}>
+      <DataTable stack empty={t("empty")} head={[t("product"), t("lot"), t("qty"), t("orders"), ""]}>
         {rows.map((r) => {
           const hidden = (
             <>
@@ -42,11 +42,11 @@ export default async function QuarantinePage() {
                   {r.location} · {ti(r.stockType)}
                 </div>
               </Td>
-              <Td className="font-mono text-xs whitespace-nowrap">
+              <Td label={t("lot")} className="font-mono text-xs whitespace-nowrap">
                 {r.lotNo} · {fmtDay(r.expiryDate)}
               </Td>
-              <Td className="text-right tabular-nums">{fmtInt(r.qty)}</Td>
-              <Td className="text-xs">
+              <Td label={t("qty")} className="text-right tabular-nums">{fmtInt(r.qty)}</Td>
+              <Td label={t("orders")} className="text-xs">
                 {r.orders.map((o) => (
                   <Link key={o.id} href={`/admin/orders/${o.id}`} className="block font-mono text-primary underline">
                     {o.code}
@@ -104,6 +104,6 @@ export default async function QuarantinePage() {
           );
         })}
       </DataTable>
-    </div>
+    </Page>
   );
 }

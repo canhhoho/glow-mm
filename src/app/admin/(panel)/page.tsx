@@ -3,7 +3,7 @@ import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { computeAlerts } from "@/server/alerts/queries";
 import { defaultRange, salesReport, workQueue } from "@/server/reports/queries";
-import { LinkButton, Stat } from "@/components/admin/ui";
+import { LinkButton, Notice, Page, PageHeader, Stat } from "@/components/admin/ui";
 import { fmtInt } from "@/lib/format";
 import { yangonDayKey } from "@/lib/time";
 
@@ -26,18 +26,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
   const tone = (n: number, level: "warning" | "danger" = "warning") => (n > 0 ? level : "neutral");
 
   return (
-    <div className="max-w-5xl space-y-6">
-      {denied && (
-        <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {t("denied")}
-        </p>
-      )}
-      <div>
-        <h1 className="text-xl font-medium">{t("welcome", { name: user.name })}</h1>
-        <p className="text-sm text-muted-foreground" data-testid="role">
-          {t("role", { role: tr(user.role) })}
-        </p>
-      </div>
+    <Page>
+      {denied && <Notice tone="danger">{t("denied")}</Notice>}
+      <PageHeader title={t("welcome", { name: user.name })} description={<span data-testid="role">{t("role", { role: tr(user.role) })}</span>} />
 
       {queue && (
         <section className="space-y-2">
@@ -83,6 +74,6 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
           </div>
         </section>
       )}
-    </div>
+    </Page>
   );
 }

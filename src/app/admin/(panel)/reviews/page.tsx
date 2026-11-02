@@ -5,8 +5,7 @@ import { productName } from "@/server/inventory/queries";
 import { moderateReviewAction } from "@/server/reviews/actions";
 import { listReviewsAdmin } from "@/server/reviews/reviews";
 import { ActionButton } from "@/components/admin/action-button";
-import { DataTable, PageHeader, Td } from "@/components/admin/ui";
-import { cn } from "@/lib/utils";
+import { DataTable, Page, PageHeader, TabNav, Td } from "@/components/admin/ui";
 import { fmtDateTime } from "@/lib/format";
 
 const STATUSES = ["PENDING", "APPROVED", "REJECTED"] as const;
@@ -19,31 +18,26 @@ export default async function ReviewsPage({ searchParams }: PageProps<"/admin/re
   const [t, rows] = await Promise.all([getTranslations("Reviews"), listReviewsAdmin(status)]);
 
   return (
-    <div className="max-w-5xl space-y-4">
+    <Page>
       <PageHeader title={t("title")} />
-      <nav className="flex flex-wrap gap-2">
-        {STATUSES.map((s) => (
-          <Link
-            key={s}
-            href={`/admin/reviews?status=${s}`}
-            aria-current={s === status ? "page" : undefined}
-            className={cn(
-              "inline-flex h-8 items-center rounded-lg border px-3 text-sm",
-              s === status ? "border-primary bg-primary/10 text-primary" : "hover:bg-muted",
-            )}
-          >
-            {t(`st.${s}`)}
-          </Link>
-        ))}
-      </nav>
-      <DataTable empty={t("empty")} head={[t("created"), t("product"), t("rating"), t("body"), t("order"), ""]}>
+      <TabNav
+        label={t("title")}
+        tabs={STATUSES.map((s) => ({ href: `/admin/reviews?status=${s}`, active: s === status, label: t(`st.${s}`) }))}
+      />
+      <DataTable stack empty={t("empty")} head={[t("created"), t("product"), t("rating"), t("body"), t("order"), ""]}>
         {rows.map((r) => (
           <tr key={r.id} data-testid="review-row">
-            <Td className="whitespace-nowrap">{fmtDateTime(r.createdAt)}</Td>
-            <Td>{productName(r.product.translations, r.product.slug)}</Td>
-            <Td className="whitespace-nowrap text-primary">{"★".repeat(r.rating)}</Td>
-            <Td className="max-w-sm whitespace-pre-line">{r.body ?? "—"}</Td>
-            <Td>
+            <Td label={t("created")} className="whitespace-nowrap">
+              {fmtDateTime(r.createdAt)}
+            </Td>
+            <Td label={t("product")}>{productName(r.product.translations, r.product.slug)}</Td>
+            <Td label={t("rating")} className="whitespace-nowrap text-primary">
+              {"★".repeat(r.rating)}
+            </Td>
+            <Td label={t("body")} className="max-w-sm whitespace-pre-line">
+              {r.body ?? "—"}
+            </Td>
+            <Td label={t("order")}>
               <Link href={`/admin/orders/${r.order.id}`} className="font-mono text-xs text-primary underline">
                 {r.order.code}
               </Link>
@@ -67,6 +61,6 @@ export default async function ReviewsPage({ searchParams }: PageProps<"/admin/re
           </tr>
         ))}
       </DataTable>
-    </div>
+    </Page>
   );
 }

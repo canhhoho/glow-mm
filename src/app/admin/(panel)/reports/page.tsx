@@ -8,8 +8,7 @@ import {
   stockByLocationType,
   type Range,
 } from "@/server/reports/queries";
-import { Button } from "@/components/ui/button";
-import { DataTable, fieldClass, PageHeader, Stat, Td } from "@/components/admin/ui";
+import { DataTable, fieldClass, FilterButton, Page, PageHeader, Stat, Td } from "@/components/admin/ui";
 import { fmtDay, fmtInt } from "@/lib/format";
 import { addDays } from "@/lib/time";
 import { cn } from "@/lib/utils";
@@ -40,8 +39,8 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
   const maxRevenue = Math.max(1, ...report.daily.map((d) => d.revenue));
 
   return (
-    <div className="max-w-6xl space-y-8">
-      <PageHeader title={t("title")} />
+    <Page>
+      <PageHeader title={t("title")} description={t("basis")} />
       <form className="flex flex-wrap items-end gap-2">
         <label className="space-y-1 text-sm">
           <span className="text-muted-foreground">{t("from")}</span>
@@ -51,11 +50,8 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
           <span className="text-muted-foreground">{t("to")}</span>
           <input type="date" name="to" defaultValue={range.to} className={cn(fieldClass, "w-40")} />
         </label>
-        <Button type="submit" variant="outline">
-          {t("apply")}
-        </Button>
+        <FilterButton>{t("apply")}</FilterButton>
       </form>
-      <p className="text-xs text-muted-foreground">{t("basis")}</p>
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label={`${t("revenue")} (MMK)`} value={fmtInt(totals.revenue)} testId="r-revenue" />
@@ -97,7 +93,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
         </DataTable>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
+      <section className="grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
         <div className="space-y-2">
           <h2 className="font-medium">{t("top")}</h2>
           <DataTable empty={t("empty")} head={["SKU", t("units"), t("revenue"), t("profit")]}>
@@ -130,7 +126,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
+      <section className="grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
         <div className="space-y-2">
           <h2 className="font-medium">{t("stock")}</h2>
           <DataTable head={[t("locType"), t("qty"), t("tester"), t("value"), t("noCost")]}>
@@ -159,6 +155,6 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
           </DataTable>
         </div>
       </section>
-    </div>
+    </Page>
   );
 }

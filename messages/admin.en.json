@@ -80,7 +80,8 @@
     "backToDashboard": "Back to dashboard",
     "chooseFile": "Choose file",
     "noFile": "No file chosen",
-    "filesChosen": "{n} files chosen"
+    "filesChosen": "{n} files chosen",
+    "filter": "Filter"
   },
   "Inventory": {
     "title": "Stock",

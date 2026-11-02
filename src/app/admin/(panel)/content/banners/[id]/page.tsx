@@ -4,7 +4,7 @@ import { utcToYangonLocal } from "@/lib/time";
 import { requirePagePermission } from "@/server/auth/session";
 import { getBannerAdmin } from "@/server/content/banners";
 import { BannerForm } from "@/components/admin/banner-form";
-import { LinkButton, PageHeader } from "@/components/admin/ui";
+import { Page, PageHeader } from "@/components/admin/ui";
 
 export default async function EditBannerPage({ params }: PageProps<"/admin/content/banners/[id]">) {
   await requirePagePermission("content:manage");
@@ -12,8 +12,8 @@ export default async function EditBannerPage({ params }: PageProps<"/admin/conte
   const [t, td, banner] = await Promise.all([getTranslations("Content"), getTranslations("Docs"), getBannerAdmin(id)]);
   if (!banner) notFound();
   return (
-    <div>
-      <PageHeader title={t("bannerEdit")} actions={<LinkButton href="/admin/content/banners">← {td("back")}</LinkButton>} />
+    <Page>
+      <PageHeader title={t("bannerEdit")} back={{ href: "/admin/content/banners", label: td("back") }} />
       <BannerForm
         key={banner.updatedAt.toISOString()}
         banner={{
@@ -28,6 +28,6 @@ export default async function EditBannerPage({ params }: PageProps<"/admin/conte
           mobileUrl: banner.mobileFile?.url ?? null,
         }}
       />
-    </div>
+    </Page>
   );
 }

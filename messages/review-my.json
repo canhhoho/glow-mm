@@ -359,6 +359,7 @@
     "Common.backToDashboard",
     "Common.chooseFile",
     "Common.filesChosen",
+    "Common.filter",
     "Common.noFile",
     "Common.notFoundHint",
     "Common.notFoundTitle",

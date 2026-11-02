@@ -4,14 +4,14 @@ import { MIN_STAFF_PASSWORD } from "@/server/auth/roles";
 import { createStaffAction } from "@/server/users/actions";
 import { ActionForm } from "@/components/admin/action-form";
 import { RoleSelect } from "@/components/admin/role-select";
-import { fieldClass, LinkButton, PageHeader } from "@/components/admin/ui";
+import { fieldClass, Page, PageHeader } from "@/components/admin/ui";
 
 export default async function NewUserPage() {
   await requirePagePermission("users:manage");
   const [t, td] = await Promise.all([getTranslations("Users"), getTranslations("Docs")]);
   return (
-    <div className="max-w-md">
-      <PageHeader title={t("new")} actions={<LinkButton href="/admin/users">← {td("back")}</LinkButton>} />
+    <Page width="narrow">
+      <PageHeader title={t("new")} back={{ href: "/admin/users", label: td("back") }} />
       <ActionForm action={createStaffAction} submitLabel={t("create")} className="space-y-3">
         <label className="block space-y-1 text-sm">
           <span>{t("name")}</span>
@@ -36,6 +36,6 @@ export default async function NewUserPage() {
         </label>
         <p className="text-xs text-muted-foreground">{t("tempPasswordHint", { min: MIN_STAFF_PASSWORD })}</p>
       </ActionForm>
-    </div>
+    </Page>
   );
 }
