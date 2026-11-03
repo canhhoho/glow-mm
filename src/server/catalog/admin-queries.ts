@@ -29,6 +29,14 @@ export async function listProductsAdmin(q?: string) {
   }));
 }
 
+export async function productCopyOptions() {
+  const products = await prisma.product.findMany({
+    orderBy: { slug: "asc" },
+    select: { id: true, slug: true, translations: { select: { locale: true, name: true } } },
+  });
+  return products.map((p) => ({ id: p.id, label: `${productName(p.translations, p.slug)} (${p.slug})` }));
+}
+
 export async function productFormOptions() {
   const [brands, categories, tags, variants] = await Promise.all([
     prisma.brand.findMany({ orderBy: { name: "asc" } }),

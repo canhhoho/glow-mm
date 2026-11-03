@@ -244,6 +244,11 @@
   "Products": {
     "title": "Sản phẩm",
     "new": "Thêm sản phẩm",
+    "copyFrom": "Sao chép từ sản phẩm cũ",
+    "copySource": "Sản phẩm nguồn",
+    "copyLoad": "Nạp thông tin",
+    "copyHelp": "Chọn sản phẩm và nạp trước khi nhập liệu. Nội dung, giá, biến thể và ảnh được sao chép; tồn kho và giao dịch không được sao chép. Nhập slug và SKU mới. Bản sao mặc định ẩn, chỉ được tạo khi bấm Lưu.",
+    "copyLoaded": "Đã nạp từ: {name}. Bạn có thể sửa thông tin bên dưới; ảnh được sao chép khi lưu.",
     "import": "Import CSV",
     "search": "Tìm tên, slug, SKU",
     "empty": "Chưa có sản phẩm.",

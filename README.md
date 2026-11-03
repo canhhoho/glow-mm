@@ -15,7 +15,14 @@ npm run dev
 Storefront: http://localhost:3000 (tiếng Myanmar) · http://localhost:3000/en · Admin: http://localhost:3000/admin
 Tài khoản mẫu: `admin@glow.local`, `kho@glow.local`, `donhang@glow.local` — mật khẩu = `SEED_STAFF_PASSWORD` trong `.env`.
 
-## Test
+## Quản lý sản phẩm
+
+Trong Admin → Sản phẩm, bấm **Sửa** trên từng dòng để chỉnh sản phẩm.
+Để dùng sản phẩm cũ làm mẫu, vào **Thêm sản phẩm** → chọn **Sản phẩm nguồn** → **Nạp thông tin**,
+chỉnh nội dung và nhập slug/SKU mới rồi bấm **Lưu**. Bản sao giữ nội dung, giá, biến thể và ảnh;
+không sao chép tồn kho, lô hàng hoặc giao dịch. Sản phẩm mới mặc định ẩn trên cửa hàng.
+
+## Kiểm thử
 
 ```bash
 npm test

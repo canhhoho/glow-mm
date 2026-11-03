@@ -56,7 +56,7 @@ function Field({ label, children, className }: { label: string; children: React.
   );
 }
 
-export function ProductForm({ initial, options }: { initial: ProductEditData | null; options: Options }) {
+export function ProductForm({ initial, options, copySourceId }: { initial: ProductEditData | null; options: Options; copySourceId?: string }) {
   const t = useTranslations("Products");
   const td = useTranslations("Docs");
   const [state, action, pending] = useActionState(saveProductAction, undefined);
@@ -74,10 +74,11 @@ export function ProductForm({ initial, options }: { initial: ProductEditData | n
       JSON.stringify({
         ...p,
         id: p.id || undefined,
+        copyFromId: copySourceId,
         // key chỉ dùng cho React; undefined bị JSON.stringify bỏ qua.
         variants: variants.map((v) => ({ ...v, key: undefined, id: v.id || undefined })),
       }),
-    [p, variants],
+    [p, variants, copySourceId],
   );
 
   const textarea = (value: string, onChange: (v: string) => void, rows = 3) => (

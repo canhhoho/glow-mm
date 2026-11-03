@@ -724,6 +724,11 @@
     "Pricing.tabRates",
     "Pricing.tabRuns",
     "Pricing.tabHistory",
-    "Pricing.current"
+    "Pricing.current",
+    "Products.copyFrom",
+    "Products.copySource",
+    "Products.copyLoad",
+    "Products.copyHelp",
+    "Products.copyLoaded"
   ]
 }

@@ -242,6 +242,11 @@
     "markArrived": "Mark as arrived"
   },
   "Products": {
+    "copyFrom": "Copy from an existing product",
+    "copySource": "Source product",
+    "copyLoad": "Load details",
+    "copyHelp": "Choose and load a product before entering details. Content, prices, variants and images are copied; stock and transactions are excluded. Enter a new slug and SKUs. The copy is hidden by default and created only when you save.",
+    "copyLoaded": "Loaded from: {name}. Edit the details below; images are copied when you save.",
     "title": "Products",
     "new": "New product",
     "import": "Import CSV",

@@ -34,6 +34,7 @@ const variantSchema = z.object({
 
 export const productSchema = z.object({
   id: z.string().optional(),
+  copyFromId: rawId.optional(),
   slug: slugSchema(80, "Slug chỉ gồm a-z, 0-9 và -"),
   brandId: rawId,
   categoryId: rawId,
@@ -55,6 +56,7 @@ export class CatalogError extends Error {
 
 export async function saveProduct(raw: unknown, userId: string) {
   const input = productSchema.parse(raw);
+  if (input.copyFromId && input.id) throw new CatalogError("Chỉ sao chép khi tạo sản phẩm mới");
   const my = {
     name: toUnicode(input.my.name),
     description: toUnicode(input.my.description),
@@ -64,6 +66,12 @@ export async function saveProduct(raw: unknown, userId: string) {
   const brandName = brand?.name ?? "";
 
   return prisma.$transaction(async (tx) => {
+    // Coordinate with image deletion/reordering so shared image files remain referenced.
+    if (input.copyFromId) await tx.$queryRaw`SELECT "id" FROM "Product" WHERE "id" = ${input.copyFromId} FOR UPDATE`;
+    const source = input.copyFromId
+      ? await tx.product.findUnique({ where: { id: input.copyFromId }, select: { images: { select: { fileId: true, alt: true, sortOrder: true } } } })
+      : null;
+    if (input.copyFromId && !source) throw new CatalogError("Sản phẩm nguồn không còn tồn tại");
     const data = {
       slug: input.slug,
       brandId: input.brandId,
@@ -144,8 +152,15 @@ export async function saveProduct(raw: unknown, userId: string) {
       await tx.bundleItem.createMany({ data: v.components.map((c) => ({ bundleId, componentId: c.componentId, qty: c.qty })) });
     }
 
+    if (source?.images.length) {
+      await tx.productImage.createMany({ data: source.images.map((image) => ({ ...image, productId: product.id })) });
+    }
+
     await tx.auditLog.create({
-      data: { userId, action: input.id ? "product.update" : "product.create", entity: "Product", entityId: product.id },
+      data: {
+        userId, action: input.id ? "product.update" : "product.create", entity: "Product", entityId: product.id,
+        ...(input.copyFromId && { data: { copyFromId: input.copyFromId } }),
+      },
     });
     return product;
   });
