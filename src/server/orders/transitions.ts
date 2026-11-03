@@ -84,11 +84,10 @@ export async function transitionInTx(
       await holdIndefinitely(tx, order.id, opts);
       data.paymentStatus = "PAID";
       break;
-    case "pack":
-      if (!userId) throw new OrderError("forbidden", "Thiếu người đóng gói");
-      await packOrder(tx, order, userId, extra.fromLocationId, opts);
-      break;
     case "ship":
+      if (!userId) throw new OrderError("forbidden", "Thiếu người bàn giao vận chuyển");
+      // Đơn PACKING cũ đã xuất kho: không xuất thêm lần nữa.
+      if (order.status !== "PACKING") await issueOrderStock(tx, order, userId, extra.fromLocationId, opts);
       await tx.delivery.create({
         data: { orderId: order.id, carrier: extra.carrier ?? "manual", trackingNo: extra.trackingNo || null, shippedAt: opts.now },
       });
@@ -121,10 +120,10 @@ export async function transitionInTx(
 }
 
 /**
- * Đóng gói: phân lô FEFO (bỏ lô dưới ngưỡng hạn dùng) cho từng dòng đơn, combo trừ từng thành phần,
+ * Xuất kho khi bàn giao: phân lô FEFO (bỏ lô dưới ngưỡng hạn dùng), combo trừ từng thành phần,
  * ghi phiếu xuất (ledger) + OrderAllocation (giá vốn) và chuyển giữ hàng sang CONSUMED.
  */
-async function packOrder(
+async function issueOrderStock(
   tx: Tx,
   order: { id: string; code: string },
   userId: string,
@@ -158,7 +157,7 @@ async function packOrder(
       alloc = pickFefo(pool, n.qty, { today: opts.now, blockDays: opts.blockDays });
     } catch (e) {
       if (e instanceof InsufficientStockError) {
-        throw new OrderError("out_of_stock", `Không đủ hàng còn hạn để đóng gói: ${e.message}`, { variantId: n.variantId });
+        throw new OrderError("out_of_stock", `Không đủ hàng còn hạn để xuất kho: ${e.message}`, { variantId: n.variantId });
       }
       throw e;
     }

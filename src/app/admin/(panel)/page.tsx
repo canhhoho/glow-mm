@@ -34,10 +34,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
         <section className="space-y-2">
           <h2 className="font-medium">{t("todo")}</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <Stat label={t("codToConfirm")} value={queue.codToConfirm} href="/admin/orders?status=PENDING" tone={tone(queue.codToConfirm)} testId="todo-cod" />
-            <Stat label={t("proofsToReview")} value={queue.proofsToReview} href="/admin/orders?status=PENDING" tone={tone(queue.proofsToReview)} />
-            <Stat label={t("toPack")} value={queue.toPack} href="/admin/orders" tone={tone(queue.toPack)} />
-            <Stat label={t("packing")} value={queue.packing} href="/admin/orders?status=PACKING" />
+            <Stat label={t("codToConfirm")} value={queue.codToConfirm} href="/admin/orders?status=PENDING&paymentMethod=COD" tone={tone(queue.codToConfirm)} testId="todo-cod" />
+            <Stat label={t("bankToConfirm")} value={queue.bankToConfirm} href="/admin/orders?status=PENDING&paymentMethod=BANK_TRANSFER" tone={tone(queue.bankToConfirm)} testId="todo-bank" />
+            <Stat label={t("preparing")} value={queue.preparing} href="/admin/orders?status=PREPARING" tone={tone(queue.preparing)} testId="todo-preparing" />
             <Stat label={t("shipping")} value={queue.shipping} href="/admin/orders?status=SHIPPING" />
             <Stat label={t("overdue")} value={queue.overdue} href="/admin/orders?overdue=1" tone={tone(queue.overdue, "danger")} />
           </div>

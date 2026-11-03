@@ -373,8 +373,8 @@ async function seedLandedCost() {
 }
 
 /**
- * Đơn mẫu cho dashboard/báo cáo — đi qua ĐÚNG luồng nghiệp vụ (tạo đơn → xác nhận → đóng gói FEFO
- * → giao → hoàn tất, trả hàng, huỷ), không ghi DB trực tiếp. Ngày trạng thái lùi vài ngày để biểu đồ có dữ liệu.
+ * Đơn mẫu cho dashboard/báo cáo — đi qua ĐÚNG luồng nghiệp vụ (tạo đơn → xác nhận → bàn giao vận chuyển (xuất kho FEFO)
+ * → hoàn tất, trả hàng, huỷ), không ghi DB trực tiếp. Ngày trạng thái lùi vài ngày để biểu đồ có dữ liệu.
  * Không dùng ML-LIP-02 (E2E cần tồn thấp cố định của mã này).
  */
 async function seedDemoOrders() {
@@ -410,7 +410,7 @@ async function seedDemoOrders() {
       { userId: STAFF[2].id, now: ago(o.createdDaysAgo) },
     );
     for (const [step, days] of steps) {
-      const extra = step === "pack" ? { fromLocationId: mm.id } : step === "ship" ? { carrier: "Royal Express" } : {};
+      const extra = step === "ship" ? { fromLocationId: mm.id, carrier: "Royal Express" } : {};
       await transitionOrder(order.id, step, admin, extra, ago(days));
     }
     return order;
@@ -418,13 +418,11 @@ async function seedDemoOrders() {
 
   await demo("seed-demo-1", { method: "COD", name: "Ma Hla", phone: "09 7812 0001", items: [["SV-SUN-50", 2], ["ML-TON-150", 1]], createdDaysAgo: 6 }, [
     ["confirmCod", 6],
-    ["pack", 5],
     ["ship", 5],
     ["complete", 4],
   ]);
   await demo("seed-demo-2", { method: "BANK_TRANSFER", name: "Ko Zaw", phone: "09 7812 0002", items: [["SV-VC-30", 1]], createdDaysAgo: 4 }, [
     ["confirmPayment", 4],
-    ["pack", 3],
     ["ship", 3],
     ["complete", 2],
   ]);
@@ -433,7 +431,6 @@ async function seedDemoOrders() {
     { method: "COD", name: "Daw Mya", phone: "09 7812 0003", items: [["SV-SUN-100", 1], ["COMBO-SUN-TON", 1]], createdDaysAgo: 3 },
     [
       ["confirmCod", 3],
-      ["pack", 2],
       ["ship", 2],
       ["complete", 1],
     ],
@@ -492,13 +489,13 @@ async function seedSubAffiliate() {
 /** Đơn mẫu của CTV: 1 đơn khách đặt qua link đã hoàn tất 10 ngày trước (đến hạn trả), 1 đơn CTV tự lên đang chờ. */
 const ago = (days: number) => new Date(Date.now() - days * 86_400_000);
 
-/** Đi hết luồng đơn (xác nhận COD → đóng gói → giao → hoàn tất) bằng hàm nghiệp vụ, hoàn tất `days` ngày trước. */
+/** Đi hết luồng đơn (xác nhận COD → chuẩn bị giao → bàn giao vận chuyển → hoàn tất) bằng hàm nghiệp vụ, hoàn tất `days` ngày trước. */
 async function completeDemo(orderId: string, days: number) {
   const { transitionOrder } = await import("../src/server/orders/transitions");
   const admin = { userId: STAFF[0].id, role: "ADMIN" as const };
   const mm = await prisma.location.findUniqueOrThrow({ where: { code: "MM-STOCK" } });
-  for (const [step, back] of [["confirmCod", 2], ["pack", 1], ["ship", 1], ["complete", 0]] as const) {
-    const extra = step === "pack" ? { fromLocationId: mm.id } : step === "ship" ? { carrier: "Royal Express" } : {};
+  for (const [step, back] of [["confirmCod", 2], ["ship", 1], ["complete", 0]] as const) {
+    const extra = step === "ship" ? { fromLocationId: mm.id, carrier: "Royal Express" } : {};
     await transitionOrder(orderId, step, admin, extra, ago(days + back));
   }
 }

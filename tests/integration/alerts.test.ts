@@ -36,8 +36,7 @@ describe("Cảnh báo kho + gợi ý đặt hàng", () => {
     // Bán 6 (FEFO bỏ lô NEAR bị khoá: WARN 3 + FAR 3), khách trả lại 1 → đã bán 5.
     const order = await createOrder(orderInput(f, 6), { userId: null });
     await transitionOrder(order.id, "confirmCod", admin(f));
-    await transitionOrder(order.id, "pack", admin(f), { fromLocationId: f.mm.id });
-    await transitionOrder(order.id, "ship", admin(f), { carrier: "Test" });
+    await transitionOrder(order.id, "ship", admin(f), { fromLocationId: f.mm.id, carrier: "Test" });
     await transitionOrder(order.id, "complete", admin(f));
     const [item] = await prisma.orderItem.findMany({ where: { orderId: order.id } });
     await returnItems(order.id, { toLocationId: f.qc.id, lines: [{ orderItemId: item.id, qty: 1 }], reason: "x" }, admin(f));

@@ -17,8 +17,8 @@ describe("Đánh giá sản phẩm", () => {
     await expect(submitReview({ productId: f.productId, rating: 5 }, access)).rejects.toMatchObject({
       code: "invalid_transition",
     });
-    for (const step of ["confirmCod", "pack", "ship", "complete"] as const) {
-      await transitionOrder(order.id, step, admin(f), step === "pack" ? { fromLocationId: f.mm.id } : { carrier: "T" });
+    for (const step of ["confirmCod", "ship", "complete"] as const) {
+      await transitionOrder(order.id, step, admin(f), { fromLocationId: f.mm.id, carrier: "T" });
     }
 
     await expect(submitReview({ productId: f.productId, rating: 5 }, { ...access, phone: "0999999999" })).rejects.toMatchObject({

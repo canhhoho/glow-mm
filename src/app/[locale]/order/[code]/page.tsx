@@ -9,7 +9,6 @@ import { customerOrder } from "@/server/accounts/order-access";
 import { reviewablesForOrder } from "@/server/reviews/reviews";
 import { getStringSetting } from "@/server/settings";
 import { ContactLinks } from "@/components/store/contact-links";
-import { ProofForm } from "@/components/store/proof-form";
 import { ReviewForm } from "@/components/store/review-form";
 import { BlockSkeleton, Notice } from "@/components/store/ui";
 
@@ -40,10 +39,9 @@ async function OrderContent({ params, searchParams }: PageProps<"/[locale]/order
     order.status === "COMPLETED" ? reviewablesForOrder(order.id) : [],
   ]);
   const total = formatMmk(order.totalMmk, locale);
-  const awaitingProof =
+  const awaitingPayment =
     order.paymentMethod === "BANK_TRANSFER" &&
-    order.status === "PENDING" &&
-    (order.paymentStatus === "UNPAID" || order.paymentStatus === "REJECTED");
+    order.status === "PENDING";
   const holdUntil = order.reservations[0]?.expiresAt;
   const delivery = order.deliveries[0];
 
@@ -86,19 +84,17 @@ async function OrderContent({ params, searchParams }: PageProps<"/[locale]/order
 
       {order.status === "PENDING" && order.paymentMethod === "COD" && <Notice>{t("codInfo", { total })}</Notice>}
 
-      {awaitingProof && (
+      {awaitingPayment && (
         <section className="space-y-3 rounded-lg border border-border bg-card p-3">
-          {order.paymentStatus === "REJECTED" && <Notice tone="error">{t("rejected")}</Notice>}
           <p className="text-sm">{t("bankInfo", { total })}</p>
           <p className="rounded-md bg-muted p-2 text-sm whitespace-pre-line" data-testid="bank-instructions">
             {bankInstructions}
           </p>
           <p className="text-sm">{t("bankRef", { code: order.code })}</p>
           {holdUntil && <p className="text-xs text-muted-foreground">{t("holdUntil", { time: fmtDateTime(holdUntil) })}</p>}
-          <ProofForm locale={locale} code={order.code} />
+          <p className="text-sm text-muted-foreground">{t("bankConfirmation")}</p>
         </section>
       )}
-      {order.paymentStatus === "PROOF_SUBMITTED" && <Notice tone="success">{t("uploaded")}</Notice>}
 
       <section aria-labelledby="items-h">
         <h2 id="items-h" className="mb-2 font-medium">

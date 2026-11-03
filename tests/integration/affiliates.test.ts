@@ -100,8 +100,7 @@ describe("Gắn CTV khi tạo đơn (P10)", () => {
     const order = await createOrder(orderInput(f, 1), { userId: null, affiliate: { source: "LINK", code: a.code } });
     const at = new Date("2026-10-01T03:00:00Z");
     await transitionOrder(order.id, "confirmCod", admin(f));
-    await transitionOrder(order.id, "pack", admin(f), { fromLocationId: f.mm.id });
-    await transitionOrder(order.id, "ship", admin(f));
+    await transitionOrder(order.id, "ship", admin(f), { fromLocationId: f.mm.id, carrier: "Test" });
     const done = await transitionOrder(order.id, "complete", admin(f), {}, at);
     expect(done).toMatchObject({ status: "COMPLETED", completedAt: at });
   });
@@ -113,8 +112,7 @@ const DAY = 24 * 60 * 60 * 1000;
 async function completedOrder(f: SaleFixture, affiliateCode: string, qty: number, daysAgo: number) {
   const order = await createOrder(orderInput(f, qty), { userId: null, affiliate: { source: "LINK", code: affiliateCode } });
   await transitionOrder(order.id, "confirmCod", admin(f));
-  await transitionOrder(order.id, "pack", admin(f), { fromLocationId: f.mm.id });
-  await transitionOrder(order.id, "ship", admin(f));
+  await transitionOrder(order.id, "ship", admin(f), { fromLocationId: f.mm.id, carrier: "Test" });
   await transitionOrder(order.id, "complete", admin(f), {}, new Date(Date.now() - daysAgo * DAY));
   return order;
 }

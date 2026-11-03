@@ -48,8 +48,8 @@ describe("Báo cáo khớp sổ kho", () => {
     await prisma.batch.updateMany({ where: { variantId: f.variantId, lotNo: "B" }, data: { landedCostMmk: 6_000 } });
 
     const order = await createOrder(orderInput(f, 5), { userId: null });
-    for (const step of ["confirmCod", "pack", "ship", "complete"] as const) {
-      await transitionOrder(order.id, step, admin(f), step === "pack" ? { fromLocationId: f.mm.id } : { carrier: "T" });
+    for (const step of ["confirmCod", "ship", "complete"] as const) {
+      await transitionOrder(order.id, step, admin(f), { fromLocationId: f.mm.id, carrier: "T" });
     }
     const [item] = await prisma.orderItem.findMany({ where: { orderId: order.id } });
     await returnItems(order.id, { toLocationId: f.qc.id, lines: [{ orderItemId: item.id, qty: 1 }], reason: "x" }, admin(f));

@@ -6,7 +6,7 @@ import { transitionInTx } from "./transitions";
 
 /**
  * Tác vụ định kỳ: huỷ đơn PENDING có giữ hàng đã quá hạn (nhả hàng qua máy trạng thái).
- *  - BANK_TRANSFER: quá `reservation.transferHours` mà chưa gửi biên lai.
+ *  - BANK_TRANSFER: quá `reservation.transferHours` mà chưa xác nhận nhận tiền.
  *  - COD: quá `cod.confirmHours` mà chưa gọi xác nhận.
  * Tồn khả dụng đã bỏ qua giữ hàng quá hạn ngay lúc đọc; job này chỉ dọn trạng thái cho khớp.
  */

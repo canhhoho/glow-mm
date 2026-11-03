@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { login, signInAtPrompt } from "./helpers";
 
 test("admin: lưu cài đặt; tính giá mới (xem trước) rồi huỷ", async ({ page }) => {
+  test.setTimeout(90_000); // DB test tích luỹ nhiều biến thể: bản xem trước cần thời gian tạo và render.
   await login(page, "admin@glow.local");
 
   // Lưu cài đặt giữ nguyên giá trị (không làm đổi hành vi các test khác).
@@ -36,7 +37,7 @@ test("admin: lưu cài đặt; tính giá mới (xem trước) rồi huỷ", asy
   await expect(page).toHaveURL(/tab=runs/);
   await page.getByLabel("% lãi").fill("40");
   await page.getByRole("button", { name: "Xem trước" }).click();
-  await expect(page).toHaveURL(/\/admin\/pricing\/runs\//);
+  await expect(page).toHaveURL(/\/admin\/pricing\/runs\//, { timeout: 20_000 });
   await expect(page.getByRole("row", { name: /SV-SUN-50/ })).toBeVisible();
   await expect(page.getByRole("checkbox", { name: "SV-SUN-50" })).toBeChecked();
   await page.screenshot({ path: "test-results/screens/pricing-run.png", fullPage: true });

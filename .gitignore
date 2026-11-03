@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+**/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -54,3 +55,7 @@ next-env.d.ts
 
 # File CSV bản dịch xuất ra để gửi người duyệt (npm run i18n:export)
 /i18n-export*.csv
+
+# Previews and downloadable copies from the Excel template builder.
+/outputs/catalog-import/
+/outputs/vtp-export/

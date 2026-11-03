@@ -1,4 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
+import { readFile } from "node:fs/promises";
+import { readSheet } from "read-excel-file/node";
 import { login, pickAddressAdmin } from "./helpers";
 
 const VARIANT = "SV-SUN-50 — Sunscreen SPF50 PA++++ (50ml)";
@@ -7,8 +9,8 @@ async function expectStatus(page: Page, text: string) {
   await expect(page.getByTestId("order-status")).toContainText(text);
 }
 
-test("đơn thủ công (Facebook, COD): tạo → xác nhận → đóng gói FEFO → giao → hoàn tất", async ({ page }) => {
-  test.setTimeout(90_000); // luồng dài: 3 vai trò, nhiều trang admin
+test("đơn thủ công (Facebook, COD): tạo → xác nhận → bàn giao (FEFO) → hoàn tất", async ({ page }) => {
+  test.setTimeout(120_000); // gồm xuất VTP, bàn giao, trả hàng và nhập lại kho
   // Nhân viên đơn hàng tạo đơn từ tin nhắn Facebook.
   await login(page, "donhang@glow.local");
   await page.goto("/admin/orders/new?phone=09%207812%203456");
@@ -28,29 +30,52 @@ test("đơn thủ công (Facebook, COD): tạo → xác nhận → đóng gói F
   const code = (await page.getByRole("heading", { level: 1 }).textContent())!.split(" ").pop()!;
   await expect(page.getByRole("button", { name: "Đóng gói (trừ kho FEFO)" })).toHaveCount(0); // không có quyền
 
-  await page.getByRole("button", { name: "Đã gọi xác nhận COD" }).click();
-  await expectStatus(page, "Đã xác nhận COD");
+  await page.getByRole("button", { name: "Xác nhận đơn" }).click();
+  await expectStatus(page, "Chuẩn bị giao");
+
+  // Thông tin đơn lẻ và file VTP lấy từ đúng đơn; xuất file không bàn giao hay thu COD.
+  const expectedCod = Number((await page.getByTestId("order-total").textContent())!.replace(/[^0-9]/g, ""));
+  const singleInfo = page.getByTestId("vtp-single-info");
+  await singleInfo.locator("summary").click();
+  await expect(singleInfo.getByLabel("Số điện thoại", { exact: true })).toHaveValue("0978123456");
+  await expect(singleInfo.getByLabel("Họ tên người nhận", { exact: true })).toHaveValue("Ma Hla Hla");
+  await expect(singleInfo.getByLabel("Thu hộ COD (MMK)", { exact: true })).toHaveValue(String(expectedCod));
+  await page.getByRole("link", { name: "Xuất Excel VTP", exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/orders\/export\?id=/);
+  await page.getByRole("combobox", { name: "Dịch vụ VTP", exact: true }).selectOption("VNM - Normal Intra City");
+  await page.getByLabel(`Khối lượng (g) ${code}`, { exact: true }).fill("250");
+  const downloaded = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Tải Excel VTP (1 đơn)", exact: true }).click();
+  const download = await downloaded;
+  expect(download.suggestedFilename()).toMatch(/^VTP-orders-\d{4}-\d{2}-\d{2}\.xlsx$/);
+  const workbookPath = await download.path();
+  expect(workbookPath).not.toBeNull();
+  const exportRows = await readSheet(await readFile(workbookPath!), "Order list");
+  expect(exportRows).toHaveLength(8); // bảy dòng tiêu đề + một đơn được chọn
+  expect(exportRows[6]).toHaveLength(21);
+  expect(exportRows[7].slice(0, 4)).toEqual([1, code, "Ma Hla Hla", "0978123456"]);
+  expect(exportRows[7][9]).toBe(250);
+  expect(exportRows[7][11]).toBe(expectedCod);
+  expect(exportRows[7][13]).toBe("VNM - Normal Intra City");
+  await page.goto(orderUrl);
+  await expectStatus(page, "Chuẩn bị giao");
+  await expectStatus(page, "Chưa trả");
 
   // Danh sách: tìm theo mã đơn.
   await page.goto(`/admin/orders?q=${code}`);
   await expect(page.getByRole("link", { name: code })).toBeVisible();
 
-  // Thủ kho đóng gói: trừ kho theo FEFO tại kho Yangon.
-  await login(page, "kho@glow.local");
+  // Nhân viên bàn giao: tự xuất kho FEFO, không cần thao tác đóng gói riêng.
   await page.goto(orderUrl);
+  await expect(page.getByRole("button", { name: "Đóng gói (trừ kho FEFO)" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "In nhãn ship" })).toBeVisible();
   const from = page.getByLabel("Kho xuất");
   if (await from.count()) await from.selectOption({ label: "MM-STOCK — Kho Yangon" });
-  await page.getByRole("button", { name: "Đóng gói (trừ kho FEFO)" }).click();
-  await expectStatus(page, "Đang đóng gói");
-  await expect(page.getByRole("link", { name: /^IS-/ })).toBeVisible();
-
-  // Nhân viên đơn hàng giao cho vận chuyển, in nhãn, hoàn tất.
-  await login(page, "donhang@glow.local");
-  await page.goto(orderUrl);
   await page.getByLabel("Đơn vị vận chuyển").fill("Royal Express");
   await page.getByLabel("Mã vận đơn").fill("RX-E2E-1");
-  await page.getByRole("button", { name: "Giao cho vận chuyển" }).click();
+  await page.getByRole("button", { name: "Đã bàn giao vận chuyển" }).click();
   await expectStatus(page, "Đang giao");
+  await expect(page.getByRole("link", { name: /^IS-/ })).toBeVisible();
   await page.screenshot({ path: "test-results/screens/admin-order-detail.png", fullPage: true });
 
   await page.getByRole("link", { name: "In nhãn ship" }).click();
@@ -61,7 +86,7 @@ test("đơn thủ công (Facebook, COD): tạo → xác nhận → đóng gói F
   await page.screenshot({ path: "test-results/screens/admin-order-label.png", fullPage: true });
 
   await page.goto(orderUrl);
-  await page.getByRole("button", { name: "Hoàn tất (đã giao)" }).click();
+  await page.getByRole("button", { name: "Giao thành công · Đã thu tiền" }).click();
   await expectStatus(page, "Hoàn tất");
   await expectStatus(page, "Đã thanh toán");
 

@@ -5,8 +5,7 @@ import { listOrdersAdmin } from "@/server/orders/admin-queries";
 import { cancelExpiredOrders } from "@/server/orders/cron";
 import { OrderError } from "@/server/orders/errors";
 import { createOrder } from "@/server/orders/orders";
-import { reviewPaymentProof, submitPaymentProof } from "@/server/orders/payments";
-import { transitionOrder } from "@/server/orders/transitions";
+import { transitionInTx, transitionOrder } from "@/server/orders/transitions";
 import { admin, avail, balance, orderInput, saleFixture, unpublishTestProducts } from "./fixtures";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -147,8 +146,43 @@ describe("Tạo đơn + giữ hàng", () => {
   });
 });
 
-describe("Chuyển trạng thái + đóng gói FEFO", () => {
-  it("COD: xác nhận → đóng gói (FEFO, bỏ lô cận hạn) → giao → hoàn tất; ledger khớp", async () => {
+describe("Chuyển trạng thái + xuất kho FEFO khi bàn giao", () => {
+  it("hai yêu cầu bàn giao đồng thời chỉ xuất kho và tạo vận chuyển một lần", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 10 }]);
+    const order = await createOrder(orderInput(f, 2), { userId: null });
+    await transitionOrder(order.id, "confirmCod", admin(f));
+    const results = await Promise.allSettled([
+      transitionOrder(order.id, "ship", admin(f), { fromLocationId: f.mm.id, carrier: "Test" }),
+      transitionOrder(order.id, "ship", admin(f), { fromLocationId: f.mm.id, carrier: "Test" }),
+    ]);
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    const rejected = results.find((r) => r.status === "rejected") as PromiseRejectedResult;
+    expect(rejected.reason).toMatchObject({ code: "invalid_transition" });
+    expect(await prisma.stockDocument.count({ where: { orderId: order.id, type: "ISSUE" } })).toBe(1);
+    expect(await prisma.delivery.count({ where: { orderId: order.id } })).toBe(1);
+    const [batch] = await prisma.batch.findMany({ where: { variantId: f.variantId } });
+    expect(await balance(batch.id, f.mm.id)).toBe(8);
+  });
+
+  it("lỗi sau ghi sổ hoàn tác cả kho, phân lô, giữ hàng, lịch sử và vận chuyển", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 10 }]);
+    const order = await createOrder(orderInput(f, 2), { userId: null });
+    await transitionOrder(order.id, "confirmCod", admin(f));
+    await expect(prisma.$transaction(async (tx) => {
+      await transitionInTx(tx, order.id, "ship", admin(f), { fromLocationId: f.mm.id, carrier: "Test" }, { now: new Date(), blockDays: 90 });
+      throw new Error("Simulated failure after stock issue");
+    })).rejects.toThrow("Simulated failure");
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe("COD_CONFIRMED");
+    expect(await prisma.stockDocument.count({ where: { orderId: order.id } })).toBe(0);
+    expect(await prisma.delivery.count({ where: { orderId: order.id } })).toBe(0);
+    expect(await prisma.orderAllocation.count({ where: { orderItem: { orderId: order.id } } })).toBe(0);
+    expect(await prisma.orderStatusHistory.count({ where: { orderId: order.id, toStatus: "SHIPPING" } })).toBe(0);
+    expect((await prisma.reservation.findFirstOrThrow({ where: { orderId: order.id } })).status).toBe("ACTIVE");
+    const [batch] = await prisma.batch.findMany({ where: { variantId: f.variantId } });
+    expect(await balance(batch.id, f.mm.id)).toBe(10);
+  });
+
+  it("COD: xác nhận → bàn giao (xuất kho FEFO) → hoàn tất; ledger khớp", async () => {
     const f = await saleFixture([
       { lot: "NEAR", expiryInDays: 30, qty: 5 },
       { lot: "MID", expiryInDays: 300, qty: 3 },
@@ -159,14 +193,15 @@ describe("Chuyển trạng thái + đóng gói FEFO", () => {
     await prisma.batch.update({ where: { id: lot("MID").id }, data: { landedCostMmk: 4000 } });
 
     const order = await createOrder(orderInput(f, 5), { userId: null });
-    await expect(transitionOrder(order.id, "pack", admin(f), { fromLocationId: f.mm.id })).rejects.toMatchObject({
+    await expect(transitionOrder(order.id, "ship", admin(f), { fromLocationId: f.mm.id })).rejects.toMatchObject({
       code: "invalid_transition",
     });
     await transitionOrder(order.id, "confirmCod", admin(f));
     expect((await prisma.reservation.findFirstOrThrow({ where: { orderId: order.id } })).expiresAt).toBeNull();
 
-    const packed = await transitionOrder(order.id, "pack", admin(f), { fromLocationId: f.mm.id });
-    expect(packed.status).toBe("PACKING");
+    const shipped = await transitionOrder(order.id, "ship", admin(f), { fromLocationId: f.mm.id, carrier: "Royal Express", trackingNo: "RX123" });
+    expect(shipped.status).toBe("SHIPPING");
+    expect(await prisma.delivery.findFirst({ where: { orderId: order.id } })).toMatchObject({ carrier: "Royal Express", trackingNo: "RX123" });
     expect(await balance(lot("NEAR").id, f.mm.id)).toBe(5);
     expect(await balance(lot("MID").id, f.mm.id)).toBe(0);
     expect(await balance(lot("FAR").id, f.mm.id)).toBe(8);
@@ -191,11 +226,10 @@ describe("Chuyển trạng thái + đóng gói FEFO", () => {
     }
 
     await expect(transitionOrder(order.id, "cancel", admin(f))).rejects.toMatchObject({ code: "invalid_transition" });
-    await transitionOrder(order.id, "ship", admin(f), { carrier: "Royal Express", trackingNo: "RX123" });
     const done = await transitionOrder(order.id, "complete", admin(f));
     expect(done).toMatchObject({ status: "COMPLETED", paymentStatus: "PAID" });
     const history = await prisma.orderStatusHistory.findMany({ where: { orderId: order.id }, orderBy: { createdAt: "asc" } });
-    expect(history.map((h) => h.toStatus)).toEqual(["PENDING", "COD_CONFIRMED", "PACKING", "SHIPPING", "COMPLETED"]);
+    expect(history.map((h) => h.toStatus)).toEqual(["PENDING", "COD_CONFIRMED", "SHIPPING", "COMPLETED"]);
   });
 
   it("đóng gói combo trừ kho từng thành phần", async () => {
@@ -212,7 +246,7 @@ describe("Chuyển trạng thái + đóng gói FEFO", () => {
     });
     const order = await createOrder({ ...orderInput(f, 1), items: [{ variantId: bundle.id, qty: 3 }] }, { userId: null });
     await transitionOrder(order.id, "confirmCod", admin(f));
-    await transitionOrder(order.id, "pack", admin(f), { fromLocationId: f.mm.id });
+    await transitionOrder(order.id, "ship", admin(f), { fromLocationId: f.mm.id });
     const [batch] = await prisma.batch.findMany({ where: { variantId: f.variantId } });
     expect(await balance(batch.id, f.mm.id)).toBe(4);
   });
@@ -257,40 +291,25 @@ describe("Hết hạn giữ hàng + cron", () => {
   });
 });
 
-describe("Chuyển khoản: biên lai → duyệt", () => {
-  const png = Buffer.from("89504e470d0a1a0a0000000d49484452", "hex");
-
-  it("upload biên lai (file riêng tư) → duyệt → PAYMENT_CONFIRMED", async () => {
+describe("Chuyển khoản: đối chiếu tiền thực nhận → xác nhận", () => {
+  it("nhân viên xác nhận tiền thực nhận, không cần tải biên lai", async () => {
     const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
     const order = await createOrder(orderInput(f, 2, { paymentMethod: "BANK_TRANSFER" }), { userId: null });
-
-    await expect(
-      submitPaymentProof({ orderCode: order.code, phone: "0999999999", file: { data: png, mime: "image/png" } }),
-    ).rejects.toMatchObject({ code: "not_found" });
-    await expect(
-      submitPaymentProof({ orderCode: order.code, phone: "09 7812 3456", file: { data: png, mime: "text/html" } }),
-    ).rejects.toMatchObject({ code: "invalid_file" });
-
-    const proof = await submitPaymentProof({
-      orderCode: order.code.toLowerCase(),
-      phone: "09 7812 3456",
-      file: { data: png, mime: "image/png" },
-    });
-    const file = await prisma.fileObject.findUniqueOrThrow({ where: { id: proof.fileId } });
-    expect(file.visibility).toBe("PRIVATE");
-    expect(file.url).toMatch(/^\/api\/files\/proofs\//);
-    expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).paymentStatus).toBe("PROOF_SUBMITTED");
-    expect((await prisma.reservation.findFirstOrThrow({ where: { orderId: order.id } })).expiresAt).toBeNull();
-
-    await expect(
-      reviewPaymentProof(proof.id, true, { userId: f.userId, role: "WAREHOUSE_MANAGER" }),
-    ).rejects.toMatchObject({ code: "forbidden" });
-    const confirmed = await reviewPaymentProof(proof.id, true, admin(f));
+    expect((await listOrdersAdmin({ status: "PENDING", paymentMethod: "BANK_TRANSFER", q: order.code })).map((o) => o.id)).toEqual([order.id]);
+    expect(await listOrdersAdmin({ status: "PENDING", paymentMethod: "COD", q: order.code })).toEqual([]);
+    await expect(transitionOrder(order.id, "confirmPayment", { userId: f.userId, role: "WAREHOUSE_MANAGER" })).rejects.toMatchObject({ code: "forbidden" });
+    const confirmed = await transitionOrder(order.id, "confirmPayment", { userId: f.userId, role: "ORDER_STAFF" });
     expect(confirmed).toMatchObject({ status: "PAYMENT_CONFIRMED", paymentStatus: "PAID" });
-    await expect(reviewPaymentProof(proof.id, false, admin(f))).rejects.toMatchObject({ code: "invalid_transition" });
+    expect((await listOrdersAdmin({ status: "PREPARING", q: order.code })).map((o) => o.id)).toEqual([order.id]);
+    expect(await prisma.paymentProof.count({ where: { orderId: order.id } })).toBe(0);
+    expect((await prisma.reservation.findFirstOrThrow({ where: { orderId: order.id } })).expiresAt).toBeNull();
+    const shipped = await transitionOrder(order.id, "ship", { userId: f.userId, role: "ORDER_STAFF" }, { fromLocationId: f.mm.id });
+    expect(shipped.status).toBe("SHIPPING");
+    await expect(transitionOrder(order.id, "ship", admin(f))).rejects.toMatchObject({ code: "invalid_transition" });
+    expect(await prisma.stockDocument.count({ where: { orderId: order.id, type: "ISSUE" } })).toBe(1);
   });
 
-  it("cron huỷ đơn chuyển khoản quá hạn chưa có biên lai", async () => {
+  it("cron huỷ đơn chuyển khoản quá hạn chưa nhận tiền", async () => {
     const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
     const order = await createOrder(orderInput(f, 2, { paymentMethod: "BANK_TRANSFER" }), {
       userId: null,

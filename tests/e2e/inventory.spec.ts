@@ -5,13 +5,15 @@ const VARIANT = "SV-SUN-50 — Sunscreen SPF50 PA++++ (50ml)";
 
 async function postAndExpect(page: Page) {
   await page.getByRole("button", { name: "Lưu nháp" }).click();
-  await expect(page.getByText("Nháp", { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/admin\/inventory\/documents\/(?!new(?:\?|$))[^/?]+$/);
+  await expect(page.getByText("Nháp", { exact: true }).filter({ visible: true })).toBeVisible();
   page.once("dialog", (d) => d.accept()); // xác nhận ghi sổ
   await page.getByRole("button", { name: "Ghi sổ" }).click();
-  await expect(page.getByText("Đã ghi sổ", { exact: true })).toBeVisible();
+  await expect(page.getByText("Đã ghi sổ", { exact: true }).filter({ visible: true })).toBeVisible();
 }
 
 test("quản lý kho: nhận → chuyển → xuất, tồn khớp theo lô và vị trí", async ({ page }) => {
+  test.setTimeout(90_000); // ba phiếu liên tiếp; DB local có thể tích luỹ nhiều lô thử nghiệm
   const lot = `E2E${Date.now().toString(36).toUpperCase()}`;
   await login(page, "kho@glow.local");
 
@@ -52,6 +54,7 @@ test("quản lý kho: nhận → chuyển → xuất, tồn khớp theo lô và 
 });
 
 test("phiếu kho: lỗi server giữ lựa chọn; ghi sổ cần xác nhận; huỷ nháp", async ({ page }) => {
+  test.setTimeout(60_000); // gồm lỗi server, lưu nháp và hai hộp xác nhận
   await login(page, "kho@glow.local");
   await page.goto("/admin/inventory/documents");
   await page.getByText("Tạo phiếu", { exact: true }).click(); // menu tạo phiếu có cả ở danh sách phiếu

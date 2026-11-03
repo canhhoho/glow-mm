@@ -48,16 +48,14 @@ test("admin: tạo CTV, gán vào đơn, đơn hoàn tất rồi ghi nhận chi 
   await expect(section).toContainText("Chờ");
 
   // Admin đi hết luồng đơn.
-  await page.getByRole("button", { name: "Đã gọi xác nhận COD" }).click();
-  await expect(page.getByTestId("order-status")).toContainText("Đã xác nhận COD");
+  await page.getByRole("button", { name: "Xác nhận đơn" }).click();
+  await expect(page.getByTestId("order-status")).toContainText("Chuẩn bị giao");
   const from = page.getByLabel("Kho xuất");
   if (await from.count()) await from.selectOption({ label: "MM-STOCK — Kho Yangon" });
-  await page.getByRole("button", { name: "Đóng gói (trừ kho FEFO)" }).click();
-  await expect(page.getByTestId("order-status")).toContainText("Đang đóng gói");
   await page.getByLabel("Đơn vị vận chuyển").fill("Royal Express");
-  await page.getByRole("button", { name: "Giao cho vận chuyển" }).click();
+  await page.getByRole("button", { name: "Đã bàn giao vận chuyển" }).click();
   await expect(page.getByTestId("order-status")).toContainText("Đang giao");
-  await page.getByRole("button", { name: "Hoàn tất (đã giao)" }).click();
+  await page.getByRole("button", { name: "Giao thành công · Đã thu tiền" }).click();
   await expect(page.getByTestId("order-status")).toContainText("Hoàn tất");
 
   // Hạn giữ 0 ngày → hoa hồng đến hạn ngay; ghi nhận chi trả.

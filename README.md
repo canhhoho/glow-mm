@@ -22,6 +22,22 @@ Trong Admin → Sản phẩm, bấm **Sửa** trên từng dòng để chỉnh s
 chỉnh nội dung và nhập slug/SKU mới rồi bấm **Lưu**. Bản sao giữ nội dung, giá, biến thể và ảnh;
 không sao chép tồn kho, lô hàng hoặc giao dịch. Sản phẩm mới mặc định ẩn trên cửa hàng.
 
+Trang nhập sản phẩm nhận trực tiếp **Excel `.xlsx` hoặc CSV**. Tải mẫu Excel, điền
+từ dòng 7 trong sheet nhập liệu rồi tải lại file; hướng dẫn và ví dụ nằm ở sheet
+riêng. Mẫu tồn đầu kỳ tạo phiếu nhập nháp để kiểm tra trước khi ghi sổ.
+
+## Xử lý đơn và xuất VTP
+
+Quy trình: **Chờ xác nhận → Chuẩn bị giao → Đang giao → Hoàn tất**. Nhân viên gọi
+xác nhận đơn COD hoặc đối chiếu tiền chuyển khoản rồi bấm **Đã nhận tiền**; khách
+không cần tải biên lai. Hệ thống xuất kho FEFO khi bấm **Đã bàn giao vận chuyển**.
+
+Trong danh sách đơn, bấm **Xuất Excel VTP** để chọn tối đa 200 đơn Chuẩn bị giao,
+chọn dịch vụ và kiểm tra trọng lượng trước khi tải file theo mẫu OMS Myanmar.
+Đơn đã thanh toán có tiền thu hộ COD bằng 0. Địa chỉ người gửi chọn trong VTP.
+Trong chi tiết đơn, mở **Thông tin tạo đơn lẻ VTP** để sao chép từng ô hoặc tải
+thông tin `.txt`. Xuất file không thay đổi trạng thái đơn hoặc tồn kho.
+
 ## Kiểm thử
 
 ```bash

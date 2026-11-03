@@ -129,11 +129,11 @@ export function ImportForm({ kind }: { kind: "products" | "stock" }) {
   return (
     <form action={action} className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <FileField name="file" accept=".csv,text/csv" required aria-label={kind === "products" ? t("importProducts") : t("importStock")} className="max-w-72" />
+        <FileField name="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required aria-label={kind === "products" ? t("importProducts") : t("importStock")} className="max-w-72" />
         <Button size="lg" type="submit" disabled={pending}>
           {t("upload")}
         </Button>
-        <a href={`/api/templates/${kind}.csv`} className="text-sm text-primary underline">
+        <a href={`/api/templates/${kind}.xlsx`} className="text-sm text-primary underline">
           {t("template")}
         </a>
       </div>

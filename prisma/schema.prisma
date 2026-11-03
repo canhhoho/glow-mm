@@ -908,7 +908,7 @@ model OrderItem {
   @@index([variantId])
 }
 
-/// Phân lô khi đóng gói; giữ giá vốn để tính lợi nhuận.
+/// Phân lô khi bàn giao vận chuyển; giữ giá vốn để tính lợi nhuận.
 model OrderAllocation {
   id                String    @id @default(cuid())
   orderItemId       String

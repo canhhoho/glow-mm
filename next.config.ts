@@ -52,6 +52,8 @@ const nextConfig: NextConfig = {
   // Thư viện libvips của sharp (tối ưu ảnh next/image) không được file-tracing chép vào standalone trên Windows.
   outputFileTracingIncludes: {
     "*": ["./node_modules/@img/sharp-win32-*/lib/*.dll", "./node_modules/@img/sharp-libvips-*/lib/**"],
+    "/api/templates/*": ["./public/templates/*.xlsx"],
+    "/api/admin/orders/vtp-export": ["./src/server/orders/templates/vtp-myanmar.xlsx"],
   },
   images: {
     formats: ["image/avif", "image/webp"],
@@ -59,7 +61,7 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     remotePatterns: [{ protocol: "https", hostname: "*.public.blob.vercel-storage.com" }],
   },
-  // Biên lai chuyển khoản upload qua Server Action (tối đa 5MB + phần đầu multipart).
+  // Chứng từ chi trả CTV upload qua Server Action (tối đa 5MB + phần đầu multipart).
   experimental: { serverActions: { bodySizeLimit: "6mb" } },
   turbopack: {
     rules: {

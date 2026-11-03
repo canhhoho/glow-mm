@@ -10,7 +10,7 @@ import { storage } from "@/server/adapters/storage";
 import { can, MIN_STAFF_PASSWORD, type Role } from "@/server/auth/roles";
 import type { Tx } from "@/server/inventory/ledger";
 import { normalizeMmPhone, phoneSearchDigits } from "@/lib/phone";
-import { PROOF_MAX_BYTES, PROOF_MIME } from "@/server/orders/payments";
+import { PROOF_MAX_BYTES, PROOF_MIME } from "@/server/affiliates/proof-policy";
 import { getNumberSetting } from "@/server/settings";
 import { uplineSnapshot } from "./upline";
 import {

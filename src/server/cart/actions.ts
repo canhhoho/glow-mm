@@ -1,6 +1,5 @@
 "use server";
 
-import { refresh } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect as nextRedirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -10,13 +9,11 @@ import { redirect } from "@/i18n/navigation";
 import { routing, type StoreLocale } from "@/i18n/routing";
 import { localePrefix } from "@/lib/site";
 import { claimOrders } from "@/server/accounts/claims";
-import { customerOrder } from "@/server/accounts/order-access";
 import { normalizeRefCode, REF_COOKIE } from "@/server/affiliates/referral";
 import { createAddress } from "@/server/accounts/accounts";
 import { getCustomerUser, requireCustomer } from "@/server/auth/customer-session";
 import { OrderError } from "@/server/orders/errors";
 import { createOrder, findOrderForCustomer } from "@/server/orders/orders";
-import { submitPaymentProof } from "@/server/orders/payments";
 import {
   addLine,
   addOrderAccess,
@@ -155,24 +152,4 @@ export async function trackOrderAction(_prev: StoreActionState, formData: FormDa
   const user = await getCustomerUser();
   if (user) await claimOrders(user.id, [{ c: order.code, p: order.recipientPhone }]);
   redirect({ href: `/order/${order.code}`, locale });
-}
-
-export async function uploadProofAction(_prev: StoreActionState, formData: FormData): Promise<StoreActionState> {
-  const locale = localeOf(formData);
-  const code = String(formData.get("code") ?? "");
-  try {
-    const order = await customerOrder(code);
-    if (!order) throw new OrderError("not_found", "Không có quyền với đơn này");
-    const file = formData.get("file");
-    if (!(file instanceof File)) throw new OrderError("invalid_file", "Thiếu file");
-    await submitPaymentProof({
-      orderCode: order.code,
-      phone: order.recipientPhone,
-      file: { data: Buffer.from(await file.arrayBuffer()), mime: file.type },
-    });
-  } catch (e) {
-    return { error: await errorText(e, locale) };
-  }
-  refresh();
-  return { ok: true };
 }

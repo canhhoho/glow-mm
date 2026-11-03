@@ -376,7 +376,7 @@ docker restart tandc-app-1
 
 Kiểm tra trên `https://moi.tandcstore.com`:
 - [ ] Trang chủ, ảnh sản phẩm, banner hiện đủ.
-- [ ] Đăng nhập admin bằng **tài khoản thật** (đi theo dữ liệu Neon), cổng CTV; mở một biên lai chuyển khoản (chỉ admin xem được).
+- [ ] Đăng nhập admin bằng **tài khoản thật** (đi theo dữ liệu Neon), cổng CTV; kiểm tra đơn chuyển khoản có nút **Đã nhận tiền** và trạng thái **Chuẩn bị giao** sau khi xác nhận.
 - [ ] Đặt thử 1 đơn COD → huỷ trong admin (dữ liệu thử — sẽ bị ghi đè ở PHẦN C).
 
 ## B7. Cron + backup (làm ngay sau B6, trước PHẦN C)
@@ -525,7 +525,7 @@ Chọn giờ ít khách (vd 22:00 Yangon). Ngừng ghi khoảng **30–60 phút*
    ```bash
    curl -sI https://www.tandcstore.com | grep -i location
    ```
-9. [ ] Admin trên **server** (`https://tandcstore.com/admin`) → **Cài đặt → bật lại "Nhận đơn trên web"**. Đặt thử 1 đơn COD và 1 đơn chuyển khoản (upload biên lai → duyệt) → huỷ cả hai.
+9. [ ] Admin trên **server** (`https://tandcstore.com/admin`) → **Cài đặt → bật lại "Nhận đơn trên web"**. Đặt thử 1 đơn COD và 1 đơn chuyển khoản (đối chiếu tiền thực nhận → bấm **Đã nhận tiền**) → huỷ cả hai.
 10. [ ] Chạy checklist **PHẦN E**.
 
 **Sau giờ chuyển**

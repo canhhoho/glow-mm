@@ -1,9 +1,9 @@
 /**
  * Máy trạng thái đơn hàng — NƠI DUY NHẤT định nghĩa chuyển trạng thái hợp lệ. Thuần, không phụ thuộc DB.
  *
- * PENDING → PAYMENT_CONFIRMED (chuyển khoản đã duyệt) | COD_CONFIRMED (đã gọi xác nhận COD)
- *         → PACKING (đã phân lô FEFO, trừ kho) → SHIPPING → COMPLETED
- * Nhánh: CANCELLED (trước khi đóng gói), RETURNED (sau khi giao/đang giao).
+ * PENDING → PAYMENT_CONFIRMED | COD_CONFIRMED (chuẩn bị giao) → SHIPPING → COMPLETED.
+ * Xuất kho FEFO khi bàn giao vận chuyển. PACKING chỉ còn cho đơn cũ đã xuất kho.
+ * Nhánh: CANCELLED (trước khi xuất kho), RETURNED (sau khi giao/đang giao).
  */
 import type { Permission } from "@/server/auth/roles";
 
@@ -20,6 +20,10 @@ export const ORDER_STATUSES = [
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export type PaymentMethod = "COD" | "BANK_TRANSFER";
 
+/** Gộp các trạng thái lưu trữ cũ thành một bước hiển thị; không sửa lịch sử đơn. */
+export const PREPARING_STATUSES = ["PAYMENT_CONFIRMED", "COD_CONFIRMED", "PACKING"] as const;
+export const ORDER_FILTER_STATUSES = ["PENDING", "PREPARING", "SHIPPING", "COMPLETED", "CANCELLED", "RETURNED"] as const;
+
 export type Transition = {
   from: OrderStatus[];
   to: OrderStatus;
@@ -31,8 +35,7 @@ export type Transition = {
 export const TRANSITIONS = {
   confirmPayment: { from: ["PENDING"], to: "PAYMENT_CONFIRMED", method: "BANK_TRANSFER", permission: "orders:confirm-payment" },
   confirmCod: { from: ["PENDING"], to: "COD_CONFIRMED", method: "COD", permission: "orders:confirm-payment" },
-  pack: { from: ["PAYMENT_CONFIRMED", "COD_CONFIRMED"], to: "PACKING", permission: "orders:pack" },
-  ship: { from: ["PACKING"], to: "SHIPPING", permission: "orders:ship" },
+  ship: { from: [...PREPARING_STATUSES], to: "SHIPPING", permission: "orders:ship" },
   complete: { from: ["SHIPPING"], to: "COMPLETED", permission: "orders:ship" },
   cancel: { from: ["PENDING", "PAYMENT_CONFIRMED", "COD_CONFIRMED"], to: "CANCELLED", permission: "orders:cancel" },
   returned: { from: ["SHIPPING", "COMPLETED"], to: "RETURNED", permission: "orders:return" },
@@ -66,7 +69,7 @@ export function availableTransitions(order: { status: OrderStatus; paymentMethod
   return (Object.keys(TRANSITIONS) as TransitionName[]).filter((n) => canTransition(n, order));
 }
 
-/** Trạng thái còn giữ hàng (reservation ACTIVE). Từ PACKING trở đi hàng đã trừ kho thật. */
+/** Giữ hàng đến khi bàn giao; PACKING cũ đã xuất kho nên không còn giữ hàng. */
 export function holdsReservation(status: OrderStatus): boolean {
   return status === "PENDING" || status === "PAYMENT_CONFIRMED" || status === "COD_CONFIRMED";
 }

@@ -44,16 +44,14 @@ test("tuyến dưới: đơn của CTV cấp dưới → cấp trên thấy hoa 
   await page.getByRole("link", { name: code }).click();
   await expect(page.getByTestId("order-upline")).toContainText("MAUNG");
   // Đi hết luồng để đơn hoàn tất.
-  await page.getByRole("button", { name: "Đã gọi xác nhận COD" }).click();
-  await expect(page.getByTestId("order-status")).toContainText("Đã xác nhận COD");
+  await page.getByRole("button", { name: "Xác nhận đơn" }).click();
+  await expect(page.getByTestId("order-status")).toContainText("Chuẩn bị giao");
   const from = page.getByLabel("Kho xuất");
   if (await from.count()) await from.selectOption({ label: "MM-STOCK — Kho Yangon" });
-  await page.getByRole("button", { name: "Đóng gói (trừ kho FEFO)" }).click();
-  await expect(page.getByTestId("order-status")).toContainText("Đang đóng gói");
   await page.getByLabel("Đơn vị vận chuyển").fill("Royal Express");
-  await page.getByRole("button", { name: "Giao cho vận chuyển" }).click();
+  await page.getByRole("button", { name: "Đã bàn giao vận chuyển" }).click();
   await expect(page.getByTestId("order-status")).toContainText("Đang giao");
-  await page.getByRole("button", { name: "Hoàn tất (đã giao)" }).click();
+  await page.getByRole("button", { name: "Giao thành công · Đã thu tiền" }).click();
   await expect(page.getByTestId("order-status")).toContainText("Hoàn tất");
 
   await setHoldDays(page, 0);

@@ -12,8 +12,7 @@ afterAll(unpublishTestProducts);
 async function completedOrder(f: SaleFixture, input: Record<string, unknown>) {
   const order = await createOrder(input, { userId: null });
   await transitionOrder(order.id, "confirmCod", admin(f));
-  await transitionOrder(order.id, "pack", admin(f), { fromLocationId: f.mm.id });
-  await transitionOrder(order.id, "ship", admin(f), { carrier: "Test" });
+  await transitionOrder(order.id, "ship", admin(f), { fromLocationId: f.mm.id, carrier: "Test" });
   await transitionOrder(order.id, "complete", admin(f));
   return prisma.order.findUniqueOrThrow({ where: { id: order.id }, include: { items: true } });
 }

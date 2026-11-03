@@ -10,6 +10,7 @@ import { deleteCategory, removeCategoryIcon, setCategoryIcon, updateCategory } f
 import { CATALOG_TAG } from "./category-tree";
 import { addProductImages, deleteProductImage, reorderProductImage, updateProductImageAlt } from "./images";
 import { createBrand, createCategory, importOpeningStockCsv, importProductsCsv, saveProduct, type ImportResult } from "./products";
+import { readImportFile } from "./import-file";
 
 function message(e: unknown): string {
   if (e instanceof ZodError) return e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
@@ -190,19 +191,11 @@ export async function deleteProductImageAction(_prev: ActionState, formData: For
 
 export type ImportState = (ImportResult & { error?: string }) | undefined;
 
-const MAX_CSV_BYTES = 2 * 1024 * 1024;
-
-async function readCsv(formData: FormData): Promise<string> {
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) throw new Error("Chưa chọn file CSV");
-  if (file.size > MAX_CSV_BYTES) throw new Error("File quá lớn (tối đa 2 MB)");
-  return file.text();
-}
-
 export async function importProductsAction(_prev: ImportState, formData: FormData): Promise<ImportState> {
   try {
     const user = await requirePermission("catalog:manage");
-    const result = await importProductsCsv(await readCsv(formData), user.id);
+    const input = await readImportFile(formData.get("file"), "products");
+    const result = await importProductsCsv(input.csv, user.id, input.lineNumbers);
     updateTag(CATALOG_TAG);
     revalidatePath("/admin/products");
     return result;
@@ -214,7 +207,8 @@ export async function importProductsAction(_prev: ImportState, formData: FormDat
 export async function importStockAction(_prev: ImportState, formData: FormData): Promise<ImportState> {
   try {
     const user = await requirePermission("stock:receive");
-    return await importOpeningStockCsv(await readCsv(formData), user.id);
+    const input = await readImportFile(formData.get("file"), "stock");
+    return await importOpeningStockCsv(input.csv, user.id, input.lineNumbers);
   } catch (e) {
     return { ok: 0, errors: [], error: message(e) };
   }

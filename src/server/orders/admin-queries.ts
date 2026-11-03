@@ -1,24 +1,28 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { loadAddressCatalog } from "@/server/locations/locations";
-import type { OrderChannel, OrderStatus, Prisma } from "@/generated/prisma/client";
+import type { OrderChannel, OrderStatus, PaymentMethod, Prisma } from "@/generated/prisma/client";
 import { salesBlockDays } from "@/server/inventory/documents";
 import { productName } from "@/server/inventory/queries";
 import { availableToSell } from "./availability";
 import { normalizeMmPhone, phoneSearchDigits } from "@/lib/phone";
 import { toUnicode } from "@/lib/myanmar";
-import { ORDER_STATUSES } from "./state-machine";
+import { ORDER_STATUSES, PREPARING_STATUSES } from "./state-machine";
 
 /** Truy vấn cho admin đơn hàng (đọc, không thay đổi dữ liệu). */
 
-export type OrderListFilter = { status?: string; channel?: string; q?: string; overdue?: boolean; affiliateId?: string };
+export type OrderListFilter = { status?: string; paymentMethod?: string; channel?: string; q?: string; overdue?: boolean; affiliateId?: string };
 
 const CHANNELS = ["WEB", "FACEBOOK", "VIBER", "PHONE"] as const;
 
 export async function listOrdersAdmin(filter: OrderListFilter, now = new Date()) {
   const where: Prisma.OrderWhereInput = {};
+  if (filter.status === "PREPARING") where.status = { in: [...PREPARING_STATUSES] };
   if (filter.status && (ORDER_STATUSES as readonly string[]).includes(filter.status)) {
     where.status = filter.status as OrderStatus;
+  }
+  if (filter.paymentMethod === "COD" || filter.paymentMethod === "BANK_TRANSFER") {
+    where.paymentMethod = filter.paymentMethod as PaymentMethod;
   }
   if (filter.channel && (CHANNELS as readonly string[]).includes(filter.channel)) {
     where.channel = filter.channel as OrderChannel;
@@ -58,9 +62,8 @@ export async function getOrderAdmin(id: string, now = new Date()) {
   const order = await prisma.order.findUnique({
     where: { id },
     include: {
-      items: { include: { allocations: { include: { batch: { select: { lotNo: true, expiryDate: true } } } } } },
+      items: { include: { variant: { select: { weightGrams: true } }, allocations: { include: { batch: { select: { lotNo: true, expiryDate: true } } } } } },
       history: { orderBy: { createdAt: "asc" } },
-      paymentProofs: { orderBy: { createdAt: "desc" }, include: { file: { select: { url: true, mime: true } } } },
       deliveries: { orderBy: { createdAt: "desc" } },
       reservations: true,
       documents: { select: { id: true, code: true, type: true, status: true } },

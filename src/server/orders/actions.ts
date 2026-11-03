@@ -10,7 +10,6 @@ import { ForbiddenError, requirePermission } from "@/server/auth/session";
 import type { ActionState } from "@/server/inventory/actions";
 import { OrderError } from "./errors";
 import { createOrder } from "./orders";
-import { reviewPaymentProof } from "./payments";
 import { returnItems } from "./returns";
 import { TRANSITIONS, type TransitionName } from "./state-machine";
 import { transitionOrder } from "./transitions";
@@ -51,6 +50,7 @@ export async function createOrderAction(_prev: ActionState, formData: FormData):
     return { error: await message(e) };
   }
   revalidatePath("/admin/orders");
+  revalidatePath("/admin");
   redirect(`/admin/orders/${id}`);
 }
 
@@ -82,25 +82,8 @@ export async function transitionOrderAction(_prev: ActionState, formData: FormDa
   }
   revalidatePath(`/admin/orders/${id}`);
   revalidatePath("/admin/orders");
+  revalidatePath("/admin");
   return { ok: name };
-}
-
-export async function reviewProofAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const orderId = String(formData.get("orderId"));
-  try {
-    const user = await requirePermission("orders:confirm-payment");
-    await reviewPaymentProof(
-      String(formData.get("proofId")),
-      formData.get("decision") === "approve",
-      { userId: user.id, role: user.role },
-      field(formData, "note"),
-    );
-  } catch (e) {
-    return { error: await message(e) };
-  }
-  revalidatePath(`/admin/orders/${orderId}`);
-  revalidatePath("/admin/orders");
-  return { ok: "reviewed" };
 }
 
 /** Form trả hàng: mỗi dòng đơn là ô `qty:<orderItemId>`. */
@@ -126,5 +109,6 @@ export async function returnItemsAction(_prev: ActionState, formData: FormData):
   }
   revalidatePath(`/admin/orders/${orderId}`);
   revalidatePath("/admin/orders");
+  revalidatePath("/admin");
   return { ok: "returned" };
 }

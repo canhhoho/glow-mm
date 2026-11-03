@@ -7,7 +7,7 @@ async function staffStep(page: Page, email: string, orderUrl: string, button: st
   await login(page, email);
   await page.goto(orderUrl);
   const from = page.getByLabel("Kho xuất");
-  if (button.startsWith("Đóng gói") && (await from.count())) await from.selectOption({ label: "MM-STOCK — Kho Yangon" });
+  if (button === "Đã bàn giao vận chuyển" && (await from.count())) await from.selectOption({ label: "MM-STOCK — Kho Yangon" });
   for (const [label, value] of Object.entries(fill ?? {})) await page.getByLabel(label).fill(value);
   await page.getByRole("button", { name: button }).click();
 }
@@ -30,7 +30,7 @@ test("khách đánh giá sau khi nhận hàng → admin duyệt → hiện trên
   const code = (await page.getByTestId("order-code").textContent())!.trim();
   const customerUrl = page.url().replace(/\?.*$/, "");
 
-  // Nhân viên (context riêng để không xoá cookie của khách): xác nhận → đóng gói → giao → hoàn tất.
+  // Nhân viên (context riêng để không xoá cookie của khách): xác nhận → chuẩn bị giao → bàn giao → hoàn tất.
   const staffCtx = await browser.newContext();
   const staff = await staffCtx.newPage();
   await login(staff, "donhang@glow.local");
@@ -38,13 +38,11 @@ test("khách đánh giá sau khi nhận hàng → admin duyệt → hiện trên
   await staff.getByRole("link", { name: code }).click();
   await expect(staff).toHaveURL(/\/admin\/orders\/[^/?]+$/);
   const orderUrl = staff.url();
-  await staff.getByRole("button", { name: "Đã gọi xác nhận COD" }).click();
-  await expect(staff.getByTestId("order-status")).toContainText("Đã xác nhận COD");
-  await staffStep(staff, "kho@glow.local", orderUrl, "Đóng gói (trừ kho FEFO)");
-  await expect(staff.getByTestId("order-status")).toContainText("Đang đóng gói");
-  await staffStep(staff, "donhang@glow.local", orderUrl, "Giao cho vận chuyển", { "Đơn vị vận chuyển": "Royal Express" });
+  await staff.getByRole("button", { name: "Xác nhận đơn" }).click();
+  await expect(staff.getByTestId("order-status")).toContainText("Chuẩn bị giao");
+  await staffStep(staff, "donhang@glow.local", orderUrl, "Đã bàn giao vận chuyển", { "Đơn vị vận chuyển": "Royal Express" });
   await expect(staff.getByTestId("order-status")).toContainText("Đang giao");
-  await staff.getByRole("button", { name: "Hoàn tất (đã giao)" }).click();
+  await staff.getByRole("button", { name: "Giao thành công · Đã thu tiền" }).click();
   await expect(staff.getByTestId("order-status")).toContainText("Hoàn tất");
 
   // Khách đánh giá 5 sao.

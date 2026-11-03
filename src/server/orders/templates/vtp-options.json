@@ -1,0 +1,2121 @@
+{
+  "states": [
+    {
+      "label": "AYY-Ayeyarwady",
+      "code": "AYY"
+    },
+    {
+      "label": "CHN-Chin",
+      "code": "CHN"
+    },
+    {
+      "label": "EBG-East Bago",
+      "code": "EBG"
+    },
+    {
+      "label": "ESH-East Shan",
+      "code": "ESH"
+    },
+    {
+      "label": "KCN-Kachin",
+      "code": "KCN"
+    },
+    {
+      "label": "KYH-Kayah",
+      "code": "KYH"
+    },
+    {
+      "label": "KYN-Kayin",
+      "code": "KYN"
+    },
+    {
+      "label": "MDY-Mandalay",
+      "code": "MDY"
+    },
+    {
+      "label": "MGY-Magway",
+      "code": "MGY"
+    },
+    {
+      "label": "MON-Mon",
+      "code": "MON"
+    },
+    {
+      "label": "NPW-Nay Pyi Taw",
+      "code": "NPW"
+    },
+    {
+      "label": "NSH-North Shan",
+      "code": "NSH"
+    },
+    {
+      "label": "RKE-Rakhine",
+      "code": "RKE"
+    },
+    {
+      "label": "SGG-Sagaing",
+      "code": "SGG"
+    },
+    {
+      "label": "SSH-Southern Shan",
+      "code": "SSH"
+    },
+    {
+      "label": "TNI-Tanintharyi",
+      "code": "TNI"
+    },
+    {
+      "label": "WBG- West Bago",
+      "code": "WBG"
+    },
+    {
+      "label": "YGN-Yangon",
+      "code": "YGN"
+    }
+  ],
+  "districts": [
+    {
+      "label": "PTN-Pathein",
+      "code": "PTN",
+      "state": "AYY"
+    },
+    {
+      "label": "PYP-Pyapon",
+      "code": "PYP",
+      "state": "AYY"
+    },
+    {
+      "label": "MBN-Maubin",
+      "code": "MBN",
+      "state": "AYY"
+    },
+    {
+      "label": "MMA-Myaungmya",
+      "code": "MMA",
+      "state": "AYY"
+    },
+    {
+      "label": "LBT-Labutta",
+      "code": "LBT",
+      "state": "AYY"
+    },
+    {
+      "label": "HTD-Hinthada",
+      "code": "HTD",
+      "state": "AYY"
+    },
+    {
+      "label": "HKA-Hakha",
+      "code": "HKA",
+      "state": "CHN"
+    },
+    {
+      "label": "FLM-Falam",
+      "code": "FLM",
+      "state": "CHN"
+    },
+    {
+      "label": "MDT-Mindat",
+      "code": "MDT",
+      "state": "CHN"
+    },
+    {
+      "label": "BGO-Bago",
+      "code": "BGO",
+      "state": "EBG"
+    },
+    {
+      "label": "TGO-Taungoo",
+      "code": "TGO",
+      "state": "EBG"
+    },
+    {
+      "label": "KTG-Kengtung",
+      "code": "KTG",
+      "state": "ESH"
+    },
+    {
+      "label": "MGS-Monghsat",
+      "code": "MGS",
+      "state": "ESH"
+    },
+    {
+      "label": "TCL-Tachileik",
+      "code": "TCL",
+      "state": "ESH"
+    },
+    {
+      "label": "MGP-Monghpyak",
+      "code": "MGP",
+      "state": "ESH"
+    },
+    {
+      "label": "MKN-Myitkyina",
+      "code": "MKN",
+      "state": "KCN"
+    },
+    {
+      "label": "MHN-Mohnyin",
+      "code": "MHN",
+      "state": "KCN"
+    },
+    {
+      "label": "BMO-Bhamo",
+      "code": "BMO",
+      "state": "KCN"
+    },
+    {
+      "label": "PTO-Puta-O",
+      "code": "PTO",
+      "state": "KCN"
+    },
+    {
+      "label": "LKW-Loikaw",
+      "code": "LKW",
+      "state": "KYH"
+    },
+    {
+      "label": "BLK-Bawlake",
+      "code": "BLK",
+      "state": "KYH"
+    },
+    {
+      "label": "PAN-Hpa-An",
+      "code": "PAN",
+      "state": "KYN"
+    },
+    {
+      "label": "PUN-Hpapun",
+      "code": "PUN",
+      "state": "KYN"
+    },
+    {
+      "label": "MWD-Myawaddy",
+      "code": "MWD",
+      "state": "KYN"
+    },
+    {
+      "label": "KKR-Kawkareik",
+      "code": "KKR",
+      "state": "KYN"
+    },
+    {
+      "label": "MDY-Mandalay",
+      "code": "MDY",
+      "state": "MDY"
+    },
+    {
+      "label": "POL-Pyinoolwin",
+      "code": "POL",
+      "state": "MDY"
+    },
+    {
+      "label": "KKS-Kyaukse",
+      "code": "KKS",
+      "state": "MDY"
+    },
+    {
+      "label": "MGY-Myingyan",
+      "code": "MGY",
+      "state": "MDY"
+    },
+    {
+      "label": "NYU-Nyaung-U",
+      "code": "NYU",
+      "state": "MDY"
+    },
+    {
+      "label": "YMT-Yamethin",
+      "code": "YMT",
+      "state": "MDY"
+    },
+    {
+      "label": "MTL-Meiktila",
+      "code": "MTL",
+      "state": "MDY"
+    },
+    {
+      "label": "MGW-Magway",
+      "code": "MGW",
+      "state": "MGY"
+    },
+    {
+      "label": "MBU-Minbu",
+      "code": "MBU",
+      "state": "MGY"
+    },
+    {
+      "label": "TYT-Thayet",
+      "code": "TYT",
+      "state": "MGY"
+    },
+    {
+      "label": "PKK-Pakokku",
+      "code": "PKK",
+      "state": "MGY"
+    },
+    {
+      "label": "GGW-Gangaw",
+      "code": "GGW",
+      "state": "MGY"
+    },
+    {
+      "label": "MLM-Mawlamyine",
+      "code": "MLM",
+      "state": "MON"
+    },
+    {
+      "label": "TTN-Thaton",
+      "code": "TTN",
+      "state": "MON"
+    },
+    {
+      "label": "NNW-Nay Pyi Taw (North)",
+      "code": "NNW",
+      "state": "NPW"
+    },
+    {
+      "label": "SNW-Nay Pyi Taw (South)",
+      "code": "SNW",
+      "state": "NPW"
+    },
+    {
+      "label": "LSH-Lashio",
+      "code": "LSH",
+      "state": "NSH"
+    },
+    {
+      "label": "MSE-Muse",
+      "code": "MSE",
+      "state": "NSH"
+    },
+    {
+      "label": "KKM-Kyaukme",
+      "code": "KKM",
+      "state": "NSH"
+    },
+    {
+      "label": "KLG-Kunlong",
+      "code": "KLG",
+      "state": "NSH"
+    },
+    {
+      "label": "LKK-Laukkaing",
+      "code": "LKK",
+      "state": "NSH"
+    },
+    {
+      "label": "HPG-Hopang",
+      "code": "HPG",
+      "state": "NSH"
+    },
+    {
+      "label": "MMN-Matman",
+      "code": "MMN",
+      "state": "NSH"
+    },
+    {
+      "label": "STW-Sittwe",
+      "code": "STW",
+      "state": "RKE"
+    },
+    {
+      "label": "MRU-Mrauk-U",
+      "code": "MRU",
+      "state": "RKE"
+    },
+    {
+      "label": "MDW-Maungdaw",
+      "code": "MDW",
+      "state": "RKE"
+    },
+    {
+      "label": "KKP-Kyaukpyu",
+      "code": "KKP",
+      "state": "RKE"
+    },
+    {
+      "label": "TWE-Thandwe",
+      "code": "TWE",
+      "state": "RKE"
+    },
+    {
+      "label": "SGG-Sagaing",
+      "code": "SGG",
+      "state": "SGG"
+    },
+    {
+      "label": "SBO-Shwebo",
+      "code": "SBO",
+      "state": "SGG"
+    },
+    {
+      "label": "MYA-Monywa",
+      "code": "MYA",
+      "state": "SGG"
+    },
+    {
+      "label": "KTA-Katha",
+      "code": "KTA",
+      "state": "SGG"
+    },
+    {
+      "label": "KLE-Kale",
+      "code": "KLE",
+      "state": "SGG"
+    },
+    {
+      "label": "TMU-Tamu",
+      "code": "TMU",
+      "state": "SGG"
+    },
+    {
+      "label": "MLK-Mawlaik",
+      "code": "MLK",
+      "state": "SGG"
+    },
+    {
+      "label": "KTI-Hkamti",
+      "code": "KTI",
+      "state": "SGG"
+    },
+    {
+      "label": "YBN-Yinmabin",
+      "code": "YBN",
+      "state": "SGG"
+    },
+    {
+      "label": "TGG-Taunggyi",
+      "code": "TGG",
+      "state": "SSH"
+    },
+    {
+      "label": "LLN-Loilen",
+      "code": "LLN",
+      "state": "SSH"
+    },
+    {
+      "label": "LKO-Langkho",
+      "code": "LKO",
+      "state": "SSH"
+    },
+    {
+      "label": "DWI-Dawei",
+      "code": "DWI",
+      "state": "TNI"
+    },
+    {
+      "label": "MYK-Myeik",
+      "code": "MYK",
+      "state": "TNI"
+    },
+    {
+      "label": "KTO-Kawthoung",
+      "code": "KTO",
+      "state": "TNI"
+    },
+    {
+      "label": "PYY-Pyay",
+      "code": "PYY",
+      "state": "WBG"
+    },
+    {
+      "label": "TWY-Thayarwady",
+      "code": "TWY",
+      "state": "WBG"
+    },
+    {
+      "label": "NYG-Yangon (North)",
+      "code": "NYG",
+      "state": "YGN"
+    },
+    {
+      "label": "EYG-Yangon (East)",
+      "code": "EYG",
+      "state": "YGN"
+    },
+    {
+      "label": "SYG-Yangon (South)",
+      "code": "SYG",
+      "state": "YGN"
+    },
+    {
+      "label": "WYG-Yangon (West)",
+      "code": "WYG",
+      "state": "YGN"
+    }
+  ],
+  "townships": [
+    {
+      "label": "MKN-Myitkyina",
+      "code": "MKN",
+      "district": "MKN"
+    },
+    {
+      "label": "WMW-Waingmaw",
+      "code": "WMW",
+      "district": "MKN"
+    },
+    {
+      "label": "IJG-Injangyang",
+      "code": "IJG",
+      "district": "MKN"
+    },
+    {
+      "label": "TAI-Tanai",
+      "code": "TAI",
+      "district": "MKN"
+    },
+    {
+      "label": "CPI-Chipwi",
+      "code": "CPI",
+      "district": "MKN"
+    },
+    {
+      "label": "TLW-Tsawlaw",
+      "code": "TLW",
+      "district": "MKN"
+    },
+    {
+      "label": "MNY-Mohnyin",
+      "code": "MNY",
+      "district": "MHN"
+    },
+    {
+      "label": "MGG-Mogaung",
+      "code": "MGG",
+      "district": "MHN"
+    },
+    {
+      "label": "PKT-Hpakant",
+      "code": "PKT",
+      "district": "MHN"
+    },
+    {
+      "label": "BMO-Bhamo",
+      "code": "BMO",
+      "district": "BMO"
+    },
+    {
+      "label": "SWG-Shwegu",
+      "code": "SWG",
+      "district": "BMO"
+    },
+    {
+      "label": "MMK-Momauk",
+      "code": "MMK",
+      "district": "BMO"
+    },
+    {
+      "label": "MSI-Mansi",
+      "code": "MSI",
+      "district": "BMO"
+    },
+    {
+      "label": "PTO-Puta-O",
+      "code": "PTO",
+      "district": "PTO"
+    },
+    {
+      "label": "SPB-Sumprabum",
+      "code": "SPB",
+      "district": "PTO"
+    },
+    {
+      "label": "MCB-Machanbaw",
+      "code": "MCB",
+      "district": "PTO"
+    },
+    {
+      "label": "KLP-Khaunglanhpu",
+      "code": "KLP",
+      "district": "PTO"
+    },
+    {
+      "label": "NMN-Nawngmun",
+      "code": "NMN",
+      "district": "PTO"
+    },
+    {
+      "label": "LKW-Loikaw",
+      "code": "LKW",
+      "district": "LKW"
+    },
+    {
+      "label": "DMS-Demoso",
+      "code": "DMS",
+      "district": "LKW"
+    },
+    {
+      "label": "PRS-Hpruso",
+      "code": "PRS",
+      "district": "LKW"
+    },
+    {
+      "label": "SDW-Shadaw",
+      "code": "SDW",
+      "district": "LKW"
+    },
+    {
+      "label": "BLK-Bawlakhe",
+      "code": "BLK",
+      "district": "BLK"
+    },
+    {
+      "label": "PSG-Hpasawng",
+      "code": "PSG",
+      "district": "BLK"
+    },
+    {
+      "label": "MSE-Mese",
+      "code": "MSE",
+      "district": "BLK"
+    },
+    {
+      "label": "PAN-Hpa-An",
+      "code": "PAN",
+      "district": "PAN"
+    },
+    {
+      "label": "LBE-Hlaingbwe",
+      "code": "LBE",
+      "district": "PAN"
+    },
+    {
+      "label": "TDA-Thandaunggyi",
+      "code": "TDA",
+      "district": "PAN"
+    },
+    {
+      "label": "PUN-Hpapun",
+      "code": "PUN",
+      "district": "PUN"
+    },
+    {
+      "label": "MWD-Myawaddy",
+      "code": "MWD",
+      "district": "MWD"
+    },
+    {
+      "label": "KKR-Kawkareik",
+      "code": "KKR",
+      "district": "KKR"
+    },
+    {
+      "label": "KSK-Kyainseikgyi",
+      "code": "KSK",
+      "district": "KKR"
+    },
+    {
+      "label": "HKA-Hakha",
+      "code": "HKA",
+      "district": "HKA"
+    },
+    {
+      "label": "TLG-Thantlang",
+      "code": "TLG",
+      "district": "HKA"
+    },
+    {
+      "label": "FLM-Falam",
+      "code": "FLM",
+      "district": "FLM"
+    },
+    {
+      "label": "TDM-Tedim",
+      "code": "TDM",
+      "district": "FLM"
+    },
+    {
+      "label": "TZG-Tonzang",
+      "code": "TZG",
+      "district": "FLM"
+    },
+    {
+      "label": "MDT-Mindat",
+      "code": "MDT",
+      "district": "MDT"
+    },
+    {
+      "label": "MTP-Matupi",
+      "code": "MTP",
+      "district": "MDT"
+    },
+    {
+      "label": "KPL-Kanpetlet",
+      "code": "KPL",
+      "district": "MDT"
+    },
+    {
+      "label": "PWA-Paletwa",
+      "code": "PWA",
+      "district": "MDT"
+    },
+    {
+      "label": "SGG-Sagaing",
+      "code": "SGG",
+      "district": "SGG"
+    },
+    {
+      "label": "MMU-Myinmu",
+      "code": "MMU",
+      "district": "SGG"
+    },
+    {
+      "label": "MAG-Myaung",
+      "code": "MAG",
+      "district": "SGG"
+    },
+    {
+      "label": "SBO-Shwebo",
+      "code": "SBO",
+      "district": "SBO"
+    },
+    {
+      "label": "KNU-Khin-U",
+      "code": "KNU",
+      "district": "SBO"
+    },
+    {
+      "label": "WLT-Wetlet",
+      "code": "WLT",
+      "district": "SBO"
+    },
+    {
+      "label": "KBL-Kanbalu",
+      "code": "KBL",
+      "district": "SBO"
+    },
+    {
+      "label": "KYL-Kyunhla",
+      "code": "KYL",
+      "district": "SBO"
+    },
+    {
+      "label": "YEU-Ye-U",
+      "code": "YEU",
+      "district": "SBO"
+    },
+    {
+      "label": "TBY-Tabayin",
+      "code": "TBY",
+      "district": "SBO"
+    },
+    {
+      "label": "TZE-Taze",
+      "code": "TZE",
+      "district": "SBO"
+    },
+    {
+      "label": "MWA-Monywa",
+      "code": "MWA",
+      "district": "MYA"
+    },
+    {
+      "label": "BDL-Budalin",
+      "code": "BDL",
+      "district": "MYA"
+    },
+    {
+      "label": "AYD-Ayadaw",
+      "code": "AYD",
+      "district": "MYA"
+    },
+    {
+      "label": "CGU-Chaung-U",
+      "code": "CGU",
+      "district": "MYA"
+    },
+    {
+      "label": "KTA-Katha",
+      "code": "KTA",
+      "district": "KTA"
+    },
+    {
+      "label": "IDW-Indaw",
+      "code": "IDW",
+      "district": "KTA"
+    },
+    {
+      "label": "TYA-Tigyaing",
+      "code": "TYA",
+      "district": "KTA"
+    },
+    {
+      "label": "BMK-Banmauk",
+      "code": "BMK",
+      "district": "KTA"
+    },
+    {
+      "label": "KLN-Kawlin",
+      "code": "KLN",
+      "district": "KTA"
+    },
+    {
+      "label": "WTO-Wuntho",
+      "code": "WTO",
+      "district": "KTA"
+    },
+    {
+      "label": "PLB-Pinlebu",
+      "code": "PLB",
+      "district": "KTA"
+    },
+    {
+      "label": "KLE-Kale",
+      "code": "KLE",
+      "district": "KLE"
+    },
+    {
+      "label": "KLW-Kalewa",
+      "code": "KLW",
+      "district": "KLE"
+    },
+    {
+      "label": "MGN-Mingin",
+      "code": "MGN",
+      "district": "KLE"
+    },
+    {
+      "label": "TMU-Tamu",
+      "code": "TMU",
+      "district": "TMU"
+    },
+    {
+      "label": "MLK-Mawlaik",
+      "code": "MLK",
+      "district": "MLK"
+    },
+    {
+      "label": "PBN-Paungbyin",
+      "code": "PBN",
+      "district": "MLK"
+    },
+    {
+      "label": "KTI-Hkamti",
+      "code": "KTI",
+      "district": "KTI"
+    },
+    {
+      "label": "HML-Homalin",
+      "code": "HML",
+      "district": "KTI"
+    },
+    {
+      "label": "LSI-Lay Shi",
+      "code": "LSI",
+      "district": "KTI"
+    },
+    {
+      "label": "LHE-Lahe",
+      "code": "LHE",
+      "district": "KTI"
+    },
+    {
+      "label": "NYN-Nanyun",
+      "code": "NYN",
+      "district": "KTI"
+    },
+    {
+      "label": "YMB-Yinmabin",
+      "code": "YMB",
+      "district": "YBN"
+    },
+    {
+      "label": "SLY-Salingyi",
+      "code": "SLY",
+      "district": "YBN"
+    },
+    {
+      "label": "PLE-Pale",
+      "code": "PLE",
+      "district": "YBN"
+    },
+    {
+      "label": "KNI-Kani",
+      "code": "KNI",
+      "district": "YBN"
+    },
+    {
+      "label": "DWI-Dawei",
+      "code": "DWI",
+      "district": "DWI"
+    },
+    {
+      "label": "LLN-Launglon",
+      "code": "LLN",
+      "district": "DWI"
+    },
+    {
+      "label": "TYC-Thayetchaung",
+      "code": "TYC",
+      "district": "DWI"
+    },
+    {
+      "label": "YBU-Yebyu",
+      "code": "YBU",
+      "district": "DWI"
+    },
+    {
+      "label": "MYK-Myeik",
+      "code": "MYK",
+      "district": "MYK"
+    },
+    {
+      "label": "KSU-Kyunsu",
+      "code": "KSU",
+      "district": "MYK"
+    },
+    {
+      "label": "PLW-Palaw",
+      "code": "PLW",
+      "district": "MYK"
+    },
+    {
+      "label": "TNI-Tanintharyi",
+      "code": "TNI",
+      "district": "MYK"
+    },
+    {
+      "label": "KTG-Kawthoung",
+      "code": "KTG",
+      "district": "KTO"
+    },
+    {
+      "label": "BYN-Bokpyin",
+      "code": "BYN",
+      "district": "KTO"
+    },
+    {
+      "label": "BGO-Bago",
+      "code": "BGO",
+      "district": "BGO"
+    },
+    {
+      "label": "TNP-Thanatpin",
+      "code": "TNP",
+      "district": "BGO"
+    },
+    {
+      "label": "KWA-Kawa",
+      "code": "KWA",
+      "district": "BGO"
+    },
+    {
+      "label": "WAW-Waw",
+      "code": "WAW",
+      "district": "BGO"
+    },
+    {
+      "label": "NLB-Nyaunglebin",
+      "code": "NLB",
+      "district": "BGO"
+    },
+    {
+      "label": "KGA-Kyauktaga",
+      "code": "KGA",
+      "district": "BGO"
+    },
+    {
+      "label": "DKU-Daik-U",
+      "code": "DKU",
+      "district": "BGO"
+    },
+    {
+      "label": "SGN-Shwegyin",
+      "code": "SGN",
+      "district": "BGO"
+    },
+    {
+      "label": "TGO-Taungoo",
+      "code": "TGO",
+      "district": "TGO"
+    },
+    {
+      "label": "YDS-Yedashe",
+      "code": "YDS",
+      "district": "TGO"
+    },
+    {
+      "label": "KKI-Kyaukkyi",
+      "code": "KKI",
+      "district": "TGO"
+    },
+    {
+      "label": "PHU-Phyu",
+      "code": "PHU",
+      "district": "TGO"
+    },
+    {
+      "label": "OTN-Oktwin",
+      "code": "OTN",
+      "district": "TGO"
+    },
+    {
+      "label": "TAB-Htantabin",
+      "code": "TAB",
+      "district": "TGO"
+    },
+    {
+      "label": "PYY-Pyay",
+      "code": "PYY",
+      "district": "PYY"
+    },
+    {
+      "label": "PKG-Paukkhaung",
+      "code": "PKG",
+      "district": "PYY"
+    },
+    {
+      "label": "PDG-Padaung",
+      "code": "PDG",
+      "district": "PYY"
+    },
+    {
+      "label": "PDE-Paungde",
+      "code": "PDE",
+      "district": "PYY"
+    },
+    {
+      "label": "TGN-Thegon",
+      "code": "TGN",
+      "district": "PYY"
+    },
+    {
+      "label": "SDA-Shwedaung",
+      "code": "SDA",
+      "district": "PYY"
+    },
+    {
+      "label": "TWD-Thayarwady",
+      "code": "TWD",
+      "district": "TWY"
+    },
+    {
+      "label": "LPD-Letpadan",
+      "code": "LPD",
+      "district": "TWY"
+    },
+    {
+      "label": "MLA-Minhla",
+      "code": "MLA",
+      "district": "TWY"
+    },
+    {
+      "label": "OPO-Okpho",
+      "code": "OPO",
+      "district": "TWY"
+    },
+    {
+      "label": "ZGN-Zigon",
+      "code": "ZGN",
+      "district": "TWY"
+    },
+    {
+      "label": "NTL-Nattalin",
+      "code": "NTL",
+      "district": "TWY"
+    },
+    {
+      "label": "MYO-Monyo",
+      "code": "MYO",
+      "district": "TWY"
+    },
+    {
+      "label": "GBA-Gyobingauk",
+      "code": "GBA",
+      "district": "TWY"
+    },
+    {
+      "label": "MGW-Magway",
+      "code": "MGW",
+      "district": "MGW"
+    },
+    {
+      "label": "YNY-Yenangyaung",
+      "code": "YNY",
+      "district": "MGW"
+    },
+    {
+      "label": "CHK-Chauk",
+      "code": "CHK",
+      "district": "MGW"
+    },
+    {
+      "label": "TDG-Taungdwingyi",
+      "code": "TDG",
+      "district": "MGW"
+    },
+    {
+      "label": "MTT-Myothit",
+      "code": "MTT",
+      "district": "MGW"
+    },
+    {
+      "label": "NMK-Natmauk",
+      "code": "NMK",
+      "district": "MGW"
+    },
+    {
+      "label": "MBU-Minbu",
+      "code": "MBU",
+      "district": "MBU"
+    },
+    {
+      "label": "PBU-Pwintbyu",
+      "code": "PBU",
+      "district": "MBU"
+    },
+    {
+      "label": "NPE-Ngape",
+      "code": "NPE",
+      "district": "MBU"
+    },
+    {
+      "label": "SLN-Salin",
+      "code": "SLN",
+      "district": "MBU"
+    },
+    {
+      "label": "STY-Sidoktaya",
+      "code": "STY",
+      "district": "MBU"
+    },
+    {
+      "label": "TYT-Thayet",
+      "code": "TYT",
+      "district": "TYT"
+    },
+    {
+      "label": "MIL-Minhla",
+      "code": "MIL",
+      "district": "TYT"
+    },
+    {
+      "label": "MDN-Mindon",
+      "code": "MDN",
+      "district": "TYT"
+    },
+    {
+      "label": "KMA-Kamma",
+      "code": "KMA",
+      "district": "TYT"
+    },
+    {
+      "label": "ALN-Aunglan",
+      "code": "ALN",
+      "district": "TYT"
+    },
+    {
+      "label": "SBW-Sinbaungwe",
+      "code": "SBW",
+      "district": "TYT"
+    },
+    {
+      "label": "PKU-Pakokku",
+      "code": "PKU",
+      "district": "PKK"
+    },
+    {
+      "label": "YSG-Yesagyo",
+      "code": "YSG",
+      "district": "PKK"
+    },
+    {
+      "label": "MIG-Myaing",
+      "code": "MIG",
+      "district": "PKK"
+    },
+    {
+      "label": "PAK-Pauk",
+      "code": "PAK",
+      "district": "PKK"
+    },
+    {
+      "label": "SPU-Seikphyu",
+      "code": "SPU",
+      "district": "PKK"
+    },
+    {
+      "label": "GGW-Gangaw",
+      "code": "GGW",
+      "district": "GGW"
+    },
+    {
+      "label": "TLN-Tilin",
+      "code": "TLN",
+      "district": "GGW"
+    },
+    {
+      "label": "SAW-Saw",
+      "code": "SAW",
+      "district": "GGW"
+    },
+    {
+      "label": "ATZ-Aungmyaythazan",
+      "code": "ATZ",
+      "district": "MDY"
+    },
+    {
+      "label": "CTZ-Chanayethazan",
+      "code": "CTZ",
+      "district": "MDY"
+    },
+    {
+      "label": "MAM-Mahaaungmyay",
+      "code": "MAM",
+      "district": "MDY"
+    },
+    {
+      "label": "CMT-Chanmyathazi",
+      "code": "CMT",
+      "district": "MDY"
+    },
+    {
+      "label": "PGT-Pyigyitagon",
+      "code": "PGT",
+      "district": "MDY"
+    },
+    {
+      "label": "APR-Amarapura",
+      "code": "APR",
+      "district": "MDY"
+    },
+    {
+      "label": "PTG-Patheingyi",
+      "code": "PTG",
+      "district": "MDY"
+    },
+    {
+      "label": "POL-Pyinoolwin",
+      "code": "POL",
+      "district": "POL"
+    },
+    {
+      "label": "MYA-Madaya",
+      "code": "MYA",
+      "district": "POL"
+    },
+    {
+      "label": "SGU-Singu",
+      "code": "SGU",
+      "district": "POL"
+    },
+    {
+      "label": "MGE-Mogoke",
+      "code": "MGE",
+      "district": "POL"
+    },
+    {
+      "label": "TBK-Thabeikkyin",
+      "code": "TBK",
+      "district": "POL"
+    },
+    {
+      "label": "KSE-Kyaukse",
+      "code": "KSE",
+      "district": "KKS"
+    },
+    {
+      "label": "SGA-Sintgaing",
+      "code": "SGA",
+      "district": "KKS"
+    },
+    {
+      "label": "MYT-Myittha",
+      "code": "MYT",
+      "district": "KKS"
+    },
+    {
+      "label": "TDU-Tada-U",
+      "code": "TDU",
+      "district": "KKS"
+    },
+    {
+      "label": "MYN-Myingyan",
+      "code": "MYN",
+      "district": "MGY"
+    },
+    {
+      "label": "TTA-Taungtha",
+      "code": "TTA",
+      "district": "MGY"
+    },
+    {
+      "label": "NTG-Natogyi",
+      "code": "NTG",
+      "district": "MGY"
+    },
+    {
+      "label": "KPD-Kyaukpadaung",
+      "code": "KPD",
+      "district": "MGY"
+    },
+    {
+      "label": "NZN-Ngazun",
+      "code": "NZN",
+      "district": "MGY"
+    },
+    {
+      "label": "NYU-Nyaung-U",
+      "code": "NYU",
+      "district": "NYU"
+    },
+    {
+      "label": "YMT-Yamethin",
+      "code": "YMT",
+      "district": "YMT"
+    },
+    {
+      "label": "PBE-Pyawbwe",
+      "code": "PBE",
+      "district": "YMT"
+    },
+    {
+      "label": "MTL-Meiktila",
+      "code": "MTL",
+      "district": "MTL"
+    },
+    {
+      "label": "MLG-Mahlaing",
+      "code": "MLG",
+      "district": "MTL"
+    },
+    {
+      "label": "TZI-Thazi",
+      "code": "TZI",
+      "district": "MTL"
+    },
+    {
+      "label": "WDW-Wundwin",
+      "code": "WDW",
+      "district": "MTL"
+    },
+    {
+      "label": "MLY-Mawlamyine",
+      "code": "MLY",
+      "district": "MLM"
+    },
+    {
+      "label": "KMR-Kyaikmaraw",
+      "code": "KMR",
+      "district": "MLM"
+    },
+    {
+      "label": "CZN-Chaungzon",
+      "code": "CZN",
+      "district": "MLM"
+    },
+    {
+      "label": "TZY-Thanbyuzayat",
+      "code": "TZY",
+      "district": "MLM"
+    },
+    {
+      "label": "MDO-Mudon",
+      "code": "MDO",
+      "district": "MLM"
+    },
+    {
+      "label": "YEE-Ye",
+      "code": "YEE",
+      "district": "MLM"
+    },
+    {
+      "label": "TTN-Thaton",
+      "code": "TTN",
+      "district": "TTN"
+    },
+    {
+      "label": "PAG-Paung",
+      "code": "PAG",
+      "district": "TTN"
+    },
+    {
+      "label": "KTO-Kyaikto",
+      "code": "KTO",
+      "district": "TTN"
+    },
+    {
+      "label": "BLN-Bilin",
+      "code": "BLN",
+      "district": "TTN"
+    },
+    {
+      "label": "STE-Sittwe",
+      "code": "STE",
+      "district": "STW"
+    },
+    {
+      "label": "PNY-Ponnagyun",
+      "code": "PNY",
+      "district": "STW"
+    },
+    {
+      "label": "PTA-Pauktaw",
+      "code": "PTA",
+      "district": "STW"
+    },
+    {
+      "label": "RTD-Rathedaung",
+      "code": "RTD",
+      "district": "STW"
+    },
+    {
+      "label": "MRU-Mrauk-U",
+      "code": "MRU",
+      "district": "MRU"
+    },
+    {
+      "label": "KTW-Kyauktaw",
+      "code": "KTW",
+      "district": "MRU"
+    },
+    {
+      "label": "MBA-Minbya",
+      "code": "MBA",
+      "district": "MRU"
+    },
+    {
+      "label": "MBN-Myebon",
+      "code": "MBN",
+      "district": "MRU"
+    },
+    {
+      "label": "MDW-Maungdaw",
+      "code": "MDW",
+      "district": "MDW"
+    },
+    {
+      "label": "BTD-Buthidaung",
+      "code": "BTD",
+      "district": "MDW"
+    },
+    {
+      "label": "KPU-Kyaukpyu",
+      "code": "KPU",
+      "district": "KKP"
+    },
+    {
+      "label": "MAU-Munaung",
+      "code": "MAU",
+      "district": "KKP"
+    },
+    {
+      "label": "RRE-Ramree",
+      "code": "RRE",
+      "district": "KKP"
+    },
+    {
+      "label": "ANN-Ann",
+      "code": "ANN",
+      "district": "KKP"
+    },
+    {
+      "label": "TDE-Thandwe",
+      "code": "TDE",
+      "district": "TWE"
+    },
+    {
+      "label": "TGP-Toungup",
+      "code": "TGP",
+      "district": "TWE"
+    },
+    {
+      "label": "GWA-Gwa",
+      "code": "GWA",
+      "district": "TWE"
+    },
+    {
+      "label": "ISN-Insein",
+      "code": "ISN",
+      "district": "NYG"
+    },
+    {
+      "label": "MGL-Mingaladon",
+      "code": "MGL",
+      "district": "NYG"
+    },
+    {
+      "label": "MBI-Hmawbi",
+      "code": "MBI",
+      "district": "NYG"
+    },
+    {
+      "label": "LGU-Hlegu",
+      "code": "LGU",
+      "district": "NYG"
+    },
+    {
+      "label": "TKI-Taikkyi",
+      "code": "TKI",
+      "district": "NYG"
+    },
+    {
+      "label": "TTB-Htantabin",
+      "code": "TTB",
+      "district": "NYG"
+    },
+    {
+      "label": "SPT-Shwepyithar",
+      "code": "SPT",
+      "district": "NYG"
+    },
+    {
+      "label": "LTY-Hlaingtharya",
+      "code": "LTY",
+      "district": "NYG"
+    },
+    {
+      "label": "TYG-Thingangyun",
+      "code": "TYG",
+      "district": "EYG"
+    },
+    {
+      "label": "YKN-Yankin",
+      "code": "YKN",
+      "district": "EYG"
+    },
+    {
+      "label": "SOK-South Okkalapa",
+      "code": "SOK",
+      "district": "EYG"
+    },
+    {
+      "label": "NOK-North Okkalapa",
+      "code": "NOK",
+      "district": "EYG"
+    },
+    {
+      "label": "TKT-Thaketa",
+      "code": "TKT",
+      "district": "EYG"
+    },
+    {
+      "label": "DBN-Dawbon",
+      "code": "DBN",
+      "district": "EYG"
+    },
+    {
+      "label": "TWE-Tamwe",
+      "code": "TWE",
+      "district": "EYG"
+    },
+    {
+      "label": "PZD-Pazundaung",
+      "code": "PZD",
+      "district": "EYG"
+    },
+    {
+      "label": "BTT-Botahtaung",
+      "code": "BTT",
+      "district": "EYG"
+    },
+    {
+      "label": "SDG-Dagon Myothit (South)",
+      "code": "SDG",
+      "district": "EYG"
+    },
+    {
+      "label": "NDG-Dagon Myothit (North)",
+      "code": "NDG",
+      "district": "EYG"
+    },
+    {
+      "label": "EDG-Dagon Myothit (East)",
+      "code": "EDG",
+      "district": "EYG"
+    },
+    {
+      "label": "DKS-Dagon Myothit (Seikkan)",
+      "code": "DKS",
+      "district": "EYG"
+    },
+    {
+      "label": "MTN-Mingalartaungnyunt",
+      "code": "MTN",
+      "district": "EYG"
+    },
+    {
+      "label": "TLY-Thanlyin",
+      "code": "TLY",
+      "district": "SYG"
+    },
+    {
+      "label": "KTN-Kyauktan",
+      "code": "KTN",
+      "district": "SYG"
+    },
+    {
+      "label": "TWA-Thongwa",
+      "code": "TWA",
+      "district": "SYG"
+    },
+    {
+      "label": "KYN-Kayan",
+      "code": "KYN",
+      "district": "SYG"
+    },
+    {
+      "label": "TTY-Twantay",
+      "code": "TTY",
+      "district": "SYG"
+    },
+    {
+      "label": "KMU-Kawhmu",
+      "code": "KMU",
+      "district": "SYG"
+    },
+    {
+      "label": "KYG-Kungyangon",
+      "code": "KYG",
+      "district": "SYG"
+    },
+    {
+      "label": "DLA-Dala",
+      "code": "DLA",
+      "district": "SYG"
+    },
+    {
+      "label": "SNT-Seikgyikanaungto",
+      "code": "SNT",
+      "district": "SYG"
+    },
+    {
+      "label": "CKN-Cocokyun",
+      "code": "CKN",
+      "district": "SYG"
+    },
+    {
+      "label": "KTD-Kyauktada",
+      "code": "KTD",
+      "district": "WYG"
+    },
+    {
+      "label": "PBD-Pabedan",
+      "code": "PBD",
+      "district": "WYG"
+    },
+    {
+      "label": "LMD-Lanmadaw",
+      "code": "LMD",
+      "district": "WYG"
+    },
+    {
+      "label": "LTA-Latha",
+      "code": "LTA",
+      "district": "WYG"
+    },
+    {
+      "label": "ALE-Ahlone",
+      "code": "ALE",
+      "district": "WYG"
+    },
+    {
+      "label": "KMD-Kyeemyindaing",
+      "code": "KMD",
+      "district": "WYG"
+    },
+    {
+      "label": "SCG-Sanchaung",
+      "code": "SCG",
+      "district": "WYG"
+    },
+    {
+      "label": "HLG-Hlaing",
+      "code": "HLG",
+      "district": "WYG"
+    },
+    {
+      "label": "KMY-Kamaryut",
+      "code": "KMY",
+      "district": "WYG"
+    },
+    {
+      "label": "MYG-Mayangone",
+      "code": "MYG",
+      "district": "WYG"
+    },
+    {
+      "label": "DGN-Dagon",
+      "code": "DGN",
+      "district": "WYG"
+    },
+    {
+      "label": "BHN-Bahan",
+      "code": "BHN",
+      "district": "WYG"
+    },
+    {
+      "label": "SKN-Seikkan",
+      "code": "SKN",
+      "district": "WYG"
+    },
+    {
+      "label": "TGI-Taunggyi",
+      "code": "TGI",
+      "district": "TGG"
+    },
+    {
+      "label": "NSE-Nyaungshwe",
+      "code": "NSE",
+      "district": "TGG"
+    },
+    {
+      "label": "HPG-Hopong",
+      "code": "HPG",
+      "district": "TGG"
+    },
+    {
+      "label": "HHG-Hsihseng",
+      "code": "HHG",
+      "district": "TGG"
+    },
+    {
+      "label": "KLA-Kalaw",
+      "code": "KLA",
+      "district": "TGG"
+    },
+    {
+      "label": "PDY-Pindaya",
+      "code": "PDY",
+      "district": "TGG"
+    },
+    {
+      "label": "YWG-Ywangan",
+      "code": "YWG",
+      "district": "TGG"
+    },
+    {
+      "label": "LSK-Lawksawk",
+      "code": "LSK",
+      "district": "TGG"
+    },
+    {
+      "label": "PLG-Pinlaung",
+      "code": "PLG",
+      "district": "TGG"
+    },
+    {
+      "label": "PKN-Pekon",
+      "code": "PKN",
+      "district": "TGG"
+    },
+    {
+      "label": "LLE-Loilen",
+      "code": "LLE",
+      "district": "LLN"
+    },
+    {
+      "label": "LKA-Laihka",
+      "code": "LKA",
+      "district": "LLN"
+    },
+    {
+      "label": "NSG-Nansang",
+      "code": "NSG",
+      "district": "LLN"
+    },
+    {
+      "label": "KHG-Kunhing",
+      "code": "KHG",
+      "district": "LLN"
+    },
+    {
+      "label": "KTH-Kyethi",
+      "code": "KTH",
+      "district": "LLN"
+    },
+    {
+      "label": "MKG-Mongkaing",
+      "code": "MKG",
+      "district": "LLN"
+    },
+    {
+      "label": "MSU-Monghsu",
+      "code": "MSU",
+      "district": "LLN"
+    },
+    {
+      "label": "LKO-Langkho",
+      "code": "LKO",
+      "district": "LKO"
+    },
+    {
+      "label": "MNI-Mongnai",
+      "code": "MNI",
+      "district": "LKO"
+    },
+    {
+      "label": "MMI-Mawkmai",
+      "code": "MMI",
+      "district": "LKO"
+    },
+    {
+      "label": "MPN-Mongpan",
+      "code": "MPN",
+      "district": "LKO"
+    },
+    {
+      "label": "LSO-Lashio",
+      "code": "LSO",
+      "district": "LSH"
+    },
+    {
+      "label": "SNI-Hseni",
+      "code": "SNI",
+      "district": "LSH"
+    },
+    {
+      "label": "MYI-Mongyai",
+      "code": "MYI",
+      "district": "LSH"
+    },
+    {
+      "label": "TYN-Tangyan",
+      "code": "TYN",
+      "district": "LSH"
+    },
+    {
+      "label": "MUS-Muse",
+      "code": "MUS",
+      "district": "MSE"
+    },
+    {
+      "label": "NKN-Namhkan",
+      "code": "NKN",
+      "district": "MSE"
+    },
+    {
+      "label": "KKA-Kutkai",
+      "code": "KKA",
+      "district": "MSE"
+    },
+    {
+      "label": "KME-Kyaukme",
+      "code": "KME",
+      "district": "KKM"
+    },
+    {
+      "label": "NKO-Nawnghkio",
+      "code": "NKO",
+      "district": "KKM"
+    },
+    {
+      "label": "SPW-Hsipaw",
+      "code": "SPW",
+      "district": "KKM"
+    },
+    {
+      "label": "NTU-Namtu",
+      "code": "NTU",
+      "district": "KKM"
+    },
+    {
+      "label": "NSN-Namhsan",
+      "code": "NSN",
+      "district": "KKM"
+    },
+    {
+      "label": "MMT-Mongmit",
+      "code": "MMT",
+      "district": "KKM"
+    },
+    {
+      "label": "MAB-Mabein",
+      "code": "MAB",
+      "district": "KKM"
+    },
+    {
+      "label": "MAT-Manton",
+      "code": "MAT",
+      "district": "KKM"
+    },
+    {
+      "label": "KLG-Kunlong",
+      "code": "KLG",
+      "district": "KLG"
+    },
+    {
+      "label": "LKG-Laukkaing",
+      "code": "LKG",
+      "district": "LKK"
+    },
+    {
+      "label": "KKN-Konkyan",
+      "code": "KKN",
+      "district": "LKK"
+    },
+    {
+      "label": "HPA-Hopang",
+      "code": "HPA",
+      "district": "HPG"
+    },
+    {
+      "label": "MMO-Mongmao",
+      "code": "MMO",
+      "district": "HPG"
+    },
+    {
+      "label": "PWN-Pangwaun",
+      "code": "PWN",
+      "district": "HPG"
+    },
+    {
+      "label": "MMN-Matman",
+      "code": "MMN",
+      "district": "MMN"
+    },
+    {
+      "label": "PSA-Pangsang",
+      "code": "PSA",
+      "district": "MMN"
+    },
+    {
+      "label": "NPN-Narphan",
+      "code": "NPN",
+      "district": "MMN"
+    },
+    {
+      "label": "KTU-Kengtung",
+      "code": "KTU",
+      "district": "KTG"
+    },
+    {
+      "label": "MKT-Mongkhet",
+      "code": "MKT",
+      "district": "KTG"
+    },
+    {
+      "label": "MNG-Mongyang",
+      "code": "MNG",
+      "district": "KTG"
+    },
+    {
+      "label": "MGA-Mongla",
+      "code": "MGA",
+      "district": "KTG"
+    },
+    {
+      "label": "MST-Monghsat",
+      "code": "MST",
+      "district": "MGS"
+    },
+    {
+      "label": "MPG-Mongping",
+      "code": "MPG",
+      "district": "MGS"
+    },
+    {
+      "label": "MTO-Mongton",
+      "code": "MTO",
+      "district": "MGS"
+    },
+    {
+      "label": "TCL-Tachileik",
+      "code": "TCL",
+      "district": "TCL"
+    },
+    {
+      "label": "MPK-Monghpyak",
+      "code": "MPK",
+      "district": "MGP"
+    },
+    {
+      "label": "MYW-Mongyawng",
+      "code": "MYW",
+      "district": "MGP"
+    },
+    {
+      "label": "KYD-Kangyidaunt",
+      "code": "KYD",
+      "district": "PTN"
+    },
+    {
+      "label": "KGN-Kyaunggon",
+      "code": "KGN",
+      "district": "PTN"
+    },
+    {
+      "label": "KPW-Kyonpyaw",
+      "code": "KPW",
+      "district": "PTN"
+    },
+    {
+      "label": "NPD-Ngapudaw",
+      "code": "NPD",
+      "district": "PTN"
+    },
+    {
+      "label": "PTN-Pathein",
+      "code": "PTN",
+      "district": "PTN"
+    },
+    {
+      "label": "YGI-Yegyi",
+      "code": "YGI",
+      "district": "PTN"
+    },
+    {
+      "label": "TBG-Thabaung",
+      "code": "TBG",
+      "district": "PTN"
+    },
+    {
+      "label": "KLT-Kyaiklat",
+      "code": "KLT",
+      "district": "PYP"
+    },
+    {
+      "label": "DDE-Dedaye",
+      "code": "DDE",
+      "district": "PYP"
+    },
+    {
+      "label": "PPN-Pyapon",
+      "code": "PPN",
+      "district": "PYP"
+    },
+    {
+      "label": "BGL-Bogale",
+      "code": "BGL",
+      "district": "PYP"
+    },
+    {
+      "label": "NDN-Nyaungdon",
+      "code": "NDN",
+      "district": "MBN"
+    },
+    {
+      "label": "DBU-Danubyu",
+      "code": "DBU",
+      "district": "MBN"
+    },
+    {
+      "label": "PTW-Pantanaw",
+      "code": "PTW",
+      "district": "MBN"
+    },
+    {
+      "label": "MIN-Maubin",
+      "code": "MIN",
+      "district": "MBN"
+    },
+    {
+      "label": "MMA-Myaungmya",
+      "code": "MMA",
+      "district": "MMA"
+    },
+    {
+      "label": "WKM-Wakema",
+      "code": "WKM",
+      "district": "MMA"
+    },
+    {
+      "label": "EME-Einme",
+      "code": "EME",
+      "district": "MMA"
+    },
+    {
+      "label": "MLM-Mawlamyinegyun",
+      "code": "MLM",
+      "district": "LBT"
+    },
+    {
+      "label": "LBT-Labutta",
+      "code": "LBT",
+      "district": "LBT"
+    },
+    {
+      "label": "KGI-Kyangin",
+      "code": "KGI",
+      "district": "HTD"
+    },
+    {
+      "label": "ZLN-Zalun",
+      "code": "ZLN",
+      "district": "HTD"
+    },
+    {
+      "label": "MYU-Myanaung",
+      "code": "MYU",
+      "district": "HTD"
+    },
+    {
+      "label": "LMT-Lemyethna",
+      "code": "LMT",
+      "district": "HTD"
+    },
+    {
+      "label": "HTD-Hinthada",
+      "code": "HTD",
+      "district": "HTD"
+    },
+    {
+      "label": "IGP-Ingapu",
+      "code": "IGP",
+      "district": "HTD"
+    },
+    {
+      "label": "TKN-Tatkon",
+      "code": "TKN",
+      "district": "NNW"
+    },
+    {
+      "label": "ZYT-Zay Yar Thi Ri",
+      "code": "ZYT",
+      "district": "NNW"
+    },
+    {
+      "label": "OTR-Oke Ta Ra Thi Ri",
+      "code": "OTR",
+      "district": "NNW"
+    },
+    {
+      "label": "PBT-Poke Ba Thi Ri",
+      "code": "PBT",
+      "district": "NNW"
+    },
+    {
+      "label": "PMN-Pyinmana",
+      "code": "PMN",
+      "district": "SNW"
+    },
+    {
+      "label": "LWE-Lewe",
+      "code": "LWE",
+      "district": "SNW"
+    },
+    {
+      "label": "ZBT-Za Bu Thi Ri",
+      "code": "ZBT",
+      "district": "SNW"
+    },
+    {
+      "label": "DKN-Det Khi Na Thi Ri",
+      "code": "DKN",
+      "district": "SNW"
+    }
+  ],
+  "services": [
+    "VNM - Normal Intra City",
+    "VFC - VTP Free COD"
+  ],
+  "productTypes": [
+    "Goods",
+    "Document"
+  ],
+  "pickupTimes": [
+    "Today - Morning (7h30 - 12h00)",
+    "Today - Afternoon (13h30 - 18h00)",
+    "Today - Evening (18h30 - 21h00)",
+    "Tomorrow - Whole day",
+    "Tomorrow - Morning (7h30 - 12h00)",
+    "Tomorrow - Afternoon (13h30 - 18h00)",
+    "Tomorrow - Evening (18h30 - 21h00)",
+    "The day after tomorrow - Whole day",
+    "The day after tomorrow - Morning (7h30 - 12h00)",
+    "The day after tomorrow - Afternoon (13h30 - 18h00)",
+    "The day after tomorrow - Evening (18h30 - 21h00)"
+  ]
+}

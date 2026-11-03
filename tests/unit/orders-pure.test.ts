@@ -15,15 +15,20 @@ describe("Máy trạng thái đơn", () => {
 
   it("luồng COD đầy đủ", () => {
     expect(assertTransition("confirmCod", cod("PENDING"))).toBe("COD_CONFIRMED");
-    expect(assertTransition("pack", cod("COD_CONFIRMED"))).toBe("PACKING");
-    expect(assertTransition("ship", cod("PACKING"))).toBe("SHIPPING");
+    expect(assertTransition("ship", cod("COD_CONFIRMED"))).toBe("SHIPPING");
     expect(assertTransition("complete", cod("SHIPPING"))).toBe("COMPLETED");
   });
 
-  it("luồng chuyển khoản: phải duyệt thanh toán trước khi đóng gói", () => {
-    expect(canTransition("pack", bank("PENDING"))).toBe(false);
+  it("chuyển khoản: nhận tiền rồi bàn giao vận chuyển, không cần biên lai hay bước đóng gói", () => {
+    expect(canTransition("ship", bank("PENDING"))).toBe(false);
     expect(assertTransition("confirmPayment", bank("PENDING"))).toBe("PAYMENT_CONFIRMED");
-    expect(canTransition("pack", bank("PAYMENT_CONFIRMED"))).toBe(true);
+    expect(assertTransition("ship", bank("PAYMENT_CONFIRMED"))).toBe("SHIPPING");
+    expect(availableTransitions(bank("PAYMENT_CONFIRMED"))).toEqual(["ship", "cancel"]);
+  });
+
+  it("đơn đóng gói cũ vẫn bàn giao được; không được giao lại", () => {
+    expect(assertTransition("ship", cod("PACKING"))).toBe("SHIPPING");
+    expect(canTransition("ship", cod("SHIPPING"))).toBe(false);
   });
 
   it("không dùng nhầm thao tác của phương thức khác", () => {
@@ -46,7 +51,7 @@ describe("Máy trạng thái đơn", () => {
     expect(() => assertTransition("ship", cod("CANCELLED"))).toThrow(TransitionError);
   });
 
-  it("chỉ giữ hàng khi chưa đóng gói", () => {
+  it("chỉ giữ hàng trước khi xuất kho", () => {
     expect(holdsReservation("PENDING")).toBe(true);
     expect(holdsReservation("COD_CONFIRMED")).toBe(true);
     expect(holdsReservation("PACKING")).toBe(false);

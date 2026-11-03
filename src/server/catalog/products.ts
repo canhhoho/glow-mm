@@ -236,7 +236,7 @@ function missingColumns(rows: Record<string, string>[], cols: readonly string[])
 }
 
 /** Import sản phẩm: mỗi dòng = 1 biến thể; các dòng cùng product_slug gộp thành 1 sản phẩm. */
-export async function importProductsCsv(csv: string, userId: string): Promise<ImportResult> {
+export async function importProductsCsv(csv: string, userId: string, lineNumbers?: number[]): Promise<ImportResult> {
   const rows = parseCsvObjects(csv);
   const required = PRODUCT_CSV_COLUMNS.filter((c) => !c.startsWith("description") && !c.startsWith("usage") && c !== "ingredients" && c !== "storage_note" && c !== "weight_g");
   const missing = missingColumns(rows, required);
@@ -245,7 +245,7 @@ export async function importProductsCsv(csv: string, userId: string): Promise<Im
   const groups = new Map<string, { line: number; row: Record<string, string> }[]>();
   rows.forEach((row, i) => {
     const key = row.product_slug;
-    groups.set(key, [...(groups.get(key) ?? []), { line: i + 2, row }]);
+    groups.set(key, [...(groups.get(key) ?? []), { line: lineNumbers?.[i] ?? i + 2, row }]);
   });
 
   const errors: string[] = [];
@@ -302,7 +302,7 @@ export async function importProductsCsv(csv: string, userId: string): Promise<Im
 }
 
 /** Import tồn đầu kỳ → tạo phiếu NHẬP NHÁP theo từng vị trí (người dùng kiểm tra rồi ghi sổ). */
-export async function importOpeningStockCsv(csv: string, userId: string): Promise<ImportResult> {
+export async function importOpeningStockCsv(csv: string, userId: string, lineNumbers?: number[]): Promise<ImportResult> {
   const rows = parseCsvObjects(csv);
   const missing = missingColumns(rows, STOCK_CSV_COLUMNS.filter((c) => c !== "mfg_date" && c !== "stock_type"));
   if (missing.length) return { ok: 0, errors: [`Thiếu cột: ${missing.join(", ")}`] };
@@ -313,7 +313,7 @@ export async function importOpeningStockCsv(csv: string, userId: string): Promis
   const variants = new Map((await prisma.variant.findMany({ select: { id: true, sku: true } })).map((v) => [v.sku, v.id]));
 
   rows.forEach((r, i) => {
-    const line = i + 2;
+    const line = lineNumbers?.[i] ?? i + 2;
     const locationId = locations.get(r.location_code);
     const variantId = variants.get(r.sku);
     if (!locationId) return errors.push(`Dòng ${line}: không có vị trí "${r.location_code}"`);
@@ -338,7 +338,7 @@ export async function importOpeningStockCsv(csv: string, userId: string): Promis
   const documents: { id: string; code: string }[] = [];
   for (const [toId, lines] of byLocation) {
     try {
-      const doc = await createDocument({ type: "RECEIVE", toId, reason: "Tồn đầu kỳ (import CSV)", lines }, userId);
+      const doc = await createDocument({ type: "RECEIVE", toId, reason: "Tồn đầu kỳ (import)", lines }, userId);
       documents.push({ id: doc.id, code: doc.code });
     } catch (e) {
       errors.push(e instanceof z.ZodError ? e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") : (e as Error).message);

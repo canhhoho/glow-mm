@@ -6,20 +6,21 @@ import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { isPhoneEmail } from "@/server/auth/customer-policy";
 import { getOrderAdmin, quarantineLocations, sellableLocations } from "@/server/orders/admin-queries";
-import { returnItemsAction, reviewProofAction } from "@/server/orders/actions";
+import { returnItemsAction } from "@/server/orders/actions";
 import { assignOrderAffiliateAction, setOrderCommissionRatesAction } from "@/server/affiliates/actions";
 import { affiliateOptions } from "@/server/affiliates/affiliates";
 import { bpToPercent, splitCommissions } from "@/server/affiliates/commission";
 import { getNumberSetting } from "@/server/settings";
 import { CommissionBadge } from "@/components/admin/affiliate-parts";
 import { availableTransitions, TRANSITIONS } from "@/server/orders/state-machine";
-import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/admin/order-badges";
 import { TransitionForm, type TransitionField } from "@/components/admin/transition-form";
 import { Badge, DataTable, fieldClass, LinkButton, Page, PageHeader, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { vtpPreview } from "@/server/orders/vtp-data";
+import { VtpSingleInfo } from "@/components/admin/vtp-single-info";
 
 export default async function OrderPage({ params }: PageProps<"/admin/orders/[id]">) {
   const user = await requirePagePermission("orders:view");
@@ -45,18 +46,14 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
     (n) => n !== "returned" && can(user.role, TRANSITIONS[n].permission),
   );
   const fieldsFor = (n: string): TransitionField[] => {
-    if (n === "pack" && locations.length > 1) {
+    if (n === "ship") {
       return [
-        {
+        ...(order.status !== "PACKING" && locations.length > 1 ? [{
           name: "fromLocationId",
           label: t("fromLocation"),
           required: true,
           options: locations.map((l) => ({ value: l.id, label: `${l.code} — ${l.name}` })),
-        },
-      ];
-    }
-    if (n === "ship") {
-      return [
+        } satisfies TransitionField] : []),
         { name: "carrier", label: t("carrier"), required: true },
         { name: "trackingNo", label: t("trackingNo") },
       ];
@@ -64,14 +61,13 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
     if (n === "cancel") return [{ name: "reason", label: t("reason") }];
     return [];
   };
-  const canReview = can(user.role, "orders:confirm-payment");
   const returnable = order.items.filter((i) => i.qty - i.returnedQty > 0);
   const canReturn =
     (order.status === "SHIPPING" || order.status === "COMPLETED") &&
     can(user.role, "orders:return") &&
     returnable.length > 0 &&
     qcLocations.length > 0;
-  const showLabel = ["PACKING", "SHIPPING", "COMPLETED"].includes(order.status);
+  const showLabel = ["PAYMENT_CONFIRMED", "COD_CONFIRMED", "PACKING", "SHIPPING", "COMPLETED"].includes(order.status);
   const who = (userId: string | null) => (userId ? (order.userNames[userId] ?? userId) : t("system"));
 
   return (
@@ -80,12 +76,15 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
         title={`${t("colCode")} ${order.code}`}
         back={{ href: "/admin/orders", label: t("back") }}
         actions={
-          showLabel && (
+          <>
+          {can(user.role, "orders:ship") && ["PAYMENT_CONFIRMED", "COD_CONFIRMED", "PACKING"].includes(order.status) && <LinkButton href={`/admin/orders/export?id=${order.id}`}>{t("exportVtp")}</LinkButton>}
+          {showLabel && (
             <LinkButton href={`/admin/orders/${order.id}/label`}>
               <Printer aria-hidden />
               {t("printLabel")}
             </LinkButton>
-          )
+          )}
+          </>
         }
       />
 
@@ -150,6 +149,8 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
           )}
         </dl>
       </section>
+
+      <VtpSingleInfo order={vtpPreview(order)} />
 
       <section className="space-y-2 rounded-lg border p-4" data-testid="order-affiliate">
         <h2 className="font-medium">{ta("orderSection")}</h2>
@@ -315,6 +316,8 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
       {(transitions.length > 0 || !canReturn) && (
         <section className="space-y-2">
           <h2 className="font-medium">{t("actions")}</h2>
+          {order.status === "PENDING" && <p className="text-sm text-muted-foreground">{t(`confirmHint.${order.paymentMethod}`)}</p>}
+          {order.status === "SHIPPING" && order.paymentMethod === "COD" && <p className="text-sm text-muted-foreground">{t("codCompleteHint")}</p>}
           {transitions.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("noActions")}</p>
           ) : (
@@ -324,7 +327,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
                   key={n}
                   orderId={order.id}
                   transition={n}
-                  label={t(`t.${n}`)}
+                  label={n === "complete" && order.paymentMethod === "COD" ? t("completeCod") : t(`t.${n}`)}
                   fields={fieldsFor(n)}
                   variant={n === "cancel" ? "destructive" : "default"}
                   confirm={n === "cancel" ? t("cancelConfirm") : undefined}
@@ -391,45 +394,6 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
               </label>
             </div>
           </ActionForm>
-        </section>
-      )}
-
-      {order.paymentMethod === "BANK_TRANSFER" && (
-        <section className="space-y-2">
-          <h2 className="font-medium">{t("proofs")}</h2>
-          {order.paymentProofs.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("noProofs")}</p>
-          ) : (
-            <ul className="space-y-2">
-              {order.paymentProofs.map((p) => (
-                <li key={p.id} className="flex flex-wrap items-center gap-3 rounded-lg border p-3 text-sm">
-                  <a href={p.file.url} target="_blank" rel="noreferrer" className="text-primary underline">
-                    {t("viewFile")}
-                  </a>
-                  <span className="text-muted-foreground">{fmtDateTime(p.createdAt)}</span>
-                  <Badge tone={p.status === "APPROVED" ? "success" : p.status === "REJECTED" ? "danger" : "warning"}>
-                    {t(`proof.${p.status}`)}
-                  </Badge>
-                  {p.note && <span>{p.note}</span>}
-                  {p.status === "PENDING" && canReview && (
-                    <span className="flex gap-2">
-                      <ActionButton
-                        action={reviewProofAction}
-                        fields={{ proofId: p.id, orderId: order.id, decision: "approve" }}
-                        label={t("approve")}
-                      />
-                      <ActionButton
-                        action={reviewProofAction}
-                        fields={{ proofId: p.id, orderId: order.id, decision: "reject" }}
-                        label={t("reject")}
-                        variant="outline"
-                      />
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
         </section>
       )}
 

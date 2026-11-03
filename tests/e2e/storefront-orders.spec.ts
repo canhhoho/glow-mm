@@ -3,12 +3,6 @@ import Rabbit from "rabbit-node";
 import { login, pickAddress, signInAtPrompt } from "./helpers";
 
 const PRODUCT = "/en/p/sen-viet-sunscreen-spf50";
-// PNG 1×1 tối thiểu làm "biên lai".
-const PNG = Buffer.from(
-  "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c6360000002000154a24f5d0000000049454e44ae426082",
-  "hex",
-);
-
 async function addToCartAndCheckout(page: Page, method: "Cash on delivery" | "Bank transfer", phone: string) {
   await page.goto(PRODUCT);
   await page.getByRole("button", { name: "Add to cart" }).click();
@@ -62,18 +56,16 @@ test("khách đặt COD trên web → nhân viên gọi xác nhận", async ({ p
   await openAdminOrder(page, code);
   await expect(page.getByText("Khách tự đặt").filter({ visible: true }).first()).toBeVisible();
   await expect(page.getByTestId("order-account")).toContainText("khach@glow.local");
-  await page.getByRole("button", { name: "Đã gọi xác nhận COD" }).click();
-  await expect(page.getByTestId("order-status")).toContainText("Đã xác nhận COD");
+  await page.getByRole("button", { name: "Xác nhận đơn" }).click();
+  await expect(page.getByTestId("order-status")).toContainText("Chuẩn bị giao");
   await cancelInAdmin(page); // nhả hàng để lần chạy sau vẫn còn tồn
 });
 
-test("khách chuyển khoản → upload biên lai → nhân viên duyệt; tra đơn bằng mã + SĐT", async ({ page, browser }) => {
+test("khách chuyển khoản → nhân viên xác nhận đã nhận tiền; tra đơn bằng mã + SĐT", async ({ page, browser }) => {
   const { code, url } = await addToCartAndCheckout(page, "Bank transfer", "09 4511 2233");
   await expect(page.getByTestId("bank-instructions")).not.toBeEmpty();
-  await page.getByLabel("Upload transfer receipt").setInputFiles({ name: "receipt.png", mimeType: "image/png", buffer: PNG });
-  await page.getByRole("button", { name: "Send receipt" }).click();
-  await expect(page.getByText("Receipt received — we will confirm soon.")).toBeVisible();
-  await expect(page.getByLabel("Upload transfer receipt")).toHaveCount(0);
+  await expect(page.locator('input[type="file"]')).toHaveCount(0);
+  await expect(page.getByText("No receipt is required.", { exact: false })).toBeVisible();
 
   // Trình duyệt khác: không có cookie đơn → phải tra bằng mã + SĐT.
   const other = await browser.newContext();
@@ -87,17 +79,12 @@ test("khách chuyển khoản → upload biên lai → nhân viên duyệt; tra 
   await guest.getByRole("button", { name: "Find order" }).click();
   await expect(guest.getByTestId("order-code")).toHaveText(code);
 
-  // Biên lai là file riêng tư: khách lạ không tải được.
+  await other.close();
   await login(page, "donhang@glow.local");
   await openAdminOrder(page, code);
-  const proofUrl = await page.getByRole("link", { name: "Xem file" }).getAttribute("href");
-  expect((await page.request.get(proofUrl!)).status()).toBe(200);
-  expect((await guest.request.get(proofUrl!)).status()).toBe(404);
-  // Key không chuẩn ("./proofs/…") không lách được kiểm tra quyền (P19).
-  expect((await guest.request.get(proofUrl!.replace("/api/files/", "/api/files/.%2F"))).status()).toBe(404);
-  await other.close();
-
-  await page.getByRole("button", { name: "Duyệt" }).click();
-  await expect(page.getByTestId("order-status")).toContainText("Đã nhận tiền");
+  await expect(page.getByRole("button", { name: "Duyệt", exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Đã nhận tiền", exact: true }).click();
+  await expect(page.getByTestId("order-status")).toContainText("Chuẩn bị giao");
+  await expect(page.getByTestId("order-status")).toContainText("Đã thanh toán");
   await cancelInAdmin(page);
 });

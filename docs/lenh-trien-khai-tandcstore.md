@@ -374,7 +374,7 @@ docker exec tandc-db-1 psql -U glow -d glow -v ON_ERROR_STOP=1 -c "BEGIN; UPDATE
 - [ ] `https://www.tandcstore.com` tự chuyển về `https://tandcstore.com`.
 - [ ] **Đăng ký** bằng một số điện thoại thử → vào được trang tài khoản → **đăng xuất** → **đăng nhập** lại bằng số đó.
 - [ ] Trang đăng nhập có dòng hướng dẫn "quên mật khẩu thì nhắn shop"; nút **Google** đăng nhập được.
-- [ ] `https://tandcstore.com/admin`: đăng nhập được cả 3 loại tài khoản nhân viên; mở thử 1 đơn có biên lai chuyển khoản và xem được ảnh biên lai.
+- [ ] `https://tandcstore.com/admin`: đăng nhập được cả 3 loại tài khoản nhân viên; mở thử 1 đơn chuyển khoản, kiểm tra nút **Đã nhận tiền**; khách không cần tải biên lai.
 - [ ] Admin → **Tài khoản khách** → tìm số thử → **đặt lại mật khẩu** → đăng nhập bằng mật khẩu mới được.
 - [ ] Cổng cộng tác viên `https://tandcstore.com/ctv` đăng nhập được.
 - [ ] Bấm thanh toán → web báo **tạm ngừng nhận đơn**. Đúng như vậy, vì đang tắt nhận đơn.

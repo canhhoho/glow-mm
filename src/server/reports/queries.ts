@@ -172,13 +172,12 @@ export async function inboundShipments() {
 
 /** Việc cần làm cho nhân viên (dashboard). */
 export async function workQueue(now = new Date()) {
-  const [byStatus, proofs, overdue] = await Promise.all([
+  const [byStatus, overdue] = await Promise.all([
     prisma.order.groupBy({
       by: ["status", "paymentMethod"],
       where: { status: { in: ["PENDING", "PAYMENT_CONFIRMED", "COD_CONFIRMED", "PACKING", "SHIPPING"] } },
       _count: true,
     }),
-    prisma.paymentProof.count({ where: { status: "PENDING", order: { status: "PENDING" } } }),
     prisma.order.count({
       where: { status: "PENDING", reservations: { some: { status: "ACTIVE", expiresAt: { lte: now } } } },
     }),
@@ -187,9 +186,8 @@ export async function workQueue(now = new Date()) {
     byStatus.filter(pred).reduce((s, r) => s + r._count, 0);
   return {
     codToConfirm: count((r) => r.status === "PENDING" && r.paymentMethod === "COD"),
-    proofsToReview: proofs,
-    toPack: count((r) => r.status === "PAYMENT_CONFIRMED" || r.status === "COD_CONFIRMED"),
-    packing: count((r) => r.status === "PACKING"),
+    bankToConfirm: count((r) => r.status === "PENDING" && r.paymentMethod === "BANK_TRANSFER"),
+    preparing: count((r) => r.status === "PAYMENT_CONFIRMED" || r.status === "COD_CONFIRMED" || r.status === "PACKING"),
     shipping: count((r) => r.status === "SHIPPING"),
     overdue,
   };
