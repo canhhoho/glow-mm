@@ -49,7 +49,7 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
       />
 
       {tab === "low" && (
-        <DataTable empty={t("empty")} head={[t("product"), t("available"), t("threshold"), t("vn"), t("inbound")]}>
+        <DataTable empty={t("empty")} numeric={[1, 2, 3, 4]} head={[t("product"), t("available"), t("threshold"), t("vn"), t("inbound")]}>
           {alerts.lowStock.map((v) => (
             <tr key={v.variantId} data-testid="alert-row">
               <Td>{product(v.sku, v.name)}</Td>
@@ -65,6 +65,7 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
       {tab === "expiry" && (
         <DataTable
           empty={t("empty")}
+          numeric={[6]}
           head={[t("level"), t("product"), t("lot"), t("expiry"), t("location"), "", t("qty")]}
         >
           {alerts.expiry.map((e) => (
@@ -88,6 +89,7 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
           <p className="text-xs text-muted-foreground">{t("reorderHint")}</p>
           <DataTable
             empty={t("empty")}
+            numeric={[1, 2, 3, 4, 5, 6, 7]}
             head={[
               t("product"),
               t("dailySales"),
