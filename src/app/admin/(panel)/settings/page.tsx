@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowUpRight, Clock, Handshake, Package, ShoppingBag, SlidersHorizontal, Tags, TrendingUp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { activeAccountCounts } from "@/server/users/users";
@@ -9,12 +10,12 @@ import { ActionForm } from "@/components/admin/action-form";
 import { fieldClass, Page, PageHeader } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 
-const GROUPS: { title: string; keys: NumericSettingKey[] }[] = [
-  { title: "expiry", keys: ["expiry.blockDays", "expiry.warnDays"] },
-  { title: "orders", keys: ["reservation.transferHours", "cod.confirmHours"] },
-  { title: "pricing", keys: ["pricing.roundTo"] },
-  { title: "reorder", keys: ["reorder.coverDays", "reorder.salesWindowDays"] },
-  { title: "affiliate", keys: ["affiliate.holdDays", "affiliate.defaultRateBp", "affiliate.uplineRateBp"] },
+const GROUPS: { title: string; icon: LucideIcon; keys: NumericSettingKey[] }[] = [
+  { title: "expiry", icon: Clock, keys: ["expiry.blockDays", "expiry.warnDays"] },
+  { title: "orders", icon: Package, keys: ["reservation.transferHours", "cod.confirmHours"] },
+  { title: "pricing", icon: Tags, keys: ["pricing.roundTo"] },
+  { title: "reorder", icon: TrendingUp, keys: ["reorder.coverDays", "reorder.salesWindowDays"] },
+  { title: "affiliate", icon: Handshake, keys: ["affiliate.holdDays", "affiliate.defaultRateBp", "affiliate.uplineRateBp"] },
 ];
 
 export default async function SettingsPage() {
@@ -26,77 +27,92 @@ export default async function SettingsPage() {
     activeAccountCounts(),
   ]);
   const accountLinks = [
-    { href: "/admin/users", label: tn("users"), count: counts.staff },
-    { href: "/admin/affiliates", label: tn("affiliates"), count: counts.affiliates },
-    { href: "/admin/customer-accounts", label: tn("customers"), count: counts.customers },
+    { href: "/admin/users", label: tn("users"), hint: t("staffHint"), icon: Users, count: counts.staff },
+    { href: "/admin/affiliates", label: tn("affiliates"), hint: t("affiliateHint"), icon: Handshake, count: counts.affiliates },
+    { href: "/admin/customer-accounts", label: tn("customers"), hint: t("customersHint"), icon: UserRound, count: counts.customers },
   ];
 
   return (
     <Page>
-      <PageHeader title={t("title")} />
-      <section className="space-y-2 rounded-lg border p-4" data-testid="settings-accounts">
-        <h2 className="font-medium">{t("accounts")}</h2>
-        <p className="text-xs text-muted-foreground">{t("accountsHint")}</p>
-        <div className="grid gap-2 sm:grid-cols-3">
+      <PageHeader title={t("title")} description={t("description")} />
+      <section className="space-y-3" data-testid="settings-accounts" aria-labelledby="settings-accounts-title">
+        <div>
+          <h2 id="settings-accounts-title" className="text-base font-semibold">{t("accounts")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t("accountsHint")}</p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
           {accountLinks.map((l) => (
-            <Link key={l.href} href={l.href} className="rounded-lg border p-3 text-sm hover:bg-muted">
-              <span className="block font-medium">{l.label}</span>
-              <span className="block text-xs text-muted-foreground">{t("activeCount", { count: l.count })}</span>
+            <Link key={l.href} href={l.href} className="group flex h-full flex-col gap-3 rounded-xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-5">
+              <div className="flex items-center gap-3">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><l.icon className="size-5" aria-hidden /></span>
+                <h3 className="font-semibold">{l.label}</h3>
+                <ArrowUpRight className="ml-auto size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden />
+              </div>
+              <p className="text-sm leading-relaxed text-muted-foreground">{l.hint}</p>
+              <div className="mt-auto flex items-baseline gap-2 border-t pt-3">
+                <span className="text-2xl font-semibold tabular-nums">{l.count}</span>
+                <span className="text-xs text-muted-foreground">{t("activeLabel")}</span>
+              </div>
             </Link>
           ))}
         </div>
       </section>
-      <ActionForm action={saveSettingsAction} submitLabel={t("save")} okText={t("saved")} className="space-y-5">
-        {/* Máy tính: các nhóm xếp 2 cột cho cùng độ rộng với các trang khác. */}
-        <div className="grid items-start gap-5 lg:grid-cols-2 [&>*]:min-w-0">
-          <fieldset className="space-y-2 rounded-lg border p-4">
-            <legend className="px-1 font-medium">{t("store")}</legend>
-            <label className="flex items-center gap-2 text-sm">
-              <input name="store.checkoutEnabled" type="checkbox" defaultChecked={settings.checkoutEnabled} className="size-4" />
-              <span>{t("keys.store.checkoutEnabled")}</span>
-            </label>
-            <p className="text-xs text-muted-foreground">{t("checkoutHint")}</p>
-          </fieldset>
-          {GROUPS.map((g) => (
-            <fieldset key={g.title} className="space-y-2 rounded-lg border p-4">
-              <legend className="px-1 font-medium">{t(g.title)}</legend>
-              {g.keys.map((k) => (
-                <label key={k} className="grid items-center gap-2 text-sm sm:grid-cols-[1fr_8rem]">
-                  <span>{t(`keys.${k}`)}</span>
-                  {PERCENT_SETTING_KEYS.includes(k) ? (
-                    <input
-                      name={k}
-                      type="number"
-                      min={0}
-                      max={50}
-                      step={0.01}
-                      inputMode="decimal"
-                      required
-                      defaultValue={bpToPercent(settings.numbers[k])}
-                      className={fieldClass}
-                    />
-                  ) : (
-                    <input name={k} type="number" min={0} step={1} required defaultValue={settings.numbers[k]} className={fieldClass} />
-                  )}
-                </label>
-              ))}
-            </fieldset>
-          ))}
-          <fieldset className="space-y-2 rounded-lg border p-4 lg:col-span-2">
-            <legend className="px-1 font-medium">{t("payment")}</legend>
-            <label className="grid content-start gap-1 text-sm">
-              <span>{t("keys.payment.bankInstructions")}</span>
-              <textarea
-                name="payment.bankInstructions"
-                rows={3}
-                maxLength={1000}
-                defaultValue={settings.bankInstructions}
-                className={cn(fieldClass, "h-auto py-2")}
-              />
-            </label>
-          </fieldset>
+      <section aria-labelledby="settings-operations-title" className="space-y-3">
+        <div>
+          <h2 id="settings-operations-title" className="flex items-center gap-2 text-base font-semibold"><SlidersHorizontal className="size-4 text-muted-foreground" aria-hidden />{t("operations")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t("operationsHint")}</p>
         </div>
-      </ActionForm>
+        <ActionForm action={saveSettingsAction} submitLabel={t("save")} okText={t("saved")} className="space-y-4 [&>div:last-of-type]:rounded-xl [&>div:last-of-type]:border [&>div:last-of-type]:bg-card [&>div:last-of-type]:p-3 [&>div:last-of-type]:shadow-sm">
+          <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3 [&>*]:min-w-0">
+            <fieldset className="space-y-4 rounded-xl border bg-card p-4 sm:p-5">
+              <legend className="inline-flex items-center gap-2 px-1 text-sm font-semibold"><ShoppingBag className="size-4 text-primary" aria-hidden />{t("store")}</legend>
+              <label className="flex cursor-pointer items-center gap-3 rounded-lg border bg-muted/30 p-3 text-sm font-medium">
+                <input name="store.checkoutEnabled" type="checkbox" defaultChecked={settings.checkoutEnabled} className="size-5 shrink-0 accent-primary" />
+                <span>{t("keys.store.checkoutEnabled")}</span>
+              </label>
+              <p className="text-xs leading-relaxed text-muted-foreground">{t("checkoutHint")}</p>
+            </fieldset>
+            {GROUPS.map((g) => (
+              <fieldset key={g.title} className="space-y-4 rounded-xl border bg-card p-4 sm:p-5">
+                <legend className="inline-flex items-center gap-2 px-1 text-sm font-semibold"><g.icon className="size-4 text-primary" aria-hidden />{t(g.title)}</legend>
+                {g.keys.map((k) => (
+                  <label key={k} className="grid content-start gap-1.5 text-sm">
+                    <span className="text-muted-foreground">{t(`keys.${k}`)}</span>
+                    {PERCENT_SETTING_KEYS.includes(k) ? (
+                      <input
+                        name={k}
+                        type="number"
+                        min={0}
+                        max={50}
+                        step={0.01}
+                        inputMode="decimal"
+                        required
+                        defaultValue={bpToPercent(settings.numbers[k])}
+                        className={cn(fieldClass, "tabular-nums")}
+                      />
+                    ) : (
+                      <input name={k} type="number" min={0} step={1} required defaultValue={settings.numbers[k]} className={cn(fieldClass, "tabular-nums")} />
+                    )}
+                  </label>
+                ))}
+              </fieldset>
+            ))}
+            <fieldset className="space-y-3 rounded-xl border bg-card p-4 sm:p-5 lg:col-span-2 2xl:col-span-3">
+              <legend className="inline-flex items-center gap-2 px-1 text-sm font-semibold"><Wallet className="size-4 text-primary" aria-hidden />{t("payment")}</legend>
+              <label className="grid content-start gap-1 text-sm">
+                <span className="text-muted-foreground">{t("keys.payment.bankInstructions")}</span>
+                <textarea
+                  name="payment.bankInstructions"
+                  rows={3}
+                  maxLength={1000}
+                  defaultValue={settings.bankInstructions}
+                  className={cn(fieldClass, "h-auto py-2")}
+                />
+              </label>
+            </fieldset>
+          </div>
+        </ActionForm>
+      </section>
     </Page>
   );
 }

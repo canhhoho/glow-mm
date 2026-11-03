@@ -485,6 +485,13 @@
     "clearFilters": "Clear filters"
   },
   "Settings": {
+    "description": "Manage accounts and store operating preferences.",
+    "staffHint": "Manage staff, roles and access to the admin area.",
+    "affiliateHint": "Manage affiliates, teams and commission policies.",
+    "customersHint": "Find customers, help with passwords and manage account status.",
+    "activeLabel": "active",
+    "operations": "Store operations",
+    "operationsHint": "Adjust the values below, then save settings to apply your changes.",
     "title": "Settings",
     "accounts": "Accounts",
     "accountsHint": "Add, edit (name, email, role), reset passwords, lock/unlock accounts.",
@@ -1155,6 +1162,14 @@
     "stateOff": "State turned off"
   },
   "Customers": {
+    "description": "Find customers, manage account status and help with sign-in.",
+    "listCount": "In this list",
+    "listTitle": "Customer directory",
+    "resultCount": "Showing {count} accounts · up to 100 newest matches",
+    "clearSearch": "Clear search",
+    "passwordOptions": "Password",
+    "passwordHint": "Set a temporary password and share it privately with the customer. This signs them out on every device.",
+    "helpTitle": "Customer support guide",
     "title": "Customer accounts",
     "hint": "Customers registered on the website (phone + password, Google, email). A phone customer who forgot their password → set a temporary password and tell them via Viber/Messenger; they should change it in Account → Profile.",
     "search": "Search (phone, email, name)",

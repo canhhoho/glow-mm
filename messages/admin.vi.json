@@ -485,6 +485,13 @@
     "clearFilters": "Xoá bộ lọc"
   },
   "Settings": {
+    "description": "Quản lý tài khoản và các thiết lập vận hành của cửa hàng.",
+    "staffHint": "Quản lý nhân viên, vai trò và quyền truy cập trang quản trị.",
+    "affiliateHint": "Quản lý cộng tác viên, đội nhóm và chính sách hoa hồng.",
+    "customersHint": "Tra cứu khách hàng, hỗ trợ mật khẩu và quản lý trạng thái tài khoản.",
+    "activeLabel": "đang hoạt động",
+    "operations": "Thiết lập vận hành",
+    "operationsHint": "Điều chỉnh các thông số bên dưới, sau đó bấm Lưu cài đặt để áp dụng.",
     "title": "Cài đặt",
     "accounts": "Tài khoản",
     "accountsHint": "Thêm, sửa (tên, email, vai trò), đặt lại mật khẩu, khoá/mở khoá tài khoản.",
@@ -1155,6 +1162,14 @@
     "stateOff": "Vùng đang tắt"
   },
   "Customers": {
+    "description": "Tra cứu khách hàng, quản lý trạng thái và hỗ trợ đăng nhập.",
+    "listCount": "Trong danh sách",
+    "listTitle": "Danh sách khách hàng",
+    "resultCount": "{count} tài khoản đang hiển thị · tối đa 100 kết quả mới nhất",
+    "clearSearch": "Xoá tìm kiếm",
+    "passwordOptions": "Mật khẩu",
+    "passwordHint": "Đặt mật khẩu tạm rồi gửi riêng cho khách. Thao tác này sẽ đăng xuất khách khỏi mọi thiết bị.",
+    "helpTitle": "Hướng dẫn hỗ trợ khách hàng",
     "title": "Tài khoản khách",
     "hint": "Khách đăng ký trên web (SĐT + mật khẩu, Google, email). Khách SĐT quên mật khẩu → đặt mật khẩu tạm rồi báo khách qua Viber/Messenger; khách nên đổi lại trong Tài khoản → Hồ sơ.",
     "search": "Tìm (SĐT, email, tên)",

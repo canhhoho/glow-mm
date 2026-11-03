@@ -75,6 +75,8 @@ test("khách SĐT quên mật khẩu → admin đặt mật khẩu tạm → kh�
   await page.goto(`/admin/customer-accounts?q=${phone.normalized}`);
   const row = page.getByTestId("customer-row").filter({ hasText: phone.normalized });
   await expect(row).toContainText("SĐT + mật khẩu");
+  await expect(row.getByPlaceholder(/Mật khẩu tạm/)).toBeHidden();
+  await row.getByTestId("customer-password-panel").locator("summary").click();
   await row.getByPlaceholder(/Mật khẩu tạm/).fill("tam-thoi-456");
   await row.getByRole("button", { name: "Đặt lại mật khẩu" }).click();
   await expect(row.getByRole("status")).toContainText("Đã đặt mật khẩu tạm");

@@ -729,6 +729,21 @@
     "Products.copySource",
     "Products.copyLoad",
     "Products.copyHelp",
-    "Products.copyLoaded"
+    "Products.copyLoaded",
+    "Customers.description",
+    "Customers.listCount",
+    "Customers.listTitle",
+    "Customers.resultCount",
+    "Customers.clearSearch",
+    "Customers.passwordOptions",
+    "Customers.passwordHint",
+    "Customers.helpTitle",
+    "Settings.description",
+    "Settings.staffHint",
+    "Settings.affiliateHint",
+    "Settings.customersHint",
+    "Settings.activeLabel",
+    "Settings.operations",
+    "Settings.operationsHint"
   ]
 }
