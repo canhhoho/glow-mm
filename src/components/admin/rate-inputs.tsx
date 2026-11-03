@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { fieldClass } from "@/components/admin/ui";
 import { rateDisplay } from "@/server/pricing/formula";
-import { cn } from "@/lib/utils";
 
 /** Bỏ dấu phẩy/khoảng trắng phân cách nghìn (giống server). */
 const clean = (v: string) => v.replace(/[,\s]/g, "");
@@ -35,7 +34,7 @@ export function RateInputs() {
           placeholder="4420"
           value={mmk}
           onChange={(e) => setMmk(e.target.value)}
-          className={cn(fieldClass, "w-36")}
+          className={fieldClass}
         />
       </label>
       <label className="grid content-start gap-1 text-sm">
@@ -47,11 +46,10 @@ export function RateInputs() {
           placeholder="26000"
           value={vnd}
           onChange={(e) => setVnd(e.target.value)}
-          className={cn(fieldClass, "w-36")}
+          className={fieldClass}
         />
       </label>
-      {/* order-last: nằm dưới hàng ô + nút (form flex-wrap). */}
-      <p className="order-last basis-full text-sm tabular-nums" role="status" data-testid="rate-preview">
+      <p className="col-span-full text-sm tabular-nums" role="status" data-testid="rate-preview">
         {preview ? t("ratePreview", { vnd: preview.vndPerMmk, mmk: preview.mmkPerVnd }) : t("rateHint")}
       </p>
     </>

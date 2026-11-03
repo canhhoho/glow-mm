@@ -26,8 +26,13 @@ test("admin: lưu cài đặt; tính giá mới (xem trước) rồi huỷ", asy
   await expect(page.getByTestId("rate-preview")).toHaveText("1 MMK = 5.8824 VND · 1 VND = 0.170000 MMK");
   await page.getByRole("button", { name: "Thêm tỷ giá" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Đã thêm tỷ giá" })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "4,420" }).first()).toBeVisible();
+  await expect(page.getByRole("cell", { name: /1 USD = 4,420 MMK/ }).first()).toBeVisible();
 
+  // Tab "Lịch sử giá" mở được; tab "Tính giá" có form xem trước.
+  await page.getByRole("link", { name: "Lịch sử giá" }).click();
+  await expect(page).toHaveURL(/tab=history/);
+  await page.getByRole("link", { name: "Tính giá", exact: true }).click();
+  await expect(page).toHaveURL(/tab=runs/);
   await page.getByLabel("% lãi").fill("40");
   await page.getByRole("button", { name: "Xem trước" }).click();
   await expect(page).toHaveURL(/\/admin\/pricing\/runs\//);

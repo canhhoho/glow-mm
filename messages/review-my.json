@@ -721,7 +721,9 @@
     "Pricing.vndPerUsd",
     "Pricing.ratePreview",
     "Pricing.rateHint",
-    "Pricing.colUsd",
-    "Pricing.colCross"
+    "Pricing.tabRates",
+    "Pricing.tabRuns",
+    "Pricing.tabHistory",
+    "Pricing.current"
   ]
 }

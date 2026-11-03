@@ -8,6 +8,11 @@ export async function listRates(take = 10) {
   return prisma.exchangeRate.findMany({ orderBy: { effectiveAt: "desc" }, take });
 }
 
+/** Số bản xem trước chưa áp dụng/huỷ — hiện cạnh tab "Tính giá". */
+export async function countPreviewRuns() {
+  return prisma.priceUpdateRun.count({ where: { status: "PREVIEW" } });
+}
+
 export async function listRuns(take = 20) {
   return prisma.priceUpdateRun.findMany({
     orderBy: { createdAt: "desc" },
