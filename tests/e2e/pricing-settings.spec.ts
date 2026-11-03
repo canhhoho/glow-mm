@@ -31,7 +31,8 @@ test("admin: lưu cài đặt; tính giá mới (xem trước) rồi huỷ", asy
   // Tab "Lịch sử giá" mở được; tab "Tính giá" có form xem trước.
   await page.getByRole("link", { name: "Lịch sử giá" }).click();
   await expect(page).toHaveURL(/tab=history/);
-  await page.getByRole("link", { name: "Tính giá", exact: true }).click();
+  // Tên link kèm số bản xem trước đang chờ (vd "Tính giá 3").
+  await page.getByRole("link", { name: /^Tính giá( \d+)?$/ }).click();
   await expect(page).toHaveURL(/tab=runs/);
   await page.getByLabel("% lãi").fill("40");
   await page.getByRole("button", { name: "Xem trước" }).click();
