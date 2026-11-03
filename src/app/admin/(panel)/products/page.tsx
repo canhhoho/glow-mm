@@ -34,7 +34,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
         <SearchInput label={t("search")} defaultValue={query} />
         <FilterButton>{tc("filter")}</FilterButton>
       </FilterBar>
-      <DataTable stack empty={t("empty")} head={[t("colName"), t("colBrand"), t("colCategory"), t("colVariants"), t("colStatus")]}>
+      <DataTable stack empty={t("empty")} head={[t("colName"), t("colBrand"), t("colCategory"), t("colVariants"), t("colStatus"), t("edit")]}>
         {products.map((p) => (
           <tr key={p.id}>
             <Td>
@@ -57,6 +57,9 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
             </Td>
             <Td label={t("colStatus")}>
               <Badge tone={p.published ? "success" : "neutral"}>{p.published ? t("published") : t("hidden")}</Badge>
+            </Td>
+            <Td label={t("edit")}>
+              <LinkButton href={`/admin/products/${p.id}`}>{t("edit")}</LinkButton>
             </Td>
           </tr>
         ))}

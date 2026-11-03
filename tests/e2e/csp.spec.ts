@@ -80,7 +80,7 @@ test("admin + CTV: CSP nonce đổi mỗi request, script của Next có nonce, 
   await visit(page, `${href}/label`);
   // Chi tiết SP có ảnh (next/image) + thao tác client (mở/đóng menu admin).
   await visit(page, "/admin/products?q=sen-viet-sunscreen-spf50");
-  await page.getByRole("row", { name: /sen-viet-sunscreen-spf50/ }).getByRole("link").click();
+  await page.getByRole("row", { name: /sen-viet-sunscreen-spf50/ }).getByRole("link", { name: "Sửa", exact: true }).click();
   await page.waitForLoadState("networkidle");
 
   // Cổng CTV.
