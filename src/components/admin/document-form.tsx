@@ -11,7 +11,7 @@ type StockType = "SELLABLE" | "TESTER";
 
 export type FormData = {
   locations: { id: string; code: string; name: string; type: string }[];
-  variants: { id: string; label: string; isBundle: boolean }[];
+  variants: { id: string; label: string; isBundle: boolean; requiresExpiry: boolean }[];
   batches: {
     id: string;
     variantId: string;
@@ -28,6 +28,7 @@ type Line = {
   batchId: string;
   lotNo: string;
   expiryDate: string;
+  expiryStatus: "DATED" | "NONE" | "UNKNOWN";
   mfgDate: string;
   unitCostVnd: string;
   qty: string;
@@ -41,6 +42,7 @@ const blank = (): Line => ({
   batchId: "",
   lotNo: "",
   expiryDate: "",
+  expiryStatus: "DATED",
   mfgDate: "",
   unitCostVnd: "",
   qty: "",
@@ -80,7 +82,8 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
         ? {
             variantId: l.variantId,
             lotNo: l.lotNo,
-            expiryDate: l.expiryDate,
+            expiryDate: l.expiryDate || undefined,
+            expiryStatus: l.expiryStatus,
             mfgDate: l.mfgDate || undefined,
             unitCostVnd: l.unitCostVnd,
             qty: l.qty,
@@ -156,7 +159,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
                 <select
                   required
                   value={l.variantId}
-                  onChange={(e) => update(l.key, { variantId: e.target.value, batchId: "" })}
+                  onChange={(e) => update(l.key, { variantId: e.target.value, batchId: "", expiryDate: "", expiryStatus: variants.find((v) => v.id === e.target.value)?.requiresExpiry === false ? "NONE" : "DATED" })}
                   className={fieldClass}
                   name={`variant-${i}`}
                 >
@@ -172,12 +175,20 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
               {type === "RECEIVE" ? (
                 <>
                   <label className="grid content-start gap-1 text-xs">
+                    <span className="text-muted-foreground">{t("expiryStatus")}</span>
+                    <select value={l.expiryStatus} onChange={(e) => update(l.key, { expiryStatus: e.target.value as Line["expiryStatus"], expiryDate: "" })} className={fieldClass}>
+                      {variants.find((v) => v.id === l.variantId)?.requiresExpiry !== false && <option value="DATED">{ti("expiryDated")}</option>}
+                      {variants.find((v) => v.id === l.variantId)?.requiresExpiry === false && <option value="NONE">{ti("expiryNone")}</option>}
+                      <option value="UNKNOWN">{ti("expiryUnknown")}</option>
+                    </select>
+                  </label>
+                  <label className="grid content-start gap-1 text-xs">
                     <span className="text-muted-foreground">{t("lotNo")}</span>
                     <input required name={`lot-${i}`} value={l.lotNo} onChange={(e) => update(l.key, { lotNo: e.target.value })} className={fieldClass} />
                   </label>
                   <label className="grid content-start gap-1 text-xs">
                     <span className="text-muted-foreground">{t("expiry")}</span>
-                    <input required type="date" name={`expiry-${i}`} value={l.expiryDate} onChange={(e) => update(l.key, { expiryDate: e.target.value })} className={fieldClass} />
+                    <input required={l.expiryStatus === "DATED"} disabled={l.expiryStatus !== "DATED"} type="date" name={`expiry-${i}`} value={l.expiryDate} onChange={(e) => update(l.key, { expiryDate: e.target.value })} className={fieldClass} />
                   </label>
                   <label className="grid content-start gap-1 text-xs">
                     <span className="text-muted-foreground">{t("mfg")}</span>

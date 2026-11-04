@@ -7,6 +7,7 @@ import { newCode } from "@/server/codes";
 import { getNumberSetting } from "@/server/settings";
 import { pickFefo } from "./fefo";
 import { applyMoves, type StockMove, type Tx } from "./ledger";
+import { vndToMmk } from "./landed-cost";
 
 /**
  * Phiếu kho: tạo NHÁP → GHI SỔ (POSTED, sinh ledger) hoặc HUỶ (chỉ khi còn nháp).
@@ -18,7 +19,7 @@ const PREFIX: Record<DocType, string> = { RECEIVE: "RC", TRANSFER: "TF", ISSUE: 
 const id = rawId;
 const qty = z.coerce.number().int().positive();
 const stockType = z.enum(["SELLABLE", "TESTER"]).default("SELLABLE");
-const day = z.coerce.date();
+const day = z.preprocess((v) => v === "" || v == null ? undefined : v, z.coerce.date().optional());
 
 export const receiveSchema = z.object({
   type: z.literal("RECEIVE"),
@@ -31,11 +32,13 @@ export const receiveSchema = z.object({
         variantId: id,
         lotNo: z.string().trim().min(1).max(50),
         expiryDate: day,
-        mfgDate: day.optional(),
+        expiryStatus: z.enum(["DATED", "NONE", "UNKNOWN"]).optional(),
+        mfgDate: day,
         unitCostVnd: z.coerce.number().int().min(0),
+        landedCostVnd: z.coerce.number().int().min(0).optional(),
         qty,
         stockType,
-      }),
+      }).refine((l) => l.landedCostVnd === undefined || l.landedCostVnd >= l.unitCostVnd, { message: "Giá vốn về kho không thể thấp hơn giá mua", path: ["landedCostVnd"] }),
     )
     .min(1),
 });
@@ -106,10 +109,10 @@ async function assertBatch(tx: Tx, batchId: string, variantId: string) {
 }
 
 /** Tạo phiếu NHÁP. RECEIVE tạo (hoặc dùng lại) lô theo (biến thể, số lô). */
-export async function createDocument(raw: unknown, userId: string) {
+export async function createDocument(raw: unknown, userId: string, transaction?: Tx) {
   const input = documentSchema.parse(raw);
 
-  return prisma.$transaction(async (tx) => {
+  const run = async (tx: Tx) => {
     const fromId = "fromId" in input ? input.fromId : undefined;
     const toId = "toId" in input ? input.toId : undefined;
     if (fromId) await assertLocation(tx, fromId);
@@ -125,14 +128,20 @@ export async function createDocument(raw: unknown, userId: string) {
 
     if (input.type === "RECEIVE") {
       for (const l of input.lines) {
-        const variant = await tx.variant.findUnique({ where: { id: l.variantId } });
+        const variant = await tx.variant.findUnique({ where: { id: l.variantId }, include: { product: true } });
         if (!variant) throw new DocumentError("Biến thể không tồn tại");
         if (variant.isBundle) throw new DocumentError("Không nhập kho trực tiếp cho combo — nhập từng thành phần");
         const existing = await tx.batch.findUnique({
           where: { variantId_lotNo: { variantId: l.variantId, lotNo: l.lotNo } },
         });
-        if (existing && existing.expiryDate.getTime() !== l.expiryDate.getTime()) {
-          throw new DocumentError(`Lô ${l.lotNo} đã có với hạn dùng khác`);
+        const expiryStatus = l.expiryStatus ?? (variant.product.requiresExpiry ? "DATED" : "NONE");
+        if (expiryStatus === "NONE" && variant.product.requiresExpiry) throw new DocumentError("Sản phẩm này yêu cầu quản lý hạn sử dụng");
+        if (expiryStatus !== "NONE" && !variant.product.requiresExpiry) throw new DocumentError("Sản phẩm này không áp dụng hạn sử dụng; chọn NONE");
+        if (expiryStatus === "DATED" && !l.expiryDate) throw new DocumentError("Cần nhập hạn sử dụng hoặc chọn Chưa biết hạn");
+        if (expiryStatus !== "DATED" && l.expiryDate) throw new DocumentError("Chỉ nhập ngày khi đã biết hạn sử dụng");
+        if (l.mfgDate && l.expiryDate && l.mfgDate > l.expiryDate) throw new DocumentError("Ngày sản xuất phải trước hạn sử dụng");
+        if (existing && (existing.expiryDate?.getTime() !== l.expiryDate?.getTime() || existing.expiryStatus !== expiryStatus || existing.unitCostVnd !== l.unitCostVnd || (l.landedCostVnd !== undefined && existing.landedCostVnd !== l.landedCostVnd))) {
+          throw new DocumentError(`Lô ${l.lotNo} đã có với hạn dùng khác hoặc giá vốn khác`);
         }
         const batch =
           existing ??
@@ -141,6 +150,8 @@ export async function createDocument(raw: unknown, userId: string) {
               variantId: l.variantId,
               lotNo: l.lotNo,
               expiryDate: l.expiryDate,
+              expiryStatus,
+              landedCostVnd: l.landedCostVnd,
               mfgDate: l.mfgDate,
               unitCostVnd: l.unitCostVnd,
               shipmentId: input.shipmentId,
@@ -169,7 +180,8 @@ export async function createDocument(raw: unknown, userId: string) {
         lines: { create: lines },
       },
     });
-  });
+  };
+  return transaction ? run(transaction) : prisma.$transaction(run);
 }
 
 /** Tồn khả dụng theo lô của một biến thể tại một vị trí (dùng cho FEFO). */
@@ -181,6 +193,7 @@ export async function candidatesAt(tx: Tx, variantId: string, locationId: string
   return balances.map((b) => ({
     batchId: b.batchId,
     expiryDate: b.batch.expiryDate,
+    expiryStatus: b.batch.expiryStatus,
     receivedAt: b.batch.createdAt,
     available: b.qty,
   }));
@@ -257,6 +270,11 @@ export async function postDocumentTx(tx: Tx, documentId: string, userId: string,
         where: { id: { in: resolved.map((r) => r.batchId) }, rateId: null },
         data: { rateId: rate.id },
       });
+      // Opening stock with explicit landed cost can be valued without an inbound shipment.
+      const batches = await tx.batch.findMany({ where: { id: { in: resolved.map((r) => r.batchId) }, shipmentId: null, landedCostVnd: { not: null } }, include: { rate: true } });
+      for (const b of batches) {
+        await tx.batch.update({ where: { id: b.id }, data: { landedCostMmk: vndToMmk(b.landedCostVnd!, b.rate ?? rate) } });
+      }
     }
   }
 
@@ -280,4 +298,18 @@ export async function cancelDocument(documentId: string, userId: string) {
 /** Ngưỡng hạn dùng cho bán hàng (dùng ở P2). */
 export async function salesBlockDays() {
   return getNumberSetting("expiry.blockDays");
+}
+
+/** Resolve an unknown date after checking packaging; posted stock ledger stays intact. */
+export async function resolveBatchExpiry(raw: unknown, userId: string) {
+  const input = z.object({ batchId: rawId, expiryDate: z.iso.date() }).parse(raw);
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT "id" FROM "Batch" WHERE "id" = ${input.batchId} FOR UPDATE`;
+    const batch = await tx.batch.findUniqueOrThrow({ where: { id: input.batchId } });
+    if (batch.expiryStatus !== "UNKNOWN") throw new DocumentError("Chỉ cập nhật hạn cho lô đang Chưa biết hạn");
+    const expiryDate = new Date(input.expiryDate);
+    if (batch.mfgDate && batch.mfgDate > expiryDate) throw new DocumentError("Hạn sử dụng phải sau ngày sản xuất");
+    await tx.batch.update({ where: { id: batch.id }, data: { expiryDate, expiryStatus: "DATED" } });
+    await tx.auditLog.create({ data: { userId, action: "batch.resolve-expiry", entity: "Batch", entityId: batch.id, data: { expiryDate: input.expiryDate } } });
+  });
 }

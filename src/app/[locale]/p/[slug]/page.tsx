@@ -95,6 +95,7 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
     { key: "usage", title: t("usage"), body: p.usage },
     { key: "ingredients", title: t("ingredients"), body: p.ingredients },
     { key: "storage", title: t("storage"), body: p.storageNote },
+    { key: "pao", title: t("paoTitle"), body: p.paoMonths ? t("paoMonths", { months: p.paoMonths }) : null },
   ].filter((s) => s.body);
 
   const pageUrl = absoluteUrl(localizedPath(locale, `/p/${p.slug}`));

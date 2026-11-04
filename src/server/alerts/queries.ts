@@ -65,7 +65,7 @@ export type ExpiryAlert = {
   sku: string;
   name: string;
   lotNo: string;
-  expiryDate: Date;
+  expiryDate: Date | null;
   location: string;
   stockType: "SELLABLE" | "TESTER";
   qty: number;
@@ -83,7 +83,7 @@ export async function loadExpiryAlerts(now: Date, t: { blockDays: number; warnDa
     orderBy: { batch: { expiryDate: "asc" } },
   });
   return rows.flatMap((r) => {
-    const level = classifyExpiry(r.batch.expiryDate, now, t);
+    const level = classifyExpiry(r.batch.expiryDate, now, t, r.batch.expiryStatus);
     if (!level) return [];
     return [
       {
@@ -125,6 +125,7 @@ export async function computeAlerts(now = new Date()) {
       expired: expiry.filter((e) => e.level === "expired").length,
       blocked: expiry.filter((e) => e.level === "blocked").length,
       near: expiry.filter((e) => e.level === "near").length,
+      unknown: expiry.filter((e) => e.level === "unknown").length,
       reorder: reorder.length,
     },
   };

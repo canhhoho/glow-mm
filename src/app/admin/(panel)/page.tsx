@@ -6,6 +6,7 @@ import { defaultRange, salesReport, workQueue } from "@/server/reports/queries";
 import { LinkButton, Notice, Page, PageHeader, Stat } from "@/components/admin/ui";
 import { fmtInt } from "@/lib/format";
 import { yangonDayKey } from "@/lib/time";
+import { prisma } from "@/lib/db";
 
 export default async function DashboardPage({ searchParams }: PageProps<"/admin">) {
   const user = await requirePagePermission("dashboard:view");
@@ -24,6 +25,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
     showSales ? salesReport({ from: today, to: today }) : null,
   ]);
   const tone = (n: number, level: "warning" | "danger" = "warning") => (n > 0 ? level : "neutral");
+  const codPending = can(user.role, "orders:reconcile-cod") ? await prisma.order.count({ where: { paymentMethod: "COD", codCollectedAt: { not: null }, codRemittedAt: null } }) : null;
+  const tc = await getTranslations("Cod");
 
   return (
     <Page>
@@ -39,6 +42,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
             <Stat label={t("preparing")} value={queue.preparing} href="/admin/orders?status=PREPARING" tone={tone(queue.preparing)} testId="todo-preparing" />
             <Stat label={t("shipping")} value={queue.shipping} href="/admin/orders?status=SHIPPING" />
             <Stat label={t("overdue")} value={queue.overdue} href="/admin/orders?overdue=1" tone={tone(queue.overdue, "danger")} />
+            {codPending != null && <Stat label={tc("waiting")} value={codPending} href="/admin/orders/cod" tone={tone(codPending)} />}
           </div>
         </section>
       )}
@@ -55,6 +59,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
               tone={tone(alerts.counts.expired + alerts.counts.blocked, "danger")}
             />
             <Stat label={t("reorder")} value={alerts.counts.reorder} href="/admin/alerts?tab=reorder" tone={tone(alerts.counts.reorder)} />
+            {alerts.counts.unknown > 0 && <Stat label={t("unknownExpiry")} value={alerts.counts.unknown} href="/admin/inventory?view=lots&expiry=unknown" tone="warning" />}
           </div>
         </section>
       )}

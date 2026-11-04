@@ -1,7 +1,7 @@
 import "server-only";
 import type { Tx } from "@/server/inventory/ledger";
 import { bundleAvailability, type BundleDef } from "@/server/inventory/bundle";
-import { sellableCutoff } from "@/server/inventory/fefo";
+import { sellableBatchWhere } from "@/server/inventory/fefo";
 
 /**
  * Tồn khả dụng để bán theo biến thể:
@@ -22,7 +22,7 @@ export async function baseAvailability(tx: Tx, variantIds: string[], opts: Avail
       stockType: "SELLABLE",
       qty: { gt: 0 },
       location: { sellable: true },
-      batch: { variantId: { in: variantIds }, expiryDate: { gte: sellableCutoff(opts.now, opts.blockDays) } },
+      batch: { variantId: { in: variantIds }, ...sellableBatchWhere(opts.now, opts.blockDays) },
     },
     select: { qty: true, batch: { select: { variantId: true } } },
   });

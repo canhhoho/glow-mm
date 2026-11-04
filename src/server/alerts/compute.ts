@@ -8,19 +8,23 @@
 
 const DAY_MS = 86_400_000;
 
-export type ExpiryLevel = "expired" | "blocked" | "near";
+export type ExpiryLevel = "expired" | "blocked" | "near" | "unknown";
 
 /** Số ngày còn lại (theo ngày UTC, hạn dùng lưu kiểu DATE). */
-export function daysLeft(expiryDate: Date, now: Date): number {
+export function daysLeft(expiryDate: Date | null, now: Date): number {
+  if (!expiryDate) return 0;
   const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
   return Math.floor((expiryDate.getTime() - today) / DAY_MS);
 }
 
 export function classifyExpiry(
-  expiryDate: Date,
+  expiryDate: Date | null,
   now: Date,
   t: { blockDays: number; warnDays: number },
+  status: "DATED" | "NONE" | "UNKNOWN" = "DATED",
 ): ExpiryLevel | null {
+  if (status === "NONE") return null;
+  if (status === "UNKNOWN" || !expiryDate) return "unknown";
   const left = daysLeft(expiryDate, now);
   if (left < 0) return "expired";
   if (left < t.blockDays) return "blocked";

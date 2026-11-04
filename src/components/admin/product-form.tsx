@@ -39,6 +39,8 @@ const EMPTY: ProductEditData = {
   brandId: "",
   categoryId: "",
   published: false,
+  requiresExpiry: true,
+  paoMonths: null,
   storageNote: "",
   ingredientsText: "",
   my: { name: "", description: "", usage: "" },
@@ -125,6 +127,13 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
         </label>
         <Field label={t("storageNote")}>
           <input value={p.storageNote} onChange={(e) => set("storageNote", e.target.value)} className={fieldClass} />
+        </Field>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={p.requiresExpiry} onChange={(e) => set("requiresExpiry", e.target.checked)} />
+          {t("requiresExpiry")}
+        </label>
+        <Field label={t("paoMonths")}>
+          <input type="number" min={1} max={120} step={1} value={p.paoMonths ?? ""} onChange={(e) => set("paoMonths", e.target.value ? Number(e.target.value) : null)} className={fieldClass} />
         </Field>
         <Field label={t("ingredients")}>{textarea(p.ingredientsText, (v) => set("ingredientsText", v), 2)}</Field>
       </section>

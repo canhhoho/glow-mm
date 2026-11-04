@@ -6,6 +6,7 @@ import { parseCsvObjects } from "@/lib/csv";
 import { normalizeForSearch, toUnicode } from "@/lib/myanmar";
 import { slugify } from "@/lib/slug";
 import { createDocument } from "@/server/inventory/documents";
+import type { Tx } from "@/server/inventory/ledger";
 
 /** Quản lý sản phẩm (admin). Giá đổi → ghi PriceHistory. Chữ Myanmar → Unicode trước khi lưu. */
 
@@ -39,6 +40,8 @@ export const productSchema = z.object({
   brandId: rawId,
   categoryId: rawId,
   published: z.boolean().default(false),
+  requiresExpiry: z.boolean().default(true),
+  paoMonths: z.preprocess((v) => v === "" || v == null ? null : v, z.coerce.number().int().min(1).max(120).nullable()).optional(),
   storageNote: optionalText(500),
   ingredientsText: optionalText(5000),
   my: translation,
@@ -54,7 +57,7 @@ export class CatalogError extends Error {
   }
 }
 
-export async function saveProduct(raw: unknown, userId: string) {
+export async function saveProduct(raw: unknown, userId: string, transaction?: Tx) {
   const input = productSchema.parse(raw);
   if (input.copyFromId && input.id) throw new CatalogError("Chỉ sao chép khi tạo sản phẩm mới");
   const my = {
@@ -62,10 +65,10 @@ export async function saveProduct(raw: unknown, userId: string) {
     description: toUnicode(input.my.description),
     usage: toUnicode(input.my.usage),
   };
-  const brand = await prisma.brand.findUnique({ where: { id: input.brandId } });
+  const brand = await (transaction ?? prisma).brand.findUnique({ where: { id: input.brandId } });
   const brandName = brand?.name ?? "";
 
-  return prisma.$transaction(async (tx) => {
+  const run = async (tx: Tx) => {
     // Coordinate with image deletion/reordering so shared image files remain referenced.
     if (input.copyFromId) await tx.$queryRaw`SELECT "id" FROM "Product" WHERE "id" = ${input.copyFromId} FOR UPDATE`;
     const source = input.copyFromId
@@ -77,6 +80,8 @@ export async function saveProduct(raw: unknown, userId: string) {
       brandId: input.brandId,
       categoryId: input.categoryId,
       published: input.published,
+      requiresExpiry: input.requiresExpiry,
+      paoMonths: input.paoMonths,
       storageNote: input.storageNote || null,
     };
     const product = input.id
@@ -163,7 +168,8 @@ export async function saveProduct(raw: unknown, userId: string) {
       },
     });
     return product;
-  });
+  };
+  return transaction ? run(transaction) : prisma.$transaction(run);
 }
 
 export async function createBrand(name: string) {
@@ -215,6 +221,8 @@ export const PRODUCT_CSV_COLUMNS = [
   "variant_label",
   "price_mmk",
   "weight_g",
+  "expiry_policy",
+  "pao_months",
 ] as const;
 
 export const STOCK_CSV_COLUMNS = [
@@ -226,6 +234,9 @@ export const STOCK_CSV_COLUMNS = [
   "unit_cost_vnd",
   "qty",
   "stock_type",
+  "expiry_status",
+  "inbound_unit_vnd",
+  "selling_fee_mmk",
 ] as const;
 
 export type ImportResult = { ok: number; errors: string[]; documents?: { id: string; code: string }[] };
@@ -236,9 +247,10 @@ function missingColumns(rows: Record<string, string>[], cols: readonly string[])
 }
 
 /** Import sản phẩm: mỗi dòng = 1 biến thể; các dòng cùng product_slug gộp thành 1 sản phẩm. */
-export async function importProductsCsv(csv: string, userId: string, lineNumbers?: number[]): Promise<ImportResult> {
+export async function importProductsCsv(csv: string, userId: string, lineNumbers?: number[], transaction?: Tx): Promise<ImportResult> {
+  const db = transaction ?? prisma;
   const rows = parseCsvObjects(csv);
-  const required = PRODUCT_CSV_COLUMNS.filter((c) => !c.startsWith("description") && !c.startsWith("usage") && c !== "ingredients" && c !== "storage_note" && c !== "weight_g");
+  const required = PRODUCT_CSV_COLUMNS.filter((c) => !c.startsWith("description") && !c.startsWith("usage") && c !== "ingredients" && c !== "storage_note" && c !== "weight_g" && c !== "expiry_policy" && c !== "pao_months");
   const missing = missingColumns(rows, required);
   if (missing.length) return { ok: 0, errors: [`Thiếu cột: ${missing.join(", ")}`] };
 
@@ -254,11 +266,11 @@ export async function importProductsCsv(csv: string, userId: string, lineNumbers
     const first = items[0].row;
     try {
       const brand =
-        (await prisma.brand.findFirst({ where: { name: { equals: first.brand, mode: "insensitive" } } })) ??
-        (await createBrand(first.brand));
-      const category = await prisma.category.findUnique({ where: { slug: first.category } });
+        (await db.brand.findFirst({ where: { name: { equals: first.brand, mode: "insensitive" } } })) ??
+        (await db.brand.create({ data: { name: z.string().trim().min(1).max(80).parse(first.brand), slug: slugify(first.brand, `brand-${Date.now()}`) } }));
+      const category = await db.category.findUnique({ where: { slug: first.category } });
       if (!category) throw new CatalogError(`Danh mục "${first.category}" chưa có (tạo trước trong trang Sản phẩm)`);
-      const existing = await prisma.product.findUnique({
+      const existing = await db.product.findUnique({
         where: { slug },
         include: { variants: true, tags: true },
       });
@@ -269,6 +281,8 @@ export async function importProductsCsv(csv: string, userId: string, lineNumbers
           brandId: brand.id,
           categoryId: category.id,
           published: existing?.published ?? false,
+          requiresExpiry: first.expiry_policy ? z.enum(["DATED", "NONE"]).parse(first.expiry_policy) === "DATED" : existing?.requiresExpiry ?? true,
+          paoMonths: first.pao_months === undefined ? existing?.paoMonths : first.pao_months,
           storageNote: first.storage_note,
           ingredientsText: first.ingredients,
           my: { name: first.name_my, description: first.description_my, usage: first.usage_my },
@@ -291,6 +305,7 @@ export async function importProductsCsv(csv: string, userId: string, lineNumbers
           }),
         },
         userId,
+        transaction,
       );
       ok += items.length;
     } catch (e) {
@@ -302,15 +317,16 @@ export async function importProductsCsv(csv: string, userId: string, lineNumbers
 }
 
 /** Import tồn đầu kỳ → tạo phiếu NHẬP NHÁP theo từng vị trí (người dùng kiểm tra rồi ghi sổ). */
-export async function importOpeningStockCsv(csv: string, userId: string, lineNumbers?: number[]): Promise<ImportResult> {
+export async function importOpeningStockCsv(csv: string, userId: string, lineNumbers?: number[], transaction?: Tx): Promise<ImportResult> {
+  const db = transaction ?? prisma;
   const rows = parseCsvObjects(csv);
-  const missing = missingColumns(rows, STOCK_CSV_COLUMNS.filter((c) => c !== "mfg_date" && c !== "stock_type"));
+  const missing = missingColumns(rows, STOCK_CSV_COLUMNS.filter((c) => !["mfg_date", "stock_type", "expiry_date", "expiry_status", "inbound_unit_vnd", "selling_fee_mmk"].includes(c)));
   if (missing.length) return { ok: 0, errors: [`Thiếu cột: ${missing.join(", ")}`] };
 
   const errors: string[] = [];
-  const byLocation = new Map<string, { variantId: string; lotNo: string; expiryDate: string; mfgDate?: string; unitCostVnd: string; qty: string; stockType: string }[]>();
-  const locations = new Map((await prisma.location.findMany()).map((l) => [l.code, l.id]));
-  const variants = new Map((await prisma.variant.findMany({ select: { id: true, sku: true } })).map((v) => [v.sku, v.id]));
+  const byLocation = new Map<string, { variantId: string; lotNo: string; expiryDate: string; expiryStatus?: "DATED" | "NONE" | "UNKNOWN"; landedCostVnd?: number; mfgDate?: string; unitCostVnd: string; qty: string; stockType: string }[]>();
+  const locations = new Map((await db.location.findMany()).map((l) => [l.code, l.id]));
+  const variants = new Map((await db.variant.findMany({ select: { id: true, sku: true } })).map((v) => [v.sku, v.id]));
 
   rows.forEach((r, i) => {
     const line = lineNumbers?.[i] ?? i + 2;
@@ -326,6 +342,8 @@ export async function importOpeningStockCsv(csv: string, userId: string, lineNum
         variantId,
         lotNo: r.lot_no,
         expiryDate: r.expiry_date,
+        expiryStatus: r.expiry_status ? z.enum(["DATED", "NONE", "UNKNOWN"]).parse(r.expiry_status) : undefined,
+        landedCostVnd: r.inbound_unit_vnd ? z.coerce.number().int().min(0).max(2147483647).parse(Number(r.unit_cost_vnd) + z.coerce.number().int().min(0).parse(r.inbound_unit_vnd)) : undefined,
         mfgDate: r.mfg_date || undefined,
         unitCostVnd: r.unit_cost_vnd,
         qty: r.qty,
@@ -338,11 +356,11 @@ export async function importOpeningStockCsv(csv: string, userId: string, lineNum
   const documents: { id: string; code: string }[] = [];
   for (const [toId, lines] of byLocation) {
     try {
-      const doc = await createDocument({ type: "RECEIVE", toId, reason: "Tồn đầu kỳ (import)", lines }, userId);
+      const doc = await createDocument({ type: "RECEIVE", toId, reason: "Tồn đầu kỳ (import)", lines }, userId, transaction);
       documents.push({ id: doc.id, code: doc.code });
     } catch (e) {
       errors.push(e instanceof z.ZodError ? e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") : (e as Error).message);
     }
   }
-  return { ok: rows.length, errors, documents };
+  return { ok: errors.length ? 0 : rows.length, errors, documents };
 }

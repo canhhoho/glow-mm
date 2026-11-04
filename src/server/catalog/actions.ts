@@ -11,6 +11,7 @@ import { CATALOG_TAG } from "./category-tree";
 import { addProductImages, deleteProductImage, reorderProductImage, updateProductImageAlt } from "./images";
 import { createBrand, createCategory, importOpeningStockCsv, importProductsCsv, saveProduct, type ImportResult } from "./products";
 import { readImportFile } from "./import-file";
+import { commitOpening, previewOpening, type OpeningPreview } from "./opening";
 
 function message(e: unknown): string {
   if (e instanceof ZodError) return e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
@@ -211,5 +212,28 @@ export async function importStockAction(_prev: ImportState, formData: FormData):
     return await importOpeningStockCsv(input.csv, user.id, input.lineNumbers);
   } catch (e) {
     return { ok: 0, errors: [], error: message(e) };
+  }
+}
+
+export type OpeningState = { preview?: OpeningPreview; result?: ImportResult; error?: string } | undefined;
+
+export async function openingImportAction(_prev: OpeningState, formData: FormData): Promise<OpeningState> {
+  try {
+    const user = await requirePermission("catalog:manage");
+    await requirePermission("stock:receive");
+    if (formData.get("step") === "confirm") {
+      const result = await commitOpening(JSON.parse(z.string().max(4_100_000).parse(formData.get("payload"))), user.id);
+      updateTag(CATALOG_TAG);
+      revalidatePath("/admin/products");
+      revalidatePath("/admin/inventory/documents");
+      return { result };
+    }
+    const file = formData.get("file");
+    if (!(file instanceof File) || !file.name.toLowerCase().endsWith(".xlsx")) throw new Error("Dùng file Excel lần đầu (.xlsx) có cả hai sheet.");
+    const [products, stock] = await Promise.all([readImportFile(file, "products"), readImportFile(file, "stock")]);
+    const preview = await previewOpening({ products: products.csv, stock: stock.csv, locationCode: formData.get("locationCode"), productLines: products.lineNumbers, stockLines: stock.lineNumbers });
+    return { preview };
+  } catch (e) {
+    return { error: message(e) };
   }
 }

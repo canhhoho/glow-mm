@@ -8,10 +8,13 @@ import { Badge, DataTable, Page, PageHeader, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
 import { rateDisplay } from "@/server/pricing/formula";
 import { cn } from "@/lib/utils";
+import { ActionForm } from "@/components/admin/action-form";
+import { resolveBatchExpiryAction } from "@/server/inventory/actions";
+import { can } from "@/server/auth/roles";
 
 /** Lịch sử lô (P9c): thông tin lô, tồn hiện tại theo vị trí, các dòng sổ kho kèm tồn luỹ kế. */
 export default async function BatchPage({ params }: PageProps<"/admin/inventory/batches/[id]">) {
-  await requirePagePermission("stock:view");
+  const user = await requirePagePermission("stock:view");
   const { id } = await params;
   const [detail, th, t, ti, td] = await Promise.all([
     batchDetail(id),
@@ -25,7 +28,7 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
   const now = new Date();
 
   const info: [string, React.ReactNode][] = [
-    [t("expiry"), <ExpiryTag key="e" date={batch.expiryDate} now={now} t={ti} th={th} />],
+    [t("expiry"), <ExpiryTag key="e" date={batch.expiryDate} status={batch.expiryStatus} now={now} t={ti} th={th} />],
     [t("mfg"), fmtDay(batch.mfgDate)],
     [t("unitCostVnd"), fmtInt(batch.unitCostVnd)],
     [t("landedVnd"), fmtInt(batch.landedCostVnd)],
@@ -62,6 +65,11 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
           </div>
         ))}
       </dl>
+      {batch.expiryStatus === "UNKNOWN" && can(user.role, "stock:receive") && <ActionForm action={resolveBatchExpiryAction} submitLabel={ti("resolveExpiry")} okText={ti("expiryDated")} className="space-y-2 rounded-lg border p-4">
+        <input type="hidden" name="batchId" value={batch.id} />
+        <p className="text-sm text-muted-foreground">{ti("resolveHelp")}</p>
+        <label className="grid max-w-xs gap-1 text-sm"><span>{t("expiry")}</span><input type="date" name="expiryDate" required className="rounded-md border px-3 py-2" /></label>
+      </ActionForm>}
 
       <section className="space-y-2">
         <h2 className="font-medium">

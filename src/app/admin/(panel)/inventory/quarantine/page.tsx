@@ -43,7 +43,7 @@ export default async function QuarantinePage() {
                 </div>
               </Td>
               <Td label={t("lot")} className="font-mono text-xs whitespace-nowrap">
-                {r.lotNo} · {fmtDay(r.expiryDate)}
+                {r.lotNo} · {r.expiryStatus === "NONE" ? ti("expiryNone") : r.expiryStatus === "UNKNOWN" ? ti("expiryUnknown") : fmtDay(r.expiryDate)}
               </Td>
               <Td label={t("qty")} className="text-right tabular-nums">{fmtInt(r.qty)}</Td>
               <Td label={t("orders")} className="text-xs">

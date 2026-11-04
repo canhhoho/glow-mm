@@ -13,7 +13,8 @@ export type BalanceRow = {
   variantId: string;
   batchId: string;
   lotNo: string;
-  expiryDate: Date;
+  expiryDate: Date | null;
+  expiryStatus?: "DATED" | "NONE" | "UNKNOWN";
   /** Giá vốn MMK/đơn vị của lô; null = chưa phân bổ chi phí chuyến. */
   landedCostMmk: number | null;
   locationId: string;
@@ -71,7 +72,7 @@ export function summarizeStock(rows: BalanceRow[], now: Date, t: Thresholds): St
       inboundLots.add(r.batchId);
     }
     if (r.stockType !== "SELLABLE" || r.locationType === "QUARANTINE") continue;
-    const level = classifyExpiry(r.expiryDate, now, t);
+    const level = classifyExpiry(r.expiryDate, now, t, r.expiryStatus);
     if (level === "near") {
       s.near.units += r.qty;
       nearLots.add(r.batchId);
@@ -128,7 +129,7 @@ export function stockByVariantCols(rows: BalanceRow[]): Map<string, VariantStock
     if (r.locationType === "VN_STOCK") v.vn += r.qty;
     else if (isInbound(r.locationType)) v.inbound += r.qty;
     else v.mm += r.qty;
-    if (r.qty > 0 && (!v.earliest || r.expiryDate < v.earliest.expiryDate)) {
+    if (r.qty > 0 && r.expiryDate && (!v.earliest || r.expiryDate < v.earliest.expiryDate)) {
       v.earliest = { lotNo: r.lotNo, expiryDate: r.expiryDate };
     }
   }
@@ -136,7 +137,7 @@ export function stockByVariantCols(rows: BalanceRow[]): Map<string, VariantStock
   for (const v of out.values()) {
     v.lots.sort(
       (a, b) =>
-        a.expiryDate.getTime() - b.expiryDate.getTime() ||
+        (a.expiryDate?.getTime() ?? Infinity) - (b.expiryDate?.getTime() ?? Infinity) ||
         order(b.locationType) - order(a.locationType) ||
         a.stockType.localeCompare(b.stockType),
     );

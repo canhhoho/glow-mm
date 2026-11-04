@@ -8,7 +8,8 @@
 
 export type FefoCandidate = {
   batchId: string;
-  expiryDate: Date;
+  expiryDate: Date | null;
+  expiryStatus?: "DATED" | "NONE" | "UNKNOWN";
   receivedAt?: Date;
   available: number;
 };
@@ -33,8 +34,13 @@ export function sellableCutoff(today: Date, blockDays: number): Date {
   return new Date(start + blockDays * DAY_MS);
 }
 
-export function isBatchUsable(expiryDate: Date, today: Date, blockDays: number): boolean {
-  return expiryDate.getTime() >= sellableCutoff(today, blockDays).getTime();
+export function isBatchUsable(expiryDate: Date | null, today: Date, blockDays: number, status: "DATED" | "NONE" | "UNKNOWN" = "DATED"): boolean {
+  return status === "NONE" || (status === "DATED" && expiryDate != null && expiryDate.getTime() >= sellableCutoff(today, blockDays).getTime());
+}
+
+/** Shared by availability and storefront: unknown dates never become sellable. */
+export function sellableBatchWhere(today: Date, blockDays: number) {
+  return { OR: [{ expiryStatus: "NONE" as const }, { expiryStatus: "DATED" as const, expiryDate: { gte: sellableCutoff(today, blockDays) } }] };
 }
 
 export function pickFefo(
@@ -45,10 +51,10 @@ export function pickFefo(
   if (!Number.isInteger(qty) || qty <= 0) throw new Error("Số lượng xuất phải là số nguyên dương");
 
   const usable = candidates
-    .filter((c) => c.available > 0 && isBatchUsable(c.expiryDate, opts.today, opts.blockDays))
+    .filter((c) => c.available > 0 && isBatchUsable(c.expiryDate, opts.today, opts.blockDays, c.expiryStatus))
     .sort(
       (a, b) =>
-        a.expiryDate.getTime() - b.expiryDate.getTime() ||
+        (a.expiryDate?.getTime() ?? Infinity) - (b.expiryDate?.getTime() ?? Infinity) ||
         (a.receivedAt?.getTime() ?? 0) - (b.receivedAt?.getTime() ?? 0) ||
         a.batchId.localeCompare(b.batchId),
     );

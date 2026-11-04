@@ -6,7 +6,7 @@ import { fmtDay, fmtInt } from "@/lib/format";
 
 const TABS = ["low", "expiry", "reorder"] as const;
 type Tab = (typeof TABS)[number];
-const LEVEL_TONE = { expired: "danger", blocked: "danger", near: "warning" } as const;
+const LEVEL_TONE = { expired: "danger", unknown: "warning", blocked: "danger", near: "warning" } as const;
 
 export default async function AlertsPage({ searchParams }: PageProps<"/admin/alerts">) {
   await requirePagePermission("stock:view");
@@ -16,7 +16,7 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
   const { counts, settings } = alerts;
   const tabCount: Record<Tab, number> = {
     low: counts.lowStock,
-    expiry: counts.expired + counts.blocked + counts.near,
+    expiry: counts.expired + counts.blocked + counts.near + counts.unknown,
     reorder: counts.reorder,
   };
   const tabLabel: Record<Tab, string> = { low: t("tabLow"), expiry: t("tabExpiry"), reorder: t("tabReorder") };

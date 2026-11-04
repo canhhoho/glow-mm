@@ -93,7 +93,10 @@ export async function transitionInTx(
       });
       break;
     case "complete":
-      if (order.paymentMethod === "COD") data.paymentStatus = "PAID"; // đã thu tiền khi giao
+      if (order.paymentMethod === "COD") {
+        data.paymentStatus = "PAID"; // khách đã trả cho hãng vận chuyển, chưa phải tiền về cửa hàng
+        data.codCollectedAt = opts.now;
+      }
       data.completedAt = opts.now; // mốc tính hạn giữ hoa hồng CTV
       break;
     case "cancel":

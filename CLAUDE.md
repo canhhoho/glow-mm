@@ -24,6 +24,8 @@ Next.js 16 có API mới (proxy thay middleware, Cache Components bật) → đ�
 **Kho (ưu tiên cao nhất)**
 - Tồn kho chỉ thay đổi qua `StockDocument` → `StockLedger` (ghi thêm, không sửa/xoá) + cập nhật `StockBalance` trong **cùng transaction**, khoá dòng bằng `SELECT … FOR UPDATE`. Không bao giờ sửa số lượng trực tiếp.
 - Xuất hàng theo FEFO; không bán lô có hạn dùng dưới ngưỡng cấu hình (mặc định 90 ngày).
+- `Product.requiresExpiry`: mặc định true; `Batch.expiryStatus=DATED` cần ngày, `NONE` không áp dụng hạn và dùng FIFO sau các lô có ngày, `UNKNOWN` chặn bán đến khi xác nhận hạn thật. PAO (`paoMonths`) tách khỏi ngày hết hạn lô. Mọi truy vấn khả dụng phải dùng cùng điều kiện hạn dùng.
+- Nhập lần đầu (`catalog/opening.ts`): xem trước chỉ đọc, xác nhận tạo sản phẩm ẩn + phiếu tồn nháp cùng transaction, khoá/chặn nhập lặp; tỷ giá chốt theo bản xem trước. COD hoàn tất chỉ ghi nhận thu khách; `orders/cod.ts` đối soát tiền về riêng, quyền ADMIN, có số thực nhận/phí/mã tham chiếu và audit.
 - Giữ hàng ở cấp biến thể; phân lô và xuất kho khi bàn giao vận chuyển. Combo trừ kho từng thành phần. Tester/quà là `stockType=TESTER`, không bán được.
 - Landed cost tính theo lô, lưu tỷ giá VND/MMK tại thời điểm nhập.
 

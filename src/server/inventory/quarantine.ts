@@ -48,6 +48,7 @@ export async function listQuarantine() {
       name: `${productName(r.batch.variant.product.translations, r.batch.variant.product.slug)} (${r.batch.variant.label})`,
       lotNo: r.batch.lotNo,
       expiryDate: r.batch.expiryDate,
+      expiryStatus: r.batch.expiryStatus,
       qty: r.qty,
       orders: [...orders].map(([id, code]) => ({ id, code })),
     };

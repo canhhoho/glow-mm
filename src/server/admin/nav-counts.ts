@@ -26,7 +26,7 @@ export async function navCounts(keys: Set<NavCountKey>, now = new Date()): Promi
   if (keys.has("blockedLots")) {
     jobs.push(
       getNumberSetting("expiry.blockDays")
-        .then((d) => distinctLots({ batch: { expiryDate: { lt: sellableCutoff(now, d) } } }))
+        .then((d) => distinctLots({ batch: { OR: [{ expiryStatus: "UNKNOWN" }, { expiryDate: { lt: sellableCutoff(now, d) } }] } }))
         .then((n) => ["blockedLots", n]),
     );
   }

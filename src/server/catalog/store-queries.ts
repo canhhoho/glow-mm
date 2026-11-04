@@ -196,6 +196,7 @@ export async function loadProductContent(slug: string, locale: string) {
     usage: tr?.usage ?? null,
     ingredients: tr?.ingredientsText ?? null,
     storageNote: p.storageNote,
+    paoMonths: p.paoMonths,
     brand: p.brand.name,
     category: { slug: p.category.slug, name: pick(p.category.translations, locale)?.name ?? p.category.slug },
     images: p.images.map((i) => ({ url: i.file.url, alt: i.alt })),
@@ -224,7 +225,7 @@ export async function withProductStock(content: ProductContent, now = new Date()
     }),
   ]);
   const nextExpiry = new Map<string, Date>();
-  for (const l of lots) if (!nextExpiry.has(l.batch.variantId)) nextExpiry.set(l.batch.variantId, l.batch.expiryDate);
+  for (const l of lots) if (l.batch.expiryDate && !nextExpiry.has(l.batch.variantId)) nextExpiry.set(l.batch.variantId, l.batch.expiryDate);
   return {
     ...content,
     variants: content.variants.map((v) => ({ ...v, available: avail.get(v.id) ?? 0, expiryDate: nextExpiry.get(v.id) ?? null })),

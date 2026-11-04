@@ -21,6 +21,7 @@ export async function listVariantsForPicker() {
     id: v.id,
     sku: v.sku,
     isBundle: v.isBundle,
+    requiresExpiry: v.product.requiresExpiry,
     label: `${v.sku} — ${productName(v.product.translations, v.product.slug)} (${v.label})`,
   }));
 }
@@ -35,7 +36,8 @@ export async function batchesForForms() {
     id: b.id,
     variantId: b.variantId,
     lotNo: b.lotNo,
-    expiryDate: b.expiryDate.toISOString().slice(0, 10),
+    expiryDate: b.expiryDate?.toISOString().slice(0, 10) ?? "",
+    expiryStatus: b.expiryStatus,
     balances: b.balances.map((x) => ({ locationId: x.locationId, stockType: x.stockType, qty: x.qty })),
   }));
 }

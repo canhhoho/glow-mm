@@ -25,6 +25,8 @@ export async function listProductsAdmin(q?: string) {
     brand: p.brand.name,
     category: productName(p.category.translations, p.category.slug),
     published: p.published,
+    requiresExpiry: p.requiresExpiry,
+    paoMonths: p.paoMonths,
     variants: p.variants.map((v) => ({ sku: v.sku, label: v.label, priceMmk: v.priceMmk, isBundle: v.isBundle })),
   }));
 }
@@ -65,6 +67,8 @@ export async function getProductForEdit(id: string) {
     brandId: p.brandId,
     categoryId: p.categoryId,
     published: p.published,
+    requiresExpiry: p.requiresExpiry,
+    paoMonths: p.paoMonths,
     storageNote: p.storageNote ?? "",
     ingredientsText: tr("en")?.ingredientsText ?? tr("my")?.ingredientsText ?? "",
     my: { name: tr("my")?.name ?? "", description: tr("my")?.description ?? "", usage: tr("my")?.usage ?? "" },

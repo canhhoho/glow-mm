@@ -45,7 +45,9 @@
     "storage": "Bảo quản",
     "bundle": "Bộ",
     "buyNow": "Mua ngay",
-    "related": "Cùng danh mục"
+    "related": "Cùng danh mục",
+    "paoTitle": "Hạn sau khi mở nắp",
+    "paoMonths": "Dùng trong {months} tháng sau khi mở nắp và không quá ngày hết hạn trên bao bì."
   },
   "Footer": {
     "contact": "Liên hệ",

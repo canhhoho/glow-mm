@@ -22,7 +22,7 @@ test("quản lý kho: nhận → chuyển → xuất, tồn khớp theo lô và 
   await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "VN-STOCK — Kho VN" });
   await page.getByLabel("Biến thể").selectOption({ label: VARIANT });
   await page.getByLabel("Số lô").fill(lot);
-  await page.getByLabel("Hạn dùng").fill("2028-12-31");
+  await page.getByLabel("Hạn dùng", { exact: true }).fill("2028-12-31");
   await page.getByLabel("Giá mua/đv (VND)").fill("90000");
   await page.getByLabel("Số lượng").fill("10");
   await postAndExpect(page);

@@ -6,7 +6,7 @@ import { ZodError } from "zod";
 import type { DocType } from "@/generated/prisma/client";
 import { requirePermission } from "@/server/auth/session";
 import type { Permission } from "@/server/auth/roles";
-import { cancelDocument, createDocument, postDocument } from "./documents";
+import { cancelDocument, createDocument, postDocument, resolveBatchExpiry } from "./documents";
 import { discardFromQuarantine, restockFromQuarantine } from "./quarantine";
 import {
   addShipmentCost,
@@ -18,6 +18,17 @@ import {
 } from "./shipments";
 
 export type ActionState = { error?: string; ok?: string } | undefined;
+
+export async function resolveBatchExpiryAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("stock:receive");
+    await resolveBatchExpiry(Object.fromEntries(formData), user.id);
+    revalidatePath("/admin/inventory");
+    revalidatePath(`/admin/inventory/batches/${String(formData.get("batchId"))}`);
+    revalidatePath("/admin/alerts");
+    return { ok: "saved" };
+  } catch (e) { return { error: message(e) }; }
+}
 
 const DOC_PERMISSION: Record<DocType, Permission> = {
   RECEIVE: "stock:receive",

@@ -13,6 +13,7 @@ import { createOrder } from "./orders";
 import { returnItems } from "./returns";
 import { TRANSITIONS, type TransitionName } from "./state-machine";
 import { transitionOrder } from "./transitions";
+import { remitCod } from "./cod";
 
 /** Server Action cho admin đơn hàng. Quyền luôn kiểm ở đây (requirePermission) và lần nữa trong domain. */
 
@@ -58,6 +59,18 @@ const field = (fd: FormData, k: string) => {
   const v = fd.get(k);
   return typeof v === "string" && v.trim() !== "" ? v : undefined;
 };
+
+export async function remitCodAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("orders:reconcile-cod");
+    const input = Object.fromEntries(formData);
+    await remitCod(input, { userId: user.id, role: user.role });
+    revalidatePath(`/admin/orders/${String(input.orderId)}`);
+    revalidatePath("/admin/orders/cod");
+    revalidatePath("/admin/orders");
+    return { ok: "remitted" };
+  } catch (e) { return { error: await message(e) }; }
+}
 
 export async function transitionOrderAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const id = String(formData.get("id"));

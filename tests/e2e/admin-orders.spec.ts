@@ -89,6 +89,14 @@ test("đơn thủ công (Facebook, COD): tạo → xác nhận → bàn giao (FE
   await page.getByRole("button", { name: "Giao thành công · Đã thu tiền" }).click();
   await expectStatus(page, "Hoàn tất");
   await expectStatus(page, "Đã thanh toán");
+  await expect(page.getByText("Chờ tiền về cửa hàng", { exact: false }).filter({ visible: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Xác nhận tiền đã về cửa hàng", exact: true })).toHaveCount(0);
+  await login(page, "admin@glow.local");
+  await page.goto(orderUrl);
+  await page.getByLabel("Mã giao dịch / bảng đối soát", { exact: true }).fill(`COD-E2E-${Date.now()}`);
+  await page.getByRole("button", { name: "Xác nhận tiền đã về cửa hàng", exact: true }).click();
+  await expect(page.getByText(/Hãng đã thu khách lúc:.*Đã về cửa hàng/).filter({ visible: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Xác nhận tiền đã về cửa hàng", exact: true })).toHaveCount(0);
 
   // Khách trả lại 1 món → hàng vào khu Chờ kiểm tra (MM-QC); trả hết nên đơn → Trả hàng.
   await page.getByLabel("Trả hàng SV-SUN-50").fill("1");

@@ -21,6 +21,7 @@ import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { vtpPreview } from "@/server/orders/vtp-data";
 import { VtpSingleInfo } from "@/components/admin/vtp-single-info";
+import { CodSettlement } from "@/components/admin/cod-settlement";
 
 export default async function OrderPage({ params }: PageProps<"/admin/orders/[id]">) {
   const user = await requirePagePermission("orders:view");
@@ -36,6 +37,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
     getNumberSetting("affiliate.holdDays"),
   ]);
   if (!order) notFound();
+  const tc = await getTranslations("Cod");
   const { commission, uplineCommission } = splitCommissions({ ...order, lines: order.payoutLines }, { now: new Date(), holdDays });
   const affiliatePaid = order.payoutLines.length > 0;
   // Đơn huỷ không phát sinh hoa hồng → khoá đổi CTV / % (server cũng chặn).
@@ -93,6 +95,15 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
         <PaymentStatusBadge status={order.paymentStatus} />
         {order.overdue && <Badge tone="danger">{t("overdue")}</Badge>}
       </div>
+
+      {order.paymentMethod === "COD" && <section className="space-y-3 rounded-xl border p-4">
+        <h2 className="font-medium">{tc("title")}</h2>
+        <p className="text-sm text-muted-foreground">{tc("help")}</p>
+        <p className="text-sm">{tc("collectedAt")}: {fmtDateTime(order.codCollectedAt)} · {order.codRemittedAt ? tc("remitted") : order.codCollectedAt ? tc("waiting") : tc("notCollected")}</p>
+        {order.codRemittedAt && <p className="text-sm">{tc("received")}: {fmtInt(order.codRemittedMmk)} MMK · {tc("fee")}: {fmtInt(order.codCarrierFeeMmk)} MMK · {order.codRemittanceRef} · {fmtDateTime(order.codRemittedAt)}</p>}
+        {order.codRemittedAt && (order.status === "RETURNED" || order.paymentStatus === "REFUNDED" || order.items.some((i) => i.returnedQty > 0)) && <p className="text-sm text-muted-foreground">{tc("exception")}</p>}
+        {can(user.role, "orders:reconcile-cod") && order.codCollectedAt && !order.codRemittedAt && (order.status === "COMPLETED" && order.paymentStatus === "PAID" && !order.items.some((i) => i.returnedQty > 0) ? <CodSettlement orderId={order.id} total={order.totalMmk} /> : <p className="text-sm text-muted-foreground">{tc("exception")}</p>)}
+      </section>}
 
       <section className="grid gap-6 md:grid-cols-2 [&>*]:min-w-0">
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">

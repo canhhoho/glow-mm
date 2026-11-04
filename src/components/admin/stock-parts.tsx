@@ -59,7 +59,8 @@ export function stockHref(f: StockFilter, view: StockView, patch: Partial<StockF
 }
 
 /** Hạn dùng + nhãn cận hạn / ngừng bán / hết hạn (kèm số ngày còn lại). */
-export function ExpiryTag({ date, now, t, th }: { date: Date; now: Date; t: T; th: Thresholds }) {
+export function ExpiryTag({ date, status, now, t, th }: { date: Date | null; status?: "DATED" | "NONE" | "UNKNOWN"; now: Date; t: T; th: Thresholds }) {
+  if (!date) return <Badge tone={status === "NONE" ? "neutral" : "warning"}>{t(status === "NONE" ? "expiryNone" : "expiryUnknown")}</Badge>;
   const level = classifyExpiry(date, now, th);
   const left = daysLeft(date, now);
   return (

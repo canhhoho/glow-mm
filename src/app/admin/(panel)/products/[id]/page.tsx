@@ -9,6 +9,9 @@ import { ActionForm } from "@/components/admin/action-form";
 import { ProductForm } from "@/components/admin/product-form";
 import { ProductImageUpload } from "@/components/admin/product-images";
 import { Badge, fieldClass, Page, PageHeader } from "@/components/admin/ui";
+import { availableToSell } from "@/server/orders/availability";
+import { salesBlockDays } from "@/server/inventory/documents";
+import { prisma } from "@/lib/db";
 
 export default async function EditProductPage({ params, searchParams }: PageProps<"/admin/products/[id]">) {
   await requirePagePermission("catalog:manage");
@@ -21,6 +24,13 @@ export default async function EditProductPage({ params, searchParams }: PageProp
     getProductImages(id),
   ]);
   if (!product) notFound();
+  const availability = await availableToSell(prisma, product.variants.map((v) => v.id), { now: new Date(), blockDays: await salesBlockDays() });
+  const active = product.variants.filter((v) => v.active);
+  const checks = [
+    { label: t("checkImages"), ok: images.length > 0 },
+    { label: t("checkPrice"), ok: active.length > 0 && active.every((v) => v.priceMmk > 0) },
+    { label: t("checkStock"), ok: active.some((v) => (availability.get(v.id) ?? 0) > 0) },
+  ];
   return (
     <Page>
       <PageHeader title={product.en.name || product.slug} back={{ href: "/admin/products", label: td("back") }} />
@@ -74,6 +84,10 @@ export default async function EditProductPage({ params, searchParams }: PageProp
             ))}
           </ul>
         )}
+      </section>
+      <section className="space-y-2 rounded-xl border p-4">
+        <h2 className="font-medium">{t("launchCheck")}</h2>
+        <ul className="flex flex-wrap gap-3 text-sm">{checks.map((check) => <li key={check.label}><Badge tone={check.ok ? "success" : "warning"}>{check.ok ? "✓" : "○"} {check.label}</Badge></li>)}</ul>
       </section>
       {/* key: nạp lại state form sau khi lưu */}
       <ProductForm key={JSON.stringify(product)} initial={product} options={options} />

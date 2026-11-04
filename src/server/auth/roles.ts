@@ -31,6 +31,7 @@ export const PERMISSIONS = {
   "orders:assign-affiliate": ["ADMIN", "ORDER_STAFF"],
   "orders:create": ["ADMIN", "ORDER_STAFF"],
   "orders:confirm-payment": ["ADMIN", "ORDER_STAFF"],
+  "orders:reconcile-cod": ["ADMIN"],
   "orders:pack": ["ADMIN", "WAREHOUSE_MANAGER"],
   "orders:ship": ["ADMIN", "ORDER_STAFF"],
   "orders:cancel": ["ADMIN", "ORDER_STAFF"],

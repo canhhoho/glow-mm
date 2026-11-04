@@ -33,6 +33,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
         title={t("title")}
         actions={
           <>
+          {can(user.role, "orders:reconcile-cod") && <LinkButton href="/admin/orders/cod">{(await getTranslations("Cod"))("title")}</LinkButton>}
           {can(user.role, "orders:ship") && <LinkButton href="/admin/orders/export">{t("exportVtp")}</LinkButton>}
           {can(user.role, "orders:create") && (
             <LinkButton href="/admin/orders/new" variant="primary" icon="new">

@@ -45,7 +45,9 @@
     "storage": "Storage",
     "bundle": "Set",
     "buyNow": "Buy now",
-    "related": "More in this category"
+    "related": "More in this category",
+    "paoTitle": "Period after opening",
+    "paoMonths": "Use within {months} months after opening and before the expiry date on the packaging."
   },
   "Footer": {
     "contact": "Contact",

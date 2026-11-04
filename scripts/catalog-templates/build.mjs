@@ -13,12 +13,13 @@ await fs.mkdir(assets, { recursive: true });
 const navy = '#27364B', rose = '#D95070', ink = '#253348', muted = '#66758A';
 const col = (i) => String.fromCharCode(65 + i);
 
-for (const kind of ['products', 'stock']) {
+for (const outputKind of ['products', 'stock', 'opening']) {
   const workbook = Workbook.create();
-  const columns = definitions[kind];
+  for (const kind of outputKind === 'opening' ? ['products', 'stock'] : [outputKind]) {
+  const columns = definitions[kind].map((c) => outputKind === 'opening' && c.key === 'location_code' ? { ...c, required: false, hint: 'Có thể để trống để dùng kho đã chọn trên website. Nếu điền, dùng đúng mã kho thực tế.' } : outputKind === 'opening' && c.key === 'sku' && kind === 'stock' ? { ...c, hint: 'Dùng đúng SKU trong sheet San pham của cùng file.' } : c);
   const isProduct = kind === 'products';
   const sheet = workbook.worksheets.add(isProduct ? 'San pham' : 'Ton dau ky');
-  const guide = workbook.worksheets.add('Huong dan');
+  const guide = workbook.worksheets.add(outputKind === 'opening' ? (isProduct ? 'Huong dan SP' : 'Huong dan ton') : 'Huong dan');
   const end = col(columns.length - 1);
   sheet.showGridLines = false;
   sheet.tabColor = rose;
@@ -28,8 +29,8 @@ for (const kind of ['products', 'stock']) {
   sheet.getRange('A2:H2').format = { font: { name: 'Arial', size: 16, bold: true, color: navy }, rowHeight: 34, borders: { bottom: { style: 'medium', color: rose } } };
   const instructions = [
     'Điền từ dòng 7. Cột có dấu * và nền vàng nhạt là bắt buộc. Giữ nguyên hàng tiêu đề.',
-    isProduct ? 'Mỗi dòng là một biến thể. Dùng chung mã sản phẩm để gộp các dung tích hoặc kích cỡ.' : 'Nhập sản phẩm trước. Sau khi tải file lên, kiểm tra phiếu nhập nháp rồi bấm Ghi sổ.',
-    'Xem sheet Huong dan để tra cách điền và ví dụ. Lưu file .xlsx rồi tải lên đúng mục trên website.',
+    isProduct ? 'Mỗi dòng là một biến thể. Dùng chung mã sản phẩm để gộp các dung tích hoặc kích cỡ.' : outputKind === 'opening' ? 'SKU liên kết với sheet San pham. Ô mã kho trống dùng kho chọn trên web. Xem trước rồi xác nhận.' : 'Nhập sản phẩm trước. Sau khi tải file lên, kiểm tra phiếu nhập nháp rồi bấm Ghi sổ.',
+    `Xem sheet ${guide.name} để tra cách điền và ví dụ. Lưu file .xlsx rồi tải lên website.`,
   ];
   instructions.forEach((text, i) => {
     sheet.getRange(`A${i + 3}:H${i + 3}`).merge();
@@ -49,7 +50,7 @@ for (const kind of ['products', 'stock']) {
     cells.setNumberFormat(c.type === 'date' ? 'dd/mm/yyyy' : ['money', 'whole', 'positive'].includes(c.type) ? '#,##0' : '@');
     cells.format.horizontalAlignment = ['date', 'money', 'whole', 'positive'].includes(c.type) ? 'right' : 'left';
     if (['money', 'whole', 'positive'].includes(c.type)) cells.dataValidation = { rule: { type: 'whole', operator: 'between', formula1: c.type === 'positive' ? 1 : 0, formula2: 2147483647 } };
-    if (c.type === 'list') cells.dataValidation = { rule: { type: 'list', values: ['SELLABLE', 'TESTER'] } };
+    if (c.type === 'list') cells.dataValidation = { rule: { type: 'list', values: c.key === 'expiry_policy' ? ['DATED', 'NONE'] : c.key === 'expiry_status' ? ['DATED', 'NONE', 'UNKNOWN'] : ['SELLABLE', 'TESTER'] } };
   }
   sheet.freezePanes.freezeRows(6);
   sheet.freezePanes.freezeColumns(2);
@@ -62,10 +63,10 @@ for (const kind of ['products', 'stock']) {
   guide.getRange('A2').values = [['HƯỚNG DẪN ĐIỀN FILE']];
   guide.getRange('A2:E2').format = { font: { name: 'Arial', size: 16, bold: true, color: navy }, rowHeight: 34, borders: { bottom: { style: 'medium', color: rose } } };
   const notes = [
-    `Chỉ dữ liệu trong sheet ${sheet.name} được nhập. Sheet này dùng để tham khảo.`,
+    outputKind === 'opening' ? 'Hai sheet San pham và Ton dau ky được nhập cùng nhau. Các sheet hướng dẫn chỉ để tham khảo.' : `Chỉ dữ liệu trong sheet ${sheet.name} được nhập. Sheet này dùng để tham khảo.`,
     'Ví dụ dưới đây chỉ minh họa cách điền. Hãy dùng mã danh mục và mã kho thực tế của bạn.',
     isProduct ? 'Thông tin chung của các dòng cùng mã sản phẩm phải thống nhất. SKU mỗi biến thể là duy nhất.' : 'Ngày dùng định dạng dd/mm/yyyy. Một dòng tương ứng một SKU, một lô, một kho và một loại hàng.',
-    isProduct ? 'Với sản phẩm đã có, nhập đủ các biến thể đang dùng. Ô nội dung bỏ trống có thể xóa nội dung cũ.' : 'Không tải lại cùng dữ liệu tồn đã ghi sổ, vì có thể làm tăng tồn kho hai lần.',
+    isProduct ? outputKind === 'opening' ? 'Luồng lần đầu chỉ tạo hàng mới. SP được lưu nháp, hoàn thiện ảnh trước khi mở bán.' : 'Với sản phẩm đã có, nhập đủ các biến thể đang dùng. Ô nội dung bỏ trống có thể xóa nội dung cũ.' : 'DATED cần ngày; NONE không áp dụng; UNKNOWN chưa được bán. Giá vốn gồm giá mua + phí đưa về kho.',
   ];
   notes.forEach((text, i) => { guide.getRange(`A${i + 3}:E${i + 3}`).merge(); guide.getRange(`A${i + 3}`).values = [[text]]; guide.getRange(`A${i + 3}:E${i + 3}`).format.font = { name: 'Arial', size: 11, color: muted }; });
   guide.getRange('A8:E8').values = [['Cột trên mẫu', 'Mã cột', 'Yêu cầu', 'Cách điền', 'Ví dụ tham khảo']];
@@ -80,12 +81,13 @@ for (const kind of ['products', 'stock']) {
   }
   guide.freezePanes.freezeRows(8);
   workbook.recalculate();
-  for (const [name, range, imageName] of [[sheet.name, isProduct ? 'A1:H14' : 'A1:H14', `${kind}-preview`], ['Huong dan', `A1:E${8 + columns.length}`, `${kind}-guide`]]) {
+  for (const [name, range, imageName] of [[sheet.name, 'A1:H14', `${outputKind}-${kind}-preview`], [guide.name, `A1:E${8 + columns.length}`, `${outputKind}-${kind}-guide`]]) {
     const preview = await workbook.render({ sheetName: name, range, scale: 1.5, format: 'png' });
     await fs.writeFile(path.join(outputDir, `${imageName}.png`), new Uint8Array(await preview.arrayBuffer()));
   }
+  }
   const file = await SpreadsheetFile.exportXlsx(workbook);
-  await file.save(path.join(outputDir, `${kind}.xlsx`));
-  await fs.copyFile(path.join(outputDir, `${kind}.xlsx`), path.join(assets, `${kind}.xlsx`));
-  console.log(`${kind}.xlsx: ${columns.length} columns, 200 blank entry rows, 2 sheets`);
+  await file.save(path.join(outputDir, `${outputKind}.xlsx`));
+  await fs.copyFile(path.join(outputDir, `${outputKind}.xlsx`), path.join(assets, `${outputKind}.xlsx`));
+  console.log(`${outputKind}.xlsx: 200 blank entry rows per input sheet`);
 }

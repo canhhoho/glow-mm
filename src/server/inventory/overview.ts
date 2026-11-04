@@ -24,7 +24,7 @@ import {
 export const PAGE_SIZE = 25;
 export const STOCK_TABS = ["all", ...LOCATION_TYPES] as const;
 /** near = cận hạn; blocked = ngừng bán (gồm hết hạn); expired = đã hết hạn. */
-export const EXPIRY_FILTERS = ["near", "blocked", "expired"] as const;
+export const EXPIRY_FILTERS = ["near", "blocked", "expired", "unknown", "none"] as const;
 export type ExpiryFilter = (typeof EXPIRY_FILTERS)[number];
 
 /** Bộ lọc lấy từ URL; giá trị lạ → mặc định (không báo lỗi). */
@@ -69,11 +69,13 @@ function batchSearch(q: string): Prisma.BatchWhereInput {
   return { OR: [{ lotNo: contains(q) }, { variant: { sku: contains(q) } }, { variant: { product: productSearch(q) } }] };
 }
 
-function expiryWhere(e: ExpiryFilter | undefined, now: Date, t: Thresholds): Prisma.DateTimeFilter | undefined {
-  if (e === "near") return { gte: sellableCutoff(now, t.blockDays), lt: sellableCutoff(now, t.warnDays) };
-  if (e === "blocked") return { lt: sellableCutoff(now, t.blockDays) };
-  if (e === "expired") return { lt: sellableCutoff(now, 0) };
-  return undefined;
+function expiryWhere(e: ExpiryFilter | undefined, now: Date, t: Thresholds): Prisma.BatchWhereInput {
+  if (e === "unknown") return { expiryStatus: "UNKNOWN" };
+  if (e === "none") return { expiryStatus: "NONE" };
+  if (e === "near") return { expiryStatus: "DATED", expiryDate: { gte: sellableCutoff(now, t.blockDays), lt: sellableCutoff(now, t.warnDays) } };
+  if (e === "blocked") return { OR: [{ expiryStatus: "UNKNOWN" }, { expiryDate: { lt: sellableCutoff(now, t.blockDays) } }] };
+  if (e === "expired") return { expiryDate: { lt: sellableCutoff(now, 0) } };
+  return {};
 }
 
 /** Điều kiện dòng tồn theo bộ lọc (tab vị trí, hạn dùng, loại tồn, từ khoá). */
@@ -82,13 +84,13 @@ function balanceWhere(f: StockFilter, now: Date, t: Thresholds): Prisma.StockBal
     qty: { not: 0 },
     stockType: f.stockType,
     location: f.tab === "all" ? undefined : { type: f.tab },
-    batch: { expiryDate: expiryWhere(f.expiry, now, t), ...(f.q ? batchSearch(f.q) : {}) },
+    batch: { AND: [expiryWhere(f.expiry, now, t), f.q ? batchSearch(f.q) : {}] },
   };
 }
 
 const ROW_INCLUDE = {
   location: { select: { code: true, type: true, sellable: true } },
-  batch: { select: { variantId: true, lotNo: true, expiryDate: true, landedCostMmk: true } },
+  batch: { select: { variantId: true, lotNo: true, expiryDate: true, expiryStatus: true, landedCostMmk: true } },
 } satisfies Prisma.StockBalanceInclude;
 
 async function loadRows(where: Prisma.StockBalanceWhereInput): Promise<BalanceRow[]> {
@@ -98,6 +100,7 @@ async function loadRows(where: Prisma.StockBalanceWhereInput): Promise<BalanceRo
     batchId: r.batchId,
     lotNo: r.batch.lotNo,
     expiryDate: r.batch.expiryDate,
+    expiryStatus: r.batch.expiryStatus,
     landedCostMmk: r.batch.landedCostMmk,
     locationId: r.locationId,
     locationCode: r.location.code,
@@ -260,6 +263,7 @@ export async function stockLots(f: StockFilter, now = new Date()) {
       variantLabel: r.batch.variant.label,
       lotNo: r.batch.lotNo,
       expiryDate: r.batch.expiryDate,
+    expiryStatus: r.batch.expiryStatus,
       locationCode: r.location.code,
       locationType: r.location.type,
       stockType: r.stockType,

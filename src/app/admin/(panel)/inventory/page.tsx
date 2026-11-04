@@ -238,7 +238,7 @@ function LotsTable({ lots, t, th, now }: { lots: BalanceRow[]; t: T; th: Thresho
           <tr key={`${l.batchId}|${l.locationId}|${l.stockType}`} data-testid="lot-row">
             <td className="px-3 py-1.5 font-mono">{l.lotNo}</td>
             <td className="px-3 py-1.5">
-              <ExpiryTag date={l.expiryDate} now={now} t={t} th={th} />
+              <ExpiryTag date={l.expiryDate} status={l.expiryStatus} now={now} t={t} th={th} />
             </td>
             <td className="px-3 py-1.5">{t(`loc.${l.locationType}`)}</td>
             <td className="px-3 py-1.5">
@@ -428,7 +428,7 @@ function LotView({ page, t, th, now }: { page: Awaited<ReturnType<typeof stockLo
             </Link>
           </Td>
           <Td>
-            <ExpiryTag date={r.expiryDate} now={now} t={t} th={th} />
+            <ExpiryTag date={r.expiryDate} status={r.expiryStatus} now={now} t={t} th={th} />
           </Td>
           <Td className="font-mono text-xs">{r.locationCode}</Td>
           <Td>

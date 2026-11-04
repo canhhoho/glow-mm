@@ -225,6 +225,9 @@ model TagTranslation {
 }
 
 model Product {
+  requiresExpiry Boolean @default(true)
+  /// Period after opening; separate from batch expiry.
+  paoMonths Int?
   id           String               @id @default(cuid())
   slug         String               @unique
   brandId      String
@@ -455,13 +458,27 @@ model ShipmentCost {
   note       String?
 }
 
+enum ExpiryStatus {
+  DATED
+  NONE
+  UNKNOWN
+}
+
+model CatalogOpeningImport {
+  id        String   @id
+  createdAt DateTime @default(now())
+  userId    String
+  result    Json
+}
+
 model Batch {
   id            String              @id @default(cuid())
   variantId     String
   variant       Variant             @relation(fields: [variantId], references: [id])
   lotNo         String
   mfgDate       DateTime?           @db.Date
-  expiryDate    DateTime            @db.Date
+  expiryDate    DateTime?           @db.Date
+  expiryStatus  ExpiryStatus        @default(DATED)
   unitCostVnd   Int
   /// Giá vốn đã cộng chi phí phân bổ (VND/đơn vị).
   landedCostVnd Int?
@@ -751,6 +768,12 @@ model Order {
   /// Chống tạo trùng khi bấm gửi 2 lần.
   idempotencyKey    String?               @unique
   codConfirmedAt    DateTime?
+  /// COD khách đã thanh toán cho đơn vị vận chuyển; khác thời điểm tiền về cửa hàng.
+  codCollectedAt    DateTime?
+  codRemittedAt     DateTime?
+  codRemittedMmk    Int?
+  codCarrierFeeMmk  Int?
+  codRemittanceRef  String?
   /// Thời điểm chuyển sang COMPLETED — mốc tính hạn giữ hoa hồng CTV.
   completedAt       DateTime?
   createdById       String?

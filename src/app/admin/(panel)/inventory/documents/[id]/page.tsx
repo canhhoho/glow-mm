@@ -66,7 +66,7 @@ export default async function DocumentPage({ params }: PageProps<"/admin/invento
               {productName(l.variant.product.translations, l.variant.product.slug)} ({l.variant.label})
             </Td>
             <Td className="font-mono text-xs">{l.batch?.lotNo ?? t("autoFefo")}</Td>
-            <Td>{fmtDay(l.batch?.expiryDate)}</Td>
+            <Td>{l.batch?.expiryStatus === "NONE" ? ti("expiryNone") : l.batch?.expiryStatus === "UNKNOWN" ? ti("expiryUnknown") : fmtDay(l.batch?.expiryDate)}</Td>
             <Td>{ti(l.stockType)}</Td>
             <Td className="text-right tabular-nums">{fmtInt(l.qty)}</Td>
           </tr>

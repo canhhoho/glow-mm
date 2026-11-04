@@ -8,6 +8,12 @@ import { importSheetToCsv, readImportFile } from "@/server/catalog/import-file";
 const asset = (kind: string) => readFile(`public/templates/${kind}.xlsx`);
 
 describe("Mẫu Excel và bộ đọc import", () => {
+  it("mẫu nhập lần đầu có hai bảng nhập trống và lựa chọn hạn dùng", async () => {
+    const bytes = new Uint8Array(await asset("opening"));
+    for (const kind of ["products", "stock"] as const) await expect(readImportFile(new File([bytes], "opening.xlsx"), kind)).rejects.toThrow("File chưa có dữ liệu");
+    const stockGuide = await readSheet(Buffer.from(bytes), "Huong dan ton");
+    expect(stockGuide.flat().some((v) => typeof v === "string" && v.includes("UNKNOWN"))).toBe(true);
+  });
   it.each(["products", "stock"] as const)("%s: mẫu tải xuống đọc được, không chứa dữ liệu ví dụ trong vùng nhập", async (kind) => {
     const file = new File([new Uint8Array(await asset(kind))], `${kind}.xlsx`);
     await expect(readImportFile(file, kind)).rejects.toThrow("File chưa có dữ liệu");

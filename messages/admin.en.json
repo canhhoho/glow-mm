@@ -65,7 +65,8 @@
     "reorder": "To reorder",
     "sales": "Last 30 days",
     "today": "Today",
-    "viewReports": "View reports"
+    "viewReports": "View reports",
+    "unknownExpiry": "Batches with unknown expiry"
   },
   "Role": {
     "ADMIN": "Administrator",
@@ -124,7 +125,9 @@
     "ex": {
       "near": "Near expiry",
       "blocked": "Blocked / expired",
-      "expired": "Expired"
+      "expired": "Expired",
+      "unknown": "Unknown expiry",
+      "none": "No expiry applies"
     },
     "stockTypeFilter": "Filter by stock type",
     "stockTypeAll": "Stock type: all",
@@ -159,7 +162,12 @@
       "CUSTOMS": "Customs",
       "MM_STOCK": "MM warehouse",
       "QUARANTINE": "Quarantine"
-    }
+    },
+    "expiryDated": "Known expiry date",
+    "expiryNone": "No expiry date applies",
+    "expiryUnknown": "Unknown expiry · Not sellable",
+    "resolveExpiry": "Confirm expiry date",
+    "resolveHelp": "Check the packaging before entering the date. The batch becomes sellable only if it meets the expiry threshold."
   },
   "Docs": {
     "title": "Stock documents",
@@ -209,7 +217,8 @@
     "saveDraft": "Save draft",
     "back": "Back",
     "error": "Could not complete",
-    "line": "Line"
+    "line": "Line",
+    "expiryStatus": "Expiry status"
   },
   "Ship": {
     "title": "Shipments VN → MM",
@@ -323,7 +332,14 @@
     "imagesUp": "Up",
     "imagesDown": "Down",
     "imagesDelete": "Delete image",
-    "imagesDeleteConfirm": "Delete this image?"
+    "imagesDeleteConfirm": "Delete this image?",
+    "requiresExpiry": "Track expiry dates for this product",
+    "separateImport": "Separate imports / update existing data",
+    "paoMonths": "Period after opening (months, optional)",
+    "launchCheck": "Before publishing",
+    "checkImages": "Product images added",
+    "checkPrice": "Active variants have a positive selling price",
+    "checkStock": "Sellable stock is available"
   },
   "Orders": {
     "exportVtp": "Export VTP Excel",
@@ -638,7 +654,8 @@
     "lv": {
       "expired": "Expired",
       "blocked": "Blocked",
-      "near": "Near expiry"
+      "near": "Near expiry",
+      "unknown": "Unknown expiry"
     },
     "note": "Stop selling below {block} days, warn below {warn} days. Sales velocity over the last {window} days, cover {cover} days after arrival. Change in Settings.",
     "reorderHint": "Suggest = sold/day × (lead time + cover days) + safety stock − (available + VN + inbound)."
@@ -1251,5 +1268,59 @@
     "copied": "Copied",
     "copyFallback": "Select the field value and press Ctrl+C to copy.",
     "downloadInfo": "Download order information (.txt)"
+  },
+  "Opening": {
+    "title": "Start selling · Import products and opening stock",
+    "help": "One workbook with two input sheets linked by SKU. New products stay unpublished; inventory takes effect after posting the receipt.",
+    "setup": "Set up the store",
+    "prepare": "Fill products and stock",
+    "review": "Preview and confirm",
+    "launch": "Test an order, then launch",
+    "setupLink": "Store and payment settings",
+    "categories": "Create / view category codes",
+    "rates": "Check exchange rates",
+    "template": "Download opening workbook",
+    "warehouse": "Default warehouse for blank warehouse cells",
+    "file": "Opening import workbook",
+    "preview": "Validate and preview",
+    "summary": "{products} products · {lines} stock rows checked",
+    "costHelp": "Preview amounts are MMK per unit. Landed cost includes purchase and inbound costs at the current rate. Estimated profit deducts entered selling fees, excluding undeclared costs and affiliate commissions.",
+    "sku": "SKU",
+    "qty": "Quantity",
+    "expiry": "Expiry",
+    "price": "Selling price",
+    "cost": "Landed cost",
+    "fee": "Estimated selling fees",
+    "profit": "Estimated profit",
+    "confirmHelp": "Confirmation creates unpublished products and draft receipts. UNKNOWN stock is not sellable. Selling fees are used for this estimate only. Publish after checking images, prices and posting stock.",
+    "confirm": "Confirm products and draft receipts",
+    "success": "Created {count} variants. Next: review and post the receipts below.",
+    "reviewDraft": "Review and post",
+    "testHelp": "Before launch: finish images and content, test a COD and a bank-transfer order, check inventory and VTP export.",
+    "finishProducts": "Finish products and publish",
+    "rateQuote": "Preview rate: 1 VND = {rate} MMK",
+    "colWarehouse": "Warehouse",
+    "lot": "Lot / Stock type"
+  },
+  "Cod": {
+    "title": "COD reconciliation",
+    "help": "Delivery completion records customer payment to the carrier. Confirm remittance only after checking the receiving account and carrier statement.",
+    "confirm": "Confirm money received by store",
+    "saved": "COD remittance recorded",
+    "received": "Net received (MMK)",
+    "fee": "Carrier deduction (MMK)",
+    "reference": "Transfer / statement reference",
+    "back": "Orders",
+    "outstanding": "{count} orders awaiting remittance · Gross COD {amount} MMK (before carrier deductions)",
+    "order": "Order",
+    "carrier": "Carrier / Tracking",
+    "collectedAt": "Customer payment collected at",
+    "gross": "Gross collected (MMK)",
+    "status": "Remittance status",
+    "waiting": "Awaiting store remittance",
+    "notCollected": "COD not collected yet",
+    "remitted": "Received by store",
+    "exception": "Return / refund · Separate reconciliation required",
+    "empty": "No COD awaiting reconciliation"
   }
 }
