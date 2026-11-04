@@ -176,17 +176,28 @@ model Brand {
 }
 
 model Category {
-  id           String                @id @default(cuid())
-  slug         String                @unique
-  parentId     String?
-  parent       Category?             @relation("CategoryTree", fields: [parentId], references: [id])
-  children     Category[]            @relation("CategoryTree")
-  sortOrder    Int                   @default(0)
+  id            String                 @id @default(cuid())
+  slug          String                 @unique
+  parentId      String?
+  parent        Category?              @relation("CategoryTree", fields: [parentId], references: [id])
+  children      Category[]             @relation("CategoryTree")
+  sortOrder     Int                    @default(0)
   /// Icon ô "nhóm hàng" trên trang chủ (ảnh vuông PNG/WebP/JPG).
-  iconFileId   String?
-  icon         FileObject?           @relation(fields: [iconFileId], references: [id])
-  translations CategoryTranslation[]
-  products     Product[]
+  iconFileId    String?
+  icon          FileObject?            @relation(fields: [iconFileId], references: [id])
+  translations  CategoryTranslation[]
+  products      Product[]
+  slugRedirects CategorySlugRedirect[]
+}
+
+/// Slug cũ của danh mục đã đổi slug → /c/<slug cũ> chuyển 308 sang slug hiện tại (trỏ theo id nên đổi nhiều lần không thành chuỗi).
+model CategorySlugRedirect {
+  slug       String   @id
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@index([categoryId])
 }
 
 model CategoryTranslation {
@@ -225,25 +236,25 @@ model TagTranslation {
 }
 
 model Product {
-  requiresExpiry Boolean @default(true)
+  requiresExpiry Boolean              @default(true)
   /// Period after opening; separate from batch expiry.
-  paoMonths Int?
-  id           String               @id @default(cuid())
-  slug         String               @unique
-  brandId      String
-  brand        Brand                @relation(fields: [brandId], references: [id])
-  categoryId   String
-  category     Category             @relation(fields: [categoryId], references: [id])
-  storageNote  String?
-  published    Boolean              @default(false)
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
-  translations ProductTranslation[]
-  tags         ProductTag[]
-  images       ProductImage[]
-  variants     Variant[]
-  reviews      Review[]
-  collections  CollectionItem[]
+  paoMonths      Int?
+  id             String               @id @default(cuid())
+  slug           String               @unique
+  brandId        String
+  brand          Brand                @relation(fields: [brandId], references: [id])
+  categoryId     String
+  category       Category             @relation(fields: [categoryId], references: [id])
+  storageNote    String?
+  published      Boolean              @default(false)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  translations   ProductTranslation[]
+  tags           ProductTag[]
+  images         ProductImage[]
+  variants       Variant[]
+  reviews        Review[]
+  collections    CollectionItem[]
 
   @@index([categoryId])
   @@index([brandId])

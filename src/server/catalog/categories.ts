@@ -1,7 +1,8 @@
 import "server-only";
 import { z } from "zod";
-import { mmTextReq } from "@/lib/schemas";
+import { mmTextReq, slugSchema } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
+import { Prisma } from "@/generated/prisma/client";
 import {
   deleteFileIfUnused,
   deleteStoredKeys,
@@ -12,13 +13,16 @@ import {
 import { CatalogError } from "./products";
 
 /**
- * Quản lý danh mục (P6): sửa tên/cha/thứ tự, icon "nhóm hàng" trên trang chủ.
+ * Quản lý danh mục (P6): sửa slug/tên/cha/thứ tự, icon "nhóm hàng" trên trang chủ.
  * Cây tối đa 2 cấp (khớp menu storefront): danh mục cha phải là danh mục gốc; danh mục đang có con không làm con được.
+ * Đổi slug → slug cũ lưu ở `CategorySlugRedirect` để link /c/<slug cũ> đã chia sẻ vẫn chuyển được sang slug mới.
  */
 
 const TX = { maxWait: 10_000, timeout: 30_000 };
 
 const updateSchema = z.object({
+  /** Không gửi = giữ slug hiện tại. */
+  slug: slugSchema(60, "Slug chỉ gồm a-z, 0-9 và dấu -").optional(),
   nameMy: mmTextReq(80),
   nameEn: z.string().trim().min(1).max(80),
   parentId: z
@@ -82,24 +86,50 @@ export async function updateCategory(id: string, raw: CategoryUpdateInput, userI
     if (!parent) throw new CatalogError("Danh mục cha không tồn tại");
     if (parent.parentId) throw new CatalogError("Danh mục cha phải là danh mục gốc (tối đa 2 cấp)");
   }
-  return prisma.$transaction(async (tx) => {
-    const updated = await tx.category.update({
-      where: { id: category.id },
-      data: { parentId: input.parentId, sortOrder: input.sortOrder },
-    });
-    for (const [locale, name] of [
-      ["my", input.nameMy],
-      ["en", input.nameEn],
-    ] as const) {
-      await tx.categoryTranslation.upsert({
-        where: { categoryId_locale: { categoryId: category.id, locale } },
-        create: { categoryId: category.id, locale, name },
-        update: { name },
+  const slug = input.slug ?? category.slug;
+  const slugChanged = slug !== category.slug;
+  try {
+    return await prisma.$transaction(async (tx) => {
+      if (slugChanged) {
+        // Dùng lại một slug cũ → bỏ redirect đó; slug vừa bỏ trỏ về danh mục này (ghi đè nếu từng thuộc danh mục khác).
+        await tx.categorySlugRedirect.deleteMany({ where: { slug } });
+        await tx.categorySlugRedirect.upsert({
+          where: { slug: category.slug },
+          create: { slug: category.slug, categoryId: category.id },
+          update: { categoryId: category.id },
+        });
+      }
+      const updated = await tx.category.update({
+        where: { id: category.id },
+        data: { slug, parentId: input.parentId, sortOrder: input.sortOrder },
       });
+      for (const [locale, name] of [
+        ["my", input.nameMy],
+        ["en", input.nameEn],
+      ] as const) {
+        await tx.categoryTranslation.upsert({
+          where: { categoryId_locale: { categoryId: category.id, locale } },
+          create: { categoryId: category.id, locale, name },
+          update: { name },
+        });
+      }
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: "category.update",
+          entity: "Category",
+          entityId: category.id,
+          data: slugChanged ? { slugFrom: category.slug, slugTo: slug } : undefined,
+        },
+      });
+      return updated;
+    }, TX);
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      throw new CatalogError("Slug đã được dùng cho danh mục khác");
     }
-    await tx.auditLog.create({ data: { userId, action: "category.update", entity: "Category", entityId: category.id } });
-    return updated;
-  }, TX);
+    throw e;
+  }
 }
 
 /** Đặt icon (ảnh vuông JPG/PNG/WebP); icon cũ không còn dùng thì xoá. */

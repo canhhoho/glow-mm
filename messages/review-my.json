@@ -365,6 +365,8 @@
     "Categories.saved",
     "Categories.search",
     "Categories.searchBtn",
+    "Categories.slug",
+    "Categories.slugHelp",
     "Categories.sortOrder",
     "Categories.title",
     "Common.backToDashboard",

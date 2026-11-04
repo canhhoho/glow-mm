@@ -76,6 +76,7 @@ export async function updateCategoryAction(_prev: ActionState, formData: FormDat
     await updateCategory(
       formId(40).parse(formData.get("categoryId")),
       {
+        slug: String(formData.get("slug") ?? ""),
         nameMy: String(formData.get("nameMy") ?? ""),
         nameEn: String(formData.get("nameEn") ?? ""),
         parentId: String(formData.get("parentId") ?? ""),
@@ -87,6 +88,7 @@ export async function updateCategoryAction(_prev: ActionState, formData: FormDat
     return { error: message(e) };
   }
   categoriesChanged();
+  revalidatePath("/admin/products"); // ô chọn danh mục ở form SP
   return { ok: "saved" };
 }
 

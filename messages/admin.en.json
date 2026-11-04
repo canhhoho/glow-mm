@@ -762,7 +762,9 @@
     "noIcon": "None",
     "newCategory": "New category",
     "search": "Search categories (slug, name)",
-    "searchBtn": "Search"
+    "searchBtn": "Search",
+    "slug": "Slug (URL path)",
+    "slugHelp": "Only a-z, 0-9 and -. Old /c/… links redirect to the new slug automatically. Product import spreadsheets must use the new slug."
   },
   "Content": {
     "bannersTitle": "Home page banners",

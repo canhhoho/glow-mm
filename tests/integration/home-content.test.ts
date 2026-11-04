@@ -6,6 +6,7 @@ import { env } from "@/lib/env";
 import { LocalDiskStorage } from "@/server/adapters/storage/local";
 import { deleteCategory, removeCategoryIcon, setCategoryIcon, updateCategory } from "@/server/catalog/categories";
 import { listRootCategories } from "@/server/catalog/queries";
+import { findCategorySlugRedirect } from "@/server/catalog/store-slugs";
 import { activeBanners, createBanner, deleteBanner, moveBanner, setBannerActive, updateBanner } from "@/server/content/banners";
 import {
   addCollectionProducts,
@@ -173,6 +174,39 @@ describe("Danh mục: sửa + icon", () => {
     await removeCategoryIcon(f.categoryId, f.userId);
     expect(await disk().get(second.icon!.key)).toBeNull();
     expect(await prisma.fileObject.findUnique({ where: { id: second.icon!.id } })).toBeNull();
+  });
+
+  it("đổi slug: slug cũ chuyển về slug hiện tại, dùng lại slug cũ, chặn trùng; xoá danh mục dọn redirect", async () => {
+    const f = await makeFixture();
+    const other = await makeFixture();
+    const input = { nameMy: "အမျိုးအစား", nameEn: "Lipstick", parentId: null, sortOrder: 0 };
+    const t = f.tag.toLowerCase(); // slug fixture viết hoa (tạo thẳng bằng Prisma) → slug mới dùng chữ thường
+    const [s0, s1, s2] = [`it-${f.tag}`, `it-lip-${t}`, `it-lips-${t}`];
+
+    await updateCategory(f.categoryId, { ...input, slug: s1 }, f.userId);
+    expect(await findCategorySlugRedirect(s0)).toBe(s1);
+    await updateCategory(f.categoryId, { ...input, slug: s2 }, f.userId);
+    expect([await findCategorySlugRedirect(s0), await findCategorySlugRedirect(s1)]).toEqual([s2, s2]); // không thành chuỗi
+    const audit = { action: "category.update", entityId: f.categoryId, data: { equals: { slugFrom: s1, slugTo: s2 } } };
+    expect(await prisma.auditLog.count({ where: audit })).toBe(1);
+
+    await updateCategory(f.categoryId, { ...input, slug: s1 }, f.userId); // dùng lại slug cũ
+    expect(await findCategorySlugRedirect(s1)).toBeNull();
+    expect([await findCategorySlugRedirect(s0), await findCategorySlugRedirect(s2)]).toEqual([s1, s1]);
+    await updateCategory(f.categoryId, input, f.userId); // không gửi slug = giữ nguyên
+    expect((await prisma.category.findUniqueOrThrow({ where: { id: f.categoryId } })).slug).toBe(s1);
+
+    const taken = `it-other-${other.tag.toLowerCase()}`;
+    await prisma.category.update({ where: { id: other.categoryId }, data: { slug: taken } });
+    await expect(updateCategory(f.categoryId, { ...input, slug: taken }, f.userId)).rejects.toThrow(/đã được dùng/);
+    await expect(updateCategory(f.categoryId, { ...input, slug: "Có Dấu" }, f.userId)).rejects.toThrow(/a-z/);
+    expect(await findCategorySlugRedirect(s1)).toBeNull(); // lỗi → transaction không ghi gì
+
+    const empty = await prisma.category.create({ data: { slug: `it-gone-${t}` } });
+    await updateCategory(empty.id, { ...input, slug: `it-gone2-${t}` }, f.userId);
+    expect(await findCategorySlugRedirect(`it-gone-${t}`)).toBe(`it-gone2-${t}`);
+    await deleteCategory(empty.id, f.userId);
+    expect(await findCategorySlugRedirect(`it-gone-${t}`)).toBeNull();
   });
 
   it("xoá chỉ khi trống (không SP, không con); dọn bản dịch + icon; ghi audit", async () => {

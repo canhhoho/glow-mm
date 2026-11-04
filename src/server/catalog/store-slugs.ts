@@ -63,6 +63,13 @@ export function createPositiveCache(ttlMs: number, max: number, now: () => numbe
 
 const known = createPositiveCache(60_000, 5_000);
 
+/** Slug cũ của danh mục đã đổi slug (`CategorySlugRedirect`) → slug hiện tại; không có thì `null`. */
+export async function findCategorySlugRedirect(slug: string): Promise<string | null> {
+  if (!slug) return null;
+  const r = await prisma.categorySlugRedirect.findUnique({ where: { slug }, select: { category: { select: { slug: true } } } });
+  return r?.category.slug ?? null;
+}
+
 export async function storeSlugExists(kind: StoreSlugKind, slug: string): Promise<boolean> {
   if (kind === "info") return isInfoPage(slug);
   if (!slug) return false;

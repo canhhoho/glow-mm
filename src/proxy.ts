@@ -5,7 +5,7 @@ import { buildCsp, newNonce } from "./lib/csp";
 import { PORTAL_HEADER, routing } from "./i18n/routing";
 import { normalizeRefCode, REF_COOKIE, REF_MAX_AGE_S, REF_PARAM } from "./server/affiliates/referral";
 import { customerLoginRedirectFor, loginRedirectFor } from "./server/auth/session-cookie";
-import { isKnownStorePath, parseStoreSlugPath, storeSlugExists } from "./server/catalog/store-slugs";
+import { findCategorySlugRedirect, isKnownStorePath, parseStoreSlugPath, storeSlugExists } from "./server/catalog/store-slugs";
 
 const intl = createMiddleware(routing);
 const DEV = process.env.NODE_ENV !== "production";
@@ -14,7 +14,7 @@ const HTTPS = process.env.APP_URL?.startsWith("https://") ?? false;
 /**
  * Proxy: định tuyến locale cho storefront + trả HTTP 404 thật (trang có header/footer, bản dịch) cho:
  * - đường dẫn không khớp route nào (`isKnownStorePath`), vd /en/foo, /en/p/a/b;
- * - slug sản phẩm/danh mục/trang thông tin/bộ sưu tập không tồn tại.
+ * - slug sản phẩm/danh mục/trang thông tin/bộ sưu tập không tồn tại (trừ slug cũ của danh mục → 308 sang slug mới).
  * Cách làm: rewrite sang /[locale]/404 — trang tĩnh gọi notFound() lúc prerender nên giữ status 404.
  * KHÔNG phải lớp bảo mật — quyền được kiểm tra trong từng Server Action/route.
  */
@@ -64,6 +64,13 @@ export default async function proxy(req: NextRequest) {
   if (isKnownStorePath(pathname)) {
     const target = parseStoreSlugPath(pathname);
     if (!target || (await storeSlugExists(target.kind, target.slug))) return res;
+    // Danh mục đã đổi slug: link cũ → 308 sang slug hiện tại (giữ tiền tố locale + query trên URL gốc).
+    const moved = target.kind === "c" ? await findCategorySlugRedirect(target.slug) : null;
+    if (moved) {
+      const url = req.nextUrl.clone();
+      url.pathname = url.pathname.replace(/[^/]+\/?$/, encodeURIComponent(moved));
+      return NextResponse.redirect(url, 308);
+    }
   }
 
   // Giữ header/cookie next-intl đã đặt, đổi đích rewrite.

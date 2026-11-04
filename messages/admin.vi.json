@@ -762,7 +762,9 @@
     "noIcon": "Chưa có",
     "newCategory": "Thêm danh mục",
     "search": "Tìm danh mục (slug, tên)",
-    "searchBtn": "Tìm"
+    "searchBtn": "Tìm",
+    "slug": "Slug (đường dẫn URL)",
+    "slugHelp": "Chỉ a-z, 0-9, dấu -. Đổi slug thì link cũ /c/… tự chuyển sang link mới. File Excel nhập sản phẩm phải dùng slug mới."
   },
   "Content": {
     "bannersTitle": "Banner trang chủ",

@@ -63,6 +63,18 @@ export default async function CategoriesPage({ searchParams }: PageProps<"/admin
                   className="grid gap-2 sm:grid-cols-2"
                 >
                   <input type="hidden" name="categoryId" value={c.id} />
+                  <label className="grid content-start gap-1 text-sm sm:col-span-2">
+                    <span className="text-muted-foreground">{t("slug")}</span>
+                    <input
+                      name="slug"
+                      required
+                      maxLength={60}
+                      pattern="[a-z0-9\-]+"
+                      defaultValue={c.slug}
+                      className={`${fieldClass} font-mono`}
+                    />
+                    <span className="text-xs text-muted-foreground">{t("slugHelp")}</span>
+                  </label>
                   <label className="grid content-start gap-1 text-sm" lang="my">
                     <span className="text-muted-foreground">{t("nameMy")}</span>
                     <input name="nameMy" required defaultValue={c.nameMy} className={fieldClass} />
