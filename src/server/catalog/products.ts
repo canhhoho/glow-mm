@@ -172,6 +172,31 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
   return transaction ? run(transaction) : prisma.$transaction(run);
 }
 
+const bulkPublishSchema = z.object({
+  ids: z.array(rawId).min(1, "Chưa chọn sản phẩm nào").max(500),
+  published: z.boolean(),
+});
+
+/** Bật/tắt "Hiển thị trên web" cho nhiều SP một lần; chỉ ghi SP thực sự đổi trạng thái (audit từng SP). */
+export async function setProductsPublished(raw: unknown, userId: string) {
+  const { ids, published } = bulkPublishSchema.parse(raw);
+  return prisma.$transaction(async (tx) => {
+    const changed = await tx.product.findMany({
+      where: { id: { in: [...new Set(ids)] }, published: !published },
+      select: { id: true },
+    });
+    const changedIds = changed.map((p) => p.id);
+    if (changedIds.length === 0) return { changed: 0 };
+    await tx.product.updateMany({ where: { id: { in: changedIds } }, data: { published } });
+    await tx.auditLog.createMany({
+      data: changedIds.map((entityId) => ({
+        userId, action: published ? "product.publish" : "product.unpublish", entity: "Product", entityId, data: { bulk: true },
+      })),
+    });
+    return { changed: changedIds.length };
+  });
+}
+
 export async function createBrand(name: string) {
   const clean = z.string().trim().min(1).max(80).parse(name);
   return prisma.brand.create({ data: { name: clean, slug: slugify(clean, `brand-${Date.now()}`) } });

@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { listProductsAdmin } from "@/server/catalog/admin-queries";
 import { BrandForm } from "@/components/admin/catalog-forms";
+import { BulkCheckbox, BulkPublishBar } from "@/components/admin/product-bulk-publish";
 import { Badge, DataTable, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Section, Td } from "@/components/admin/ui";
 import { fmtInt } from "@/lib/format";
 
@@ -34,9 +35,17 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
         <SearchInput label={t("search")} defaultValue={query} />
         <FilterButton>{tc("filter")}</FilterButton>
       </FilterBar>
-      <DataTable stack empty={t("empty")} head={[t("colName"), t("colBrand"), t("colCategory"), t("colVariants"), t("colStatus"), t("edit")]}>
+      <BulkPublishBar total={products.length} />
+      <DataTable
+        stack
+        empty={t("empty")}
+        head={[<span key="sel" className="sr-only">{t("colSelect")}</span>, t("colName"), t("colBrand"), t("colCategory"), t("colVariants"), t("colStatus"), t("edit")]}
+      >
         {products.map((p) => (
           <tr key={p.id}>
+            <Td className="w-8">
+              <BulkCheckbox id={p.id} label={t("selectProduct", { name: p.name })} />
+            </Td>
             <Td>
               <Link href={`/admin/products/${p.id}`} className="text-primary underline">
                 {p.name}

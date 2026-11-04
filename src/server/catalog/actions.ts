@@ -9,7 +9,7 @@ import type { ActionState } from "@/server/inventory/actions";
 import { deleteCategory, removeCategoryIcon, setCategoryIcon, updateCategory } from "./categories";
 import { CATALOG_TAG } from "./category-tree";
 import { addProductImages, deleteProductImage, reorderProductImage, updateProductImageAlt } from "./images";
-import { createBrand, createCategory, importOpeningStockCsv, importProductsCsv, saveProduct, type ImportResult } from "./products";
+import { createBrand, createCategory, importOpeningStockCsv, importProductsCsv, saveProduct, setProductsPublished, type ImportResult } from "./products";
 import { readImportFile } from "./import-file";
 import { commitOpening, previewOpening, type OpeningPreview } from "./opening";
 
@@ -30,6 +30,23 @@ export async function saveProductAction(_prev: ActionState, formData: FormData):
   updateTag(CATALOG_TAG); // menu danh mục storefront (SP đăng/ẩn, đổi danh mục)
   revalidatePath("/admin/products");
   redirect(`/admin/products/${id}?saved=1`);
+}
+
+/** Bật/ẩn nhiều SP từ danh sách admin; `ok` = số SP đổi trạng thái. */
+export async function setProductsPublishedAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  let changed: number;
+  try {
+    const user = await requirePermission("catalog:manage");
+    ({ changed } = await setProductsPublished(
+      { ids: formData.getAll("ids").map(String), published: formData.get("published") === "1" },
+      user.id,
+    ));
+  } catch (e) {
+    return { error: message(e) };
+  }
+  updateTag(CATALOG_TAG); // thẻ/trang SP, menu danh mục storefront
+  revalidatePath("/admin/products");
+  return { ok: String(changed) };
 }
 
 export async function createBrandAction(_prev: ActionState, formData: FormData): Promise<ActionState> {

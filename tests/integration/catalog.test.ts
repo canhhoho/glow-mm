@@ -2,7 +2,7 @@ import Rabbit from "rabbit-node";
 import { describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { toCsv } from "@/lib/csv";
-import { importOpeningStockCsv, importProductsCsv, PRODUCT_CSV_COLUMNS, saveProduct, STOCK_CSV_COLUMNS } from "@/server/catalog/products";
+import { importOpeningStockCsv, importProductsCsv, PRODUCT_CSV_COLUMNS, saveProduct, setProductsPublished, STOCK_CSV_COLUMNS } from "@/server/catalog/products";
 import { postDocument } from "@/server/inventory/documents";
 import { balance, makeFixture } from "./fixtures";
 
@@ -46,6 +46,25 @@ describe("Sản phẩm", () => {
     );
     const v = await prisma.variant.findFirstOrThrow({ where: { productId: ok.id }, include: { bundleItems: true } });
     expect(v.bundleItems).toEqual([expect.objectContaining({ componentId: f.variantId, qty: 2 })]);
+  });
+
+  it("bật/ẩn hàng loạt chỉ đổi SP khác trạng thái, ghi audit từng SP", async () => {
+    const f = await makeFixture();
+    const a = await saveProduct({ ...base(f, `ba-${f.tag.toLowerCase()}`), variants: [{ sku: `BA-${f.tag}`, label: "x", priceMmk: 1 }] }, f.userId);
+    const b = await saveProduct(
+      { ...base(f, `bb-${f.tag.toLowerCase()}`), published: true, variants: [{ sku: `BB-${f.tag}`, label: "x", priceMmk: 1 }] },
+      f.userId,
+    );
+
+    expect(await setProductsPublished({ ids: [a.id, b.id, a.id], published: true }, f.userId)).toEqual({ changed: 1 });
+    const rows = await prisma.product.findMany({ where: { id: { in: [a.id, b.id] } }, select: { published: true } });
+    expect(rows.every((r) => r.published)).toBe(true);
+    expect(await prisma.auditLog.count({ where: { entityId: a.id, action: "product.publish" } })).toBe(1);
+    expect(await prisma.auditLog.count({ where: { entityId: b.id, action: "product.publish" } })).toBe(0);
+
+    expect(await setProductsPublished({ ids: [a.id, b.id], published: false }, f.userId)).toEqual({ changed: 2 });
+    expect(await prisma.product.count({ where: { id: { in: [a.id, b.id] }, published: true } })).toBe(0);
+    await expect(setProductsPublished({ ids: [], published: true }, f.userId)).rejects.toThrow(/Chưa chọn/);
   });
 
   it("không cho SKU trùng với sản phẩm khác", async () => {
