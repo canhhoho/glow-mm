@@ -2,8 +2,9 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import type { Permission } from "@/server/auth/roles";
-import { batchesForForms, listLocations, listShipments, listVariantsForPicker } from "@/server/inventory/queries";
+import { batchesForForms, listLocations, listShipments, listVariantsForPicker, listVariantsForReceive } from "@/server/inventory/queries";
 import { DocumentForm } from "@/components/admin/document-form";
+import { ReceiveBulkForm } from "@/components/admin/receive-bulk-form";
 import { Page, PageHeader } from "@/components/admin/ui";
 
 const TYPES: Record<string, Permission> = {
@@ -17,6 +18,19 @@ export default async function NewDocumentPage({ searchParams }: PageProps<"/admi
   const { type } = await searchParams;
   if (typeof type !== "string" || !TYPES[type]) notFound();
   await requirePagePermission(TYPES[type]);
+  if (type === "RECEIVE") {
+    const [t, locations, variants, shipments] = await Promise.all([getTranslations("Docs"), listLocations(), listVariantsForReceive(), listShipments()]);
+    return (
+      <Page>
+        <PageHeader title={`${t("new")}: ${t(type)}`} back={{ href: "/admin/inventory", label: t("back") }} />
+        <ReceiveBulkForm
+          locations={locations.map((l) => ({ id: l.id, code: l.code, name: l.name }))}
+          shipments={shipments.map((s) => ({ id: s.id, code: s.code }))}
+          variants={variants}
+        />
+      </Page>
+    );
+  }
   const [t, locations, variants, batches, shipments] = await Promise.all([
     getTranslations("Docs"),
     listLocations(),

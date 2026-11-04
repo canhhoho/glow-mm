@@ -26,6 +26,33 @@ export async function listVariantsForPicker() {
   }));
 }
 
+/** Biến thể nhập kho được (đang dùng, không phải combo) cho bảng nhập nhanh; `lastCostVnd` = giá mua của lô mới nhất. */
+export async function listVariantsForReceive() {
+  const [variants, lastBatches] = await Promise.all([
+    prisma.variant.findMany({
+      where: { active: true, isBundle: false },
+      orderBy: { sku: "asc" },
+      include: { product: { include: { translations: true, brand: true } } },
+    }),
+    prisma.batch.findMany({
+      distinct: ["variantId"],
+      orderBy: [{ variantId: "asc" }, { createdAt: "desc" }],
+      select: { variantId: true, unitCostVnd: true },
+    }),
+  ]);
+  const lastCost = new Map(lastBatches.map((b) => [b.variantId, b.unitCostVnd]));
+  return variants.map((v) => ({
+    id: v.id,
+    sku: v.sku,
+    name: productName(v.product.translations, v.product.slug),
+    label: v.label,
+    brand: v.product.brand.name,
+    requiresExpiry: v.product.requiresExpiry,
+    lastCostVnd: lastCost.get(v.id) ?? null,
+  }));
+}
+export type ReceiveVariant = Awaited<ReturnType<typeof listVariantsForReceive>>[number];
+
 /** Mọi lô (kèm tồn theo vị trí) — dữ liệu cho form phiếu kho. */
 export async function batchesForForms() {
   const batches = await prisma.batch.findMany({

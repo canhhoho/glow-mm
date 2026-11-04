@@ -28,6 +28,39 @@ async function receive(
   return prisma.batch.findMany({ where: { variantId: f.variantId }, orderBy: { expiryDate: "asc" } });
 }
 
+describe("Phiếu nhập nhiều sản phẩm", () => {
+  it("phiếu ~200 dòng tạo trong một transaction; cùng (SKU, lô) dùng chung một lô", async () => {
+    const f = await makeFixture();
+    const variants = await prisma.$transaction(
+      Array.from({ length: 199 }, (_, i) =>
+        prisma.variant.create({ data: { productId: f.productId, sku: `IT-${f.tag}-${i}`, label: `v${i}`, priceMmk: 1000 } }),
+      ),
+    );
+    const line = (variantId: string, lotNo: string, qty: number) => ({ variantId, lotNo, expiryDate: "2028-12-31", unitCostVnd: 50_000, qty });
+    const doc = await createDocument(
+      {
+        type: "RECEIVE",
+        toId: f.vn.id,
+        lines: [line(f.variantId, "L1", 3), line(f.variantId, "L1", 2), ...variants.map((v) => line(v.id, "L1", 1))],
+      },
+      f.userId,
+    );
+    const lines = await prisma.stockDocumentLine.findMany({ where: { documentId: doc.id } });
+    expect(lines).toHaveLength(201);
+    const own = lines.filter((l) => l.variantId === f.variantId);
+    expect(new Set(own.map((l) => l.batchId)).size).toBe(1);
+    await postDocument(doc.id, f.userId);
+    expect(await balance(own[0].batchId!, f.vn.id)).toBe(5);
+  });
+
+  it("lỗi dòng ghi rõ SKU", async () => {
+    const f = await makeFixture();
+    await expect(
+      createDocument({ type: "RECEIVE", toId: f.vn.id, lines: [{ variantId: f.variantId, lotNo: "X", unitCostVnd: 1, qty: 1 }] }, f.userId),
+    ).rejects.toThrow(`SKU IT-${f.tag}: Cần nhập hạn sử dụng`);
+  });
+});
+
 describe("Sổ kho: nhận → chuyển → xuất", () => {
   it("nhận tạo lô + tồn, chuyển theo FEFO, xuất trừ tồn, ledger khớp tồn", async () => {
     const f = await makeFixture();

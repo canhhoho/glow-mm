@@ -40,7 +40,8 @@ export const receiveSchema = z.object({
         stockType,
       }).refine((l) => l.landedCostVnd === undefined || l.landedCostVnd >= l.unitCostVnd, { message: "Giá vốn về kho không thể thấp hơn giá mua", path: ["landedCostVnd"] }),
     )
-    .min(1),
+    .min(1)
+    .max(500),
 });
 
 export const transferSchema = z.object({
@@ -127,21 +128,34 @@ export async function createDocument(raw: unknown, userId: string, transaction?:
     const lines: { variantId: string; batchId: string | null; stockType: StockType; qty: number }[] = [];
 
     if (input.type === "RECEIVE") {
+      // Tải trước biến thể + lô đã có một lần (phiếu nhiều dòng không tốn 2–3 truy vấn mỗi dòng).
+      const variantIds = [...new Set(input.lines.map((l) => l.variantId))];
+      const variants = new Map(
+        (await tx.variant.findMany({ where: { id: { in: variantIds } }, include: { product: true } })).map((v) => [v.id, v]),
+      );
+      const lotKey = (variantId: string, lotNo: string) => `${variantId}\u0000${lotNo}`;
+      const wanted = new Set(input.lines.map((l) => lotKey(l.variantId, l.lotNo)));
+      const batches = new Map(
+        (await tx.batch.findMany({ where: { variantId: { in: variantIds }, lotNo: { in: [...new Set(input.lines.map((l) => l.lotNo))] } } }))
+          .filter((b) => wanted.has(lotKey(b.variantId, b.lotNo)))
+          .map((b) => [lotKey(b.variantId, b.lotNo), b]),
+      );
       for (const l of input.lines) {
-        const variant = await tx.variant.findUnique({ where: { id: l.variantId }, include: { product: true } });
+        const variant = variants.get(l.variantId);
         if (!variant) throw new DocumentError("Biến thể không tồn tại");
-        if (variant.isBundle) throw new DocumentError("Không nhập kho trực tiếp cho combo — nhập từng thành phần");
-        const existing = await tx.batch.findUnique({
-          where: { variantId_lotNo: { variantId: l.variantId, lotNo: l.lotNo } },
-        });
+        const fail = (msg: string): never => {
+          throw new DocumentError(`SKU ${variant.sku}: ${msg}`);
+        };
+        if (variant.isBundle) fail("Không nhập kho trực tiếp cho combo — nhập từng thành phần");
+        const existing = batches.get(lotKey(l.variantId, l.lotNo));
         const expiryStatus = l.expiryStatus ?? (variant.product.requiresExpiry ? "DATED" : "NONE");
-        if (expiryStatus === "NONE" && variant.product.requiresExpiry) throw new DocumentError("Sản phẩm này yêu cầu quản lý hạn sử dụng");
-        if (expiryStatus !== "NONE" && !variant.product.requiresExpiry) throw new DocumentError("Sản phẩm này không áp dụng hạn sử dụng; chọn NONE");
-        if (expiryStatus === "DATED" && !l.expiryDate) throw new DocumentError("Cần nhập hạn sử dụng hoặc chọn Chưa biết hạn");
-        if (expiryStatus !== "DATED" && l.expiryDate) throw new DocumentError("Chỉ nhập ngày khi đã biết hạn sử dụng");
-        if (l.mfgDate && l.expiryDate && l.mfgDate > l.expiryDate) throw new DocumentError("Ngày sản xuất phải trước hạn sử dụng");
+        if (expiryStatus === "NONE" && variant.product.requiresExpiry) fail("Sản phẩm này yêu cầu quản lý hạn sử dụng");
+        if (expiryStatus !== "NONE" && !variant.product.requiresExpiry) fail("Sản phẩm này không áp dụng hạn sử dụng; chọn NONE");
+        if (expiryStatus === "DATED" && !l.expiryDate) fail("Cần nhập hạn sử dụng hoặc chọn Chưa biết hạn");
+        if (expiryStatus !== "DATED" && l.expiryDate) fail("Chỉ nhập ngày khi đã biết hạn sử dụng");
+        if (l.mfgDate && l.expiryDate && l.mfgDate > l.expiryDate) fail("Ngày sản xuất phải trước hạn sử dụng");
         if (existing && (existing.expiryDate?.getTime() !== l.expiryDate?.getTime() || existing.expiryStatus !== expiryStatus || existing.unitCostVnd !== l.unitCostVnd || (l.landedCostVnd !== undefined && existing.landedCostVnd !== l.landedCostVnd))) {
-          throw new DocumentError(`Lô ${l.lotNo} đã có với hạn dùng khác hoặc giá vốn khác`);
+          fail(`Lô ${l.lotNo} đã có với hạn dùng khác hoặc giá vốn khác`);
         }
         const batch =
           existing ??
@@ -157,6 +171,7 @@ export async function createDocument(raw: unknown, userId: string, transaction?:
               shipmentId: input.shipmentId,
             },
           }));
+        batches.set(lotKey(l.variantId, l.lotNo), batch); // dòng sau cùng (SKU, lô) dùng lại lô này
         lines.push({ variantId: l.variantId, batchId: batch.id, stockType: l.stockType, qty: l.qty });
       }
     } else {

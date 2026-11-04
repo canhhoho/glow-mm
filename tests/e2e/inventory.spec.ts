@@ -1,7 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 import { login } from "./helpers";
 
-const VARIANT = "SV-SUN-50 — Sunscreen SPF50 PA++++ (50ml)";
+const SKU = "SV-SUN-50";
+const VARIANT = `${SKU} — Sunscreen SPF50 PA++++ (50ml)`;
 
 async function postAndExpect(page: Page) {
   await page.getByRole("button", { name: "Lưu nháp" }).click();
@@ -17,14 +18,14 @@ test("quản lý kho: nhận → chuyển → xuất, tồn khớp theo lô và 
   const lot = `E2E${Date.now().toString(36).toUpperCase()}`;
   await login(page, "kho@glow.local");
 
-  // 1) Nhập 10 vào kho VN
+  // 1) Nhập 10 vào kho VN (bảng nhập nhanh: lọc SKU, điền dòng)
   await page.goto("/admin/inventory/documents/new?type=RECEIVE");
   await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "VN-STOCK — Kho VN" });
-  await page.getByLabel("Biến thể").selectOption({ label: VARIANT });
-  await page.getByLabel("Số lô").fill(lot);
-  await page.getByLabel("Hạn dùng", { exact: true }).fill("2028-12-31");
-  await page.getByLabel("Giá mua/đv (VND)").fill("90000");
-  await page.getByLabel("Số lượng").fill("10");
+  await page.getByLabel("Tìm SKU, tên sản phẩm").fill(SKU);
+  await page.getByLabel(`Số lượng ${SKU}`, { exact: true }).fill("10");
+  await page.getByLabel(`Số lô ${SKU}`, { exact: true }).fill(lot);
+  await page.getByLabel(`Hạn dùng ${SKU}`, { exact: true }).fill("2028-12-31");
+  await page.getByLabel(`Giá mua/đv (VND) ${SKU}`, { exact: true }).fill("90000");
   await postAndExpect(page);
 
   // 2) Chuyển 4 sang kho Yangon (chọn đúng lô vừa nhập)
@@ -88,6 +89,36 @@ test("phiếu kho: lỗi server giữ lựa chọn; ghi sổ cần xác nhận; 
   await expect(shown("Đã huỷ")).toBeVisible();
   await expect(shown(/không ảnh hưởng tồn kho/)).toBeVisible();
   await expect(shown(/Phiếu đã ghi sổ/)).toHaveCount(0);
+});
+
+test("phiếu nhập: dán từ Excel điền nhiều dòng, báo dòng lỗi, dòng thiếu hạn bị chặn", async ({ page }) => {
+  test.setTimeout(60_000);
+  const lot = `PX${Date.now().toString(36).toUpperCase()}`;
+  await login(page, "kho@glow.local");
+  await page.goto("/admin/inventory/documents/new?type=RECEIVE");
+  await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "VN-STOCK — Kho VN" });
+  await page.getByRole("button", { name: "Dán từ Excel" }).click();
+  await page.getByRole("textbox", { name: "Dán từ Excel" }).fill(
+    `SKU\tSL\tLô\tHSD\tGiá\n${SKU}\t3\t${lot}\t31/12/2028\t90,000\n${SKU}\t2\t${lot}B\t\t90000\nKHONG-CO\t1\tX\t2028-01-01\t1`,
+  );
+  await page.getByRole("button", { name: "Điền vào bảng" }).click();
+  await expect(page.getByText("Đã điền 2 dòng vào bảng.")).toBeVisible();
+  await expect(page.getByText('Dòng 4: không có SKU "KHONG-CO"')).toBeVisible();
+  await expect(page.getByText(/^2 dòng · tổng SL 5/)).toBeVisible();
+
+  // Dòng lô thứ 2 thiếu hạn dùng → chặn ở client, không gửi.
+  await page.getByRole("button", { name: "Lưu nháp" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "1 dòng thiếu" })).toBeVisible();
+  await expect(page).toHaveURL(/type=RECEIVE$/);
+
+  await page.getByLabel(`Hạn dùng ${SKU}`, { exact: true }).nth(1).fill("2029-06-30");
+  await page.getByRole("button", { name: "Lưu nháp" }).click();
+  await expect(page).toHaveURL(/\/admin\/inventory\/documents\/(?!new(?:\?|$))[^/?]+$/);
+  await expect(page.getByText(lot, { exact: true }).filter({ visible: true })).toBeVisible();
+  await expect(page.getByText(`${lot}B`, { exact: true }).filter({ visible: true })).toBeVisible();
+  page.once("dialog", (d) => d.accept());
+  await page.getByRole("button", { name: "Huỷ phiếu" }).click(); // không để lại tồn thử nghiệm
+  await expect(page.getByText("Đã huỷ", { exact: true }).filter({ visible: true })).toBeVisible();
 });
 
 test("nhân viên đơn hàng không tạo được phiếu nhập kho", async ({ page }) => {
