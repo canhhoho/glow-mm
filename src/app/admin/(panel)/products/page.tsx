@@ -1,22 +1,29 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
-import { listProductsAdmin } from "@/server/catalog/admin-queries";
+import { listProductsAdmin, PRODUCT_STATUSES, productFilterOptions, type ProductStatusFilter } from "@/server/catalog/admin-queries";
 import { BrandForm } from "@/components/admin/catalog-forms";
-import { BulkCheckbox, BulkPublishBar } from "@/components/admin/product-bulk-publish";
-import { Badge, DataTable, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Section, Td } from "@/components/admin/ui";
+import { BulkCheckbox, BulkPublishBar, RowProductAction } from "@/components/admin/product-bulk-publish";
+import { Badge, DataTable, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Section, Td, fieldClass } from "@/components/admin/ui";
 import { fmtInt } from "@/lib/format";
+
+const str = (v: string | string[] | undefined) => (typeof v === "string" && v ? v : undefined);
 
 export default async function ProductsPage({ searchParams }: PageProps<"/admin/products">) {
   await requirePagePermission("catalog:manage");
-  const { q } = await searchParams;
-  const query = typeof q === "string" ? q : undefined;
-  const [t, tn, tc, products] = await Promise.all([
+  const sp = await searchParams;
+  const query = str(sp.q);
+  const brandId = str(sp.brand);
+  const categoryId = str(sp.category);
+  const status: ProductStatusFilter = PRODUCT_STATUSES.find((s) => s === sp.status) ?? "active";
+  const [t, tn, tc, products, options] = await Promise.all([
     getTranslations("Products"),
     getTranslations("Nav"),
     getTranslations("Common"),
-    listProductsAdmin(query),
+    listProductsAdmin({ q: query, brandId, categoryId, status }),
+    productFilterOptions(),
   ]);
+  const archivedView = status === "archived";
 
   return (
     <Page>
@@ -33,13 +40,42 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
       />
       <FilterBar>
         <SearchInput label={t("search")} defaultValue={query} />
+        <select name="brand" defaultValue={brandId ?? ""} aria-label={t("colBrand")} className={fieldClass}>
+          <option value="">{t("allBrands")}</option>
+          {options.brands.map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.name}
+            </option>
+          ))}
+        </select>
+        <select name="category" defaultValue={categoryId ?? ""} aria-label={t("colCategory")} className={fieldClass}>
+          <option value="">{t("allCategories")}</option>
+          {options.categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.depth ? `— ${c.name}` : c.name}
+            </option>
+          ))}
+        </select>
+        <select name="status" defaultValue={status} aria-label={t("colStatus")} className={fieldClass}>
+          {PRODUCT_STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {t(`status.${s}`)}
+            </option>
+          ))}
+        </select>
         <FilterButton>{tc("filter")}</FilterButton>
+        {(query || brandId || categoryId || status !== "active") && (
+          <Link href="/admin/products" className="text-sm text-primary underline">
+            {t("clearFilters")}
+          </Link>
+        )}
       </FilterBar>
-      <BulkPublishBar total={products.length} />
+      <p className="text-sm text-muted-foreground">{t("count", { count: products.length })}</p>
+      <BulkPublishBar total={products.length} archivedView={archivedView} />
       <DataTable
         stack
         empty={t("empty")}
-        head={[<span key="sel" className="sr-only">{t("colSelect")}</span>, t("colName"), t("colBrand"), t("colCategory"), t("colVariants"), t("colStatus"), t("edit")]}
+        head={[<span key="sel" className="sr-only">{t("colSelect")}</span>, t("colName"), t("colBrand"), t("colCategory"), t("colVariants"), t("colStatus"), t("colActions")]}
       >
         {products.map((p) => (
           <tr key={p.id}>
@@ -65,10 +101,17 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
               </ul>
             </Td>
             <Td label={t("colStatus")}>
-              <Badge tone={p.published ? "success" : "neutral"}>{p.published ? t("published") : t("hidden")}</Badge>
+              {p.archived ? (
+                <Badge tone="warning">{t("archived")}</Badge>
+              ) : (
+                <Badge tone={p.published ? "success" : "neutral"}>{p.published ? t("published") : t("hidden")}</Badge>
+              )}
             </Td>
-            <Td label={t("edit")}>
-              <LinkButton href={`/admin/products/${p.id}`}>{t("edit")}</LinkButton>
+            <Td label={t("colActions")}>
+              <div className="flex flex-wrap gap-2">
+                <LinkButton href={`/admin/products/${p.id}`}>{t("edit")}</LinkButton>
+                <RowProductAction id={p.id} name={p.name} kind={p.archived ? "restore" : "delete"} />
+              </div>
             </Td>
           </tr>
         ))}

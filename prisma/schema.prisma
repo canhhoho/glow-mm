@@ -247,6 +247,8 @@ model Product {
   category       Category             @relation(fields: [categoryId], references: [id])
   storageNote    String?
   published      Boolean              @default(false)
+  /// Ngừng kinh doanh: SP đã có lịch sử kho/đơn nên không xoá hẳn được — ẩn khỏi web, danh sách mặc định và form nhập kho.
+  archivedAt     DateTime?
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
   translations   ProductTranslation[]

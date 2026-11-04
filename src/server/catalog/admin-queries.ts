@@ -2,18 +2,31 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { productName } from "@/server/inventory/queries";
 
-export async function listProductsAdmin(q?: string) {
-  const query = q?.trim();
+export const PRODUCT_STATUSES = ["active", "published", "hidden", "archived"] as const;
+export type ProductStatusFilter = (typeof PRODUCT_STATUSES)[number];
+
+/**
+ * Danh sách SP admin. `status`: active (mặc định — mọi SP trừ ngừng kinh doanh) · published · hidden · archived.
+ * `categoryId` gồm cả danh mục con.
+ */
+export async function listProductsAdmin(filter: { q?: string; brandId?: string; categoryId?: string; status?: ProductStatusFilter } = {}) {
+  const query = filter.q?.trim();
+  const status = filter.status ?? "active";
   const products = await prisma.product.findMany({
-    where: query
-      ? {
-          OR: [
-            { slug: { contains: query, mode: "insensitive" } },
-            { translations: { some: { name: { contains: query, mode: "insensitive" } } } },
-            { variants: { some: { sku: { contains: query, mode: "insensitive" } } } },
-          ],
-        }
-      : undefined,
+    where: {
+      ...(query && {
+        OR: [
+          { slug: { contains: query, mode: "insensitive" } },
+          { translations: { some: { name: { contains: query, mode: "insensitive" } } } },
+          { variants: { some: { sku: { contains: query, mode: "insensitive" } } } },
+        ],
+      }),
+      ...(filter.brandId && { brandId: filter.brandId }),
+      ...(filter.categoryId && { category: { OR: [{ id: filter.categoryId }, { parentId: filter.categoryId }] } }),
+      archivedAt: status === "archived" ? { not: null } : null,
+      ...(status === "published" && { published: true }),
+      ...(status === "hidden" && { published: false }),
+    },
     orderBy: { updatedAt: "desc" },
     include: { brand: true, category: { include: { translations: true } }, translations: true, variants: true },
     take: 300,
@@ -25,10 +38,27 @@ export async function listProductsAdmin(q?: string) {
     brand: p.brand.name,
     category: productName(p.category.translations, p.category.slug),
     published: p.published,
+    archived: p.archivedAt !== null,
     requiresExpiry: p.requiresExpiry,
     paoMonths: p.paoMonths,
     variants: p.variants.map((v) => ({ sku: v.sku, label: v.label, priceMmk: v.priceMmk, isBundle: v.isBundle })),
   }));
+}
+
+/** Ô lọc danh sách SP: thương hiệu + danh mục (con xếp ngay sau cha, có `depth`). */
+export async function productFilterOptions() {
+  const [brands, categories] = await Promise.all([
+    prisma.brand.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.category.findMany({ include: { translations: true }, orderBy: [{ sortOrder: "asc" }, { slug: "asc" }] }),
+  ]);
+  const named = categories.map((c) => ({ id: c.id, parentId: c.parentId, name: productName(c.translations, c.slug) }));
+  const tree = named
+    .filter((c) => !c.parentId || !named.some((p) => p.id === c.parentId))
+    .flatMap((root) => [{ ...root, depth: 0 }, ...named.filter((c) => c.parentId === root.id).map((c) => ({ ...c, depth: 1 }))]);
+  return {
+    brands: brands.sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" })), // "beplain" cạnh "BIODANCE", không dồn cuối
+    categories: tree.map(({ id, name, depth }) => ({ id, name, depth })),
+  };
 }
 
 export async function productCopyOptions() {

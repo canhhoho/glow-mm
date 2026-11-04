@@ -12,6 +12,7 @@ import { addProductImages, deleteProductImage, reorderProductImage, updateProduc
 import { createBrand, createCategory, importOpeningStockCsv, importProductsCsv, saveProduct, setProductsPublished, type ImportResult } from "./products";
 import { readImportFile } from "./import-file";
 import { commitOpening, previewOpening, type OpeningPreview } from "./opening";
+import { deleteProducts, restoreProducts } from "./product-delete";
 
 function message(e: unknown): string {
   if (e instanceof ZodError) return e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
@@ -32,21 +33,35 @@ export async function saveProductAction(_prev: ActionState, formData: FormData):
   redirect(`/admin/products/${id}?saved=1`);
 }
 
-/** Bật/ẩn nhiều SP từ danh sách admin; `ok` = số SP đổi trạng thái. */
-export async function setProductsPublishedAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  let changed: number;
+export type ProductBulkState =
+  | { error?: string; done?: { kind: "publish" | "hide" | "restore"; count: number } | { kind: "delete"; deleted: number; archived: number } }
+  | undefined;
+
+const bulkIntent = z.union([
+  z.enum(["publish", "hide", "delete", "restore"]),
+  z.string().regex(/^(delete|restore):[^:]{1,40}$/), // nút ở từng dòng: "delete:<id>"
+]);
+
+/**
+ * Thao tác trên danh sách SP admin: bật/ẩn/xoá/khôi phục các SP đã tick (`ids`),
+ * hoặc một SP từ nút ở dòng (`intent = "delete:<id>"`).
+ */
+export async function productBulkAction(_prev: ProductBulkState, formData: FormData): Promise<ProductBulkState> {
+  let done: NonNullable<ProductBulkState>["done"];
   try {
     const user = await requirePermission("catalog:manage");
-    ({ changed } = await setProductsPublished(
-      { ids: formData.getAll("ids").map(String), published: formData.get("published") === "1" },
-      user.id,
-    ));
+    const intent = bulkIntent.parse(formData.get("intent"));
+    const [kind, one] = intent.split(":") as ["publish" | "hide" | "delete" | "restore", string | undefined];
+    const ids = one ? [one] : formData.getAll("ids").map(String);
+    if (kind === "delete") done = { kind, ...(await deleteProducts(ids, user.id)) };
+    else if (kind === "restore") done = { kind, count: await restoreProducts(ids, user.id) };
+    else done = { kind, count: (await setProductsPublished({ ids, published: kind === "publish" }, user.id)).changed };
   } catch (e) {
     return { error: message(e) };
   }
-  updateTag(CATALOG_TAG); // thẻ/trang SP, menu danh mục storefront
+  updateTag(CATALOG_TAG); // thẻ/trang SP, menu danh mục, bộ lọc storefront
   revalidatePath("/admin/products");
-  return { ok: String(changed) };
+  return { done };
 }
 
 export async function createBrandAction(_prev: ActionState, formData: FormData): Promise<ActionState> {

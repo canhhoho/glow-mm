@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { toCsv } from "@/lib/csv";
 import { importOpeningStockCsv, importProductsCsv, PRODUCT_CSV_COLUMNS, saveProduct, setProductsPublished, STOCK_CSV_COLUMNS } from "@/server/catalog/products";
-import { postDocument } from "@/server/inventory/documents";
+import { createDocument, postDocument } from "@/server/inventory/documents";
+import { listProductsAdmin } from "@/server/catalog/admin-queries";
+import { deleteProducts, restoreProducts } from "@/server/catalog/product-delete";
 import { balance, makeFixture } from "./fixtures";
 
 const base = (f: Awaited<ReturnType<typeof makeFixture>>, slug: string) => ({
@@ -65,6 +67,52 @@ describe("Sản phẩm", () => {
     expect(await setProductsPublished({ ids: [a.id, b.id], published: false }, f.userId)).toEqual({ changed: 2 });
     expect(await prisma.product.count({ where: { id: { in: [a.id, b.id] }, published: true } })).toBe(0);
     await expect(setProductsPublished({ ids: [], published: true }, f.userId)).rejects.toThrow(/Chưa chọn/);
+  });
+
+  it("xoá: SP chưa có lịch sử xoá hẳn; SP có lô → ngừng kinh doanh, không bật lại được, khôi phục được", async () => {
+    const f = await makeFixture();
+    const clean = await saveProduct(
+      { ...base(f, `del-${f.tag.toLowerCase()}`), published: true, variants: [{ sku: `DEL-${f.tag}`, label: "x", priceMmk: 1 }] },
+      f.userId,
+    );
+    await saveProduct(
+      { ...base(f, `del-${f.tag.toLowerCase()}`), id: clean.id, published: true, variants: [{ sku: `DEL-${f.tag}`, label: "x", priceMmk: 2 }] },
+      f.userId,
+    ); // có lịch sử giá — vẫn xoá được
+    await createDocument(
+      { type: "RECEIVE", toId: f.vn.id, lines: [{ variantId: f.variantId, lotNo: "L", expiryDate: "2029-01-01", unitCostVnd: 1, qty: 1 }] },
+      f.userId,
+    ); // SP của fixture có lô (phiếu nháp) → không xoá hẳn
+
+    expect(await deleteProducts([clean.id, f.productId], f.userId)).toEqual({ deleted: 1, archived: 1 });
+    expect(await prisma.product.findUnique({ where: { id: clean.id } })).toBeNull();
+    expect(await prisma.variant.findUnique({ where: { sku: `DEL-${f.tag}` } })).toBeNull();
+    const archived = await prisma.product.findUniqueOrThrow({ where: { id: f.productId } });
+    expect(archived.archivedAt).not.toBeNull();
+    expect(archived.published).toBe(false);
+    expect(await prisma.auditLog.count({ where: { entityId: clean.id, action: "product.delete" } })).toBe(1);
+
+    // Ngừng kinh doanh: không bật hiển thị; mặc định không hiện trong danh sách, có ở bộ lọc "archived".
+    expect(await setProductsPublished({ ids: [f.productId], published: true }, f.userId)).toEqual({ changed: 0 });
+    expect((await listProductsAdmin({ brandId: f.brandId })).map((p) => p.id)).not.toContain(f.productId);
+    expect((await listProductsAdmin({ brandId: f.brandId, status: "archived" })).map((p) => p.id)).toEqual([f.productId]);
+
+    expect(await restoreProducts([f.productId], f.userId)).toBe(1);
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: f.productId } })).archivedAt).toBeNull();
+  });
+
+  it("lọc danh sách theo thương hiệu, danh mục (gồm danh mục con), trạng thái", async () => {
+    const f = await makeFixture();
+    const child = await prisma.category.create({ data: { slug: `it-${f.tag.toLowerCase()}-child`, parentId: f.categoryId } });
+    const inChild = await saveProduct(
+      { ...base(f, `fc-${f.tag.toLowerCase()}`), categoryId: child.id, published: true, variants: [{ sku: `FC-${f.tag}`, label: "x", priceMmk: 1 }] },
+      f.userId,
+    );
+    const byCat = (await listProductsAdmin({ categoryId: f.categoryId })).map((p) => p.id);
+    expect(byCat.sort()).toEqual([f.productId, inChild.id].sort());
+    expect((await listProductsAdmin({ categoryId: child.id })).map((p) => p.id)).toEqual([inChild.id]);
+    expect((await listProductsAdmin({ brandId: f.brandId, status: "published" })).map((p) => p.id)).toEqual([inChild.id]);
+    expect((await listProductsAdmin({ brandId: f.brandId, status: "hidden" })).map((p) => p.id)).toEqual([f.productId]);
   });
 
   it("không cho SKU trùng với sản phẩm khác", async () => {

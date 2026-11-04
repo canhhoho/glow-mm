@@ -30,7 +30,7 @@ export async function listVariantsForPicker() {
 export async function listVariantsForReceive() {
   const [variants, lastBatches] = await Promise.all([
     prisma.variant.findMany({
-      where: { active: true, isBundle: false },
+      where: { active: true, isBundle: false, product: { archivedAt: null } },
       orderBy: { sku: "asc" },
       include: { product: { include: { translations: true, brand: true } } },
     }),

@@ -75,6 +75,10 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
       ? await tx.product.findUnique({ where: { id: input.copyFromId }, select: { images: { select: { fileId: true, alt: true, sortOrder: true } } } })
       : null;
     if (input.copyFromId && !source) throw new CatalogError("Sản phẩm nguồn không còn tồn tại");
+    if (input.id && input.published) {
+      const current = await tx.product.findUnique({ where: { id: input.id }, select: { archivedAt: true } });
+      if (current?.archivedAt) throw new CatalogError("Sản phẩm đã ngừng kinh doanh — khôi phục trước khi hiển thị trên web");
+    }
     const data = {
       slug: input.slug,
       brandId: input.brandId,
@@ -182,7 +186,8 @@ export async function setProductsPublished(raw: unknown, userId: string) {
   const { ids, published } = bulkPublishSchema.parse(raw);
   return prisma.$transaction(async (tx) => {
     const changed = await tx.product.findMany({
-      where: { id: { in: [...new Set(ids)] }, published: !published },
+      // SP ngừng kinh doanh không bật hiển thị được (khôi phục trước).
+      where: { id: { in: [...new Set(ids)] }, published: !published, ...(published && { archivedAt: null }) },
       select: { id: true },
     });
     const changedIds = changed.map((p) => p.id);

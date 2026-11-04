@@ -27,7 +27,7 @@ export default async function EditCollectionPage({ params, searchParams }: PageP
     getTranslations("Content"),
     getTranslations("Docs"),
     getCollectionAdmin(id),
-    query ? listProductsAdmin(query) : Promise.resolve([]),
+    query ? listProductsAdmin({ q: query }) : Promise.resolve([]),
   ]);
   if (!collection) notFound();
   const inCollection = new Set(collection.items.map((i) => i.productId));

@@ -50,7 +50,7 @@ export async function getRun(id: string) {
 /** Biến thể đang bán chưa có lô nào → không tính được giá vốn. */
 export async function variantsWithoutCost() {
   const rows = await prisma.variant.findMany({
-    where: { active: true, isBundle: false, batches: { none: {} } },
+    where: { active: true, isBundle: false, batches: { none: {} }, product: { archivedAt: null } },
     select: { sku: true },
     orderBy: { sku: "asc" },
   });

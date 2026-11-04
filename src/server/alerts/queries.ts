@@ -10,7 +10,7 @@ const DAY_MS = 86_400_000;
 /** Tồn theo biến thể (không gồm combo — combo trừ kho thành phần) + số đã bán trong cửa sổ. */
 export async function loadVariantStock(now: Date, opts: { blockDays: number; salesWindowDays: number }) {
   const variants = await prisma.variant.findMany({
-    where: { active: true, isBundle: false },
+    where: { active: true, isBundle: false, product: { archivedAt: null } }, // SP ngừng kinh doanh: không báo tồn thấp / gợi ý đặt
     include: { product: { include: { translations: true } } },
     orderBy: { sku: "asc" },
   });
