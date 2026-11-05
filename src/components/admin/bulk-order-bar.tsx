@@ -9,7 +9,8 @@ import { fieldClass } from "./ui";
 import { cn } from "@/lib/utils";
 
 const SELECTOR = "input[data-bulk-id]";
-const boxes = () => [...document.querySelectorAll<HTMLInputElement>(SELECTOR)];
+// Next Activity giữ DOM trang cũ: ô đang ẩn không thuộc phạm vi thao tác của trang hiện tại.
+const boxes = () => [...document.querySelectorAll<HTMLInputElement>(SELECTOR)].filter(b => b.getClientRects().length > 0);
 const checkedIds = () => boxes().filter((b) => b.checked).map((b) => b.dataset.bulkId!);
 
 /**

@@ -94,7 +94,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
       </FilterBar>
 
       {orders.length > 0 && (
-        <BulkOrderBar transitions={BULK_TRANSITIONS.filter((n) => can(user.role, TRANSITIONS[n].permission))} />
+        <BulkOrderBar key={JSON.stringify({ ...filter, page: result.page })} transitions={BULK_TRANSITIONS.filter((n) => can(user.role, TRANSITIONS[n].permission))} />
       )}
       <DataTable
         empty={filtered ? t("emptyFiltered") : t("empty")}

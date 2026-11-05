@@ -38,7 +38,9 @@ export async function POST(request: Request) {
     return new Response(null, { status: 204 });
   } catch (error) {
     if (error instanceof SyntaxError) return Response.json({ error: "Invalid event" }, { status: 400 });
-    console.error("analytics.write_failed");
+    // Chỉ mã/loại lỗi để chẩn đoán; không ghi message/query có thể chứa dữ liệu request.
+    const code = error && typeof error === "object" && "code" in error && typeof error.code === "string" && /^[A-Z0-9_]{1,20}$/.test(error.code) ? error.code : error instanceof Error ? error.name : "unknown";
+    console.error("analytics.write_failed", { code });
     return Response.json({ error: "Event unavailable" }, { status: 503 });
   }
 }

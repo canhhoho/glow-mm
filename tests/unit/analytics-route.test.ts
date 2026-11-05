@@ -32,4 +32,13 @@ describe("API sự kiện", () => {
     expect((await request({ ...event, name: "web_vital", props })).status).toBe(204);
     expect(mocks.upsert).toHaveBeenLastCalledWith(expect.objectContaining({ update: { props } }));
   });
+  it("DB lỗi trả 503 và chỉ ghi mã lỗi, không ghi nội dung nhạy cảm", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      mocks.upsert.mockRejectedValueOnce(Object.assign(new Error("private-request-data"), { code: "P2002" }));
+      expect((await request()).status).toBe(503);
+      expect(log).toHaveBeenCalledWith("analytics.write_failed", { code: "P2002" });
+      expect(JSON.stringify(log.mock.calls)).not.toContain("private-request-data");
+    } finally { log.mockRestore(); }
+  });
 });
