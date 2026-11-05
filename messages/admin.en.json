@@ -636,7 +636,33 @@
     "phone2": "Alternative phone (optional)",
     "shippingNote": "Shipping fee collected by the courier on delivery",
     "emptyFiltered": "No orders match the filters",
-    "clearFilters": "Clear filters"
+    "clearFilters": "Clear filters",
+    "bulk": {
+      "select": "Select order {code}",
+      "toggleAll": "Select / clear all",
+      "selected": "{count} orders selected",
+      "printLabels": "Print labels",
+      "printPick": "Print pick list",
+      "confirmCod": "Confirm COD orders",
+      "carrier": "Carrier",
+      "ship": "Handed to carrier",
+      "complete": "Delivery successful",
+      "confirm": {
+        "confirmCod": "Confirm {count} selected COD orders?",
+        "ship": "Hand over {count} selected orders? Stock is issued by FEFO and cannot be undone.",
+        "complete": "Mark {count} orders as delivered? COD orders will record that the carrier collected the cash."
+      },
+      "result": "Processed {done}/{total} orders.",
+      "labelCount": "{count} labels",
+      "pickTitle": "Pick list",
+      "pickMeta": "{count} orders",
+      "pickHelp": "Total quantity per SKU by sales warehouse; combos are expanded into components. FEFO lots are fixed at handover.",
+      "pickTotal": "{qty} items",
+      "pickItem": "Product",
+      "pickQty": "Qty",
+      "pickOrders": "Orders",
+      "packTitle": "Pack by order"
+    }
   },
   "Settings": {
     "description": "Manage accounts and store operating preferences.",

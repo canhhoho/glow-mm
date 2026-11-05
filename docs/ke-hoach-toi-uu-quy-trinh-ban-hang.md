@@ -123,6 +123,8 @@ Nghiệm thu: test regression cho từng mục (unit/integration cho 1 và 3, E2
 
 ## 6. D0 — Dữ liệu nền và mốc kiểm chứng
 
+**Trạng thái: đã làm (05/11/2026)** dạng trang admin `/admin/reports/data-health` (tab "Sức khoẻ dữ liệu" trong Báo cáo, quyền `reports:view`), domain `src/server/reports/data-health.ts`, tải mốc JSON qua `GET /api/admin/reports/data-health?days=30|90`. Gồm 16 mục kiểm tra (sản phẩm, giá vốn/nguồn giá, vận hành) và mốc: thời gian đặt → xác nhận → bàn giao → hoàn tất (p50/p90), ghi sổ nhập → đổi giá, đơn theo trạng thái, tuổi nợ COD, hoa hồng đã chi. Chưa làm: fixture đại diện riêng (dùng fixture integration sẵn có), kiểm tra backup/restore (việc của người vận hành server). Cần chạy trên production và lưu file JSON làm mốc trước khi bật DT.
+
 ### Công việc
 
 - Lập báo cáo chỉ đọc: sản phẩm giá 0, thiếu ảnh/khối lượng, kho không hợp lệ; lô có tồn nhưng thiếu vốn; SKU chỉ có lô từ nháp/hủy; đơn giữ hàng lâu; COD chưa về; hàng trả chưa kiểm tra.
@@ -139,6 +141,8 @@ Nghiệm thu: test regression cho từng mục (unit/integration cho 1 và 3, E2
 Chạy báo cáo không làm đổi dữ liệu. Có danh sách lỗi để người phụ trách xử lý, không tự điền khối lượng, giá hay cước bằng phỏng đoán.
 
 ## 6A. DT — Tối ưu thao tác hằng ngày
+
+**Trạng thái: làm DT.2 (05/11/2026)** theo lựa chọn của chủ shop — các mục DT.3–DT.6 để sau. Danh sách đơn có ô chọn + thanh thao tác: xác nhận COD / bàn giao (hãng mặc định VTP) / giao thành công hàng loạt (`orders/bulk.ts`, mỗi đơn một transaction, tối đa 100 đơn, báo kết quả từng đơn), in nhãn A6 hàng loạt (`/admin/orders/print-labels?ids=`) và phiếu lấy hàng gộp theo kho + SKU, combo bung thành phần (`/admin/orders/pick-list?ids=`, `orders/pick-list.ts`). Không làm huỷ / xác nhận chuyển khoản hàng loạt (cần xem từng đơn). Bàn giao hàng loạt không nhập mã vận đơn; mã vận đơn hiện chưa sửa được sau bàn giao (DT.3).
 
 Hiện trạng: mỗi đơn COD cần mở trang chi tiết khoảng 4–5 lần (xác nhận, in nhãn, bàn giao, hoàn tất, đối soát COD); danh sách đơn không chọn nhiều được; chỉ xuất Excel VTP là chọn nhiều đơn (và không đổi trạng thái/tồn). Đợt này giảm số lần thao tác, không đổi quy tắc nghiệp vụ.
 

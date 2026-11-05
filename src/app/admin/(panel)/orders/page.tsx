@@ -4,7 +4,9 @@ import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { affiliateOptions } from "@/server/affiliates/affiliates";
 import { listOrdersAdmin } from "@/server/orders/admin-queries";
-import { ORDER_FILTER_STATUSES, PREPARING_STATUSES } from "@/server/orders/state-machine";
+import { ORDER_FILTER_STATUSES, PREPARING_STATUSES, TRANSITIONS } from "@/server/orders/state-machine";
+import { BULK_TRANSITIONS } from "@/server/orders/bulk";
+import { BulkOrderBar } from "@/components/admin/bulk-order-bar";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/admin/order-badges";
 import { Badge, DataTable, fieldClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Td } from "@/components/admin/ui";
 import { fmtDate, fmtInt } from "@/lib/format";
@@ -83,6 +85,9 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
         <FilterButton>{t("filter")}</FilterButton>
       </FilterBar>
 
+      {orders.length > 0 && (
+        <BulkOrderBar transitions={BULK_TRANSITIONS.filter((n) => can(user.role, TRANSITIONS[n].permission))} />
+      )}
       <DataTable
         empty={filtered ? t("emptyFiltered") : t("empty")}
         head={[t("colCode"), t("colCreated"), t("colCustomer"), t("colChannel"), t("colPayment"), t("colTotal"), t("colStatus")]}
@@ -92,9 +97,12 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
         {orders.map((o) => (
           <tr key={o.id}>
             <Td>
-              <Link href={`/admin/orders/${o.id}`} className="font-mono text-xs whitespace-nowrap text-primary underline">
-                {o.code}
-              </Link>
+              <span className="flex items-center gap-2">
+                <input type="checkbox" data-bulk-id={o.id} aria-label={t("bulk.select", { code: o.code })} className="size-4 accent-primary" />
+                <Link href={`/admin/orders/${o.id}`} className="font-mono text-xs whitespace-nowrap text-primary underline">
+                  {o.code}
+                </Link>
+              </span>
               <div className="text-xs text-muted-foreground">
                 {o._count.items} {t("colItems")}
               </div>

@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import { can } from "@/server/auth/roles";
 import { ForbiddenError, requirePermission } from "@/server/auth/session";
 import type { ActionState } from "@/server/inventory/actions";
+import { bulkTransition, BULK_TRANSITIONS, type BulkState } from "./bulk";
 import { OrderError } from "./errors";
 import { createOrder } from "./orders";
 import { returnItems } from "./returns";
@@ -98,6 +99,27 @@ export async function transitionOrderAction(_prev: ActionState, formData: FormDa
   revalidatePath("/admin/orders");
   revalidatePath("/admin");
   return { ok: name };
+}
+
+/** DT: xác nhận COD / bàn giao / hoàn tất nhiều đơn; `ids` lặp lại, mỗi đơn xử lý riêng (bulk.ts). */
+export async function bulkTransitionAction(_prev: BulkState, formData: FormData): Promise<BulkState> {
+  const transition = String(formData.get("transition"));
+  try {
+    if (!(BULK_TRANSITIONS as readonly string[]).includes(transition)) return { error: "transition" };
+    const user = await requirePermission(TRANSITIONS[transition as TransitionName].permission);
+    const results = await bulkTransition(
+      { transition, ids: formData.getAll("ids").map(String), carrier: field(formData, "carrier") },
+      { userId: user.id, role: user.role },
+    );
+    const failed = await Promise.all(
+      results.flatMap((r) => (r.ok ? [] : [message(r.error).then((m) => ({ code: r.code, message: m }))])),
+    );
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin");
+    return { done: results.length - failed.length, total: results.length, failed };
+  } catch (e) {
+    return { error: await message(e) };
+  }
 }
 
 /** Form trả hàng: mỗi dòng đơn là ô `qty:<orderItemId>`. */

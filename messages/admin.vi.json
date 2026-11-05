@@ -636,7 +636,33 @@
     "phone2": "SĐT phụ (không bắt buộc)",
     "shippingNote": "Phí ship do đơn vị vận chuyển thu khi giao",
     "emptyFiltered": "Không có đơn nào khớp bộ lọc",
-    "clearFilters": "Xoá bộ lọc"
+    "clearFilters": "Xoá bộ lọc",
+    "bulk": {
+      "select": "Chọn đơn {code}",
+      "toggleAll": "Chọn / bỏ chọn tất cả",
+      "selected": "Đã chọn {count} đơn",
+      "printLabels": "In nhãn",
+      "printPick": "In phiếu lấy hàng",
+      "confirmCod": "Xác nhận đơn COD",
+      "carrier": "Hãng vận chuyển",
+      "ship": "Đã bàn giao vận chuyển",
+      "complete": "Giao thành công",
+      "confirm": {
+        "confirmCod": "Xác nhận {count} đơn COD đã chọn?",
+        "ship": "Bàn giao {count} đơn đã chọn? Hàng sẽ được xuất kho theo FEFO, không hoàn tác được.",
+        "complete": "Đánh dấu {count} đơn đã giao thành công? Đơn COD sẽ ghi nhận hãng đã thu tiền."
+      },
+      "result": "Đã xử lý {done}/{total} đơn.",
+      "labelCount": "{count} nhãn",
+      "pickTitle": "Phiếu lấy hàng",
+      "pickMeta": "{count} đơn",
+      "pickHelp": "Tổng số lượng theo SKU, chia theo kho bán; combo đã bung thành từng thành phần. Lô xuất theo FEFO được chốt khi bàn giao.",
+      "pickTotal": "{qty} món",
+      "pickItem": "Sản phẩm",
+      "pickQty": "SL",
+      "pickOrders": "Đơn",
+      "packTitle": "Đóng gói theo đơn"
+    }
   },
   "Settings": {
     "description": "Quản lý tài khoản và các thiết lập vận hành của cửa hàng.",
