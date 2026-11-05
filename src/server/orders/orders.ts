@@ -67,7 +67,7 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
   const phone = normalizeMmPhone(input.phone);
   if (!phone) throw new OrderError("invalid_phone", "Số điện thoại không hợp lệ");
   const phone2 = input.phone2 ? normalizeMmPhone(input.phone2) : null;
-  if (input.phone2 && !phone2) throw new OrderError("invalid_phone", "Số điện thoại phụ không hợp lệ");
+  if (input.phone2 && !phone2) throw new OrderError("invalid_phone", "Số điện thoại phụ không hợp lệ", { field: "phone2" });
 
   if (input.idempotencyKey) {
     const existing = await prisma.order.findUnique({ where: { idempotencyKey: input.idempotencyKey } });

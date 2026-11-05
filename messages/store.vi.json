@@ -131,7 +131,9 @@
     "newAddress": "Địa chỉ mới",
     "saveToBook": "Lưu vào sổ địa chỉ",
     "orderingAs": "Đặt hàng bằng tài khoản {email}",
-    "orderingAsAffiliate": "Bạn đang đặt hàng bằng tài khoản cộng tác viên {code} — đơn này được tính vào doanh số và hoa hồng của bạn."
+    "orderingAsAffiliate": "Bạn đang đặt hàng bằng tài khoản cộng tác viên {code} — đơn này được tính vào doanh số và hoa hồng của bạn.",
+    "reviewCart": "Kiểm tra lại giỏ hàng",
+    "paymentReminder": "COD: trả tiền hàng khi nhận. Chuyển khoản: cửa hàng xác nhận sau khi nhận tiền."
   },
   "Order": {
     "thanks": "Cảm ơn bạn! Đơn hàng đã được đặt.",
@@ -168,7 +170,8 @@
       "REJECTED": "Chờ xác nhận thanh toán",
       "REFUNDED": "Đã hoàn tiền"
     },
-    "askHelp": "Cần hỗ trợ? Liên hệ chúng tôi"
+    "askHelp": "Cần hỗ trợ? Liên hệ chúng tôi",
+    "createdPending": "Đã tạo đơn — chờ cửa hàng xác nhận. Tạo đơn chưa có nghĩa là đã thanh toán."
   },
   "Track": {
     "title": "Tra cứu đơn hàng",

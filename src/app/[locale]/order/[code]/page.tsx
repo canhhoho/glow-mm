@@ -48,6 +48,7 @@ async function OrderContent({ params, searchParams }: PageProps<"/[locale]/order
   return (
     <div className="mx-auto max-w-screen-md space-y-4">
       {placed && <Notice tone="success">{t("thanks")}</Notice>}
+      {placed && order.status === "PENDING" && <p role="status" className="text-sm">{t("createdPending")}</p>}
       <section className="rounded-xl bg-accent p-4 text-accent-foreground">
         <p className="text-sm">{t("code")}</p>
         <p className="font-mono text-xl font-medium" data-testid="order-code">

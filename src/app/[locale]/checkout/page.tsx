@@ -13,6 +13,7 @@ import { CART_COOKIE, parseCart } from "@/server/cart/cart";
 import { getCartDetails } from "@/server/catalog/store-queries";
 import { getBoolSetting } from "@/server/settings";
 import { CheckoutForm } from "@/components/store/checkout-form";
+import { ContactLinks } from "@/components/store/contact-links";
 import { BlockSkeleton, PageTitle } from "@/components/store/ui";
 
 /** Thanh toán: không cho máy tìm kiếm index (SEO, P7). */
@@ -100,6 +101,7 @@ async function CheckoutContent({ params }: PageProps<"/[locale]/checkout">) {
             addresses={saved}
             accountName={user.name}
             accountPhone={user.phone}
+            summary={<div className="space-y-2 rounded-lg bg-accent p-3 text-sm"><p className="flex justify-between font-medium"><span>{t("total")}</span><span>{formatMmk(cart.subtotalMmk, locale)}</span></p><p>{ta("shippingNote")}</p><p>{t("paymentReminder")}</p><ContactLinks locale={locale} /></div>}
           />
         ) : (
           <p role="alert" className="rounded-lg border border-border bg-card p-3 text-sm">

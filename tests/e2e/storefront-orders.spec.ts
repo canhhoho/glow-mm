@@ -22,6 +22,8 @@ async function addToCartAndCheckout(page: Page, method: "Cash on delivery" | "Ba
   if (failFirst) {
     // Server báo lỗi → các ô khách vừa nhập (kể cả địa chỉ chọn và cách thanh toán) phải còn nguyên (DQ).
     await expect(page.getByText("Please enter a valid Myanmar mobile number")).toBeVisible();
+    await expect(page.locator('input[name="phone"]')).toHaveAttribute("aria-invalid", "true");
+    await expect(page.locator('input[name="phone"]')).toHaveAttribute("aria-describedby", "checkout-phone-error");
     await expect(page.getByLabel("Full name")).toHaveValue("Ma Thandar");
     await expect(page.getByLabel("Address (house no., street, ward)")).toHaveValue("No. 7, Pyay Road");
     await expect(page.getByLabel("Township").locator("option:checked")).toHaveText("Kamaryut");

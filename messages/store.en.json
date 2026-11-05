@@ -131,7 +131,9 @@
     "newAddress": "A new address",
     "saveToBook": "Save to my address book",
     "orderingAs": "Ordering as {email}",
-    "orderingAsAffiliate": "You are ordering with affiliate account {code} — this order counts towards your sales and commission."
+    "orderingAsAffiliate": "You are ordering with affiliate account {code} — this order counts towards your sales and commission.",
+    "reviewCart": "Review cart",
+    "paymentReminder": "COD: pay for goods on delivery. Bank transfer: the store confirms after receiving payment."
   },
   "Order": {
     "thanks": "Thank you! Your order has been placed.",
@@ -168,7 +170,8 @@
       "REJECTED": "Awaiting payment confirmation",
       "REFUNDED": "Refunded"
     },
-    "askHelp": "Questions? Contact us"
+    "askHelp": "Questions? Contact us",
+    "createdPending": "Order created — waiting for store confirmation. Creating an order does not confirm payment."
   },
   "Track": {
     "title": "Track your order",

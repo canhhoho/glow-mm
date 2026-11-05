@@ -8,6 +8,7 @@ import { z, ZodError } from "zod";
 import { redirect } from "@/i18n/navigation";
 import { routing, type StoreLocale } from "@/i18n/routing";
 import { localePrefix } from "@/lib/site";
+import { prisma } from "@/lib/db";
 import { claimOrders } from "@/server/accounts/claims";
 import { normalizeRefCode, REF_COOKIE } from "@/server/affiliates/referral";
 import { createAddress } from "@/server/accounts/accounts";
@@ -27,7 +28,7 @@ import {
 
 /** Server Action của storefront. Mọi dữ liệu được kiểm lại ở domain. */
 
-export type StoreActionState = { error?: string; ok?: boolean } | undefined;
+export type StoreActionState = { error?: string; ok?: boolean; fieldErrors?: Record<string, string>; cartError?: boolean; sku?: string } | undefined;
 
 const COOKIE_OPTS = {
   httpOnly: true,
@@ -123,7 +124,20 @@ export async function placeOrderAction(_prev: StoreActionState, formData: FormDa
       },
     );
   } catch (e) {
-    return { error: await errorText(e, locale) };
+    const error = await errorText(e, locale);
+    const fieldErrors: Record<string, string> = {};
+    if (e instanceof ZodError) {
+      for (const issue of e.issues) {
+        const field = String(issue.path[0]);
+        if (["name", "phone", "phone2", "townshipId", "addressLine", "note", "paymentMethod"].includes(field)) fieldErrors[field] = error;
+      }
+    }
+    if (e instanceof OrderError && e.code === "invalid_phone") fieldErrors[e.details?.field === "phone2" ? "phone2" : "phone"] = error;
+    if (e instanceof OrderError && e.code === "invalid_zone") fieldErrors.townshipId = error;
+    const cartError = e instanceof OrderError && ["out_of_stock", "variant_unavailable", "price_missing"].includes(e.code);
+    const variantId = e instanceof OrderError && typeof e.details?.variantId === "string" ? e.details.variantId : undefined;
+    const variant = cartError && variantId ? await prisma.variant.findUnique({ where: { id: variantId }, select: { sku: true } }) : null;
+    return { error, fieldErrors, cartError, ...(variant && { sku: variant.sku }) };
   }
   await writeCart([]);
   // Đơn thuộc tài khoản → không cần nhớ mã + SĐT trong cookie. Lưu sổ địa chỉ lỗi (vd đã đủ 10) không chặn đặt hàng.

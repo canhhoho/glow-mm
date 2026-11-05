@@ -1,6 +1,7 @@
 "use client";
 
-import { startTransition, useActionState, useState, useSyncExternalStore } from "react";
+import { startTransition, useActionState, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import type { AddressCatalog } from "@/server/locations/locations";
 import { placeOrderAction } from "@/server/cart/actions";
@@ -34,6 +35,7 @@ export function CheckoutForm({
   addresses,
   accountName,
   accountPhone,
+  summary,
 }: {
   locale: string;
   catalog: AddressCatalog;
@@ -42,6 +44,7 @@ export function CheckoutForm({
   accountName: string;
   /** SĐT của tài khoản SĐT (P17) — điền sẵn khi chưa có địa chỉ đã lưu. */
   accountPhone?: string | null;
+  summary?: ReactNode;
 }) {
   const t = useTranslations("Checkout");
   const ta = useTranslations("Address");
@@ -50,12 +53,22 @@ export function CheckoutForm({
   const [selected, setSelected] = useState(addresses[0]?.id ?? "new");
   const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
   const a = addresses.find((x) => x.id === selected);
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (!state?.error) return;
+    const first = formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]') ?? formRef.current?.querySelector<HTMLElement>('[role="alert"]');
+    first?.scrollIntoView({ behavior: "smooth", block: "center" });
+    first?.focus({ preventScroll: true });
+  }, [state]);
+  const field = (name: string) => ({ "aria-invalid": !!state?.fieldErrors?.[name], "aria-describedby": state?.fieldErrors?.[name] ? `checkout-${name}-error` : undefined });
+  const errorFor = (name: string) => state?.fieldErrors?.[name] ? <p id={`checkout-${name}-error`} className="text-sm text-destructive">{state.fieldErrors[name]}</p> : null;
   return (
     // `action={…}` làm React reset form sau MỌI lần gửi → server báo lỗi (hết hàng, SĐT sai…) thì khách mất tên,
     // địa chỉ, cách thanh toán vừa nhập và các ô chọn địa chỉ lệch với state. Gửi qua onSubmit để giữ nguyên;
     // thành công thì server redirect sang trang đơn. Nút khoá đến khi hydrate xong (Slow 3G) để không gửi form
     // kiểu trình duyệt; method="post" để dù vậy dữ liệu khách cũng không lên URL.
     <form
+      ref={formRef}
       method="post"
       onSubmit={(e) => {
         e.preventDefault();
@@ -90,17 +103,20 @@ export function CheckoutForm({
           <span>{t("name")}</span>
           <input
             name="name"
+            {...field("name")}
             required
             maxLength={100}
             autoComplete="name"
             defaultValue={a?.recipientName ?? accountName}
             className={storeField}
           />
+          {errorFor("name")}
         </label>
         <label className="block space-y-1 text-sm">
           <span>{t("phone")}</span>
           <input
             name="phone"
+            {...field("phone")}
             required
             type="tel"
             inputMode="tel"
@@ -109,17 +125,20 @@ export function CheckoutForm({
             defaultValue={a?.phone ?? accountPhone ?? undefined}
             className={storeField}
           />
+          {errorFor("phone")}
         </label>
         <label className="block space-y-1 text-sm">
           <span>{ta("phone2")}</span>
-          <input name="phone2" type="tel" inputMode="tel" defaultValue={a?.phone2 ?? ""} className={storeField} />
+          <input name="phone2" {...field("phone2")} type="tel" inputMode="tel" defaultValue={a?.phone2 ?? ""} className={storeField} />
+          {errorFor("phone2")}
         </label>
         {/* Thị trấn của địa chỉ đã lưu có thể đã ngừng giao → picker để trống cho khách chọn lại. */}
-        <AddressPicker catalog={catalog} labels={labels} defaultTownshipId={a?.townshipId} fieldClass={storeField} />
+        <AddressPicker catalog={catalog} labels={labels} defaultTownshipId={a?.townshipId} fieldClass={storeField} error={state?.fieldErrors?.townshipId} errorId="checkout-townshipId-error" />
         <label className="block space-y-1 text-sm">
           <span>{t("address")}</span>
           <textarea
             name="addressLine"
+            {...field("addressLine")}
             required
             minLength={3}
             maxLength={500}
@@ -127,10 +146,12 @@ export function CheckoutForm({
             defaultValue={a?.line}
             className={`${storeField} h-auto py-2`}
           />
+          {errorFor("addressLine")}
         </label>
         <label className="block space-y-1 text-sm">
           <span>{t("note")}</span>
-          <input name="note" maxLength={500} defaultValue={a?.note ?? ""} className={storeField} />
+          <input name="note" {...field("note")} maxLength={500} defaultValue={a?.note ?? ""} className={storeField} />
+          {errorFor("note")}
         </label>
         {!a && (
           <label className="flex min-h-11 items-center gap-2 text-sm">
@@ -161,7 +182,10 @@ export function CheckoutForm({
         ))}
       </fieldset>
 
-      {state?.error && <Notice tone="error">{state.error}</Notice>}
+      {errorFor("paymentMethod")}
+      {state?.error && !Object.keys(state.fieldErrors ?? {}).length && <Notice tone="error">{state.error}{state.sku && <span> · {state.sku}</span>}</Notice>}
+      {state?.cartError && <Link href="/cart" className="underline">{t("reviewCart")}</Link>}
+      {summary}
       <button type="submit" disabled={pending || !hydrated} className={`${primaryButton} w-full`}>
         {t("place")}
       </button>

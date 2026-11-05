@@ -34,6 +34,8 @@ export function AddressPicker({
   labelClass = "block space-y-1 text-sm",
   textClass,
   onTownshipChange,
+  error,
+  errorId,
 }: {
   catalog: AddressCatalog;
   labels: AddressPickerLabels;
@@ -44,6 +46,8 @@ export function AddressPicker({
   /** Lớp cho chữ nhãn (admin dùng màu chữ phụ). */
   textClass?: string;
   onTownshipChange?: (townshipId: string) => void;
+  error?: string;
+  errorId?: string;
 }) {
   const initial = locate(catalog, defaultTownshipId);
   const [stateId, setStateId] = useState(initial.stateId);
@@ -106,6 +110,8 @@ export function AddressPicker({
         <span className={textClass}>{labels.township}</span>
         <select
           name={name}
+          aria-invalid={!!error}
+          aria-describedby={error ? errorId : undefined}
           required
           value={townshipId}
           disabled={!district}
@@ -122,6 +128,7 @@ export function AddressPicker({
           ))}
         </select>
       </label>
+      {error && <p id={errorId} className="text-sm text-destructive">{error}</p>}
     </>
   );
 }
