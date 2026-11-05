@@ -10,8 +10,8 @@ import {
   getStoreCategory,
   listStoreProducts,
   loadCardRows,
+  loadCardPage,
   loadProductContent,
-  sortCards,
   storeFilterOptions,
   withProductStock,
   withStock,
@@ -25,7 +25,7 @@ import {
  * Hàm "use cache" không đọc cookies/headers và không nhận `new Date()` làm tham số.
  */
 
-export async function cachedCardRows(query: Omit<ProductListQuery, "sort" | "q">) {
+export async function cachedCardRows(query: Omit<ProductListQuery, "q">) {
   "use cache";
   cacheLife("hours");
   cacheTag(CATALOG_TAG);
@@ -35,9 +35,21 @@ export async function cachedCardRows(query: Omit<ProductListQuery, "sort" | "q">
 /** Danh sách thẻ SP cho trang danh mục/tìm kiếm/SP liên quan. Có từ khoá `q` → không cache (vô hạn tổ hợp). */
 export async function storeProducts(query: ProductListQuery) {
   if (query.q?.trim()) return listStoreProducts(query);
-  const { sort, ...rest } = query;
-  const [cards] = await withStock([await cachedCardRows(rest)]);
-  return sortCards(cards, sort);
+  const [cards] = await withStock([await cachedCardRows(query)]);
+  return cards;
+}
+
+async function cachedCardPage(query: ProductListQuery) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CATALOG_TAG);
+  return loadCardPage(query);
+}
+
+export async function storeProductPage(query: ProductListQuery) {
+  const data = query.q?.trim() ? await loadCardPage(query) : await cachedCardPage(query);
+  const [products] = await withStock([data.rows]);
+  return { ...data, products };
 }
 
 async function cachedProductContent(slug: string, locale: string) {
@@ -82,19 +94,19 @@ export async function cachedHomeCollectionRows(locale: string, take: number) {
   return loadHomeCollectionRows(locale, take);
 }
 
-async function cachedCollectionRow(slug: string, locale: string) {
+async function cachedCollectionRow(slug: string, locale: string, page: number) {
   "use cache";
   cacheLife("hours");
   cacheTag(HOME_TAG, CATALOG_TAG);
-  return loadCollectionRow(slug, locale);
+  return loadCollectionRow(slug, locale, page);
 }
 
 /** Trang /collection/[slug]: null nếu không có, đang tắt hoặc ngoài lịch tại `now`. */
-export async function storeCollection(slug: string, locale: string, now: Date) {
-  const c = await cachedCollectionRow(slug, locale);
+export async function storeCollection(slug: string, locale: string, now: Date, page = 1) {
+  const c = await cachedCollectionRow(slug, locale, page);
   if (!c || !isInSchedule(c, now)) return null;
   const [products] = await withStock([c.products]);
-  return { slug: c.slug, name: c.name, products };
+  return { slug: c.slug, name: c.name, products, page: c.page, pages: c.pages, total: c.total };
 }
 
 export async function storeReviews(productId: string) {

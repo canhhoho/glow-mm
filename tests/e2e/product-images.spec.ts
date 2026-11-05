@@ -31,6 +31,13 @@ test("admin tải ảnh sản phẩm → hiện trên trang sản phẩm → xo�
 
   try {
     await page.goto(`/en/p/${SLUG}`);
+    if (before > 0) {
+      await page.getByRole("button", { name: `Image ${before + 1}`, exact: true }).click();
+      await expect(page.getByRole("button", { name: `Image ${before + 1}`, exact: true })).toHaveAttribute("aria-pressed", "true");
+      await page.getByRole("button", { name: `Image ${before + 1}`, exact: true }).press("ArrowLeft");
+      await expect(page.getByRole("button", { name: `Image ${before}`, exact: true })).toHaveAttribute("aria-pressed", "true");
+      await page.getByRole("button", { name: `Image ${before + 1}`, exact: true }).click();
+    }
     const img = page.getByRole("img", { name: alt });
     await expect(img).toBeVisible();
     // Ảnh thật sự tải được (qua /api/files + bộ tối ưu next/image).

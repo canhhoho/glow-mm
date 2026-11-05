@@ -1,5 +1,5 @@
 import { cache, Suspense } from "react";
-import Image from "next/image";
+import { ProductGallery } from "@/components/store/product-gallery";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
@@ -123,29 +123,7 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
       <article className={`${storeCard} space-y-4 lg:grid lg:grid-cols-2 lg:gap-8 lg:space-y-0`}>
         {/* Cột trái (lg): ảnh chính + thumbnail, dính khi cuộn. */}
         <div className="space-y-2 lg:sticky lg:top-36 lg:self-start">
-          <div className="relative aspect-square overflow-hidden rounded-xl bg-accent">
-            {p.images[0] ? (
-              <Image
-                src={p.images[0].url}
-                alt={p.images[0].alt ?? p.name}
-                fill
-                priority
-                sizes="(min-width: 1024px) 540px, (max-width: 768px) 100vw, 720px"
-                className="object-cover"
-              />
-            ) : (
-              <ImageFallback brand={p.brand} className="text-8xl" />
-            )}
-          </div>
-          {p.images.length > 1 && (
-            <ul className="flex gap-2 overflow-x-auto">
-              {p.images.slice(1).map((img) => (
-                <li key={img.url} className="relative size-20 shrink-0 overflow-hidden rounded-md bg-accent">
-                  <Image src={img.url} alt={img.alt ?? p.name} fill sizes="80px" className="object-cover" />
-                </li>
-              ))}
-            </ul>
-          )}
+          {p.images.length ? <ProductGallery images={p.images} name={p.name} imageLabel={t("image")} /> : <div className="relative aspect-square overflow-hidden rounded-xl bg-accent"><ImageFallback brand={p.brand} className="text-8xl" /></div>}
         </div>
 
         {/* Cột phải (lg): tên, giá, biến thể, nút mua. */}

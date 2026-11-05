@@ -47,7 +47,8 @@
     "buyNow": "Buy now",
     "related": "More in this category",
     "paoTitle": "Period after opening",
-    "paoMonths": "Use within {months} months after opening and before the expiry date on the packaging."
+    "paoMonths": "Use within {months} months after opening and before the expiry date on the packaging.",
+    "image": "Image"
   },
   "Footer": {
     "contact": "Contact",
@@ -74,7 +75,11 @@
     "from": "from {price}",
     "count": "{count, plural, one {# product} other {# products}}",
     "choose": "Choose",
-    "seeMore": "See more"
+    "seeMore": "See more",
+    "pagination": "Product pages",
+    "previous": "Previous",
+    "next": "Next",
+    "pageCount": "Page {page}/{pages} · {total} products"
   },
   "Search": {
     "title": "Search",

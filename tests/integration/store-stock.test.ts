@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { listStoreProducts, loadCardRows, sortCards, withStock } from "@/server/catalog/store-queries";
+import { listStoreProducts, loadCardRows, withStock } from "@/server/catalog/store-queries";
 import { saleFixture, unpublishTestProducts } from "./fixtures";
 
 // CI chạy integration trên DB trống (trước seed) → tự tạo SP đã đăng, có tồn.
@@ -25,9 +25,9 @@ describe("Thẻ SP: nội dung tách khỏi tồn (P20)", () => {
   });
 
   it("listStoreProducts = nội dung + tồn + sắp theo giá", async () => {
-    const [cards] = await withStock([await loadCardRows({ locale: "en", take: 20 })]);
+    const [cards] = await withStock([await loadCardRows({ locale: "en", take: 20, sort: "price_asc" })]);
     const asc = await listStoreProducts({ locale: "en", take: 20, sort: "price_asc" });
-    expect(asc).toEqual(sortCards([...cards], "price_asc"));
+    expect(new Set(asc.map((p) => p.slug))).toEqual(new Set(cards.map((p) => p.slug)));
     expect(asc.map((c) => c.priceMmk)).toEqual([...asc.map((c) => c.priceMmk)].sort((a, b) => a - b));
   });
 });

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { storeProducts } from "@/server/catalog/cached";
-import { CatalogFilters, parseCatalogParams } from "@/components/store/catalog-filters";
+import { storeProductPage } from "@/server/catalog/cached";
+import { CatalogFilters, CatalogPagination, parseCatalogParams } from "@/components/store/catalog-filters";
 import { ProductGrid } from "@/components/store/product-card";
 import { ListSkeleton, primaryButton, storeCard, storeField } from "@/components/store/ui";
 
@@ -18,13 +19,14 @@ export default function SearchPage(props: PageProps<"/[locale]/search">) {
 }
 
 async function SearchContent({ params, searchParams }: PageProps<"/[locale]/search">) {
+  await connection(); // Truy vấn động/tồn và transaction chỉ chạy khi có request.
   const { locale } = await params;
   setRequestLocale(locale);
   const current = parseCatalogParams(await searchParams);
   // Tìm kiếm: chuỗi Zawgyi được nhận dạng và chuyển Unicode trong loadCardRows (searchVariants); có `q` → không cache.
-  const [t, products] = await Promise.all([
+  const [t, result] = await Promise.all([
     getTranslations({ locale, namespace: "Search" }),
-    storeProducts({ locale, q: current.q, brand: current.brand, tags: current.tags, sort: current.sort }),
+    storeProductPage({ locale, ...current }),
   ]);
 
   return (
@@ -46,7 +48,8 @@ async function SearchContent({ params, searchParams }: PageProps<"/[locale]/sear
       <CatalogFilters locale={locale} current={current} />
       <section className={storeCard}>
         {current.q && <h2 className="mb-2 text-sm text-muted-foreground">{t("results", { q: current.q })}</h2>}
-        <ProductGrid products={products} locale={locale} />
+        <ProductGrid products={result.products} locale={locale} />
+        <CatalogPagination current={current} {...result} locale={locale} />
       </section>
     </div>
   );

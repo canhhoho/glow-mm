@@ -2,8 +2,9 @@ import { getTranslations } from "next-intl/server";
 import { storeFilters } from "@/server/catalog/cached";
 import type { StoreSort } from "@/server/catalog/store-queries";
 import { outlineButton, storeField } from "./ui";
+import { Link } from "@/i18n/navigation";
 
-export type CatalogParams = { q?: string; brand?: string; tags: string[]; sort: StoreSort };
+export type CatalogParams = { q?: string; brand?: string; tags: string[]; sort: StoreSort; page: number };
 
 const SORTS: StoreSort[] = ["new", "price_asc", "price_desc"];
 
@@ -12,7 +13,24 @@ export function parseCatalogParams(sp: Record<string, string | string[] | undefi
   const one = (v: string | string[] | undefined) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
   const tags = ([] as string[]).concat(sp.tag ?? []).filter(Boolean).slice(0, 10);
   const sort = SORTS.includes(sp.sort as StoreSort) ? (sp.sort as StoreSort) : "new";
-  return { q: one(sp.q), brand: one(sp.brand), tags, sort };
+  const page = Number(sp.page);
+  return { q: one(sp.q), brand: one(sp.brand), tags, sort, page: Number.isSafeInteger(page) && page > 0 ? Math.min(page, 1000000) : 1 };
+}
+
+export async function CatalogPagination({ current, page, pages, total, locale }: { current: CatalogParams; page: number; pages: number; total: number; locale: string }) {
+  const t = await getTranslations({ locale, namespace: "Catalog" });
+  const href = (next: number) => {
+    const sp = new URLSearchParams({ sort: current.sort, page: String(next) });
+    if (current.q) sp.set("q", current.q);
+    if (current.brand) sp.set("brand", current.brand);
+    for (const tag of current.tags) sp.append("tag", tag);
+    return `?${sp}`;
+  };
+  return <nav aria-label={t("pagination")} className="mt-4 flex flex-wrap items-center justify-center gap-3">
+    {page > 1 && <Link href={href(page - 1)} className={outlineButton}>{t("previous")}</Link>}
+    <span className="text-sm" aria-live="polite">{t("pageCount", { page, pages, total })}</span>
+    {page < pages && <Link href={href(page + 1)} className={outlineButton}>{t("next")}</Link>}
+  </nav>;
 }
 
 /**

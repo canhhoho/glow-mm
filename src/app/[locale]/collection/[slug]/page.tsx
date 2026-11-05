@@ -7,9 +7,10 @@ import { storeCollection } from "@/server/catalog/cached";
 import { ProductGrid } from "@/components/store/product-card";
 import { Breadcrumb, storeCard } from "@/components/store/ui";
 import { alternates } from "@/lib/site";
+import { CatalogPagination, parseCatalogParams } from "@/components/store/catalog-filters";
 
 // Metadata và trang dùng chung một lần truy vấn trong cùng request.
-const loadCollection = cache((slug: string, locale: string) => storeCollection(slug, locale, new Date()));
+const loadCollection = cache((slug: string, locale: string, page = 1) => storeCollection(slug, locale, new Date(), page));
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/collection/[slug]">): Promise<Metadata> {
   const { locale, slug } = await params;
@@ -22,14 +23,15 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/collecti
 export const instant = false;
 
 /** Bộ sưu tập do admin chọn tay ("Xem thêm" từ trang chủ). Slug lạ / tắt / ngoài lịch → proxy trả 404. */
-export default async function CollectionPage({ params }: PageProps<"/[locale]/collection/[slug]">) {
+export default async function CollectionPage({ params, searchParams }: PageProps<"/[locale]/collection/[slug]">) {
   const { locale, slug } = await params;
   await connection(); // lịch hiển thị + tồn kho tính lúc request
   setRequestLocale(locale);
+  const current = parseCatalogParams(await searchParams);
   const [t, tn, collection] = await Promise.all([
     getTranslations({ locale, namespace: "Catalog" }),
     getTranslations({ locale, namespace: "Nav" }),
-    loadCollection(slug, locale),
+    loadCollection(slug, locale, current.page),
   ]);
   if (!collection) notFound();
 
@@ -38,8 +40,9 @@ export default async function CollectionPage({ params }: PageProps<"/[locale]/co
       <Breadcrumb label={tn("breadcrumb")} items={[{ href: "/", name: tn("home") }, { name: collection.name }]} />
       <section className={storeCard}>
         <h1 className="mb-2 text-lg font-medium lg:text-xl">{collection.name}</h1>
-        <p className="mb-2 text-sm text-muted-foreground">{t("count", { count: collection.products.length })}</p>
+        <p className="mb-2 text-sm text-muted-foreground">{t("count", { count: collection.total })}</p>
         <ProductGrid products={collection.products} locale={locale} />
+        <CatalogPagination current={{ tags: [], sort: "new", page: current.page }} {...collection} locale={locale} />
       </section>
     </div>
   );

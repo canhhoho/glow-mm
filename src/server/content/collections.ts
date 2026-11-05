@@ -4,7 +4,7 @@ import { formId, mmTextReq, slugSchema } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { pick } from "@/server/catalog/queries";
-import { loadCardRowsByIds, withStock } from "@/server/catalog/store-queries";
+import { loadCardRowsByIds, STORE_VISIBLE, withStock } from "@/server/catalog/store-queries";
 import type { Tx } from "@/server/inventory/ledger";
 import { ContentError, directionSchema, inSchedule, isInSchedule, moveInList, scheduleSchema, type Direction } from "./common";
 
@@ -239,7 +239,7 @@ export async function loadHomeCollectionRows(locale: string, take = COLLECTION_R
   const rows = await prisma.collection.findMany({
     where: { active: true, showOnHome: true },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    include: { translations: true, items: ITEMS_ORDER },
+    include: { translations: true, items: { ...ITEMS_ORDER, where: { product: { AND: STORE_VISIBLE } }, take: Math.min(60, Math.max(1, take)) } },
   });
   return Promise.all(
     rows.map(async (c) => ({
@@ -254,18 +254,24 @@ export async function loadHomeCollectionRows(locale: string, take = COLLECTION_R
 }
 
 /** Bộ sưu tập đang bật theo slug (chưa xét lịch), thẻ SP chưa có tồn. */
-export async function loadCollectionRow(slug: string, locale: string) {
-  const c = await prisma.collection.findFirst({ where: { slug, active: true }, include: { translations: true, items: ITEMS_ORDER } });
+export async function loadCollectionRow(slug: string, locale: string, requestedPage = 1) {
+  const c = await prisma.collection.findFirst({ where: { slug, active: true }, include: { translations: true } });
   if (!c) return null;
+  const where = { collectionId: c.id, product: { AND: STORE_VISIBLE } };
+  const total = await prisma.collectionItem.count({ where });
+  const pages = Math.max(1, Math.ceil(total / 24));
+  const page = Math.min(pages, Math.max(1, Math.trunc(requestedPage) || 1));
+  const items = await prisma.collectionItem.findMany({ ...ITEMS_ORDER, where, skip: (page - 1) * 24, take: 24 });
   return {
     slug: c.slug,
     name: pick(c.translations, locale)?.name ?? c.slug,
     startAt: c.startAt,
     endAt: c.endAt,
     products: await loadCardRowsByIds(
-      c.items.map((i) => i.productId),
+      items.map((i) => i.productId),
       locale,
     ),
+    total, page, pages,
   };
 }
 

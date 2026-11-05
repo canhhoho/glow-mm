@@ -47,7 +47,8 @@
     "buyNow": "Mua ngay",
     "related": "Cùng danh mục",
     "paoTitle": "Hạn sau khi mở nắp",
-    "paoMonths": "Dùng trong {months} tháng sau khi mở nắp và không quá ngày hết hạn trên bao bì."
+    "paoMonths": "Dùng trong {months} tháng sau khi mở nắp và không quá ngày hết hạn trên bao bì.",
+    "image": "Ảnh"
   },
   "Footer": {
     "contact": "Liên hệ",
@@ -74,7 +75,11 @@
     "from": "từ {price}",
     "count": "{count} sản phẩm",
     "choose": "Chọn",
-    "seeMore": "Xem thêm"
+    "seeMore": "Xem thêm",
+    "pagination": "Phân trang sản phẩm",
+    "previous": "Trang trước",
+    "next": "Trang sau",
+    "pageCount": "Trang {page}/{pages} · {total} sản phẩm"
   },
   "Search": {
     "title": "Tìm kiếm",

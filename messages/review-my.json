@@ -108,6 +108,10 @@
     "Auth.submitRegister",
     "Auth.verified",
     "Catalog.choose",
+    "Catalog.next",
+    "Catalog.pageCount",
+    "Catalog.pagination",
+    "Catalog.previous",
     "Catalog.seeMore",
     "Checkout.err.price_missing",
     "Checkout.newAddress",
@@ -164,6 +168,7 @@
     "Order.st.PACKING",
     "Order.st.PAYMENT_CONFIRMED",
     "Product.buyNow",
+    "Product.image",
     "Product.paoMonths",
     "Product.paoTitle",
     "Product.related"

@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { prisma } from "@/lib/db";
-import type { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { normalizeForSearch, searchVariants } from "@/lib/myanmar";
 import type { CartLine } from "@/server/cart/cart";
 import { salesBlockDays } from "@/server/inventory/documents";
@@ -21,6 +21,7 @@ export type ProductListQuery = {
   sort?: StoreSort;
   /** Số sản phẩm tối đa (mặc định 60; dải sản phẩm trang chủ lấy ít hơn). */
   take?: number;
+  page?: number;
 };
 
 /** Ngưỡng hạn dùng đọc một lần mỗi request (trang chủ gọi `availability` cho nhiều dải SP cùng lúc). */
@@ -82,35 +83,40 @@ export async function loadCardRowsByIds(ids: string[], locale: string): Promise<
   return products.map((p) => toCardRow(p, locale));
 }
 
-/** Thẻ SP theo bộ lọc, mới nhất trước (sắp theo giá làm ở `sortCards` sau khi gắn tồn). */
-export async function loadCardRows(query: Omit<ProductListQuery, "sort">): Promise<CardRow[]> {
-  const and: Prisma.ProductWhereInput[] = [...STORE_VISIBLE];
+/** Lọc và sắp toàn tập ở DB trước phân trang; giá = MIN của biến thể đang dùng. */
+export async function loadCardPage(query: ProductListQuery) {
+  const and: Prisma.Sql[] = [Prisma.sql`p.published = TRUE`, Prisma.sql`EXISTS (SELECT 1 FROM "Variant" v WHERE v."productId" = p.id AND v.active = TRUE)`];
   if (query.category) {
-    and.push({ OR: [{ category: { slug: query.category } }, { category: { parent: { slug: query.category } } }] });
+    and.push(Prisma.sql`EXISTS (SELECT 1 FROM "Category" c LEFT JOIN "Category" parent ON parent.id = c."parentId" WHERE c.id = p."categoryId" AND (c.slug = ${query.category} OR parent.slug = ${query.category}))`);
   }
-  if (query.brand) and.push({ brand: { slug: query.brand } });
-  for (const tag of query.tags ?? []) and.push({ tags: { some: { tag: { slug: tag } } } });
+  if (query.brand) and.push(Prisma.sql`EXISTS (SELECT 1 FROM "Brand" b WHERE b.id = p."brandId" AND b.slug = ${query.brand})`);
+  for (const tag of query.tags ?? []) and.push(Prisma.sql`EXISTS (SELECT 1 FROM "ProductTag" pt JOIN "Tag" t ON t.id = pt."tagId" WHERE pt."productId" = p.id AND t.slug = ${tag})`);
   const q = query.q?.trim();
   if (q) {
-    and.push({
-      OR: [
-        ...searchVariants(q).map((v) => ({ translations: { some: { searchText: { contains: v } } } })),
-        { brand: { name: { contains: q, mode: "insensitive" } } },
-        // Tìm không dấu theo slug thương hiệu: "sen viet" → "sen-viet" (tên "Sen Việt" có dấu, SQL không bỏ dấu được).
-        { brand: { slug: { contains: normalizeForSearch(q).replace(/ /g, "-") } } },
-        { variants: { some: { sku: { contains: q.toUpperCase() } } } },
-      ],
-    });
+    const texts = searchVariants(q).map((v) => Prisma.sql`EXISTS (SELECT 1 FROM "ProductTranslation" t WHERE t."productId" = p.id AND strpos(t."searchText", ${v}) > 0)`);
+    and.push(Prisma.sql`(${Prisma.join([...texts,
+      Prisma.sql`EXISTS (SELECT 1 FROM "Brand" b WHERE b.id = p."brandId" AND (strpos(lower(b.name), lower(${q})) > 0 OR strpos(b.slug, ${normalizeForSearch(q).replace(/ /g, "-")}) > 0))`,
+      Prisma.sql`EXISTS (SELECT 1 FROM "Variant" v WHERE v."productId" = p.id AND strpos(v.sku, ${q.toUpperCase()}) > 0)`,
+    ], " OR ")})`);
   }
-
-  const products = await prisma.product.findMany({
-    where: { AND: and },
-    orderBy: { createdAt: "desc" },
-    take: Math.min(query.take ?? 60, 60),
-    include: CARD_INCLUDE,
-  });
-  return products.map((p) => toCardRow(p, query.locale));
+  const where = Prisma.join(and, " AND ");
+  const take = Math.min(60, Math.max(1, Math.trunc(query.take ?? 24)));
+  const requestedPage = Math.min(1000000, Math.max(1, Math.trunc(query.page ?? 1)));
+  // Count và page dùng cùng snapshot để total/page không lệch khi có người đăng SP đồng thời.
+  return prisma.$transaction(async (tx) => {
+    const count = await tx.$queryRaw<{ total: bigint }[]>(Prisma.sql`SELECT COUNT(*) AS total FROM "Product" p WHERE ${where}`);
+    const total = Number(count[0].total);
+    const pages = Math.max(1, Math.ceil(total / take));
+    const page = Math.min(requestedPage, pages);
+    const order = query.sort === "price_asc" ? Prisma.sql`price ASC, p.id ASC` : query.sort === "price_desc" ? Prisma.sql`price DESC, p.id ASC` : Prisma.sql`p."createdAt" DESC, p.id ASC`;
+    const ids = await tx.$queryRaw<{ id: string }[]>(Prisma.sql`SELECT p.id, (SELECT MIN(v."priceMmk") FROM "Variant" v WHERE v."productId" = p.id AND v.active = TRUE) AS price FROM "Product" p WHERE ${where} ORDER BY ${order} LIMIT ${take} OFFSET ${(page - 1) * take}`);
+    const products = await tx.product.findMany({ where: { id: { in: ids.map((r) => r.id) } }, include: CARD_INCLUDE });
+    const byId = new Map(products.map((p) => [p.id, p]));
+    return { rows: ids.map((r) => toCardRow(byId.get(r.id)!, query.locale)), total, page, pages };
+  }, { isolationLevel: "RepeatableRead" });
 }
+
+export async function loadCardRows(query: ProductListQuery): Promise<CardRow[]> { return (await loadCardPage(query)).rows; }
 
 export type ProductCardData = Omit<CardRow, "variantIds"> & { inStock: boolean };
 
@@ -136,7 +142,7 @@ export async function listStoreProductsByIds(ids: string[], locale: string) {
 
 export async function listStoreProducts(query: ProductListQuery) {
   const [cards] = await withStock([await loadCardRows(query)]);
-  return sortCards(cards, query.sort);
+  return cards;
 }
 
 /** Bộ lọc: thương hiệu + loại da + vấn đề da có trên sản phẩm đang bán. */

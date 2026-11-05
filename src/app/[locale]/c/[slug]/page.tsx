@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { storeCategory, storeProducts } from "@/server/catalog/cached";
-import { CatalogFilters, parseCatalogParams } from "@/components/store/catalog-filters";
+import { storeCategory, storeProductPage } from "@/server/catalog/cached";
+import { CatalogFilters, CatalogPagination, parseCatalogParams } from "@/components/store/catalog-filters";
 import { ProductGrid } from "@/components/store/product-card";
 import { Breadcrumb, storeCard } from "@/components/store/ui";
 import { alternates } from "@/lib/site";
@@ -27,11 +27,11 @@ export default async function CategoryPage({ params, searchParams }: PageProps<"
   const { locale, slug } = await params;
   setRequestLocale(locale);
   const current = parseCatalogParams(await searchParams);
-  const [t, tn, category, products] = await Promise.all([
+  const [t, tn, category, result] = await Promise.all([
     getTranslations({ locale, namespace: "Catalog" }),
     getTranslations({ locale, namespace: "Nav" }),
     loadCategory(slug, locale),
-    storeProducts({ locale, category: slug, brand: current.brand, tags: current.tags, sort: current.sort }),
+    storeProductPage({ locale, category: slug, ...current }),
   ]);
   if (!category) notFound();
 
@@ -59,8 +59,9 @@ export default async function CategoryPage({ params, searchParams }: PageProps<"
             ))}
           </ul>
         )}
-        <p className="mb-2 text-sm text-muted-foreground">{t("count", { count: products.length })}</p>
-        <ProductGrid products={products} locale={locale} />
+        <p className="mb-2 text-sm text-muted-foreground">{t("count", { count: result.total })}</p>
+        <ProductGrid products={result.products} locale={locale} />
+        <CatalogPagination current={current} {...result} locale={locale} />
       </section>
     </div>
   );
