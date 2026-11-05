@@ -77,7 +77,10 @@ export async function shipmentAllocationStatus(shipmentId: string) {
   return prisma.$transaction(async tx => {
     const current = await allocationInput(tx, shipmentId);
     const history = await tx.shipmentAllocation.findMany({ where: { shipmentId }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 10 });
-    return { state: !history.length ? "UNALLOCATED" : history[0].fingerprint === current.fingerprint ? "ALLOCATED" : "STALE", history };
+    const users = await tx.user.findMany({ where: { id: { in: history.map(h=>h.createdById) } }, select: { id: true, name: true } });
+    const names = new Map(users.map(u=>[u.id,u.name]));
+    const results = z.array(z.object({ key: z.string(), allocatedVnd: z.number().int(), landedUnitVnd: z.number().int() })).catch([]);
+    return { state: !history.length ? "UNALLOCATED" : history[0].fingerprint === current.fingerprint ? "ALLOCATED" : "STALE", history: history.map(h=>({ ...h, results: results.parse(h.result), createdByName: names.get(h.createdById) ?? h.createdById })) };
   }, { isolationLevel: "RepeatableRead" });
 }
 
@@ -100,9 +103,10 @@ export async function attachBatchToShipment(raw: unknown, userId: string) {
  * Tính lại landed cost cho mọi lô thuộc chuyến hàng.
  * Số lượng dùng để phân bổ = tổng đã NHẬP (phiếu RECEIVE đã ghi sổ) của lô, gồm cả tester.
  */
-export async function allocateShipment(shipmentId: string, userId: string) {
+export async function allocateShipment(shipmentId: string, userId: string, selectedMethod?: AllocationMethod) {
   return prisma.$transaction(async (tx) => {
     await lockShipment(tx, shipmentId);
+    if (selectedMethod) await tx.inboundShipment.update({ where: { id: shipmentId }, data: { allocationMethod: shipmentSchema.shape.allocationMethod.parse(selectedMethod) } });
     const { shipment, batches, totalCosts, input, fingerprint } = await allocationInput(tx, shipmentId);
     if (batches.length === 0) throw new Error("Chuyến hàng chưa có lô nào đã nhập kho");
     const missing = shipment.allocationMethod === "BY_WEIGHT" ? batches.filter(b => !b.variant.weightGrams).map(b => b.variant.sku) : [];

@@ -16,6 +16,8 @@ export function PricingRunForm({
   brands,
   roundTo,
   lastShip,
+  receiptId,
+  initialLocationId,
 }: {
   warehouses: (Option & { pricingMode: "VN_IMPORT" | "LOCAL_MMK" })[];
   rates: { id: string; label: string }[];
@@ -23,9 +25,11 @@ export function PricingRunForm({
   brands: Option[];
   roundTo: number;
   lastShip: number | null;
+  receiptId?: string;
+  initialLocationId?: string;
 }) {
   const t = useTranslations("Pricing");
-  const [locationId, setLocationId] = useState(warehouses[0]?.id ?? "");
+  const [locationId, setLocationId] = useState(warehouses.some(w=>w.id === initialLocationId) ? initialLocationId! : warehouses[0]?.id ?? "");
   const mode = warehouses.find((w) => w.id === locationId)?.pricingMode ?? "VN_IMPORT";
   const vn = mode === "VN_IMPORT";
   const label = "grid content-start gap-1 text-sm";
@@ -38,6 +42,7 @@ export function PricingRunForm({
         <p className="text-sm text-muted-foreground">{t("noRate")}</p>
       ) : (
         <ActionForm action={previewRunAction} submitLabel={t("preview")} className="grid gap-3 sm:grid-cols-2">
+          {receiptId && <input type="hidden" name="receiptId" value={receiptId} />}
           <label className={label}>
             <span className="text-muted-foreground">{t("warehouse")}</span>
             <select name="locationId" aria-label={t("warehouse")} value={locationId} onChange={(e) => setLocationId(e.target.value)} className={fieldClass}>

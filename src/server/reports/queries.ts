@@ -207,7 +207,7 @@ export async function inboundShipments() {
 
 /** Việc cần làm cho nhân viên (dashboard). */
 export async function workQueue(now = new Date()) {
-  const [byStatus, overdue] = await Promise.all([
+  const [byStatus, overdue, longShipping] = await Promise.all([
     prisma.order.groupBy({
       by: ["status", "paymentMethod"],
       where: { status: { in: ["PENDING", "PAYMENT_CONFIRMED", "COD_CONFIRMED", "PACKING", "SHIPPING"] } },
@@ -216,6 +216,7 @@ export async function workQueue(now = new Date()) {
     prisma.order.count({
       where: { status: "PENDING", reservations: { some: { status: "ACTIVE", expiresAt: { lte: now } } } },
     }),
+    prisma.order.count({ where: { status: "SHIPPING", deliveries: { some: { shippedAt: { lte: new Date(now.getTime() - 7 * 86400000) } } } } }),
   ]);
   const count = (pred: (r: (typeof byStatus)[number]) => boolean) =>
     byStatus.filter(pred).reduce((s, r) => s + r._count, 0);
@@ -225,5 +226,6 @@ export async function workQueue(now = new Date()) {
     preparing: count((r) => r.status === "PAYMENT_CONFIRMED" || r.status === "COD_CONFIRMED" || r.status === "PACKING"),
     shipping: count((r) => r.status === "SHIPPING"),
     overdue,
+    longShipping,
   };
 }

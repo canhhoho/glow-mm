@@ -173,7 +173,7 @@ export function CheckoutForm({
             key={value}
             className="flex min-h-11 items-start gap-3 rounded-lg border border-border bg-card p-3 has-checked:border-brand"
           >
-            <input type="radio" name="paymentMethod" value={value} required defaultChecked={value === "COD"} className="mt-1" />
+            <input type="radio" name="paymentMethod" {...field("paymentMethod")} value={value} required defaultChecked={value === "COD"} className="mt-1" />
             <span>
               <span className="block">{label}</span>
               <span className="block text-xs text-muted-foreground">{hint}</span>

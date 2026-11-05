@@ -8,14 +8,20 @@ import { availableToSell } from "./availability";
 import { normalizeMmPhone, phoneSearchDigits } from "@/lib/phone";
 import { toUnicode } from "@/lib/myanmar";
 import { ORDER_STATUSES, PREPARING_STATUSES } from "./state-machine";
+import { pageNumber, validDay } from "@/lib/pagination";
+import { addDays, yangonDayStart } from "@/lib/time";
 
 /** Truy vấn cho admin đơn hàng (đọc, không thay đổi dữ liệu). */
 
-export type OrderListFilter = { status?: string; paymentMethod?: string; channel?: string; q?: string; overdue?: boolean; affiliateId?: string };
+export type OrderListFilter = { status?: string; paymentMethod?: string; channel?: string; q?: string; overdue?: boolean; affiliateId?: string; from?: string; to?: string; locationId?: string; page?: number; shippingDays?: number };
 
 const CHANNELS = ["WEB", "FACEBOOK", "VIBER", "PHONE"] as const;
 
 export async function listOrdersAdmin(filter: OrderListFilter, now = new Date()) {
+  return (await listOrdersPageAdmin(filter, now, 200)).orders;
+}
+
+export async function listOrdersPageAdmin(filter: OrderListFilter, now = new Date(), pageSize = 50) {
   const where: Prisma.OrderWhereInput = {};
   if (filter.status === "PREPARING") where.status = { in: [...PREPARING_STATUSES] };
   if (filter.status && (ORDER_STATUSES as readonly string[]).includes(filter.status)) {
@@ -28,6 +34,15 @@ export async function listOrdersAdmin(filter: OrderListFilter, now = new Date())
     where.channel = filter.channel as OrderChannel;
   }
   if (filter.affiliateId) where.affiliateId = filter.affiliateId;
+  if (filter.locationId) where.items = { some: { variant: { product: { stockLocationId: filter.locationId } } } };
+  let from = validDay(filter.from);
+  let to = validDay(filter.to);
+  if (from && to && from > to) [from, to] = [to, from];
+  if (from || to) where.createdAt = { ...(from && { gte: yangonDayStart(from) }), ...(to && { lt: yangonDayStart(addDays(to,1)) }) };
+  if (Number.isInteger(filter.shippingDays) && filter.shippingDays! > 0 && filter.shippingDays! <= 365) {
+    where.status = "SHIPPING";
+    where.deliveries = { some: { shippedAt: { lte: new Date(now.getTime() - filter.shippingDays! * 86400000) } } };
+  }
   const q = filter.q ? toUnicode(filter.q.trim()) : "";
   if (q) {
     // SĐT đủ → khớp đúng; chỉ gõ số → khớp một phần; có chữ → chỉ tìm mã đơn / tên người nhận.
@@ -43,19 +58,17 @@ export async function listOrdersAdmin(filter: OrderListFilter, now = new Date())
     status: "PENDING",
     reservations: { some: { status: "ACTIVE", expiresAt: { lte: now } } },
   };
-  if (filter.overdue) Object.assign(where, overdueWhere);
+  if (filter.overdue) where.AND = [overdueWhere];
 
-  const [orders, overdueIds] = await Promise.all([
-    prisma.order.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      take: 200,
-      include: { _count: { select: { items: true } }, affiliate: { select: { code: true } } },
-    }),
-    prisma.order.findMany({ where: overdueWhere, select: { id: true } }),
-  ]);
-  const overdue = new Set(overdueIds.map((o) => o.id));
-  return orders.map((o) => ({ ...o, overdue: overdue.has(o.id) }));
+  const take = Math.max(1, Math.min(200, Math.trunc(pageSize)));
+  return prisma.$transaction(async tx => {
+    const total = await tx.order.count({ where });
+    const pages = Math.max(1, Math.ceil(total / take));
+    const page = Math.min(pages, pageNumber(filter.page));
+    const orders = await tx.order.findMany({ where, orderBy: [{ createdAt: "desc" }, { id: "asc" }], take, skip: (page-1)*take,
+      include: { _count: { select: { items: true } }, affiliate: { select: { code: true } }, reservations: { where: { status: "ACTIVE", expiresAt: { lte: now } }, select: { id: true }, take: 1 } } });
+    return { total, page, pages, orders: orders.map(({ reservations, ...o })=>({ ...o, overdue: o.status === "PENDING" && reservations.length > 0 })) };
+  }, { isolationLevel: "RepeatableRead" });
 }
 
 export async function getOrderAdmin(id: string, now = new Date()) {
@@ -71,6 +84,7 @@ export async function getOrderAdmin(id: string, now = new Date()) {
       payoutLines: { select: { amountMmk: true, kind: true } },
       uplineAffiliate: { select: { id: true, code: true, user: { select: { name: true } } } },
       account: { select: { name: true, email: true, phoneNumber: true } },
+      pick: { include: { lines: { orderBy: { id: "asc" }, include: { batch: { select: { lotNo: true, expiryDate: true, variant: { select: { sku: true } } } }, location: { select: { code: true, name: true } } } } } },
     },
   });
   if (!order) return null;

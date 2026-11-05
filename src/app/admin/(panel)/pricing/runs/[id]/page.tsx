@@ -11,7 +11,9 @@ import { ActionForm } from "@/components/admin/action-form";
 import { Badge, DataTable, Notice, Page, PageHeader, Td } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import { fmtDate, fmtDateTime, fmtInt } from "@/lib/format";
-import { rateDisplay } from "@/server/pricing/formula";
+import { convertVndToMmk, rateDisplay } from "@/server/pricing/formula";
+import { getNumberSetting } from "@/server/settings";
+import { priceRisks } from "@/server/pricing/risks";
 
 const RUN_TONE = { PREVIEW: "warning", APPLIED: "success", CANCELLED: "neutral" } as const;
 const LINE_TONE = { PENDING: "warning", APPLIED: "success", SKIPPED: "neutral" } as const;
@@ -21,6 +23,7 @@ const SKIP_REASONS = ["UNCHANGED", "PRICE_CHANGED", "INPUT_CHANGED", "CANCELLED"
 
 export default async function PriceRunPage({ params }: PageProps<"/admin/pricing/runs/[id]">) {
   await requirePagePermission("pricing:manage");
+  const commissionBp = (await getNumberSetting("affiliate.defaultRateBp")) + (await getNumberSetting("affiliate.uplineRateBp"));
   const { id } = await params;
   const [t, run] = await Promise.all([getTranslations("Pricing"), getRun(id)]);
   if (!run) notFound();
@@ -57,6 +60,8 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
         const pct = changePct(l.oldPriceMmk, l.newPriceMmk);
         const pendingLine = l.status === "PENDING";
         const stale = editable && pendingLine && l.currentPriceMmk !== l.oldPriceMmk;
+        const costMmk = l.costMmk ?? (l.costVnd != null && run.rate ? convertVndToMmk(l.costVnd, run.rate) : null);
+        const risks = priceRisks({ oldPriceMmk: l.oldPriceMmk, priceMmk: l.newPriceMmk, costMmk, shipMmk: l.shipMmk ?? 0, commissionBp });
         return (
           <tr key={l.variantId} className={cn(stale && "bg-amber-50 dark:bg-amber-950/30")} data-testid="run-line">
             <Td>
@@ -68,6 +73,8 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
             <Td>
               {l.name}
               {stale && <div className="text-xs text-amber-700 dark:text-amber-400">{t("changedSince")}</div>}
+              {risks.lowMargin && <p className="text-xs text-amber-700 dark:text-amber-400">{t("lowMarginWarning", { profit: fmtInt(risks.profit), rate: commissionBp / 100 })}</p>}
+              {risks.largeChange && <p className="text-xs text-amber-700 dark:text-amber-400">{t("largeChangeWarning")}</p>}
             </Td>
             <Td className="text-right tabular-nums">{fmtInt(mmk ? l.costMmk : l.costVnd)}</Td>
             {extra && <Td className="text-right tabular-nums">{fmtInt(mmk ? l.profitMmk : l.shipMmk)}</Td>}

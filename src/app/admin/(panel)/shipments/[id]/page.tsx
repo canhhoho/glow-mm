@@ -80,7 +80,7 @@ export default async function ShipmentPage({ params }: PageProps<"/admin/shipmen
         <p className="text-sm text-muted-foreground">{t("allocationHelp")}</p>
         <AttachBatchForm shipmentId={s.id} batches={unlinked.map(b => ({ id: b.id, sku: b.variant.sku, lotNo: b.lotNo }))} />
         <h3 className="font-medium">{t("allocationHistory")}</h3>
-        <DataTable head={[t("allocatedAt"), t("method"), t("allocatedBy"), t("fingerprint")] }>{allocation.history.map(h => <tr key={h.id}><Td>{fmtDateTime(h.createdAt)}</Td><Td>{t(h.method)}</Td><Td>{h.createdById}</Td><Td className="font-mono text-xs break-all">{h.fingerprint}</Td></tr>)}</DataTable>
+        <DataTable head={[t("allocatedAt"), t("method"), t("allocatedBy"), t("fingerprint")] }>{allocation.history.map(h => <tr key={h.id}><Td>{fmtDateTime(h.createdAt)}</Td><Td>{t(h.method)}</Td><Td>{h.createdByName}</Td><Td><span className="font-mono text-xs break-all">{h.fingerprint}</span><details className="mt-2"><summary className="cursor-pointer">{t("allocationDetails")}</summary><DataTable head={[td("lotNo"), t("allocatedVnd"), t("colLanded")]}>{h.results.map(r=><tr key={r.key}><Td>{s.batches.find(b=>b.id===r.key)?.lotNo ?? r.key}</Td><Td>{fmtInt(r.allocatedVnd)}</Td><Td>{fmtInt(r.landedUnitVnd)}</Td></tr>)}</DataTable></details></Td></tr>)}</DataTable>
       </section>
     </Page>
   );

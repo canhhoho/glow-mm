@@ -17,7 +17,6 @@ import {
   createShipment,
   markShipmentArrived,
   removeShipmentCost,
-  setAllocationMethod,
 } from "./shipments";
 
 export type ActionState = { error?: string; ok?: string } | undefined;
@@ -196,8 +195,8 @@ export async function allocateShipmentAction(_prev: ActionState, formData: FormD
   try {
     const user = await requirePermission("shipment:manage");
     const method = formData.get("allocationMethod");
-    if (method === "BY_VALUE" || method === "BY_QTY" || method === "BY_WEIGHT") await setAllocationMethod(shipmentId, method);
-    await allocateShipment(shipmentId, user.id);
+    if (method !== "BY_VALUE" && method !== "BY_QTY" && method !== "BY_WEIGHT") throw new Error("Cách phân bổ không hợp lệ");
+    await allocateShipment(shipmentId, user.id, method);
     revalidatePath("/admin/inventory");
     revalidatePath("/admin/reports");
     revalidatePath("/admin/inventory/batches/[id]", "page");

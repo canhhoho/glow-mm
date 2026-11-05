@@ -80,13 +80,16 @@ test("đơn thủ công (Facebook, COD): tạo → xác nhận → bàn giao (FE
   await page.getByRole("button", { name: "Đã bàn giao vận chuyển" }).click();
   await expectStatus(page, "Đang giao");
   await expect(page.getByRole("link", { name: /^IS-/ })).toBeVisible();
+  await page.getByLabel("Mã vận đơn", { exact: true }).fill("RX-E2E-UPDATED");
+  await page.getByRole("button", { name: "Lưu vận đơn", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Đã cập nhật vận đơn" })).toBeVisible();
   await page.screenshot({ path: "test-results/screens/admin-order-detail.png", fullPage: true });
 
   await page.getByRole("link", { name: "In nhãn ship" }).click();
   // Next giữ trang trước (ẩn) trong DOM → giới hạn trong nhãn.
   const label = page.getByRole("article");
   await expect(label.getByText("Thu hộ (COD)")).toBeVisible();
-  await expect(label.getByText("RX-E2E-1")).toBeVisible();
+  await expect(label.getByText("RX-E2E-UPDATED")).toBeVisible();
   await expect(label.getByText("Cửa hàng trả cước", { exact: true })).toBeVisible();
   await page.screenshot({ path: "test-results/screens/admin-order-label.png", fullPage: true });
 

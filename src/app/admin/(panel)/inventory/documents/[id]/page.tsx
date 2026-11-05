@@ -1,19 +1,22 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
+import { can } from "@/server/auth/roles";
+import { prisma } from "@/lib/db";
 import { getDocument, productName } from "@/server/inventory/queries";
 import { cancelDocumentAction, postDocumentAction } from "@/server/inventory/actions";
 import { ActionButton } from "@/components/admin/action-button";
-import { Badge, DataTable, Page, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, LinkButton, Page, PageHeader, Td } from "@/components/admin/ui";
 import { fmtDate, fmtDay, fmtInt } from "@/lib/format";
 
 const STATUS_TONE = { DRAFT: "warning", POSTED: "success", CANCELLED: "neutral" } as const;
 
 export default async function DocumentPage({ params }: PageProps<"/admin/inventory/documents/[id]">) {
-  await requirePagePermission("stock:view");
+  const user = await requirePagePermission("stock:view");
   const { id } = await params;
   const [t, ti, doc] = await Promise.all([getTranslations("Docs"), getTranslations("Inventory"), getDocument(id)]);
   if (!doc) notFound();
+  const picked = doc.status === "DRAFT" && ["ISSUE", "TRANSFER"].includes(doc.type) && doc.fromId ? await prisma.orderPickLine.findMany({ where: { locationId: doc.fromId, variantId: { in: doc.lines.map(l=>l.variantId) }, pick: { consumedAt: null, order: { status: { in: ["COD_CONFIRMED", "PAYMENT_CONFIRMED"] } } } }, select: { pick: { select: { order: { select: { code: true } } } } }, take: 50 }) : [];
 
   return (
     <Page>
@@ -21,6 +24,8 @@ export default async function DocumentPage({ params }: PageProps<"/admin/invento
         title={`${t(doc.type)} · ${doc.code}`}
         back={{ href: "/admin/inventory/documents", label: t("back") }}
       />
+      {doc.type === "RECEIVE" && doc.status === "POSTED" && can(user.role, "pricing:manage") && <LinkButton href={`/admin/pricing?tab=runs&receiptId=${doc.id}`}>{t("priceReceived")}</LinkButton>}
+      {picked.length > 0 && <p role="alert" className="rounded-lg border border-amber-500 p-3 text-sm">{t("pickedWarning", { codes: [...new Set(picked.map(p=>p.pick.order.code))].join(", ") })}</p>}
       <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-[auto_1fr]">
         <dt className="text-muted-foreground">{t("status")}</dt>
         <dd>

@@ -24,6 +24,10 @@ test("D8 nhập theo chuyến, phân bổ theo kg rồi thay chi phí báo cần
   page.once("dialog", d=>d.accept());
   await page.getByRole("button", { name: "Ghi sổ" }).click();
   await expect(page.getByText("Đã ghi sổ", { exact: true }).filter({ visible:true })).toBeVisible();
+  await page.getByRole("link", { name: "Tính giá SKU vừa nhập", exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/pricing\?tab=runs&receiptId=/);
+  await expect(page.getByText(/Chỉ tính các SKU trong phiếu/)).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Kho", exact: true }).locator("option:checked")).toHaveText("Kho Thắm");
   await page.goto(shipmentUrl);
   await page.locator('input[name="amountVnd"]').fill("1000");
   await page.locator('form').filter({ has: page.locator('input[name="amountVnd"]') }).getByRole("button").click();

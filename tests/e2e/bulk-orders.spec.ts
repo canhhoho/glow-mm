@@ -56,6 +56,11 @@ test("DT: chọn nhiều đơn → xác nhận COD hàng loạt → in phiếu l
   await expect(slip.getByTestId("pick-plan").first()).toContainText("Đã chốt lô lúc");
   await slip.screenshot({ path: "test-results/screens/pick-slip.png", fullPage: true });
   await slip.close();
+  const details = await page.context().newPage();
+  await details.goto((await page.getByRole("link", { name: codes[0], exact: true }).getAttribute("href"))!);
+  await expect(details.getByTestId("order-pick")).toContainText("Đã chốt lô lúc");
+  await expect(details.getByTestId("order-pick")).toContainText("SV-SUN-50");
+  await details.close();
   for (const code of codes) await page.getByLabel(`Chọn đơn ${code}`).uncheck();
 
   // Đã xác nhận rồi → chạy lại báo lỗi từng đơn, không đổi gì.

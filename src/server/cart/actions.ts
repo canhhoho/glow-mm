@@ -136,8 +136,10 @@ export async function placeOrderAction(_prev: StoreActionState, formData: FormDa
     if (e instanceof OrderError && e.code === "invalid_zone") fieldErrors.townshipId = error;
     const cartError = e instanceof OrderError && ["out_of_stock", "variant_unavailable", "price_missing"].includes(e.code);
     const variantId = e instanceof OrderError && typeof e.details?.variantId === "string" ? e.details.variantId : undefined;
-    const variant = cartError && variantId ? await prisma.variant.findUnique({ where: { id: variantId }, select: { sku: true } }) : null;
-    return { error, fieldErrors, cartError, ...(variant && { sku: variant.sku }) };
+    const shortages = e instanceof OrderError && Array.isArray(e.details?.variants) ? e.details.variants.flatMap((row: unknown) => row && typeof row === "object" && "variantId" in row && typeof row.variantId === "string" ? [row.variantId] : []) : [];
+    const ids = [...new Set([...(variantId ? [variantId] : []), ...shortages])].slice(0, 50);
+    const variants = cartError && ids.length ? await prisma.variant.findMany({ where: { id: { in: ids } }, select: { sku: true } }) : [];
+    return { error, fieldErrors, cartError, ...(variants.length > 0 && { sku: variants.map(v=>v.sku).join(", ") }) };
   }
   await writeCart([]);
   // Đơn thuộc tài khoản → không cần nhớ mã + SĐT trong cookie. Lưu sổ địa chỉ lỗi (vd đã đủ 10) không chặn đặt hàng.

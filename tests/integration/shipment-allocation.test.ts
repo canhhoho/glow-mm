@@ -28,6 +28,11 @@ describe("D8 phân bổ theo khối lượng và dấu kiểm", () => {
     expect((await shipmentAllocationStatus(sh.id)).history).toHaveLength(2);
     await addShipmentCost({ shipmentId: sh.id, type: "FEE", amountVnd: 1 });
     expect((await shipmentAllocationStatus(sh.id)).state).toBe("STALE");
+    // Chọn phương pháp và ghi lịch sử trong cùng transaction.
+    await allocateShipment(sh.id, f.userId, "BY_QTY");
+    const latest = await shipmentAllocationStatus(sh.id);
+    expect(latest.state).toBe("ALLOCATED");
+    expect(latest.history[0].method).toBe("BY_QTY");
   });
 
   it("chuyến tùy chọn, gắn lô tường minh và chặn phiếu dùng lô chuyến khác", async () => {

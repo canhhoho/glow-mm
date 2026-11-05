@@ -6,7 +6,7 @@ import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { isPhoneEmail } from "@/server/auth/customer-policy";
 import { getOrderAdmin, quarantineLocations } from "@/server/orders/admin-queries";
-import { returnItemsAction, setShippingPayerAction } from "@/server/orders/actions";
+import { returnItemsAction, setShippingPayerAction, updateTrackingAction } from "@/server/orders/actions";
 import { assignOrderAffiliateAction, setOrderCommissionRatesAction } from "@/server/affiliates/actions";
 import { affiliateOptions } from "@/server/affiliates/affiliates";
 import { bpToPercent, splitCommissions } from "@/server/affiliates/commission";
@@ -89,6 +89,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
         <PaymentStatusBadge status={order.paymentStatus} />
         {order.overdue && <Badge tone="danger">{t("overdue")}</Badge>}
       </div>
+      {order.pick && <section className="space-y-2" data-testid="order-pick"><h2 className="font-medium">{t("bulk.pickTitle")}</h2><p className="text-sm">{t("bulk.pickPrintedAt", { time: fmtDateTime(order.pick.printedAt) })}</p>{!order.pick.consumedAt && <LinkButton href={`/admin/orders/pick-list?ids=${order.id}`}>{t("bulk.pickTitle")}</LinkButton>}<DataTable head={["SKU", t("bulk.pickLot"), t("warehouse"), t("bulk.pickQty")]}>{order.pick.lines.map(l => <tr key={l.id}><Td>{l.batch.variant.sku}</Td><Td>{l.batch.lotNo} · {fmtDay(l.batch.expiryDate)}</Td><Td>{l.location.code}</Td><Td>{l.qty}</Td></tr>)}</DataTable></section>}
 
       {order.paymentMethod === "COD" && <section className="space-y-3 rounded-xl border p-4">
         <h2 className="font-medium">{tc("title")}</h2>
@@ -420,6 +421,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
             {order.deliveries.map((d) => (
               <li key={d.id}>
                 {d.carrier} · <span className="font-mono">{d.trackingNo ?? "—"}</span> · {fmtDateTime(d.shippedAt)}
+                {can(user.role, "orders:ship") && <ActionForm action={updateTrackingAction} submitLabel={t("saveTracking")} okText={t("trackingSaved")} className="mt-2 flex flex-wrap items-end gap-2"><input type="hidden" name="orderId" value={order.id} /><input type="hidden" name="deliveryId" value={d.id} /><label className="grid gap-1"><span>{t("carrier")}</span><input name="carrier" required maxLength={80} defaultValue={d.carrier} className={fieldClass} /></label><label className="grid gap-1"><span>{t("trackingNo")}</span><input name="trackingNo" maxLength={100} defaultValue={d.trackingNo ?? ""} className={fieldClass} /></label></ActionForm>}
               </li>
             ))}
           </ul>

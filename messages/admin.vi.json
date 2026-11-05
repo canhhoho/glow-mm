@@ -111,7 +111,8 @@
     "sales": "Kinh doanh 30 ngày",
     "today": "Hôm nay",
     "viewReports": "Xem báo cáo",
-    "unknownExpiry": "Lô chưa biết hạn sử dụng"
+    "unknownExpiry": "Lô chưa biết hạn sử dụng",
+    "longShipping": "Đang giao từ {days} ngày"
   },
   "Role": {
     "ADMIN": "Quản trị viên",
@@ -312,7 +313,9 @@
     "usesDefault": "Dùng chung: {value}",
     "byDefault": "Chung ({value})",
     "estimateShip": "Cước tạm tính VN → MM (MMK/kg)",
-    "estimateHelp": "Khi ghi sổ: giá vốn tạm = giá mua quy đổi MMK + cước × khối lượng. Để trống nếu chưa biết cước; thiếu tỷ giá hoặc khối lượng sẽ báo thiếu giá vốn. Chi phí thực tế của chuyến được ưu tiên khi đã phân bổ."
+    "estimateHelp": "Khi ghi sổ: giá vốn tạm = giá mua quy đổi MMK + cước × khối lượng. Để trống nếu chưa biết cước; thiếu tỷ giá hoặc khối lượng sẽ báo thiếu giá vốn. Chi phí thực tế của chuyến được ưu tiên khi đã phân bổ.",
+    "priceReceived": "Tính giá SKU vừa nhập",
+    "pickedWarning": "Có phiếu soạn chưa bàn giao cho các SKU tại kho này: {codes}. Kiểm tra lô trước khi xuất/chuyển; dùng lô đã soạn có thể khiến đơn phải in lại phiếu."
   },
   "Ship": {
     "title": "Chuyến hàng VN → MM",
@@ -355,7 +358,9 @@
       "UNALLOCATED": "Chưa có lần phân bổ được lưu",
       "ALLOCATED": "Đã phân bổ — đầu vào còn khớp",
       "STALE": "Cần phân bổ lại — đầu vào đã thay đổi"
-    }
+    },
+    "allocationDetails": "Xem kết quả từng lô",
+    "allocatedVnd": "Chi phí được phân bổ (VND)"
   },
   "Products": {
     "title": "Sản phẩm",
@@ -737,7 +742,18 @@
     "receiverPays": "Người nhận trả cước",
     "senderPays": "Cửa hàng trả cước",
     "saveShippingPayer": "Lưu người trả cước",
-    "shippingPayerSaved": "Đã lưu người trả cước."
+    "shippingPayerSaved": "Đã lưu người trả cước.",
+    "warehouse": "Kho bán sản phẩm",
+    "allWarehouses": "Tất cả kho bán",
+    "fromDate": "Từ ngày đặt",
+    "toDate": "Đến ngày đặt",
+    "shippingDays": "Đang giao từ (ngày)",
+    "pagination": "Phân trang đơn hàng",
+    "previousPage": "Trang trước",
+    "nextPage": "Trang sau",
+    "pageCount": "Trang {page}/{pages} · {total} đơn",
+    "saveTracking": "Lưu vận đơn",
+    "trackingSaved": "Đã cập nhật vận đơn"
   },
   "Settings": {
     "description": "Quản lý tài khoản và các thiết lập vận hành của cửa hàng.",
@@ -892,7 +908,11 @@
     },
     "expiresAt": "Hết hạn {date}",
     "expired": "Bản xem trước đã hết hạn hoặc tạo theo cách tính cũ — tạo bản mới để áp dụng.",
-    "partial": "Đã áp {applied} dòng, còn {pending} dòng chờ"
+    "partial": "Đã áp {applied} dòng, còn {pending} dòng chờ",
+    "receiptInvalid": "Phiếu nhập không tồn tại hoặc chưa ghi sổ. Không tính giá toàn kho thay thế.",
+    "receiptScope": "Chỉ tính các SKU trong phiếu {code}; vẫn áp dụng bộ lọc kho, danh mục và thương hiệu bên dưới.",
+    "lowMarginWarning": "Lãi minh họa sau cước và hoa hồng {rate}%: {profit} MMK (≤ 5% giá bán). Chưa trừ phí bán khác; tỷ lệ CTV thực tế có thể khác.",
+    "largeChangeWarning": "Giá thay đổi từ 20% — kiểm tra trước khi áp dụng."
   },
   "Quarantine": {
     "title": "Hàng chờ kiểm tra (hàng trả)",

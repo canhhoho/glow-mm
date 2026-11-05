@@ -18,6 +18,7 @@ import { RateInputs } from "@/components/admin/rate-inputs";
 import { Badge, DataTable, fieldClass, Page, PageHeader, Section, TabNav, Td } from "@/components/admin/ui";
 import { rateDisplay } from "@/server/pricing/formula";
 import { fmtDate, fmtDateTime, fmtDecimal, fmtInt } from "@/lib/format";
+import { prisma } from "@/lib/db";
 
 const RUN_TONE = { PREVIEW: "warning", APPLIED: "success", CANCELLED: "neutral" } as const;
 
@@ -27,7 +28,7 @@ type Tab = (typeof TABS)[number];
 
 export default async function PricingPage({ searchParams }: PageProps<"/admin/pricing">) {
   await requirePagePermission("pricing:manage");
-  const { tab: rawTab } = await searchParams;
+  const { tab: rawTab, receiptId } = await searchParams;
   const tab: Tab = TABS.includes(rawTab as Tab) ? (rawTab as Tab) : "rates";
   const [t, previews] = await Promise.all([getTranslations("Pricing"), countPreviewRuns()]);
   const tabLabel: Record<Tab, string> = { rates: t("tabRates"), runs: t("tabRuns"), history: t("tabHistory") };
@@ -45,7 +46,7 @@ export default async function PricingPage({ searchParams }: PageProps<"/admin/pr
         }))}
       />
       {tab === "rates" && <RatesTab />}
-      {tab === "runs" && <RunsTab />}
+      {tab === "runs" && <RunsTab receiptId={typeof receiptId === "string" ? receiptId : undefined} />}
       {tab === "history" && <HistoryTab />}
     </Page>
   );
@@ -102,7 +103,7 @@ async function RatesTab() {
   );
 }
 
-async function RunsTab() {
+async function RunsTab({ receiptId }: { receiptId?: string }) {
   const [t, rates, runs, options, gaps, roundTo, lastShip] = await Promise.all([
     getTranslations("Pricing"),
     listRates(),
@@ -112,6 +113,8 @@ async function RunsTab() {
     getNumberSetting("pricing.roundTo"),
     lastShipRate(),
   ]);
+  const receipt = receiptId ? await prisma.stockDocument.findFirst({ where: { id: receiptId, type: "RECEIVE", status: "POSTED" }, select: { code: true, lines: { select: { variant: { select: { product: { select: { stockLocationId: true } } } } } } } }) : null;
+  if (receiptId && !receipt) return <p role="alert">{t("receiptInvalid")}</p>;
   const gapLine = (label: string, skus: string[]) =>
     skus.length > 0 && (
       <p className="text-xs break-words text-muted-foreground">
@@ -121,7 +124,11 @@ async function RunsTab() {
   return (
     <>
       <Section title={t("newRun")} className="max-w-3xl">
+        {receipt && <p className="text-sm">{t("receiptScope", { code: receipt.code })}</p>}
         <PricingRunForm
+          key={receiptId ?? "all"}
+          receiptId={receiptId}
+          initialLocationId={receipt?.lines[0]?.variant.product.stockLocationId}
           warehouses={options.warehouses}
           rates={rates.map((r) => ({ id: r.id, label: `1 MMK = ${rateDisplay(r).vndPerMmk} VND · ${fmtDate(r.effectiveAt)}` }))}
           categories={options.categories}

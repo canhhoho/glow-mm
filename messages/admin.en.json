@@ -111,7 +111,8 @@
     "sales": "Last 30 days",
     "today": "Today",
     "viewReports": "View reports",
-    "unknownExpiry": "Batches with unknown expiry"
+    "unknownExpiry": "Batches with unknown expiry",
+    "longShipping": "Shipping for {days}+ days"
   },
   "Role": {
     "ADMIN": "Administrator",
@@ -312,7 +313,9 @@
     "usesDefault": "Shared: {value}",
     "byDefault": "Shared ({value})",
     "estimateShip": "Estimated VN → MM freight (MMK/kg)",
-    "estimateHelp": "On posting: estimated cost = purchase cost converted to MMK + freight × weight. Leave blank if unknown. Missing exchange rate or weight leaves the cost missing. Allocated actual shipment costs take priority."
+    "estimateHelp": "On posting: estimated cost = purchase cost converted to MMK + freight × weight. Leave blank if unknown. Missing exchange rate or weight leaves the cost missing. Allocated actual shipment costs take priority.",
+    "priceReceived": "Price received SKUs",
+    "pickedWarning": "Unshipped pick lists use these SKUs at this warehouse: {codes}. Check batches before issuing/transferring; using picked stock may require reprinting the order pick list."
   },
   "Ship": {
     "title": "Shipments VN → MM",
@@ -355,7 +358,9 @@
       "UNALLOCATED": "No recorded allocation",
       "ALLOCATED": "Allocated — inputs match",
       "STALE": "Reallocation needed — inputs changed"
-    }
+    },
+    "allocationDetails": "View batch allocation",
+    "allocatedVnd": "Allocated costs (VND)"
   },
   "Products": {
     "copyFrom": "Copy from an existing product",
@@ -737,7 +742,18 @@
     "receiverPays": "Receiver pays delivery",
     "senderPays": "Store pays delivery",
     "saveShippingPayer": "Save charge payer",
-    "shippingPayerSaved": "Charge payer saved."
+    "shippingPayerSaved": "Charge payer saved.",
+    "warehouse": "Product sales warehouse",
+    "allWarehouses": "All sales warehouses",
+    "fromDate": "Ordered from",
+    "toDate": "Ordered through",
+    "shippingDays": "Shipping for (days)",
+    "pagination": "Order pages",
+    "previousPage": "Previous",
+    "nextPage": "Next",
+    "pageCount": "Page {page}/{pages} · {total} orders",
+    "saveTracking": "Save tracking",
+    "trackingSaved": "Tracking updated"
   },
   "Settings": {
     "description": "Manage accounts and store operating preferences.",
@@ -892,7 +908,11 @@
     },
     "expiresAt": "Expires {date}",
     "expired": "This preview has expired or uses the old method — create a new preview to apply prices.",
-    "partial": "{applied} lines applied, {pending} still pending"
+    "partial": "{applied} lines applied, {pending} still pending",
+    "receiptInvalid": "Receipt not found or not posted. No full-warehouse pricing fallback.",
+    "receiptScope": "Only SKUs in receipt {code}; warehouse, category and brand filters below still apply.",
+    "lowMarginWarning": "Illustrative profit after freight and {rate}% commission: {profit} MMK (≤ 5% of price). Other sales fees excluded; actual affiliate rates may differ.",
+    "largeChangeWarning": "Price changes by at least 20% — review before applying."
   },
   "Quarantine": {
     "title": "Quarantine (returned goods)",

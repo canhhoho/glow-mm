@@ -48,6 +48,8 @@ export async function previewRunAction(_prev: ActionState, formData: FormData): 
           roundTo: opt(formData, "roundTo"),
           categoryId: opt(formData, "categoryId"),
           brandId: opt(formData, "brandId"),
+          receiptId: opt(formData, "receiptId"),
+          ...(formData.has("variantIds") && { variantIds: formData.getAll("variantIds") }),
         },
         user.id,
       )

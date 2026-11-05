@@ -89,6 +89,8 @@ export const previewSchema = z.object({
   roundTo: z.preprocess(blankToUndefined, z.coerce.number().int().min(1).max(100_000).optional()),
   categoryId: z.preprocess(blankToUndefined, rawId.optional()),
   brandId: z.preprocess(blankToUndefined, rawId.optional()),
+  variantIds: z.array(rawId).min(1).max(5000).optional(),
+  receiptId: z.preprocess(blankToUndefined, rawId.optional()),
 });
 
 type Mode = "VN_IMPORT" | "LOCAL_MMK" | null;
@@ -239,7 +241,14 @@ export async function previewRun(raw: unknown, userId: string, now = new Date())
         productWhere.OR = [{ categoryId: input.categoryId }, { category: { parentId: input.categoryId } }];
       }
       if (input.brandId) productWhere.brandId = input.brandId;
-      const ids = await tx.variant.findMany({ where: { active: true, product: productWhere }, select: { id: true } });
+      let scopeIds = input.variantIds;
+      if (input.receiptId) {
+        const receipt = await tx.stockDocument.findFirst({ where: { id: input.receiptId, type: "RECEIVE", status: "POSTED" }, select: { lines: { select: { variantId: true } } } });
+        if (!receipt) throw new PricingError("Chỉ tính giá từ phiếu nhập đã ghi sổ");
+        const receivedIds = [...new Set(receipt.lines.map(l => l.variantId))];
+        scopeIds = scopeIds ? scopeIds.filter(id => receivedIds.includes(id)) : receivedIds;
+      }
+      const ids = await tx.variant.findMany({ where: { active: true, product: productWhere, ...(scopeIds && { id: { in: scopeIds } }) }, select: { id: true } });
       const ctx: RunCtx = {
         mode,
         rate,

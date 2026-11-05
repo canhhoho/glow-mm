@@ -17,8 +17,19 @@ import { TRANSITIONS, type TransitionName } from "./state-machine";
 import { transitionOrder } from "./transitions";
 import { remitCod, settleCodException } from "./cod";
 import { setShippingPayer } from "./shipping-payer";
+import { updateTracking } from "./tracking";
 
 /** Server Action cho admin đơn hàng. Quyền luôn kiểm ở đây (requirePermission) và lần nữa trong domain. */
+
+export async function updateTrackingAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const orderId = String(formData.get("orderId"));
+  try {
+    const user = await requirePermission("orders:ship");
+    await updateTracking(Object.fromEntries(formData), { userId: user.id, role: user.role });
+  } catch (e) { return { error: await message(e) }; }
+  revalidatePath(`/admin/orders/${orderId}`);
+  return { ok: "saved" };
+}
 
 async function message(e: unknown): Promise<string> {
   if (e instanceof OrderError) {

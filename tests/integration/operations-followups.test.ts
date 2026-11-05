@@ -1,0 +1,63 @@
+import { randomUUID } from "node:crypto";
+import { afterAll, describe, expect, it } from "vitest";
+import { prisma } from "@/lib/db";
+import { updateTracking } from "@/server/orders/tracking";
+import { createOrder } from "@/server/orders/orders";
+import { transitionOrder } from "@/server/orders/transitions";
+import { listOrdersPageAdmin } from "@/server/orders/admin-queries";
+import { createRate, previewRun } from "@/server/pricing/runs";
+import { createDocument, postDocument } from "@/server/inventory/documents";
+import { yangonDayStart } from "@/lib/time";
+import { admin, makeFixture, orderInput, saleFixture, unpublishTestProducts } from "./fixtures";
+
+afterAll(unpublishTestProducts);
+describe("DT tiếp nối", () => {
+  it("sửa vận đơn sau bàn giao có audit, không đổi trạng thái hay tồn", async () => {
+    const f=await saleFixture([{lot:"A",qty:5,expiryInDays:400}]);
+    const order=await createOrder(orderInput(f,1),{userId:f.userId});
+    await transitionOrder(order.id,"confirmCod",admin(f));
+    await transitionOrder(order.id,"ship",admin(f),{carrier:"VTP"});
+    const delivery=await prisma.delivery.findFirstOrThrow({where:{orderId:order.id}});
+    const ledgerCount=await prisma.stockLedger.count();
+    const input={orderId:order.id,deliveryId:delivery.id,carrier:"VTP",trackingNo:"TRACK-123"};
+    await expect(updateTracking(input,{userId:f.userId,role:"WAREHOUSE_MANAGER"})).rejects.toMatchObject({code:"forbidden"});
+    await updateTracking(input,admin(f));
+    expect((await prisma.delivery.findUniqueOrThrow({where:{id:delivery.id}})).trackingNo).toBe("TRACK-123");
+    expect((await prisma.order.findUniqueOrThrow({where:{id:order.id}})).status).toBe("SHIPPING");
+    expect(await prisma.stockLedger.count()).toBe(ledgerCount);
+    expect(await prisma.auditLog.count({where:{entityId:order.id,action:"order.tracking"}})).toBe(1);
+    await updateTracking(input,admin(f));
+    expect(await prisma.auditLog.count({where:{entityId:order.id,action:"order.tracking"}})).toBe(1);
+  });
+  it("lọc ngày theo Yangon, kho và phân trang hơn 200 đơn", async () => {
+    const f=await saleFixture([{lot:"A",qty:2,expiryInDays:400}]);
+    const created=await createOrder(orderInput(f,1),{userId:f.userId});
+    const original=await prisma.order.findUniqueOrThrow({where:{id:created.id}});
+    const prefix=`PAGE-${f.tag}`;
+    const data=Array.from({length:205},(_,i)=>({...original,id:randomUUID(),code:`${prefix}-${i}`,idempotencyKey:null,createdAt:new Date(yangonDayStart("2026-10-01").getTime()+i*1000)}));
+    await prisma.order.createMany({data});
+    await prisma.orderItem.createMany({data:data.map(o=>({orderId:o.id,variantId:f.variantId,name:"Test",sku:f.tag,qty:1,unitPriceMmk:10000,returnedQty:0}))});
+    const filter={q:prefix,from:"2026-10-01",to:"2026-10-01",locationId:f.mm.id};
+    const pages=await Promise.all([1,2,3,4,5].map(page=>listOrdersPageAdmin({...filter,page})));
+    expect(pages[0]).toMatchObject({total:205,pages:5,page:1});
+    expect(new Set(pages.flatMap(p=>p.orders.map(o=>o.id))).size).toBe(205);
+    expect((await listOrdersPageAdmin({...filter,from:"2026-10-02",to:"2026-10-02"})).total).toBe(0);
+    expect((await listOrdersPageAdmin({...filter,locationId:f.chi.id})).total).toBe(0);
+    await prisma.orderItem.deleteMany({where:{orderId:{in:data.map(o=>o.id)}}});
+    await prisma.order.deleteMany({where:{id:{in:data.map(o=>o.id)}}});
+  });
+  it("tính giá riêng biến thể hoặc phiếu RECEIVE POSTED, không lùi về toàn kho", async () => {
+    const f=await makeFixture();
+    const second=await prisma.variant.create({data:{productId:f.productId,sku:`${f.tag}-B`,label:"B",priceMmk:10000,weightGrams:100}});
+    await prisma.variant.update({where:{id:f.variantId},data:{weightGrams:100}});
+    const rate=await createRate({mmkPerUsd:"2600",vndPerUsd:"26000"},f.userId);
+    const receipt=await createDocument({type:"RECEIVE",toId:f.mm.id,lines:[{variantId:f.variantId,lotNo:"A",expiryDate:"2028-01-01",qty:5,unitCostVnd:1000},{variantId:second.id,lotNo:"B",expiryDate:"2028-01-01",qty:5,unitCostVnd:2000}]},f.userId);
+    const input={locationId:f.mm.id,rateId:rate.id,marginPct:"10",shipMmkPerKg:1000,roundTo:1};
+    await expect(previewRun({...input,receiptId:receipt.id},f.userId)).rejects.toThrow("đã ghi sổ");
+    await postDocument(receipt.id,f.userId);
+    const run=await previewRun({...input,receiptId:receipt.id,variantIds:[second.id]},f.userId);
+    expect((await prisma.priceRunLine.findMany({where:{runId:run.id}})).map(l=>l.variantId)).toEqual([second.id]);
+    await expect(previewRun({...input,variantIds:[]},f.userId)).rejects.toThrow();
+    await expect(previewRun({...input,receiptId:"missing"},f.userId)).rejects.toThrow("đã ghi sổ");
+  });
+});

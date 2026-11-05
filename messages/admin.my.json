@@ -111,7 +111,8 @@
     "sales": "နောက်ဆုံး ရက် ၃၀",
     "today": "ယနေ့",
     "viewReports": "အစီရင်ခံစာ",
-    "unknownExpiry": "သက်တမ်းမသိသေးသော ကုန်အသုတ်များ"
+    "unknownExpiry": "သက်တမ်းမသိသေးသော ကုန်အသုတ်များ",
+    "longShipping": "{days} ရက်နှင့်အထက် ပို့ဆောင်နေဆဲ"
   },
   "Role": {
     "ADMIN": "စီမံခန့်ခွဲသူ",
@@ -312,7 +313,9 @@
     "usesDefault": "ဘုံ: {value}",
     "byDefault": "ဘုံ ({value})",
     "estimateShip": "VN → MM ခန့်မှန်းပို့ဆောင်ခ (MMK/kg)",
-    "estimateHelp": "စာရင်းသွင်းချိန် ခန့်မှန်းကုန်ကျစရိတ် = MMK ပြောင်းထားသော ဝယ်ဈေး + ပို့ခ × အလေးချိန်။ မသိလျှင် ဗလာထားပါ။ ငွေလဲနှုန်း သို့မဟုတ် အလေးချိန်မရှိလျှင် ကုန်ကျစရိတ်မပြည့်စုံဟု ပြမည်။ ခွဲဝေပြီးသော အမှန်ကုန်ကျစရိတ်ကို ဦးစားပေးမည်။"
+    "estimateHelp": "စာရင်းသွင်းချိန် ခန့်မှန်းကုန်ကျစရိတ် = MMK ပြောင်းထားသော ဝယ်ဈေး + ပို့ခ × အလေးချိန်။ မသိလျှင် ဗလာထားပါ။ ငွေလဲနှုန်း သို့မဟုတ် အလေးချိန်မရှိလျှင် ကုန်ကျစရိတ်မပြည့်စုံဟု ပြမည်။ ခွဲဝေပြီးသော အမှန်ကုန်ကျစရိတ်ကို ဦးစားပေးမည်။",
+    "priceReceived": "Price received SKUs",
+    "pickedWarning": "Unshipped pick lists use these SKUs at this warehouse: {codes}. Check batches before issuing/transferring; using picked stock may require reprinting the order pick list."
   },
   "Ship": {
     "title": "ကုန်တင်ပို့မှု VN → MM",
@@ -355,7 +358,9 @@
       "UNALLOCATED": "No recorded allocation",
       "ALLOCATED": "Allocated — inputs match",
       "STALE": "Reallocation needed — inputs changed"
-    }
+    },
+    "allocationDetails": "အသုတ်အလိုက် ရလဒ်ကြည့်ရန်",
+    "allocatedVnd": "ခွဲဝေထားသော ကုန်ကျစရိတ် (VND)"
   },
   "Products": {
     "copyFrom": "ရှိပြီးသား ကုန်ပစ္စည်းမှ ကူးယူရန်",
@@ -737,7 +742,18 @@
     "receiverPays": "လက်ခံသူ ပို့ခပေးမည်",
     "senderPays": "ဆိုင်မှ ပို့ခပေးမည်",
     "saveShippingPayer": "ပို့ခပေးသူ သိမ်းရန်",
-    "shippingPayerSaved": "ပို့ခပေးသူ သိမ်းပြီးပါပြီ။"
+    "shippingPayerSaved": "ပို့ခပေးသူ သိမ်းပြီးပါပြီ။",
+    "warehouse": "ကုန်ပစ္စည်းရောင်းချသည့် ဂိုဒေါင်",
+    "allWarehouses": "ဂိုဒေါင်အားလုံး",
+    "fromDate": "မှာယူစတင်ရက်",
+    "toDate": "မှာယူပြီးဆုံးရက်",
+    "shippingDays": "ပို့ဆောင်နေသည့် ရက်",
+    "pagination": "အော်ဒါ စာမျက်နှာများ",
+    "previousPage": "ရှေ့စာမျက်နှာ",
+    "nextPage": "နောက်စာမျက်နှာ",
+    "pageCount": "စာမျက်နှာ {page}/{pages} · အော်ဒါ {total}",
+    "saveTracking": "ပို့ဆောင်မှုအမှတ် သိမ်းရန်",
+    "trackingSaved": "ပြင်ဆင်ပြီး"
   },
   "Settings": {
     "description": "အကောင့်များနှင့် ဆိုင်လည်ပတ်မှု ဆက်တင်များကို စီမံရန်။",
@@ -892,7 +908,11 @@
     },
     "expiresAt": "{date} တွင် သက်တမ်းကုန်",
     "expired": "ဤကြိုကြည့်မှု သက်တမ်းကုန်ပြီ သို့မဟုတ် နည်းဟောင်းဖြင့် ဖန်တီးထားသည် — ဈေးအသုံးပြုရန် အသစ် ဖန်တီးပါ။",
-    "partial": "လိုင်း {applied} ခု အသုံးပြုပြီး၊ {pending} ခု စောင့်ဆဲ"
+    "partial": "လိုင်း {applied} ခု အသုံးပြုပြီး၊ {pending} ခု စောင့်ဆဲ",
+    "receiptInvalid": "Receipt not found or not posted. No full-warehouse pricing fallback.",
+    "receiptScope": "Only SKUs in receipt {code}; warehouse, category and brand filters below still apply.",
+    "lowMarginWarning": "Illustrative profit after freight and {rate}% commission: {profit} MMK (≤ 5% of price). Other sales fees excluded; actual affiliate rates may differ.",
+    "largeChangeWarning": "Price changes by at least 20% — review before applying."
   },
   "Quarantine": {
     "title": "စစ်ဆေးရန်စောင့်နေသော ပစ္စည်း (ပြန်ပို့)",

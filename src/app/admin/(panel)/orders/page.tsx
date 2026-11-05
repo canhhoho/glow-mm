@@ -3,7 +3,8 @@ import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { affiliateOptions } from "@/server/affiliates/affiliates";
-import { listOrdersAdmin } from "@/server/orders/admin-queries";
+import { listOrdersPageAdmin, sellableLocations } from "@/server/orders/admin-queries";
+import { pageNumber, validDay } from "@/lib/pagination";
 import { ORDER_FILTER_STATUSES, PREPARING_STATUSES, TRANSITIONS } from "@/server/orders/state-machine";
 import { BULK_TRANSITIONS } from "@/server/orders/bulk";
 import { BulkOrderBar } from "@/components/admin/bulk-order-bar";
@@ -25,9 +26,12 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
     q: str(sp.q),
     overdue: sp.overdue === "1",
     affiliateId: str(sp.affiliate),
+    from: validDay(sp.from), to: validDay(sp.to), locationId: str(sp.locationId), page: pageNumber(sp.page), shippingDays: Number(sp.shippingDays) || undefined,
   };
-  const [t, orders, affiliates] = await Promise.all([getTranslations("Orders"), listOrdersAdmin(filter), affiliateOptions()]);
-  const filtered = !!(filter.status || filter.paymentMethod || filter.channel || filter.q || filter.overdue || filter.affiliateId);
+  const [t, result, affiliates, locations] = await Promise.all([getTranslations("Orders"), listOrdersPageAdmin(filter), affiliateOptions(), sellableLocations()]);
+  const orders = result.orders;
+  const pageHref = (page: number) => { const params = new URLSearchParams(); for (const [key,value] of Object.entries(sp)) { if (key !== "page") for (const v of Array.isArray(value) ? value : value ? [value] : []) params.append(key,v); } params.set("page",String(page)); return `/admin/orders?${params}`; };
+  const filtered = !!(filter.status || filter.paymentMethod || filter.channel || filter.q || filter.overdue || filter.affiliateId || filter.from || filter.to || filter.locationId || filter.shippingDays);
 
   return (
     <Page>
@@ -46,6 +50,10 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
         }
       />
       <FilterBar>
+        <label className="grid gap-1 text-sm"><span>{t("fromDate")}</span><input type="date" name="from" defaultValue={filter.from} className={fieldClass} /></label>
+        <label className="grid gap-1 text-sm"><span>{t("toDate")}</span><input type="date" name="to" defaultValue={filter.to} className={fieldClass} /></label>
+        <select name="locationId" defaultValue={filter.locationId ?? ""} aria-label={t("warehouse")} className={cn(fieldClass,"w-auto")}><option value="">{t("allWarehouses")}</option>{locations.map(l=><option key={l.id} value={l.id}>{l.code} — {l.name}</option>)}</select>
+        <label className="grid gap-1 text-sm"><span>{t("shippingDays")}</span><input type="number" name="shippingDays" min={1} max={365} defaultValue={filter.shippingDays} className={cn(fieldClass,"w-28")} /></label>
         <SearchInput label={t("search")} defaultValue={filter.q} />
         <select name="status" defaultValue={filter.status ?? ""} aria-label={t("colStatus")} className={cn(fieldClass, "w-auto")}>
           <option value="">{t("allStatuses")}</option>
@@ -140,6 +148,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
           </tr>
         ))}
       </DataTable>
+      <nav aria-label={t("pagination")} className="flex flex-wrap items-center justify-center gap-3">{result.page > 1 && <LinkButton href={pageHref(result.page-1)}>{t("previousPage")}</LinkButton>}<span className="text-sm">{t("pageCount", { page:result.page, pages:result.pages, total:result.total })}</span>{result.page < result.pages && <LinkButton href={pageHref(result.page+1)}>{t("nextPage")}</LinkButton>}</nav>
       {filtered && orders.length === 0 && (
         <LinkButton href="/admin/orders">{t("clearFilters")}</LinkButton>
       )}
