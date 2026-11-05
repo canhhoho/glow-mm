@@ -118,6 +118,7 @@ export async function placeOrderAction(_prev: StoreActionState, formData: FormDa
       {
         userId: null,
         accountId: user.id,
+        analytics: { sessionId: formData.get("analyticsSessionId"), device: formData.get("analyticsDevice") },
         affiliate: user.affiliate ? { source: "AFFILIATE", id: user.affiliate.id } : await referralFromCookie(),
       },
     );

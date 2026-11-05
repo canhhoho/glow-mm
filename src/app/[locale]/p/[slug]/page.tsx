@@ -172,7 +172,7 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
             )}
           </header>
 
-          <form action={addToCartAction} className="space-y-3">
+          <form action={addToCartAction} className="space-y-3" data-analytics-add-cart>
             <input type="hidden" name="locale" value={locale} />
             <fieldset className="space-y-2">
               <legend className="mb-1 text-sm">{t("variant")}</legend>

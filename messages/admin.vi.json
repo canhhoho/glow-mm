@@ -1737,6 +1737,56 @@
       "amount": "Số tiền (MMK)",
       "codTotal": "Tổng COD chưa về: {count} đơn · {amount} MMK",
       "commissionPaid": "Hoa hồng đã chi (luỹ kế, MMK)"
+    },
+    "tabAnalytics": "Hành vi mua hàng"
+  },
+  "Analytics": {
+    "title": "Hành vi mua hàng",
+    "basis": "Phễu tuần tự theo phiên xem sản phẩm trong kỳ. Chỉ tính đơn web gắn cùng phiên; nhánh đăng nhập là tùy chọn. Khoảng lọc tối đa 90 ngày.",
+    "disabled": "Đang tắt ghi sự kiện mới.",
+    "from": "Từ ngày",
+    "to": "Đến ngày",
+    "apply": "Lọc",
+    "collection": "Bắt đầu ghi: {started} · Có dữ liệu trong {days} ngày của kỳ",
+    "conversion": "Tỷ lệ tạo đơn / xem sản phẩm",
+    "stepLabel": "Bước",
+    "all": "Tất cả",
+    "mobile": "Điện thoại",
+    "desktop": "Máy tính",
+    "unknown": "Chưa rõ",
+    "vitals": "Tốc độ trải nghiệm thực tế",
+    "vitalsHelp": "p75 là mức mà 75% mẫu đo không vượt quá. LCP/INP tính bằng ms; CLS không có đơn vị. Ít mẫu chưa đủ để kết luận.",
+    "pageType": "Loại trang",
+    "device": "Thiết bị",
+    "metric": "Chỉ số",
+    "samples": "Số mẫu",
+    "empty": "Chưa có mẫu đo.",
+    "step": {
+      "view": "Xem sản phẩm",
+      "cart": "Thêm giỏ",
+      "checkout": "Bắt đầu thanh toán",
+      "purchase": "Tạo đơn",
+      "confirmed": "Xác nhận",
+      "shipped": "Bàn giao vận chuyển",
+      "completed": "Giao thành công",
+      "login": "Gặp yêu cầu đăng nhập",
+      "loggedin": "Đăng nhập thành công",
+      "cancelled": "Đơn hủy",
+      "refund": "Có trả hàng"
+    },
+    "page": {
+      "home": "Trang chủ",
+      "product": "Sản phẩm",
+      "category": "Danh mục",
+      "collection": "Bộ sưu tập",
+      "search": "Tìm kiếm",
+      "cart": "Giỏ hàng",
+      "checkout": "Thanh toán",
+      "auth": "Đăng nhập",
+      "order": "Đơn hàng",
+      "account": "Tài khoản",
+      "info": "Thông tin",
+      "other": "Khác"
     }
   }
 }

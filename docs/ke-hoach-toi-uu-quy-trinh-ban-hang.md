@@ -373,6 +373,8 @@ Ca mẫu: COD 100.000, tiền về 97.000, phí 3.000; báo cáo không tăng do
 
 ## 11. D5 — Đo hành vi trước khi tối ưu chuyển đổi
 
+**Trạng thái: đã triển khai local (05/11/2026).** Bảng sự kiện nội bộ, endpoint chỉ nhận tên/thuộc tính cho phép, bỏ query/mã đơn/PII, giới hạn dung lượng và tần suất; sessionStorage UUID, Web Vitals, mốc nghiệp vụ trong transaction và chống trùng. Báo cáo `/admin/reports/analytics` tính phễu tuần tự theo phiên và thiết bị, p75 theo loại trang; đăng nhập là nhánh tùy chọn. Có cờ tắt và cleanup mặc định 180 ngày. Migration `20261105190000_d5_analytics_events` đã áp local/test; CSP giữ nguyên. Kiểm tra: 212 unit, 3 integration D5, typecheck; E2E hành trình D5 và 2 kiểm tra CSP đạt. Chuỗi Myanmar mới có trong danh sách cần người bản ngữ duyệt (một số nhãn quản trị tạm dùng tiếng Anh). Chưa triển khai production, chưa có hai tuần dữ liệu thật để quyết định D6.2; quy định lưu dữ liệu Myanmar vẫn [CẦN XÁC MINH].
+
 Hiện chưa có công cụ đo nào; CSP chỉ cho `'self'`. Chọn **bảng sự kiện tự ghi** thay vì GA4: không thêm script ngoài (nhẹ trên Slow 3G), không mở CSP, dữ liệu nằm trong Postgres của mình, chạy được cả Vercel lẫn Docker, không mất dữ liệu do chặn quảng cáo. GA4 chỉ dùng làm tham chiếu tên sự kiện; có thể đẩy thêm sang GA4 về sau như một phạm vi riêng.
 
 - Lưu trữ: model Prisma bảng sự kiện (tên, thời điểm UTC, locale, loại thiết bị, đường dẫn đã bỏ query nhạy cảm, mã phiên ẩn danh ngẫu nhiên, nguồn/CTV, dữ liệu sự kiện dạng JSON giới hạn kích thước). Ghi qua route `POST /api/events` (validate Zod, `hitRateLimit`, bỏ qua bot), gửi bằng `navigator.sendBeacon`; một script nhỏ, không chặn render.

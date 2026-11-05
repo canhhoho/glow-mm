@@ -1,12 +1,19 @@
 import "server-only";
 import { z } from "zod";
 
+const analyticsEnvSchema = z.object({
+  ANALYTICS_ENABLED: z.enum(["true", "false"]).default("true").transform((v) => v === "true"),
+  ANALYTICS_RETENTION_DAYS: z.coerce.number().int().min(1).max(730).default(180),
+});
+export const analyticsConfig = () => analyticsEnvSchema.parse(process.env);
+
 /**
  * Biến môi trường phía server. Xem .env.example cho ghi chú từng môi trường.
  * Validate lười (khi gọi lần đầu) để `next build` không cần DB/secret.
  */
 const schema = z
   .object({
+    ...analyticsEnvSchema.shape,
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     DATABASE_URL: z.string().url(),
     /** Số kết nối tối đa của pool pg (đọc trực tiếp ở src/lib/db.ts) — server riêng ~20, Vercel/Neon để mặc định 10. */

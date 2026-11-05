@@ -1,4 +1,6 @@
 import "../globals.css";
+import { Suspense } from "react";
+import { StoreAnalyticsGate } from "@/components/store/analytics-gate";
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { notFound } from "next/navigation";
@@ -77,6 +79,7 @@ export default async function StoreLayout({ children, params }: LayoutProps<"/[l
             <StoreFooter locale={locale} />
             <ChatFab locale={locale} />
             <SwRegister />
+            <Suspense fallback={null}><StoreAnalyticsGate /></Suspense>
           </div>
         </NextIntlClientProvider>
       </body>

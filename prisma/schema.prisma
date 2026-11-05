@@ -805,6 +805,24 @@ enum ShippingPayer {
   SENDER
 }
 
+/// Sự kiện đo hành vi: mã phiên ngẫu nhiên, đường dẫn đã bỏ chi tiết và không lưu thông tin khách.
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  name       String
+  occurredAt DateTime @default(now())
+  sessionId  String
+  locale     String?
+  device     String?
+  path       String?
+  orderId    String?
+  dedupeKey  String? @unique
+  props      Json?
+
+  @@index([name, occurredAt])
+  @@index([sessionId, occurredAt])
+  @@index([occurredAt])
+}
+
 enum PaymentStatus {
   UNPAID
   PROOF_SUBMITTED

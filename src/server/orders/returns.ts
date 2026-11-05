@@ -1,4 +1,5 @@
 import "server-only";
+import { recordOrderEvent } from "@/server/analytics/record";
 import { z } from "zod";
 import { mmTextReq, rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
@@ -107,6 +108,8 @@ export async function returnItems(orderId: string, raw: unknown, actor: { userId
           data: { code: order.code, document: doc.code, lines: summary, refunded: input.refunded, fullyReturned },
         },
       });
+      const valueMmk = input.lines.reduce((sum, line) => sum + line.qty * order.items.find((item) => item.id === line.orderItemId)!.unitPriceMmk, 0);
+      await recordOrderEvent(tx, "refund", order, { reference: doc.id, valueMmk });
       return { documentId: doc.id, documentCode: doc.code, fullyReturned };
     },
     { maxWait: 10_000, timeout: 30_000 },

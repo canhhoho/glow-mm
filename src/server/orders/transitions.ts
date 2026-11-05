@@ -1,4 +1,5 @@
 import "server-only";
+import { recordOrderEvent } from "@/server/analytics/record";
 import { z } from "zod";
 import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
@@ -121,6 +122,8 @@ export async function transitionInTx(
   await tx.auditLog.create({
     data: { userId, action: `order.${name}`, entity: "Order", entityId: order.id, data: { code: order.code, from: order.status, to } },
   });
+  const event = name === "confirmCod" || name === "confirmPayment" ? "order_confirmed" : name === "ship" ? "order_shipped" : name === "complete" ? "order_completed" : name === "cancel" ? "order_cancelled" : null;
+  if (event) await recordOrderEvent(tx, event, updated);
   return updated;
 }
 

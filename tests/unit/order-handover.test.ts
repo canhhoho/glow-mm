@@ -7,6 +7,7 @@ const inventory = vi.hoisted(() => ({
   bundleDefs: vi.fn(),
 }));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
+vi.mock("@/server/analytics/record", () => ({ recordOrderEvent: vi.fn() }));
 vi.mock("@/server/inventory/documents", () => ({ ...inventory, salesBlockDays: vi.fn() }));
 vi.mock("@/server/orders/availability", () => ({ bundleDefs: inventory.bundleDefs }));
 vi.mock("@/server/orders/reservations", () => ({ holdIndefinitely: vi.fn(), releaseReservations: vi.fn() }));

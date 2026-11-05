@@ -14,6 +14,7 @@ import { OrderError } from "./errors";
 import { normalizeMmPhone } from "@/lib/phone";
 import { orderTotals } from "./pricing";
 import { reserveForOrder } from "./reservations";
+import { recordOrderEvent } from "@/server/analytics/record";
 
 /**
  * Tạo đơn — dùng chung cho storefront (khách tự đặt) và admin (đơn từ FB/Viber/điện thoại).
@@ -50,6 +51,7 @@ export const createOrderSchema = z.object({
  * `accountId` (P14): tài khoản khách đặt đơn trên web (Server Action bắt buộc đăng nhập; domain không ép).
  */
 export type CreateOrderContext = {
+  analytics?: unknown;
   userId: string | null;
   accountId?: string | null;
   now?: Date;
@@ -153,6 +155,7 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
             data: { code: order.code, channel, ...(affiliate && { affiliateId: affiliate.id, affiliateSource: ctx.affiliate!.source }) },
           },
         });
+        await recordOrderEvent(tx, "purchase", order, { context: ctx.analytics });
         return order;
       },
       { maxWait: 10_000, timeout: 30_000 },

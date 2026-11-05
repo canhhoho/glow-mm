@@ -1737,6 +1737,56 @@
       "amount": "ငွေပမာဏ (MMK)",
       "codTotal": "မရောက်သေးသော COD: အော်ဒါ {count} · {amount} MMK",
       "commissionPaid": "ပေးချေပြီး ကော်မရှင် (စုစုပေါင်း၊ MMK)"
+    },
+    "tabAnalytics": "ဝယ်ယူမှု အဆင့်များ"
+  },
+  "Analytics": {
+    "title": "ဝယ်ယူမှု အဆင့်များ",
+    "basis": "Sequential funnel for sessions viewing a product during the period. Only web orders linked to the same session count; login is optional. Maximum range: 90 days.",
+    "disabled": "New event collection is disabled.",
+    "from": "စတင်ရက်",
+    "to": "ပြီးဆုံးရက်",
+    "apply": "စစ်ထုတ်ရန်",
+    "collection": "Collection started: {started} · Data on {days} days in this period",
+    "conversion": "Orders / product-view sessions",
+    "stepLabel": "အဆင့်",
+    "all": "အားလုံး",
+    "mobile": "ဖုန်း",
+    "desktop": "ကွန်ပျူတာ",
+    "unknown": "မသိရသေး",
+    "vitals": "Real user experience",
+    "vitalsHelp": "p75 is the value that 75% of samples do not exceed. LCP/INP are in ms; CLS is unitless. Small samples are not conclusive.",
+    "pageType": "Page type",
+    "device": "စက်အမျိုးအစား",
+    "metric": "Metric",
+    "samples": "နမူနာအရေအတွက်",
+    "empty": "တိုင်းတာမှု မရှိသေးပါ။",
+    "step": {
+      "view": "ကုန်ပစ္စည်းကြည့်ရှုခြင်း",
+      "cart": "ဈေးခြင်းထဲထည့်ခြင်း",
+      "checkout": "ငွေရှင်းစတင်ခြင်း",
+      "purchase": "အော်ဒါတင်ခြင်း",
+      "confirmed": "အတည်ပြုပြီး",
+      "shipped": "ပို့ဆောင်ပြီး",
+      "completed": "လက်ခံရရှိပြီး",
+      "login": "အကောင့်ဝင်ရန် လိုအပ်ခြင်း",
+      "loggedin": "အကောင့်ဝင်ပြီး",
+      "cancelled": "အော်ဒါပယ်ဖျက်ပြီး",
+      "refund": "ကုန်ပစ္စည်းပြန်အပ်ခြင်း"
+    },
+    "page": {
+      "home": "Home",
+      "product": "Product",
+      "category": "Category",
+      "collection": "Collection",
+      "search": "Search",
+      "cart": "Cart",
+      "checkout": "Checkout",
+      "auth": "Login",
+      "order": "Order",
+      "account": "Account",
+      "info": "Information",
+      "other": "Other"
     }
   }
 }

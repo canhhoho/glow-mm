@@ -1737,6 +1737,56 @@
       "amount": "Amount (MMK)",
       "codTotal": "Outstanding COD: {count} orders · {amount} MMK",
       "commissionPaid": "Commission paid (cumulative, MMK)"
+    },
+    "tabAnalytics": "Shopping behavior"
+  },
+  "Analytics": {
+    "title": "Shopping behavior",
+    "basis": "Sequential funnel for sessions viewing a product during the period. Only web orders linked to the same session count; login is optional. Maximum range: 90 days.",
+    "disabled": "New event collection is disabled.",
+    "from": "From",
+    "to": "To",
+    "apply": "Filter",
+    "collection": "Collection started: {started} · Data on {days} days in this period",
+    "conversion": "Orders / product-view sessions",
+    "stepLabel": "Step",
+    "all": "All",
+    "mobile": "Mobile",
+    "desktop": "Desktop",
+    "unknown": "Unknown",
+    "vitals": "Real user experience",
+    "vitalsHelp": "p75 is the value that 75% of samples do not exceed. LCP/INP are in ms; CLS is unitless. Small samples are not conclusive.",
+    "pageType": "Page type",
+    "device": "Device",
+    "metric": "Metric",
+    "samples": "Samples",
+    "empty": "No measurements yet.",
+    "step": {
+      "view": "Product viewed",
+      "cart": "Added to cart",
+      "checkout": "Checkout started",
+      "purchase": "Order created",
+      "confirmed": "Confirmed",
+      "shipped": "Shipped",
+      "completed": "Delivered",
+      "login": "Login required",
+      "loggedin": "Login succeeded",
+      "cancelled": "Order cancelled",
+      "refund": "Items returned"
+    },
+    "page": {
+      "home": "Home",
+      "product": "Product",
+      "category": "Category",
+      "collection": "Collection",
+      "search": "Search",
+      "cart": "Cart",
+      "checkout": "Checkout",
+      "auth": "Login",
+      "order": "Order",
+      "account": "Account",
+      "info": "Information",
+      "other": "Other"
     }
   }
 }

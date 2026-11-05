@@ -7,6 +7,7 @@ import { placeOrderAction } from "@/server/cart/actions";
 import { AddressPicker } from "../address-picker";
 import { Notice, primaryButton, storeField } from "./ui";
 import { useAddressLabels } from "./address-labels";
+import { analyticsContext } from "@/lib/analytics-client";
 
 const noopSubscribe = () => () => {};
 
@@ -59,6 +60,10 @@ export function CheckoutForm({
       onSubmit={(e) => {
         e.preventDefault();
         const fd = new FormData(e.currentTarget);
+        try {
+          const analytics = analyticsContext();
+          if (analytics) { fd.set("analyticsSessionId", analytics.sessionId); fd.set("analyticsDevice", analytics.device); }
+        } catch { /* Analytics không được cản đặt hàng. */ }
         startTransition(() => action(fd));
       }}
       className="space-y-4"

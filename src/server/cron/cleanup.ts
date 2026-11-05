@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { analyticsConfig } from "@/lib/env";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -9,16 +10,18 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  */
 export async function cleanupExpired(now = new Date()) {
   const staleBefore = BigInt(now.getTime() - DAY_MS);
-  const [rateLimits, customerRateLimits, sessions, verifications] = await Promise.all([
+  const [rateLimits, customerRateLimits, sessions, verifications, analytics] = await Promise.all([
     prisma.rateLimit.deleteMany({ where: { lastRequest: { lt: staleBefore } } }),
     prisma.customerRateLimit.deleteMany({ where: { lastRequest: { lt: staleBefore } } }),
     prisma.session.deleteMany({ where: { expiresAt: { lt: now } } }),
     prisma.verification.deleteMany({ where: { expiresAt: { lt: now } } }),
+    prisma.analyticsEvent.deleteMany({ where: { occurredAt: { lt: new Date(now.getTime() - analyticsConfig().ANALYTICS_RETENTION_DAYS * DAY_MS) } } }),
   ]);
   return {
     rateLimits: rateLimits.count,
     customerRateLimits: customerRateLimits.count,
     sessions: sessions.count,
     verifications: verifications.count,
+    analytics: analytics.count,
   };
 }
