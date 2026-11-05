@@ -156,7 +156,7 @@
     "statSellableHintHeld": "đơn vị · {variants} SP · đang giữ {held} cho đơn",
     "statValue": "Giá trị tồn (giá vốn)",
     "statValueHint": "MMK · mọi vị trí",
-    "statValueUnvalued": "MMK · {units} đv chưa phân bổ",
+    "statValueUnvalued": "MMK · {units} đv thiếu giá vốn",
     "statInbound": "Đang vận chuyển / Hải quan",
     "statInboundHint": "đơn vị · {lots} lô",
     "statQuarantine": "Chờ kiểm tra",
@@ -197,7 +197,7 @@
     "comboHint": "tồn theo thành phần",
     "daysLeft": "còn {n} ngày",
     "earliestLine": "Lô {lot} hết hạn {date}",
-    "unallocated": "chưa phân bổ",
+    "unallocated": "thiếu giá vốn",
     "history": "Lịch sử",
     "showLots": "Xem lô",
     "emptyFiltered": "Không có dòng nào khớp bộ lọc.",
@@ -216,7 +216,16 @@
     "expiryNone": "Không áp dụng hạn sử dụng",
     "expiryUnknown": "Chưa biết hạn · Chưa được bán",
     "resolveExpiry": "Xác nhận hạn sử dụng",
-    "resolveHelp": "Kiểm tra bao bì trước khi nhập ngày. Lô chỉ được bán khi đáp ứng ngưỡng hạn dùng."
+    "resolveHelp": "Kiểm tra bao bì trước khi nhập ngày. Lô chỉ được bán khi đáp ứng ngưỡng hạn dùng.",
+    "costStatus": "Trạng thái giá vốn",
+    "costACTUAL": "Thực tế",
+    "costESTIMATED": "Tạm tính",
+    "costMISSING": "Thiếu giá vốn",
+    "estimatedUnits": "{units} đơn vị dùng giá vốn tạm",
+    "estimateWeight": "Khối lượng tính cước (g)",
+    "estimateAction": "Tính giá vốn tạm",
+    "estimateExistingHelp": "Dùng giá mua gốc, tỷ giá đã gắn với lô (hoặc tỷ giá hiện hành nếu chưa có) và khối lượng hiện tại. Giá vốn đã chụp trên đơn cũ được giữ nguyên.",
+    "estimateSaved": "Đã lưu giá vốn tạm."
   },
   "Docs": {
     "title": "Phiếu kho",
@@ -301,7 +310,9 @@
     "splitLotHelp": "Thêm một dòng cho cùng sản phẩm với số lô khác",
     "addLot": "+ Lô",
     "usesDefault": "Dùng chung: {value}",
-    "byDefault": "Chung ({value})"
+    "byDefault": "Chung ({value})",
+    "estimateShip": "Cước tạm tính VN → MM (MMK/kg)",
+    "estimateHelp": "Khi ghi sổ: giá vốn tạm = giá mua quy đổi MMK + cước × khối lượng. Để trống nếu chưa biết cước; thiếu tỷ giá hoặc khối lượng sẽ báo thiếu giá vốn. Chi phí thực tế của chuyến được ưu tiên khi đã phân bổ."
   },
   "Ship": {
     "title": "Chuyến hàng VN → MM",
@@ -697,7 +708,7 @@
     "rateAdded": "Đã thêm tỷ giá",
     "newRun": "Tính giá mới (xem trước)",
     "formula": "Giá = vốn VND (lô nhập gần nhất) ÷ tỷ giá (VND cho 1 MMK) × (1 + % lãi), làm tròn lên",
-    "formulaVn": "Kho hàng nhập VN: giá = vốn VND (lô gần nhất) × tỷ giá × (1 + % lãi) + phí ship (MMK/kg) × khối lượng, làm tròn lên. % lãi chỉ tính trên giá hàng.",
+    "formulaVn": "Kho hàng nhập VN: giá mua gốc VND (lô gần nhất) × tỷ giá × (1 + % lãi) + cước VN → MM (MMK/kg) × khối lượng, làm tròn lên. % lãi chỉ tính trên giá mua gốc.",
     "formulaMmk": "Kho mua tại Myanmar: giá = vốn MMK (lô gần nhất) + lãi cố định MMK của sản phẩm, làm tròn lên. Lãi cố định nhập ở trang Sửa sản phẩm.",
     "warehouse": "Kho",
     "shipMmkPerKg": "Phí ship VN → MM (MMK/kg)",
@@ -743,7 +754,9 @@
     "reasonManual": "Sửa tay",
     "back": "Giá & tỷ giá",
     "noRate": "Chưa có tỷ giá — thêm tỷ giá trước",
-    "empty": "Chưa có dữ liệu"
+    "empty": "Chưa có dữ liệu",
+    "purchaseCost": "Giá mua gốc (VND)",
+    "costBasisHelp": "Giá bán dùng giá mua gốc và cộng cước theo kg một lần. Chi phí chuyến thực tế dùng cho giá vốn và lợi nhuận."
   },
   "Quarantine": {
     "title": "Hàng chờ kiểm tra (hàng trả)",
@@ -821,7 +834,7 @@
     "tester": "Tester",
     "value": "Giá trị (MMK)",
     "noCost": "SL chưa có giá vốn",
-    "missingCost": "Các đơn có lô chưa có giá vốn (tính 0) — phân bổ chi phí chuyến hàng để lợi nhuận chính xác:",
+    "missingCost": "Các đơn sau thiếu giá vốn tại thời điểm xuất hàng; phần thiếu đang tính 0 nên lợi nhuận có thể cao hơn thực tế:",
     "empty": "Không có dữ liệu trong kỳ",
     "loc": {
       "VN_STOCK": "Kho VN",
@@ -833,7 +846,9 @@
     "andMore": "… và {count} đơn khác",
     "commission": "Hoa hồng CTV",
     "profitAfterCommission": "Lợi nhuận sau hoa hồng",
-    "uplineCommission": "Trong đó: hoa hồng tuyến dưới"
+    "uplineCommission": "Trong đó: hoa hồng tuyến dưới",
+    "estimatedCost": "Lợi nhuận có sử dụng giá vốn tạm tính chụp lúc xuất hàng. Các đơn:",
+    "estimatedQty": "SL vốn tạm tính"
   },
   "Reviews": {
     "title": "Đánh giá sản phẩm",

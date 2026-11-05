@@ -9,23 +9,28 @@ import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
 import { rateDisplay } from "@/server/pricing/formula";
 import { cn } from "@/lib/utils";
 import { ActionForm } from "@/components/admin/action-form";
-import { resolveBatchExpiryAction } from "@/server/inventory/actions";
+import { resolveBatchExpiryAction, estimateBatchCostAction } from "@/server/inventory/actions";
+import { lastShipRate } from "@/server/pricing/queries";
+import { fieldClass } from "@/components/admin/ui";
 import { can } from "@/server/auth/roles";
+import { inventoryCost } from "@/server/inventory/cost";
 
 /** Lịch sử lô (P9c): thông tin lô, tồn hiện tại theo vị trí, các dòng sổ kho kèm tồn luỹ kế. */
 export default async function BatchPage({ params }: PageProps<"/admin/inventory/batches/[id]">) {
   const user = await requirePagePermission("stock:view");
   const { id } = await params;
-  const [detail, th, t, ti, td] = await Promise.all([
+  const [detail, th, t, ti, td, lastShip] = await Promise.all([
     batchDetail(id),
     loadThresholds(),
     getTranslations("Batch"),
     getTranslations("Inventory"),
     getTranslations("Docs"),
+    lastShipRate(),
   ]);
   if (!detail) notFound();
   const { batch, entries } = detail;
   const now = new Date();
+  const cost = inventoryCost(batch);
 
   const info: [string, React.ReactNode][] = [
     [t("expiry"), <ExpiryTag key="e" date={batch.expiryDate} status={batch.expiryStatus} now={now} t={ti} th={th} />],
@@ -37,7 +42,12 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
           [t("landedVnd"), fmtInt(batch.landedCostVnd)],
         ] as [string, React.ReactNode][])
       : []),
-    [t("costMmk"), batch.landedCostMmk == null ? ti("unallocated") : fmtInt(batch.landedCostMmk)],
+    [t("costMmk"), cost.unitCostMmk == null ? ti("unallocated") : fmtInt(cost.unitCostMmk)],
+    [ti("costStatus"), ti(`cost${cost.costStatus}`)],
+    ...(cost.costStatus === "ESTIMATED" ? ([
+      [td("estimateShip"), fmtInt(batch.estimatedShipMmkPerKg)],
+      [ti("estimateWeight"), fmtInt(batch.estimatedWeightGrams)],
+    ] as [string, React.ReactNode][]) : []),
     ...(batch.unitCostMmk == null ? ([[t("rate"), batch.rate ? rateDisplay(batch.rate).vndPerMmk : "—"]] as [string, React.ReactNode][]) : []),
     [
       t("shipment"),
@@ -70,6 +80,16 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
           </div>
         ))}
       </dl>
+      {batch.unitCostVnd != null && batch.landedCostVnd == null && batch.landedCostMmk == null && can(user.role, "stock:receive") && (
+        <ActionForm action={estimateBatchCostAction} submitLabel={ti("estimateAction")} okText={ti("estimateSaved")} className="space-y-3 rounded-lg border p-4">
+          <input type="hidden" name="batchId" value={batch.id} />
+          <p className="text-sm text-muted-foreground">{ti("estimateExistingHelp")}</p>
+          <label className="grid max-w-sm gap-1 text-sm">
+            <span>{td("estimateShip")}</span>
+            <input required type="number" name="shipMmkPerKg" min={0} max={2147483647} step={1} defaultValue={batch.estimatedShipMmkPerKg ?? lastShip ?? ""} className={fieldClass} />
+          </label>
+        </ActionForm>
+      )}
       {batch.expiryStatus === "UNKNOWN" && can(user.role, "stock:receive") && <ActionForm action={resolveBatchExpiryAction} submitLabel={ti("resolveExpiry")} okText={ti("expiryDated")} className="space-y-2 rounded-lg border p-4">
         <input type="hidden" name="batchId" value={batch.id} />
         <p className="text-sm text-muted-foreground">{ti("resolveHelp")}</p>

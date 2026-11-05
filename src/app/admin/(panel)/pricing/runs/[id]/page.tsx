@@ -31,7 +31,7 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
         editable ? t("select") : "",
         t("sku"),
         t("product"),
-        mmk ? t("costMmk") : t("cost"),
+        mmk ? t("costMmk") : run.shipMmkPerKg != null ? t("purchaseCost") : t("cost"),
         ...(extra ? [extra] : []),
         t("oldPrice"),
         t("newPrice"),

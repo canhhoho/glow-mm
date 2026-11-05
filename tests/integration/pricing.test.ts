@@ -31,6 +31,18 @@ describe("Tính giá theo kho (P24)", () => {
     expect(await linesOf(run.id)).toEqual([
       expect.objectContaining({ variantId: f.variantId, costVnd: 100_000, shipMmk: 640, newPriceMmk: 22_800 }),
     ]);
+    // Allocating actual shipment expenses must not add the same freight to the selling price again.
+    await prisma.batch.updateMany({ where: { variantId: f.variantId }, data: { landedCostVnd: 120_000, landedCostMmk: 20_400 } });
+    const after = await previewRun({ locationId: f.mm.id, rateId: rate.id, marginPct: "30", shipMmkPerKg: 8_000, roundTo: 100 }, f.userId);
+    expect(await linesOf(after.id)).toEqual([
+      expect.objectContaining({ variantId: f.variantId, costVnd: 100_000, shipMmk: 640, newPriceMmk: 22_800 }),
+    ]);
+    const bundle = await prisma.variant.create({ data: {
+      productId: f.productId, sku: `IT-${f.tag}-SET`, label: "Set", priceMmk: 1, isBundle: true, weightGrams: 160,
+      bundleItems: { create: { componentId: f.variantId, qty: 2 } },
+    } });
+    const comboRun = await previewRun({ locationId: f.mm.id, rateId: rate.id, marginPct: "30", shipMmkPerKg: 8000, roundTo: 100 }, f.userId);
+    expect((await linesOf(comboRun.id)).find((l) => l.variantId === bundle.id)).toMatchObject({ costVnd: 200_000, shipMmk: 1280, newPriceMmk: 45_500 });
   });
 
   it("Kho mua MMK: lô giá MMK có giá vốn MMK ngay; giá = vốn MMK + lãi cố định; sai loại tiền bị chặn", async () => {

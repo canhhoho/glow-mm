@@ -4,6 +4,7 @@ import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { can, type Role } from "@/server/auth/roles";
 import { candidatesAt, postDocumentTx, salesBlockDays } from "@/server/inventory/documents";
+import { inventoryCost } from "@/server/inventory/cost";
 import { InsufficientStockError, pickFefo, type FefoCandidate } from "@/server/inventory/fefo";
 import type { Tx } from "@/server/inventory/ledger";
 import { newCode } from "@/server/codes";
@@ -196,16 +197,16 @@ async function issueOrderStock(
 
   const batches = await tx.batch.findMany({
     where: { id: { in: picks.map((p) => p.batchId) } },
-    select: { id: true, landedCostMmk: true },
+    select: { id: true, landedCostMmk: true, estimatedCostMmk: true },
   });
-  // [CẦN XÁC MINH] Lô chưa có landed cost (chưa phân bổ chi phí chuyến) ghi giá vốn 0 — báo cáo lợi nhuận P3 cần cảnh báo.
-  const cost = new Map(batches.map((b) => [b.id, b.landedCostMmk ?? 0]));
+  const cost = new Map(batches.map((b) => [b.id, inventoryCost(b)]));
   await tx.orderAllocation.createMany({
     data: picks.map((p) => ({
       orderItemId: p.orderItemId,
       batchId: p.batchId,
       qty: p.qty,
-      unitLandedCostMmk: cost.get(p.batchId) ?? 0,
+      unitLandedCostMmk: cost.get(p.batchId)?.unitCostMmk ?? 0,
+      costStatus: cost.get(p.batchId)?.costStatus ?? "MISSING",
     })),
   });
   await tx.reservation.updateMany({ where: { orderId: order.id, status: "ACTIVE" }, data: { status: "CONSUMED" } });

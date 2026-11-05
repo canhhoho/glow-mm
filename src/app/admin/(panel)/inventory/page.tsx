@@ -88,7 +88,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
         <Tile
           label={t("statValue")}
           value={compact(summary.valueMmk, locale)}
-          hint={summary.unvaluedUnits > 0 ? t("statValueUnvalued", { units: summary.unvaluedUnits }) : t("statValueHint")}
+          hint={[summary.unvaluedUnits > 0 ? t("statValueUnvalued", { units: summary.unvaluedUnits }) : t("statValueHint"), summary.estimatedUnits > 0 ? t("estimatedUnits", { units: summary.estimatedUnits }) : ""].filter(Boolean).join(" · ")}
         />
         <Tile
           label={t("statQuarantine")}
@@ -261,6 +261,7 @@ function LotsTable({ lots, t, th, now }: { lots: BalanceRow[]; t: T; th: Thresho
             <td className="px-3 py-1.5 text-right tabular-nums">{fmtInt(l.qty)}</td>
             <td className={cn("px-3 py-1.5 text-right tabular-nums", l.landedCostMmk == null && "text-muted-foreground")}>
               {l.landedCostMmk == null ? t("unallocated") : fmtInt(l.landedCostMmk)}
+              <div className="text-[11px] text-muted-foreground">{t(`cost${l.costStatus ?? (l.landedCostMmk == null ? "MISSING" : "ACTUAL")}`)}</div>
             </td>
             <td className="px-3 py-1.5 text-right">
               <Link href={`/admin/inventory/batches/${l.batchId}`} className="text-primary underline">
@@ -452,6 +453,7 @@ function LotView({ page, t, th, now }: { page: Awaited<ReturnType<typeof stockLo
           <Td className="text-right tabular-nums">{fmtInt(r.qty)}</Td>
           <Td className={cn("text-right tabular-nums", r.landedCostMmk == null && "text-muted-foreground")}>
             {r.landedCostMmk == null ? t("unallocated") : fmtInt(r.landedCostMmk)}
+            <div className="text-[11px] text-muted-foreground">{t(`cost${r.costStatus}`)}</div>
           </Td>
         </tr>
       ))}

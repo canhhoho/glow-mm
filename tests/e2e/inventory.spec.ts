@@ -97,6 +97,8 @@ test("phiếu nhập: dán từ Excel điền nhiều dòng, báo dòng lỗi, d
   await login(page, "kho@glow.local");
   await page.goto("/admin/inventory/documents/new?type=RECEIVE");
   await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "THAM — Kho Thắm" });
+  await expect(page.getByLabel("Cước tạm tính VN → MM (MMK/kg)")).toBeVisible();
+  await page.getByLabel("Cước tạm tính VN → MM (MMK/kg)").fill("8000");
   await page.getByRole("button", { name: "Dán từ Excel" }).click();
   await page.getByRole("textbox", { name: "Dán từ Excel" }).fill(
     `SKU\tSL\tLô\tHSD\tGiá\n${SKU}\t3\t${lot}\t31/12/2028\t90,000\n${SKU}\t2\t${lot}B\t\t90000\nKHONG-CO\t1\tX\t2028-01-01\t1`,

@@ -156,7 +156,7 @@
     "statSellableHintHeld": "units · {variants} products · {held} held for orders",
     "statValue": "Stock value (cost)",
     "statValueHint": "MMK · all locations",
-    "statValueUnvalued": "MMK · {units} units unallocated",
+    "statValueUnvalued": "MMK · {units} units missing cost",
     "statInbound": "In transit / Customs",
     "statInboundHint": "units · {lots} lots",
     "statQuarantine": "Quarantine",
@@ -197,7 +197,7 @@
     "comboHint": "stock from components",
     "daysLeft": "{n} days left",
     "earliestLine": "Lot {lot} expires {date}",
-    "unallocated": "unallocated",
+    "unallocated": "missing cost",
     "history": "History",
     "showLots": "Show lots",
     "emptyFiltered": "No rows match the filters.",
@@ -216,7 +216,16 @@
     "expiryNone": "No expiry date applies",
     "expiryUnknown": "Unknown expiry · Not sellable",
     "resolveExpiry": "Confirm expiry date",
-    "resolveHelp": "Check the packaging before entering the date. The batch becomes sellable only if it meets the expiry threshold."
+    "resolveHelp": "Check the packaging before entering the date. The batch becomes sellable only if it meets the expiry threshold.",
+    "costStatus": "Cost status",
+    "costACTUAL": "Actual",
+    "costESTIMATED": "Estimated",
+    "costMISSING": "Missing cost",
+    "estimatedUnits": "{units} units use estimated cost",
+    "estimateWeight": "Freight weight (g)",
+    "estimateAction": "Estimate cost",
+    "estimateExistingHelp": "Uses purchase cost, the batch exchange rate (or the current rate if absent), and current weight. Existing order cost snapshots remain unchanged.",
+    "estimateSaved": "Estimated cost saved."
   },
   "Docs": {
     "title": "Stock documents",
@@ -301,7 +310,9 @@
     "splitLotHelp": "Add another row for the same product with a different lot",
     "addLot": "+ Lot",
     "usesDefault": "Shared: {value}",
-    "byDefault": "Shared ({value})"
+    "byDefault": "Shared ({value})",
+    "estimateShip": "Estimated VN → MM freight (MMK/kg)",
+    "estimateHelp": "On posting: estimated cost = purchase cost converted to MMK + freight × weight. Leave blank if unknown. Missing exchange rate or weight leaves the cost missing. Allocated actual shipment costs take priority."
   },
   "Ship": {
     "title": "Shipments VN → MM",
@@ -697,7 +708,7 @@
     "rateAdded": "Rate added",
     "newRun": "Recalculate prices (preview)",
     "formula": "Price = VND cost (latest batch) ÷ rate (VND per 1 MMK) × (1 + margin %), rounded up",
-    "formulaVn": "Imported from VN: price = VND cost (latest batch) × rate × (1 + margin %) + shipping (MMK/kg) × weight, rounded up. Margin applies to goods only.",
+    "formulaVn": "VN imports: latest purchase cost VND × exchange rate × (1 + markup %) + VN → MM freight (MMK/kg) × weight, rounded up. Markup applies only to purchase cost.",
     "formulaMmk": "Bought in Myanmar: price = MMK cost (latest batch) + the product's fixed MMK profit, rounded up. Set the fixed profit on the product edit page.",
     "warehouse": "Warehouse",
     "shipMmkPerKg": "Shipping VN → MM (MMK/kg)",
@@ -743,7 +754,9 @@
     "reasonManual": "Manual edit",
     "back": "Prices",
     "noRate": "No exchange rate yet — add one first",
-    "empty": "Nothing yet"
+    "empty": "Nothing yet",
+    "purchaseCost": "Purchase cost (VND)",
+    "costBasisHelp": "Selling prices use purchase cost and add freight per kg once. Actual shipment expenses determine inventory cost and profit."
   },
   "Quarantine": {
     "title": "Quarantine (returned goods)",
@@ -821,7 +834,7 @@
     "tester": "Tester",
     "value": "Value (MMK)",
     "noCost": "Qty without cost",
-    "missingCost": "Orders with lots missing landed cost (counted as 0) — allocate shipment costs for accurate profit:",
+    "missingCost": "These orders had missing costs when shipped. Missing amounts are counted as 0, so profit may be overstated:",
     "empty": "No data in this period",
     "loc": {
       "VN_STOCK": "VN warehouse",
@@ -833,7 +846,9 @@
     "andMore": "… and {count} more",
     "commission": "Affiliate commission",
     "profitAfterCommission": "Profit after commission",
-    "uplineCommission": "Of which: team (upline) commission"
+    "uplineCommission": "Of which: team (upline) commission",
+    "estimatedCost": "Profit includes estimated costs captured when shipping. Orders:",
+    "estimatedQty": "Estimated-cost units"
   },
   "Reviews": {
     "title": "Product reviews",

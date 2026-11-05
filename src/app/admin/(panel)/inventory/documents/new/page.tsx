@@ -5,6 +5,7 @@ import type { Permission } from "@/server/auth/roles";
 import { batchesForForms, listLocations, listShipments, listVariantsForPicker, listVariantsForReceive } from "@/server/inventory/queries";
 import { DocumentForm } from "@/components/admin/document-form";
 import { ReceiveBulkForm } from "@/components/admin/receive-bulk-form";
+import { lastShipRate } from "@/server/pricing/queries";
 import { Page, PageHeader } from "@/components/admin/ui";
 
 const TYPES: Record<string, Permission> = {
@@ -19,11 +20,12 @@ export default async function NewDocumentPage({ searchParams }: PageProps<"/admi
   if (typeof type !== "string" || !TYPES[type]) notFound();
   await requirePagePermission(TYPES[type]);
   if (type === "RECEIVE") {
-    const [t, locations, variants, shipments] = await Promise.all([getTranslations("Docs"), listLocations(), listVariantsForReceive(), listShipments()]);
+    const [t, locations, variants, shipments, lastShip] = await Promise.all([getTranslations("Docs"), listLocations(), listVariantsForReceive(), listShipments(), lastShipRate()]);
     return (
       <Page>
         <PageHeader title={`${t("new")}: ${t(type)}`} back={{ href: "/admin/inventory", label: t("back") }} />
         <ReceiveBulkForm
+          lastShip={lastShip}
           locations={locations.map((l) => ({ id: l.id, code: l.code, name: l.name, sellable: l.sellable, pricingMode: l.pricingMode }))}
           shipments={shipments.map((s) => ({ id: s.id, code: s.code }))}
           variants={variants}

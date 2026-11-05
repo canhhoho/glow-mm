@@ -118,7 +118,8 @@ export async function previewRun(raw: unknown, userId: string) {
         where: { active: true, product: productWhere },
         select: { id: true, priceMmk: true, weightGrams: true, product: { select: { fixedProfitMmk: true } } },
       });
-      const costs = await variantCosts(tx, variants.map((v) => v.id), mode === "LOCAL_MMK" ? "MMK" : "VND");
+      // VN pricing adds freight per kg separately; its base must exclude shipment costs.
+      const costs = await variantCosts(tx, variants.map((v) => v.id), mode === "LOCAL_MMK" ? "MMK" : "VND", mode === "VN_IMPORT" ? "PURCHASE" : "LANDED");
       const lines = variants.flatMap((v): PreviewLine[] => {
         const cost = costs.get(v.id);
         if (!cost) return [];

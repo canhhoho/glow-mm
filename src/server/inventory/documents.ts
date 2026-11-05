@@ -8,6 +8,7 @@ import { getNumberSetting } from "@/server/settings";
 import { pickFefo } from "./fefo";
 import { applyMoves, type StockMove, type Tx } from "./ledger";
 import { vndToMmk } from "./landed-cost";
+import { shippingMmk } from "@/server/pricing/formula";
 
 /**
  * Phiếu kho: tạo NHÁP → GHI SỔ (POSTED, sinh ledger) hoặc HUỶ (chỉ khi còn nháp).
@@ -26,6 +27,7 @@ export const receiveSchema = z.object({
   type: z.literal("RECEIVE"),
   toId: id,
   shipmentId: id.optional(),
+  estimatedShipMmkPerKg: optionalMoney,
   reason: z.string().max(500).optional(),
   lines: z
     .array(
@@ -229,6 +231,7 @@ export async function createDocument(raw: unknown, userId: string, transaction?:
         shipmentId: input.type === "RECEIVE" ? input.shipmentId : undefined,
         orderId: input.type === "RETURN" ? input.orderId : undefined,
         reason: input.reason,
+        estimatedShipMmkPerKg: input.type === "RECEIVE" ? input.estimatedShipMmkPerKg : undefined,
         createdById: userId,
         lines: { create: lines },
       },
@@ -328,6 +331,23 @@ export async function postDocumentTx(tx: Tx, documentId: string, userId: string,
       const batches = await tx.batch.findMany({ where: { id: { in: resolved.map((r) => r.batchId) }, shipmentId: null, landedCostVnd: { not: null } }, include: { rate: true } });
       for (const b of batches) {
         await tx.batch.update({ where: { id: b.id }, data: { landedCostMmk: vndToMmk(b.landedCostVnd!, b.rate ?? rate) } });
+      }
+      if (doc.estimatedShipMmkPerKg != null) {
+        const unvalued = await tx.batch.findMany({
+          where: { id: { in: resolved.map((r) => r.batchId) }, unitCostVnd: { not: null }, landedCostVnd: null, landedCostMmk: null, estimatedCostMmk: null },
+          include: { rate: true, variant: { select: { weightGrams: true } } },
+        });
+        for (const b of unvalued) {
+          const weight = b.variant.weightGrams;
+          if (weight == null || weight <= 0) continue;
+          const estimate = vndToMmk(b.unitCostVnd!, b.rate ?? rate) + shippingMmk(doc.estimatedShipMmkPerKg, weight);
+          if (!Number.isSafeInteger(estimate) || estimate > 2_147_483_647) throw new DocumentError(`Lô ${b.lotNo}: giá vốn tạm tính vượt giới hạn`);
+          await tx.batch.update({ where: { id: b.id }, data: {
+            estimatedCostMmk: estimate,
+            estimatedShipMmkPerKg: doc.estimatedShipMmkPerKg,
+            estimatedWeightGrams: weight,
+          } });
+        }
       }
     }
   }

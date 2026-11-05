@@ -4,14 +4,14 @@ import { bundleDefs } from "@/server/orders/availability";
 
 /**
  * Vốn của biến thể để tính giá (đã chốt P3, mở rộng P24): lô nhập gần nhất (`createdAt` mới nhất) **có giá đúng loại tiền**.
- *  - VND (kho hàng nhập VN): `landedCostVnd` nếu đã phân bổ chi phí chuyến, chưa thì `unitCostVnd`.
+ *  - VND: PURCHASE dùng `unitCostVnd` cho công thức có cước/kg; LANDED giữ cách tính cũ không cước.
  *  - MMK (kho mua tại Myanmar): `unitCostMmk`.
  * Combo = tổng vốn thành phần × số lượng; thiếu vốn một thành phần → không tính được (null).
  */
 export type VariantCost = { costVnd: number; landed: boolean } | null;
 export type CostCurrency = "VND" | "MMK";
 
-export async function variantCosts(tx: Tx, variantIds: string[], currency: CostCurrency = "VND"): Promise<Map<string, VariantCost>> {
+export async function variantCosts(tx: Tx, variantIds: string[], currency: CostCurrency = "VND", basis: "PURCHASE" | "LANDED" = "LANDED"): Promise<Map<string, VariantCost>> {
   const defs = await bundleDefs(tx, variantIds);
   const baseIds = new Set(variantIds.filter((id) => !defs.has(id)));
   for (const def of defs.values()) for (const c of def) baseIds.add(c.componentId);
@@ -27,7 +27,7 @@ export async function variantCosts(tx: Tx, variantIds: string[], currency: CostC
     base.set(
       b.variantId,
       currency === "VND"
-        ? { costVnd: b.landedCostVnd ?? b.unitCostVnd!, landed: b.landedCostVnd != null }
+        ? { costVnd: basis === "PURCHASE" ? b.unitCostVnd! : b.landedCostVnd ?? b.unitCostVnd!, landed: basis === "LANDED" && b.landedCostVnd != null }
         : { costVnd: b.unitCostMmk!, landed: true },
     );
   }

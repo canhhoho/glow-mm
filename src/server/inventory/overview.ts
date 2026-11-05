@@ -1,4 +1,5 @@
 import "server-only";
+import { inventoryCost } from "./cost";
 import { z } from "zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
@@ -91,7 +92,7 @@ function balanceWhere(f: StockFilter, now: Date, t: Thresholds): Prisma.StockBal
 
 const ROW_INCLUDE = {
   location: { select: { code: true, name: true, type: true, sellable: true } },
-  batch: { select: { variantId: true, lotNo: true, expiryDate: true, expiryStatus: true, landedCostMmk: true } },
+  batch: { select: { variantId: true, lotNo: true, expiryDate: true, expiryStatus: true, landedCostMmk: true, estimatedCostMmk: true } },
 } satisfies Prisma.StockBalanceInclude;
 
 async function loadRows(where: Prisma.StockBalanceWhereInput): Promise<BalanceRow[]> {
@@ -102,7 +103,8 @@ async function loadRows(where: Prisma.StockBalanceWhereInput): Promise<BalanceRo
     lotNo: r.batch.lotNo,
     expiryDate: r.batch.expiryDate,
     expiryStatus: r.batch.expiryStatus,
-    landedCostMmk: r.batch.landedCostMmk,
+    landedCostMmk: inventoryCost(r.batch).unitCostMmk,
+    costStatus: inventoryCost(r.batch).costStatus,
     locationId: r.locationId,
     locationCode: r.location.code,
     locationName: r.location.name,
@@ -289,7 +291,8 @@ export async function stockLots(f: StockFilter, now = new Date()) {
       locationType: r.location.type,
       stockType: r.stockType,
       qty: r.qty,
-      landedCostMmk: r.batch.landedCostMmk,
+      landedCostMmk: inventoryCost(r.batch).unitCostMmk,
+      costStatus: inventoryCost(r.batch).costStatus,
     })),
     total,
     f.page,

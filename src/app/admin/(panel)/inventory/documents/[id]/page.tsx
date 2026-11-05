@@ -54,6 +54,12 @@ export default async function DocumentPage({ params }: PageProps<"/admin/invento
             <dd>{doc.reason}</dd>
           </>
         )}
+        {doc.estimatedShipMmkPerKg != null && (
+          <>
+            <dt className="text-muted-foreground">{t("estimateShip")}</dt>
+            <dd>{fmtInt(doc.estimatedShipMmkPerKg)}</dd>
+          </>
+        )}
         <dt className="text-muted-foreground">{t("createdAt")}</dt>
         <dd>{fmtDate(doc.createdAt)}</dd>
       </dl>

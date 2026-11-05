@@ -529,6 +529,10 @@ model Batch {
   rateId        String?
   rate          ExchangeRate?       @relation(fields: [rateId], references: [id])
   landedCostMmk Int?
+  /// Giá vốn tạm tính MMK, chụp khi ghi sổ; không ghi đè giá vốn thực tế.
+  estimatedCostMmk Int?
+  estimatedShipMmkPerKg Int?
+  estimatedWeightGrams Int?
   shipmentId    String?
   shipment      InboundShipment?    @relation(fields: [shipmentId], references: [id])
   createdAt     DateTime            @default(now())
@@ -574,6 +578,7 @@ model StockDocument {
   orderId     String?
   order       Order?              @relation(fields: [orderId], references: [id])
   reason      String?
+  estimatedShipMmkPerKg Int?
   createdById String
   postedById  String?
   createdAt   DateTime            @default(now())
@@ -984,9 +989,16 @@ model OrderAllocation {
   batch             Batch     @relation(fields: [batchId], references: [id])
   qty               Int
   unitLandedCostMmk Int
+  costStatus        CostStatus @default(MISSING)
 
   @@index([orderItemId])
   @@index([batchId])
+}
+
+enum CostStatus {
+  ACTUAL
+  ESTIMATED
+  MISSING
 }
 
 model OrderStatusHistory {

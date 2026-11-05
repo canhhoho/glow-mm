@@ -7,6 +7,7 @@ import { bundleDefs } from "@/server/orders/availability";
 import { getNumberSetting } from "@/server/settings";
 import { commissionBaseMmk, commissionMmk } from "@/server/affiliates/commission";
 import { itemProfit } from "./profit";
+import { inventoryCost } from "@/server/inventory/cost";
 
 /**
  * Báo cáo (đã chốt P3): doanh thu = tiền hàng của đơn HOÀN TẤT theo ngày hoàn tất (giờ Yangon),
@@ -55,11 +56,13 @@ export async function salesReport(range: Range, opts: { topN?: number } = {}) {
   const products = new Map<string, { sku: string; name: string; units: number; revenue: number; profit: number }>();
   const totals = { orders: 0, grossRevenue: 0, returnedRevenue: 0, revenue: 0, cogs: 0, profit: 0, shippingFees: 0, commission: 0, uplineCommission: 0 };
   const missingCostOrders: string[] = [];
+  const estimatedCostOrders: string[] = [];
 
   for (const o of orders) {
     const day = days.get(yangonDayKey(completedAt.get(o.id)!));
     if (!day) continue;
     let missing = false;
+    let estimated = false;
     for (const i of o.items) {
       const p = itemProfit({
         qty: i.qty,
@@ -74,9 +77,11 @@ export async function salesReport(range: Range, opts: { topN?: number } = {}) {
           variantId: a.batch.variantId,
           qty: a.qty,
           unitCostMmk: a.unitLandedCostMmk,
+          costStatus: a.costStatus,
         })),
       });
       missing ||= p.missingCost;
+      estimated ||= p.estimatedCost;
       totals.grossRevenue += p.grossRevenue;
       totals.returnedRevenue += p.returnedRevenue;
       totals.revenue += p.netRevenue;
@@ -100,6 +105,7 @@ export async function salesReport(range: Range, opts: { topN?: number } = {}) {
     totals.uplineCommission += upline;
     day.orders++;
     if (missing) missingCostOrders.push(o.code);
+    if (estimated) estimatedCostOrders.push(o.code);
   }
 
   return {
@@ -116,6 +122,7 @@ export async function salesReport(range: Range, opts: { topN?: number } = {}) {
       .sort((a, b) => b.units - a.units || b.revenue - a.revenue)
       .slice(0, opts.topN ?? 10),
     missingCostOrders,
+    estimatedCostOrders,
   };
 }
 
@@ -141,21 +148,23 @@ export async function stockByLocation() {
     }),
     prisma.stockBalance.findMany({
       where: { qty: { not: 0 } },
-      select: { qty: true, stockType: true, locationId: true, batch: { select: { landedCostMmk: true } } },
+      select: { qty: true, stockType: true, locationId: true, batch: { select: { landedCostMmk: true, estimatedCostMmk: true } } },
     }),
   ]);
-  const out = new Map<string, { qty: number; testerQty: number; valueMmk: number; missingCost: number }>();
+  const out = new Map<string, { qty: number; testerQty: number; valueMmk: number; missingCost: number; estimatedQty: number }>();
   for (const r of rows) {
-    const cur = out.get(r.locationId) ?? { qty: 0, testerQty: 0, valueMmk: 0, missingCost: 0 };
+    const cur = out.get(r.locationId) ?? { qty: 0, testerQty: 0, valueMmk: 0, missingCost: 0, estimatedQty: 0 };
     if (r.stockType === "TESTER") cur.testerQty += r.qty;
     else cur.qty += r.qty;
-    if (r.batch.landedCostMmk == null) cur.missingCost += r.qty;
-    else cur.valueMmk += r.qty * r.batch.landedCostMmk;
+    const cost = inventoryCost(r.batch);
+    if (cost.unitCostMmk == null) cur.missingCost += r.qty;
+    else cur.valueMmk += r.qty * cost.unitCostMmk;
+    if (cost.costStatus === "ESTIMATED") cur.estimatedQty += r.qty;
     out.set(r.locationId, cur);
   }
   const rank = (l: { sellable: boolean; type: string }) => (l.sellable ? 0 : l.type === "QUARANTINE" ? 1 : 2);
-  const zero = () => ({ qty: 0, testerQty: 0, valueMmk: 0, missingCost: 0 });
-  const rowsOut: { code: string | null; name: string | null; type: string | null; active: boolean; qty: number; testerQty: number; valueMmk: number; missingCost: number }[] = locations
+  const zero = () => ({ qty: 0, testerQty: 0, valueMmk: 0, missingCost: 0, estimatedQty: 0 });
+  const rowsOut: { code: string | null; name: string | null; type: string | null; active: boolean; qty: number; testerQty: number; valueMmk: number; missingCost: number; estimatedQty: number }[] = locations
     .filter((l) => l.active)
     .sort((a, b) => rank(a) - rank(b))
     .map((l) => ({ code: l.code, name: l.name, type: l.type, active: true, ...(out.get(l.id) ?? zero()) }));
@@ -169,6 +178,7 @@ export async function stockByLocation() {
       sum.testerQty += s.testerQty;
       sum.valueMmk += s.valueMmk;
       sum.missingCost += s.missingCost;
+      sum.estimatedQty += s.estimatedQty;
     }
     rowsOut.push({ code: null, name: null, type: null, active: false, ...sum });
   }

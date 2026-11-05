@@ -74,6 +74,13 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
         </p>
       )}
 
+      {report.estimatedCostOrders.length > 0 && (
+        <p role="status" className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
+          {t("estimatedCost")} <span className="font-mono">{report.estimatedCostOrders.slice(0, 10).join(", ")}</span>
+          {report.estimatedCostOrders.length > 10 && ` ${t("andMore", { count: report.estimatedCostOrders.length - 10 })}`}
+        </p>
+      )}
+
       <section className="space-y-2">
         <h2 className="font-medium">{t("daily")}</h2>
         <DataTable empty={t("empty")} head={[t("day"), t("orders"), t("revenue"), "", t("cogs"), t("profit")]}>
@@ -130,13 +137,14 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
       <section className="grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
         <div className="space-y-2">
           <h2 className="font-medium">{t("stock")}</h2>
-          <DataTable head={[t("locType"), t("qty"), t("tester"), t("value"), t("noCost")]}>
+          <DataTable head={[t("locType"), t("qty"), t("tester"), t("value"), t("estimatedQty"), t("noCost")]}>
             {stock.map((s) => (
               <tr key={s.code ?? "inactive"} data-testid={`stock-${s.code ?? "inactive"}`}>
                 <Td>{s.name ?? t("inactiveLocations")}</Td>
                 <Td className="text-right tabular-nums">{fmtInt(s.qty)}</Td>
                 <Td className="text-right tabular-nums">{fmtInt(s.testerQty)}</Td>
                 <Td className="text-right tabular-nums">{fmtInt(s.valueMmk)}</Td>
+                <Td className="text-right tabular-nums">{s.estimatedQty ? fmtInt(s.estimatedQty) : "—"}</Td>
                 <Td className="text-right tabular-nums">{s.missingCost ? fmtInt(s.missingCost) : "—"}</Td>
               </tr>
             ))}

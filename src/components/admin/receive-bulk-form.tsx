@@ -66,7 +66,7 @@ function rowInvalid(r: Row, d: Defaults) {
 type Location = { id: string; code: string; name: string; sellable: boolean; pricingMode: "VN_IMPORT" | "LOCAL_MMK" | null };
 
 /** Phiếu nhập nhiều SP: bảng mọi biến thể, chỉ dòng có SL > 0 vào phiếu; dán từ Excel để điền nhanh. */
-export function ReceiveBulkForm({ locations, shipments, variants }: { locations: Location[]; shipments: { id: string; code: string }[]; variants: ReceiveVariant[] }) {
+export function ReceiveBulkForm({ locations, shipments, variants, lastShip = null }: { locations: Location[]; shipments: { id: string; code: string }[]; variants: ReceiveVariant[]; lastShip?: number | null }) {
   const t = useTranslations("Docs");
   const ti = useTranslations("Inventory");
   const [state, action, pending] = useActionState(createDocumentAction, undefined);
@@ -75,6 +75,7 @@ export function ReceiveBulkForm({ locations, shipments, variants }: { locations:
 
   const [toId, setToId] = useState("");
   const [shipmentId, setShipmentId] = useState("");
+  const [estimatedShip, setEstimatedShip] = useState(lastShip == null ? "" : String(lastShip));
   const [reason, setReason] = useState("");
   const [defaults, setDefaults] = useState<Defaults>({ lotNo: "", expiryDate: "", mfgDate: "", stockType: "SELLABLE" });
   const [rows, setRows] = useState<Row[]>(() => variants.map((v, i) => newRow(v, i)));
@@ -124,6 +125,7 @@ export function ReceiveBulkForm({ locations, shipments, variants }: { locations:
   }, [rows, q, brand, onlyFilled, byId, inScope]);
 
   const filled = rows.filter((r) => hasQty(r) && inScope(byId.get(r.variantId)!));
+  const canUseShipment = (!!toLoc && toLoc.sellable && toLoc.pricingMode !== "LOCAL_MMK") || (!!toLoc && !toLoc.sellable && filled.length > 0 && filled.every((r) => byId.get(r.variantId)!.currency === "VND"));
   const totalQty = filled.reduce((s, r) => s + Number(r.qty), 0);
   // Tổng tiền theo loại tiền (khu chờ kiểm tra có thể nhận cả SP Kho Thắm (VND) lẫn Kho Chi (MMK)).
   const totals = filled.reduce<Record<string, number>>((m, r) => {
@@ -197,7 +199,8 @@ export function ReceiveBulkForm({ locations, shipments, variants }: { locations:
     const payload = {
       type: "RECEIVE",
       toId,
-      shipmentId: shipmentId || undefined,
+      shipmentId: canUseShipment ? shipmentId || undefined : undefined,
+      estimatedShipMmkPerKg: variants.some((v) => inScope(v) && v.currency === "VND") ? estimatedShip : undefined,
       reason: reason || undefined,
       lines: filled.map((r) => {
         const eff = effective(r, defaults);
@@ -232,7 +235,7 @@ export function ReceiveBulkForm({ locations, shipments, variants }: { locations:
             ))}
           </select>
         </label>
-        <label className="grid content-start gap-1 text-sm">
+        {canUseShipment && <label className="grid content-start gap-1 text-sm">
           <span className="text-muted-foreground">{t("shipment")}</span>
           <select value={shipmentId} onChange={(e) => setShipmentId(e.target.value)} className={fieldClass}>
             <option value="">{t("none")}</option>
@@ -242,7 +245,7 @@ export function ReceiveBulkForm({ locations, shipments, variants }: { locations:
               </option>
             ))}
           </select>
-        </label>
+        </label>}
         <label className="grid content-start gap-1 text-sm">
           <span className="text-muted-foreground">{t("reason")}</span>
           <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} className={fieldClass} />
@@ -274,6 +277,14 @@ export function ReceiveBulkForm({ locations, shipments, variants }: { locations:
           </label>
         </div>
       </fieldset>
+
+      {variants.some((v) => inScope(v) && v.currency === "VND") && (
+        <label className="grid max-w-xl gap-1 text-sm">
+          <span>{t("estimateShip")}</span>
+          <input type="number" min={0} max={2147483647} step={1} value={estimatedShip} onChange={(e) => setEstimatedShip(e.target.value)} className={fieldClass} />
+          <span className="text-xs text-muted-foreground">{t("estimateHelp")}</span>
+        </label>
+      )}
 
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">

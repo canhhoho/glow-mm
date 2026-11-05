@@ -48,7 +48,7 @@ describe("Bàn giao vận chuyển trong quy trình 4 bước", () => {
     await expect(handover()).resolves.toMatchObject({ status: "SHIPPING" });
     expect(inventory.postDocumentTx).toHaveBeenCalledWith(tx, "issue", actor.userId);
     expect(tx.stockDocument.create).toHaveBeenCalledTimes(1);
-    expect(tx.orderAllocation.createMany).toHaveBeenCalledWith({ data: [{ orderItemId: "item", batchId: "batch", qty: 2, unitLandedCostMmk: 4000 }] });
+    expect(tx.orderAllocation.createMany).toHaveBeenCalledWith({ data: [{ orderItemId: "item", batchId: "batch", qty: 2, unitLandedCostMmk: 4000, costStatus: "ACTUAL" }] });
     expect(tx.reservation.updateMany).toHaveBeenCalledWith({ where: { orderId: "order", status: "ACTIVE" }, data: { status: "CONSUMED" } });
     expect(tx.orderStatusHistory.create).toHaveBeenCalledWith({ data: expect.objectContaining({ fromStatus: status, toStatus: "SHIPPING", userId: actor.userId }) });
     await expect(handover()).rejects.toMatchObject({ code: "invalid_transition" });
@@ -62,6 +62,13 @@ describe("Bàn giao vận chuyển trong quy trình 4 bước", () => {
     expect(tx.stockDocument.create).not.toHaveBeenCalled();
     expect(inventory.postDocumentTx).not.toHaveBeenCalled();
     expect(tx.delivery.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("captures the estimated cost and its status when shipping", async () => {
+    const { tx, handover } = fixture();
+    tx.batch.findMany.mockResolvedValue([{ id: "batch", landedCostMmk: null, estimatedCostMmk: 4500 }]);
+    await handover();
+    expect(tx.orderAllocation.createMany).toHaveBeenCalledWith({ data: [{ orderItemId: "item", batchId: "batch", qty: 2, unitLandedCostMmk: 4500, costStatus: "ESTIMATED" }] });
   });
 
   it("thiếu tồn không chuyển trạng thái hay tạo vận chuyển", async () => {

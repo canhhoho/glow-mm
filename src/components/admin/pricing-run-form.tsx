@@ -33,6 +33,7 @@ export function PricingRunForm({
   return (
     <div className="space-y-2">
       <p className="text-xs text-muted-foreground">{vn ? t("formulaVn") : t("formulaMmk")}</p>
+      {vn && <p className="text-xs text-muted-foreground">{t("costBasisHelp")}</p>}
       {vn && rates.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("noRate")}</p>
       ) : (

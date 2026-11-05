@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { ZodError } from "zod";
+import { estimateBatchCost } from "./estimate";
 import type { DocType } from "@/generated/prisma/client";
 import { requirePermission } from "@/server/auth/session";
 import type { Permission } from "@/server/auth/roles";
@@ -19,6 +20,17 @@ import {
 } from "./shipments";
 
 export type ActionState = { error?: string; ok?: string } | undefined;
+
+export async function estimateBatchCostAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("stock:receive");
+    await estimateBatchCost(Object.fromEntries(formData), user.id);
+    revalidatePath("/admin/inventory");
+    revalidatePath(`/admin/inventory/batches/${String(formData.get("batchId"))}`);
+    revalidatePath("/admin/reports");
+    return { ok: "saved" };
+  } catch (e) { return { error: message(e) }; }
+}
 
 export async function resolveBatchExpiryAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   try {
@@ -117,6 +129,8 @@ export async function postDocumentAction(_prev: ActionState, formData: FormData)
     return { error: message(e) };
   }
   revalidatePath(`/admin/inventory/documents/${id}`);
+  revalidatePath("/admin/inventory");
+  revalidatePath("/admin/reports");
   return { ok: "posted" };
 }
 
@@ -183,6 +197,9 @@ export async function allocateShipmentAction(_prev: ActionState, formData: FormD
     const method = formData.get("allocationMethod");
     if (method === "BY_VALUE" || method === "BY_QTY") await setAllocationMethod(shipmentId, method);
     await allocateShipment(shipmentId, user.id);
+    revalidatePath("/admin/inventory");
+    revalidatePath("/admin/reports");
+    revalidatePath("/admin/inventory/batches/[id]", "page");
   } catch (e) {
     return { error: message(e) };
   }

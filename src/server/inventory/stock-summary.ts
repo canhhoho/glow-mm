@@ -1,4 +1,5 @@
 import { classifyExpiry } from "@/server/alerts/compute";
+import type { CostStatus } from "./cost";
 
 /**
  * Tổng hợp tồn cho trang Tồn kho (P9). Thuần, không phụ thuộc DB: dữ liệu là các dòng `StockBalance`
@@ -15,8 +16,9 @@ export type BalanceRow = {
   lotNo: string;
   expiryDate: Date | null;
   expiryStatus?: "DATED" | "NONE" | "UNKNOWN";
-  /** Giá vốn MMK/đơn vị của lô; null = chưa phân bổ chi phí chuyến. */
+  /** Giá vốn MMK/đơn vị được chọn (thực tế hoặc tạm tính); null = thiếu dữ liệu. */
   landedCostMmk: number | null;
+  costStatus?: CostStatus;
   locationId: string;
   locationCode: string;
   /** Tên kho (P24: hiển thị theo kho, không theo loại). Thiếu → dùng mã. */
@@ -34,9 +36,10 @@ export type StockSummary = {
   /** SL bán được: SELLABLE tại vị trí bán, lô còn hạn ≥ blockDays (chưa trừ giữ hàng). */
   sellableUnits: number;
   sellableVariants: number;
-  /** Σ SL × giá vốn lô (mọi vị trí, mọi loại tồn); lô chưa phân bổ không tính, đếm riêng. */
+  /** Σ SL × giá vốn thực tế hoặc tạm tính; lô thiếu dữ liệu không tính, đếm riêng. */
   valueMmk: number;
   unvaluedUnits: number;
+  estimatedUnits: number;
   /** Đang vận chuyển + hải quan. */
   inbound: { units: number; lots: number };
   /** Lô cận hạn (blockDays ≤ còn lại < warnDays) / ngừng bán + hết hạn (< blockDays) — tồn SELLABLE ngoài khu chờ kiểm tra. */
@@ -60,6 +63,7 @@ export function summarizeStock(rows: BalanceRow[], now: Date, t: Thresholds): St
     sellableVariants: 0,
     valueMmk: 0,
     unvaluedUnits: 0,
+    estimatedUnits: 0,
     inbound: { units: 0, lots: 0 },
     near: { units: 0, lots: 0 },
     blocked: { units: 0, lots: 0 },
@@ -73,6 +77,7 @@ export function summarizeStock(rows: BalanceRow[], now: Date, t: Thresholds): St
     s.byLocation[r.locationCode] = (s.byLocation[r.locationCode] ?? 0) + r.qty;
     if (r.landedCostMmk == null) s.unvaluedUnits += r.qty;
     else s.valueMmk += r.qty * r.landedCostMmk;
+    if (r.costStatus === "ESTIMATED") s.estimatedUnits += r.qty;
     if (isInbound(r.locationType)) {
       s.inbound.units += r.qty;
       inboundLots.add(r.batchId);
