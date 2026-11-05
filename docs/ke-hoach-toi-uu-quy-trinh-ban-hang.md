@@ -1,5 +1,7 @@
 # Kế hoạch tối ưu quy trình và web bán hàng T&C Cosmetics
 
+Bản giao việc chi tiết D4 → D9 (cho Codex): [ke-hoach-codex-d4-d9.md](ke-hoach-codex-d4-d9.md).
+
 Ngày lập: 05/11/2026. Rà soát đối chiếu code: 05/11/2026 (bổ sung đợt DQ, DT; D3 rút gọn thành D3-lite; D5 dùng bảng sự kiện tự ghi). Trạng thái: kế hoạch triển khai, chưa triển khai các hạng mục mới trong tài liệu này.
 
 ## 1. Mục tiêu và ranh giới
