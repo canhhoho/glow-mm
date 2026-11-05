@@ -6,6 +6,8 @@ export type OrderErrorCode =
   | "invalid_zone"
   | "variant_unavailable"
   | "price_missing"
+  | "pick_mismatch"
+  | "pick_required"
   | "out_of_stock"
   | "not_found"
   | "invalid_transition"

@@ -650,7 +650,9 @@
       "proof_not_allowed": "Đơn không ở trạng thái chờ biên lai",
       "checkout_disabled": "Đang tạm ngừng nhận đơn trên web",
       "invalid_affiliate": "CTV không tồn tại hoặc đã bị khoá",
-      "invalid_form": "Thông tin đơn chưa hợp lệ, kiểm tra lại các ô"
+      "invalid_form": "Thông tin đơn chưa hợp lệ, kiểm tra lại các ô",
+      "pick_mismatch": "Phiếu soạn không còn khớp (lô không đủ / hết hạn bán hoặc đơn đã đổi) — in lại phiếu soạn",
+      "pick_required": "Cần in phiếu soạn (Chốt lô & In) trước khi bàn giao"
     },
     "ret": {
       "title": "Trả hàng",
@@ -696,12 +698,26 @@
       "labelCount": "{count} nhãn",
       "pickTitle": "Phiếu lấy hàng",
       "pickMeta": "{count} đơn",
-      "pickHelp": "Tổng số lượng theo SKU, chia theo kho bán; combo đã bung thành từng thành phần. Lô xuất theo FEFO được chốt khi bàn giao.",
       "pickTotal": "{qty} món",
       "pickItem": "Sản phẩm",
       "pickQty": "SL",
       "pickOrders": "Đơn",
-      "packTitle": "Đóng gói theo đơn"
+      "packTitle": "Đóng gói theo đơn",
+      "pickSaveAndPrint": "Chốt lô & In",
+      "pickSaved": "Đã chốt lô cho {count} đơn",
+      "pickLot": "Lô / HSD",
+      "pickHelpLots": "Lô theo FEFO, cùng quy tắc xuất kho. Bấm «Chốt lô & In» để lưu phiếu: khi bàn giao, hệ thống xuất đúng các lô này; nếu lô không còn đủ / hết hạn bán hoặc đơn đã đổi thì báo in lại. Phiếu không giữ hàng.",
+      "pickPrintedAt": "Đã chốt lô lúc {time}",
+      "pickPlan": {
+        "PLANNED": "Đã có lô đề xuất",
+        "NOT_CONFIRMED": "Chưa xác nhận — không chốt lô",
+        "SHORT": "Thiếu hàng — không chốt được"
+      },
+      "pickErr": {
+        "stale": "Tồn kho vừa thay đổi — tải lại phiếu rồi in lại",
+        "forbidden": "Không có quyền in phiếu soạn",
+        "nothing": "Không có đơn nào chốt lô được"
+      }
     }
   },
   "Settings": {
@@ -751,12 +767,16 @@
       },
       "store": {
         "checkoutEnabled": "Nhận đơn trên web"
+      },
+      "orders": {
+        "requirePickList": "Bắt buộc in phiếu soạn (chốt lô) trước khi bàn giao"
       }
     },
     "save": "Lưu cài đặt",
     "saved": "Đã lưu",
     "store": "Cửa hàng web",
-    "checkoutHint": "Bỏ chọn khi bảo trì hoặc chuyển server: khách vẫn xem được hàng nhưng không đặt được đơn. Đơn tạo tay trong admin không bị ảnh hưởng."
+    "checkoutHint": "Bỏ chọn khi bảo trì hoặc chuyển server: khách vẫn xem được hàng nhưng không đặt được đơn. Đơn tạo tay trong admin không bị ảnh hưởng.",
+    "requirePickHint": "Bật khi kho đã quen phiếu soạn: đơn chưa chốt lô sẽ không bàn giao được. Tắt: đơn chưa có phiếu vẫn xuất theo FEFO như trước."
   },
   "Pricing": {
     "title": "Giá & tỷ giá",

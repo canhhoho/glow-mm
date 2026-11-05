@@ -44,6 +44,20 @@ test("DT: chọn nhiều đơn → xác nhận COD hàng loạt → in phiếu l
   await expect(bar.getByTestId("bulk-count")).toHaveText("Đã chọn 0 đơn");
   await page.screenshot({ path: "test-results/screens/bulk-orders.png", fullPage: true });
 
+  // D3-lite: đơn đã xác nhận → phiếu lấy hàng có lô FEFO; "Chốt lô & In" lưu phiếu soạn.
+  for (const code of codes) await page.getByLabel(`Chọn đơn ${code}`).check();
+  const [slip] = await Promise.all([page.waitForEvent("popup"), bar.getByRole("button", { name: "In phiếu lấy hàng" }).click()]);
+  await expect(slip.getByTestId("pick-line").filter({ hasText: codes[0] }).getByTestId("pick-lot")).not.toHaveText("—");
+  await slip.evaluate(() => {
+    window.print = () => {};
+  });
+  await slip.getByRole("button", { name: "Chốt lô & In" }).click();
+  await expect(slip.getByRole("status")).toHaveText("Đã chốt lô cho 2 đơn");
+  await expect(slip.getByTestId("pick-plan").first()).toContainText("Đã chốt lô lúc");
+  await slip.screenshot({ path: "test-results/screens/pick-slip.png", fullPage: true });
+  await slip.close();
+  for (const code of codes) await page.getByLabel(`Chọn đơn ${code}`).uncheck();
+
   // Đã xác nhận rồi → chạy lại báo lỗi từng đơn, không đổi gì.
   for (const code of codes) await page.getByLabel(`Chọn đơn ${code}`).check();
   page.once("dialog", (d) => d.accept());

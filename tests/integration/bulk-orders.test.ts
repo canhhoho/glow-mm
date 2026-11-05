@@ -67,7 +67,8 @@ describe("Thao tác hàng loạt đơn (DT)", () => {
     expect(groups).toHaveLength(1);
     expect(groups[0].location.id).toBe(f.mm.id);
     expect(groups[0].lines).toEqual([
-      expect.objectContaining({ sku: `IT-${f.tag}`, qty: 7, orders: [{ code: o2.code, qty: 6 }, { code: o1.code, qty: 1 }] }),
+      // Đơn chưa xác nhận → chưa có lô FEFO (D3-lite chỉ lập lô cho đơn đã xác nhận).
+      expect.objectContaining({ sku: `IT-${f.tag}`, qty: 7, lots: [expect.objectContaining({ lotNo: null, qty: 7, orders: [{ code: o2.code, qty: 6 }, { code: o1.code, qty: 1 }] })] }),
     ]);
   });
 });

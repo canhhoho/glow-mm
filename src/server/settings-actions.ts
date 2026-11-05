@@ -15,6 +15,7 @@ export async function saveSettingsAction(_prev: ActionState, formData: FormData)
     for (const k of PERCENT_SETTING_KEYS) raw[k] = percentToBp(Number(formData.get(k)));
     raw["payment.bankInstructions"] = formData.get("payment.bankInstructions") ?? "";
     raw["store.checkoutEnabled"] = formData.get("store.checkoutEnabled") === "on";
+    raw["orders.requirePickList"] = formData.get("orders.requirePickList") === "on";
     await saveSettings(raw, user.id);
   } catch (e) {
     // Key cài đặt (vd "expiry.warnDays") là tên kỹ thuật → chỉ hiện câu báo lỗi.

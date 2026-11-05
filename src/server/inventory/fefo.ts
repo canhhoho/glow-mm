@@ -17,6 +17,8 @@ export type FefoCandidate = {
 export type FefoAllocation = { batchId: string; qty: number };
 
 export class InsufficientStockError extends Error {
+  /** Biến thể thiếu hàng (gắn bởi nơi gọi khi biết — vd allocateFefo). */
+  variantId?: string;
   constructor(
     public readonly requested: number,
     public readonly available: number,

@@ -650,7 +650,9 @@
       "proof_not_allowed": "Order is not awaiting payment proof",
       "checkout_disabled": "Web orders are temporarily paused",
       "invalid_affiliate": "Affiliate not found or locked",
-      "invalid_form": "Order details are invalid — check the fields"
+      "invalid_form": "Order details are invalid — check the fields",
+      "pick_mismatch": "The pick slip no longer matches (lot short / past cut-off or order changed) — reprint the pick slip",
+      "pick_required": "Print the pick slip (Lock lots & print) before handover"
     },
     "ret": {
       "title": "Return items",
@@ -696,12 +698,26 @@
       "labelCount": "{count} labels",
       "pickTitle": "Pick list",
       "pickMeta": "{count} orders",
-      "pickHelp": "Total quantity per SKU by sales warehouse; combos are expanded into components. FEFO lots are fixed at handover.",
       "pickTotal": "{qty} items",
       "pickItem": "Product",
       "pickQty": "Qty",
       "pickOrders": "Orders",
-      "packTitle": "Pack by order"
+      "packTitle": "Pack by order",
+      "pickSaveAndPrint": "Lock lots & print",
+      "pickSaved": "Lots locked for {count} orders",
+      "pickLot": "Lot / expiry",
+      "pickHelpLots": "Lots follow FEFO, the same rule as stock issue. «Lock lots & print» saves the slip: at handover exactly these lots are issued; if a lot is short / past the sales cut-off or the order changed, you are asked to reprint. The slip does not hold stock.",
+      "pickPrintedAt": "Lots locked at {time}",
+      "pickPlan": {
+        "PLANNED": "Lots suggested",
+        "NOT_CONFIRMED": "Not confirmed — no lots locked",
+        "SHORT": "Short of stock — cannot lock"
+      },
+      "pickErr": {
+        "stale": "Stock just changed — reload the slip and print again",
+        "forbidden": "Not allowed to print pick slips",
+        "nothing": "No order can have lots locked"
+      }
     }
   },
   "Settings": {
@@ -751,12 +767,16 @@
       },
       "store": {
         "checkoutEnabled": "Accept web orders"
+      },
+      "orders": {
+        "requirePickList": "Require a pick slip (locked lots) before handover"
       }
     },
     "save": "Save settings",
     "saved": "Saved",
     "store": "Web store",
-    "checkoutHint": "Untick during maintenance or server migration: customers can browse but cannot place orders. Manual orders in admin are not affected."
+    "checkoutHint": "Untick during maintenance or server migration: customers can browse but cannot place orders. Manual orders in admin are not affected.",
+    "requirePickHint": "Turn on once the warehouse uses pick slips: orders without locked lots cannot be handed over. Off: orders without a slip are issued by FEFO as before."
   },
   "Pricing": {
     "title": "Prices & exchange rate",

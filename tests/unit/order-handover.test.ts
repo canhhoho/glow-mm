@@ -10,6 +10,8 @@ vi.mock("@/lib/db", () => ({ prisma: {} }));
 vi.mock("@/server/inventory/documents", () => ({ ...inventory, salesBlockDays: vi.fn() }));
 vi.mock("@/server/orders/availability", () => ({ bundleDefs: inventory.bundleDefs }));
 vi.mock("@/server/orders/reservations", () => ({ holdIndefinitely: vi.fn(), releaseReservations: vi.fn() }));
+// D3-lite: không có phiếu soạn, không bắt buộc phiếu → FEFO như trước.
+vi.mock("@/server/settings", () => ({ getBoolSetting: vi.fn().mockResolvedValue(false), getNumberSetting: vi.fn() }));
 
 import { transitionInTx } from "@/server/orders/transitions";
 
@@ -28,6 +30,7 @@ function fixture(status: "COD_CONFIRMED" | "PAYMENT_CONFIRMED" | "PACKING" = "CO
     batch: { findMany: vi.fn().mockResolvedValue([{ id: "batch", landedCostMmk: 4000 }]) },
     orderAllocation: { createMany: vi.fn() },
     reservation: { updateMany: vi.fn() },
+    orderPick: { findUnique: vi.fn().mockResolvedValue(null), update: vi.fn() },
     delivery: { create: vi.fn() },
     orderStatusHistory: { create: vi.fn() },
     auditLog: { create: vi.fn() },

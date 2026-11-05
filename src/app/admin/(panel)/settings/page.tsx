@@ -71,6 +71,11 @@ export default async function SettingsPage() {
                 <span>{t("keys.store.checkoutEnabled")}</span>
               </label>
               <p className="text-xs leading-relaxed text-muted-foreground">{t("checkoutHint")}</p>
+              <label className="flex cursor-pointer items-center gap-3 rounded-lg border bg-muted/30 p-3 text-sm font-medium">
+                <input name="orders.requirePickList" type="checkbox" defaultChecked={settings.requirePickList} className="size-5 shrink-0 accent-primary" />
+                <span>{t("keys.orders.requirePickList")}</span>
+              </label>
+              <p className="text-xs leading-relaxed text-muted-foreground">{t("requirePickHint")}</p>
             </fieldset>
             {GROUPS.map((g) => (
               <fieldset key={g.title} className="space-y-4 rounded-xl border bg-card p-4 sm:p-5">

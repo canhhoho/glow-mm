@@ -1105,7 +1105,6 @@
     "Orders.bulk.confirmCod",
     "Orders.bulk.labelCount",
     "Orders.bulk.packTitle",
-    "Orders.bulk.pickHelp",
     "Orders.bulk.pickItem",
     "Orders.bulk.pickMeta",
     "Orders.bulk.pickOrders",
@@ -1176,6 +1175,21 @@
     "Products.readiness.steps",
     "Products.readiness.warning",
     "Products.status.ready",
-    "Products.status.incomplete"
+    "Products.status.incomplete",
+    "Orders.bulk.pickErr.forbidden",
+    "Orders.bulk.pickErr.nothing",
+    "Orders.bulk.pickErr.stale",
+    "Orders.bulk.pickHelpLots",
+    "Orders.bulk.pickLot",
+    "Orders.bulk.pickPlan.NOT_CONFIRMED",
+    "Orders.bulk.pickPlan.PLANNED",
+    "Orders.bulk.pickPlan.SHORT",
+    "Orders.bulk.pickPrintedAt",
+    "Orders.bulk.pickSaveAndPrint",
+    "Orders.bulk.pickSaved",
+    "Orders.err.pick_mismatch",
+    "Orders.err.pick_required",
+    "Settings.keys.orders.requirePickList",
+    "Settings.requirePickHint"
   ]
 }

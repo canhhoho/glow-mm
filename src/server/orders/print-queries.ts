@@ -2,9 +2,11 @@ import "server-only";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { rawId } from "@/lib/schemas";
+import { salesBlockDays } from "@/server/inventory/documents";
 import { productName } from "@/server/inventory/queries";
 import { BULK_MAX } from "./bulk";
-import { buildPickList, type PickOrder } from "./pick-list";
+import { buildPickList, type PickRow } from "./pick-list";
+import { orderNeeds, planHash, planPicks, type OrderPlan } from "./picking";
 
 /** `?ids=a,b,c` của trang in hàng loạt → danh sách id hợp lệ (bỏ trùng, tối đa BULK_MAX). Sai → null. */
 export function parsePrintIds(raw: string | string[] | undefined): string[] | null {
@@ -24,8 +26,11 @@ export async function ordersForLabels(ids: string[]) {
 }
 export type LabelOrder = Awaited<ReturnType<typeof ordersForLabels>>[number];
 
-/** Phiếu lấy hàng gộp: theo kho của SP, combo bung thành phần, kèm danh sách đơn để đóng gói. */
-export async function pickListFor(ids: string[]) {
+/**
+ * Phiếu lấy hàng gộp (D3-lite): kế hoạch FEFO cho các đơn đã xác nhận (chỉ đọc — chốt khi bấm in),
+ * gộp theo kho bán → SKU → lô; kèm danh sách đóng gói theo đơn và `hash` để chốt đúng phiếu đang xem.
+ */
+export async function pickListFor(ids: string[], now = new Date()) {
   const orders = await prisma.order.findMany({
     where: { id: { in: ids } },
     select: {
@@ -33,48 +38,54 @@ export async function pickListFor(ids: string[]) {
       code: true,
       status: true,
       recipientName: true,
-      items: {
-        select: {
-          variantId: true,
-          sku: true,
-          name: true,
-          qty: true,
-          variant: {
-            select: {
-              isBundle: true,
-              product: { select: { stockLocation: { select: { id: true, name: true } } } },
-              bundleItems: {
-                select: {
-                  qty: true,
-                  component: { select: { id: true, sku: true, label: true, product: { select: { slug: true, translations: true } } } },
-                },
-              },
-            },
-          },
-        },
-      },
+      pick: { select: { printedAt: true, consumedAt: true } },
+      items: { orderBy: { id: "asc" }, select: { id: true, variantId: true, sku: true, name: true, qty: true } },
     },
   });
   const byId = new Map(orders.map((o) => [o.id, o]));
   const ordered = ids.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []));
-  const pickOrders: PickOrder[] = ordered.map((o) => ({
-    id: o.id,
-    code: o.code,
-    items: o.items.map((i) => ({
-      variantId: i.variantId,
-      sku: i.sku,
-      name: i.name,
-      qty: i.qty,
-      location: i.variant.product.stockLocation,
-      components: i.variant.isBundle
-        ? i.variant.bundleItems.map((b) => ({
-            variantId: b.component.id,
-            sku: b.component.sku,
-            name: `${productName(b.component.product.translations, b.component.product.slug)} — ${b.component.label}`,
-            qty: b.qty,
-          }))
-        : undefined,
-    })),
-  }));
-  return { orders: ordered, groups: buildPickList(pickOrders) };
+  const plans = await planPicks(prisma, ordered.map((o) => o.id), { now, blockDays: await salesBlockDays() });
+  const planOf = new Map(plans.map((p) => [p.orderId, p]));
+
+  // Đơn chưa lập được kế hoạch: vẫn liệt kê hàng cần lấy (không có lô).
+  const unplanned = new Map<string, Awaited<ReturnType<typeof orderNeeds>>>();
+  for (const o of ordered) if (planOf.get(o.id)?.status !== "PLANNED") unplanned.set(o.id, await orderNeeds(prisma, o.id));
+  const allNeeds = [...plans.flatMap((p) => p.picks), ...[...unplanned.values()].flat()];
+  const [variants, batches, locations] = await Promise.all([
+    prisma.variant.findMany({
+      where: { id: { in: [...new Set(allNeeds.map((n) => n.variantId))] } },
+      select: { id: true, sku: true, label: true, product: { select: { slug: true, translations: true } } },
+    }),
+    prisma.batch.findMany({
+      where: { id: { in: [...new Set(plans.flatMap((p) => p.picks.map((x) => x.batchId)))] } },
+      select: { id: true, lotNo: true, expiryDate: true },
+    }),
+    prisma.location.findMany({ where: { id: { in: [...new Set(allNeeds.map((n) => n.locationId))] } }, select: { id: true, name: true } }),
+  ]);
+  const variant = new Map(variants.map((v) => [v.id, v]));
+  const batch = new Map(batches.map((b) => [b.id, b]));
+  const location = new Map(locations.map((l) => [l.id, l]));
+  const row = (code: string, n: { variantId: string; locationId: string; qty: number; batchId?: string }): PickRow => {
+    const v = variant.get(n.variantId);
+    const b = n.batchId ? batch.get(n.batchId) : undefined;
+    return {
+      orderCode: code,
+      variantId: n.variantId,
+      sku: v?.sku ?? n.variantId,
+      name: v ? `${productName(v.product.translations, v.product.slug)} — ${v.label}` : "",
+      location: location.get(n.locationId) ?? { id: n.locationId, name: n.locationId },
+      qty: n.qty,
+      lot: b && { batchId: b.id, lotNo: b.lotNo, expiryDate: b.expiryDate },
+    };
+  };
+  const rows = ordered.flatMap((o) => {
+    const p = planOf.get(o.id);
+    return p?.status === "PLANNED" ? p.picks.map((x) => row(o.code, x)) : (unplanned.get(o.id) ?? []).map((n) => row(o.code, n));
+  });
+  return {
+    orders: ordered.map((o) => ({ ...o, plan: (planOf.get(o.id)?.status ?? "NOT_CONFIRMED") as OrderPlan["status"] })),
+    groups: buildPickList(rows),
+    hash: planHash(plans),
+    plannable: plans.some((p) => p.status === "PLANNED"),
+  };
 }

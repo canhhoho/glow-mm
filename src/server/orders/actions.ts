@@ -11,6 +11,7 @@ import type { ActionState } from "@/server/inventory/actions";
 import { bulkTransition, BULK_TRANSITIONS, type BulkState } from "./bulk";
 import { OrderError } from "./errors";
 import { createOrder } from "./orders";
+import { PickError, savePickManifests } from "./picking";
 import { returnItems } from "./returns";
 import { TRANSITIONS, type TransitionName } from "./state-machine";
 import { transitionOrder } from "./transitions";
@@ -118,6 +119,19 @@ export async function bulkTransitionAction(_prev: BulkState, formData: FormData)
     revalidatePath("/admin");
     return { done: results.length - failed.length, total: results.length, failed };
   } catch (e) {
+    return { error: await message(e) };
+  }
+}
+
+/** D3-lite: chốt lô của phiếu soạn đang xem (ids + hash) trước khi in. Trả số đơn đã chốt hoặc lỗi. */
+export async function savePickManifestsAction(ids: string[], hash: string): Promise<{ saved?: number; error?: string }> {
+  try {
+    const user = await requirePermission("orders:view");
+    const res = await savePickManifests({ ids, hash }, { userId: user.id, role: user.role });
+    revalidatePath("/admin/orders");
+    return { saved: res.saved };
+  } catch (e) {
+    if (e instanceof PickError) return { error: (await getTranslations("Orders"))(`bulk.pickErr.${e.code}`) };
     return { error: await message(e) };
   }
 }

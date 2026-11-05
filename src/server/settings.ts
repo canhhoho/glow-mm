@@ -33,10 +33,16 @@ export async function getNumberSetting(key: NumericSettingKey): Promise<number> 
   return typeof v === "number" && Number.isFinite(v) ? v : SETTING_DEFAULTS[key];
 }
 
-/** Bật/tắt nhận đơn web (tắt khi bảo trì / chuyển server). Đơn tạo tay trong admin không bị chặn. */
-export async function getBoolSetting(key: "store.checkoutEnabled"): Promise<boolean> {
+/**
+ * Cài đặt bật/tắt. `store.checkoutEnabled`: nhận đơn web (tắt khi bảo trì / chuyển server; đơn tạo tay không bị chặn).
+ * `orders.requirePickList` (D3-lite): bắt buộc in phiếu soạn (chốt lô) trước khi bàn giao — mặc định tắt.
+ */
+const BOOL_DEFAULTS = { "store.checkoutEnabled": true, "orders.requirePickList": false } as const;
+export type BoolSettingKey = keyof typeof BOOL_DEFAULTS;
+
+export async function getBoolSetting(key: BoolSettingKey): Promise<boolean> {
   const row = await prisma.setting.findUnique({ where: { key } });
-  return typeof row?.value === "boolean" ? row.value : true;
+  return typeof row?.value === "boolean" ? row.value : BOOL_DEFAULTS[key];
 }
 
 export async function getStringSetting(key: "payment.bankInstructions"): Promise<string> {
@@ -56,7 +62,9 @@ export async function getAllSettings() {
   ) as Record<NumericSettingKey, number>;
   const bank = byKey.get("payment.bankInstructions");
   const checkout = byKey.get("store.checkoutEnabled");
+  const requirePick = byKey.get("orders.requirePickList");
   return {
+    requirePickList: typeof requirePick === "boolean" ? requirePick : false,
     numbers,
     bankInstructions: typeof bank === "string" ? bank : "",
     checkoutEnabled: typeof checkout === "boolean" ? checkout : true,
@@ -81,6 +89,7 @@ export const settingsSchema = z
     "payment.bankInstructions": z.string().trim().max(1000).transform(toUnicode),
     // Không gửi → giữ nguyên giá trị hiện tại.
     "store.checkoutEnabled": z.boolean().optional(),
+    "orders.requirePickList": z.boolean().optional(),
   })
   .refine((s) => s["expiry.warnDays"] >= s["expiry.blockDays"], {
     path: ["expiry.warnDays"],
@@ -101,6 +110,10 @@ export async function saveSettings(raw: unknown, userId: string) {
   const checkout = input["store.checkoutEnabled"];
   if (checkout !== undefined && checkout !== before.checkoutEnabled) {
     changed["store.checkoutEnabled"] = { from: before.checkoutEnabled, to: checkout };
+  }
+  const requirePick = input["orders.requirePickList"];
+  if (requirePick !== undefined && requirePick !== before.requirePickList) {
+    changed["orders.requirePickList"] = { from: before.requirePickList, to: requirePick };
   }
   if (Object.keys(changed).length === 0) return changed;
 

@@ -492,6 +492,7 @@ model Location {
   docsTo      StockDocument[] @relation("DocTo")
   products    Product[]
   priceRuns   PriceUpdateRun[]
+  pickLines   OrderPickLine[]
 }
 
 enum AllocationMethod {
@@ -570,6 +571,7 @@ model Batch {
   allocations   OrderAllocation[]
   documentLines StockDocumentLine[]
   priceRunLines PriceRunLine[]
+  pickLines     OrderPickLine[]
 
   @@unique([variantId, lotNo])
   @@index([variantId, expiryDate])
@@ -879,6 +881,7 @@ model Order {
   documents         StockDocument[]
   reviews           Review[]
   payoutLines       AffiliatePayoutLine[]
+  pick              OrderPick?
 
   @@index([status, createdAt])
   @@index([customerId])
@@ -1006,9 +1009,40 @@ model OrderItem {
   /// Số lượng khách đã trả lại (≤ qty). Doanh thu/giá vốn trừ phần này.
   returnedQty  Int               @default(0)
   allocations  OrderAllocation[]
+  pickLines    OrderPickLine[]
 
   @@index([orderId])
   @@index([variantId])
+}
+
+/// D3-lite: phiếu soạn đã chốt khi in (manifest lô FEFO). KHÔNG giữ lô, không đổi tồn bán; khi bàn giao,
+/// xuất đúng các dòng này nếu còn hợp lệ, lệch → báo in lại (không đổi lô âm thầm). In lại = thay toàn bộ dòng.
+model OrderPick {
+  orderId     String          @id
+  order       Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  printedById String
+  printedAt   DateTime        @default(now())
+  /// Bàn giao đã xuất theo phiếu này.
+  consumedAt  DateTime?
+  lines       OrderPickLine[]
+}
+
+model OrderPickLine {
+  id          String    @id @default(cuid())
+  orderId     String
+  pick        OrderPick @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+  orderItemId String
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  /// Biến thể thực lấy (combo → từng thành phần).
+  variantId   String
+  batchId     String
+  batch       Batch     @relation(fields: [batchId], references: [id])
+  locationId  String
+  location    Location  @relation(fields: [locationId], references: [id])
+  qty         Int
+
+  @@index([orderId])
+  @@index([batchId, locationId])
 }
 
 /// Phân lô khi bàn giao vận chuyển; giữ giá vốn để tính lợi nhuận.

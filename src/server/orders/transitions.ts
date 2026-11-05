@@ -3,13 +3,14 @@ import { z } from "zod";
 import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { can, type Role } from "@/server/auth/roles";
-import { candidatesAt, postDocumentTx, salesBlockDays } from "@/server/inventory/documents";
+import { postDocumentTx, salesBlockDays } from "@/server/inventory/documents";
 import { inventoryCost } from "@/server/inventory/cost";
-import { InsufficientStockError, pickFefo, type FefoCandidate } from "@/server/inventory/fefo";
+import { InsufficientStockError } from "@/server/inventory/fefo";
+import { getBoolSetting } from "@/server/settings";
 import type { Tx } from "@/server/inventory/ledger";
 import { newCode } from "@/server/codes";
-import { bundleDefs } from "./availability";
 import { OrderError } from "./errors";
+import { allocateFefo, manifestPicks, orderNeeds } from "./picking";
 import { holdIndefinitely, releaseReservations } from "./reservations";
 import { assertTransition, TRANSITIONS, TransitionError, type TransitionName } from "./state-machine";
 
@@ -136,44 +137,24 @@ async function issueOrderStock(
   _fromLocationId: string | undefined,
   opts: { now: Date; blockDays: number },
 ) {
-  const items = await tx.orderItem.findMany({
-    where: { orderId: order.id },
-    include: { variant: { select: { product: { select: { stockLocationId: true } } } } },
-  });
-  const defs = await bundleDefs(tx, items.map((i) => i.variantId));
-  const needs = items.flatMap((i) => {
-    const locationId = i.variant.product.stockLocationId;
-    const def = defs.get(i.variantId);
-    return def
-      ? def.map((c) => ({ orderItemId: i.id, variantId: c.componentId, qty: c.qty * i.qty, locationId }))
-      : [{ orderItemId: i.id, variantId: i.variantId, qty: i.qty, locationId }];
-  });
+  const needs = await orderNeeds(tx, order.id);
   const locations = await tx.location.findMany({ where: { id: { in: [...new Set(needs.map((n) => n.locationId))] } } });
   if (locations.some((l) => !l.sellable)) throw new OrderError("invalid_transition", "Vị trí xuất phải là kho bán được");
 
-  // Tồn theo lô dùng chung cho các dòng cùng biến thể + kho (trừ dần khi phân bổ).
-  const pools = new Map<string, FefoCandidate[]>();
-  const picks: { orderItemId: string; variantId: string; batchId: string; qty: number; locationId: string }[] = [];
-  for (const n of needs) {
-    const key = `${n.variantId}|${n.locationId}`;
-    let pool = pools.get(key);
-    if (!pool) {
-      pool = await candidatesAt(tx, n.variantId, n.locationId, "SELLABLE");
-      pools.set(key, pool);
+  // D3-lite: có phiếu soạn đã in → xuất đúng lô trên phiếu (lệch → pick_mismatch, in lại); chưa có → FEFO như trước.
+  let picks = await manifestPicks(tx, order.id, needs, opts);
+  if (!picks) {
+    if (await getBoolSetting("orders.requirePickList")) {
+      throw new OrderError("pick_required", "Cần in phiếu soạn (chốt lô) trước khi bàn giao");
     }
-    let alloc;
     try {
-      alloc = pickFefo(pool, n.qty, { today: opts.now, blockDays: opts.blockDays });
+      // Tồn theo lô dùng chung cho các dòng cùng biến thể + kho (trừ dần khi phân bổ).
+      picks = await allocateFefo(tx, needs, new Map(), opts);
     } catch (e) {
       if (e instanceof InsufficientStockError) {
-        throw new OrderError("out_of_stock", `Không đủ hàng còn hạn để xuất kho: ${e.message}`, { variantId: n.variantId });
+        throw new OrderError("out_of_stock", `Không đủ hàng còn hạn để xuất kho: ${e.message}`, { variantId: e.variantId });
       }
       throw e;
-    }
-    for (const a of alloc) {
-      const c = pool.find((p) => p.batchId === a.batchId)!;
-      c.available -= a.qty;
-      picks.push({ orderItemId: n.orderItemId, variantId: n.variantId, batchId: a.batchId, qty: a.qty, locationId: n.locationId });
     }
   }
 

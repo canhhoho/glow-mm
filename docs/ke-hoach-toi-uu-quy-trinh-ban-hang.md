@@ -265,7 +265,9 @@ Kiểm tra tạo/sửa/publish hàng loạt đều không vượt gate; trực t
 
 ## 9. D3 — Soạn hàng và bàn giao đúng lô
 
-Hiện trạng: chưa có phiếu soạn; phiếu in duy nhất là nhãn A6 ghi số món; lô chỉ thấy trên đơn sau khi đã xuất. Làm **D3-lite** trước; bản giữ lô đầy đủ (D3+) chỉ làm khi có nhiều người soạn đồng thời hoặc D3-lite cho thấy hay phải soạn lại.
+**Trạng thái D3-lite: đã làm (05/11/2026)**, migration `20261105150000_d3_order_pick` (`OrderPick` + `OrderPickLine`, khoá chính theo đơn — in lại thay toàn bộ dòng). Domain `orders/picking.ts`: `planPicks` (FEFO dùng chung `allocateFefo` với xuất kho, các đơn in cùng lúc chia tồn từng lô, trừ phần đã nằm trên phiếu chưa bàn giao của đơn khác), `savePickManifests` (khoá đơn, kế hoạch phải trùng `hash` của phiếu đang xem), `manifestPicks` (lúc bàn giao: khoá số dư lô, kiểm nhu cầu đơn / đủ hàng / còn hạn bán; lệch → `pick_mismatch`, rollback). Trang `/admin/orders/pick-list` có cột Lô/HSD, nút "Chốt lô & In". Cài đặt `orders.requirePickList` (mặc định tắt) bắt buộc phiếu soạn trước khi bàn giao. Chưa làm: hiện phiếu soạn trên trang chi tiết đơn; xuất nội bộ chưa tránh lô đã nằm trên phiếu (lệch thì báo in lại).
+
+Hiện trạng trước D3-lite: chưa có phiếu soạn; phiếu in duy nhất là nhãn A6 ghi số món; lô chỉ thấy trên đơn sau khi đã xuất. Làm **D3-lite** trước; bản giữ lô đầy đủ (D3+) chỉ làm khi có nhiều người soạn đồng thời hoặc D3-lite cho thấy hay phải soạn lại.
 
 ### D3-lite.1 Thiết kế
 
