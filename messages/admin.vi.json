@@ -1471,5 +1471,137 @@
     "remitted": "Đã về cửa hàng",
     "exception": "Có hoàn hàng / hoàn tiền · Cần đối soát riêng",
     "empty": "Không có COD đang chờ đối soát"
+  },
+  "DataHealth": {
+    "title": "Sức khoẻ dữ liệu",
+    "description": "Báo cáo chỉ đọc: chỗ dữ liệu sai/thiếu cần sửa tay và mốc thời gian vận hành. Trang này không tự sửa dữ liệu.",
+    "tabSales": "Bán hàng",
+    "tabHealth": "Sức khoẻ dữ liệu",
+    "generatedAt": "Lập lúc {time}",
+    "download": "Tải mốc (JSON)",
+    "period": "Kỳ mốc",
+    "days": "{days} ngày",
+    "groups": {
+      "catalog": "Sản phẩm",
+      "cost": "Giá vốn và nguồn giá",
+      "operations": "Vận hành"
+    },
+    "sev": {
+      "error": "Lỗi",
+      "warning": "Cảnh báo",
+      "info": "Theo dõi"
+    },
+    "none": "Không có",
+    "more": "Còn {count} mục nữa — sửa các mục trên rồi tải lại trang.",
+    "colRef": "Mã",
+    "colName": "Tên / ghi chú",
+    "state": {
+      "published": "Đang hiển thị",
+      "hidden": "Đang ẩn"
+    },
+    "checks": {
+      "publishedZeroPrice": {
+        "title": "SP đang hiển thị có giá bán ≤ 0",
+        "help": "Khách không đặt được (server chặn). Tính giá hoặc ẩn SP.",
+        "value": "Giá"
+      },
+      "hiddenZeroPrice": {
+        "title": "SP đang ẩn chưa có giá bán",
+        "help": "Cần tính giá trước khi mở bán.",
+        "value": "Giá"
+      },
+      "noImage": {
+        "title": "SP chưa có ảnh",
+        "help": "Thêm ảnh trước khi mở bán.",
+        "value": "Trạng thái"
+      },
+      "missingWeight": {
+        "title": "Biến thể kho hàng nhập VN thiếu khối lượng",
+        "help": "Công thức giá cần khối lượng để tính cước/kg; khi tính giá biến thể này bị bỏ qua.",
+        "value": ""
+      },
+      "missingWeightLocal": {
+        "title": "Biến thể kho mua MMK thiếu khối lượng",
+        "help": "Không ảnh hưởng giá; cần khi gửi VTP.",
+        "value": ""
+      },
+      "badLocation": {
+        "title": "SP thuộc kho đã ngừng hoặc không phải kho bán",
+        "help": "Tồn của SP này không bán được. Chuyển SP sang kho bán đang dùng.",
+        "value": "Kho"
+      },
+      "stockMissingCost": {
+        "title": "Lô có tồn bán nhưng chưa có giá vốn",
+        "help": "Đơn xuất từ lô này sẽ ghi Thiếu giá vốn. Phân bổ chi phí chuyến hoặc tính giá vốn tạm ở trang lô.",
+        "value": "SL tồn"
+      },
+      "draftOnlyCost": {
+        "title": "Biến thể chỉ có lô từ phiếu nhập nháp/huỷ",
+        "help": "Chưa có giá mua đã ghi sổ nên tính giá bỏ qua. Ghi sổ phiếu nhập thật.",
+        "value": ""
+      },
+      "comboMissingCost": {
+        "title": "Combo không tính được giá vốn",
+        "help": "Thành phần chưa có lô nhập đã ghi sổ đúng loại tiền nên tính giá bỏ qua combo.",
+        "value": "Thành phần thiếu"
+      },
+      "oldShipRuns": {
+        "title": "Lần tính giá có cước/kg áp dụng trước bản sửa cước",
+        "help": "Có thể đã cộng cước hai lần nếu lô đã phân bổ chuyến. Xem lại giá; hệ thống không tự sửa.",
+        "value": "Số giá đã đổi"
+      },
+      "lotShipmentMismatch": {
+        "title": "Lô nhập lại ở phiếu thuộc chuyến khác",
+        "help": "Lô vẫn tính theo chuyến cũ nên chi phí chuyến phân bổ sai chỗ. Cần xử lý riêng.",
+        "value": "Phiếu"
+      },
+      "overdueOrders": {
+        "title": "Đơn chờ xác nhận đã quá hạn giữ hàng",
+        "help": "Cron sẽ huỷ các đơn này; gọi khách nếu cần giữ đơn.",
+        "value": "Số ngày"
+      },
+      "longShipping": {
+        "title": "Đơn đang giao quá {days} ngày",
+        "help": "Hỏi hãng vận chuyển hoặc cập nhật giao thành công / hoàn hàng.",
+        "value": "Số ngày"
+      },
+      "codExceptions": {
+        "title": "COD đã thu nhưng không đối soát thẳng được",
+        "help": "Đơn có hoàn hàng/hoàn tiền hoặc chưa hoàn tất. Cần xử lý ngoại lệ, không tự suy số tiền.",
+        "value": "Số ngày"
+      },
+      "quarantine": {
+        "title": "Hàng trả chờ kiểm tra",
+        "help": "Kiểm rồi nhập lại kho bán hoặc xuất huỷ.",
+        "value": "SL"
+      },
+      "staleDrafts": {
+        "title": "Phiếu kho nháp quá {days} ngày",
+        "help": "Ghi sổ hoặc huỷ để số liệu rõ ràng.",
+        "value": "Số ngày"
+      }
+    },
+    "baseline": {
+      "title": "Mốc vận hành",
+      "help": "Tính từ lịch sử trạng thái của đơn tạo trong kỳ. p50 = trung vị; p90 = 90% số đơn nhanh hơn mức này.",
+      "step": "Bước",
+      "n": "Số mẫu",
+      "p50": "p50 (giờ)",
+      "p90": "p90 (giờ)",
+      "createdToConfirmed": "Đặt → xác nhận",
+      "confirmedToShipped": "Xác nhận → bàn giao",
+      "createdToShipped": "Đặt → bàn giao",
+      "shippedToCompleted": "Bàn giao → hoàn tất",
+      "receiveToPrice": "Ghi sổ nhập → đổi giá",
+      "neverPriced": "{count} dòng nhập trong kỳ chưa đổi giá lần nào sau đó.",
+      "ordersByStatus": "Đơn theo trạng thái (toàn bộ)",
+      "status": "Trạng thái",
+      "count": "Số đơn",
+      "cod": "COD chưa về theo tuổi nợ",
+      "age": "Số ngày từ lúc hãng thu",
+      "amount": "Số tiền (MMK)",
+      "codTotal": "Tổng COD chưa về: {count} đơn · {amount} MMK",
+      "commissionPaid": "Hoa hồng đã chi (luỹ kế, MMK)"
+    }
   }
 }

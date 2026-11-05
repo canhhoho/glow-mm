@@ -1471,5 +1471,137 @@
     "remitted": "Received by store",
     "exception": "Return / refund · Separate reconciliation required",
     "empty": "No COD awaiting reconciliation"
+  },
+  "DataHealth": {
+    "title": "Data health",
+    "description": "Read-only report: data that is wrong or missing and needs a manual fix, plus operating-time baselines. This page never changes data.",
+    "tabSales": "Sales",
+    "tabHealth": "Data health",
+    "generatedAt": "Generated {time}",
+    "download": "Download baseline (JSON)",
+    "period": "Baseline period",
+    "days": "{days} days",
+    "groups": {
+      "catalog": "Products",
+      "cost": "Cost and price source",
+      "operations": "Operations"
+    },
+    "sev": {
+      "error": "Error",
+      "warning": "Warning",
+      "info": "Watch"
+    },
+    "none": "None",
+    "more": "{count} more — fix the items above and reload.",
+    "colRef": "Code",
+    "colName": "Name / note",
+    "state": {
+      "published": "Visible",
+      "hidden": "Hidden"
+    },
+    "checks": {
+      "publishedZeroPrice": {
+        "title": "Visible products priced ≤ 0",
+        "help": "Customers cannot order them (blocked on the server). Price or hide the product.",
+        "value": "Price"
+      },
+      "hiddenZeroPrice": {
+        "title": "Hidden products without a price",
+        "help": "Price them before publishing.",
+        "value": "Price"
+      },
+      "noImage": {
+        "title": "Products without images",
+        "help": "Add images before publishing.",
+        "value": "State"
+      },
+      "missingWeight": {
+        "title": "VN-import variants missing weight",
+        "help": "The price formula needs weight for the per-kg freight; pricing skips these variants.",
+        "value": ""
+      },
+      "missingWeightLocal": {
+        "title": "MMK-purchase variants missing weight",
+        "help": "Does not affect price; needed for VTP shipping.",
+        "value": ""
+      },
+      "badLocation": {
+        "title": "Products in an inactive or non-sales warehouse",
+        "help": "Their stock cannot be sold. Move the product to an active sales warehouse.",
+        "value": "Warehouse"
+      },
+      "stockMissingCost": {
+        "title": "Lots with sellable stock but no cost",
+        "help": "Orders issued from these lots record Missing cost. Allocate shipment costs or estimate the cost on the lot page.",
+        "value": "Stock qty"
+      },
+      "draftOnlyCost": {
+        "title": "Variants with lots only from draft/cancelled receipts",
+        "help": "No posted purchase cost, so pricing skips them. Post the real receipt.",
+        "value": ""
+      },
+      "comboMissingCost": {
+        "title": "Combos without a computable cost",
+        "help": "A component has no posted lot in the right currency, so pricing skips the combo.",
+        "value": "Missing components"
+      },
+      "oldShipRuns": {
+        "title": "Price runs with per-kg freight applied before the freight fix",
+        "help": "Freight may have been added twice if lots had shipment costs. Review the prices; nothing is changed automatically.",
+        "value": "Prices changed"
+      },
+      "lotShipmentMismatch": {
+        "title": "Lots re-received on a document of another shipment",
+        "help": "The lot keeps its old shipment, so shipment costs are allocated to the wrong place. Needs a separate fix.",
+        "value": "Document"
+      },
+      "overdueOrders": {
+        "title": "Pending orders past their hold time",
+        "help": "Cron will cancel them; call the customer if the order should be kept.",
+        "value": "Days"
+      },
+      "longShipping": {
+        "title": "Orders shipping for more than {days} days",
+        "help": "Check with the carrier or record delivery / return.",
+        "value": "Days"
+      },
+      "codExceptions": {
+        "title": "Collected COD that cannot be reconciled directly",
+        "help": "Order has returns/refunds or is not completed. Handle as an exception; never guess the amount.",
+        "value": "Days"
+      },
+      "quarantine": {
+        "title": "Returned goods awaiting inspection",
+        "help": "Inspect, then restock to a sales warehouse or write off.",
+        "value": "Qty"
+      },
+      "staleDrafts": {
+        "title": "Draft stock documents older than {days} days",
+        "help": "Post or cancel them to keep figures clear.",
+        "value": "Days"
+      }
+    },
+    "baseline": {
+      "title": "Operating baseline",
+      "help": "From the status history of orders created in the period. p50 = median; p90 = 90% of orders are faster than this.",
+      "step": "Step",
+      "n": "Samples",
+      "p50": "p50 (hours)",
+      "p90": "p90 (hours)",
+      "createdToConfirmed": "Placed → confirmed",
+      "confirmedToShipped": "Confirmed → handed over",
+      "createdToShipped": "Placed → handed over",
+      "shippedToCompleted": "Handed over → completed",
+      "receiveToPrice": "Receipt posted → price changed",
+      "neverPriced": "{count} receipt lines in the period had no price change afterwards.",
+      "ordersByStatus": "Orders by status (all time)",
+      "status": "Status",
+      "count": "Orders",
+      "cod": "Outstanding COD by age",
+      "age": "Days since carrier collected",
+      "amount": "Amount (MMK)",
+      "codTotal": "Outstanding COD: {count} orders · {amount} MMK",
+      "commissionPaid": "Commission paid (cumulative, MMK)"
+    }
   }
 }

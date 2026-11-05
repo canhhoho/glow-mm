@@ -9,6 +9,7 @@ import {
   type Range,
 } from "@/server/reports/queries";
 import { DataTable, fieldClass, FilterButton, Page, PageHeader, Stat, Td } from "@/components/admin/ui";
+import { ReportsTabs } from "@/components/admin/reports-tabs";
 import { fmtDay, fmtInt } from "@/lib/format";
 import { addDays } from "@/lib/time";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
   return (
     <Page>
       <PageHeader title={t("title")} description={t("basis")} />
+      <ReportsTabs active="sales" />
       {/* key theo kỳ: điều hướng phía client giữ DOM → defaultValue cũ; đổi key để ô ngày hiện kỳ đã chuẩn hoá. */}
       <form key={`${range.from}|${range.to}`} className="flex flex-wrap items-end gap-2">
         <label className="grid content-start gap-1 text-sm">
