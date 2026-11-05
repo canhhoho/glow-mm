@@ -116,6 +116,7 @@
       "invalid_phone": "Vui lòng nhập số di động Myanmar hợp lệ",
       "invalid_zone": "Vui lòng chọn thị trấn",
       "variant_unavailable": "Một số sản phẩm không còn bán — vui lòng kiểm tra giỏ hàng",
+      "price_missing": "Một số sản phẩm chưa có giá bán — vui lòng liên hệ cửa hàng",
       "out_of_stock": "Một số sản phẩm không đủ hàng — vui lòng kiểm tra giỏ hàng",
       "invalid_form": "Vui lòng kiểm tra thông tin đã nhập",
       "not_found": "Không tìm thấy đơn hàng",

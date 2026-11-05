@@ -1,9 +1,18 @@
 import "server-only";
+import type { Prisma } from "@/generated/prisma/client";
 import type { Tx } from "@/server/inventory/ledger";
 import { bundleDefs } from "@/server/orders/availability";
 
 /**
- * Vốn của biến thể để tính giá (đã chốt P3, mở rộng P24): lô nhập gần nhất (`createdAt` mới nhất) **có giá đúng loại tiền**.
+ * Lô đã thực nhập: có dòng phiếu RECEIVE đã ghi sổ, số lượng dương. Lô được tạo ngay khi lập phiếu nháp
+ * và không bị xoá khi huỷ phiếu → phiếu nháp/huỷ không được là nguồn giá mua.
+ */
+export const postedReceiveBatch = {
+  documentLines: { some: { qty: { gt: 0 }, document: { type: "RECEIVE", status: "POSTED" } } },
+} satisfies Prisma.BatchWhereInput;
+
+/**
+ * Vốn của biến thể để tính giá (đã chốt P3, mở rộng P24): lô **đã nhập ghi sổ** gần nhất (`createdAt` mới nhất) **có giá đúng loại tiền**.
  *  - VND: PURCHASE dùng `unitCostVnd` cho công thức có cước/kg; LANDED giữ cách tính cũ không cước.
  *  - MMK (kho mua tại Myanmar): `unitCostMmk`.
  * Combo = tổng vốn thành phần × số lượng; thiếu vốn một thành phần → không tính được (null).
@@ -17,7 +26,11 @@ export async function variantCosts(tx: Tx, variantIds: string[], currency: CostC
   for (const def of defs.values()) for (const c of def) baseIds.add(c.componentId);
 
   const batches = await tx.batch.findMany({
-    where: { variantId: { in: [...baseIds] }, ...(currency === "VND" ? { unitCostVnd: { not: null } } : { unitCostMmk: { not: null } }) },
+    where: {
+      variantId: { in: [...baseIds] },
+      ...(currency === "VND" ? { unitCostVnd: { not: null } } : { unitCostMmk: { not: null } }),
+      ...postedReceiveBatch,
+    },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     select: { variantId: true, unitCostVnd: true, landedCostVnd: true, unitCostMmk: true },
   });

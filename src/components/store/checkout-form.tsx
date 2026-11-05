@@ -1,12 +1,14 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState, useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 import type { AddressCatalog } from "@/server/locations/locations";
 import { placeOrderAction } from "@/server/cart/actions";
 import { AddressPicker } from "../address-picker";
 import { Notice, primaryButton, storeField } from "./ui";
 import { useAddressLabels } from "./address-labels";
+
+const noopSubscribe = () => () => {};
 
 /** Địa chỉ trong sổ địa chỉ của khách (P14c) — mặc định đứng đầu. */
 export type SavedAddress = {
@@ -45,9 +47,22 @@ export function CheckoutForm({
   const labels = useAddressLabels();
   const [state, action, pending] = useActionState(placeOrderAction, undefined);
   const [selected, setSelected] = useState(addresses[0]?.id ?? "new");
+  const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
   const a = addresses.find((x) => x.id === selected);
   return (
-    <form action={action} className="space-y-4">
+    // `action={…}` làm React reset form sau MỌI lần gửi → server báo lỗi (hết hàng, SĐT sai…) thì khách mất tên,
+    // địa chỉ, cách thanh toán vừa nhập và các ô chọn địa chỉ lệch với state. Gửi qua onSubmit để giữ nguyên;
+    // thành công thì server redirect sang trang đơn. Nút khoá đến khi hydrate xong (Slow 3G) để không gửi form
+    // kiểu trình duyệt; method="post" để dù vậy dữ liệu khách cũng không lên URL.
+    <form
+      method="post"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const fd = new FormData(e.currentTarget);
+        startTransition(() => action(fd));
+      }}
+      className="space-y-4"
+    >
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       {addresses.length > 0 && (
@@ -142,7 +157,7 @@ export function CheckoutForm({
       </fieldset>
 
       {state?.error && <Notice tone="error">{state.error}</Notice>}
-      <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
+      <button type="submit" disabled={pending || !hydrated} className={`${primaryButton} w-full`}>
         {t("place")}
       </button>
     </form>

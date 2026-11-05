@@ -601,6 +601,7 @@
       "invalid_phone": "Invalid phone number",
       "invalid_zone": "Invalid delivery zone or no rate",
       "variant_unavailable": "An item is no longer sold",
+      "price_missing": "An item has no selling price (price ≤ 0)",
       "out_of_stock": "Not enough stock (available/requested)",
       "not_found": "Order not found",
       "invalid_transition": "Not allowed in the current status",

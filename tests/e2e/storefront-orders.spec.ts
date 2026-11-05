@@ -3,7 +3,7 @@ import Rabbit from "rabbit-node";
 import { login, pickAddress, signInAtPrompt } from "./helpers";
 
 const PRODUCT = "/en/p/sen-viet-sunscreen-spf50";
-async function addToCartAndCheckout(page: Page, method: "Cash on delivery" | "Bank transfer", phone: string) {
+async function addToCartAndCheckout(page: Page, method: "Cash on delivery" | "Bank transfer", phone: string, failFirst = false) {
   await page.goto(PRODUCT);
   await page.getByRole("button", { name: "Add to cart" }).click();
   await expect(page).toHaveURL(/\/en\/cart$/);
@@ -14,11 +14,21 @@ async function addToCartAndCheckout(page: Page, method: "Cash on delivery" | "Ba
   await page.getByRole("link", { name: "Checkout" }).click();
   await signInAtPrompt(page);
   await page.getByLabel("Full name").fill("Ma Thandar");
-  await page.getByLabel("Phone number").fill(phone);
+  await page.getByLabel("Phone number").fill(failFirst ? "12345" : phone);
   await pickAddress(page);
   await page.getByLabel("Address (house no., street, ward)").fill("No. 7, Pyay Road");
   await page.getByText(method, { exact: true }).click();
   await page.getByRole("button", { name: "Place order" }).click();
+  if (failFirst) {
+    // Server báo lỗi → các ô khách vừa nhập (kể cả địa chỉ chọn và cách thanh toán) phải còn nguyên (DQ).
+    await expect(page.getByText("Please enter a valid Myanmar mobile number")).toBeVisible();
+    await expect(page.getByLabel("Full name")).toHaveValue("Ma Thandar");
+    await expect(page.getByLabel("Address (house no., street, ward)")).toHaveValue("No. 7, Pyay Road");
+    await expect(page.getByLabel("Township").locator("option:checked")).toHaveText("Kamaryut");
+    await expect(page.getByRole("radio", { name: new RegExp(method) })).toBeChecked();
+    await page.getByLabel("Phone number").fill(phone);
+    await page.getByRole("button", { name: "Place order" }).click();
+  }
 
   await expect(page).toHaveURL(/\/en\/order\/OD-/);
   await expect(page.getByText("Thank you! Your order has been placed.")).toBeVisible();
@@ -62,7 +72,7 @@ test("khách đặt COD trên web → nhân viên gọi xác nhận", async ({ p
 });
 
 test("khách chuyển khoản → nhân viên xác nhận đã nhận tiền; tra đơn bằng mã + SĐT", async ({ page, browser }) => {
-  const { code, url } = await addToCartAndCheckout(page, "Bank transfer", "09 4511 2233");
+  const { code, url } = await addToCartAndCheckout(page, "Bank transfer", "09 4511 2233", true);
   await expect(page.getByTestId("bank-instructions")).not.toBeEmpty();
   await expect(page.locator('input[type="file"]')).toHaveCount(0);
   await expect(page.getByText("No receipt is required.", { exact: false })).toBeVisible();

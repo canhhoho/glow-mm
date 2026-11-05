@@ -176,7 +176,10 @@ async function resolveAffiliate(tx: Tx, ref: CreateOrderContext["affiliate"]) {
   return a;
 }
 
-/** Giá hiện hành + snapshot tên/sku. Biến thể ngừng bán hoặc sản phẩm chưa đăng → lỗi. */
+/**
+ * Giá hiện hành + snapshot tên/sku. Biến thể ngừng bán hoặc sản phẩm chưa đăng → lỗi.
+ * Giá ≤ 0 (chưa tính giá / nhập thiếu) → lỗi cho mọi kênh, kể cả đơn nhân viên/CTV; quà/tester không đi qua đây.
+ */
 async function priceLines(tx: Tx, items: { variantId: string; qty: number }[], locale: string) {
   const variants = await tx.variant.findMany({
     where: { id: { in: items.map((i) => i.variantId) }, active: true, product: { published: true } },
@@ -186,6 +189,9 @@ async function priceLines(tx: Tx, items: { variantId: string; qty: number }[], l
   return items.map((i) => {
     const v = byId.get(i.variantId);
     if (!v) throw new OrderError("variant_unavailable", "Sản phẩm không còn bán", { variantId: i.variantId });
+    if (v.priceMmk <= 0) {
+      throw new OrderError("price_missing", `Sản phẩm ${v.sku} chưa có giá bán`, { variantId: v.id, sku: v.sku });
+    }
     const tr = pick(v.product.translations, locale);
     return {
       variantId: v.id,

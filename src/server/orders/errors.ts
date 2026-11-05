@@ -5,6 +5,7 @@ export type OrderErrorCode =
   | "invalid_phone"
   | "invalid_zone"
   | "variant_unavailable"
+  | "price_missing"
   | "out_of_stock"
   | "not_found"
   | "invalid_transition"

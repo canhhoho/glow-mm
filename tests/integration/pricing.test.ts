@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { ZodError } from "zod";
 import { prisma } from "@/lib/db";
-import { createDocument, postDocument } from "@/server/inventory/documents";
+import { cancelDocument, createDocument, postDocument } from "@/server/inventory/documents";
+import { pricingGaps } from "@/server/pricing/queries";
 import { applyRun, cancelRun, createRate, previewRun } from "@/server/pricing/runs";
 import { getAllSettings, getNumberSetting, saveSettings } from "@/server/settings";
 import { makeFixture, type Fixture } from "./fixtures";
@@ -98,6 +99,50 @@ describe("Cập nhật giá hàng loạt", () => {
 
     await expect(applyRun(run.id, [f.variantId], f.userId)).rejects.toThrow(/đã được áp dụng/);
     await expect(cancelRun(run.id, f.userId)).rejects.toThrow();
+  });
+
+  it("phiếu nhập nháp/huỷ không là nguồn giá mua; ghi sổ phiếu mới thì nguồn đổi", async () => {
+    const f = await makeFixture();
+    await receiveLot(f, "POSTED", 100_000);
+    const rate = await createRate({ mmkPerUsd: "2600", vndPerUsd: "26000" }, f.userId); // 1 VND = 0.1 MMK
+    const draft = (lot: string, unitCostVnd: number) =>
+      createDocument(
+        { type: "RECEIVE", toId: f.vn.id, lines: [{ variantId: f.variantId, lotNo: lot, expiryDate: "2028-12-31", unitCostVnd, qty: 5 }] },
+        f.userId,
+      );
+    const suggested = async () => {
+      const run = await previewRun({ rateId: rate.id, marginPct: "0", roundTo: 1, brandId: f.brandId }, f.userId);
+      const [line] = await linesOf(run.id);
+      await cancelRun(run.id, f.userId);
+      return line.costVnd;
+    };
+
+    // Lô của phiếu nháp được tạo ngay — giá cao không được kéo giá đề xuất lên; biến thể vẫn không bị coi là thiếu vốn.
+    const pending = await draft("DRAFT", 900_000);
+    expect(await suggested()).toBe(100_000);
+    const gaps = (await pricingGaps()).find((g) => g.location.id === f.mm.id);
+    expect(gaps?.missingCost ?? []).not.toContain(`IT-${f.tag}`);
+
+    // Huỷ phiếu: lô vẫn còn trong DB nhưng không được dùng.
+    const cancelled = await draft("CANCELLED", 800_000);
+    await cancelDocument(cancelled.id, f.userId);
+    expect(await suggested()).toBe(100_000);
+
+    // Ghi sổ phiếu nháp → thành nguồn giá.
+    await postDocument(pending.id, f.userId);
+    expect(await suggested()).toBe(900_000);
+  });
+
+  it("chỉ có lô từ phiếu nháp → biến thể bị coi là thiếu vốn, không vào bản xem trước", async () => {
+    const f = await makeFixture();
+    await createDocument(
+      { type: "RECEIVE", toId: f.vn.id, lines: [{ variantId: f.variantId, lotNo: "D", expiryDate: "2028-12-31", unitCostVnd: 50_000, qty: 5 }] },
+      f.userId,
+    );
+    const rate = await createRate({ mmkPerUsd: "2600", vndPerUsd: "26000" }, f.userId);
+    await expect(previewRun({ rateId: rate.id, marginPct: "0", brandId: f.brandId }, f.userId)).rejects.toThrow(/đủ dữ liệu/);
+    const gaps = (await pricingGaps()).find((g) => g.location.id === f.mm.id);
+    expect(gaps?.missingCost).toContain(`IT-${f.tag}`);
   });
 
   it("giá bị sửa tay sau khi xem trước → bỏ qua, không ghi đè", async () => {

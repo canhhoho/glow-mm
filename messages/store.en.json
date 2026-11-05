@@ -116,6 +116,7 @@
       "invalid_phone": "Please enter a valid Myanmar mobile number",
       "invalid_zone": "Please choose a township",
       "variant_unavailable": "Some items are no longer available — please check your cart",
+      "price_missing": "Some items don't have a price yet — please contact us",
       "out_of_stock": "Not enough stock for some items — please check your cart",
       "invalid_form": "Please check the information you entered",
       "not_found": "Order not found",

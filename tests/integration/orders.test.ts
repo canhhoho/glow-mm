@@ -61,6 +61,20 @@ describe("Tạo đơn + giữ hàng", () => {
     expect(await prisma.order.count({ where: { items: { some: { variantId: f.variantId } } } })).toBe(0);
   });
 
+  it("giá bán ≤ 0 → price_missing cho cả đơn web lẫn đơn nhân viên, không tạo đơn, không giữ hàng", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
+    await prisma.variant.update({ where: { id: f.variantId }, data: { priceMmk: 0 } });
+    await expect(createOrder(orderInput(f, 1), { userId: null })).rejects.toMatchObject({
+      code: "price_missing",
+      details: { sku: `IT-${f.tag}` },
+    });
+    await expect(createOrder({ ...orderInput(f, 1), channel: "VIBER" }, { userId: f.userId })).rejects.toMatchObject({
+      code: "price_missing",
+    });
+    expect(await prisma.order.count({ where: { items: { some: { variantId: f.variantId } } } })).toBe(0);
+    expect(await avail(f.variantId)).toBe(5);
+  });
+
   it("tên/địa chỉ gõ bằng Zawgyi được lưu dạng Unicode", async () => {
     const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 2 }]);
     const name = "မမြင့်မြင့်";

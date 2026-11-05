@@ -30,6 +30,7 @@ async function message(e: unknown): Promise<string> {
         : ids.map((id) => sku.get(id) ?? id).join(", ");
       return `${t("err.out_of_stock")}: ${list}`;
     }
+    if (e.code === "price_missing" && e.details?.sku) return `${t("err.price_missing")}: ${String(e.details.sku)}`;
     return t(`err.${e.code}`);
   }
   if (e instanceof ZodError) return e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");

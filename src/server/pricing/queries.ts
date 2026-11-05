@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { productName } from "@/server/inventory/queries";
+import { postedReceiveBatch } from "./cost";
 
 /** Truy vấn cho trang /admin/pricing (chỉ đọc). */
 
@@ -51,10 +52,10 @@ export async function getRun(id: string) {
   };
 }
 
-/** Biến thể đang bán chưa có lô nào → không tính được giá vốn. */
+/** Biến thể đang bán chưa có lô nào đã nhập ghi sổ → không tính được giá vốn. */
 export async function variantsWithoutCost() {
   const rows = await prisma.variant.findMany({
-    where: { active: true, isBundle: false, batches: { none: {} }, product: { archivedAt: null } },
+    where: { active: true, isBundle: false, batches: { none: postedReceiveBatch }, product: { archivedAt: null } },
     select: { sku: true },
     orderBy: { sku: "asc" },
   });
@@ -82,7 +83,11 @@ export async function pricingGaps() {
           isBundle: true,
           weightGrams: true,
           product: { select: { fixedProfitMmk: true } },
-          batches: { where: mmk ? { unitCostMmk: { not: null } } : { unitCostVnd: { not: null } }, take: 1, select: { id: true } },
+          batches: {
+            where: { ...(mmk ? { unitCostMmk: { not: null } } : { unitCostVnd: { not: null } }), ...postedReceiveBatch },
+            take: 1,
+            select: { id: true },
+          },
         },
       });
       return {

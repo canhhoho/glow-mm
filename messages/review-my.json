@@ -162,7 +162,8 @@
     "Order.pay.PROOF_SUBMITTED",
     "Order.pay.REJECTED",
     "Product.paoMonths",
-    "Product.paoTitle"
+    "Product.paoTitle",
+    "Checkout.err.price_missing"
   ],
   "admin": [
     "Affiliates.access",
@@ -1006,6 +1007,7 @@
     "Products.fixedProfitMmk",
     "Reports.inactiveLocations",
     "Warehouses.hideInactive",
-    "Warehouses.showInactive"
+    "Warehouses.showInactive",
+    "Orders.err.price_missing"
   ]
 }
