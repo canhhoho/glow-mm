@@ -18,7 +18,7 @@ import { SwRegister } from "@/components/store/sw-register";
  * Font Myanmar tự host: chỉ phần chữ Myanmar, 1 độ đậm (400) để nhẹ trên 3G; Next tự preload + tạo fallback metric.
  * Chữ Latin dùng font hệ thống. (Admin dùng cùng cách, thêm độ đậm 500.)
  */
-const myanmarFont = localFont({
+const storeMyanmarFont = localFont({
   src: "../../../node_modules/@fontsource/noto-sans-myanmar/files/noto-sans-myanmar-myanmar-400-normal.woff2",
   weight: "400",
   display: "swap",
@@ -69,7 +69,7 @@ export default async function StoreLayout({ children, params }: LayoutProps<"/[l
   const clientMessages = Object.fromEntries(CLIENT_NAMESPACES.map((ns) => [ns, messages[ns]]));
 
   return (
-    <html lang={locale} data-theme="store" className={myanmarFont.className}>
+    <html lang={locale} data-theme="store" className={storeMyanmarFont.className}>
       <body className="min-h-dvh bg-background text-foreground antialiased">
         <NextIntlClientProvider messages={clientMessages}>
           {/* Header/footer trải hết chiều ngang; nội dung trong khung max-w-6xl (mobile-first). */}

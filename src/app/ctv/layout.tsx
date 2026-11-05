@@ -2,7 +2,7 @@ import "../globals.css";
 import type { Metadata, Viewport } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
-import { myanmarFont } from "@/lib/fonts";
+import { staffMyanmarFont } from "@/lib/fonts";
 
 // Cổng CTV luôn động (cookie ngôn ngữ + phiên đăng nhập); không cần instant navigation.
 export const instant = false;
@@ -22,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function CtvRootLayout({ children }: LayoutProps<"/ctv">) {
   const locale = await getLocale();
   return (
-    <html lang={locale} className={myanmarFont.className}>
+    <html lang={locale} className={staffMyanmarFont.className}>
       <body className="min-h-dvh bg-background text-foreground antialiased">
         <NextIntlClientProvider>{children}</NextIntlClientProvider>
       </body>

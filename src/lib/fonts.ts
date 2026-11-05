@@ -5,11 +5,15 @@ import localFont from "next/font/local";
  * Latin/Việt, trình duyệt lấy ascent/descent rất cao của nó cho mọi dòng → chữ trong nút lệch lên trên.
  * Chữ Latin/Việt dùng font hệ thống. (Storefront dùng bản riêng chỉ 400 — src/app/[locale]/layout.tsx.)
  */
-export const myanmarFont = localFont({
+// Next 16 dùng tên biến cho font-family; phải khác storeMyanmarFont để CSS gộp không lẫn weight 500.
+export const staffMyanmarFont = localFont({
   src: [
     { path: "../../node_modules/@fontsource/noto-sans-myanmar/files/noto-sans-myanmar-myanmar-400-normal.woff2", weight: "400" },
     { path: "../../node_modules/@fontsource/noto-sans-myanmar/files/noto-sans-myanmar-myanmar-500-normal.woff2", weight: "500" },
   ],
+  // CSS font được gộp giữa các root layout trong bản này; không preload font staff trên storefront.
+  // Admin/CTV vẫn tải đúng font qua @font-face khi có chữ Myanmar.
+  preload: false,
   display: "swap",
   fallback: ["ui-sans-serif", "system-ui", "sans-serif"],
   adjustFontFallback: false,

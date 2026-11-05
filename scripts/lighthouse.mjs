@@ -3,6 +3,7 @@
  * Chạy trên bản build production đang chạy (mặc định http://localhost:3100 — cùng server với E2E):
  *   npm run build && npm run start   (PORT=3100, env .env.test)   rồi   npm run perf
  * Tuỳ chọn: PERF_URL=<base url>, PERF_RUNS=<số lần đo mỗi trang, mặc định 3>.
+ * Đo lại phạm vi có vấn đề: PERF_PAGES=home,product PERF_PROFILES=slow-3g (bỏ trống = tất cả).
  * Điểm Lighthouse dao động giữa các lần → lấy lần có điểm trung vị (khuyến nghị của Lighthouse).
  *
  * Cổng (đã chốt ở P2):
@@ -36,6 +37,16 @@ const PROFILES = {
   desktop: { settings: desktopConfig.settings, min: 90 },
 };
 
+function selected(items, raw, key) {
+  if (!raw) return items;
+  const wanted = raw.split(",").map(s=>s.trim()).filter(Boolean);
+  if (!wanted.length || wanted.some(name=>!items.some(item=>key(item) === name))) throw new Error(`Phạm vi đo không hợp lệ: ${raw}`);
+  return items.filter(item=>wanted.includes(key(item)));
+}
+if (!Number.isInteger(RUNS) || RUNS < 1 || RUNS > 10) throw new Error("PERF_RUNS phải là số nguyên 1–10");
+const selectedPages = selected(PAGES, process.env.PERF_PAGES, page=>page.name);
+const selectedProfiles = selected(Object.entries(PROFILES), process.env.PERF_PROFILES, ([name])=>name);
+
 // Dùng Chromium của Playwright (đã cài cho E2E), mở cổng debug cho Lighthouse.
 const PORT = 9333;
 const browser = await chromium.launch({ args: [`--remote-debugging-port=${PORT}`] });
@@ -44,8 +55,8 @@ await mkdir("lighthouse-reports", { recursive: true });
 const failures = [];
 const rows = [];
 try {
-  for (const [profile, { settings, min }] of Object.entries(PROFILES)) {
-    for (const page of PAGES) {
+  for (const [profile, { settings, min }] of selectedProfiles) {
+    for (const page of selectedPages) {
       const runs = [];
       for (let i = 0; i < RUNS; i++) {
         runs.push(
