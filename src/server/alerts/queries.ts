@@ -18,7 +18,9 @@ export async function loadVariantStock(now: Date, opts: { blockDays: number; sal
   const since = new Date(now.getTime() - opts.salesWindowDays * DAY_MS);
 
   const [available, balances, issued, returned] = await Promise.all([
-    prisma.$transaction((tx) => baseAvailability(tx, ids, { now, blockDays: opts.blockDays })),
+    // Chỉ đọc; READ COMMITTED cũ cũng không có snapshot xuyên hai câu SELECT.
+    // Không giữ interactive transaction 5s: DB bận không được làm dashboard lỗi P2028.
+    baseAvailability(prisma, ids, { now, blockDays: opts.blockDays }),
     prisma.stockBalance.findMany({
       where: { qty: { gt: 0 }, stockType: "SELLABLE", location: { type: { in: ["VN_STOCK", "IN_TRANSIT", "CUSTOMS"] } } },
       select: { qty: true, location: { select: { type: true } }, batch: { select: { variantId: true } } },

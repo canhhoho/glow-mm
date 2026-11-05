@@ -6,6 +6,7 @@ test("admin tạo nhân viên → nhân viên đăng nhập đúng quyền → a
   page,
   browser,
 }) => {
+  test.setTimeout(60_000); // Hai trình duyệt, tạo/khóa tài khoản rồi kiểm thu hồi phiên và đóng context.
   const email = `e2e-staff-${randomBytes(4).toString("hex")}@glow.local`;
   const password = `E2E-tam-${randomBytes(6).toString("hex")}`;
 
