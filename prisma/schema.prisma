@@ -498,6 +498,7 @@ model Location {
 enum AllocationMethod {
   BY_VALUE
   BY_QTY
+  BY_WEIGHT
 }
 
 /// Chuyến hàng VN→MM, gom chi phí để phân bổ landed cost.
@@ -512,6 +513,21 @@ model InboundShipment {
   costs            ShipmentCost[]
   batches          Batch[]
   documents        StockDocument[]
+  allocations      ShipmentAllocation[]
+}
+
+model ShipmentAllocation {
+  id           String @id @default(cuid())
+  shipmentId   String
+  shipment     InboundShipment @relation(fields: [shipmentId], references: [id])
+  createdAt    DateTime @default(now())
+  createdById  String
+  method       AllocationMethod
+  fingerprint  String
+  input        Json
+  result       Json
+
+  @@index([shipmentId, createdAt])
 }
 
 enum ShipmentCostType {

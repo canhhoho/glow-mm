@@ -182,6 +182,7 @@ export async function createDocument(raw: unknown, userId: string, transaction?:
         if (mmk && l.unitCostMmk === undefined) fail(`${variant.product.stockLocation.name} nhập giá mua bằng MMK`);
         if (!mmk && l.unitCostVnd === undefined) fail(`${variant.product.stockLocation.name} nhập giá mua bằng VND`);
         if (mmk && input.shipmentId) fail("Lô giá MMK không gắn chuyến hàng VN → MM");
+        if (existing && (existing.shipmentId ?? null) !== (input.shipmentId ?? null)) fail(`Lô ${l.lotNo} có chuyến hàng khác. Chọn đúng chuyến hoặc dùng thao tác gắn lô trước khi lập phiếu.`);
         const unitCostVnd = l.unitCostVnd ?? null;
         const unitCostMmk = l.unitCostMmk ?? null;
         if (
@@ -273,6 +274,7 @@ export async function postDocumentTx(tx: Tx, documentId: string, userId: string,
   if (claimed.count !== 1) throw new DocumentError("Phiếu không ở trạng thái nháp");
 
   const doc = await tx.stockDocument.findUniqueOrThrow({ where: { id: documentId }, include: { lines: true } });
+  if (doc.type === "RECEIVE" && doc.shipmentId) await tx.$queryRaw`SELECT id FROM "InboundShipment" WHERE id = ${doc.shipmentId} FOR UPDATE`;
   const today = new Date();
 
   // Dòng chưa chọn lô (chuyển/xuất) → FEFO tại vị trí đi. Xuất nội bộ mặc định dùng cả lô cận hạn (blockDays = 0).

@@ -13,6 +13,7 @@ import { createWarehouse, setWarehouseActive, updateWarehouse } from "./warehous
 import {
   addShipmentCost,
   allocateShipment,
+  attachBatchToShipment,
   createShipment,
   markShipmentArrived,
   removeShipmentCost,
@@ -195,7 +196,7 @@ export async function allocateShipmentAction(_prev: ActionState, formData: FormD
   try {
     const user = await requirePermission("shipment:manage");
     const method = formData.get("allocationMethod");
-    if (method === "BY_VALUE" || method === "BY_QTY") await setAllocationMethod(shipmentId, method);
+    if (method === "BY_VALUE" || method === "BY_QTY" || method === "BY_WEIGHT") await setAllocationMethod(shipmentId, method);
     await allocateShipment(shipmentId, user.id);
     revalidatePath("/admin/inventory");
     revalidatePath("/admin/reports");
@@ -205,6 +206,17 @@ export async function allocateShipmentAction(_prev: ActionState, formData: FormD
   }
   revalidatePath(`/admin/shipments/${shipmentId}`);
   return { ok: "allocated" };
+}
+
+export async function attachBatchAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const shipmentId = String(formData.get("shipmentId"));
+  try {
+    const user = await requirePermission("shipment:manage");
+    await attachBatchToShipment({ shipmentId, batchId: formData.get("batchId") }, user.id);
+  } catch (e) { return { error: message(e) }; }
+  revalidatePath(`/admin/shipments/${shipmentId}`);
+  revalidatePath("/admin/inventory/batches/[id]", "page");
+  return { ok: "attached" };
 }
 
 // ── Khu Chờ kiểm tra (hàng trả) ──

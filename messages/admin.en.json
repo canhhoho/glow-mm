@@ -341,7 +341,21 @@
     "colRate": "FX rate (VND/MMK)",
     "receiveHint": "Batches are linked when a receive document selects this shipment.",
     "arrivedAt": "Arrived",
-    "markArrived": "Mark as arrived"
+    "markArrived": "Mark as arrived",
+    "BY_WEIGHT": "By weight (kg)",
+    "unlinkedBatch": "VND batch without shipment (latest 200)",
+    "attachBatch": "Attach batch",
+    "attached": "Batch attached",
+    "allocationHistory": "Last 10 allocations",
+    "allocatedBy": "Allocated by",
+    "fingerprint": "Input fingerprint",
+    "allocatedAt": "Time",
+    "allocationHelp": "Uses posted receipt quantities, including testers. Weight allocation requires every SKU weight. VND remainders use largest remainder, ties follow internal batch ID order. Unit costs round separately. Changed inputs require explicit reallocation; shipped order cost snapshots stay unchanged.",
+    "allocationState": {
+      "UNALLOCATED": "No recorded allocation",
+      "ALLOCATED": "Allocated — inputs match",
+      "STALE": "Reallocation needed — inputs changed"
+    }
   },
   "Products": {
     "copyFrom": "Copy from an existing product",

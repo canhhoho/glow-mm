@@ -1,14 +1,16 @@
 import "server-only";
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
-import { allocateLandedCost, vndToMmk } from "./landed-cost";
+import { allocateLandedCost, vndToMmk, type AllocationMethod } from "./landed-cost";
+import type { Tx } from "./ledger";
 
 /** Chuyến hàng VN→MM: gom chi phí (ship/thuế/phí) và phân bổ vào giá vốn từng lô. */
 
 export const shipmentSchema = z.object({
   code: z.string().trim().min(1).max(30),
-  allocationMethod: z.enum(["BY_VALUE", "BY_QTY"]).default("BY_VALUE"),
+  allocationMethod: z.enum(["BY_VALUE", "BY_QTY", "BY_WEIGHT"]).default("BY_VALUE"),
   departedAt: z.coerce.date().optional(),
   note: z.string().max(500).optional(),
 });
@@ -27,11 +29,15 @@ export async function createShipment(raw: unknown) {
 
 export async function addShipmentCost(raw: unknown) {
   const input = shipmentCostSchema.parse(raw);
-  return prisma.shipmentCost.create({ data: input });
+  return prisma.$transaction(async tx => { await lockShipment(tx, input.shipmentId); return tx.shipmentCost.create({ data: input }); });
 }
 
 export async function removeShipmentCost(costId: string) {
-  await prisma.shipmentCost.delete({ where: { id: costId } });
+  await prisma.$transaction(async tx => {
+    const cost = await tx.shipmentCost.findUniqueOrThrow({ where: { id: costId } });
+    await lockShipment(tx, cost.shipmentId);
+    await tx.shipmentCost.delete({ where: { id: costId } });
+  });
 }
 
 /** Đánh dấu chuyến đã đến (hết "đang vận chuyển" trên báo cáo). Ghi ngày đi nếu chưa có. */
@@ -47,8 +53,47 @@ export async function markShipmentArrived(shipmentId: string, userId: string, at
   });
 }
 
-export async function setAllocationMethod(shipmentId: string, method: "BY_VALUE" | "BY_QTY") {
-  await prisma.inboundShipment.update({ where: { id: shipmentId }, data: { allocationMethod: method } });
+export async function setAllocationMethod(shipmentId: string, method: AllocationMethod) {
+  const allocationMethod = shipmentSchema.shape.allocationMethod.parse(method);
+  await prisma.$transaction(async tx => { await lockShipment(tx, shipmentId); await tx.inboundShipment.update({ where: { id: shipmentId }, data: { allocationMethod } }); });
+}
+
+async function lockShipment(tx: Tx, id: string) {
+  const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM "InboundShipment" WHERE id = ${id} FOR UPDATE`;
+  if (!rows.length) throw new Error("Không tìm thấy chuyến hàng");
+}
+
+/** Cùng đầu vào cho phân bổ và cảnh báo stale; không dùng tồn hiện tại làm trọng số. */
+async function allocationInput(tx: Tx, shipmentId: string) {
+  const shipment = await tx.inboundShipment.findUniqueOrThrow({ where: { id: shipmentId }, include: { costs: { orderBy: { id: "asc" } }, batches: { orderBy: { id: "asc" }, include: { rate: true, variant: { select: { sku: true, weightGrams: true } } } } } });
+  const received = await tx.stockLedger.groupBy({ by: ["batchId"], where: { batchId: { in: shipment.batches.map(b => b.id) }, document: { type: "RECEIVE", status: "POSTED" } }, _sum: { qtyDelta: true } });
+  const qtyByBatch = new Map(received.map(r => [r.batchId, r._sum.qtyDelta ?? 0]));
+  const batches = shipment.batches.flatMap(b => b.unitCostVnd != null && (qtyByBatch.get(b.id) ?? 0) > 0 ? [{ ...b, unitCostVnd: b.unitCostVnd, qty: qtyByBatch.get(b.id)! }] : []);
+  const input = { method: shipment.allocationMethod, costs: shipment.costs.map(c => ({ id: c.id, type: c.type, amountVnd: c.amountVnd })), batches: batches.map(b => ({ id: b.id, qty: b.qty, unitCostVnd: b.unitCostVnd, weightGrams: b.variant.weightGrams, rateId: b.rateId, rate: b.rate?.mmkPerVnd.toString() ?? null })) };
+  return { shipment, batches, input, fingerprint: createHash("sha256").update(JSON.stringify(input)).digest("hex"), totalCosts: shipment.costs.reduce((sum,c) => sum + c.amountVnd, 0) };
+}
+
+export async function shipmentAllocationStatus(shipmentId: string) {
+  return prisma.$transaction(async tx => {
+    const current = await allocationInput(tx, shipmentId);
+    const history = await tx.shipmentAllocation.findMany({ where: { shipmentId }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 10 });
+    return { state: !history.length ? "UNALLOCATED" : history[0].fingerprint === current.fingerprint ? "ALLOCATED" : "STALE", history };
+  }, { isolationLevel: "RepeatableRead" });
+}
+
+/** Gắn rõ ràng lô chưa có chuyến; không sửa chứng từ đã ghi sổ hay snapshot đơn. */
+export async function attachBatchToShipment(raw: unknown, userId: string) {
+  const { batchId, shipmentId } = z.object({ batchId: rawId, shipmentId: rawId }).parse(raw);
+  return prisma.$transaction(async tx => {
+    await lockShipment(tx, shipmentId);
+    const batch = await tx.batch.findUniqueOrThrow({ where: { id: batchId } });
+    if (batch.shipmentId || batch.unitCostVnd == null) throw new Error("Chỉ gắn lô VND chưa thuộc chuyến hàng");
+    const other = await tx.stockDocumentLine.count({ where: { batchId, document: { type: "RECEIVE", shipmentId: { not: shipmentId } } } });
+    if (other) throw new Error("Lô có phiếu nhập thuộc chuyến khác");
+    const changed = await tx.batch.updateMany({ where: { id: batchId, shipmentId: null }, data: { shipmentId } });
+    if (changed.count !== 1) throw new Error("Lô vừa được gắn chuyến khác, tải lại trang");
+    await tx.auditLog.create({ data: { userId, action: "shipment.attach-batch", entity: "Batch", entityId: batchId, data: { shipmentId } } });
+  });
 }
 
 /**
@@ -57,26 +102,14 @@ export async function setAllocationMethod(shipmentId: string, method: "BY_VALUE"
  */
 export async function allocateShipment(shipmentId: string, userId: string) {
   return prisma.$transaction(async (tx) => {
-    const shipment = await tx.inboundShipment.findUniqueOrThrow({
-      where: { id: shipmentId },
-      include: { costs: true, batches: { include: { rate: true } } },
-    });
-    const totalCosts = shipment.costs.reduce((s, c) => s + c.amountVnd, 0);
-
-    const received = await tx.stockLedger.groupBy({
-      by: ["batchId"],
-      where: { batchId: { in: shipment.batches.map((b) => b.id) }, document: { type: "RECEIVE", status: "POSTED" } },
-      _sum: { qtyDelta: true },
-    });
-    const qtyByBatch = new Map(received.map((r) => [r.batchId, r._sum.qtyDelta ?? 0]));
-    // Chi phí chuyến (VND) chỉ phân bổ cho lô giá VND — lô MMK không đi chuyến VN → MM (P24).
-    const batches = shipment.batches.flatMap((b) =>
-      (qtyByBatch.get(b.id) ?? 0) > 0 && b.unitCostVnd != null ? [{ ...b, unitCostVnd: b.unitCostVnd }] : [],
-    );
+    await lockShipment(tx, shipmentId);
+    const { shipment, batches, totalCosts, input, fingerprint } = await allocationInput(tx, shipmentId);
     if (batches.length === 0) throw new Error("Chuyến hàng chưa có lô nào đã nhập kho");
+    const missing = shipment.allocationMethod === "BY_WEIGHT" ? batches.filter(b => !b.variant.weightGrams).map(b => b.variant.sku) : [];
+    if (missing.length) throw new Error(`Thiếu khối lượng SKU: ${[...new Set(missing)].join(", ")}`);
 
     const result = allocateLandedCost(
-      batches.map((b) => ({ key: b.id, qty: qtyByBatch.get(b.id)!, unitCostVnd: b.unitCostVnd })),
+      batches.map((b) => ({ key: b.id, qty: b.qty, unitCostVnd: b.unitCostVnd, weightGrams: b.variant.weightGrams })),
       totalCosts,
       shipment.allocationMethod,
     );
@@ -91,6 +124,7 @@ export async function allocateShipment(shipmentId: string, userId: string) {
         },
       });
     }
+    await tx.shipmentAllocation.create({ data: { shipmentId, createdById: userId, method: shipment.allocationMethod, fingerprint, input, result } });
     await tx.auditLog.create({
       data: {
         userId,

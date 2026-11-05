@@ -1,0 +1,36 @@
+import { expect, test } from "@playwright/test";
+import { login } from "./helpers";
+
+test("D8 nhập theo chuyến, phân bổ theo kg rồi thay chi phí báo cần phân bổ lại", async ({ page }) => {
+  test.setTimeout(90000);
+  const code = `KG-${Date.now().toString(36)}`;
+  await login(page, "admin@glow.local");
+  await page.goto("/admin/shipments");
+  await page.locator('input[name="code"]').fill(code);
+  await page.locator('select[name="allocationMethod"]').selectOption("BY_WEIGHT");
+  await page.locator('form').filter({ has: page.locator('input[name="code"]') }).getByRole("button", { name: "Tạo", exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/shipments\/[^/?]+$/);
+  const shipmentUrl = page.url();
+  await page.goto("/admin/inventory/documents/new?type=RECEIVE");
+  await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "THAM — Kho Thắm" });
+  await page.getByRole("combobox", { name: "Chuyến hàng", exact: true }).selectOption({ label: code });
+  await page.getByLabel("Tìm SKU, tên sản phẩm").fill("SV-SUN-50");
+  await page.getByLabel("Số lượng SV-SUN-50", { exact: true }).fill("3");
+  await page.getByLabel("Số lô SV-SUN-50", { exact: true }).fill(code);
+  await page.getByLabel("Hạn dùng SV-SUN-50", { exact: true }).fill("2028-12-31");
+  await page.getByLabel("Giá mua/đv (VND) SV-SUN-50", { exact: true }).fill("90000");
+  await page.getByRole("button", { name: "Lưu nháp" }).click();
+  await expect(page).toHaveURL(/\/documents\/(?!new)[^/?]+$/);
+  page.once("dialog", d=>d.accept());
+  await page.getByRole("button", { name: "Ghi sổ" }).click();
+  await expect(page.getByText("Đã ghi sổ", { exact: true }).filter({ visible:true })).toBeVisible();
+  await page.goto(shipmentUrl);
+  await page.locator('input[name="amountVnd"]').fill("1000");
+  await page.locator('form').filter({ has: page.locator('input[name="amountVnd"]') }).getByRole("button").click();
+  await expect(page.locator('input[name="amountVnd"]')).toHaveValue("");
+  await page.locator('form').filter({ has: page.locator('select[name="allocationMethod"]') }).getByRole("button").click();
+  await expect(page.getByTestId("allocation-state")).toHaveText("Đã phân bổ — đầu vào còn khớp");
+  await page.locator('input[name="amountVnd"]').fill("1");
+  await page.locator('form').filter({ has: page.locator('input[name="amountVnd"]') }).getByRole("button").click();
+  await expect(page.getByTestId("allocation-state")).toHaveText("Cần phân bổ lại — đầu vào đã thay đổi");
+});

@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { fieldClass } from "@/components/admin/ui";
-import { addShipmentCostAction, allocateShipmentAction, createShipmentAction } from "@/server/inventory/actions";
+import { addShipmentCostAction, allocateShipmentAction, attachBatchAction, createShipmentAction } from "@/server/inventory/actions";
 
 function ErrorText({ error }: { error?: string }) {
   const t = useTranslations("Docs");
@@ -29,6 +29,7 @@ export function ShipmentCreateForm() {
         <select name="allocationMethod" className={fieldClass} defaultValue="BY_VALUE">
           <option value="BY_VALUE">{t("BY_VALUE")}</option>
           <option value="BY_QTY">{t("BY_QTY")}</option>
+          <option value="BY_WEIGHT">{t("BY_WEIGHT")}</option>
         </select>
       </label>
       <label className="grid content-start gap-1 text-sm">
@@ -81,7 +82,7 @@ export function ShipmentCostForm({ shipmentId }: { shipmentId: string }) {
   );
 }
 
-export function AllocateForm({ shipmentId, method }: { shipmentId: string; method: "BY_VALUE" | "BY_QTY" }) {
+export function AllocateForm({ shipmentId, method }: { shipmentId: string; method: "BY_VALUE" | "BY_QTY" | "BY_WEIGHT" }) {
   const t = useTranslations("Ship");
   const [state, action, pending] = useActionState(allocateShipmentAction, undefined);
   return (
@@ -92,6 +93,7 @@ export function AllocateForm({ shipmentId, method }: { shipmentId: string; metho
         <select name="allocationMethod" className={fieldClass} defaultValue={method}>
           <option value="BY_VALUE">{t("BY_VALUE")}</option>
           <option value="BY_QTY">{t("BY_QTY")}</option>
+          <option value="BY_WEIGHT">{t("BY_WEIGHT")}</option>
         </select>
       </label>
       <Button size="lg" type="submit" disabled={pending}>
@@ -103,4 +105,10 @@ export function AllocateForm({ shipmentId, method }: { shipmentId: string; metho
       </div>
     </form>
   );
+}
+
+export function AttachBatchForm({ shipmentId, batches }: { shipmentId: string; batches: { id: string; sku: string; lotNo: string }[] }) {
+  const t = useTranslations("Ship");
+  const [state, action, pending] = useActionState(attachBatchAction, undefined);
+  return <form action={action} className="flex flex-wrap items-end gap-2"><input type="hidden" name="shipmentId" value={shipmentId} /><label className="grid gap-1 text-sm"><span>{t("unlinkedBatch")}</span><select name="batchId" required className={fieldClass} defaultValue=""><option value="" disabled>—</option>{batches.map(b => <option key={b.id} value={b.id}>{b.sku} · {b.lotNo}</option>)}</select></label><Button type="submit" disabled={pending || !batches.length}>{t("attachBatch")}</Button><ErrorText error={state?.error} />{state?.ok && <p role="status">{t("attached")}</p>}</form>;
 }

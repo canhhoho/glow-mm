@@ -341,7 +341,21 @@
     "colRate": "ငွေလဲနှုန်း (VND/ကျပ်)",
     "receiveHint": "ပစ္စည်းလက်ခံစာရွက်တွင် ဤကုန်တင်ပို့မှုကို ရွေးလျှင် လော့များ ချိတ်ဆက်ပါမည်။",
     "arrivedAt": "ရောက်ရက်",
-    "markArrived": "ရောက်ပြီးဟု မှတ်"
+    "markArrived": "ရောက်ပြီးဟု မှတ်",
+    "BY_WEIGHT": "အလေးချိန်အလိုက် (kg)",
+    "unlinkedBatch": "VND batch without shipment (latest 200)",
+    "attachBatch": "အသုတ်ကို ခရီးစဉ်နှင့် ချိတ်ရန်",
+    "attached": "ချိတ်ပြီး",
+    "allocationHistory": "Last 10 allocations",
+    "allocatedBy": "Allocated by",
+    "fingerprint": "Input fingerprint",
+    "allocatedAt": "အချိန်",
+    "allocationHelp": "Uses posted receipt quantities, including testers. Weight allocation requires every SKU weight. VND remainders use largest remainder, ties follow internal batch ID order. Unit costs round separately. Changed inputs require explicit reallocation; shipped order cost snapshots stay unchanged.",
+    "allocationState": {
+      "UNALLOCATED": "No recorded allocation",
+      "ALLOCATED": "Allocated — inputs match",
+      "STALE": "Reallocation needed — inputs changed"
+    }
   },
   "Products": {
     "copyFrom": "ရှိပြီးသား ကုန်ပစ္စည်းမှ ကူးယူရန်",

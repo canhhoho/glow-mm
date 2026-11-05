@@ -341,7 +341,21 @@
     "colRate": "Tỷ giá (VND/MMK)",
     "receiveHint": "Lô được gắn vào chuyến khi tạo phiếu nhập kho và chọn chuyến hàng này.",
     "arrivedAt": "Ngày đến",
-    "markArrived": "Đánh dấu đã đến"
+    "markArrived": "Đánh dấu đã đến",
+    "BY_WEIGHT": "Theo khối lượng (kg)",
+    "unlinkedBatch": "Lô VND chưa có chuyến (200 lô mới nhất)",
+    "attachBatch": "Gắn lô vào chuyến",
+    "attached": "Đã gắn lô",
+    "allocationHistory": "10 lần phân bổ gần nhất",
+    "allocatedBy": "Người phân bổ",
+    "fingerprint": "Dấu kiểm đầu vào",
+    "allocatedAt": "Thời điểm",
+    "allocationHelp": "Chỉ phân bổ cho số lượng nhập đã ghi sổ, kể cả tester. Thiếu khối lượng sẽ chặn cách chia theo kg. Phần lẻ VND chia theo phần dư lớn nhất; cùng phần dư ưu tiên thứ tự mã lô nội bộ. Giá vốn/đơn vị làm tròn riêng. Đầu vào thay đổi chỉ báo cần phân bổ lại; đơn đã xuất giữ nguyên vốn chụp.",
+    "allocationState": {
+      "UNALLOCATED": "Chưa có lần phân bổ được lưu",
+      "ALLOCATED": "Đã phân bổ — đầu vào còn khớp",
+      "STALE": "Cần phân bổ lại — đầu vào đã thay đổi"
+    }
   },
   "Products": {
     "title": "Sản phẩm",

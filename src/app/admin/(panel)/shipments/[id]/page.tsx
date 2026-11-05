@@ -4,9 +4,11 @@ import { requirePagePermission } from "@/server/auth/session";
 import { getShipment } from "@/server/inventory/queries";
 import { markArrivedAction, removeShipmentCostAction } from "@/server/inventory/actions";
 import { ActionButton } from "@/components/admin/action-button";
-import { AllocateForm, ShipmentCostForm } from "@/components/admin/shipment-forms";
+import { AllocateForm, AttachBatchForm, ShipmentCostForm } from "@/components/admin/shipment-forms";
+import { shipmentAllocationStatus } from "@/server/inventory/shipments";
+import { prisma } from "@/lib/db";
 import { DataTable, Page, PageHeader, Td } from "@/components/admin/ui";
-import { fmtDay, fmtInt } from "@/lib/format";
+import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
 import { rateDisplay } from "@/server/pricing/formula";
 
 export default async function ShipmentPage({ params }: PageProps<"/admin/shipments/[id]">) {
@@ -14,6 +16,7 @@ export default async function ShipmentPage({ params }: PageProps<"/admin/shipmen
   const { id } = await params;
   const [t, td, s] = await Promise.all([getTranslations("Ship"), getTranslations("Docs"), getShipment(id)]);
   if (!s) notFound();
+  const [allocation, unlinked] = await Promise.all([shipmentAllocationStatus(id), prisma.batch.findMany({ where: { shipmentId: null, unitCostVnd: { not: null }, ledger: { some: { document: { type: "RECEIVE", status: "POSTED" } } } }, orderBy: { createdAt: "desc" }, take: 200, include: { variant: { select: { sku: true } } } })]);
   const total = s.costs.reduce((a, c) => a + c.amountVnd, 0);
 
   return (
@@ -73,6 +76,11 @@ export default async function ShipmentPage({ params }: PageProps<"/admin/shipmen
           ))}
         </DataTable>
         <AllocateForm shipmentId={s.id} method={s.allocationMethod} />
+        <p role="status" data-testid="allocation-state">{t(`allocationState.${allocation.state}`)}</p>
+        <p className="text-sm text-muted-foreground">{t("allocationHelp")}</p>
+        <AttachBatchForm shipmentId={s.id} batches={unlinked.map(b => ({ id: b.id, sku: b.variant.sku, lotNo: b.lotNo }))} />
+        <h3 className="font-medium">{t("allocationHistory")}</h3>
+        <DataTable head={[t("allocatedAt"), t("method"), t("allocatedBy"), t("fingerprint")] }>{allocation.history.map(h => <tr key={h.id}><Td>{fmtDateTime(h.createdAt)}</Td><Td>{t(h.method)}</Td><Td>{h.createdById}</Td><Td className="font-mono text-xs break-all">{h.fingerprint}</Td></tr>)}</DataTable>
       </section>
     </Page>
   );
