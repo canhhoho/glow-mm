@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { connection } from "next/server";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
@@ -14,26 +16,36 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
   const showOrders = can(user.role, "orders:view");
   const showStock = can(user.role, "stock:view");
   const showSales = can(user.role, "reports:view");
-  const today = yangonDayKey(new Date());
-  const [t, tr, trp, queue, alerts, month, todaySales] = await Promise.all([
+  const [t, tr] = await Promise.all([
     getTranslations("Dashboard"),
     getTranslations("Role"),
-    getTranslations("Reports"),
-    showOrders ? workQueue() : null,
-    showStock ? computeAlerts() : null,
-    showSales ? salesReport(defaultRange()) : null,
-    showSales ? salesReport({ from: today, to: today }) : null,
   ]);
-  const tone = (n: number, level: "warning" | "danger" = "warning") => (n > 0 ? level : "neutral");
-  const codPending = can(user.role, "orders:reconcile-cod") ? await prisma.order.count({ where: { paymentMethod: "COD", codCollectedAt: { not: null }, codRemittedAt: null } }) : null;
-  const tc = await getTranslations("Cod");
-
   return (
     <Page>
       {denied && <Notice tone="danger">{t("denied")}</Notice>}
       <PageHeader title={t("welcome", { name: user.name })} description={<span data-testid="role">{t("role", { role: tr(user.role) })}</span>} />
+      {showOrders && <Suspense fallback={<DashboardLoading label={t("todo")} />}><OrderQueue canReconcile={can(user.role, "orders:reconcile-cod")} /></Suspense>}
+      {showStock && <Suspense fallback={<DashboardLoading label={t("alerts")} />}><StockAlerts /></Suspense>}
+      {showSales && <Suspense fallback={<DashboardLoading label={t("sales")} />}><SalesOverview /></Suspense>}
+    </Page>
+  );
+}
 
-      {queue && (
+const tone = (n: number, level: "warning" | "danger" = "warning") => n > 0 ? level : "neutral";
+
+function DashboardLoading({ label }: { label: string }) {
+  return <section aria-label={label} aria-busy="true" className="space-y-2"><h2 className="font-medium">{label}</h2><div aria-hidden className="h-28 animate-pulse rounded-lg bg-muted" /></section>;
+}
+
+/** Header và điều hướng không phải chờ các truy vấn tổng hợp. Mỗi nhóm dữ liệu stream riêng. */
+async function OrderQueue({ canReconcile }: { canReconcile: boolean }) {
+  await connection();
+  const [t, tc, queue, codPending] = await Promise.all([
+    getTranslations("Dashboard"), getTranslations("Cod"), workQueue(),
+    canReconcile ? prisma.order.count({ where: { paymentMethod: "COD", codCollectedAt: { not: null }, codRemittedAt: null } }) : null,
+  ]);
+  return (
+
         <section className="space-y-2">
           <h2 className="font-medium">{t("todo")}</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -46,9 +58,13 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
             {codPending != null && <Stat label={tc("waiting")} value={codPending} href="/admin/orders/cod" tone={tone(codPending)} />}
           </div>
         </section>
-      )}
+  );
+}
 
-      {alerts && (
+async function StockAlerts() {
+  await connection();
+  const [t, alerts] = await Promise.all([getTranslations("Dashboard"), computeAlerts()]);
+  return (
         <section className="space-y-2">
           <h2 className="font-medium">{t("alerts")}</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -63,9 +79,16 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
             {alerts.counts.unknown > 0 && <Stat label={t("unknownExpiry")} value={alerts.counts.unknown} href="/admin/inventory?view=lots&expiry=unknown" tone="warning" />}
           </div>
         </section>
-      )}
+  );
+}
 
-      {month && todaySales && (
+async function SalesOverview() {
+  await connection();
+  const today = yangonDayKey(new Date());
+  const [t, trp, month, todaySales] = await Promise.all([
+    getTranslations("Dashboard"), getTranslations("Reports"), salesReport(defaultRange()), salesReport({ from: today, to: today }),
+  ]);
+  return (
         <section className="space-y-2">
           <div className="flex items-center justify-between gap-2">
             <h2 className="font-medium">{t("sales")}</h2>
@@ -78,7 +101,5 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
             <Stat label={trp("orders")} value={month.totals.orders} />
           </div>
         </section>
-      )}
-    </Page>
   );
 }

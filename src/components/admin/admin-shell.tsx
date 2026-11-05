@@ -62,6 +62,8 @@ export type ShellItem = {
   label: string;
   icon: NavIcon;
   badge?: { n: number; tone: "brand" | "neutral" | "warning" };
+  /** Nội dung server stream riêng, không để số đếm chặn cả khung điều hướng. */
+  badgeContent?: React.ReactNode;
 };
 export type ShellGroup = { label: string | null; items: ShellItem[] };
 
@@ -160,6 +162,7 @@ export function AdminShell({
                         {active && <span className="absolute inset-y-1 -left-3 hidden w-[3px] rounded-r bg-primary lg:block" />}
                         <Icon className="size-4 flex-none" aria-hidden />
                         {i.label}
+                        {i.badgeContent}
                         {i.badge && (
                           <span
                             className={cn("ml-auto rounded-full px-1.5 text-[11px] font-medium tabular-nums", TONES[i.badge.tone])}

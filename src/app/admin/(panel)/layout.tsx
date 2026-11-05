@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { LogOut, UserRound } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -8,6 +9,8 @@ import { neededCounts, visibleNav, type NavCountKey } from "@/server/admin/nav";
 import { navCounts } from "@/server/admin/nav-counts";
 import { AdminShell, type ShellGroup, type ShellItem } from "@/components/admin/admin-shell";
 import { Button } from "@/components/ui/button";
+import { TONES } from "@/components/admin/ui";
+import { cn } from "@/lib/utils";
 
 const BADGE_TONE: Record<NavCountKey, NonNullable<ShellItem["badge"]>["tone"]> = {
   pendingOrders: "brand",
@@ -19,17 +22,17 @@ const BADGE_TONE: Record<NavCountKey, NonNullable<ShellItem["badge"]>["tone"]> =
 export default async function PanelLayout({ children }: LayoutProps<"/admin">) {
   const user = await requireStaff();
   const nav = visibleNav(user.role);
-  const [t, locale, counts] = await Promise.all([getTranslations("Nav"), getLocale(), navCounts(neededCounts(nav))]);
+  const [t, locale] = await Promise.all([getTranslations("Nav"), getLocale()]);
+  const counts = navCounts(neededCounts(nav));
 
   const groups: ShellGroup[] = nav.map((g) => ({
     label: g.key ? t(g.key) : null,
     items: g.items.map((i) => {
-      const n = i.count ? (counts[i.count] ?? 0) : 0;
       return {
         href: i.href,
         label: t(i.key),
         icon: i.icon,
-        badge: i.count && n > 0 ? { n, tone: BADGE_TONE[i.count] } : undefined,
+        badgeContent: i.count ? <Suspense fallback={null}><NavBadge counts={counts} kind={i.count} /></Suspense> : undefined,
       };
     }),
   }));
@@ -70,4 +73,9 @@ export default async function PanelLayout({ children }: LayoutProps<"/admin">) {
       {children}
     </AdminShell>
   );
+}
+
+async function NavBadge({ counts, kind }: { counts: ReturnType<typeof navCounts>; kind: NavCountKey }) {
+  const n = (await counts)[kind] ?? 0;
+  return n > 0 ? <span className={cn("ml-auto rounded-full px-1.5 text-[11px] font-medium tabular-nums", TONES[BADGE_TONE[kind]])}>{n}</span> : null;
 }
