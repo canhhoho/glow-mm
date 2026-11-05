@@ -1,5 +1,9 @@
 # PLAN — Web bán mỹ phẩm VN → Myanmar
 
+## Cập nhật triển khai quy trình (05/11/2026)
+
+Đã triển khai local D4.1–D4.3, D5, D6.1, D7, D8.1–D8.2 và các mục DT.3 sửa vận đơn/DT.5/DT.6, D3 hiển thị phiếu soạn/cảnh báo xuất nội bộ. Xem [bằng chứng nghiệm thu và điều kiện còn mở](docs/nghiem-thu-d4-d9.md). Chủ shop yêu cầu giữ chính sách hoa hồng hiện tại: không thêm gate COD mới. Guest COD chờ ít nhất hai tuần dữ liệu D5 thực tế; import VTP chờ file thật; tách đợt nhập/lô NSX chờ bằng chứng và quyết định. Chưa triển khai production.
+
 ## Quyết định đã chốt
 | # | Chủ đề | Chốt |
 |---|---|---|
@@ -8,7 +12,7 @@
 | 3 | Kho | 1 kho VN + 1 kho MM + vị trí ảo Đang vận chuyển / Hải quan / Chờ kiểm tra; hỗ trợ N kho |
 | 4 | Giữ hàng | Cấp biến thể; phân lô FEFO khi Đóng gói |
 | 5 | Hạn dùng | Ngừng bán <90 ngày, cảnh báo 180 ngày (cấu hình) |
-| 6 | Landed cost | Phân bổ theo giá trị mua (chọn được theo số lượng) |
+| 6 | Landed cost | Phân bổ theo giá trị mua, số lượng hoặc khối lượng nhập đã ghi sổ; lưu lịch sử và cảnh báo cần phân bổ lại |
 | 7 | Hàng trả | Vào "Chờ kiểm tra" → nhập lại hoặc huỷ |
 | 8 | Combo/Tester | Combo cố định trừ kho thành phần; tester/quà = loại tồn riêng trên cùng lô |
 | 9 | COD | Gọi xác nhận; tự huỷ/nhả sau 24h (cấu hình) |

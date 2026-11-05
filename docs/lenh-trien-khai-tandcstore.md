@@ -497,6 +497,12 @@ docker compose -p tandc ps -a; docker logs tandc-app-1 --since 24h 2>&1 | grep -
 
 # PHẦN 4 — Cập nhật web khi Claude báo có bản mới
 
+**Riêng đợt tối ưu quy trình 05/11/2026:** chỉ cập nhật khi bản phát hành đã được duyệt và CI xanh. Có các migration mới: `20261105090000_estimated_inventory_cost`, `20261105120000_d1_price_provenance`, `20261105150000_d3_order_pick`, `20261105180000_d4_cod_shipping_payer`, `20261105190000_d5_analytics_events`, `20261105200000_d8_weight_allocation`. Sao lưu và xác nhận khôi phục được trước khi cập nhật. Container migrate chạy `prisma migrate deploy`, không reset database. Giữ `orders.requirePickList` theo quyết định vận hành; chính sách chi CTV hiện tại giữ nguyên.
+
+Sau cập nhật: đăng nhập admin kiểm trang COD, Báo cáo → Hành vi mua hàng và Sức khỏe dữ liệu; tải mốc JSON D0, lưu kèm commit/thời điểm. Kiểm cron `cleanup`, log `analytics.write_failed`, đặt thử một đơn rồi hủy qua nghiệp vụ. Cấu hình analytics theo `.env.example`, không đưa khóa bí mật vào log. Theo dõi mốc D0 và phễu sau 2–4 tuần; guest COD chỉ xem xét sau ít nhất hai tuần dữ liệu D5 thật. Không quay lui bằng cách drop bảng/cột hoặc phục hồi đè lên giao dịch mới.
+
+Nếu cần quay lui sau khi đã dùng BY_WEIGHT/người trả cước SENDER/ngoại lệ COD: dùng bản app vẫn hiểu các trường và phương pháp này. App cũ có thể phân bổ theo số lượng hoặc xuất nhãn/cước sai. Không chuyển dữ liệu ngược hoặc xóa lịch sử tự động để chạy app cũ.
+
 Claude sẽ nhắn: *"đã merge main, có/không thay đổi database"*. Bạn làm:
 
 1. Làm **bước 1** (vào server).

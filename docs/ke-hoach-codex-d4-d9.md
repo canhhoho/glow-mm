@@ -1,6 +1,7 @@
 # Bàn giao cho Codex: kế hoạch chi tiết D4 → D9 (T&C Cosmetics)
 
 ## Context
+Tiến độ thực hiện và điều kiện nghiệm thu còn mở được cập nhật tại [nghiem-thu-d4-d9.md](nghiem-thu-d4-d9.md) và các đoạn Trạng thái trong kế hoạch tổng. Chủ shop đã duyệt công thức COD ngoại lệ, yêu cầu giữ chính sách hoa hồng hiện tại (không làm gate D4.4). Chưa cập nhật production.
 Chủ shop đang thực hiện `docs/ke-hoach-toi-uu-quy-trinh-ban-hang.md` (kế hoạch tổng). Claude đã làm xong DQ, D0, DT (một phần), D1, D2, D3-lite và push `dev = 2761bf1`; Claude sắp hết token nên phần còn lại giao cho Codex. Tài liệu này là bản giao việc tự đủ: hiện trạng, quy ước làm việc, từng đợt D4 → D9 (việc, file, quyết định, test nghiệm thu) và các việc còn dở.
 
 ---

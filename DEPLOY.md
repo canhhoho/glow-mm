@@ -2,6 +2,8 @@
 
 Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong biến môi trường (xem `.env.example`).
 
+Đợt quy trình 05/11/2026 có migration D1/D3/D4/D5/D8. Trước phát hành cần CI, backup/khôi phục thử và nghiệm thu; các lệnh cập nhật server nằm ở PHẦN 4 của `docs/lenh-trien-khai-tandcstore.md`. Analytics nội bộ mặc định bật (`ANALYTICS_ENABLED=true`, `ANALYTICS_RETENTION_DAYS=180`), cần cron `cleanup`; tắt thu thập không xóa lịch sử, cleanup vẫn áp thời hạn. Xem `docs/nghiem-thu-d4-d9.md` để biết mục còn mở; chưa có tuyên bố đã triển khai production.
+
 > **Làm theo từng bước cho tên miền `tandcstore.com` + server `10.201.42.65`:** [docs/huong-dan-trien-khai-tandcstore.md](docs/huong-dan-trien-khai-tandcstore.md). Server đó đang chạy web VCM với Nginx trên 80/443 → **không cài Coolify** (Traefik sẽ chiếm 80/443); chạy `docker-compose.prod.yml` (project `tandc`) sau Nginx dùng chung. File này là tài liệu tham khảo chi tiết.
 
 | | Testing | Production (sau) |

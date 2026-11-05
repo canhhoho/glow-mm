@@ -2,7 +2,7 @@
 
 Bản giao việc chi tiết D4 → D9 (cho Codex): [ke-hoach-codex-d4-d9.md](ke-hoach-codex-d4-d9.md).
 
-Ngày lập: 05/11/2026. Rà soát đối chiếu code: 05/11/2026 (bổ sung đợt DQ, DT; D3 rút gọn thành D3-lite; D5 dùng bảng sự kiện tự ghi). Trạng thái: kế hoạch triển khai, chưa triển khai các hạng mục mới trong tài liệu này.
+Ngày lập: 05/11/2026. Rà soát đối chiếu code: 05/11/2026 (bổ sung đợt DQ, DT; D3 rút gọn thành D3-lite; D5 dùng bảng sự kiện tự ghi). Trạng thái: đã triển khai các phần đủ điều kiện trên local/test; các đoạn Trạng thái và `nghiem-thu-d4-d9.md` ghi kết quả, phần chờ và giới hạn nghiệm thu. Chưa cập nhật production.
 
 ## 1. Mục tiêu và ranh giới
 
@@ -144,7 +144,9 @@ Chạy báo cáo không làm đổi dữ liệu. Có danh sách lỗi để ngư
 
 ## 6A. DT — Tối ưu thao tác hằng ngày
 
-**Trạng thái: làm DT.2 (05/11/2026)** theo lựa chọn của chủ shop — các mục DT.3–DT.6 để sau. Danh sách đơn có ô chọn + thanh thao tác: xác nhận COD / bàn giao (hãng mặc định VTP) / giao thành công hàng loạt (`orders/bulk.ts`, mỗi đơn một transaction, tối đa 100 đơn, báo kết quả từng đơn), in nhãn A6 hàng loạt (`/admin/orders/print-labels?ids=`) và phiếu lấy hàng gộp theo kho + SKU, combo bung thành phần (`/admin/orders/pick-list?ids=`, `orders/pick-list.ts`). Không làm huỷ / xác nhận chuyển khoản hàng loạt (cần xem từng đơn). Bàn giao hàng loạt không nhập mã vận đơn; mã vận đơn hiện chưa sửa được sau bàn giao (DT.3).
+**Phần DT/D2/D3 còn dở: đã bổ sung local (05/11/2026).** Sửa vận đơn có quyền/audit; link tính giá riêng SKU trong phiếu nhập POSTED (hỗ trợ variantIds và giao bộ lọc, không fallback toàn kho); lọc ngày Yangon/kho, tổng thật và 50 đơn/trang, dashboard giao từ 7 ngày; hiện manifest trên đơn và cảnh báo xuất/chuyển nội bộ liên quan phiếu chưa bàn giao. Preview giá cảnh báo biến động ≥20% và lãi minh họa sau cước/hoa hồng mặc định ≤5%; không đổi chính sách CTV. Phân bổ lưu phương pháp và kết quả trong cùng transaction, lịch sử có tên người và kết quả từng lô. Integration DT/picking/pricing/reports 14 ca đạt; E2E admin-orders/bulk-orders đạt trong lần chạy đầy đủ. Import file VTP vẫn chờ mẫu thật. Xem `nghiem-thu-d4-d9.md` để biết kết quả cuối và các điều kiện còn mở.
+
+**DT.2 đã làm trước đợt D4–D9 (05/11/2026).** Danh sách đơn có ô chọn + thanh thao tác: xác nhận COD / bàn giao (hãng mặc định VTP) / giao thành công hàng loạt (`orders/bulk.ts`, mỗi đơn một transaction, tối đa 100 đơn, báo kết quả từng đơn), in nhãn A6 hàng loạt (`/admin/orders/print-labels?ids=`) và phiếu lấy hàng gộp theo kho + SKU, combo bung thành phần (`/admin/orders/pick-list?ids=`, `orders/pick-list.ts`). Không làm huỷ / xác nhận chuyển khoản hàng loạt (cần xem từng đơn). Bàn giao hàng loạt không nhập mã vận đơn; mã vận đơn nay sửa được sau bàn giao theo bổ sung DT.3.
 
 Hiện trạng: mỗi đơn COD cần mở trang chi tiết khoảng 4–5 lần (xác nhận, in nhãn, bàn giao, hoàn tất, đối soát COD); danh sách đơn không chọn nhiều được; chỉ xuất Excel VTP là chọn nhiều đơn (và không đổi trạng thái/tồn). Đợt này giảm số lần thao tác, không đổi quy tắc nghiệp vụ.
 
@@ -267,7 +269,7 @@ Kiểm tra tạo/sửa/publish hàng loạt đều không vượt gate; trực t
 
 ## 9. D3 — Soạn hàng và bàn giao đúng lô
 
-**Trạng thái D3-lite: đã làm (05/11/2026)**, migration `20261105150000_d3_order_pick` (`OrderPick` + `OrderPickLine`, khoá chính theo đơn — in lại thay toàn bộ dòng). Domain `orders/picking.ts`: `planPicks` (FEFO dùng chung `allocateFefo` với xuất kho, các đơn in cùng lúc chia tồn từng lô, trừ phần đã nằm trên phiếu chưa bàn giao của đơn khác), `savePickManifests` (khoá đơn, kế hoạch phải trùng `hash` của phiếu đang xem), `manifestPicks` (lúc bàn giao: khoá số dư lô, kiểm nhu cầu đơn / đủ hàng / còn hạn bán; lệch → `pick_mismatch`, rollback). Trang `/admin/orders/pick-list` có cột Lô/HSD, nút "Chốt lô & In". Cài đặt `orders.requirePickList` (mặc định tắt) bắt buộc phiếu soạn trước khi bàn giao. Chưa làm: hiện phiếu soạn trên trang chi tiết đơn; xuất nội bộ chưa tránh lô đã nằm trên phiếu (lệch thì báo in lại).
+**Trạng thái D3-lite: đã làm (05/11/2026)**, migration `20261105150000_d3_order_pick` (`OrderPick` + `OrderPickLine`, khoá chính theo đơn — in lại thay toàn bộ dòng). Domain `orders/picking.ts`: `planPicks` (FEFO dùng chung `allocateFefo` với xuất kho, các đơn in cùng lúc chia tồn từng lô, trừ phần đã nằm trên phiếu chưa bàn giao của đơn khác), `savePickManifests` (khoá đơn, kế hoạch phải trùng `hash` của phiếu đang xem), `manifestPicks` (lúc bàn giao: khoá số dư lô, kiểm nhu cầu đơn / đủ hàng / còn hạn bán; lệch → `pick_mismatch`, rollback). Trang `/admin/orders/pick-list` có cột Lô/HSD, nút "Chốt lô & In". Cài đặt `orders.requirePickList` (mặc định tắt) bắt buộc phiếu soạn trước khi bàn giao. Bổ sung trong đợt D4–D9: đã hiện phiếu soạn trên trang chi tiết đơn và cảnh báo khi phiếu xuất/chuyển nội bộ liên quan SKU trên phiếu chưa bàn giao; lệch tồn vẫn phải in lại.
 
 Hiện trạng trước D3-lite: chưa có phiếu soạn; phiếu in duy nhất là nhãn A6 ghi số món; lô chỉ thấy trên đơn sau khi đã xuất. Làm **D3-lite** trước; bản giữ lô đầy đủ (D3+) chỉ làm khi có nhiều người soạn đồng thời hoặc D3-lite cho thấy hay phải soạn lại.
 
@@ -375,12 +377,6 @@ Ca mẫu: COD 100.000, tiền về 97.000, phí 3.000; báo cáo không tăng do
 
 **Trạng thái: đã triển khai local (05/11/2026).** Bảng sự kiện nội bộ, endpoint chỉ nhận tên/thuộc tính cho phép, bỏ query/mã đơn/PII, giới hạn dung lượng và tần suất; sessionStorage UUID, Web Vitals, mốc nghiệp vụ trong transaction và chống trùng. Báo cáo `/admin/reports/analytics` tính phễu tuần tự theo phiên và thiết bị, p75 theo loại trang; đăng nhập là nhánh tùy chọn. Có cờ tắt và cleanup mặc định 180 ngày. Migration `20261105190000_d5_analytics_events` đã áp local/test; CSP giữ nguyên. Kiểm tra: 212 unit, 3 integration D5, typecheck; E2E hành trình D5 và 2 kiểm tra CSP đạt. Chuỗi Myanmar mới có trong danh sách cần người bản ngữ duyệt (một số nhãn quản trị tạm dùng tiếng Anh). Chưa triển khai production, chưa có hai tuần dữ liệu thật để quyết định D6.2; quy định lưu dữ liệu Myanmar vẫn [CẦN XÁC MINH].
 
-**D6.1: đã làm local (05/11/2026).** Checkout trả lỗi theo từng ô, giữ dữ liệu, cuộn/focus tới lỗi đầu; lỗi hàng có SKU khi xác định được và đường về giỏ. Đặt tiền hàng/phí giao/phương thức thanh toán/liên hệ gần nút đặt; trang tạo đơn nói rõ chờ xác nhận và chưa xác nhận thanh toán. Typecheck và 2 E2E COD/chuyển khoản (gồm lỗi SĐT giữ form + ARIA) đạt. D6.2 chưa bật/triển khai vì chưa đủ dữ liệu thực tế theo điều kiện kế hoạch.
-
-**D7: đã triển khai local (05/11/2026).** Lọc/sắp toàn tập bằng SQL có tham số, giá MIN biến thể active, thứ tự phụ id, count thật và phân trang 24 SP; nội dung giữ cache/tag, tồn tính mỗi request. Bộ sưu tập phân trang, gallery đổi ảnh qua thumbnail/bàn phím/vuốt. Kiểm thử fixture 65 SP + bộ sưu tập, tích hợp nội dung/tồn, E2E URL/back-forward và tải ảnh/đổi ảnh đạt; typecheck/lint đạt trước bước D8. Đo một lượt Lighthouse local: mobile 95/96/97, desktop 100/100/100 (home/product/category); Slow 3G 68/72/72, trang chủ dưới ngưỡng 70 cần xác nhận lại bằng nhiều lượt. Đây là mốc sau thay đổi, chưa có cặp đo trước/sau cùng điều kiện và chưa thay thế dữ liệu khách thật D5.
-
-**D8.1–D8.2: đã làm local (05/11/2026).** Migration `20261105200000_d8_weight_allocation` thêm BY_WEIGHT và lịch sử phân bổ (người/thời điểm/phương pháp/đầu vào/kết quả/fingerprint). Trọng số dùng lượng RECEIVE POSTED gồm tester × gram; thiếu gram liệt kê SKU và chặn. Giữ quy tắc phần dư lớn nhất đang dùng cho BY_VALUE/BY_QTY, dùng số nguyên BigInt tránh sai số tích lớn, nêu rõ cách làm tròn trên màn hình. Trạng thái chưa phân bổ/khớp/cần phân bổ lại; gắn rõ lô VND chưa chuyến, chặn lô chuyến khác khi lập phiếu, không tự sửa snapshot đơn. Migration áp local/test. 19 unit liên quan, 11 integration kho/phân bổ, typecheck/lint và E2E nhập→phân bổ→đổi phí báo stale đạt. D8.3 chưa tách schema vì chưa có bằng chứng production và phê duyệt theo điều kiện kế hoạch.
-
 Hiện chưa có công cụ đo nào; CSP chỉ cho `'self'`. Chọn **bảng sự kiện tự ghi** thay vì GA4: không thêm script ngoài (nhẹ trên Slow 3G), không mở CSP, dữ liệu nằm trong Postgres của mình, chạy được cả Vercel lẫn Docker, không mất dữ liệu do chặn quảng cáo. GA4 chỉ dùng làm tham chiếu tên sự kiện; có thể đẩy thêm sang GA4 về sau như một phạm vi riêng.
 
 - Lưu trữ: model Prisma bảng sự kiện (tên, thời điểm UTC, locale, loại thiết bị, đường dẫn đã bỏ query nhạy cảm, mã phiên ẩn danh ngẫu nhiên, nguồn/CTV, dữ liệu sự kiện dạng JSON giới hạn kích thước). Ghi qua route `POST /api/events` (validate Zod, `hitRateLimit`, bỏ qua bot), gửi bằng `navigator.sendBeacon`; một script nhỏ, không chặn render.
@@ -402,6 +398,8 @@ Nghiệm thu: xem được một hành trình thử duy nhất từ xem hàng đ
 Nguồn tham chiếu: [GA4 ecommerce](https://developers.google.com/analytics/devguides/collection/ga4/ecommerce) và [Web Vitals](https://web.dev/articles/vitals).
 
 ## 12. D6 — Giảm trở ngại đặt hàng
+
+**D6.1: đã làm local (05/11/2026).** Checkout trả lỗi theo từng ô, giữ dữ liệu, cuộn/focus tới lỗi đầu; lỗi hàng có SKU khi xác định được và đường về giỏ. Đặt tiền hàng/phí giao/phương thức thanh toán/liên hệ gần nút đặt; trang tạo đơn nói rõ chờ xác nhận và chưa xác nhận thanh toán. Typecheck và 2 E2E COD/chuyển khoản (gồm lỗi SĐT giữ form + ARIA) đạt. D6.2 chưa bật/triển khai vì chưa đủ dữ liệu thực tế theo điều kiện kế hoạch.
 
 ### D6.1 Cải thiện ngay trong luồng hiện tại
 
@@ -425,6 +423,8 @@ Nguồn tham chiếu: [GA4 ecommerce](https://developers.google.com/analytics/de
 File: checkout/page.tsx, checkout-form.tsx, cart/actions.ts, customer-session/policy, proxy, order-access/claims và tests storefront-orders/customer/auth. Đọc lại guide Next.js trong node_modules trước khi sửa các API/form.
 
 ## 13. D7 — Tìm hàng, trang sản phẩm và hiệu năng
+
+**D7: đã triển khai local (05/11/2026).** Lọc/sắp toàn tập bằng SQL có tham số, giá MIN biến thể active, thứ tự phụ id, count thật và phân trang 24 SP; nội dung giữ cache/tag, tồn tính mỗi request. Bộ sưu tập phân trang, gallery đổi ảnh qua thumbnail/bàn phím/vuốt. Kiểm thử fixture 65 SP + bộ sưu tập, tích hợp nội dung/tồn, E2E URL/back-forward và tải ảnh/đổi ảnh đạt; typecheck/lint đạt trước bước D8. Sau tách tên font và bỏ preload staff trên storefront, trang chủ Slow 3G đạt trung vị 72 điểm, vượt ngưỡng 70 (3 lượt, dải 67–73). Số đo chi tiết và giới hạn so sánh nằm ở `nghiem-thu-d4-d9.md`; chưa có dữ liệu khách production.
 
 ### D7.1 Danh sách sản phẩm
 
@@ -454,6 +454,8 @@ Lưu số đo LCP/INP/CLS trước/sau trên cùng trang, điều kiện và thi
 File: catalog/store-queries.ts, cached.ts, trang search/category/collection/product, product-card và các thành phần bộ lọc; tests storefront-content/storefront-cache/seo/store-stock.
 
 ## 14. D8 — Chuyến hàng và quản lý đợt nhập
+
+**D8.1–D8.2: đã làm local (05/11/2026).** Migration `20261105200000_d8_weight_allocation` thêm BY_WEIGHT và lịch sử phân bổ (người/thời điểm/phương pháp/đầu vào/kết quả/fingerprint). Trọng số dùng lượng RECEIVE POSTED gồm tester × gram; thiếu gram liệt kê SKU và chặn. Giữ quy tắc phần dư lớn nhất đang dùng cho BY_VALUE/BY_QTY, dùng số nguyên BigInt tránh sai số tích lớn, nêu rõ cách làm tròn trên màn hình. Trạng thái chưa phân bổ/khớp/cần phân bổ lại; gắn rõ lô VND chưa chuyến, chặn lô chuyến khác khi lập phiếu, không tự sửa snapshot đơn. Migration áp local/test. 19 unit liên quan, 11 integration kho/phân bổ, typecheck/lint và E2E nhập→phân bổ→đổi phí báo stale đạt. D8.3 chưa tách schema vì chưa có bằng chứng production và phê duyệt theo điều kiện kế hoạch.
 
 ### D8.1 Phân bổ theo kg
 
@@ -494,7 +496,7 @@ File: inventory/shipments.ts, landed-cost.ts, queries.ts, documents.ts; shipment
 | T08 | Hai người bàn giao đồng thời / lô trên phiếu soạn bị lấy mất | Không xuất âm, không ghi sổ hai lần; báo soạn lại, không đổi lô âm thầm |
 | T09 | Đơn có hai kho | Soạn đủ hai nhóm; xuất một lần mỗi kho, một bàn giao theo phạm vi hỗ trợ |
 | T10 | Chuyển khoản | Đối chiếu rồi xác nhận; không gọi tiền chưa có là đã thanh toán |
-| T11 | COD giao xong, chưa tiền về | Hoàn tất nhưng chưa đối soát; hoa hồng bị giữ theo chính sách mới |
+| T11 | COD giao xong, chưa tiền về | Hoàn tất nhưng chưa đối soát; hoa hồng giữ chính sách hiện tại theo lựa chọn chủ shop, không thêm gate COD |
 | T12 | COD tiền về + phí | Tổng khớp; doanh thu không ghi hai lần, chi phí trừ một lần |
 | T13 | Trả một phần/toàn bộ trước/sau chi CTV | Đúng lô, về Chờ kiểm tra, giảm đúng số; bù trừ hoa hồng không mất |
 | T14 | Guest COD và tài khoản hiện có | Bảo toàn giỏ, quyền xem đơn, attribution; không tự chiếm đơn cũ |
