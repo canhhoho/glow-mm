@@ -1,9 +1,11 @@
 import "server-only";
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { getNumberSetting } from "@/server/settings";
+import type { Tx } from "@/server/inventory/ledger";
 import { variantCosts } from "./cost";
 import { mmkPerVndFromUsd, parseScaled, priceLocalMmk, priceVnImport, shippingMmk, suggestPrice } from "./formula";
 
@@ -11,6 +13,8 @@ import { mmkPerVndFromUsd, parseScaled, priceLocalMmk, priceVnImport, shippingMm
  * Cập nhật giá hàng loạt: nhập tỷ giá → tạo bản XEM TRƯỚC (lưu từng dòng) → chọn dòng → ÁP DỤNG.
  * Áp dụng dùng đúng số đã xem trước; dòng mà giá đã bị sửa sau khi xem trước sẽ bị bỏ qua.
  */
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export class PricingError extends Error {
   constructor(message: string) {
@@ -87,22 +91,143 @@ export const previewSchema = z.object({
   brandId: z.preprocess(blankToUndefined, rawId.optional()),
 });
 
-type PreviewLine = { variantId: string; costVnd?: number; costMmk?: number; shipMmk?: number; profitMmk?: number; oldPriceMmk: number; newPriceMmk: number };
+type Mode = "VN_IMPORT" | "LOCAL_MMK" | null;
+/** Tham số của cả bản xem trước — cố định theo run, không cần nằm trong fingerprint từng dòng. */
+type RunCtx = {
+  mode: Mode;
+  rate: { mmkPerVnd: Prisma.Decimal | string; mmkPerUsd?: Prisma.Decimal | string | null; vndPerUsd?: Prisma.Decimal | string | null } | null;
+  marginPct: string | null;
+  shipMmkPerKg: number | null;
+  roundTo: number;
+};
+export type SkipReason = "NO_COST" | "NO_WEIGHT" | "NO_PROFIT";
+type ComputedLine = {
+  variantId: string;
+  costVnd?: number;
+  costMmk?: number;
+  shipMmk?: number;
+  profitMmk?: number;
+  oldPriceMmk: number;
+  newPriceMmk: number;
+  sourceBatchId?: string;
+  sourceDocumentId?: string;
+  sourcePostedAt?: Date | null;
+  weightGrams?: number;
+  weightFromComponents: boolean;
+  fingerprint: string;
+};
+
+/** Phiên bản cách chọn nguồn giá + công thức (D1). Đổi cách tính → tăng số để bản cũ không áp được. */
+export const FORMULA_VERSION = 2;
+
+const fingerprintOf = (input: unknown) => createHash("sha256").update(JSON.stringify(input)).digest("hex").slice(0, 32);
+
+/**
+ * Tính dòng giá cho các biến thể theo tham số run — dùng chung lúc XEM TRƯỚC và lúc ÁP DỤNG (tính lại fingerprint).
+ * Biến thể không đủ dữ liệu → `skipped` kèm lý do (thiếu vốn / khối lượng / lãi cố định), không tạo giá giả.
+ * Khối lượng combo (VN_IMPORT): của combo nếu khai báo, chưa có thì cộng thành phần × số lượng.
+ */
+async function computeLines(tx: Tx, variantIds: string[], ctx: RunCtx) {
+  const variants = await tx.variant.findMany({
+    where: { id: { in: variantIds }, active: true },
+    orderBy: { sku: "asc" },
+    select: {
+      id: true,
+      sku: true,
+      priceMmk: true,
+      weightGrams: true,
+      isBundle: true,
+      product: { select: { fixedProfitMmk: true, stockLocationId: true } },
+      bundleItems: { select: { qty: true, component: { select: { weightGrams: true } } } },
+    },
+  });
+  // VN pricing adds freight per kg separately; its base must exclude shipment costs.
+  const costs = await variantCosts(tx, variants.map((v) => v.id), ctx.mode === "LOCAL_MMK" ? "MMK" : "VND", ctx.mode === "VN_IMPORT" ? "PURCHASE" : "LANDED");
+  const lines: ComputedLine[] = [];
+  const skipped: { variantId: string; sku: string; reason: SkipReason }[] = [];
+  for (const v of variants) {
+    const cost = costs.get(v.id);
+    if (!cost) {
+      skipped.push({ variantId: v.id, sku: v.sku, reason: "NO_COST" });
+      continue;
+    }
+    const src = cost.source;
+    const base = {
+      variantId: v.id,
+      oldPriceMmk: v.priceMmk,
+      sourceBatchId: src?.batchId,
+      sourceDocumentId: src?.documentId,
+      sourcePostedAt: src?.postedAt,
+    };
+    // Đầu vào riêng của dòng: nguồn giá (dòng phiếu, giá trị), thành phần combo, kho của SP, khối lượng / lãi cố định.
+    const inputs = {
+      v: FORMULA_VERSION,
+      mode: ctx.mode,
+      loc: v.product.stockLocationId,
+      cost: cost.costVnd,
+      src: src?.lineId ?? null,
+      comps: cost.components?.map((c) => [c.componentId, c.qty, c.source.lineId, c.cost]) ?? null,
+    };
+    if (ctx.mode === "LOCAL_MMK") {
+      const profit = v.product.fixedProfitMmk;
+      if (profit == null) {
+        skipped.push({ variantId: v.id, sku: v.sku, reason: "NO_PROFIT" });
+        continue;
+      }
+      const newPriceMmk = priceLocalMmk({ costMmk: cost.costVnd, fixedProfitMmk: profit, roundTo: ctx.roundTo });
+      lines.push({ ...base, costMmk: cost.costVnd, profitMmk: profit, newPriceMmk, weightFromComponents: false, fingerprint: fingerprintOf({ ...inputs, profit }) });
+      continue;
+    }
+    if (ctx.mode === "VN_IMPORT") {
+      const own = v.weightGrams && v.weightGrams > 0 ? v.weightGrams : null;
+      const parts = v.isBundle && v.bundleItems.length > 0 && v.bundleItems.every((b) => (b.component.weightGrams ?? 0) > 0);
+      const weight = own ?? (parts ? v.bundleItems.reduce((s, b) => s + b.component.weightGrams! * b.qty, 0) : null);
+      if (!weight) {
+        skipped.push({ variantId: v.id, sku: v.sku, reason: "NO_WEIGHT" });
+        continue;
+      }
+      const fromComponents = own == null;
+      const newPriceMmk = priceVnImport({
+        ...ctx.rate!,
+        costVnd: cost.costVnd,
+        marginPct: ctx.marginPct!,
+        shipMmkPerKg: ctx.shipMmkPerKg!,
+        weightGrams: weight,
+        roundTo: ctx.roundTo,
+      });
+      lines.push({
+        ...base,
+        costVnd: cost.costVnd,
+        shipMmk: shippingMmk(ctx.shipMmkPerKg!, weight),
+        newPriceMmk,
+        weightGrams: weight,
+        weightFromComponents: fromComponents,
+        fingerprint: fingerprintOf({ ...inputs, weight, fromComponents }),
+      });
+      continue;
+    }
+    const newPriceMmk = suggestPrice({ ...ctx.rate!, costVnd: cost.costVnd, marginPct: ctx.marginPct!, roundTo: ctx.roundTo });
+    lines.push({ ...base, costVnd: cost.costVnd, newPriceMmk, weightFromComponents: false, fingerprint: fingerprintOf(inputs) });
+  }
+  return { lines, skipped };
+}
 
 /**
  * Tạo bản xem trước. Có kho (P24):
  *  - VN_IMPORT (Kho Thắm): cần tỷ giá, % lãi, ship MMK/kg; biến thể thiếu vốn VND / khối lượng bị bỏ qua.
- *  - LOCAL_MMK (Kho Chi): vốn MMK lô mới nhất + lãi cố định của SP; thiếu vốn MMK / lãi bị bỏ qua.
- * Danh sách bị bỏ qua xem ở `pricingGaps` (trang Tính giá).
+ *  - LOCAL_MMK (Kho Chi): vốn MMK + lãi cố định của SP; thiếu vốn MMK / lãi bị bỏ qua.
+ * D1: mỗi dòng lưu nguồn giá (lô + phiếu nhập đã ghi sổ) + fingerprint đầu vào; bản có hạn `pricing.previewDays`;
+ * danh sách bị bỏ qua lưu kèm lý do. Dòng giá không đổi được đánh dấu bỏ qua ngay.
  */
-export async function previewRun(raw: unknown, userId: string) {
+export async function previewRun(raw: unknown, userId: string, now = new Date()) {
   const input = previewSchema.parse(raw);
-  const roundTo = input.roundTo ?? (await getNumberSetting("pricing.roundTo"));
+  const [defaultRound, previewDays] = await Promise.all([getNumberSetting("pricing.roundTo"), getNumberSetting("pricing.previewDays")]);
+  const roundTo = input.roundTo ?? defaultRound;
   return prisma.$transaction(
     async (tx) => {
       const location = input.locationId ? await tx.location.findUnique({ where: { id: input.locationId } }) : null;
       if (input.locationId && (!location?.sellable || !location.active)) throw new PricingError("Kho tính giá phải là kho bán đang dùng");
-      const mode = location ? (location.pricingMode ?? "VN_IMPORT") : null;
+      const mode: Mode = location ? (location.pricingMode ?? "VN_IMPORT") : null;
       const needsRate = mode !== "LOCAL_MMK";
       if (needsRate && (!input.rateId || input.marginPct === undefined)) throw new PricingError("Chọn tỷ giá và nhập % lãi");
       if (mode === "VN_IMPORT" && input.shipMmkPerKg === undefined) throw new PricingError("Nhập phí ship VN → MM (MMK/kg)");
@@ -114,51 +239,38 @@ export async function previewRun(raw: unknown, userId: string) {
         productWhere.OR = [{ categoryId: input.categoryId }, { category: { parentId: input.categoryId } }];
       }
       if (input.brandId) productWhere.brandId = input.brandId;
-      const variants = await tx.variant.findMany({
-        where: { active: true, product: productWhere },
-        select: { id: true, priceMmk: true, weightGrams: true, product: { select: { fixedProfitMmk: true } } },
-      });
-      // VN pricing adds freight per kg separately; its base must exclude shipment costs.
-      const costs = await variantCosts(tx, variants.map((v) => v.id), mode === "LOCAL_MMK" ? "MMK" : "VND", mode === "VN_IMPORT" ? "PURCHASE" : "LANDED");
-      const lines = variants.flatMap((v): PreviewLine[] => {
-        const cost = costs.get(v.id);
-        if (!cost) return [];
-        if (mode === "LOCAL_MMK") {
-          const profit = v.product.fixedProfitMmk;
-          if (profit == null) return [];
-          const newPriceMmk = priceLocalMmk({ costMmk: cost.costVnd, fixedProfitMmk: profit, roundTo });
-          return [{ variantId: v.id, costMmk: cost.costVnd, profitMmk: profit, oldPriceMmk: v.priceMmk, newPriceMmk }];
-        }
-        if (mode === "VN_IMPORT") {
-          if (!v.weightGrams) return []; // thiếu khối lượng → không tính được phí ship
-          const newPriceMmk = priceVnImport({
-            ...rate!,
-            costVnd: cost.costVnd,
-            marginPct: input.marginPct!,
-            shipMmkPerKg: input.shipMmkPerKg!,
-            weightGrams: v.weightGrams,
-            roundTo,
-          });
-          const shipMmk = shippingMmk(input.shipMmkPerKg!, v.weightGrams);
-          return [{ variantId: v.id, costVnd: cost.costVnd, shipMmk, oldPriceMmk: v.priceMmk, newPriceMmk }];
-        }
-        const newPriceMmk = suggestPrice({ ...rate!, costVnd: cost.costVnd, marginPct: input.marginPct!, roundTo });
-        return [{ variantId: v.id, costVnd: cost.costVnd, oldPriceMmk: v.priceMmk, newPriceMmk }];
-      });
+      const ids = await tx.variant.findMany({ where: { active: true, product: productWhere }, select: { id: true } });
+      const ctx: RunCtx = {
+        mode,
+        rate,
+        marginPct: needsRate ? input.marginPct! : null,
+        shipMmkPerKg: mode === "VN_IMPORT" ? input.shipMmkPerKg! : null,
+        roundTo,
+      };
+      const { lines, skipped } = await computeLines(tx, ids.map((v) => v.id), ctx);
       if (lines.length === 0) throw new PricingError("Không có biến thể nào đủ dữ liệu để tính giá (xem danh sách thiếu vốn / khối lượng / lãi)");
       const run = await tx.priceUpdateRun.create({
         data: {
           locationId: location?.id,
           rateId: rate?.id,
-          marginPct: needsRate ? input.marginPct : null,
-          shipMmkPerKg: mode === "VN_IMPORT" ? input.shipMmkPerKg : null,
+          marginPct: ctx.marginPct,
+          shipMmkPerKg: ctx.shipMmkPerKg,
           roundTo,
           createdById: userId,
-          lines: { create: lines },
+          createdAt: now,
+          formulaVersion: FORMULA_VERSION,
+          expiresAt: new Date(now.getTime() + previewDays * DAY_MS),
+          skipped: skipped.length ? skipped : undefined,
+          lines: {
+            create: lines.map((l) => ({
+              ...l,
+              ...(l.newPriceMmk === l.oldPriceMmk && { status: "SKIPPED" as const, skipReason: "UNCHANGED" }),
+            })),
+          },
         },
       });
       await tx.auditLog.create({
-        data: { userId, action: "pricing.preview", entity: "PriceUpdateRun", entityId: run.id, data: { lines: lines.length } },
+        data: { userId, action: "pricing.preview", entity: "PriceUpdateRun", entityId: run.id, data: { lines: lines.length, skipped: skipped.length } },
       });
       return run;
     },
@@ -166,60 +278,77 @@ export async function previewRun(raw: unknown, userId: string) {
   );
 }
 
-/** Áp dụng các dòng được chọn. Trả về số dòng đã áp dụng và SKU bị bỏ qua (giá đã đổi sau khi xem trước). */
-export async function applyRun(runId: string, variantIds: string[], userId: string) {
+export type ApplySkip = { sku: string; reason: "PRICE_CHANGED" | "INPUT_CHANGED" };
+
+/**
+ * Áp dụng các dòng ĐANG CHỜ được chọn. Mỗi dòng tính lại đầu vào: fingerprint khác (lô/giá mua/khối lượng/combo/
+ * lãi/kho đã đổi) → bỏ qua INPUT_CHANGED; giá đã bị sửa sau xem trước → bỏ qua PRICE_CHANGED (không ghi đè).
+ * Còn dòng chờ thì bản vẫn mở (áp tiếp / huỷ được); hết dòng chờ → APPLIED. Bản quá hạn / tạo trước D1 → phải tạo lại.
+ */
+export async function applyRun(runId: string, variantIds: string[], userId: string, now = new Date()) {
   if (variantIds.length === 0) throw new PricingError("Chưa chọn biến thể nào");
   return prisma.$transaction(
     async (tx) => {
-      const claimed = await tx.priceUpdateRun.updateMany({
-        where: { id: runId, status: "PREVIEW" },
-        data: { status: "APPLIED", appliedAt: new Date() },
-      });
-      if (claimed.count !== 1) throw new PricingError("Bản xem trước đã được áp dụng hoặc huỷ");
-
+      await tx.$queryRaw`SELECT "id" FROM "PriceUpdateRun" WHERE "id" = ${runId} FOR UPDATE`;
+      const run = await tx.priceUpdateRun.findUnique({ where: { id: runId }, include: { rate: true, location: true } });
+      if (!run || run.status !== "PREVIEW") throw new PricingError("Bản xem trước đã được áp dụng hoặc huỷ");
+      if (run.formulaVersion < FORMULA_VERSION || !run.expiresAt || run.expiresAt <= now) {
+        throw new PricingError("Bản xem trước đã hết hạn hoặc tạo theo cách tính cũ — tạo bản xem trước mới");
+      }
       const lines = await tx.priceRunLine.findMany({
-        where: { runId, variantId: { in: variantIds } },
+        where: { runId, variantId: { in: variantIds }, status: "PENDING" },
         include: { variant: { select: { sku: true } } },
       });
+      const ctx: RunCtx = {
+        mode: run.location ? (run.location.pricingMode ?? "VN_IMPORT") : null,
+        rate: run.rate,
+        marginPct: run.marginPct?.toString() ?? null,
+        shipMmkPerKg: run.shipMmkPerKg,
+        roundTo: run.roundTo,
+      };
+      const fresh = new Map((await computeLines(tx, lines.map((l) => l.variantId), ctx)).lines.map((l) => [l.variantId, l]));
+
       let applied = 0;
-      const skipped: string[] = [];
+      const skipped: ApplySkip[] = [];
+      const skip = async (l: (typeof lines)[number], reason: ApplySkip["reason"]) => {
+        skipped.push({ sku: l.variant.sku, reason });
+        await tx.priceRunLine.update({ where: { id: l.id }, data: { status: "SKIPPED", skipReason: reason } });
+      };
       for (const l of lines) {
-        if (l.newPriceMmk === l.oldPriceMmk) continue;
-        // Chỉ đổi nếu giá vẫn đúng như lúc xem trước (không ghi đè chỉnh sửa tay xen giữa).
-        const res = await tx.variant.updateMany({
-          where: { id: l.variantId, priceMmk: l.oldPriceMmk },
-          data: { priceMmk: l.newPriceMmk },
-        });
-        if (res.count !== 1) {
-          skipped.push(l.variant.sku);
+        const f = fresh.get(l.variantId);
+        if (!l.fingerprint || !f || f.fingerprint !== l.fingerprint || f.newPriceMmk !== l.newPriceMmk) {
+          await skip(l, "INPUT_CHANGED");
           continue;
         }
+        // Chỉ đổi nếu giá vẫn đúng như lúc xem trước (không ghi đè chỉnh sửa tay xen giữa).
+        const res = await tx.variant.updateMany({ where: { id: l.variantId, priceMmk: l.oldPriceMmk }, data: { priceMmk: l.newPriceMmk } });
+        if (res.count !== 1) {
+          await skip(l, "PRICE_CHANGED");
+          continue;
+        }
+        await tx.priceRunLine.update({ where: { id: l.id }, data: { status: "APPLIED", appliedAt: now } });
         await tx.priceHistory.create({
-          data: {
-            variantId: l.variantId,
-            oldPriceMmk: l.oldPriceMmk,
-            newPriceMmk: l.newPriceMmk,
-            runId,
-            reason: "bulk",
-            userId,
-          },
+          data: { variantId: l.variantId, oldPriceMmk: l.oldPriceMmk, newPriceMmk: l.newPriceMmk, runId, reason: "bulk", userId, createdAt: now },
         });
         applied++;
       }
+      const remaining = await tx.priceRunLine.count({ where: { runId, status: "PENDING" } });
+      await tx.priceUpdateRun.update({ where: { id: runId }, data: { appliedAt: now, ...(remaining === 0 && { status: "APPLIED" }) } });
       await tx.auditLog.create({
-        data: { userId, action: "pricing.apply", entity: "PriceUpdateRun", entityId: runId, data: { applied, skipped } },
+        data: { userId, action: "pricing.apply", entity: "PriceUpdateRun", entityId: runId, data: { applied, skipped, remaining } },
       });
-      return { applied, skipped };
+      return { applied, skipped, remaining };
     },
     { maxWait: 10_000, timeout: 30_000 },
   );
 }
 
+/** Huỷ bản xem trước (kể cả bản đã áp một phần): dòng còn chờ → bỏ qua; dòng đã áp giữ nguyên. */
 export async function cancelRun(runId: string, userId: string) {
-  const res = await prisma.priceUpdateRun.updateMany({
-    where: { id: runId, status: "PREVIEW" },
-    data: { status: "CANCELLED" },
+  await prisma.$transaction(async (tx) => {
+    const res = await tx.priceUpdateRun.updateMany({ where: { id: runId, status: "PREVIEW" }, data: { status: "CANCELLED" } });
+    if (res.count !== 1) throw new PricingError("Chỉ huỷ được bản xem trước");
+    await tx.priceRunLine.updateMany({ where: { runId, status: "PENDING" }, data: { status: "SKIPPED", skipReason: "CANCELLED" } });
+    await tx.auditLog.create({ data: { userId, action: "pricing.cancel", entity: "PriceUpdateRun", entityId: runId } });
   });
-  if (res.count !== 1) throw new PricingError("Chỉ huỷ được bản xem trước");
-  await prisma.auditLog.create({ data: { userId, action: "pricing.cancel", entity: "PriceUpdateRun", entityId: runId } });
 }

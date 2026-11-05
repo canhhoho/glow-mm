@@ -10,6 +10,8 @@ export const SETTING_DEFAULTS = {
   "reservation.transferHours": 24,
   "cod.confirmHours": 24,
   "pricing.roundTo": 100,
+  /** D1: bản xem trước giá hết hạn sau số ngày này (đầu vào đổi thì dòng bị chặn bất kể hạn). */
+  "pricing.previewDays": 3,
   "reorder.coverDays": 30,
   "reorder.salesWindowDays": 60,
   /** Số ngày sau khi đơn hoàn thành mới tính hoa hồng CTV là đến hạn (chờ đổi trả) — P10. */
@@ -70,6 +72,7 @@ export const settingsSchema = z
     "reservation.transferHours": int(1, 168),
     "cod.confirmHours": int(1, 168),
     "pricing.roundTo": int(1, 100_000),
+    "pricing.previewDays": int(1, 30),
     "reorder.coverDays": int(0, 365),
     "reorder.salesWindowDays": int(7, 365),
     "affiliate.holdDays": int(0, 90),

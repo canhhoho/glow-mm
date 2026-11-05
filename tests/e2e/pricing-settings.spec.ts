@@ -43,6 +43,11 @@ test("admin: lưu cài đặt; tính giá mới (xem trước) rồi huỷ", asy
   await expect(page).toHaveURL(/\/admin\/pricing\/runs\//, { timeout: 20_000 });
   await expect(page.getByRole("row", { name: /SV-SUN-50/ })).toBeVisible();
   await expect(page.getByRole("checkbox", { name: "SV-SUN-50" })).toBeChecked();
+  // D1: nguồn giá mua (phiếu nhập đã ghi sổ + lô), trạng thái dòng, hạn bản xem trước.
+  await expect(page.getByRole("columnheader", { name: "Nguồn giá mua" })).toBeVisible();
+  await expect(page.getByRole("row", { name: /SV-SUN-50/ }).getByRole("link").first()).toHaveAttribute("href", /\/admin\/inventory\/documents\//);
+  await expect(page.getByRole("row", { name: /SV-SUN-50/ })).toContainText("Chờ");
+  await expect(page.getByText(/^Hết hạn /)).toBeVisible();
   await page.screenshot({ path: "test-results/screens/pricing-run.png", fullPage: true });
 
   await page.getByRole("button", { name: "Huỷ bản xem trước" }).click();

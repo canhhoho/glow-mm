@@ -1,29 +1,41 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { applyRunAction, cancelRunAction } from "@/server/pricing/actions";
 import { changePct } from "@/server/pricing/formula";
 import { getRun } from "@/server/pricing/queries";
+import { FORMULA_VERSION } from "@/server/pricing/runs";
 import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
-import { Badge, DataTable, Page, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, Notice, Page, PageHeader, Td } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
-import { fmtDateTime, fmtInt } from "@/lib/format";
+import { fmtDate, fmtDateTime, fmtInt } from "@/lib/format";
 import { rateDisplay } from "@/server/pricing/formula";
 
 const RUN_TONE = { PREVIEW: "warning", APPLIED: "success", CANCELLED: "neutral" } as const;
+const LINE_TONE = { PENDING: "warning", APPLIED: "success", SKIPPED: "neutral" } as const;
 /** Thay đổi giá vượt ngưỡng này (%) được tô nổi để kiểm tra lại. */
 const BIG_CHANGE = 20;
+const SKIP_REASONS = ["UNCHANGED", "PRICE_CHANGED", "INPUT_CHANGED", "CANCELLED", "LEGACY"] as const;
 
 export default async function PriceRunPage({ params }: PageProps<"/admin/pricing/runs/[id]">) {
   await requirePagePermission("pricing:manage");
   const { id } = await params;
   const [t, run] = await Promise.all([getTranslations("Pricing"), getRun(id)]);
   if (!run) notFound();
-  const editable = run.status === "PREVIEW";
+  const now = new Date();
+  const open = run.status === "PREVIEW";
+  // D1: bản tạo trước khi có nguồn giá theo phiếu ghi sổ / fingerprint, hoặc quá hạn → không áp được nữa.
+  const expired = open && (run.formulaVersion < FORMULA_VERSION || !run.expiresAt || run.expiresAt <= now);
+  const editable = open && !expired;
+  const pending = run.lines.filter((l) => l.status === "PENDING").length;
+  const appliedCount = run.lines.filter((l) => l.status === "APPLIED").length;
   // P24: cột theo cách tính giá của kho — MMK: vốn MMK + lãi cố định; VN: vốn VND + phí ship (MMK).
   const mmk = run.location?.pricingMode === "LOCAL_MMK";
+  const vn = run.shipMmkPerKg != null;
   const extra = run.location ? (mmk ? t("profitCol") : t("shipCol")) : null;
+  const skipLabel = (r: string | null) => (r && (SKIP_REASONS as readonly string[]).includes(r) ? t(`skipReason.${r as (typeof SKIP_REASONS)[number]}`) : null);
 
   const table = (
     <DataTable
@@ -31,29 +43,25 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
         editable ? t("select") : "",
         t("sku"),
         t("product"),
-        mmk ? t("costMmk") : run.shipMmkPerKg != null ? t("purchaseCost") : t("cost"),
+        mmk ? t("costMmk") : vn ? t("purchaseCost") : t("cost"),
         ...(extra ? [extra] : []),
+        ...(vn ? [t("weight")] : []),
+        t("source"),
         t("oldPrice"),
         t("newPrice"),
         t("change"),
+        t("status"),
       ]}
     >
       {run.lines.map((l) => {
         const pct = changePct(l.oldPriceMmk, l.newPriceMmk);
-        const stale = editable && l.currentPriceMmk !== l.oldPriceMmk;
-        const same = l.newPriceMmk === l.oldPriceMmk;
+        const pendingLine = l.status === "PENDING";
+        const stale = editable && pendingLine && l.currentPriceMmk !== l.oldPriceMmk;
         return (
-          <tr key={l.variantId} className={cn(stale && "bg-amber-50 dark:bg-amber-950/30")}>
+          <tr key={l.variantId} className={cn(stale && "bg-amber-50 dark:bg-amber-950/30")} data-testid="run-line">
             <Td>
-              {editable && (
-                <input
-                  type="checkbox"
-                  name="variantId"
-                  value={l.variantId}
-                  defaultChecked={!same && !stale}
-                  disabled={same}
-                  aria-label={l.sku}
-                />
+              {editable && pendingLine && (
+                <input type="checkbox" name="variantId" value={l.variantId} defaultChecked={!stale} aria-label={l.sku} />
               )}
             </Td>
             <Td className="font-mono text-xs">{l.sku}</Td>
@@ -63,15 +71,39 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
             </Td>
             <Td className="text-right tabular-nums">{fmtInt(mmk ? l.costMmk : l.costVnd)}</Td>
             {extra && <Td className="text-right tabular-nums">{fmtInt(mmk ? l.profitMmk : l.shipMmk)}</Td>}
+            {vn && (
+              <Td className="text-right tabular-nums">
+                {fmtInt(l.weightGrams)}
+                {l.weightFromComponents && <div className="text-xs text-muted-foreground">{t("weightFromComponents")}</div>}
+              </Td>
+            )}
+            <Td className="text-xs">
+              {l.source ? (
+                <>
+                  <Link href={`/admin/inventory/documents/${l.source.document.id}`} className="font-mono text-primary underline">
+                    {l.source.document.code}
+                  </Link>
+                  <div>
+                    <Link href={`/admin/inventory/batches/${l.source.batch.id}`} className="underline">
+                      {l.source.batch.lotNo}
+                    </Link>
+                    {l.source.postedAt && <span className="text-muted-foreground"> · {fmtDate(l.source.postedAt)}</span>}
+                  </div>
+                </>
+              ) : l.isBundle ? (
+                <span className="text-muted-foreground">{t("sourceCombo")}</span>
+              ) : (
+                "—"
+              )}
+            </Td>
             <Td className="text-right tabular-nums">{fmtInt(l.oldPriceMmk)}</Td>
             <Td className="text-right font-medium tabular-nums">{fmtInt(l.newPriceMmk)}</Td>
-            <Td
-              className={cn(
-                "text-right tabular-nums",
-                pct != null && Math.abs(pct) >= BIG_CHANGE && "font-medium text-destructive",
-              )}
-            >
+            <Td className={cn("text-right tabular-nums", pct != null && Math.abs(pct) >= BIG_CHANGE && "font-medium text-destructive")}>
               {pct == null ? "—" : `${pct > 0 ? "+" : ""}${pct}%`}
+            </Td>
+            <Td>
+              <Badge tone={LINE_TONE[l.status]}>{t(`lineStatus.${l.status}`)}</Badge>
+              {skipLabel(l.skipReason) && <div className="text-xs text-muted-foreground">{skipLabel(l.skipReason)}</div>}
             </Td>
           </tr>
         );
@@ -81,12 +113,11 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
 
   return (
     <Page>
-      <PageHeader
-        title={t("runTitle", { date: fmtDateTime(run.createdAt) })}
-        back={{ href: "/admin/pricing?tab=runs", label: t("back") }}
-      />
+      <PageHeader title={t("runTitle", { date: fmtDateTime(run.createdAt) })} back={{ href: "/admin/pricing?tab=runs", label: t("back") }} />
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <Badge tone={RUN_TONE[run.status]}>{t(`st.${run.status}`)}</Badge>
+        {open && appliedCount > 0 && <span data-testid="run-partial">{t("partial", { applied: appliedCount, pending })}</span>}
+        {open && run.expiresAt && <span className="text-muted-foreground">{t("expiresAt", { date: fmtDateTime(run.expiresAt) })}</span>}
         {run.location && (
           <span>
             {t("warehouse")}: {run.location.name}
@@ -108,7 +139,23 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
           {t("roundTo")}: {fmtInt(run.roundTo)}
         </span>
       </div>
-      {editable ? (
+      {expired && <Notice tone="danger">{t("expired")}</Notice>}
+      {run.skippedVariants.length > 0 && (
+        <details className="rounded-md border px-3 py-2 text-sm" data-testid="run-skipped">
+          <summary className="cursor-pointer font-medium">{t("skippedTitle", { count: run.skippedVariants.length })}</summary>
+          <ul className="mt-2 space-y-1 text-xs">
+            {(["NO_COST", "NO_WEIGHT", "NO_PROFIT"] as const).map((reason) => {
+              const skus = run.skippedVariants.filter((s) => s.reason === reason).map((s) => s.sku);
+              return skus.length > 0 ? (
+                <li key={reason}>
+                  <span className="font-medium">{t(`skippedReason.${reason}`)}:</span> <span className="font-mono">{skus.join(", ")}</span>
+                </li>
+              ) : null;
+            })}
+          </ul>
+        </details>
+      )}
+      {editable && pending > 0 ? (
         <>
           <ActionForm action={applyRunAction} submitLabel={t("apply")} confirm={t("applyConfirm")}>
             <input type="hidden" name="runId" value={run.id} />
@@ -117,7 +164,10 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
           <ActionButton action={cancelRunAction} fields={{ runId: run.id }} label={t("cancelRun")} variant="outline" />
         </>
       ) : (
-        table
+        <>
+          {table}
+          {open && <ActionButton action={cancelRunAction} fields={{ runId: run.id }} label={t("cancelRun")} variant="outline" />}
+        </>
       )}
     </Page>
   );

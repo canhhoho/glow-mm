@@ -1,7 +1,8 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { productName } from "@/server/inventory/queries";
-import { postedReceiveBatch } from "./cost";
+import { postedReceiveBatch, variantCosts } from "./cost";
+import type { SkipReason } from "./runs";
 
 /** Truy vấn cho trang /admin/pricing (chỉ đọc). */
 
@@ -29,7 +30,11 @@ export async function getRun(id: string) {
       rate: true,
       location: { select: { name: true, pricingMode: true } },
       lines: {
-        include: { variant: { include: { product: { include: { translations: true } } } } },
+        include: {
+          variant: { include: { product: { include: { translations: true } } } },
+          sourceBatch: { select: { id: true, lotNo: true } },
+          sourceDocument: { select: { id: true, code: true } },
+        },
         orderBy: { variant: { sku: "asc" } },
       },
     },
@@ -48,7 +53,14 @@ export async function getRun(id: string) {
       oldPriceMmk: l.oldPriceMmk,
       newPriceMmk: l.newPriceMmk,
       currentPriceMmk: l.variant.priceMmk,
+      isBundle: l.variant.isBundle,
+      status: l.status,
+      skipReason: l.skipReason,
+      source: l.sourceBatch && l.sourceDocument ? { batch: l.sourceBatch, document: l.sourceDocument, postedAt: l.sourcePostedAt } : null,
+      weightGrams: l.weightGrams,
+      weightFromComponents: l.weightFromComponents,
     })),
+    skippedVariants: Array.isArray(run.skipped) ? (run.skipped as { variantId: string; sku: string; reason: SkipReason }[]) : [],
   };
 }
 
@@ -63,8 +75,9 @@ export async function variantsWithoutCost() {
 }
 
 /**
- * P24: biến thể của từng kho bán chưa tính được giá — thiếu vốn đúng loại tiền (lô VND / lô MMK),
- * thiếu khối lượng (kho hàng nhập VN: phí ship theo kg), thiếu lãi cố định (kho mua MMK).
+ * P24 (+D1): biến thể của từng kho bán chưa tính được giá — thiếu vốn đúng loại tiền (chỉ phiếu nhập đã ghi sổ;
+ * combo: thiếu vốn một thành phần), thiếu khối lượng (kho hàng nhập VN; combo chưa khai báo thì cộng thành phần),
+ * thiếu lãi cố định (kho mua MMK). Cùng điều kiện với `computeLines` trong runs.ts.
  */
 export async function pricingGaps() {
   const locations = await prisma.location.findMany({
@@ -79,21 +92,21 @@ export async function pricingGaps() {
         where: { active: true, product: { stockLocationId: l.id, archivedAt: null } },
         orderBy: { sku: "asc" },
         select: {
+          id: true,
           sku: true,
           isBundle: true,
           weightGrams: true,
           product: { select: { fixedProfitMmk: true } },
-          batches: {
-            where: { ...(mmk ? { unitCostMmk: { not: null } } : { unitCostVnd: { not: null } }), ...postedReceiveBatch },
-            take: 1,
-            select: { id: true },
-          },
+          bundleItems: { select: { component: { select: { weightGrams: true } } } },
         },
       });
+      const costs = await prisma.$transaction((tx) => variantCosts(tx, variants.map((v) => v.id), mmk ? "MMK" : "VND", mmk ? "LANDED" : "PURCHASE"));
+      const hasWeight = (v: (typeof variants)[number]) =>
+        (v.weightGrams ?? 0) > 0 || (v.isBundle && v.bundleItems.length > 0 && v.bundleItems.every((b) => (b.component.weightGrams ?? 0) > 0));
       return {
         location: l,
-        missingCost: variants.filter((v) => !v.isBundle && v.batches.length === 0).map((v) => v.sku),
-        missingWeight: mmk ? [] : variants.filter((v) => !v.weightGrams).map((v) => v.sku),
+        missingCost: variants.filter((v) => !costs.get(v.id)).map((v) => v.sku),
+        missingWeight: mmk ? [] : variants.filter((v) => !hasWeight(v)).map((v) => v.sku),
         missingProfit: mmk ? variants.filter((v) => v.product.fixedProfitMmk == null).map((v) => v.sku) : [],
       };
     }),

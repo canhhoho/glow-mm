@@ -66,8 +66,8 @@ export async function applyRunAction(_prev: ActionState, formData: FormData): Pr
     const ids = formData.getAll("variantId").map(String);
     const res = await applyRun(runId, ids, user.id);
     const t = await getTranslations("Pricing");
-    ok = t("appliedResult", { applied: res.applied, skipped: res.skipped.length });
-    if (res.skipped.length) ok += ` (${res.skipped.join(", ")})`;
+    ok = t("appliedResult", { applied: res.applied, skipped: res.skipped.length, remaining: res.remaining });
+    if (res.skipped.length) ok += ` (${res.skipped.map((s) => `${s.sku}: ${t(`skipShort.${s.reason}`)}`).join(", ")})`;
   } catch (e) {
     return { error: message(e) };
   }

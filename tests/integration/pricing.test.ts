@@ -68,7 +68,7 @@ describe("Tính giá theo kho (P24)", () => {
     expect(await linesOf(run.id)).toEqual([
       expect.objectContaining({ variantId: f.variantId, costVnd: null, costMmk: 18_250, profitMmk: 5_000, newPriceMmk: 23_300 }),
     ]);
-    expect(await applyRun(run.id, [f.variantId], f.userId)).toEqual({ applied: 1, skipped: [] });
+    expect(await applyRun(run.id, [f.variantId], f.userId)).toEqual({ applied: 1, skipped: [], remaining: 0 });
     expect((await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).priceMmk).toBe(23_300);
   });
 });
@@ -92,7 +92,7 @@ describe("Cập nhật giá hàng loạt", () => {
     expect((await linesOf(run.id))[0].newPriceMmk).toBe(36_000);
 
     const res = await applyRun(run.id, [f.variantId], f.userId);
-    expect(res).toEqual({ applied: 1, skipped: [] });
+    expect(res).toEqual({ applied: 1, skipped: [], remaining: 0 });
     expect((await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).priceMmk).toBe(36_000);
     const hist = await prisma.priceHistory.findFirstOrThrow({ where: { variantId: f.variantId, runId: run.id } });
     expect(hist).toMatchObject({ oldPriceMmk: 10_000, newPriceMmk: 36_000, reason: "bulk" });
@@ -153,7 +153,7 @@ describe("Cập nhật giá hàng loạt", () => {
     await prisma.variant.update({ where: { id: f.variantId }, data: { priceMmk: 12_345 } });
 
     const res = await applyRun(run.id, [f.variantId], f.userId);
-    expect(res).toEqual({ applied: 0, skipped: [`IT-${f.tag}`] });
+    expect(res).toEqual({ applied: 0, skipped: [{ sku: `IT-${f.tag}`, reason: "PRICE_CHANGED" }], remaining: 0 });
     expect((await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).priceMmk).toBe(12_345);
   });
 

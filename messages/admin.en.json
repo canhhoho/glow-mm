@@ -694,7 +694,8 @@
         "confirmHours": "Auto-cancel unconfirmed COD after (hours)"
       },
       "pricing": {
-        "roundTo": "Round prices up to multiple of (MMK)"
+        "roundTo": "Round prices up to multiple of (MMK)",
+        "previewDays": "Price previews expire after (days)"
       },
       "reorder": {
         "coverDays": "Days of stock to cover after arrival",
@@ -735,8 +736,8 @@
     "rateAdded": "Rate added",
     "newRun": "Recalculate prices (preview)",
     "formula": "Price = VND cost (latest batch) ÷ rate (VND per 1 MMK) × (1 + margin %), rounded up",
-    "formulaVn": "VN imports: latest purchase cost VND × exchange rate × (1 + markup %) + VN → MM freight (MMK/kg) × weight, rounded up. Markup applies only to purchase cost.",
-    "formulaMmk": "Bought in Myanmar: price = MMK cost (latest batch) + the product's fixed MMK profit, rounded up. Set the fixed profit on the product edit page.",
+    "formulaVn": "VN-import warehouse: VND purchase cost (latest posted receipt) × rate × (1 + margin %) + VN → MM freight (MMK/kg) × weight, rounded up. Margin applies to the purchase cost only. Combos without a declared weight use the sum of component weights.",
+    "formulaMmk": "Myanmar-purchase warehouse: price = MMK cost (latest posted receipt) + the product's fixed MMK profit, rounded up. Set the fixed profit on the product edit page.",
     "warehouse": "Warehouse",
     "shipMmkPerKg": "Shipping VN → MM (MMK/kg)",
     "shipShort": "shipping {n} MMK/kg",
@@ -752,7 +753,7 @@
     "brand": "Brand",
     "all": "All",
     "preview": "Preview",
-    "noCost": "No cost yet (no batch received), cannot be priced",
+    "noCost": "No posted receipt in the right currency (combo: a component is missing), so no price can be computed",
     "runs": "Price runs",
     "history": "Price history",
     "created": "Created",
@@ -773,7 +774,7 @@
     "changedSince": "Price edited after preview — will be skipped",
     "apply": "Apply selected prices",
     "applyConfirm": "Apply new prices to the selected lines?",
-    "appliedResult": "Applied {applied} prices, skipped {skipped}",
+    "appliedResult": "Applied {applied} prices, skipped {skipped}, {remaining} still pending",
     "cancelRun": "Discard preview",
     "select": "Select",
     "reason": "Reason",
@@ -783,7 +784,36 @@
     "noRate": "No exchange rate yet — add one first",
     "empty": "Nothing yet",
     "purchaseCost": "Purchase cost (VND)",
-    "costBasisHelp": "Selling prices use purchase cost and add freight per kg once. Actual shipment expenses determine inventory cost and profit."
+    "costBasisHelp": "Selling prices use purchase cost and add freight per kg once. Actual shipment expenses determine inventory cost and profit.",
+    "source": "Purchase cost source",
+    "sourceCombo": "Sum of components",
+    "weight": "Weight (g)",
+    "weightFromComponents": "sum of components",
+    "lineStatus": {
+      "PENDING": "Pending",
+      "APPLIED": "Applied",
+      "SKIPPED": "Skipped"
+    },
+    "skipReason": {
+      "UNCHANGED": "Price unchanged",
+      "PRICE_CHANGED": "Price was edited after the preview",
+      "INPUT_CHANGED": "Inputs changed (lot, purchase cost, weight, combo, profit or warehouse) — create a new preview",
+      "CANCELLED": "Preview cancelled",
+      "LEGACY": "Not applied (run from before line statuses)"
+    },
+    "skipShort": {
+      "PRICE_CHANGED": "price edited",
+      "INPUT_CHANGED": "inputs changed"
+    },
+    "skippedTitle": "{count} variants could not be priced",
+    "skippedReason": {
+      "NO_COST": "No posted purchase cost",
+      "NO_WEIGHT": "Missing weight",
+      "NO_PROFIT": "Missing fixed profit"
+    },
+    "expiresAt": "Expires {date}",
+    "expired": "This preview has expired or uses the old method — create a new preview to apply prices.",
+    "partial": "{applied} lines applied, {pending} still pending"
   },
   "Quarantine": {
     "title": "Quarantine (returned goods)",

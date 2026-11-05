@@ -694,7 +694,8 @@
         "confirmHours": "Tự huỷ COD chưa xác nhận sau (giờ)"
       },
       "pricing": {
-        "roundTo": "Làm tròn giá lên bội số (MMK)"
+        "roundTo": "Làm tròn giá lên bội số (MMK)",
+        "previewDays": "Bản xem trước giá hết hạn sau (ngày)"
       },
       "reorder": {
         "coverDays": "Số ngày bán cần đủ hàng sau khi về",
@@ -735,8 +736,8 @@
     "rateAdded": "Đã thêm tỷ giá",
     "newRun": "Tính giá mới (xem trước)",
     "formula": "Giá = vốn VND (lô nhập gần nhất) ÷ tỷ giá (VND cho 1 MMK) × (1 + % lãi), làm tròn lên",
-    "formulaVn": "Kho hàng nhập VN: giá mua gốc VND (lô gần nhất) × tỷ giá × (1 + % lãi) + cước VN → MM (MMK/kg) × khối lượng, làm tròn lên. % lãi chỉ tính trên giá mua gốc.",
-    "formulaMmk": "Kho mua tại Myanmar: giá = vốn MMK (lô gần nhất) + lãi cố định MMK của sản phẩm, làm tròn lên. Lãi cố định nhập ở trang Sửa sản phẩm.",
+    "formulaVn": "Kho hàng nhập VN: giá mua gốc VND (phiếu nhập đã ghi sổ gần nhất) × tỷ giá × (1 + % lãi) + cước VN → MM (MMK/kg) × khối lượng, làm tròn lên. % lãi chỉ tính trên giá mua gốc. Combo chưa khai báo khối lượng thì cộng khối lượng thành phần.",
+    "formulaMmk": "Kho mua tại Myanmar: giá = vốn MMK (phiếu nhập đã ghi sổ gần nhất) + lãi cố định MMK của sản phẩm, làm tròn lên. Lãi cố định nhập ở trang Sửa sản phẩm.",
     "warehouse": "Kho",
     "shipMmkPerKg": "Phí ship VN → MM (MMK/kg)",
     "shipShort": "ship {n} MMK/kg",
@@ -752,7 +753,7 @@
     "brand": "Thương hiệu",
     "all": "Tất cả",
     "preview": "Xem trước",
-    "noCost": "Chưa có giá vốn (chưa nhập lô) nên không tính được",
+    "noCost": "Chưa có phiếu nhập đã ghi sổ đúng loại tiền (combo: thiếu ở một thành phần) nên không tính được",
     "runs": "Các lần tính giá",
     "history": "Lịch sử giá",
     "created": "Tạo lúc",
@@ -773,7 +774,7 @@
     "changedSince": "Giá đã bị sửa sau khi xem trước — sẽ bỏ qua",
     "apply": "Áp dụng giá đã chọn",
     "applyConfirm": "Áp dụng giá mới cho các dòng đã chọn?",
-    "appliedResult": "Đã áp dụng {applied} giá, bỏ qua {skipped}",
+    "appliedResult": "Đã áp dụng {applied} giá, bỏ qua {skipped}, còn chờ {remaining}",
     "cancelRun": "Huỷ bản xem trước",
     "select": "Chọn",
     "reason": "Lý do",
@@ -783,7 +784,36 @@
     "noRate": "Chưa có tỷ giá — thêm tỷ giá trước",
     "empty": "Chưa có dữ liệu",
     "purchaseCost": "Giá mua gốc (VND)",
-    "costBasisHelp": "Giá bán dùng giá mua gốc và cộng cước theo kg một lần. Chi phí chuyến thực tế dùng cho giá vốn và lợi nhuận."
+    "costBasisHelp": "Giá bán dùng giá mua gốc và cộng cước theo kg một lần. Chi phí chuyến thực tế dùng cho giá vốn và lợi nhuận.",
+    "source": "Nguồn giá mua",
+    "sourceCombo": "Tổng thành phần",
+    "weight": "Khối lượng (g)",
+    "weightFromComponents": "cộng thành phần",
+    "lineStatus": {
+      "PENDING": "Chờ",
+      "APPLIED": "Đã áp",
+      "SKIPPED": "Bỏ qua"
+    },
+    "skipReason": {
+      "UNCHANGED": "Giá không đổi",
+      "PRICE_CHANGED": "Giá đã bị sửa sau khi xem trước",
+      "INPUT_CHANGED": "Đầu vào đã đổi (lô, giá mua, khối lượng, combo, lãi hoặc kho) — tạo bản mới",
+      "CANCELLED": "Đã huỷ bản xem trước",
+      "LEGACY": "Không áp dụng (bản trước khi lưu trạng thái dòng)"
+    },
+    "skipShort": {
+      "PRICE_CHANGED": "giá đã sửa",
+      "INPUT_CHANGED": "đầu vào đổi"
+    },
+    "skippedTitle": "Không tính được {count} biến thể",
+    "skippedReason": {
+      "NO_COST": "Thiếu giá mua đã ghi sổ",
+      "NO_WEIGHT": "Thiếu khối lượng",
+      "NO_PROFIT": "Thiếu lãi cố định"
+    },
+    "expiresAt": "Hết hạn {date}",
+    "expired": "Bản xem trước đã hết hạn hoặc tạo theo cách tính cũ — tạo bản mới để áp dụng.",
+    "partial": "Đã áp {applied} dòng, còn {pending} dòng chờ"
   },
   "Quarantine": {
     "title": "Hàng chờ kiểm tra (hàng trả)",

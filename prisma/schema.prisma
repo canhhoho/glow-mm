@@ -366,6 +366,13 @@ enum PriceRunStatus {
   CANCELLED
 }
 
+/// D1: trạng thái từng dòng — áp dụng một phần thì bản xem trước vẫn mở cho dòng còn chờ.
+enum PriceLineStatus {
+  PENDING
+  APPLIED
+  SKIPPED
+}
+
 model PriceUpdateRun {
   id           String         @id @default(cuid())
   /// Kho được tính giá (P24); null = bản tính giá cũ trước khi có 2 kho.
@@ -380,7 +387,14 @@ model PriceUpdateRun {
   status      PriceRunStatus @default(PREVIEW)
   createdById String
   createdAt   DateTime       @default(now())
+  /// Lần áp dụng gần nhất (bản áp một phần vẫn PREVIEW đến khi hết dòng chờ).
   appliedAt   DateTime?
+  /// D1: 1 = bản cũ (lô theo ngày tạo, không fingerprint); 2 = nguồn từ phiếu nhập đã ghi sổ + fingerprint.
+  formulaVersion Int        @default(1)
+  /// Hết hạn áp dụng; null = bản tạo trước D1 → coi như hết hạn, phải tạo lại.
+  expiresAt   DateTime?
+  /// Biến thể bị bỏ qua khi tạo bản xem trước: [{ variantId, sku, reason }].
+  skipped     Json?
   history     PriceHistory[]
   lines       PriceRunLine[]
 }
@@ -400,6 +414,21 @@ model PriceRunLine {
   profitMmk   Int?
   oldPriceMmk Int
   newPriceMmk Int
+  /// D1: Chờ / Đã áp / Bỏ qua (`skipReason`: UNCHANGED, PRICE_CHANGED, INPUT_CHANGED, CANCELLED, LEGACY).
+  status      PriceLineStatus @default(PENDING)
+  skipReason  String?
+  appliedAt   DateTime?
+  /// Nguồn giá mua (biến thể thường): lô + phiếu nhập đã ghi sổ được chọn. Combo: null (xem thành phần).
+  sourceBatchId    String?
+  sourceBatch      Batch?         @relation(fields: [sourceBatchId], references: [id])
+  sourceDocumentId String?
+  sourceDocument   StockDocument? @relation(fields: [sourceDocumentId], references: [id])
+  sourcePostedAt   DateTime?
+  /// Khối lượng dùng tính cước/kg (VN_IMPORT); `weightFromComponents` = combo chưa khai báo → cộng thành phần.
+  weightGrams          Int?
+  weightFromComponents Boolean @default(false)
+  /// Băm đầu vào của dòng (nguồn giá, khối lượng, combo, lãi cố định…) — áp dụng tính lại, khác thì bỏ qua.
+  fingerprint String?
 
   @@unique([runId, variantId])
 }
@@ -540,6 +569,7 @@ model Batch {
   balances      StockBalance[]
   allocations   OrderAllocation[]
   documentLines StockDocumentLine[]
+  priceRunLines PriceRunLine[]
 
   @@unique([variantId, lotNo])
   @@index([variantId, expiryDate])
@@ -584,6 +614,7 @@ model StockDocument {
   createdAt   DateTime            @default(now())
   postedAt    DateTime?
   lines       StockDocumentLine[]
+  priceRunLines PriceRunLine[]
   ledger      StockLedger[]
 
   @@index([type, status])

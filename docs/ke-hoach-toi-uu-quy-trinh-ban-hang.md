@@ -185,6 +185,12 @@ File: `orders/actions.ts`, `transitions.ts`, `cod.ts`, `admin-queries.ts`, `repo
 
 ## 7. D1 — Chọn đúng nguồn giá mua
 
+**Trạng thái: đã làm (05/11/2026)**, migration `20261105120000_d1_price_provenance`. Quyết định của chủ shop: khối lượng combo = của combo, chưa khai báo thì cộng thành phần; bản xem trước hết hạn sau `pricing.previewDays` (mặc định 3 ngày, sửa ở Cài đặt); áp dụng một phần thì bản vẫn mở cho dòng còn chờ.
+- `pricing/cost.ts`: nguồn = dòng phiếu RECEIVE đã POSTED mới nhất theo `postedAt` → phiếu → dòng; trả kèm lô, phiếu, ngày ghi sổ; combo kèm nguồn từng thành phần.
+- `pricing/runs.ts`: `computeLines` dùng chung cho xem trước và áp dụng; mỗi dòng lưu nguồn, khối lượng đã dùng, fingerprint; `PriceRunLine.status` PENDING/APPLIED/SKIPPED + `skipReason`; `PriceUpdateRun.formulaVersion = 2`, `expiresAt`, `skipped` (biến thể không tính được + lý do). Áp dụng tính lại fingerprint, khác thì bỏ qua `INPUT_CHANGED`; bản cũ (version 1 / không hạn) không áp được nữa. Huỷ bản đã áp một phần giữ dòng đã áp.
+- `pricingGaps` liệt kê cả combo thiếu vốn; khối lượng combo tính theo quy ước trên.
+- Migration: dòng của run đã áp dụng có lịch sử giá → APPLIED, còn lại của run đã đóng → SKIPPED `LEGACY`.
+
 ### D1.1 Nguồn dữ liệu
 
 - Thay truy vấn chỉ dựa trên Batch.createdAt bằng dòng phiếu RECEIVE đã POSTED, có batch và số lượng dương.
