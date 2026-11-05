@@ -32,6 +32,9 @@ test("đơn thủ công (Facebook, COD): tạo → xác nhận → bàn giao (FE
 
   await page.getByRole("button", { name: "Xác nhận đơn" }).click();
   await expectStatus(page, "Chuẩn bị giao");
+  await page.getByRole("combobox", { name: "Người trả cước giao khách", exact: true }).selectOption("SENDER");
+  await page.getByRole("button", { name: "Lưu người trả cước", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Đã lưu người trả cước" })).toBeVisible();
 
   // Thông tin đơn lẻ và file VTP lấy từ đúng đơn; xuất file không bàn giao hay thu COD.
   const expectedCod = Number((await page.getByTestId("order-total").textContent())!.replace(/[^0-9]/g, ""));
@@ -57,6 +60,7 @@ test("đơn thủ công (Facebook, COD): tạo → xác nhận → bàn giao (FE
   expect(exportRows[7][9]).toBe(250);
   expect(exportRows[7][11]).toBe(expectedCod);
   expect(exportRows[7][13]).toBe("VNM - Normal Intra City");
+  expect(exportRows[7][18]).toBe("Sender");
   await page.goto(orderUrl);
   await expectStatus(page, "Chuẩn bị giao");
   await expectStatus(page, "Chưa trả");
@@ -83,6 +87,7 @@ test("đơn thủ công (Facebook, COD): tạo → xác nhận → bàn giao (FE
   const label = page.getByRole("article");
   await expect(label.getByText("Thu hộ (COD)")).toBeVisible();
   await expect(label.getByText("RX-E2E-1")).toBeVisible();
+  await expect(label.getByText("Cửa hàng trả cước", { exact: true })).toBeVisible();
   await page.screenshot({ path: "test-results/screens/admin-order-label.png", fullPage: true });
 
   await page.goto(orderUrl);

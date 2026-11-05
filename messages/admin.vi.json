@@ -718,7 +718,12 @@
         "forbidden": "Không có quyền in phiếu soạn",
         "nothing": "Không có đơn nào chốt lô được"
       }
-    }
+    },
+    "shippingPayer": "Người trả cước giao khách",
+    "receiverPays": "Người nhận trả cước",
+    "senderPays": "Cửa hàng trả cước",
+    "saveShippingPayer": "Lưu người trả cước",
+    "shippingPayerSaved": "Đã lưu người trả cước."
   },
   "Settings": {
     "description": "Quản lý tài khoản và các thiết lập vận hành của cửa hàng.",
@@ -965,7 +970,10 @@
     "profitAfterCommission": "Lợi nhuận sau hoa hồng",
     "uplineCommission": "Trong đó: hoa hồng tuyến dưới",
     "estimatedCost": "Lợi nhuận có sử dụng giá vốn tạm tính chụp lúc xuất hàng. Các đơn:",
-    "estimatedQty": "SL vốn tạm tính"
+    "estimatedQty": "SL vốn tạm tính",
+    "codCarrierFees": "Phí hãng khấu trừ COD",
+    "profitAfterRecordedCosts": "Sau chi phí bán đã ghi nhận",
+    "recordedCostBasis": "Theo kỳ hoàn tất đơn; phí cập nhật đến lúc xem. Có {pending} đơn COD chưa đối soát nên chưa đủ phí. {sender} đơn cửa hàng trả cước: chỉ phần phí đã ghi nhận được trừ; cước khác chưa có số liệu chưa được trừ. Đây không phải lãi ròng kế toán."
   },
   "Reviews": {
     "title": "Đánh giá sản phẩm",
@@ -1532,7 +1540,8 @@
     "copy": "Sao chép",
     "copied": "Đã sao chép",
     "copyFallback": "Chọn nội dung trong ô rồi nhấn Ctrl+C để sao chép.",
-    "downloadInfo": "Tải thông tin đơn (.txt)"
+    "downloadInfo": "Tải thông tin đơn (.txt)",
+    "payerFromOrder": "Theo từng đơn đã lưu"
   },
   "Opening": {
     "title": "Bắt đầu bán hàng · Nhập sản phẩm và tồn đầu kỳ",
@@ -1586,7 +1595,17 @@
     "notCollected": "Chưa ghi nhận thu COD",
     "remitted": "Đã về cửa hàng",
     "exception": "Có hoàn hàng / hoàn tiền · Cần đối soát riêng",
-    "empty": "Không có COD đang chờ đối soát"
+    "empty": "Không có COD đang chờ đối soát",
+    "all": "Tất cả",
+    "filterLabel": "Lọc đối soát COD",
+    "age": "Số ngày chờ",
+    "ageBucket": "{days} ngày · {count} đơn",
+    "exceptionTotal": "Ngoại lệ: {count} đơn · COD gốc {amount} MMK (chưa phải số còn phải thu đã xác minh).",
+    "closeException": "Đóng ngoại lệ COD",
+    "exceptionConfirm": "Xác nhận số liệu đã đối chiếu để đóng ngoại lệ COD? Thao tác không tự hoàn tiền hoặc thay đổi hàng trả.",
+    "exceptionFormula": "Tiền về + phí hãng + giảm thu = COD gốc. Nhập số đã đối chiếu, không tự lấy từ số hàng trả.",
+    "adjustment": "Giảm thu do hoàn hàng / hoàn tiền (MMK)",
+    "settlementNote": "Lý do và ghi chú đối soát"
   },
   "DataHealth": {
     "title": "Sức khoẻ dữ liệu",

@@ -330,6 +330,8 @@ Kiểm tra hai đơn soạn cùng lô, soạn đồng thời, ship lặp, hủy 
 
 ## 10. D4 — COD, chi phí bán và hoa hồng
 
+**Trạng thái: đã triển khai D4.1–D4.3 trên local (05/11/2026).** Migration `20261105180000_d4_cod_shipping_payer`: lưu người trả cước trên đơn, khoản giảm thu và lý do đóng ngoại lệ COD. VTP mặc định theo từng đơn; sửa người trả cước chỉ khi chuẩn bị giao, có audit. Hàng đợi có lọc và tuổi nợ. Báo cáo thêm phí COD và lợi nhuận sau chi phí đã ghi nhận, không cộng tiền đối soát vào doanh thu. Chủ shop đã duyệt công thức ngoại lệ `tiền về + phí + giảm thu = COD gốc`; **yêu cầu giữ chính sách hoa hồng hiện tại**, vì vậy không thêm/bật gate `affiliate.requireCodRemitted`. Kiểm tra đạt: lint, typecheck, 29 unit liên quan, 53 integration liên quan; E2E admin-orders, cod-exception và dashboard-reports đã đạt sau khi sửa locator bài mới và chờ đúng nội dung dashboard đang stream. CI của bản bàn giao chưa xác minh được do kết nối GitHub thất bại; chưa cập nhật production.
+
 ### D4.1 Dòng tiền
 
 - Hiển thị tách trạng thái đơn, trạng thái thanh toán và trạng thái đối soát COD.

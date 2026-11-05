@@ -11,6 +11,7 @@ export type OrderLabelData = {
   zoneName: string;
   paymentMethod: string;
   paymentStatus: string;
+  shippingPayer?: "RECEIVER" | "SENDER";
   totalMmk: number;
   shippingFeeMmk: number;
   note: string | null;
@@ -53,7 +54,7 @@ export async function OrderLabel({ order, className }: { order: OrderLabelData; 
         ) : (
           <div className="text-base font-bold">{t("prepaid")}</div>
         )}
-        {order.shippingFeeMmk === 0 && <div className="text-xs">{t("shippingNote")}</div>}
+        {order.shippingPayer === "SENDER" ? <div className="text-sm font-bold">{t("senderPays")}</div> : order.shippingFeeMmk === 0 && <div className="text-xs">{t("shippingNote")}</div>}
       </section>
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 text-xs">
         <dt>{t("itemsCount")}</dt>

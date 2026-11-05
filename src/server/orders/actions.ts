@@ -15,7 +15,8 @@ import { PickError, savePickManifests } from "./picking";
 import { returnItems } from "./returns";
 import { TRANSITIONS, type TransitionName } from "./state-machine";
 import { transitionOrder } from "./transitions";
-import { remitCod } from "./cod";
+import { remitCod, settleCodException } from "./cod";
+import { setShippingPayer } from "./shipping-payer";
 
 /** Server Action cho admin đơn hàng. Quyền luôn kiểm ở đây (requirePermission) và lần nữa trong domain. */
 
@@ -71,7 +72,33 @@ export async function remitCodAction(_prev: ActionState, formData: FormData): Pr
     revalidatePath(`/admin/orders/${String(input.orderId)}`);
     revalidatePath("/admin/orders/cod");
     revalidatePath("/admin/orders");
+    revalidatePath("/admin/reports");
     return { ok: "remitted" };
+  } catch (e) { return { error: await message(e) }; }
+}
+
+export async function settleCodExceptionAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("orders:reconcile-cod");
+    const input = Object.fromEntries(formData);
+    await settleCodException(input, { userId: user.id, role: user.role });
+    revalidatePath(`/admin/orders/${String(input.orderId)}`);
+    revalidatePath("/admin/orders/cod");
+    revalidatePath("/admin/reports");
+    revalidatePath("/admin");
+    return { ok: "remitted" };
+  } catch (e) { return { error: await message(e) }; }
+}
+
+export async function setShippingPayerAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("orders:ship");
+    const input = Object.fromEntries(formData);
+    await setShippingPayer(input, { userId: user.id, role: user.role });
+    revalidatePath(`/admin/orders/${String(input.orderId)}`);
+    revalidatePath(`/admin/orders/${String(input.orderId)}/label`);
+    revalidatePath("/admin/orders/export");
+    return { ok: "saved" };
   } catch (e) { return { error: await message(e) }; }
 }
 

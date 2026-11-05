@@ -31,6 +31,7 @@ export type VtpSourceOrder = {
   id: string; code: string; recipientName: string; recipientPhone: string; recipientPhone2: string | null;
   addressText: string; zoneName: string; stateCode: string | null; districtCode: string | null; townshipCode: string | null;
   paymentMethod: string; paymentStatus: string; subtotalMmk: number; totalMmk: number; note: string | null;
+  shippingPayer?: "RECEIVER" | "SENDER";
   items: { sku: string; name: string; qty: number; variant: { weightGrams: number | null } }[];
 };
 export type VtpPreview = ReturnType<typeof vtpPreview>;
@@ -44,6 +45,7 @@ export function vtpPreview(order: VtpSourceOrder) {
     weightGrams: missingWeights.length ? null : order.items.reduce((sum, i) => sum + (i.variant.weightGrams ?? 0) * i.qty, 0),
     missingWeights,
     valueMmk: order.subtotalMmk,
+    chargePayer: order.shippingPayer === "SENDER" ? "Sender" as const : "Receiver" as const,
     codMmk: order.paymentMethod === "COD" && order.paymentStatus !== "PAID" ? order.totalMmk : 0,
     note: [order.recipientPhone2 ? `Phone 2: ${order.recipientPhone2}` : "", order.note ?? ""].filter(Boolean).join("; "),
   };
@@ -52,10 +54,11 @@ export function vtpPreview(order: VtpSourceOrder) {
 export type VtpRowOptions = { weightGrams: number; addressKey: string; recipientName: string; note: string; service: string; chargePayer: string; pickupTime: string };
 export function vtpRow(order: VtpSourceOrder, options: VtpRowOptions, index: number): (string | number)[] {
   const preview = vtpPreview(order);
+  const chargePayer = options.chargePayer === "Order" ? preview.chargePayer : options.chargePayer;
   const address = VTP_ADDRESSES.find((a) => a.key === options.addressKey);
   if (!address) throw new Error(`${order.code}: chọn đủ địa chỉ VTP.`);
   if (!carrier.services.includes(options.service)) throw new Error("Chọn dịch vụ có trong mẫu VTP.");
-  if (!["Sender", "Receiver"].includes(options.chargePayer)) throw new Error("Người trả cước không hợp lệ.");
+  if (!["Sender", "Receiver"].includes(chargePayer)) throw new Error("Người trả cước không hợp lệ.");
   if (options.pickupTime && !carrier.pickupTimes.includes(options.pickupTime)) throw new Error("Thời gian hẹn lấy không hợp lệ.");
   if (!Number.isInteger(options.weightGrams) || options.weightGrams <= 0 || options.weightGrams > 2147483647) throw new Error(`${order.code}: khối lượng phải là số nguyên dương, tính bằng gram.`);
   const name = options.recipientName.trim();
@@ -64,5 +67,5 @@ export function vtpRow(order: VtpSourceOrder, options: VtpRowOptions, index: num
   if (!preview.phone || preview.phone.length > 20 || !preview.addressText || !preview.goods) throw new Error(`${order.code}: thiếu hoặc sai thông tin người nhận/hàng hóa.`);
   return [index + 1, order.code, name, preview.phone, address.state, address.district, address.township,
     preview.addressText, preview.goods, options.weightGrams, preview.valueMmk, preview.codMmk,
-    "Goods", options.service, "", "", "", "", options.chargePayer, options.pickupTime, options.note];
+    "Goods", options.service, "", "", "", "", chargePayer, options.pickupTime, options.note];
 }

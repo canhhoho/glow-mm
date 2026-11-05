@@ -67,7 +67,10 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
         <Stat label={`${t("commission")} (MMK)`} value={fmtInt(totals.commission)} testId="r-commission" />
         <Stat label={`${t("uplineCommission")} (MMK)`} value={fmtInt(totals.uplineCommission)} />
         <Stat label={`${t("profitAfterCommission")} (MMK)`} value={fmtInt(totals.profitAfterCommission)} />
+        <Stat label={`${t("codCarrierFees")} (MMK)`} value={fmtInt(totals.codCarrierFees)} testId="r-cod-fees" />
+        <Stat label={`${t("profitAfterRecordedCosts")} (MMK)`} value={fmtInt(totals.profitAfterRecordedCosts)} testId="r-recorded-profit" />
       </section>
+      <p className="text-sm text-muted-foreground">{t("recordedCostBasis", { pending: totals.unsettledCodOrders, sender: totals.senderPaysOrders })}</p>
 
       {report.missingCostOrders.length > 0 && (
         <p role="alert" className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">

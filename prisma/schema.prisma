@@ -800,6 +800,11 @@ enum PaymentMethod {
   BANK_TRANSFER
 }
 
+enum ShippingPayer {
+  RECEIVER
+  SENDER
+}
+
 enum PaymentStatus {
   UNPAID
   PROOF_SUBMITTED
@@ -839,6 +844,7 @@ model Order {
   channel           OrderChannel          @default(WEB)
   status            OrderStatus           @default(PENDING)
   paymentMethod     PaymentMethod
+  shippingPayer     ShippingPayer @default(RECEIVER)
   paymentStatus     PaymentStatus         @default(UNPAID)
   subtotalMmk       Int
   /// Từ P15 luôn 0: phí ship do đơn vị vận chuyển (VTP) thu trực tiếp khi giao. Đơn cũ giữ phí đã chốt.
@@ -856,6 +862,8 @@ model Order {
   codRemittedMmk    Int?
   codCarrierFeeMmk  Int?
   codRemittanceRef  String?
+  codAdjustmentMmk  Int?
+  codSettlementNote String?
   /// Thời điểm chuyển sang COMPLETED — mốc tính hạn giữ hoa hồng CTV.
   completedAt       DateTime?
   createdById       String?

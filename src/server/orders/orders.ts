@@ -26,6 +26,7 @@ const HOUR_MS = 60 * 60 * 1000;
 export const createOrderSchema = z.object({
   channel: z.enum(["WEB", "FACEBOOK", "VIBER", "PHONE"]).default("WEB"),
   paymentMethod: z.enum(["COD", "BANK_TRANSFER"]),
+  shippingPayer: z.enum(["RECEIVER", "SENDER"]).default("RECEIVER"),
   name: mmText(100).pipe(z.string().min(1)),
   phone: phoneSchema,
   /** SĐT phụ người nhận (P15, không bắt buộc). */
@@ -117,6 +118,7 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
             ...vtpCodes(township),
             channel,
             paymentMethod: input.paymentMethod,
+            shippingPayer: ctx.userId ? input.shippingPayer : "RECEIVER",
             subtotalMmk: totals.subtotalMmk,
             shippingFeeMmk: totals.shippingFeeMmk,
             totalMmk: totals.totalMmk,

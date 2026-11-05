@@ -29,7 +29,8 @@ export async function login(page: Page, email: string, password = PASSWORD) {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Mật khẩu", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Đăng nhập" }).click();
-  await expect(page.getByTestId("role")).toBeVisible();
+  // Dashboard stream số liệu từ DB test tích lũy; chờ nội dung, không chỉ HTTP 200 của shell.
+  await expect(page.getByTestId("role")).toBeVisible({ timeout: 20_000 });
 }
 
 /** Đăng nhập cổng CTV (P10c) bằng CTV seed; ép giao diện tiếng Việt (mặc định của cổng CTV là tiếng Myanmar). */

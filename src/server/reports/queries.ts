@@ -54,7 +54,7 @@ export async function salesReport(range: Range, opts: { topN?: number } = {}) {
     dayRange(range.from, range.to).map((k) => [k, { day: k, orders: 0, revenue: 0, cogs: 0, profit: 0 }]),
   );
   const products = new Map<string, { sku: string; name: string; units: number; revenue: number; profit: number }>();
-  const totals = { orders: 0, grossRevenue: 0, returnedRevenue: 0, revenue: 0, cogs: 0, profit: 0, shippingFees: 0, commission: 0, uplineCommission: 0 };
+  const totals = { orders: 0, grossRevenue: 0, returnedRevenue: 0, revenue: 0, cogs: 0, profit: 0, shippingFees: 0, commission: 0, uplineCommission: 0, codCarrierFees: 0, unsettledCodOrders: 0, senderPaysOrders: 0 };
   const missingCostOrders: string[] = [];
   const estimatedCostOrders: string[] = [];
 
@@ -98,6 +98,9 @@ export async function salesReport(range: Range, opts: { topN?: number } = {}) {
     }
     totals.orders++;
     totals.shippingFees += o.shippingFeeMmk;
+    totals.codCarrierFees += o.codCarrierFeeMmk ?? 0;
+    if (o.paymentMethod === "COD" && !o.codRemittedAt) totals.unsettledCodOrders++;
+    if (o.shippingPayer === "SENDER") totals.senderPaysOrders++;
     // Hoa hồng CTV (P10) + tầng trên (P11) ghi nhận theo ngày hoàn tất, trên tiền hàng sau khi trừ hàng trả.
     const base = commissionBaseMmk(o.items);
     const upline = commissionMmk(base, o.uplineRateBp);
@@ -113,6 +116,7 @@ export async function salesReport(range: Range, opts: { topN?: number } = {}) {
     totals: {
       ...totals,
       profitAfterCommission: totals.profit - totals.commission,
+      profitAfterRecordedCosts: totals.profit - totals.commission - totals.codCarrierFees,
       marginPct: totals.revenue > 0 ? Math.round((totals.profit / totals.revenue) * 1000) / 10 : null,
     },
     daily: [...days.values()],

@@ -39,6 +39,7 @@ export function OrderForm({
   const [idempotencyKey] = useState(() => crypto.randomUUID());
   const [channel, setChannel] = useState("FACEBOOK");
   const [paymentMethod, setPaymentMethod] = useState("COD");
+  const [shippingPayer, setShippingPayer] = useState("RECEIVER");
   const [name, setName] = useState(initial.name);
   const [phone, setPhone] = useState(initial.phone);
   const [phone2, setPhone2] = useState(initial.phone2);
@@ -58,6 +59,7 @@ export function OrderForm({
       JSON.stringify({
         channel,
         paymentMethod,
+        shippingPayer,
         name,
         phone,
         phone2: phone2 || undefined,
@@ -68,7 +70,7 @@ export function OrderForm({
         idempotencyKey,
         items: lines.filter((l) => l.variantId).map((l) => ({ variantId: l.variantId, qty: l.qty })),
       }),
-    [channel, paymentMethod, name, phone, phone2, townshipId, addressLine, note, idempotencyKey, lines],
+    [channel, paymentMethod, shippingPayer, name, phone, phone2, townshipId, addressLine, note, idempotencyKey, lines],
   );
 
   return (
@@ -110,6 +112,13 @@ export function OrderForm({
             </select>
           </label>
         )}
+        <label className="grid content-start gap-1 text-sm">
+          <span className="text-muted-foreground">{t("shippingPayer")}</span>
+          <select value={shippingPayer} onChange={(e) => setShippingPayer(e.target.value)} className={fieldClass}>
+            <option value="RECEIVER">{t("receiverPays")}</option>
+            <option value="SENDER">{t("senderPays")}</option>
+          </select>
+        </label>
         <label className="grid content-start gap-1 text-sm">
           <span className="text-muted-foreground">{t("name")}</span>
           <input name="name" required value={name} onChange={(e) => setName(e.target.value)} className={fieldClass} />

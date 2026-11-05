@@ -12,6 +12,7 @@ export function VtpSingleInfo({ order }: { order: VtpPreview }) {
     ["order", order.code], ["phone", order.phone], ["phone2", order.phone2], ["recipient", order.recipientName],
     ["address", order.addressText], ["state", order.address?.state ?? ""], ["district", order.address?.district ?? ""], ["township", order.address?.township ?? ""],
     ["goods", order.goods], ["weight", order.weightGrams?.toString() ?? ""], ["value", order.valueMmk.toString()], ["cod", order.codMmk.toString()], ["note", order.note],
+    ["chargePayer", order.chargePayer === "Sender" ? t("senderPays") : t("receiverPays")],
   ];
   const text = fields.map(([key, value]) => `${t(key)}: ${value}`).join("\n");
   const copy = async (value: string) => { try { await navigator.clipboard.writeText(value); setStatus(t("copied")); } catch { setStatus(t("copyFallback")); } };

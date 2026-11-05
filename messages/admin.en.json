@@ -718,7 +718,12 @@
         "forbidden": "Not allowed to print pick slips",
         "nothing": "No order can have lots locked"
       }
-    }
+    },
+    "shippingPayer": "Delivery charge payer",
+    "receiverPays": "Receiver pays delivery",
+    "senderPays": "Store pays delivery",
+    "saveShippingPayer": "Save charge payer",
+    "shippingPayerSaved": "Charge payer saved."
   },
   "Settings": {
     "description": "Manage accounts and store operating preferences.",
@@ -965,7 +970,10 @@
     "profitAfterCommission": "Profit after commission",
     "uplineCommission": "Of which: team (upline) commission",
     "estimatedCost": "Profit includes estimated costs captured when shipping. Orders:",
-    "estimatedQty": "Estimated-cost units"
+    "estimatedQty": "Estimated-cost units",
+    "codCarrierFees": "Recorded COD carrier fees",
+    "profitAfterRecordedCosts": "After recorded selling costs",
+    "recordedCostBasis": "Based on order completion period and fees recorded as of viewing. {pending} COD orders await settlement. Store pays delivery on {sender} orders: only recorded fees are deducted; other unrecorded delivery costs are excluded. This is not accounting net profit."
   },
   "Reviews": {
     "title": "Product reviews",
@@ -1532,7 +1540,8 @@
     "copy": "Copy",
     "copied": "Copied",
     "copyFallback": "Select the field value and press Ctrl+C to copy.",
-    "downloadInfo": "Download order information (.txt)"
+    "downloadInfo": "Download order information (.txt)",
+    "payerFromOrder": "Use saved payer per order"
   },
   "Opening": {
     "title": "Start selling · Import products and opening stock",
@@ -1586,7 +1595,17 @@
     "notCollected": "COD not collected yet",
     "remitted": "Received by store",
     "exception": "Return / refund · Separate reconciliation required",
-    "empty": "No COD awaiting reconciliation"
+    "empty": "No COD awaiting reconciliation",
+    "all": "All",
+    "filterLabel": "Filter COD settlements",
+    "age": "Days outstanding",
+    "ageBucket": "{days} days · {count} orders",
+    "exceptionTotal": "Exceptions: {count} orders · original COD {amount} MMK (not a verified receivable).",
+    "closeException": "Settle COD exception",
+    "exceptionConfirm": "Confirm the reconciled amounts? This does not issue a refund or change returned stock.",
+    "exceptionFormula": "Received + carrier fee + reduction must equal original COD. Enter reconciled amounts; returns are not inferred.",
+    "adjustment": "Reduction for returns / refunds (MMK)",
+    "settlementNote": "Settlement reason and note"
   },
   "DataHealth": {
     "title": "Data health",

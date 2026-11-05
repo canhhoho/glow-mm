@@ -1,4 +1,5 @@
 import "server-only";
+import { COD_BUCKETS } from "@/server/orders/cod-aging";
 import { prisma } from "@/lib/db";
 import { inventoryCost } from "@/server/inventory/cost";
 import { productName } from "@/server/inventory/queries";
@@ -318,13 +319,6 @@ const pct = (r: PctRow | undefined): Percentiles => ({
   p50: r?.p50 == null ? null : Math.round(Number(r.p50) * 10) / 10,
   p90: r?.p90 == null ? null : Math.round(Number(r.p90) * 10) / 10,
 });
-const COD_BUCKETS = [
-  { label: "0-7", max: 7 },
-  { label: "8-14", max: 14 },
-  { label: "15-30", max: 30 },
-  { label: ">30", max: Infinity },
-] as const;
-
 export async function baseline(now = new Date(), days = 30): Promise<Baseline> {
   const since = new Date(now.getTime() - days * DAY_MS);
   // Mốc đầu tiên của mỗi trạng thái theo đơn (OrderStatusHistory ghi mọi lần chuyển).

@@ -48,6 +48,14 @@ describe("API xuất VTP", () => {
     expect((await request({ ...body, orders: [selection, selection] })).status).toBe(400);
   });
 
+  it("mặc định dùng người trả cước từ đơn; vẫn cho override trên file xuất", async () => {
+    mocks.orders.mockResolvedValue([{ ...order, shippingPayer: "SENDER" }]);
+    expect((await request({ ...body, chargePayer: "Order" })).status).toBe(200);
+    expect(mocks.workbook.mock.calls[0][0][0][18]).toBe("Sender");
+    expect((await request({ ...body, chargePayer: "Receiver" })).status).toBe(200);
+    expect(mocks.workbook.mock.calls[1][0][0][18]).toBe("Receiver");
+  });
+
   it("chặn thiếu cân nặng hoặc dịch vụ lạ trước khi tạo file", async () => {
     expect((await request({ ...body, orders: [{ ...selection, weightGrams: 0 }] })).status).toBe(400);
     expect((await request({ ...body, service: "INVALID" })).status).toBe(400);

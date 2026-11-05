@@ -7,7 +7,7 @@ import { vtpRow } from "@/server/orders/vtp-data";
 import { createVtpWorkbook } from "@/server/orders/vtp-workbook";
 
 const schema = z.object({
-  service: z.string(), chargePayer: z.enum(["Sender", "Receiver"]), pickupTime: z.string().default(""),
+  service: z.string(), chargePayer: z.enum(["Order", "Sender", "Receiver"]).default("Order"), pickupTime: z.string().default(""),
   orders: z.array(z.object({ id: z.string().min(1).max(100), weightGrams: z.number().int().positive(), addressKey: z.string(), recipientName: z.string().trim().min(1), note: z.string().max(600) })).min(1).max(200),
 });
 

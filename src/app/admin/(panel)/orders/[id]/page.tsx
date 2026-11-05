@@ -6,7 +6,7 @@ import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { isPhoneEmail } from "@/server/auth/customer-policy";
 import { getOrderAdmin, quarantineLocations } from "@/server/orders/admin-queries";
-import { returnItemsAction } from "@/server/orders/actions";
+import { returnItemsAction, setShippingPayerAction } from "@/server/orders/actions";
 import { assignOrderAffiliateAction, setOrderCommissionRatesAction } from "@/server/affiliates/actions";
 import { affiliateOptions } from "@/server/affiliates/affiliates";
 import { bpToPercent, splitCommissions } from "@/server/affiliates/commission";
@@ -95,8 +95,9 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
         <p className="text-sm text-muted-foreground">{tc("help")}</p>
         <p className="text-sm">{tc("collectedAt")}: {fmtDateTime(order.codCollectedAt)} · {order.codRemittedAt ? tc("remitted") : order.codCollectedAt ? tc("waiting") : tc("notCollected")}</p>
         {order.codRemittedAt && <p className="text-sm">{tc("received")}: {fmtInt(order.codRemittedMmk)} MMK · {tc("fee")}: {fmtInt(order.codCarrierFeeMmk)} MMK · {order.codRemittanceRef} · {fmtDateTime(order.codRemittedAt)}</p>}
+        {order.codAdjustmentMmk != null && <p className="text-sm">{tc("adjustment")}: {fmtInt(order.codAdjustmentMmk)} MMK · {order.codSettlementNote}</p>}
         {order.codRemittedAt && (order.status === "RETURNED" || order.paymentStatus === "REFUNDED" || order.items.some((i) => i.returnedQty > 0)) && <p className="text-sm text-muted-foreground">{tc("exception")}</p>}
-        {can(user.role, "orders:reconcile-cod") && order.codCollectedAt && !order.codRemittedAt && (order.status === "COMPLETED" && order.paymentStatus === "PAID" && !order.items.some((i) => i.returnedQty > 0) ? <CodSettlement orderId={order.id} total={order.totalMmk} /> : <p className="text-sm text-muted-foreground">{tc("exception")}</p>)}
+        {can(user.role, "orders:reconcile-cod") && order.codCollectedAt && !order.codRemittedAt && ((order.status === "COMPLETED" || order.status === "RETURNED") ? <CodSettlement orderId={order.id} total={order.totalMmk} exception={order.status !== "COMPLETED" || order.paymentStatus !== "PAID" || order.items.some((i) => i.returnedQty > 0)} /> : <p className="text-sm text-muted-foreground">{tc("exception")}</p>)}
       </section>}
 
       <section className="grid gap-6 md:grid-cols-2 [&>*]:min-w-0">
@@ -124,6 +125,8 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
           <dd>{t(`channel.${order.channel}`)}</dd>
           <dt className="text-muted-foreground">{t("paymentMethod")}</dt>
           <dd>{t(`method.${order.paymentMethod}`)}</dd>
+          <dt className="text-muted-foreground">{t("shippingPayer")}</dt>
+          <dd>{order.shippingPayer === "SENDER" ? t("senderPays") : t("receiverPays")}</dd>
           <dt className="text-muted-foreground">{t("colCreated")}</dt>
           <dd>{fmtDateTime(order.createdAt)}</dd>
           <dt className="text-muted-foreground">{t("createdBy")}</dt>
@@ -156,6 +159,14 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
       </section>
 
       <VtpSingleInfo order={vtpPreview(order)} />
+      {can(user.role, "orders:ship") && ["PAYMENT_CONFIRMED", "COD_CONFIRMED", "PACKING"].includes(order.status) && (
+        <ActionForm action={setShippingPayerAction} submitLabel={t("saveShippingPayer")} okText={t("shippingPayerSaved")} className="flex flex-wrap items-end gap-3 rounded-lg border p-4">
+          <input type="hidden" name="orderId" value={order.id} />
+          <label className="grid gap-1 text-sm"><span>{t("shippingPayer")}</span><select name="shippingPayer" defaultValue={order.shippingPayer} className={fieldClass}>
+            <option value="RECEIVER">{t("receiverPays")}</option><option value="SENDER">{t("senderPays")}</option>
+          </select></label>
+        </ActionForm>
+      )}
 
       <section className="space-y-2 rounded-lg border p-4" data-testid="order-affiliate">
         <h2 className="font-medium">{ta("orderSection")}</h2>
