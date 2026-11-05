@@ -12,6 +12,7 @@ const base = (f: Awaited<ReturnType<typeof makeFixture>>, slug: string) => ({
   slug,
   brandId: f.brandId,
   categoryId: f.categoryId,
+  stockLocationId: f.mm.id, // P24: cùng kho với SP fixture (combo cần thành phần cùng kho)
   my: { name: "နေကာခရင်မ်" },
   en: { name: "Sunscreen" },
 });

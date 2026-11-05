@@ -13,7 +13,7 @@ test("dashboard (admin) + báo cáo có số liệu từ đơn mẫu seed", asyn
   await expect(page.getByRole("heading", { name: "Báo cáo" })).toBeVisible();
   // Seed có đơn mẫu hoàn tất trong 30 ngày → doanh thu > 0.
   await expect(page.getByTestId("r-orders")).not.toContainText(/\b0$/);
-  await expect(page.getByTestId("stock-MM_STOCK")).toBeVisible();
+  await expect(page.getByTestId("stock-THAM")).toBeVisible();
   await page.screenshot({ path: "test-results/screens/reports.png", fullPage: true });
 });
 

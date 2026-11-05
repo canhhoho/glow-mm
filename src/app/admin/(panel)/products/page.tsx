@@ -15,12 +15,13 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
   const query = str(sp.q);
   const brandId = str(sp.brand);
   const categoryId = str(sp.category);
+  const warehouseId = str(sp.warehouse);
   const status: ProductStatusFilter = PRODUCT_STATUSES.find((s) => s === sp.status) ?? "active";
   const [t, tn, tc, products, options] = await Promise.all([
     getTranslations("Products"),
     getTranslations("Nav"),
     getTranslations("Common"),
-    listProductsAdmin({ q: query, brandId, categoryId, status }),
+    listProductsAdmin({ q: query, brandId, categoryId, warehouseId, status }),
     productFilterOptions(),
   ]);
   const archivedView = status === "archived";
@@ -56,6 +57,14 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
             </option>
           ))}
         </select>
+        <select name="warehouse" defaultValue={warehouseId ?? ""} aria-label={t("warehouse")} className={fieldClass}>
+          <option value="">{t("allWarehouses")}</option>
+          {options.warehouses.map((w) => (
+            <option key={w.id} value={w.id}>
+              {w.name}
+            </option>
+          ))}
+        </select>
         <select name="status" defaultValue={status} aria-label={t("colStatus")} className={fieldClass}>
           {PRODUCT_STATUSES.map((s) => (
             <option key={s} value={s}>
@@ -64,18 +73,27 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
           ))}
         </select>
         <FilterButton>{tc("filter")}</FilterButton>
-        {(query || brandId || categoryId || status !== "active") && (
+        {(query || brandId || categoryId || warehouseId || status !== "active") && (
           <Link href="/admin/products" className="text-sm text-primary underline">
             {t("clearFilters")}
           </Link>
         )}
       </FilterBar>
       <p className="text-sm text-muted-foreground">{t("count", { count: products.length })}</p>
-      <BulkPublishBar total={products.length} archivedView={archivedView} />
+      <BulkPublishBar total={products.length} archivedView={archivedView} warehouses={options.warehouses} />
       <DataTable
         stack
         empty={t("empty")}
-        head={[<span key="sel" className="sr-only">{t("colSelect")}</span>, t("colName"), t("colBrand"), t("colCategory"), t("colVariants"), t("colStatus"), t("colActions")]}
+        head={[
+          <span key="sel" className="sr-only">{t("colSelect")}</span>,
+          t("colName"),
+          t("colBrand"),
+          t("colCategory"),
+          t("warehouse"),
+          t("colVariants"),
+          t("colStatus"),
+          t("colActions"),
+        ]}
       >
         {products.map((p) => (
           <tr key={p.id}>
@@ -90,6 +108,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
             </Td>
             <Td label={t("colBrand")}>{p.brand}</Td>
             <Td label={t("colCategory")}>{p.category}</Td>
+            <Td label={t("warehouse")}>{p.warehouse}</Td>
             <Td label={t("colVariants")}>
               <ul className="space-y-0.5 text-xs">
                 {p.variants.map((v) => (

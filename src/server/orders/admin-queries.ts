@@ -124,7 +124,7 @@ export async function findCustomerByPhone(input: string) {
 
 export async function sellableLocations() {
   return prisma.location.findMany({
-    where: { sellable: true },
+    where: { sellable: true, active: true },
     orderBy: { code: "asc" },
     select: { id: true, code: true, name: true },
   });
@@ -132,7 +132,7 @@ export async function sellableLocations() {
 
 export async function quarantineLocations() {
   return prisma.location.findMany({
-    where: { type: "QUARANTINE" },
+    where: { type: "QUARANTINE", active: true },
     orderBy: { code: "asc" },
     select: { id: true, code: true, name: true },
   });

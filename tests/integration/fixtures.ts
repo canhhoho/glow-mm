@@ -13,18 +13,25 @@ export async function makeFixture() {
   });
   const brand = await prisma.brand.create({ data: { slug: `it-${tag}`, name: `IT ${tag}` } });
   const category = await prisma.category.create({ data: { slug: `it-${tag}` } });
+  const loc = async (suffix: string, type: "VN_STOCK" | "MM_STOCK" | "QUARANTINE" | "IN_TRANSIT", pricingMode?: "VN_IMPORT" | "LOCAL_MMK") =>
+    prisma.location.create({ data: { code: `IT-${tag}-${suffix}`, name: suffix, type, sellable: type === "MM_STOCK", pricingMode } });
+  const vn = await loc("VN", "VN_STOCK");
+  const transit = await loc("TR", "IN_TRANSIT");
+  // `mm` = kho bán của SP fixture (giá vốn VND); `chi` = kho bán thứ hai (giá vốn MMK) — P24.
+  const mm = await loc("MM", "MM_STOCK", "VN_IMPORT");
+  const chi = await loc("CHI", "MM_STOCK", "LOCAL_MMK");
+  const qc = await loc("QC", "QUARANTINE");
   const product = await prisma.product.create({
     data: {
       slug: `it-${tag}`,
       brandId: brand.id,
       categoryId: category.id,
+      stockLocationId: mm.id,
       translations: { create: { locale: "en", name: `IT product ${tag}`, searchText: tag } },
       variants: { create: { sku: `IT-${tag}`, label: "50ml", priceMmk: 10000 } },
     },
     include: { variants: true },
   });
-  const loc = async (suffix: string, type: "VN_STOCK" | "MM_STOCK" | "QUARANTINE" | "IN_TRANSIT") =>
-    prisma.location.create({ data: { code: `IT-${tag}-${suffix}`, name: suffix, type, sellable: type === "MM_STOCK" } });
   return {
     tag,
     userId: user.id,
@@ -32,10 +39,11 @@ export async function makeFixture() {
     categoryId: category.id,
     productId: product.id,
     variantId: product.variants[0].id,
-    vn: await loc("VN", "VN_STOCK"),
-    transit: await loc("TR", "IN_TRANSIT"),
-    mm: await loc("MM", "MM_STOCK"),
-    qc: await loc("QC", "QUARANTINE"),
+    vn,
+    transit,
+    mm,
+    chi,
+    qc,
   };
 }
 

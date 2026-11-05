@@ -12,7 +12,7 @@ import { addProductImages, deleteProductImage, reorderProductImage, updateProduc
 import { createBrand, createCategory, importOpeningStockCsv, importProductsCsv, saveProduct, setProductsPublished, type ImportResult } from "./products";
 import { readImportFile } from "./import-file";
 import { commitOpening, previewOpening, type OpeningPreview } from "./opening";
-import { deleteProducts, restoreProducts } from "./product-delete";
+import { deleteProducts, moveProductsToWarehouse, restoreProducts } from "./product-delete";
 
 function message(e: unknown): string {
   if (e instanceof ZodError) return e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
@@ -34,11 +34,11 @@ export async function saveProductAction(_prev: ActionState, formData: FormData):
 }
 
 export type ProductBulkState =
-  | { error?: string; done?: { kind: "publish" | "hide" | "restore"; count: number } | { kind: "delete"; deleted: number; archived: number } }
+  | { error?: string; done?: { kind: "publish" | "hide" | "restore" | "move"; count: number } | { kind: "delete"; deleted: number; archived: number } }
   | undefined;
 
 const bulkIntent = z.union([
-  z.enum(["publish", "hide", "delete", "restore"]),
+  z.enum(["publish", "hide", "delete", "restore", "move"]),
   z.string().regex(/^(delete|restore):[^:]{1,40}$/), // nút ở từng dòng: "delete:<id>"
 ]);
 
@@ -51,10 +51,11 @@ export async function productBulkAction(_prev: ProductBulkState, formData: FormD
   try {
     const user = await requirePermission("catalog:manage");
     const intent = bulkIntent.parse(formData.get("intent"));
-    const [kind, one] = intent.split(":") as ["publish" | "hide" | "delete" | "restore", string | undefined];
+    const [kind, one] = intent.split(":") as ["publish" | "hide" | "delete" | "restore" | "move", string | undefined];
     const ids = one ? [one] : formData.getAll("ids").map(String);
     if (kind === "delete") done = { kind, ...(await deleteProducts(ids, user.id)) };
     else if (kind === "restore") done = { kind, count: await restoreProducts(ids, user.id) };
+    else if (kind === "move") done = { kind, count: await moveProductsToWarehouse(ids, formData.get("toLocationId"), user.id) };
     else done = { kind, count: (await setProductsPublished({ ids, published: kind === "publish" }, user.id)).changed };
   } catch (e) {
     return { error: message(e) };

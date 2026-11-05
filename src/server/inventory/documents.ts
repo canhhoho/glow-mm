@@ -20,6 +20,7 @@ const id = rawId;
 const qty = z.coerce.number().int().positive();
 const stockType = z.enum(["SELLABLE", "TESTER"]).default("SELLABLE");
 const day = z.preprocess((v) => v === "" || v == null ? undefined : v, z.coerce.date().optional());
+const optionalMoney = z.preprocess((v) => (v === "" || v == null ? undefined : v), z.coerce.number().int().min(0).max(2_147_483_647).optional());
 
 export const receiveSchema = z.object({
   type: z.literal("RECEIVE"),
@@ -28,17 +29,25 @@ export const receiveSchema = z.object({
   reason: z.string().max(500).optional(),
   lines: z
     .array(
-      z.object({
-        variantId: id,
-        lotNo: z.string().trim().min(1).max(50),
-        expiryDate: day,
-        expiryStatus: z.enum(["DATED", "NONE", "UNKNOWN"]).optional(),
-        mfgDate: day,
-        unitCostVnd: z.coerce.number().int().min(0),
-        landedCostVnd: z.coerce.number().int().min(0).optional(),
-        qty,
-        stockType,
-      }).refine((l) => l.landedCostVnd === undefined || l.landedCostVnd >= l.unitCostVnd, { message: "Giá vốn về kho không thể thấp hơn giá mua", path: ["landedCostVnd"] }),
+      z
+        .object({
+          variantId: id,
+          lotNo: z.string().trim().min(1).max(50),
+          expiryDate: day,
+          expiryStatus: z.enum(["DATED", "NONE", "UNKNOWN"]).optional(),
+          mfgDate: day,
+          /** P24: giá mua VND (kho hàng nhập VN) hoặc MMK (kho mua tại Myanmar) — đúng một. */
+          unitCostVnd: optionalMoney,
+          unitCostMmk: optionalMoney,
+          landedCostVnd: optionalMoney,
+          qty,
+          stockType,
+        })
+        .refine((l) => (l.unitCostVnd === undefined) !== (l.unitCostMmk === undefined), { message: "Nhập giá mua bằng VND hoặc MMK", path: ["unitCostVnd"] })
+        .refine((l) => l.landedCostVnd === undefined || (l.unitCostVnd !== undefined && l.landedCostVnd >= l.unitCostVnd), {
+          message: "Giá vốn về kho không thể thấp hơn giá mua",
+          path: ["landedCostVnd"],
+        }),
     )
     .min(1)
     .max(500),
@@ -116,14 +125,21 @@ export async function createDocument(raw: unknown, userId: string, transaction?:
   const run = async (tx: Tx) => {
     const fromId = "fromId" in input ? input.fromId : undefined;
     const toId = "toId" in input ? input.toId : undefined;
-    if (fromId) await assertLocation(tx, fromId);
-    if (toId) {
-      const to = await assertLocation(tx, toId);
-      if (input.type === "RETURN" && to.type !== "QUARANTINE") {
-        throw new DocumentError("Hàng trả phải nhập vào vị trí Chờ kiểm tra");
-      }
+    if (fromId) await assertLocation(tx, fromId); // xuất/chuyển từ kho đã ngừng dùng vẫn được (dọn tồn cũ)
+    const to = toId ? await assertLocation(tx, toId) : null;
+    if (to && !to.active) throw new DocumentError(`Kho ${to.name} đã ngừng dùng`);
+    if (input.type === "RETURN" && to?.type !== "QUARANTINE") {
+      throw new DocumentError("Hàng trả phải nhập vào vị trí Chờ kiểm tra");
     }
     if (fromId && toId && fromId === toId) throw new DocumentError("Vị trí đi và đến phải khác nhau");
+    // P24: hàng vào kho bán (nhập, chuyển) phải đúng kho của SP; điều chỉnh lô đã có ở kho thì không chặn.
+    if (to?.sellable && (input.type === "RECEIVE" || input.type === "TRANSFER")) {
+      const wrong = await tx.variant.findFirst({
+        where: { id: { in: input.lines.map((l) => l.variantId) }, product: { stockLocationId: { not: to.id } } },
+        select: { sku: true, product: { select: { stockLocation: { select: { name: true } } } } },
+      });
+      if (wrong) throw new DocumentError(`SKU ${wrong.sku}: sản phẩm thuộc ${wrong.product.stockLocation.name}, không nhập vào ${to.name}`);
+    }
 
     const lines: { variantId: string; batchId: string | null; stockType: StockType; qty: number }[] = [];
 
@@ -131,7 +147,12 @@ export async function createDocument(raw: unknown, userId: string, transaction?:
       // Tải trước biến thể + lô đã có một lần (phiếu nhiều dòng không tốn 2–3 truy vấn mỗi dòng).
       const variantIds = [...new Set(input.lines.map((l) => l.variantId))];
       const variants = new Map(
-        (await tx.variant.findMany({ where: { id: { in: variantIds } }, include: { product: true } })).map((v) => [v.id, v]),
+        (
+          await tx.variant.findMany({
+            where: { id: { in: variantIds } },
+            include: { product: { include: { stockLocation: { select: { pricingMode: true, name: true } } } } },
+          })
+        ).map((v) => [v.id, v]),
       );
       const lotKey = (variantId: string, lotNo: string) => `${variantId}\u0000${lotNo}`;
       const wanted = new Set(input.lines.map((l) => lotKey(l.variantId, l.lotNo)));
@@ -154,7 +175,21 @@ export async function createDocument(raw: unknown, userId: string, transaction?:
         if (expiryStatus === "DATED" && !l.expiryDate) fail("Cần nhập hạn sử dụng hoặc chọn Chưa biết hạn");
         if (expiryStatus !== "DATED" && l.expiryDate) fail("Chỉ nhập ngày khi đã biết hạn sử dụng");
         if (l.mfgDate && l.expiryDate && l.mfgDate > l.expiryDate) fail("Ngày sản xuất phải trước hạn sử dụng");
-        if (existing && (existing.expiryDate?.getTime() !== l.expiryDate?.getTime() || existing.expiryStatus !== expiryStatus || existing.unitCostVnd !== l.unitCostVnd || (l.landedCostVnd !== undefined && existing.landedCostVnd !== l.landedCostVnd))) {
+        // P24: loại tiền theo kho của SP — kho mua tại Myanmar (LOCAL_MMK) nhập giá MMK, kho hàng nhập VN nhập VND.
+        const mmk = variant.product.stockLocation.pricingMode === "LOCAL_MMK";
+        if (mmk && l.unitCostMmk === undefined) fail(`${variant.product.stockLocation.name} nhập giá mua bằng MMK`);
+        if (!mmk && l.unitCostVnd === undefined) fail(`${variant.product.stockLocation.name} nhập giá mua bằng VND`);
+        if (mmk && input.shipmentId) fail("Lô giá MMK không gắn chuyến hàng VN → MM");
+        const unitCostVnd = l.unitCostVnd ?? null;
+        const unitCostMmk = l.unitCostMmk ?? null;
+        if (
+          existing &&
+          (existing.expiryDate?.getTime() !== l.expiryDate?.getTime() ||
+            existing.expiryStatus !== expiryStatus ||
+            existing.unitCostVnd !== unitCostVnd ||
+            existing.unitCostMmk !== unitCostMmk ||
+            (l.landedCostVnd !== undefined && existing.landedCostVnd !== l.landedCostVnd))
+        ) {
           fail(`Lô ${l.lotNo} đã có với hạn dùng khác hoặc giá vốn khác`);
         }
         const batch =
@@ -167,7 +202,10 @@ export async function createDocument(raw: unknown, userId: string, transaction?:
               expiryStatus,
               landedCostVnd: l.landedCostVnd,
               mfgDate: l.mfgDate,
-              unitCostVnd: l.unitCostVnd,
+              unitCostVnd,
+              unitCostMmk,
+              // Lô MMK: giá vốn MMK có ngay (không tỷ giá, không phân bổ chuyến) → báo cáo lãi, giá vốn đơn chạy sẵn.
+              landedCostMmk: unitCostMmk,
               shipmentId: input.shipmentId,
             },
           }));
@@ -282,7 +320,8 @@ export async function postDocumentTx(tx: Tx, documentId: string, userId: string,
     const rate = await tx.exchangeRate.findFirst({ orderBy: { effectiveAt: "desc" } });
     if (rate) {
       await tx.batch.updateMany({
-        where: { id: { in: resolved.map((r) => r.batchId) }, rateId: null },
+        // Chỉ lô giá VND cần tỷ giá; lô MMK đã có giá vốn MMK từ lúc tạo (P24).
+        where: { id: { in: resolved.map((r) => r.batchId) }, rateId: null, unitCostVnd: { not: null } },
         data: { rateId: rate.id },
       });
       // Opening stock with explicit landed cost can be valued without an inbound shipment.

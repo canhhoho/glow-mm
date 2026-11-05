@@ -40,13 +40,13 @@ test("ô số tổng + bộ lọc giữ trên URL; theo lô có phân trang", as
   await page.getByRole("link", { name: "Xoá lọc" }).click();
   await expect(page).toHaveURL(/\/admin\/inventory$/);
 
-  // Tab vị trí.
-  await page.getByRole("navigation", { name: "Vị trí kho" }).getByRole("link", { name: /Kho MM/ }).click();
-  await expect(page).toHaveURL(/tab=MM_STOCK/);
+  // Tab theo kho (P24).
+  await page.getByRole("navigation", { name: "Vị trí kho" }).getByRole("link", { name: /Kho Thắm/ }).click();
+  await expect(page).toHaveURL(/tab=THAM/);
 
   // Theo lô: 25 dòng/trang (DB test luôn có > 25 lô sau bộ integration + seed).
   await page.getByRole("link", { name: "Theo lô" }).click();
-  await expect(page).toHaveURL(/\?tab=MM_STOCK&view=lots$/);
+  await expect(page).toHaveURL(/\?tab=THAM&view=lots$/);
   await page.goto("/admin/inventory?view=lots");
   const info = page.getByTestId("page-info");
   await expect(info).toHaveText(/^1–25 \/ \d+$/);

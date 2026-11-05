@@ -17,7 +17,7 @@ export async function listQuarantine() {
     where: { qty: { gt: 0 }, location: { type: "QUARANTINE" } },
     include: {
       location: true,
-      batch: { include: { variant: { include: { product: { include: { translations: true } } } } } },
+      batch: { include: { variant: { include: { product: { include: { translations: true, stockLocation: { select: { name: true } } } } } } } },
     },
     orderBy: [{ batch: { variant: { sku: "asc" } } }, { batch: { expiryDate: "asc" } }],
   });
@@ -50,6 +50,8 @@ export async function listQuarantine() {
       expiryDate: r.batch.expiryDate,
       expiryStatus: r.batch.expiryStatus,
       qty: r.qty,
+      /** Kho bán của SP — nơi nhập lại sau kiểm tra (P24). */
+      warehouse: r.batch.variant.product.stockLocation.name,
       orders: [...orders].map(([id, code]) => ({ id, code })),
     };
   });
@@ -62,7 +64,8 @@ const base = z.object({
   stockType: z.enum(["SELLABLE", "TESTER"]).default("SELLABLE"),
 });
 
-export const restockSchema = base.extend({ toId: rawId });
+/** `toId` bỏ trống = kho bán của SP (P24: nhập lại chỉ được vào đúng kho của SP). */
+export const restockSchema = base.extend({ toId: z.preprocess((v) => (v === "" || v == null ? undefined : v), rawId.optional()) });
 export const discardSchema = base.extend({ reason: mmTextReq(500) });
 
 async function assertQuarantine(fromId: string) {
@@ -85,14 +88,18 @@ async function createAndPost(raw: unknown, userId: string) {
 export async function restockFromQuarantine(raw: unknown, userId: string) {
   const input = restockSchema.parse(raw);
   await assertQuarantine(input.fromId);
-  const to = await prisma.location.findUnique({ where: { id: input.toId } });
+  const batch = await prisma.batch.findUniqueOrThrow({
+    where: { id: input.batchId },
+    include: { variant: { select: { product: { select: { stockLocationId: true } } } } },
+  });
+  const toId = input.toId ?? batch.variant.product.stockLocationId;
+  const to = await prisma.location.findUnique({ where: { id: toId } });
   if (!to?.sellable) throw new DocumentError("Phải nhập lại vào vị trí bán được");
-  const batch = await prisma.batch.findUniqueOrThrow({ where: { id: input.batchId } });
   return createAndPost(
     {
       type: "TRANSFER",
       fromId: input.fromId,
-      toId: input.toId,
+      toId,
       reason: "Hàng trả đạt kiểm tra — nhập lại kho bán",
       lines: [{ variantId: batch.variantId, batchId: batch.id, qty: input.qty, stockType: input.stockType }],
     },

@@ -1,0 +1,119 @@
+import { afterAll, describe, expect, it } from "vitest";
+import { prisma } from "@/lib/db";
+import { createDocument, postDocument } from "@/server/inventory/documents";
+import { createWarehouse, setWarehouseActive } from "@/server/inventory/warehouses";
+import { moveProductsToWarehouse } from "@/server/catalog/product-delete";
+import { saveProduct } from "@/server/catalog/products";
+import { createOrder } from "@/server/orders/orders";
+import { transitionOrder } from "@/server/orders/transitions";
+import { admin, avail, isoDay, orderInput, saleFixture, unpublishTestProducts } from "./fixtures";
+
+/** P24: hai kho bán — SP thuộc một kho; nhập, tồn bán, xuất đơn theo kho của SP. */
+
+afterAll(unpublishTestProducts);
+
+/** `mmk`: SP thuộc kho mua tại Myanmar → giá mua MMK (P24). */
+const receive = (f: { userId: string }, toId: string, variantId: string, lotNo: string, qty: number, mmk = false) =>
+  createDocument(
+    { type: "RECEIVE", toId, lines: [{ variantId, lotNo, expiryDate: isoDay(400), ...(mmk ? { unitCostMmk: 9_000 } : { unitCostVnd: 50_000 }), qty }] },
+    f.userId,
+  );
+
+describe("Kho của sản phẩm", () => {
+  it("nhập / chuyển vào kho bán khác kho của SP bị chặn; kho đã ngừng không nhận phiếu", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
+    await expect(receive(f, f.chi.id, f.variantId, "X", 1)).rejects.toThrow(`SKU IT-${f.tag}: sản phẩm thuộc MM, không nhập vào CHI`);
+    await expect(
+      createDocument({ type: "TRANSFER", fromId: f.mm.id, toId: f.chi.id, lines: [{ variantId: f.variantId, qty: 1 }] }, f.userId),
+    ).rejects.toThrow(/không nhập vào CHI/);
+    // Kho không bán (VN) vẫn nhận bình thường.
+    await expect(receive(f, f.vn.id, f.variantId, "V", 1)).resolves.toBeTruthy();
+
+    await prisma.location.update({ where: { id: f.vn.id }, data: { active: false } });
+    await expect(receive(f, f.vn.id, f.variantId, "V2", 1)).rejects.toThrow(/đã ngừng dùng/);
+  });
+
+  it("tồn bán chỉ tính ở kho của SP; đổi kho → chuyển hàng sang kho mới mới bán lại", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 4 }]);
+    expect(await avail(f.variantId)).toBe(4);
+
+    expect(await moveProductsToWarehouse([f.productId], f.chi.id, f.userId)).toBe(1);
+    expect(await avail(f.variantId)).toBe(0); // hàng còn nằm ở kho cũ
+
+    const tf = await createDocument(
+      { type: "TRANSFER", fromId: f.mm.id, toId: f.chi.id, lines: [{ variantId: f.variantId, qty: 4 }] },
+      f.userId,
+    );
+    await postDocument(tf.id, f.userId);
+    expect(await avail(f.variantId)).toBe(4);
+  });
+
+  it("đơn có hàng của hai kho: bàn giao tạo một phiếu xuất cho mỗi kho", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 3 }]);
+    const other = await saveProduct(
+      {
+        slug: `it-chi-${f.tag.toLowerCase()}`,
+        brandId: f.brandId,
+        categoryId: f.categoryId,
+        stockLocationId: f.chi.id,
+        published: true,
+        my: { name: "ခရင်မ်" },
+        en: { name: "Cream" },
+        variants: [{ sku: `CHI-${f.tag}`, label: "30ml", priceMmk: 20_000 }],
+      },
+      f.userId,
+    );
+    const chiVariant = await prisma.variant.findFirstOrThrow({ where: { productId: other.id } });
+    await postDocument((await receive(f, f.chi.id, chiVariant.id, "C1", 2, true)).id, f.userId);
+
+    const order = await createOrder(
+      orderInput(f, 1, { items: [{ variantId: f.variantId, qty: 2 }, { variantId: chiVariant.id, qty: 1 }] }),
+      { userId: null },
+    );
+    await transitionOrder(order.id, "confirmCod", admin(f));
+    await transitionOrder(order.id, "ship", admin(f), { carrier: "VTP" });
+
+    const issues = await prisma.stockDocument.findMany({ where: { orderId: order.id, type: "ISSUE" }, include: { lines: true } });
+    expect(issues.map((d) => d.fromId).sort()).toEqual([f.mm.id, f.chi.id].sort());
+    expect(issues.find((d) => d.fromId === f.chi.id)!.lines).toEqual([expect.objectContaining({ variantId: chiVariant.id, qty: 1 })]);
+    expect(await avail(f.variantId)).toBe(1);
+    expect(await avail(chiVariant.id)).toBe(1);
+    // Giá vốn dòng đơn Kho Chi lấy thẳng từ giá MMK của lô (P24).
+    const alloc = await prisma.orderAllocation.findFirstOrThrow({ where: { orderItem: { orderId: order.id, variantId: chiVariant.id } } });
+    expect(alloc.unitLandedCostMmk).toBe(9_000);
+  });
+
+  it("thành phần combo phải cùng kho; đổi kho riêng một phía bị chặn", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 2 }]);
+    const combo = await saveProduct(
+      {
+        slug: `it-combo-${f.tag.toLowerCase()}`,
+        brandId: f.brandId,
+        categoryId: f.categoryId,
+        stockLocationId: f.mm.id,
+        my: { name: "ဆက်" },
+        en: { name: "Set" },
+        variants: [{ sku: `SET-${f.tag}`, label: "Set", priceMmk: 1, isBundle: true, components: [{ componentId: f.variantId, qty: 1 }] }],
+      },
+      f.userId,
+    );
+    await expect(moveProductsToWarehouse([f.productId], f.chi.id, f.userId)).rejects.toThrow(/phải cùng kho/);
+    expect(await moveProductsToWarehouse([f.productId, combo.id], f.chi.id, f.userId)).toBe(2);
+  });
+});
+
+describe("Quản lý kho", () => {
+  it("tạo kho; không ngừng dùng được khi còn tồn / còn SP; ngừng được khi trống", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 1 }]);
+    await expect(setWarehouseActive({ id: f.mm.id, active: false }, f.userId)).rejects.toThrow(/còn tồn/);
+    await expect(setWarehouseActive({ id: f.chi.id, active: true }, f.userId)).resolves.toBeTruthy();
+
+    const code = `W${f.tag.slice(0, 6)}`;
+    const loc = await createWarehouse({ kind: "sell", code, name: "Kho thử", pricingMode: "LOCAL_MMK" }, f.userId);
+    expect(loc).toMatchObject({ sellable: true, type: "MM_STOCK", pricingMode: "LOCAL_MMK", active: true });
+    await expect(createWarehouse({ kind: "sell", code, name: "Trùng", pricingMode: "VN_IMPORT" }, f.userId)).rejects.toThrow(/đã có/);
+    const off = await setWarehouseActive({ id: loc.id, active: false }, f.userId);
+    expect(off.active).toBe(false);
+    await expect(moveProductsToWarehouse([f.productId], loc.id, f.userId)).rejects.toThrow(/ngừng dùng/);
+  });
+});

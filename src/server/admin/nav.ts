@@ -24,6 +24,7 @@ export type NavIcon =
   | "handshake"
   | "userCircle"
   | "map"
+  | "warehouse"
   | "gear";
 
 /** Số đếm hiện ở badge (xem `navCounts`). */
@@ -87,6 +88,7 @@ export const NAV: NavGroup[] = [
       { href: "/admin/users", key: "users", permission: "users:manage", icon: "users" },
       { href: "/admin/customer-accounts", key: "customers", permission: "users:manage", icon: "userCircle" },
       { href: "/admin/settings", key: "settings", permission: "settings:manage", icon: "gear" },
+      { href: "/admin/settings/warehouses", key: "warehouses", permission: "settings:manage", icon: "warehouse" },
       { href: "/admin/settings/locations", key: "locations", permission: "settings:manage", icon: "map" },
     ],
   },

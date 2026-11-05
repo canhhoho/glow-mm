@@ -28,7 +28,7 @@ export function OpeningImport({ locations, defaultLocation }: { locations: { cod
     <form action={action} className="flex flex-wrap items-end gap-3">
       <input type="hidden" name="step" value="preview" />
       <label className="grid gap-1 text-sm"><span>{t("warehouse")}</span>
-        <select name="locationCode" required defaultValue={locations.some((l) => l.code === defaultLocation) ? defaultLocation : locations.find((l) => l.code === "MM-STOCK" && l.sellable)?.code ?? locations.find((l) => l.sellable)?.code ?? ""} className={fieldClass}>
+        <select name="locationCode" required defaultValue={locations.some((l) => l.code === defaultLocation) ? defaultLocation : locations.find((l) => l.sellable)?.code ?? ""} className={fieldClass}>
           <option value="">—</option>{locations.map((l) => <option key={l.code} value={l.code}>{l.code} · {l.name}</option>)}
         </select>
       </label>

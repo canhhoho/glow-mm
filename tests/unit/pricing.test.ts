@@ -4,9 +4,38 @@ import {
   convertVndToMmk,
   mmkPerVndFromUsd,
   parseScaled,
+  priceLocalMmk,
+  priceVnImport,
   rateDisplay,
+  shippingMmk,
   suggestPrice,
 } from "@/server/pricing/formula";
+
+describe("Giá theo kho (P24)", () => {
+  const rate = { mmkPerVnd: "0.17", mmkPerUsd: "4420", vndPerUsd: "26000" }; // 1 VND = 0.17 MMK
+
+  it("Kho Thắm: vốn VND × tỷ giá × (1 + %) + ship/kg × khối lượng, % chỉ trên hàng, làm tròn lên một lần", () => {
+    // 100,000 VND × 0.17 = 17,000 MMK × 1.3 = 22,100; ship 8,000 MMK/kg × 80 g = 640 → 22,740 → 22,800
+    expect(priceVnImport({ ...rate, costVnd: 100_000, marginPct: "30", shipMmkPerKg: 8_000, weightGrams: 80, roundTo: 100 })).toBe(22_800);
+    // không làm tròn: 22,740 đúng
+    expect(priceVnImport({ ...rate, costVnd: 100_000, marginPct: "30", shipMmkPerKg: 8_000, weightGrams: 80, roundTo: 1 })).toBe(22_740);
+    // ship 0 → trùng công thức cũ
+    expect(priceVnImport({ ...rate, costVnd: 95_000, marginPct: "40", shipMmkPerKg: 0, weightGrams: 80, roundTo: 100 })).toBe(
+      suggestPrice({ ...rate, costVnd: 95_000, marginPct: "40", roundTo: 100 }),
+    );
+    // phần lẻ của ship không bị làm tròn riêng: 1 MMK/kg × 1 g = 0.001 → vẫn làm tròn LÊN tổng
+    expect(priceVnImport({ ...rate, costVnd: 0, marginPct: "0", shipMmkPerKg: 1, weightGrams: 1, roundTo: 1 })).toBe(1);
+    expect(shippingMmk(8_000, 80)).toBe(640);
+    expect(shippingMmk(5_000, 125)).toBe(625);
+    expect(() => priceVnImport({ ...rate, costVnd: 1, marginPct: "1", shipMmkPerKg: -1, weightGrams: 1, roundTo: 1 })).toThrow();
+  });
+
+  it("Kho Chi: vốn MMK + lãi cố định, làm tròn lên", () => {
+    expect(priceLocalMmk({ costMmk: 18_250, fixedProfitMmk: 5_000, roundTo: 100 })).toBe(23_300);
+    expect(priceLocalMmk({ costMmk: 18_250, fixedProfitMmk: 5_000, roundTo: 1 })).toBe(23_250);
+    expect(() => priceLocalMmk({ costMmk: 1.5, fixedProfitMmk: 0, roundTo: 1 })).toThrow();
+  });
+});
 
 describe("Công thức giá", () => {
   it("vốn × tỷ giá × (1+%lãi), làm tròn LÊN 100 MMK", () => {

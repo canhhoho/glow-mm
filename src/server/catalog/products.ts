@@ -6,6 +6,7 @@ import { parseCsvObjects } from "@/lib/csv";
 import { normalizeForSearch, toUnicode } from "@/lib/myanmar";
 import { slugify } from "@/lib/slug";
 import { createDocument } from "@/server/inventory/documents";
+import { assertStockLocation, defaultStockLocationId, stockLocationByCode } from "@/server/inventory/warehouses";
 import type { Tx } from "@/server/inventory/ledger";
 
 /** Quản lý sản phẩm (admin). Giá đổi → ghi PriceHistory. Chữ Myanmar → Unicode trước khi lưu. */
@@ -39,9 +40,13 @@ export const productSchema = z.object({
   slug: slugSchema(80, "Slug chỉ gồm a-z, 0-9 và -"),
   brandId: rawId,
   categoryId: rawId,
+  /** Kho bán (P24). Bỏ trống: SP mới → kho mặc định; SP đang có → giữ kho cũ. */
+  stockLocationId: z.preprocess((v) => (v === "" || v == null ? undefined : v), rawId.optional()),
   published: z.boolean().default(false),
   requiresExpiry: z.boolean().default(true),
   paoMonths: z.preprocess((v) => v === "" || v == null ? null : v, z.coerce.number().int().min(1).max(120).nullable()).optional(),
+  /** Lãi cố định MMK/đơn vị — kho mua tại Myanmar (P24). Bỏ qua (undefined) = giữ giá trị cũ. */
+  fixedProfitMmk: z.preprocess((v) => (v === "" ? null : v), z.coerce.number().int().min(0).max(1_000_000_000).nullable()).optional(),
   storageNote: optionalText(500),
   ingredientsText: optionalText(5000),
   my: translation,
@@ -75,14 +80,26 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
       ? await tx.product.findUnique({ where: { id: input.copyFromId }, select: { images: { select: { fileId: true, alt: true, sortOrder: true } } } })
       : null;
     if (input.copyFromId && !source) throw new CatalogError("Sản phẩm nguồn không còn tồn tại");
-    if (input.id && input.published) {
-      const current = await tx.product.findUnique({ where: { id: input.id }, select: { archivedAt: true } });
-      if (current?.archivedAt) throw new CatalogError("Sản phẩm đã ngừng kinh doanh — khôi phục trước khi hiển thị trên web");
+    const current = input.id
+      ? await tx.product.findUnique({ where: { id: input.id }, select: { archivedAt: true, stockLocationId: true } })
+      : null;
+    if (input.id && !current) throw new CatalogError("Không tìm thấy sản phẩm");
+    if (current?.archivedAt && input.published) throw new CatalogError("Sản phẩm đã ngừng kinh doanh — khôi phục trước khi hiển thị trên web");
+    // Đổi kho được cả khi còn tồn: hàng ở kho cũ chỉ bán lại sau khi tạo phiếu chuyển sang kho mới.
+    const stockLocationId = input.stockLocationId ?? current?.stockLocationId ?? (await defaultStockLocationId(tx));
+    if (stockLocationId !== current?.stockLocationId) {
+      try {
+        await assertStockLocation(tx, stockLocationId);
+      } catch (e) {
+        throw new CatalogError(e instanceof Error ? e.message : String(e));
+      }
     }
     const data = {
       slug: input.slug,
       brandId: input.brandId,
       categoryId: input.categoryId,
+      stockLocationId,
+      ...(input.fixedProfitMmk !== undefined && { fixedProfitMmk: input.fixedProfitMmk }),
       published: input.published,
       requiresExpiry: input.requiresExpiry,
       paoMonths: input.paoMonths,
@@ -155,8 +172,10 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
       if (!v.isBundle) continue;
       if (v.components.length === 0) throw new CatalogError(`Combo ${v.sku} cần ít nhất 1 thành phần`);
       for (const c of v.components) {
-        const comp = await tx.variant.findUnique({ where: { id: c.componentId } });
+        const comp = await tx.variant.findUnique({ where: { id: c.componentId }, include: { product: { select: { stockLocationId: true } } } });
         if (!comp || comp.isBundle || comp.id === bundleId) throw new CatalogError(`Thành phần combo ${v.sku} không hợp lệ`);
+        // Combo trừ kho từng thành phần ở kho của combo → thành phần phải cùng kho (P24).
+        if (comp.product.stockLocationId !== product.stockLocationId) throw new CatalogError(`Thành phần ${comp.sku} của combo ${v.sku} thuộc kho khác`);
       }
       await tx.bundleItem.createMany({ data: v.components.map((c) => ({ bundleId, componentId: c.componentId, qty: c.qty })) });
     }
@@ -253,6 +272,7 @@ export const PRODUCT_CSV_COLUMNS = [
   "weight_g",
   "expiry_policy",
   "pao_months",
+  "warehouse_code",
 ] as const;
 
 export const STOCK_CSV_COLUMNS = [
@@ -267,6 +287,7 @@ export const STOCK_CSV_COLUMNS = [
   "expiry_status",
   "inbound_unit_vnd",
   "selling_fee_mmk",
+  "unit_cost_mmk",
 ] as const;
 
 export type ImportResult = { ok: number; errors: string[]; documents?: { id: string; code: string }[] };
@@ -280,7 +301,7 @@ function missingColumns(rows: Record<string, string>[], cols: readonly string[])
 export async function importProductsCsv(csv: string, userId: string, lineNumbers?: number[], transaction?: Tx): Promise<ImportResult> {
   const db = transaction ?? prisma;
   const rows = parseCsvObjects(csv);
-  const required = PRODUCT_CSV_COLUMNS.filter((c) => !c.startsWith("description") && !c.startsWith("usage") && c !== "ingredients" && c !== "storage_note" && c !== "weight_g" && c !== "expiry_policy" && c !== "pao_months");
+  const required = PRODUCT_CSV_COLUMNS.filter((c) => !c.startsWith("description") && !c.startsWith("usage") && c !== "ingredients" && c !== "storage_note" && c !== "weight_g" && c !== "expiry_policy" && c !== "pao_months" && c !== "warehouse_code");
   const missing = missingColumns(rows, required);
   if (missing.length) return { ok: 0, errors: [`Thiếu cột: ${missing.join(", ")}`] };
 
@@ -304,12 +325,19 @@ export async function importProductsCsv(csv: string, userId: string, lineNumbers
         where: { slug },
         include: { variants: true, tags: true },
       });
+      const warehouse = first.warehouse_code?.trim()
+        ? await stockLocationByCode(db, first.warehouse_code).catch((e: Error) => {
+            throw new CatalogError(e.message);
+          })
+        : null;
       await saveProduct(
         {
           id: existing?.id,
           slug,
           brandId: brand.id,
           categoryId: category.id,
+          stockLocationId: warehouse?.id, // trống: SP mới → kho mặc định, SP có sẵn → giữ kho
+
           published: existing?.published ?? false,
           requiresExpiry: first.expiry_policy ? z.enum(["DATED", "NONE"]).parse(first.expiry_policy) === "DATED" : existing?.requiresExpiry ?? true,
           paoMonths: first.pao_months === undefined ? existing?.paoMonths : first.pao_months,
@@ -350,11 +378,11 @@ export async function importProductsCsv(csv: string, userId: string, lineNumbers
 export async function importOpeningStockCsv(csv: string, userId: string, lineNumbers?: number[], transaction?: Tx): Promise<ImportResult> {
   const db = transaction ?? prisma;
   const rows = parseCsvObjects(csv);
-  const missing = missingColumns(rows, STOCK_CSV_COLUMNS.filter((c) => !["mfg_date", "stock_type", "expiry_date", "expiry_status", "inbound_unit_vnd", "selling_fee_mmk"].includes(c)));
+  const missing = missingColumns(rows, STOCK_CSV_COLUMNS.filter((c) => !["mfg_date", "stock_type", "expiry_date", "expiry_status", "inbound_unit_vnd", "selling_fee_mmk", "unit_cost_vnd", "unit_cost_mmk"].includes(c)));
   if (missing.length) return { ok: 0, errors: [`Thiếu cột: ${missing.join(", ")}`] };
 
   const errors: string[] = [];
-  const byLocation = new Map<string, { variantId: string; lotNo: string; expiryDate: string; expiryStatus?: "DATED" | "NONE" | "UNKNOWN"; landedCostVnd?: number; mfgDate?: string; unitCostVnd: string; qty: string; stockType: string }[]>();
+  const byLocation = new Map<string, { variantId: string; lotNo: string; expiryDate: string; expiryStatus?: "DATED" | "NONE" | "UNKNOWN"; landedCostVnd?: number; mfgDate?: string; unitCostVnd?: string; unitCostMmk?: string; qty: string; stockType: string }[]>();
   const locations = new Map((await db.location.findMany()).map((l) => [l.code, l.id]));
   const variants = new Map((await db.variant.findMany({ select: { id: true, sku: true } })).map((v) => [v.sku, v.id]));
 
@@ -373,9 +401,11 @@ export async function importOpeningStockCsv(csv: string, userId: string, lineNum
         lotNo: r.lot_no,
         expiryDate: r.expiry_date,
         expiryStatus: r.expiry_status ? z.enum(["DATED", "NONE", "UNKNOWN"]).parse(r.expiry_status) : undefined,
-        landedCostVnd: r.inbound_unit_vnd ? z.coerce.number().int().min(0).max(2147483647).parse(Number(r.unit_cost_vnd) + z.coerce.number().int().min(0).parse(r.inbound_unit_vnd)) : undefined,
+        landedCostVnd: r.inbound_unit_vnd && r.unit_cost_vnd ? z.coerce.number().int().min(0).max(2147483647).parse(Number(r.unit_cost_vnd) + z.coerce.number().int().min(0).parse(r.inbound_unit_vnd)) : undefined,
         mfgDate: r.mfg_date || undefined,
-        unitCostVnd: r.unit_cost_vnd,
+        // P24: giá mua VND (kho hàng nhập VN) hoặc MMK (kho mua tại Myanmar) — createDocument kiểm tra đúng loại tiền.
+        unitCostVnd: r.unit_cost_vnd || undefined,
+        unitCostMmk: r.unit_cost_mmk || undefined,
         qty: r.qty,
         stockType: st,
       },

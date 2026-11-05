@@ -8,13 +8,13 @@ import path from "node:path";
 const TEMPLATES: Record<string, (string | number)[][]> = {
   "products.csv": [
     [...PRODUCT_CSV_COLUMNS],
-    ["sen-viet-sunscreen-spf50", "Sen Việt", "skincare", "နေကာခရင်မ် SPF50", "Sunscreen SPF50", "", "", "", "", "Aqua, Zinc Oxide", "Dưới 30°C", "SV-SUN-50", "50ml", 25000, 80, "DATED"],
-    ["sen-viet-sunscreen-spf50", "Sen Việt", "skincare", "နေကာခရင်မ် SPF50", "Sunscreen SPF50", "", "", "", "", "Aqua, Zinc Oxide", "Dưới 30°C", "SV-SUN-100", "100ml", 42000, 140, "DATED"],
+    ["sen-viet-sunscreen-spf50", "Sen Việt", "skincare", "နေကာခရင်မ် SPF50", "Sunscreen SPF50", "", "", "", "", "Aqua, Zinc Oxide", "Dưới 30°C", "SV-SUN-50", "50ml", 25000, 80, "DATED", "", "THAM"],
+    ["sen-viet-sunscreen-spf50", "Sen Việt", "skincare", "နေကာခရင်မ် SPF50", "Sunscreen SPF50", "", "", "", "", "Aqua, Zinc Oxide", "Dưới 30°C", "SV-SUN-100", "100ml", 42000, 140, "DATED", "", "THAM"],
   ],
   "stock.csv": [
     [...STOCK_CSV_COLUMNS],
-    ["SV-SUN-50", "VN-STOCK", "L2701", "2028-03-31", "2026-03-01", 95000, 50, "SELLABLE", "DATED", 0, 0],
-    ["SV-SUN-50", "VN-STOCK", "L2701", "2028-03-31", "2026-03-01", 95000, 3, "TESTER", "DATED", 0, 0],
+    ["SV-SUN-50", "THAM", "L2701", "2028-03-31", "2026-03-01", 95000, 50, "SELLABLE", "DATED", 0, 0, ""],
+    ["SV-SUN-50", "THAM", "L2701", "2028-03-31", "2026-03-01", 95000, 3, "TESTER", "DATED", 0, 0, ""],
   ],
 };
 

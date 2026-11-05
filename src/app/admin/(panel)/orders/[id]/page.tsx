@@ -5,7 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { isPhoneEmail } from "@/server/auth/customer-policy";
-import { getOrderAdmin, quarantineLocations, sellableLocations } from "@/server/orders/admin-queries";
+import { getOrderAdmin, quarantineLocations } from "@/server/orders/admin-queries";
 import { returnItemsAction } from "@/server/orders/actions";
 import { assignOrderAffiliateAction, setOrderCommissionRatesAction } from "@/server/affiliates/actions";
 import { affiliateOptions } from "@/server/affiliates/affiliates";
@@ -27,11 +27,10 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
   const user = await requirePagePermission("orders:view");
   const { id } = await params;
   const canAssign = can(user.role, "orders:assign-affiliate");
-  const [t, ta, order, locations, qcLocations, affiliates, holdDays] = await Promise.all([
+  const [t, ta, order, qcLocations, affiliates, holdDays] = await Promise.all([
     getTranslations("Orders"),
     getTranslations("Affiliates"),
     getOrderAdmin(id),
-    sellableLocations(),
     quarantineLocations(),
     canAssign ? affiliateOptions() : [],
     getNumberSetting("affiliate.holdDays"),
@@ -49,13 +48,8 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
   );
   const fieldsFor = (n: string): TransitionField[] => {
     if (n === "ship") {
+      // P24: không chọn kho xuất — mỗi SP xuất từ kho bán của nó.
       return [
-        ...(order.status !== "PACKING" && locations.length > 1 ? [{
-          name: "fromLocationId",
-          label: t("fromLocation"),
-          required: true,
-          options: locations.map((l) => ({ value: l.id, label: `${l.code} — ${l.name}` })),
-        } satisfies TransitionField] : []),
         { name: "carrier", label: t("carrier"), required: true },
         { name: "trackingNo", label: t("trackingNo") },
       ];

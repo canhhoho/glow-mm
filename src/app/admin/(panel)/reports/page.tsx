@@ -5,7 +5,7 @@ import {
   inboundShipments,
   salesReport,
   slowMovers,
-  stockByLocationType,
+  stockByLocation,
   type Range,
 } from "@/server/reports/queries";
 import { DataTable, fieldClass, FilterButton, Page, PageHeader, Stat, Td } from "@/components/admin/ui";
@@ -33,7 +33,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
     salesReport(range),
     slowMovers(),
     inboundShipments(),
-    stockByLocationType(),
+    stockByLocation(),
   ]);
   const { totals } = report;
   const maxRevenue = Math.max(1, ...report.daily.map((d) => d.revenue));
@@ -132,8 +132,8 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
           <h2 className="font-medium">{t("stock")}</h2>
           <DataTable head={[t("locType"), t("qty"), t("tester"), t("value"), t("noCost")]}>
             {stock.map((s) => (
-              <tr key={s.type} data-testid={`stock-${s.type}`}>
-                <Td>{t(`loc.${s.type}`)}</Td>
+              <tr key={s.code ?? "inactive"} data-testid={`stock-${s.code ?? "inactive"}`}>
+                <Td>{s.name ?? t("inactiveLocations")}</Td>
                 <Td className="text-right tabular-nums">{fmtInt(s.qty)}</Td>
                 <Td className="text-right tabular-nums">{fmtInt(s.testerQty)}</Td>
                 <Td className="text-right tabular-nums">{fmtInt(s.valueMmk)}</Td>

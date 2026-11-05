@@ -69,7 +69,10 @@ export async function allocateShipment(shipmentId: string, userId: string) {
       _sum: { qtyDelta: true },
     });
     const qtyByBatch = new Map(received.map((r) => [r.batchId, r._sum.qtyDelta ?? 0]));
-    const batches = shipment.batches.filter((b) => (qtyByBatch.get(b.id) ?? 0) > 0);
+    // Chi phí chuyến (VND) chỉ phân bổ cho lô giá VND — lô MMK không đi chuyến VN → MM (P24).
+    const batches = shipment.batches.flatMap((b) =>
+      (qtyByBatch.get(b.id) ?? 0) > 0 && b.unitCostVnd != null ? [{ ...b, unitCostVnd: b.unitCostVnd }] : [],
+    );
     if (batches.length === 0) throw new Error("Chuyến hàng chưa có lô nào đã nhập kho");
 
     const result = allocateLandedCost(

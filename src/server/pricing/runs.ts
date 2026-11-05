@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { getNumberSetting } from "@/server/settings";
 import { variantCosts } from "./cost";
-import { mmkPerVndFromUsd, parseScaled, suggestPrice } from "./formula";
+import { mmkPerVndFromUsd, parseScaled, priceLocalMmk, priceVnImport, shippingMmk, suggestPrice } from "./formula";
 
 /**
  * Cập nhật giá hàng loạt: nhập tỷ giá → tạo bản XEM TRƯỚC (lưu từng dòng) → chọn dòng → ÁP DỤNG.
@@ -71,46 +71,90 @@ export async function createRate(raw: unknown, userId: string) {
   });
 }
 
+const blankToUndefined = (v: unknown) => (v === "" || v == null ? undefined : v);
+
 export const previewSchema = z.object({
-  rateId: rawId,
-  marginPct: decimalString(2, (v) => v <= BigInt(100_000), "% lãi từ 0 đến 1000, tối đa 2 chữ số thập phân"),
-  roundTo: z.coerce.number().int().min(1).max(100_000).optional(),
-  categoryId: rawId.optional(),
-  brandId: rawId.optional(),
+  /** Kho tính giá (P24). Bỏ trống = cách cũ: mọi biến thể, vốn VND × tỷ giá × (1 + % lãi), không ship. */
+  locationId: z.preprocess(blankToUndefined, rawId.optional()),
+  rateId: z.preprocess(blankToUndefined, rawId.optional()),
+  marginPct: z.preprocess(
+    blankToUndefined,
+    decimalString(2, (v) => v <= BigInt(100_000), "% lãi từ 0 đến 1000, tối đa 2 chữ số thập phân").optional(),
+  ),
+  shipMmkPerKg: z.preprocess(blankToUndefined, z.coerce.number().int().min(0).max(100_000_000).optional()),
+  roundTo: z.preprocess(blankToUndefined, z.coerce.number().int().min(1).max(100_000).optional()),
+  categoryId: z.preprocess(blankToUndefined, rawId.optional()),
+  brandId: z.preprocess(blankToUndefined, rawId.optional()),
 });
 
-/** Tạo bản xem trước cho các biến thể đang bán (lọc theo danh mục/thương hiệu nếu có). */
+type PreviewLine = { variantId: string; costVnd?: number; costMmk?: number; shipMmk?: number; profitMmk?: number; oldPriceMmk: number; newPriceMmk: number };
+
+/**
+ * Tạo bản xem trước. Có kho (P24):
+ *  - VN_IMPORT (Kho Thắm): cần tỷ giá, % lãi, ship MMK/kg; biến thể thiếu vốn VND / khối lượng bị bỏ qua.
+ *  - LOCAL_MMK (Kho Chi): vốn MMK lô mới nhất + lãi cố định của SP; thiếu vốn MMK / lãi bị bỏ qua.
+ * Danh sách bị bỏ qua xem ở `pricingGaps` (trang Tính giá).
+ */
 export async function previewRun(raw: unknown, userId: string) {
   const input = previewSchema.parse(raw);
   const roundTo = input.roundTo ?? (await getNumberSetting("pricing.roundTo"));
   return prisma.$transaction(
     async (tx) => {
-      const rate = await tx.exchangeRate.findUnique({ where: { id: input.rateId } });
-      if (!rate) throw new PricingError("Tỷ giá không tồn tại");
-      const productWhere: Prisma.ProductWhereInput = {};
+      const location = input.locationId ? await tx.location.findUnique({ where: { id: input.locationId } }) : null;
+      if (input.locationId && (!location?.sellable || !location.active)) throw new PricingError("Kho tính giá phải là kho bán đang dùng");
+      const mode = location ? (location.pricingMode ?? "VN_IMPORT") : null;
+      const needsRate = mode !== "LOCAL_MMK";
+      if (needsRate && (!input.rateId || input.marginPct === undefined)) throw new PricingError("Chọn tỷ giá và nhập % lãi");
+      if (mode === "VN_IMPORT" && input.shipMmkPerKg === undefined) throw new PricingError("Nhập phí ship VN → MM (MMK/kg)");
+      const rate = needsRate ? await tx.exchangeRate.findUnique({ where: { id: input.rateId! } }) : null;
+      if (needsRate && !rate) throw new PricingError("Tỷ giá không tồn tại");
+
+      const productWhere: Prisma.ProductWhereInput = location ? { stockLocationId: location.id, archivedAt: null } : {};
       if (input.categoryId) {
         productWhere.OR = [{ categoryId: input.categoryId }, { category: { parentId: input.categoryId } }];
       }
       if (input.brandId) productWhere.brandId = input.brandId;
       const variants = await tx.variant.findMany({
         where: { active: true, product: productWhere },
-        select: { id: true, priceMmk: true },
+        select: { id: true, priceMmk: true, weightGrams: true, product: { select: { fixedProfitMmk: true } } },
       });
-      const costs = await variantCosts(tx, variants.map((v) => v.id));
-      const lines = variants.flatMap((v) => {
+      const costs = await variantCosts(tx, variants.map((v) => v.id), mode === "LOCAL_MMK" ? "MMK" : "VND");
+      const lines = variants.flatMap((v): PreviewLine[] => {
         const cost = costs.get(v.id);
         if (!cost) return [];
-        const newPriceMmk = suggestPrice({
-          ...rate,
-          costVnd: cost.costVnd,
-          marginPct: input.marginPct,
-          roundTo,
-        });
+        if (mode === "LOCAL_MMK") {
+          const profit = v.product.fixedProfitMmk;
+          if (profit == null) return [];
+          const newPriceMmk = priceLocalMmk({ costMmk: cost.costVnd, fixedProfitMmk: profit, roundTo });
+          return [{ variantId: v.id, costMmk: cost.costVnd, profitMmk: profit, oldPriceMmk: v.priceMmk, newPriceMmk }];
+        }
+        if (mode === "VN_IMPORT") {
+          if (!v.weightGrams) return []; // thiếu khối lượng → không tính được phí ship
+          const newPriceMmk = priceVnImport({
+            ...rate!,
+            costVnd: cost.costVnd,
+            marginPct: input.marginPct!,
+            shipMmkPerKg: input.shipMmkPerKg!,
+            weightGrams: v.weightGrams,
+            roundTo,
+          });
+          const shipMmk = shippingMmk(input.shipMmkPerKg!, v.weightGrams);
+          return [{ variantId: v.id, costVnd: cost.costVnd, shipMmk, oldPriceMmk: v.priceMmk, newPriceMmk }];
+        }
+        const newPriceMmk = suggestPrice({ ...rate!, costVnd: cost.costVnd, marginPct: input.marginPct!, roundTo });
         return [{ variantId: v.id, costVnd: cost.costVnd, oldPriceMmk: v.priceMmk, newPriceMmk }];
       });
-      if (lines.length === 0) throw new PricingError("Không có biến thể nào có giá vốn để tính");
+      if (lines.length === 0) throw new PricingError("Không có biến thể nào đủ dữ liệu để tính giá (xem danh sách thiếu vốn / khối lượng / lãi)");
       const run = await tx.priceUpdateRun.create({
-        data: { rateId: rate.id, marginPct: input.marginPct, roundTo, createdById: userId, lines: { create: lines } },
+        data: {
+          locationId: location?.id,
+          rateId: rate?.id,
+          marginPct: needsRate ? input.marginPct : null,
+          shipMmkPerKg: mode === "VN_IMPORT" ? input.shipMmkPerKg : null,
+          roundTo,
+          createdById: userId,
+          lines: { create: lines },
+        },
       });
       await tx.auditLog.create({
         data: { userId, action: "pricing.preview", entity: "PriceUpdateRun", entityId: run.id, data: { lines: lines.length } },

@@ -5,7 +5,7 @@ import { createOrder } from "@/server/orders/orders";
 import { returnItems } from "@/server/orders/returns";
 import { transitionOrder } from "@/server/orders/transitions";
 import { createShipment, markShipmentArrived } from "@/server/inventory/shipments";
-import { inboundShipments, salesReport, stockByLocationType } from "@/server/reports/queries";
+import { inboundShipments, salesReport, stockByLocation } from "@/server/reports/queries";
 import { admin, orderInput, saleFixture, unpublishTestProducts } from "./fixtures";
 
 afterAll(unpublishTestProducts);
@@ -69,15 +69,17 @@ describe("Báo cáo khớp sổ kho", () => {
     expect(mine).toMatchObject({ units: 4, revenue: 40_000, profit: 20_000 });
     expect(report.topProducts.every((p) => p.units > 0)).toBe(true); // SP trả hết không vào "Bán chạy"
 
-    const stock = await stockByLocationType();
-    const ledgerByType = await prisma.$queryRaw<{ type: string; qty: bigint }[]>`
-      SELECT l."type"::text AS type, COALESCE(SUM(sl."qtyDelta"), 0) AS qty
+    const stock = await stockByLocation();
+    const ledgerByCode = await prisma.$queryRaw<{ code: string; qty: bigint }[]>`
+      SELECT l."code" AS code, COALESCE(SUM(sl."qtyDelta"), 0) AS qty
       FROM "StockLedger" sl JOIN "Location" l ON l.id = sl."locationId"
       WHERE sl."stockType" = 'SELLABLE'
-      GROUP BY l."type"`;
+      GROUP BY l."code"`;
     for (const s of stock) {
-      expect(s.qty).toBe(Number(ledgerByType.find((r) => r.type === s.type)?.qty ?? 0));
+      if (s.code === null) continue; // dòng gộp kho đã ngừng dùng
+      expect(s.qty).toBe(Number(ledgerByCode.find((r) => r.code === s.code)?.qty ?? 0));
     }
+    expect(stock.some((s) => s.code === f.mm.code)).toBe(true);
   });
 
   it("chuyến đã đi chưa đến → đang vận chuyển; đánh dấu đã đến thì hết", async () => {

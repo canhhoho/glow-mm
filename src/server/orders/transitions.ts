@@ -125,35 +125,40 @@ export async function transitionInTx(
 /**
  * Xuất kho khi bàn giao: phân lô FEFO (bỏ lô dưới ngưỡng hạn dùng), combo trừ từng thành phần,
  * ghi phiếu xuất (ledger) + OrderAllocation (giá vốn) và chuyển giữ hàng sang CONSUMED.
+ * P24: mỗi SP xuất từ kho bán của nó (combo: kho của combo = kho thành phần) → đơn có hàng
+ * của nhiều kho sinh một phiếu xuất cho mỗi kho. `fromLocationId` cũ bị bỏ qua.
  */
 async function issueOrderStock(
   tx: Tx,
   order: { id: string; code: string },
   userId: string,
-  fromLocationId: string | undefined,
+  _fromLocationId: string | undefined,
   opts: { now: Date; blockDays: number },
 ) {
-  const fromId = fromLocationId ?? (await defaultSellableLocation(tx));
-  const loc = await tx.location.findUnique({ where: { id: fromId } });
-  if (!loc?.sellable) throw new OrderError("invalid_transition", "Vị trí xuất phải là kho bán được");
-
-  const items = await tx.orderItem.findMany({ where: { orderId: order.id } });
+  const items = await tx.orderItem.findMany({
+    where: { orderId: order.id },
+    include: { variant: { select: { product: { select: { stockLocationId: true } } } } },
+  });
   const defs = await bundleDefs(tx, items.map((i) => i.variantId));
   const needs = items.flatMap((i) => {
+    const locationId = i.variant.product.stockLocationId;
     const def = defs.get(i.variantId);
     return def
-      ? def.map((c) => ({ orderItemId: i.id, variantId: c.componentId, qty: c.qty * i.qty }))
-      : [{ orderItemId: i.id, variantId: i.variantId, qty: i.qty }];
+      ? def.map((c) => ({ orderItemId: i.id, variantId: c.componentId, qty: c.qty * i.qty, locationId }))
+      : [{ orderItemId: i.id, variantId: i.variantId, qty: i.qty, locationId }];
   });
+  const locations = await tx.location.findMany({ where: { id: { in: [...new Set(needs.map((n) => n.locationId))] } } });
+  if (locations.some((l) => !l.sellable)) throw new OrderError("invalid_transition", "Vị trí xuất phải là kho bán được");
 
-  // Tồn theo lô dùng chung cho các dòng cùng biến thể (trừ dần khi phân bổ).
+  // Tồn theo lô dùng chung cho các dòng cùng biến thể + kho (trừ dần khi phân bổ).
   const pools = new Map<string, FefoCandidate[]>();
-  const picks: { orderItemId: string; variantId: string; batchId: string; qty: number }[] = [];
+  const picks: { orderItemId: string; variantId: string; batchId: string; qty: number; locationId: string }[] = [];
   for (const n of needs) {
-    let pool = pools.get(n.variantId);
+    const key = `${n.variantId}|${n.locationId}`;
+    let pool = pools.get(key);
     if (!pool) {
-      pool = await candidatesAt(tx, n.variantId, fromId, "SELLABLE");
-      pools.set(n.variantId, pool);
+      pool = await candidatesAt(tx, n.variantId, n.locationId, "SELLABLE");
+      pools.set(key, pool);
     }
     let alloc;
     try {
@@ -167,23 +172,27 @@ async function issueOrderStock(
     for (const a of alloc) {
       const c = pool.find((p) => p.batchId === a.batchId)!;
       c.available -= a.qty;
-      picks.push({ orderItemId: n.orderItemId, variantId: n.variantId, batchId: a.batchId, qty: a.qty });
+      picks.push({ orderItemId: n.orderItemId, variantId: n.variantId, batchId: a.batchId, qty: a.qty, locationId: n.locationId });
     }
   }
 
-  const doc = await tx.stockDocument.create({
-    data: {
-      code: newCode("IS", opts.now),
-      type: "ISSUE",
-      status: "DRAFT",
-      fromId,
-      orderId: order.id,
-      reason: `Đơn ${order.code}`,
-      createdById: userId,
-      lines: { create: picks.map((p) => ({ variantId: p.variantId, batchId: p.batchId, stockType: "SELLABLE", qty: p.qty })) },
-    },
-  });
-  await postDocumentTx(tx, doc.id, userId);
+  for (const loc of locations) {
+    const own = picks.filter((p) => p.locationId === loc.id);
+    if (own.length === 0) continue;
+    const doc = await tx.stockDocument.create({
+      data: {
+        code: newCode("IS", opts.now),
+        type: "ISSUE",
+        status: "DRAFT",
+        fromId: loc.id,
+        orderId: order.id,
+        reason: locations.length > 1 ? `Đơn ${order.code} · ${loc.name}` : `Đơn ${order.code}`,
+        createdById: userId,
+        lines: { create: own.map((p) => ({ variantId: p.variantId, batchId: p.batchId, stockType: "SELLABLE", qty: p.qty })) },
+      },
+    });
+    await postDocumentTx(tx, doc.id, userId);
+  }
 
   const batches = await tx.batch.findMany({
     where: { id: { in: picks.map((p) => p.batchId) } },
@@ -200,10 +209,4 @@ async function issueOrderStock(
     })),
   });
   await tx.reservation.updateMany({ where: { orderId: order.id, status: "ACTIVE" }, data: { status: "CONSUMED" } });
-}
-
-async function defaultSellableLocation(tx: Tx) {
-  const locs = await tx.location.findMany({ where: { sellable: true }, select: { id: true }, take: 2 });
-  if (locs.length !== 1) throw new OrderError("invalid_transition", "Chọn vị trí kho xuất hàng");
-  return locs[0].id;
 }

@@ -21,8 +21,9 @@ function fixture(status: "COD_CONFIRMED" | "PAYMENT_CONFIRMED" | "PACKING" = "CO
   const tx = {
     $queryRaw: vi.fn(),
     order: { findUnique: vi.fn().mockImplementation(async () => ({ ...order })), update: vi.fn().mockImplementation(({ data }) => ({ ...Object.assign(order, data) })) },
-    location: { findUnique: vi.fn().mockResolvedValue({ sellable: true }) },
-    orderItem: { findMany: vi.fn().mockResolvedValue([{ id: "item", variantId: "variant", qty: 2 }]) },
+    location: { findMany: vi.fn().mockResolvedValue([{ id: "warehouse", name: "Kho Thắm", sellable: true }]) },
+    // P24: kho xuất lấy theo kho của SP.
+    orderItem: { findMany: vi.fn().mockResolvedValue([{ id: "item", variantId: "variant", qty: 2, variant: { product: { stockLocationId: "warehouse" } } }]) },
     stockDocument: { create: vi.fn().mockResolvedValue({ id: "issue" }) },
     batch: { findMany: vi.fn().mockResolvedValue([{ id: "batch", landedCostMmk: 4000 }]) },
     orderAllocation: { createMany: vi.fn() },

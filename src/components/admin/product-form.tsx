@@ -12,7 +12,8 @@ type Options = {
   brands: { id: string; name: string }[];
   categories: { id: string; name: string }[];
   tags: { id: string; kind: "SKIN_TYPE" | "CONCERN" | "INGREDIENT"; name: string }[];
-  components: { id: string; label: string }[];
+  components: { id: string; label: string; stockLocationId: string }[];
+  warehouses: { id: string; code: string; name: string; pricingMode: "VN_IMPORT" | "LOCAL_MMK" | null }[];
 };
 
 type Variant = ProductEditData["variants"][number] & { key: number };
@@ -38,6 +39,8 @@ const EMPTY: ProductEditData = {
   slug: "",
   brandId: "",
   categoryId: "",
+  stockLocationId: "",
+  fixedProfitMmk: null,
   published: false,
   requiresExpiry: true,
   paoMonths: null,
@@ -62,7 +65,8 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
   const t = useTranslations("Products");
   const td = useTranslations("Docs");
   const [state, action, pending] = useActionState(saveProductAction, undefined);
-  const [p, setP] = useState<ProductEditData>(initial ?? EMPTY);
+  const [p, setP] = useState<ProductEditData>(initial ?? { ...EMPTY, stockLocationId: options.warehouses[0]?.id ?? "" });
+  const initialWarehouse = initial?.id ? initial.stockLocationId : null;
   const [variants, setVariants] = useState<Variant[]>(
     initial?.variants.length ? initial.variants.map((v) => ({ ...v, key: ++seq })) : [blankVariant()],
   );
@@ -121,6 +125,30 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
             ))}
           </select>
         </Field>
+        <Field label={t("warehouse")}>
+          <select required value={p.stockLocationId} onChange={(e) => set("stockLocationId", e.target.value)} className={fieldClass}>
+            {options.warehouses.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name} ({w.code})
+              </option>
+            ))}
+          </select>
+          {initialWarehouse && p.stockLocationId !== initialWarehouse && <span className="text-xs text-amber-700 dark:text-amber-400">{t("warehouseChangeHint")}</span>}
+        </Field>
+        {options.warehouses.find((w) => w.id === p.stockLocationId)?.pricingMode === "LOCAL_MMK" && (
+          <Field label={t("fixedProfitMmk")}>
+            <input
+              type="number"
+              min={0}
+              step={1}
+              inputMode="numeric"
+              value={p.fixedProfitMmk ?? ""}
+              onChange={(e) => set("fixedProfitMmk", e.target.value === "" ? null : Number(e.target.value))}
+              className={fieldClass}
+            />
+            <span className="text-xs text-muted-foreground">{t("fixedProfitHint")}</span>
+          </Field>
+        )}
         <label className="flex items-center gap-2 self-end text-sm">
           <input type="checkbox" checked={p.published} onChange={(e) => set("published", e.target.checked)} />
           {t("publishedLabel")}
@@ -238,7 +266,8 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
                     >
                       <option value="">—</option>
                       {options.components
-                        .filter((o) => o.id !== v.id)
+                        // Thành phần combo phải cùng kho với combo (P24).
+                        .filter((o) => o.id !== v.id && (o.stockLocationId === p.stockLocationId || o.id === c.componentId))
                         .map((o) => (
                           <option key={o.id} value={o.id}>
                             {o.label}

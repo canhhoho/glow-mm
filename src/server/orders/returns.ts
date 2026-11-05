@@ -114,7 +114,7 @@ export async function returnItems(orderId: string, raw: unknown, actor: { userId
 }
 
 async function defaultQuarantine(tx: Tx) {
-  const locs = await tx.location.findMany({ where: { type: "QUARANTINE" }, select: { id: true }, take: 2 });
+  const locs = await tx.location.findMany({ where: { type: "QUARANTINE", active: true }, select: { id: true }, take: 2 });
   if (locs.length !== 1) throw new OrderError("invalid_transition", "Chọn vị trí Chờ kiểm tra");
   return locs[0].id;
 }

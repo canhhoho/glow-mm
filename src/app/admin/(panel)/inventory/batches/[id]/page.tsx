@@ -30,10 +30,15 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
   const info: [string, React.ReactNode][] = [
     [t("expiry"), <ExpiryTag key="e" date={batch.expiryDate} status={batch.expiryStatus} now={now} t={ti} th={th} />],
     [t("mfg"), fmtDay(batch.mfgDate)],
-    [t("unitCostVnd"), fmtInt(batch.unitCostVnd)],
-    [t("landedVnd"), fmtInt(batch.landedCostVnd)],
+    // P24: lô mua bằng MMK (Kho Chi) không có giá VND / tỷ giá — chỉ hiện giá vốn MMK.
+    ...(batch.unitCostMmk == null
+      ? ([
+          [t("unitCostVnd"), fmtInt(batch.unitCostVnd)],
+          [t("landedVnd"), fmtInt(batch.landedCostVnd)],
+        ] as [string, React.ReactNode][])
+      : []),
     [t("costMmk"), batch.landedCostMmk == null ? ti("unallocated") : fmtInt(batch.landedCostMmk)],
-    [t("rate"), batch.rate ? rateDisplay(batch.rate).vndPerMmk : "—"],
+    ...(batch.unitCostMmk == null ? ([[t("rate"), batch.rate ? rateDisplay(batch.rate).vndPerMmk : "—"]] as [string, React.ReactNode][]) : []),
     [
       t("shipment"),
       batch.shipment ? (

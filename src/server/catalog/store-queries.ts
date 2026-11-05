@@ -212,12 +212,12 @@ export async function withProductStock(content: ProductContent, now = new Date()
   const blockDays = await storeBlockDays();
   const [avail, lots] = await Promise.all([
     availableToSell(prisma, ids, { now, blockDays }),
-    // Chỉ lô còn bán được ở kho bán.
+    // Chỉ lô còn bán được ở kho bán của SP (các biến thể cùng một SP → cùng một kho, P24).
     prisma.stockBalance.findMany({
       where: {
         stockType: "SELLABLE",
         qty: { gt: 0 },
-        location: { sellable: true },
+        location: { sellable: true, products: { some: { variants: { some: { id: { in: ids } } } } } },
         batch: { variantId: { in: ids }, expiryDate: { gte: sellableCutoff(now, blockDays) } },
       },
       select: { batch: { select: { variantId: true, expiryDate: true } } },

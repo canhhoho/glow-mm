@@ -3,6 +3,8 @@ import { z } from "zod";
 import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { deleteFileIfUnused, deleteStoredKeys } from "@/server/files/public-images";
+import { assertStockLocation } from "@/server/inventory/warehouses";
+import { CatalogError } from "./products";
 
 /**
  * Xoá sản phẩm khỏi danh mục admin.
@@ -73,6 +75,37 @@ export async function deleteProducts(rawIds: unknown, userId: string): Promise<D
   }, TX);
   await deleteStoredKeys(orphanKeys);
   return result;
+}
+
+/**
+ * Đổi kho bán cho nhiều SP (P24). Hàng còn ở kho cũ chỉ bán lại sau khi tạo phiếu chuyển sang kho mới.
+ * Combo và thành phần phải cùng kho → kiểm tra sau khi đổi, sai thì huỷ cả lần đổi.
+ */
+export async function moveProductsToWarehouse(rawIds: unknown, rawLocationId: unknown, userId: string): Promise<number> {
+  const ids = [...new Set(idsSchema.parse(rawIds))];
+  const locationId = rawId.parse(rawLocationId);
+  return prisma.$transaction(async (tx) => {
+    const loc = await assertStockLocation(tx, locationId).catch((e: Error) => {
+      throw new CatalogError(e.message);
+    });
+    const rows = await tx.product.findMany({ where: { id: { in: ids }, stockLocationId: { not: loc.id } }, select: { id: true } });
+    if (rows.length === 0) return 0;
+    const moved = rows.map((r) => r.id);
+    await tx.product.updateMany({ where: { id: { in: moved } }, data: { stockLocationId: loc.id } });
+    const links = await tx.bundleItem.findMany({
+      where: { OR: [{ bundle: { productId: { in: moved } } }, { component: { productId: { in: moved } } }] },
+      select: {
+        bundle: { select: { sku: true, product: { select: { stockLocationId: true } } } },
+        component: { select: { sku: true, product: { select: { stockLocationId: true } } } },
+      },
+    });
+    const bad = links.find((l) => l.bundle.product.stockLocationId !== l.component.product.stockLocationId);
+    if (bad) throw new CatalogError(`Combo ${bad.bundle.sku} và thành phần ${bad.component.sku} phải cùng kho — đổi kho cả hai cùng lúc`);
+    await tx.auditLog.createMany({
+      data: moved.map((entityId) => ({ userId, action: "product.move", entity: "Product", entityId, data: { locationId: loc.id } })),
+    });
+    return moved.length;
+  });
 }
 
 /** Khôi phục SP ngừng kinh doanh về danh mục (vẫn ẩn — bật hiển thị riêng). */

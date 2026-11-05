@@ -28,6 +28,7 @@ Next.js 16 có API mới (proxy thay middleware, Cache Components bật) → đ�
 - Nhập lần đầu (`catalog/opening.ts`): xem trước chỉ đọc, xác nhận tạo sản phẩm ẩn + phiếu tồn nháp cùng transaction, khoá/chặn nhập lặp; tỷ giá chốt theo bản xem trước. COD hoàn tất chỉ ghi nhận thu khách; `orders/cod.ts` đối soát tiền về riêng, quyền ADMIN, có số thực nhận/phí/mã tham chiếu và audit.
 - Giữ hàng ở cấp biến thể; phân lô và xuất kho khi bàn giao vận chuyển. Combo trừ kho từng thành phần. Tester/quà là `stockType=TESTER`, không bán được.
 - Landed cost tính theo lô, lưu tỷ giá VND/MMK tại thời điểm nhập.
+- **Hai kho bán (P24):** mỗi SP thuộc đúng một kho bán (`Product.stockLocationId`); nhập/chuyển vào kho bán, tồn bán (`baseAvailability`), xuất đơn (`issueOrderStock`, mỗi kho một phiếu ISSUE) đều theo kho của SP. Combo + thành phần cùng kho. `Location.active=false` = ngừng dùng (không xoá vì ledger). `Location.pricingMode`: `VN_IMPORT` (Kho Thắm — lô giá `unitCostVnd`, giá = VND × tỷ giá × (1+%) + ship MMK/kg × khối lượng) hoặc `LOCAL_MMK` (Kho Chi — lô giá `unitCostMmk`, `landedCostMmk = unitCostMmk` lúc tạo; giá = vốn MMK + `Product.fixedProfitMmk`). Lô có đúng một loại tiền (CHECK ở DB). Quản lý kho: `/admin/settings/warehouses` (`server/inventory/warehouses.ts`).
 
 **Code**
 - Logic nghiệp vụ nằm ở `src/server/<domain>/`, không import Next/Vercel → test được bằng Vitest.

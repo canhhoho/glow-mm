@@ -68,7 +68,7 @@ async function main() {
     throw new Error("STORAGE_DRIVER=vercel-blob: ảnh demo chỉ để test local. Dùng --no-images, hoặc --allow-blob nếu chắc chắn.");
   }
   const admin = await prisma.user.findUnique({ where: { email: "admin@glow.local" } });
-  const mm = await prisma.location.findUnique({ where: { code: "MM-STOCK" } });
+  const mm = await prisma.location.findUnique({ where: { code: "THAM" } }); // P24: SP demo thuộc Kho Thắm
   const rate = await prisma.exchangeRate.findFirst({ orderBy: { effectiveAt: "desc" } });
   if (!admin || !mm || !rate) throw new Error("Chưa có dữ liệu nền — chạy `npm run db:seed` trước.");
   const roundTo = Number((await prisma.setting.findUnique({ where: { key: "pricing.roundTo" } }))?.value ?? 100);
@@ -125,6 +125,7 @@ async function main() {
         slug: p.slug,
         brandId: brandId.get(p.brand)!,
         categoryId: catId.get(p.category)!,
+        stockLocationId: mm.id,
         published: true,
         translations: {
           create: (["my", "en"] as const).map((locale) => ({

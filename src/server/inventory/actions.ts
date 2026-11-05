@@ -8,6 +8,7 @@ import { requirePermission } from "@/server/auth/session";
 import type { Permission } from "@/server/auth/roles";
 import { cancelDocument, createDocument, postDocument, resolveBatchExpiry } from "./documents";
 import { discardFromQuarantine, restockFromQuarantine } from "./quarantine";
+import { createWarehouse, setWarehouseActive, updateWarehouse } from "./warehouses";
 import {
   addShipmentCost,
   allocateShipment,
@@ -42,6 +43,48 @@ function message(e: unknown): string {
   if (e instanceof ZodError) return e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
   if (e instanceof Error) return e.message;
   return String(e);
+}
+
+// ───────────────────────── Kho (P24) ─────────────────────────
+
+/** Kho đổi → mọi trang chọn kho + tồn bán storefront (tồn tính theo kho của SP). */
+function warehousesChanged() {
+  revalidatePath("/admin/settings/warehouses");
+  revalidatePath("/admin/inventory");
+  revalidatePath("/admin/products");
+}
+
+export async function createWarehouseAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("settings:manage");
+    await createWarehouse(Object.fromEntries(formData), user.id);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  warehousesChanged();
+  return { ok: "created" };
+}
+
+export async function updateWarehouseAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("settings:manage");
+    await updateWarehouse({ id: formData.get("id"), name: formData.get("name"), pricingMode: formData.get("pricingMode") || undefined }, user.id);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  warehousesChanged();
+  return { ok: "saved" };
+}
+
+export async function setWarehouseActiveAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("settings:manage");
+    await setWarehouseActive({ id: formData.get("id"), active: formData.get("active") === "1" }, user.id);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  warehousesChanged();
+  return { ok: "saved" };
 }
 
 /** payload = JSON của phiếu (từ form nhiều dòng). */

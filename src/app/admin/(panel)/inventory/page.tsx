@@ -8,11 +8,12 @@ import {
   EXPIRY_FILTERS,
   PAGE_SIZE,
   parseStockFilter,
-  STOCK_TABS,
   stockByVariant,
   stockLots,
   stockSummary,
+  stockTabs,
   type StockFilter,
+  type StockTab,
   type VariantStockRow,
 } from "@/server/inventory/overview";
 import type { BalanceRow, Thresholds } from "@/server/inventory/stock-summary";
@@ -35,14 +36,24 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
   const f = parseStockFilter(sp);
   const view: StockView = sp.view === "lots" ? "lots" : "products";
   const now = new Date();
-  const [t, td, locale, summary, products, lots] = await Promise.all([
+  const [t, td, locale, summary, products, lots, tabs] = await Promise.all([
     getTranslations("Inventory"),
     getTranslations("Docs"),
     getLocale(),
     stockSummary({ now }),
     view === "products" ? stockByVariant(f, now) : null,
     view === "lots" ? stockLots(f, now) : null,
+    stockTabs(),
   ]);
+  // Cột theo kho bán (P24); tồn ở kho khác (kho cũ, chưa chuyển) gộp vào cột "Kho khác" nếu trang có.
+  // Nhiều kho (vd. DB test) → chỉ cột của kho có hàng trong trang; tab giữ 20 kho nhiều tồn nhất + tab đang chọn.
+  const allSellable = tabs.filter((l) => l.sellable && l.active);
+  const onPage = new Set(products?.rows.flatMap((r) => Object.keys(r.cols?.byLocation ?? {})) ?? []);
+  const sellableTabs = allSellable.length <= 6 ? allSellable : allSellable.filter((l) => onPage.has(l.code));
+  const top = new Set(
+    tabs.length <= 20 ? tabs : [...tabs].sort((a, b) => (summary.byLocation[b.code] ?? 0) - (summary.byLocation[a.code] ?? 0)).slice(0, 20),
+  );
+  const shownTabs = tabs.filter((l) => top.has(l) || l.code === f.tab);
   const th = summary.thresholds;
   const href = (patch: Partial<StockFilter> & { view?: StockView } = {}) => stockHref(f, view, patch);
   const filtered = f.tab !== "all" || !!f.q || !!f.expiry || !!f.stockType;
@@ -80,10 +91,10 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
           hint={summary.unvaluedUnits > 0 ? t("statValueUnvalued", { units: summary.unvaluedUnits }) : t("statValueHint")}
         />
         <Tile
-          label={t("statInbound")}
-          value={fmtInt(summary.inbound.units)}
-          hint={t("statInboundHint", { lots: summary.inbound.lots })}
-          href={href({ tab: "IN_TRANSIT", expiry: undefined, stockType: undefined, q: undefined })}
+          label={t("statQuarantine")}
+          value={fmtInt(summary.byLocationType.QUARANTINE)}
+          hint={t("statQuarantineHint")}
+          href="/admin/inventory/quarantine"
         />
         <Tile
           tone="warning"
@@ -105,12 +116,15 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
 
       <TabNav
         label={t("tabs")}
-        tabs={STOCK_TABS.map((tab) => ({
-          href: href({ tab }),
-          active: f.tab === tab,
-          label: tab === "all" ? t("tabAll") : t(`loc.${tab}`),
-          count: tab === "all" ? undefined : fmtInt(summary.byLocationType[tab]),
-        }))}
+        tabs={[
+          { href: href({ tab: "all" }), active: f.tab === "all", label: t("tabAll") },
+          ...shownTabs.map((l) => ({
+            href: href({ tab: l.code }),
+            active: f.tab === l.code,
+            label: l.active ? l.name : `${l.name} (${t("inactive")})`,
+            count: fmtInt(summary.byLocation[l.code] ?? 0),
+          })),
+        ]}
       />
 
       {/* Bộ lọc (GET, chạy không cần JS) + cách xem */}
@@ -154,7 +168,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
         </div>
       </div>
 
-      {products && <ProductView page={products} t={t} th={th} now={now} />}
+      {products && <ProductView page={products} t={t} th={th} now={now} warehouses={sellableTabs} />}
       {lots && <LotView page={lots} t={t} th={th} now={now} />}
       <Pager
         page={(products ?? lots)!.page}
@@ -240,7 +254,7 @@ function LotsTable({ lots, t, th, now }: { lots: BalanceRow[]; t: T; th: Thresho
             <td className="px-3 py-1.5">
               <ExpiryTag date={l.expiryDate} status={l.expiryStatus} now={now} t={t} th={th} />
             </td>
-            <td className="px-3 py-1.5">{t(`loc.${l.locationType}`)}</td>
+            <td className="px-3 py-1.5">{l.locationName ?? l.locationCode}</td>
             <td className="px-3 py-1.5">
               <Badge tone={l.stockType === "TESTER" ? "brand" : "neutral"}>{t(l.stockType)}</Badge>
             </td>
@@ -270,18 +284,27 @@ function ProductView({
   t,
   th,
   now,
+  warehouses,
 }: {
   page: Awaited<ReturnType<typeof stockByVariant>>;
   t: T;
   th: Thresholds;
   now: Date;
+  warehouses: StockTab[];
 }) {
+  // SL bán (ngoài chờ kiểm tra, không tester) ở kho không có cột riêng: kho cũ / kho đã ngừng.
+  const other = (c: NonNullable<VariantStockRow["cols"]>) =>
+    c.vn + c.inbound + c.mm - warehouses.reduce((s, w) => s + (c.byLocation[w.code] ?? 0), 0);
+  const showOther = page.rows.some((r) => r.cols && other(r.cols) !== 0);
+  const stockCols = (c: VariantStockRow["cols"]) => [
+    ...warehouses.map((w) => [w.name, c ? (c.byLocation[w.code] ?? 0) : null] as const),
+    ...(showOther ? [[t("colOther"), c ? other(c) : null] as const] : []),
+  ];
   const head = [
     "",
     t("colProduct"),
-    t("colVn"),
-    t("colInbound"),
-    t("colMm"),
+    ...warehouses.map((w) => w.name),
+    ...(showOther ? [t("colOther")] : []),
     t("colTester"),
     t("colReserved"),
     t("colAvailable"),
@@ -321,9 +344,7 @@ function ProductView({
                         </div>
                       </div>
                     </Td>
-                    {c ? num(c.vn) : dash}
-                    {c ? num(c.inbound) : dash}
-                    {c ? num(c.mm) : dash}
+                    {stockCols(c).map(([label, v]) => (v == null ? <Td key={label} className="text-right text-muted-foreground">—</Td> : <Td key={label} className="text-right tabular-nums">{fmtInt(v)}</Td>))}
                     {c ? num(c.tester, true) : dash}
                     {num(r.reserved, true)}
                     <Td className={cn("text-right font-medium tabular-nums", r.available === 0 && "text-destructive")}>
@@ -364,14 +385,8 @@ function ProductView({
                   <div className="font-mono text-[11px] text-muted-foreground">{sub(r)}</div>
                 </div>
               </div>
-              <div className="mt-2 grid grid-cols-4 gap-1 text-center text-[11px]">
-                {(
-                  [
-                    [t("colVn"), c?.vn],
-                    [t("colInbound"), c?.inbound],
-                    [t("colMm"), c?.mm],
-                  ] as const
-                ).map(([label, v]) => (
+              <div className="mt-2 grid grid-cols-3 gap-1 text-center text-[11px]">
+                {stockCols(c).map(([label, v]) => (
                   <div key={label} className="rounded bg-muted/60 py-1">
                     <div className="text-muted-foreground">{label}</div>
                     <div className="text-[13px] font-medium tabular-nums">{v == null ? "—" : fmtInt(v)}</div>
@@ -430,7 +445,7 @@ function LotView({ page, t, th, now }: { page: Awaited<ReturnType<typeof stockLo
           <Td>
             <ExpiryTag date={r.expiryDate} status={r.expiryStatus} now={now} t={t} th={th} />
           </Td>
-          <Td className="font-mono text-xs">{r.locationCode}</Td>
+          <Td className="text-xs">{r.locationName}</Td>
           <Td>
             <Badge tone={r.stockType === "TESTER" ? "brand" : "neutral"}>{t(r.stockType)}</Badge>
           </Td>

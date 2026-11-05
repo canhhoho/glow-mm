@@ -68,14 +68,13 @@ async function seedCatalog() {
     await prisma.setting.upsert({ where: { key }, update: {}, create: { key, value: value as never } });
   }
 
-  // ── Kho & vị trí ──
-  const vn = await prisma.warehouse.create({ data: { code: "VN-HCM", name: "Kho TP.HCM", country: "VN" } });
+  // ── Kho (P24): hai kho bán ở Myanmar, mỗi kho một cách tính giá + khu chờ kiểm tra hàng trả ──
   const mm = await prisma.warehouse.create({ data: { code: "MM-YGN", name: "Yangon Warehouse", country: "MM" } });
-  await prisma.location.create({ data: { code: "VN-STOCK", name: "Kho VN", type: "VN_STOCK", warehouseId: vn.id } });
-  await prisma.location.create({ data: { code: "IN-TRANSIT", name: "Đang vận chuyển", type: "IN_TRANSIT" } });
-  await prisma.location.create({ data: { code: "CUSTOMS", name: "Hải quan", type: "CUSTOMS" } });
+  const tham = await prisma.location.create({
+    data: { code: "THAM", name: "Kho Thắm", type: "MM_STOCK", warehouseId: mm.id, sellable: true, pricingMode: "VN_IMPORT" },
+  });
   await prisma.location.create({
-    data: { code: "MM-STOCK", name: "Kho Yangon", type: "MM_STOCK", warehouseId: mm.id, sellable: true },
+    data: { code: "CHI", name: "Kho Chi", type: "MM_STOCK", warehouseId: mm.id, sellable: true, pricingMode: "LOCAL_MMK" },
   });
   await prisma.location.create({ data: { code: "MM-QC", name: "Chờ kiểm tra", type: "QUARANTINE", warehouseId: mm.id } });
 
@@ -127,6 +126,7 @@ async function seedCatalog() {
         slug: p.slug,
         brandId: p.brandId,
         categoryId: p.categoryId,
+        stockLocationId: tham.id,
         storageNote: p.storageNote,
         published: true,
         translations: {
@@ -289,7 +289,7 @@ async function seedStock() {
     where: { note: "Tỷ giá mẫu cho dev" },
     orderBy: { createdAt: "asc" },
   });
-  const loc = { mm: await prisma.location.findUniqueOrThrow({ where: { code: "MM-STOCK" } }) };
+  const loc = { mm: await prisma.location.findUniqueOrThrow({ where: { code: "THAM" } }) };
   const shipment = await prisma.inboundShipment.findUniqueOrThrow({ where: { code: "SH-2026-001" } });
   const allVariants = await prisma.variant.findMany();
 
@@ -386,7 +386,7 @@ async function seedDemoOrders() {
   const DAY = 86_400_000;
   const ago = (days: number) => new Date(Date.now() - days * DAY);
   const admin = { userId: STAFF[0].id, role: "ADMIN" as const };
-  const mm = await prisma.location.findUniqueOrThrow({ where: { code: "MM-STOCK" } });
+  const mm = await prisma.location.findUniqueOrThrow({ where: { code: "THAM" } });
   const qc = await prisma.location.findUniqueOrThrow({ where: { code: "MM-QC" } });
   const id = async (sku: string) => (await prisma.variant.findUniqueOrThrow({ where: { sku } })).id;
 
@@ -493,7 +493,7 @@ const ago = (days: number) => new Date(Date.now() - days * 86_400_000);
 async function completeDemo(orderId: string, days: number) {
   const { transitionOrder } = await import("../src/server/orders/transitions");
   const admin = { userId: STAFF[0].id, role: "ADMIN" as const };
-  const mm = await prisma.location.findUniqueOrThrow({ where: { code: "MM-STOCK" } });
+  const mm = await prisma.location.findUniqueOrThrow({ where: { code: "THAM" } });
   for (const [step, back] of [["confirmCod", 2], ["ship", 1], ["complete", 0]] as const) {
     const extra = step === "ship" ? { fromLocationId: mm.id, carrier: "Royal Express" } : {};
     await transitionOrder(orderId, step, admin, extra, ago(days + back));

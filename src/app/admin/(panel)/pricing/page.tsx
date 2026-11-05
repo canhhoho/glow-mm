@@ -1,15 +1,17 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
-import { createRateAction, previewRunAction } from "@/server/pricing/actions";
+import { createRateAction } from "@/server/pricing/actions";
 import {
   countPreviewRuns,
+  lastShipRate,
   listPriceHistory,
   listRates,
   listRuns,
   pricingFilterOptions,
-  variantsWithoutCost,
+  pricingGaps,
 } from "@/server/pricing/queries";
+import { PricingRunForm } from "@/components/admin/pricing-run-form";
 import { getNumberSetting } from "@/server/settings";
 import { ActionForm } from "@/components/admin/action-form";
 import { RateInputs } from "@/components/admin/rate-inputs";
@@ -101,69 +103,43 @@ async function RatesTab() {
 }
 
 async function RunsTab() {
-  const [t, rates, runs, options, noCost, roundTo] = await Promise.all([
+  const [t, rates, runs, options, gaps, roundTo, lastShip] = await Promise.all([
     getTranslations("Pricing"),
     listRates(),
     listRuns(),
     pricingFilterOptions(),
-    variantsWithoutCost(),
+    pricingGaps(),
     getNumberSetting("pricing.roundTo"),
+    lastShipRate(),
   ]);
+  const gapLine = (label: string, skus: string[]) =>
+    skus.length > 0 && (
+      <p className="text-xs break-words text-muted-foreground">
+        {label} ({skus.length}): <span className="font-mono">{skus.slice(0, 40).join(", ")}{skus.length > 40 ? " …" : ""}</span>
+      </p>
+    );
   return (
     <>
       <Section title={t("newRun")} className="max-w-3xl">
-        <p className="text-xs text-muted-foreground">{t("formula")}</p>
-        {rates.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("noRate")}</p>
-        ) : (
-          <ActionForm action={previewRunAction} submitLabel={t("preview")} className="grid gap-3 sm:grid-cols-2">
-            <label className="grid content-start gap-1 text-sm">
-              <span className="text-muted-foreground">{t("rate")}</span>
-              <select name="rateId" defaultValue={rates[0].id} className={fieldClass}>
-                {rates.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    1 MMK = {rateDisplay(r).vndPerMmk} VND · {fmtDate(r.effectiveAt)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid content-start gap-1 text-sm">
-              <span className="text-muted-foreground">{t("marginPct")}</span>
-              <input name="marginPct" required inputMode="decimal" placeholder="40" className={fieldClass} />
-            </label>
-            <label className="grid content-start gap-1 text-sm">
-              <span className="text-muted-foreground">{t("roundTo")}</span>
-              <input name="roundTo" type="number" min={1} defaultValue={roundTo} className={fieldClass} />
-            </label>
-            <label className="grid content-start gap-1 text-sm">
-              <span className="text-muted-foreground">{t("category")}</span>
-              <select name="categoryId" defaultValue="" className={fieldClass}>
-                <option value="">{t("all")}</option>
-                {options.categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid content-start gap-1 text-sm">
-              <span className="text-muted-foreground">{t("brand")}</span>
-              <select name="brandId" defaultValue="" className={fieldClass}>
-                <option value="">{t("all")}</option>
-                {options.brands.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </ActionForm>
-        )}
-        {noCost.length > 0 && (
-          <p className="text-xs break-words text-muted-foreground">
-            {t("noCost")}: <span className="font-mono">{noCost.join(", ")}</span>
-          </p>
-        )}
+        <PricingRunForm
+          warehouses={options.warehouses}
+          rates={rates.map((r) => ({ id: r.id, label: `1 MMK = ${rateDisplay(r).vndPerMmk} VND · ${fmtDate(r.effectiveAt)}` }))}
+          categories={options.categories}
+          brands={options.brands}
+          roundTo={roundTo}
+          lastShip={lastShip}
+        />
+        {/* P24: biến thể bị bỏ qua khi tính giá — theo từng kho. */}
+        {gaps.map((g) => (
+          <div key={g.location.id} className="space-y-0.5">
+            {(g.missingCost.length > 0 || g.missingWeight.length > 0 || g.missingProfit.length > 0) && (
+              <p className="text-xs font-medium">{g.location.name}</p>
+            )}
+            {gapLine(t("noCost"), g.missingCost)}
+            {gapLine(t("noWeight"), g.missingWeight)}
+            {gapLine(t("noProfit"), g.missingProfit)}
+          </div>
+        ))}
       </Section>
 
       <section className="space-y-3">
@@ -171,8 +147,8 @@ async function RunsTab() {
         <DataTable
           stack
           empty={t("empty")}
-          numeric={[3]}
-          head={[t("created"), t("rate"), t("marginPct"), t("lines"), t("status")]}
+          numeric={[4]}
+          head={[t("created"), t("warehouse"), t("rate"), t("marginPct"), t("lines"), t("status")]}
         >
           {runs.map((r) => (
             <tr key={r.id}>
@@ -181,10 +157,12 @@ async function RunsTab() {
                   {fmtDateTime(r.createdAt)}
                 </Link>
               </Td>
+              <Td label={t("warehouse")}>{r.location?.name ?? "—"}</Td>
               <Td label={t("rate")} className="tabular-nums">
-                1 MMK = {rateDisplay(r.rate).vndPerMmk} VND
+                {r.rate ? `1 MMK = ${rateDisplay(r.rate).vndPerMmk} VND` : "—"}
+                {r.shipMmkPerKg != null && <div className="text-xs text-muted-foreground">{t("shipShort", { n: fmtInt(r.shipMmkPerKg) })}</div>}
               </Td>
-              <Td label={t("marginPct")}>{r.marginPct.toString()}%</Td>
+              <Td label={t("marginPct")}>{r.marginPct != null ? `${r.marginPct.toString()}%` : t("fixedProfit")}</Td>
               <Td label={t("lines")} className="tabular-nums md:text-right">
                 {r._count.lines}
               </Td>

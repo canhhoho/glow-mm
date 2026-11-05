@@ -19,6 +19,8 @@ export type BalanceRow = {
   landedCostMmk: number | null;
   locationId: string;
   locationCode: string;
+  /** Tên kho (P24: hiển thị theo kho, không theo loại). Thiếu → dùng mã. */
+  locationName?: string;
   locationType: LocationTypeKey;
   /** Vị trí bán được (kho MM). */
   sellable: boolean;
@@ -41,6 +43,8 @@ export type StockSummary = {
   near: { units: number; lots: number };
   blocked: { units: number; lots: number };
   byLocationType: Record<LocationTypeKey, number>;
+  /** SL theo mã kho (tab trang Tồn kho, P24). */
+  byLocation: Record<string, number>;
 };
 
 const isInbound = (t: LocationTypeKey) => t === "IN_TRANSIT" || t === "CUSTOMS";
@@ -60,11 +64,13 @@ export function summarizeStock(rows: BalanceRow[], now: Date, t: Thresholds): St
     near: { units: 0, lots: 0 },
     blocked: { units: 0, lots: 0 },
     byLocationType,
+    byLocation: {},
   };
 
   for (const r of rows) {
     if (r.qty <= 0) continue;
     byLocationType[r.locationType] += r.qty;
+    s.byLocation[r.locationCode] = (s.byLocation[r.locationCode] ?? 0) + r.qty;
     if (r.landedCostMmk == null) s.unvaluedUnits += r.qty;
     else s.valueMmk += r.qty * r.landedCostMmk;
     if (isInbound(r.locationType)) {
@@ -98,6 +104,8 @@ export type VariantStockCols = {
   mm: number;
   tester: number;
   quarantine: number;
+  /** Tồn SELLABLE (ngoài khu chờ kiểm tra) theo mã kho — cột theo kho ở trang Tồn kho (P24). */
+  byLocation: Record<string, number>;
   valueMmk: number;
   /** Có SL thuộc lô chưa phân bổ chi phí (giá trị chưa đủ). */
   unvalued: boolean;
@@ -112,7 +120,7 @@ export function stockByVariantCols(rows: BalanceRow[]): Map<string, VariantStock
   for (const r of rows) {
     let v = out.get(r.variantId);
     if (!v) {
-      v = { vn: 0, inbound: 0, mm: 0, tester: 0, quarantine: 0, valueMmk: 0, unvalued: false, earliest: null, lots: [] };
+      v = { vn: 0, inbound: 0, mm: 0, tester: 0, quarantine: 0, byLocation: {}, valueMmk: 0, unvalued: false, earliest: null, lots: [] };
       out.set(r.variantId, v);
     }
     v.lots.push(r);
@@ -129,6 +137,7 @@ export function stockByVariantCols(rows: BalanceRow[]): Map<string, VariantStock
     if (r.locationType === "VN_STOCK") v.vn += r.qty;
     else if (isInbound(r.locationType)) v.inbound += r.qty;
     else v.mm += r.qty;
+    v.byLocation[r.locationCode] = (v.byLocation[r.locationCode] ?? 0) + r.qty;
     if (r.qty > 0 && r.expiryDate && (!v.earliest || r.expiryDate < v.earliest.expiryDate)) {
       v.earliest = { lotNo: r.lotNo, expiryDate: r.expiryDate };
     }

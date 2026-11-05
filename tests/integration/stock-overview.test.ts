@@ -112,7 +112,9 @@ describe("Trang Tồn kho — số liệu khớp sổ kho", () => {
     expect(byVariant.rows.map((r) => r.variantId)).toEqual([f.variantId]);
 
     // Giá trị lạ trên URL → mặc định.
-    expect(parseStockFilter({ tab: "XYZ", expiry: "?", stockType: "nope", page: "-3" })).toEqual({ tab: "all", page: 1 });
+    expect(parseStockFilter({ tab: "x y!", expiry: "?", stockType: "nope", page: "-3" })).toEqual({ tab: "all", page: 1 });
+    // P24: tab = mã kho → lọc theo kho.
+    expect(parseStockFilter({ tab: f.mm.code }).tab).toBe(f.mm.code);
   });
 
   it("lịch sử lô: tồn luỹ kế khớp tồn hiện tại theo vị trí", async () => {

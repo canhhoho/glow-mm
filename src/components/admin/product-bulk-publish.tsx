@@ -3,7 +3,8 @@
 import { useActionState, useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { Notice } from "@/components/admin/ui";
+import { Notice, fieldClass } from "@/components/admin/ui";
+import { cn } from "@/lib/utils";
 import { productBulkAction, type ProductBulkState } from "@/server/catalog/actions";
 
 export const BULK_FORM_ID = "product-bulk-publish";
@@ -42,7 +43,15 @@ export function RowProductAction({ id, name, kind }: { id: string; name: string;
 }
 
 /** Thanh chọn tất cả + nút Hiện / Ẩn / Xoá (hoặc Khôi phục khi xem SP ngừng kinh doanh) cho các SP đã tick. */
-export function BulkPublishBar({ total, archivedView = false }: { total: number; archivedView?: boolean }) {
+export function BulkPublishBar({
+  total,
+  archivedView = false,
+  warehouses = [],
+}: {
+  total: number;
+  archivedView?: boolean;
+  warehouses?: { id: string; name: string }[];
+}) {
   const t = useTranslations("Products");
   const [selected, setSelected] = useState(0);
   const allRef = useRef<HTMLInputElement>(null);
@@ -116,13 +125,29 @@ export function BulkPublishBar({ total, archivedView = false }: { total: number;
               <Button type="submit" name="intent" value="delete" size="lg" variant="destructive" disabled={none} onClick={confirmOr(t("deleteConfirm", { count: selected }))}>
                 {t("bulkDelete")}
               </Button>
+              {warehouses.length > 1 && (
+                <span className="flex items-center gap-1">
+                  <select name="toLocationId" aria-label={t("moveTo")} defaultValue={warehouses[0].id} className={cn(fieldClass, "w-auto")}>
+                    {warehouses.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name}
+                      </option>
+                    ))}
+                  </select>
+                  <Button type="submit" name="intent" value="move" size="lg" variant="outline" disabled={none} onClick={confirmOr(t("moveConfirm", { count: selected }))}>
+                    {t("bulkMove")}
+                  </Button>
+                </span>
+              )}
             </>
           )}
         </div>
       </div>
       {state?.error && <Notice tone="danger">{state.error}</Notice>}
       {done?.kind === "delete" && <Notice>{t("deleteDone", { deleted: done.deleted, archived: done.archived })}</Notice>}
-      {done && done.kind !== "delete" && <Notice>{t(done.kind === "restore" ? "restoreDone" : "bulkDone", { count: done.count })}</Notice>}
+      {done && done.kind !== "delete" && (
+        <Notice>{t(done.kind === "restore" ? "restoreDone" : done.kind === "move" ? "moveDone" : "bulkDone", { count: done.count })}</Notice>
+      )}
     </form>
   );
 }

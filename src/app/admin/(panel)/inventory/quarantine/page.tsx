@@ -4,7 +4,6 @@ import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { discardAction, restockAction } from "@/server/inventory/actions";
 import { listQuarantine } from "@/server/inventory/quarantine";
-import { sellableLocations } from "@/server/orders/admin-queries";
 import { ActionForm } from "@/components/admin/action-form";
 import { DataTable, fieldClass, Page, PageHeader, Td } from "@/components/admin/ui";
 import { fmtDay, fmtInt } from "@/lib/format";
@@ -12,12 +11,7 @@ import { cn } from "@/lib/utils";
 
 export default async function QuarantinePage() {
   const user = await requirePagePermission("stock:view");
-  const [t, ti, rows, locations] = await Promise.all([
-    getTranslations("Quarantine"),
-    getTranslations("Inventory"),
-    listQuarantine(),
-    sellableLocations(),
-  ]);
+  const [t, ti, rows] = await Promise.all([getTranslations("Quarantine"), getTranslations("Inventory"), listQuarantine()]);
   const canRestock = can(user.role, "stock:transfer");
   const canDiscard = can(user.role, "stock:issue");
 
@@ -55,7 +49,7 @@ export default async function QuarantinePage() {
               </Td>
               <Td>
                 <div className="flex flex-col gap-2">
-                  {canRestock && locations.length > 0 && (
+                  {canRestock && (
                     <ActionForm action={restockAction} submitLabel={t("restock")} okText={t("restocked")} className="flex flex-wrap items-end gap-2">
                       {hidden}
                       <input
@@ -67,13 +61,10 @@ export default async function QuarantinePage() {
                         aria-label={`${t("qty")} ${t("restock")}`}
                         className={cn(fieldClass, "w-20")}
                       />
-                      <select name="toId" aria-label={t("restockTo")} defaultValue={locations[0].id} className={cn(fieldClass, "w-36")}>
-                        {locations.map((l) => (
-                          <option key={l.id} value={l.id}>
-                            {l.code}
-                          </option>
-                        ))}
-                      </select>
+                      {/* P24: nhập lại đúng kho bán của SP (server tự chọn). */}
+                      <span className="self-center text-xs text-muted-foreground">
+                        {t("restockTo")}: {r.warehouse}
+                      </span>
                     </ActionForm>
                   )}
                   {canDiscard && (

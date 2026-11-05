@@ -94,7 +94,7 @@ test("nhập hàng lần đầu: xem trước hai sheet, tạo nháp rồi ghi s
   expect(download.suggestedFilename()).toBe("opening.xlsx");
   const first = fillProductTemplate(await readFile((await download.path())!), { product_slug: slug, sku, variant_label: "1 unit", name_my: "ပစ္စည်း", name_en: `Opening ${suffix}`, brand: "Sen Việt", category: "skincare", price_mmk: 30000, weight_g: 100, expiry_policy: "NONE", pao_months: 12 });
   const filled = fillProductTemplate(first, { sku, lot_no: "OPEN", qty: 3, unit_cost_vnd: 100000, inbound_unit_vnd: 5000, selling_fee_mmk: 1000, expiry_status: "NONE" }, "stock", 3);
-  await page.getByRole("combobox", { name: "Kho mặc định khi ô mã kho để trống", exact: true }).selectOption("MM-STOCK");
+  await page.getByRole("combobox", { name: "Kho mặc định khi ô mã kho để trống", exact: true }).selectOption("THAM");
   await page.getByLabel("File nhập hàng lần đầu", { exact: true }).setInputFiles({ name: "opening.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer: filled });
   await page.getByRole("button", { name: "Kiểm tra và xem trước", exact: true }).click();
   await expect(page.getByText("1 sản phẩm · 1 dòng tồn đã kiểm tra", { exact: true })).toBeVisible({ timeout: 20_000 });

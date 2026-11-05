@@ -5,7 +5,7 @@ import { sellableBatchWhere } from "@/server/inventory/fefo";
 
 /**
  * Tồn khả dụng để bán theo biến thể:
- *   Σ tồn SELLABLE tại vị trí bán được, chỉ lô còn hạn ≥ ngưỡng (blockDays)
+ *   Σ tồn SELLABLE tại kho bán của SP (`Product.stockLocationId`), chỉ lô còn hạn ≥ ngưỡng (blockDays)
  *   − Σ giữ hàng ACTIVE chưa hết hạn.
  * Giữ hàng đã quá `expiresAt` coi như đã nhả ngay lúc đọc (không phụ thuộc cron).
  * Combo = số bộ tối đa ghép được từ khả dụng của thành phần.
@@ -24,9 +24,13 @@ export async function baseAvailability(tx: Tx, variantIds: string[], opts: Avail
       location: { sellable: true },
       batch: { variantId: { in: variantIds }, ...sellableBatchWhere(opts.now, opts.blockDays) },
     },
-    select: { qty: true, batch: { select: { variantId: true } } },
+    select: { qty: true, locationId: true, batch: { select: { variantId: true, variant: { select: { product: { select: { stockLocationId: true } } } } } } },
   });
-  for (const b of balances) result.set(b.batch.variantId, (result.get(b.batch.variantId) ?? 0) + b.qty);
+  // P24: chỉ tồn ở đúng kho bán của SP mới bán được (hàng nằm nhầm kho phải chuyển về trước).
+  for (const b of balances) {
+    if (b.locationId !== b.batch.variant.product.stockLocationId) continue;
+    result.set(b.batch.variantId, (result.get(b.batch.variantId) ?? 0) + b.qty);
+  }
 
   const held = await tx.reservation.groupBy({
     by: ["variantId"],

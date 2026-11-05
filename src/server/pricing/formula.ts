@@ -85,6 +85,49 @@ export function suggestPrice(input: RateValue & { costVnd: number; marginPct: st
   return Number(steps * BigInt(roundTo));
 }
 
+const GRAMS_PER_KG = BigInt(1000);
+
+function assertWhole(n: number, label: string) {
+  if (!Number.isInteger(n) || n < 0) throw new Error(`${label} phải là số nguyên ≥ 0`);
+}
+
+/** Phí ship MMK của một đơn vị = đơn giá MMK/kg × khối lượng (g) / 1000, làm tròn nửa lên (chỉ để hiển thị). */
+export function shippingMmk(shipMmkPerKg: number, weightGrams: number): number {
+  assertWhole(shipMmkPerKg, "Phí ship MMK/kg");
+  assertWhole(weightGrams, "Khối lượng (g)");
+  return Number((BigInt(shipMmkPerKg) * BigInt(weightGrams) * TWO + GRAMS_PER_KG) / (GRAMS_PER_KG * TWO));
+}
+
+/**
+ * Kho hàng nhập VN (P24 — Kho Thắm): giá = vốn VND × tỷ giá × (1 + % lãi) + ship MMK/kg × khối lượng,
+ * % lãi chỉ tính trên giá hàng; cộng chính xác (phân số) rồi làm tròn LÊN bội số `roundTo` một lần.
+ */
+export function priceVnImport(
+  input: RateValue & { costVnd: number; marginPct: string | number; shipMmkPerKg: number; weightGrams: number; roundTo: number },
+): number {
+  const { costVnd, shipMmkPerKg, weightGrams, roundTo } = input;
+  assertWhole(costVnd, "Vốn VND");
+  assertWhole(shipMmkPerKg, "Phí ship MMK/kg");
+  assertWhole(weightGrams, "Khối lượng (g)");
+  if (!Number.isInteger(roundTo) || roundTo <= 0) throw new Error("Bội số làm tròn phải > 0");
+  const rate = rateFraction(input);
+  const margin = parseScaled(input.marginPct, 2);
+  // hàng: cost × num/den × (10000+margin)/10000 ; ship: shipPerKg × g / 1000 → mẫu chung den × 10000 × 1000
+  const goods = BigInt(costVnd) * rate.num * (PCT_SCALE + margin) * GRAMS_PER_KG;
+  const ship = BigInt(shipMmkPerKg) * BigInt(weightGrams) * rate.den * PCT_SCALE;
+  const den = rate.den * PCT_SCALE * GRAMS_PER_KG * BigInt(roundTo);
+  return Number(((goods + ship + den - ONE) / den) * BigInt(roundTo));
+}
+
+/** Kho mua tại Myanmar (P24 — Kho Chi): giá = vốn MMK lô mới nhất + lãi cố định MMK của SP, làm tròn LÊN bội số `roundTo`. */
+export function priceLocalMmk(input: { costMmk: number; fixedProfitMmk: number; roundTo: number }): number {
+  const { costMmk, fixedProfitMmk, roundTo } = input;
+  assertWhole(costMmk, "Vốn MMK");
+  assertWhole(fixedProfitMmk, "Lãi cố định MMK");
+  if (!Number.isInteger(roundTo) || roundTo <= 0) throw new Error("Bội số làm tròn phải > 0");
+  return Math.ceil((costMmk + fixedProfitMmk) / roundTo) * roundTo;
+}
+
 /** % chênh lệch giá mới so với giá cũ (làm tròn 1 chữ số), để cảnh báo thay đổi lớn. */
 export function changePct(oldPrice: number, newPrice: number): number | null {
   if (oldPrice <= 0) return null;

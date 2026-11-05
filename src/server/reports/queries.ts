@@ -129,29 +129,50 @@ export async function slowMovers(now = new Date()) {
   };
 }
 
-/** Tồn theo loại vị trí (số lượng + giá trị theo landed cost MMK) — khớp tổng sổ cái. */
-export async function stockByLocationType() {
-  const rows = await prisma.stockBalance.findMany({
-    where: { qty: { not: 0 } },
-    select: {
-      qty: true,
-      stockType: true,
-      location: { select: { type: true } },
-      batch: { select: { landedCostMmk: true } },
-    },
-  });
-  const out = new Map<string, { type: string; qty: number; testerQty: number; valueMmk: number; missingCost: number }>();
+/**
+ * Tồn theo kho (P24; số lượng + giá trị theo landed cost MMK) — khớp tổng sổ cái.
+ * Gồm kho đang dùng và kho đã ngừng nhưng còn tồn; thứ tự kho bán → chờ kiểm tra → kho cũ.
+ */
+export async function stockByLocation() {
+  const [locations, rows] = await Promise.all([
+    prisma.location.findMany({
+      orderBy: [{ pricingMode: "asc" }, { code: "asc" }],
+      select: { id: true, code: true, name: true, type: true, sellable: true, active: true },
+    }),
+    prisma.stockBalance.findMany({
+      where: { qty: { not: 0 } },
+      select: { qty: true, stockType: true, locationId: true, batch: { select: { landedCostMmk: true } } },
+    }),
+  ]);
+  const out = new Map<string, { qty: number; testerQty: number; valueMmk: number; missingCost: number }>();
   for (const r of rows) {
-    const cur = out.get(r.location.type) ?? { type: r.location.type, qty: 0, testerQty: 0, valueMmk: 0, missingCost: 0 };
+    const cur = out.get(r.locationId) ?? { qty: 0, testerQty: 0, valueMmk: 0, missingCost: 0 };
     if (r.stockType === "TESTER") cur.testerQty += r.qty;
     else cur.qty += r.qty;
     if (r.batch.landedCostMmk == null) cur.missingCost += r.qty;
     else cur.valueMmk += r.qty * r.batch.landedCostMmk;
-    out.set(r.location.type, cur);
+    out.set(r.locationId, cur);
   }
-  return ["VN_STOCK", "IN_TRANSIT", "CUSTOMS", "MM_STOCK", "QUARANTINE"].map(
-    (t) => out.get(t) ?? { type: t, qty: 0, testerQty: 0, valueMmk: 0, missingCost: 0 },
-  );
+  const rank = (l: { sellable: boolean; type: string }) => (l.sellable ? 0 : l.type === "QUARANTINE" ? 1 : 2);
+  const zero = () => ({ qty: 0, testerQty: 0, valueMmk: 0, missingCost: 0 });
+  const rowsOut: { code: string | null; name: string | null; type: string | null; active: boolean; qty: number; testerQty: number; valueMmk: number; missingCost: number }[] = locations
+    .filter((l) => l.active)
+    .sort((a, b) => rank(a) - rank(b))
+    .map((l) => ({ code: l.code, name: l.name, type: l.type, active: true, ...(out.get(l.id) ?? zero()) }));
+  // Kho đã ngừng dùng nhưng còn tồn → gộp một dòng (code null) để bảng không dài theo số kho cũ.
+  const inactive = locations.filter((l) => !l.active && out.has(l.id));
+  if (inactive.length) {
+    const sum = zero();
+    for (const l of inactive) {
+      const s = out.get(l.id)!;
+      sum.qty += s.qty;
+      sum.testerQty += s.testerQty;
+      sum.valueMmk += s.valueMmk;
+      sum.missingCost += s.missingCost;
+    }
+    rowsOut.push({ code: null, name: null, type: null, active: false, ...sum });
+  }
+  return rowsOut;
 }
 
 /** Chuyến hàng đã đi, chưa đến. */

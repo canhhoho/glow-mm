@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import type { Tx } from "@/server/inventory/ledger";
 import { parseCsvObjects, toCsv } from "@/lib/csv";
 import { vndToMmk } from "@/server/inventory/landed-cost";
-import { productSchema, importProductsCsv, importOpeningStockCsv, STOCK_CSV_COLUMNS } from "./products";
+import { productSchema, importProductsCsv, importOpeningStockCsv, PRODUCT_CSV_COLUMNS, STOCK_CSV_COLUMNS } from "./products";
 
 export const openingInputSchema = z.object({
   products: z.string().min(1).max(2_000_000),
@@ -37,12 +37,19 @@ export async function previewOpening(raw: unknown, db: Tx = prisma): Promise<Ope
     db.category.findMany({ select: { id: true, slug: true } }),
     db.variant.findMany({ where: { sku: { in: products.map((r) => r.sku) } }, select: { sku: true } }),
     db.product.findMany({ where: { slug: { in: products.map((r) => r.product_slug) } }, select: { slug: true } }),
-    db.location.findMany({ select: { code: true } }),
+    db.location.findMany({ where: { active: true }, select: { code: true, sellable: true, pricingMode: true } }),
     db.exchangeRate.findFirst({ where: { effectiveAt: { lte: new Date() } }, orderBy: [{ effectiveAt: "desc" }, { id: "desc" }] }),
   ]);
   const errors: string[] = [];
   const bySku = new Map<string, Record<string, string>>();
   const byProduct = new Map<string, Record<string, string>>();
+  // Kho bán của SP (P24): cột warehouse_code; trống → kho của dòng tồn đầu tiên (nếu là kho bán) → kho mặc định đã chọn.
+  const sellable = new Set(locations.filter((l) => l.sellable).map((l) => l.code));
+  const stockLocOf = (sku: string) => {
+    const s = stock.find((x) => x.sku === sku);
+    return (s?.location_code || input.locationCode).trim().toUpperCase();
+  };
+  const warehouseOf = new Map<string, string>(); // product_slug → mã kho bán
   for (const [i, r] of products.entries()) {
     try {
       const category = categories.find((c) => c.slug === r.category);
@@ -55,8 +62,16 @@ export async function previewOpening(raw: unknown, db: Tx = prisma): Promise<Ope
       if (bySku.has(r.sku)) throw new Error(`SKU ${r.sku} bị trùng trong file`);
       if (existing.some((v) => v.sku === r.sku) || existingProducts.some((p) => p.slug === r.product_slug)) throw new Error("SKU hoặc mã sản phẩm đã có. Luồng lần đầu chỉ tạo hàng mới; dùng mục nhập riêng để cập nhật.");
       const first = byProduct.get(r.product_slug);
-      const shared = ["brand", "category", "name_my", "name_en", "description_my", "description_en", "usage_my", "usage_en", "ingredients", "storage_note", "expiry_policy", "pao_months"];
+      const shared = ["brand", "category", "name_my", "name_en", "description_my", "description_en", "usage_my", "usage_en", "ingredients", "storage_note", "expiry_policy", "pao_months", "warehouse_code"];
       if (first && shared.some((key) => (first[key] || "") !== (r[key] || ""))) throw new Error("Thông tin chung giữa các biến thể cùng sản phẩm không thống nhất");
+      const wanted = (r.warehouse_code || "").trim().toUpperCase();
+      if (wanted && !sellable.has(wanted)) throw new Error(`Không có kho bán ${wanted}`);
+      if (!warehouseOf.has(r.product_slug)) {
+        const fromStock = stockLocOf(r.sku);
+        const code = wanted || (sellable.has(fromStock) ? fromStock : sellable.has(input.locationCode) ? input.locationCode : "");
+        if (!code) throw new Error("Chưa xác định được kho bán: điền cột Mã kho bán (warehouse_code)");
+        warehouseOf.set(r.product_slug, code);
+      }
       byProduct.set(r.product_slug, r);
       bySku.set(r.sku, r);
     } catch (e) { errors.push(`San pham · dòng ${input.productLines?.[i] ?? i + 2} · ${r.sku}: ${errorText(e)}`); }
@@ -68,8 +83,10 @@ export async function previewOpening(raw: unknown, db: Tx = prisma): Promise<Ope
     try {
       const product = bySku.get(r.sku);
       if (!product) throw new Error("SKU phải có trong sheet San pham và không có lỗi");
-      const location = r.location_code || input.locationCode;
-      if (!locations.some((l) => l.code === location)) throw new Error(`Mã kho ${location} không tồn tại`);
+      const location = (r.location_code || input.locationCode).trim().toUpperCase();
+      if (!locations.some((l) => l.code === location)) throw new Error(`Mã kho ${location} không tồn tại hoặc đã ngừng dùng`);
+      const home = warehouseOf.get(product.product_slug);
+      if (sellable.has(location) && location !== home) throw new Error(`Sản phẩm thuộc kho ${home}; tồn bán phải nhập vào đúng kho ${home}`);
       z.string().trim().min(1).max(50).parse(r.lot_no);
       const status = z.enum(["DATED", "NONE", "UNKNOWN"]).parse(r.expiry_status || product.expiry_policy || "DATED");
       if (status === "NONE" && product.expiry_policy !== "NONE") throw new Error("Sản phẩm có quản lý hạn: chọn DATED hoặc UNKNOWN");
@@ -79,9 +96,15 @@ export async function previewOpening(raw: unknown, db: Tx = prisma): Promise<Ope
       if (status !== "DATED" && r.expiry_date) throw new Error("Để trống ngày hết hạn với NONE hoặc UNKNOWN");
       if (r.mfg_date && (!date(r.mfg_date) || (r.expiry_date && r.mfg_date > r.expiry_date))) throw new Error("Ngày sản xuất không hợp lệ hoặc sau hạn sử dụng");
       const qty = positive.parse(r.qty);
-      const purchase = money.parse(r.unit_cost_vnd);
-      if (!r.unit_cost_vnd.trim()) throw new Error("Chưa điền giá mua");
-      const inbound = money.parse(r.inbound_unit_vnd || 0);
+      // P24: kho mua tại Myanmar (LOCAL_MMK) nhập giá mua MMK, không phí đưa về kho VND; kho hàng nhập VN như cũ.
+      const mmk = locations.find((l) => l.code === home)?.pricingMode === "LOCAL_MMK";
+      const vndText = (r.unit_cost_vnd ?? "").trim();
+      const mmkText = (r.unit_cost_mmk ?? "").trim();
+      if (mmk ? !mmkText : !vndText) throw new Error(mmk ? `Sản phẩm thuộc kho ${home}: điền Giá mua (MMK/đv)` : "Chưa điền giá mua (VND/đv)");
+      if (mmk ? vndText : mmkText) throw new Error(mmk ? `Kho ${home} chỉ nhập giá mua MMK, để trống cột VND` : `Kho ${home} nhập giá mua VND, để trống cột MMK`);
+      if (mmk && r.inbound_unit_vnd && Number(r.inbound_unit_vnd) !== 0) throw new Error("Hàng mua bằng MMK không có phí đưa về kho VND");
+      const purchase = money.parse(mmk ? mmkText : vndText);
+      const inbound = mmk ? 0 : money.parse(r.inbound_unit_vnd || 0);
       const landed = money.parse(purchase + inbound);
       const fee = money.parse(r.selling_fee_mmk || 0);
       const type = z.enum(["SELLABLE", "TESTER"]).parse(r.stock_type || "SELLABLE");
@@ -89,16 +112,27 @@ export async function previewOpening(raw: unknown, db: Tx = prisma): Promise<Ope
       if (seen.has(key)) throw new Error("Trùng SKU, kho, lô và loại hàng; gộp số lượng thành một dòng");
       seen.add(key);
       const previous = normalized.find((s) => s.sku === r.sku && s.lot_no === r.lot_no);
-      if (previous && ["expiry_date", "mfg_date", "unit_cost_vnd"].some((k) => (previous[k] || "") !== (r[k] || ""))) throw new Error("Cùng SKU và lô phải có cùng hạn, ngày sản xuất và giá mua");
+      if (previous && ["expiry_date", "mfg_date", "unit_cost_vnd", "unit_cost_mmk"].some((k) => (previous[k] || "") !== (r[k] || ""))) throw new Error("Cùng SKU và lô phải có cùng hạn, ngày sản xuất và giá mua");
       if (previous && (previous.expiry_status !== status || previous.inbound_unit_vnd !== String(inbound))) throw new Error("Cùng SKU và lô phải có cùng trạng thái hạn và chi phí đưa về kho");
-      normalized.push({ ...r, location_code: location, expiry_status: status, inbound_unit_vnd: String(inbound), stock_type: type });
-      const cost = rate ? money.parse(vndToMmk(landed, rate)) : null;
+      normalized.push({ ...r, location_code: location, expiry_status: status, inbound_unit_vnd: mmk ? "" : String(inbound), stock_type: type });
+      const cost = mmk ? landed : rate ? money.parse(vndToMmk(landed, rate)) : null;
       rows.push({ sku: r.sku, name: product.name_en, lotNo: r.lot_no, stockType: type, expiryDate: r.expiry_date || null, qty, location, expiryStatus: status, price: Number(product.price_mmk), cost, fee, profit: cost == null ? null : Number(product.price_mmk) - cost - fee });
     } catch (e) { errors.push(`Ton dau ky · dòng ${input.stockLines?.[i] ?? i + 2} · ${r.sku}: ${errorText(e)}`); }
   }
   if (!rate) errors.push("Cần thiết lập tỷ giá đang có hiệu lực trước khi nhập tồn để tính giá vốn MMK.");
   const normalizedStock = toCsv([[...STOCK_CSV_COLUMNS], ...normalized.map((r) => STOCK_CSV_COLUMNS.map((k) => r[k] ?? ""))]);
-  return { input: { ...input, stock: errors.length ? input.stock : normalizedStock, rateId: rate?.id }, errors, rows, products: byProduct.size, rate: rate?.mmkPerVnd.toString() ?? null };
+  // Ghi kho bán đã xác định vào sheet SP → bước xác nhận tạo SP đúng kho.
+  const normalizedProducts = toCsv([
+    [...PRODUCT_CSV_COLUMNS],
+    ...products.map((r) => PRODUCT_CSV_COLUMNS.map((k) => (k === "warehouse_code" ? warehouseOf.get(r.product_slug) ?? "" : r[k] ?? ""))),
+  ]);
+  return {
+    input: { ...input, products: errors.length ? input.products : normalizedProducts, stock: errors.length ? input.stock : normalizedStock, rateId: rate?.id },
+    errors,
+    rows,
+    products: byProduct.size,
+    rate: rate?.mmkPerVnd.toString() ?? null,
+  };
 }
 
 export async function commitOpening(raw: unknown, userId: string) {

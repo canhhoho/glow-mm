@@ -7,8 +7,12 @@ export function productName(translations: { locale: string; name: string }[], fa
   return (translations.find((t) => t.locale === "en") ?? translations[0])?.name ?? fallback;
 }
 
-export async function listLocations() {
-  return prisma.location.findMany({ orderBy: { code: "asc" } });
+/** Kho đang dùng (ô chọn kho ở phiếu kho, nhập Excel). `includeInactive`: cả kho đã ngừng (xuất/chuyển tồn cũ). */
+export async function listLocations(opts: { includeInactive?: boolean } = {}) {
+  return prisma.location.findMany({
+    where: opts.includeInactive ? undefined : { active: true },
+    orderBy: [{ active: "desc" }, { code: "asc" }],
+  });
 }
 
 export async function listVariantsForPicker() {
@@ -28,28 +32,42 @@ export async function listVariantsForPicker() {
 
 /** Biến thể nhập kho được (đang dùng, không phải combo) cho bảng nhập nhanh; `lastCostVnd` = giá mua của lô mới nhất. */
 export async function listVariantsForReceive() {
-  const [variants, lastBatches] = await Promise.all([
+  const [variants, lastVnd, lastMmk] = await Promise.all([
     prisma.variant.findMany({
       where: { active: true, isBundle: false, product: { archivedAt: null } },
       orderBy: { sku: "asc" },
-      include: { product: { include: { translations: true, brand: true } } },
+      include: { product: { include: { translations: true, brand: true, stockLocation: { select: { pricingMode: true } } } } },
     }),
     prisma.batch.findMany({
+      where: { unitCostVnd: { not: null } },
       distinct: ["variantId"],
       orderBy: [{ variantId: "asc" }, { createdAt: "desc" }],
       select: { variantId: true, unitCostVnd: true },
     }),
+    prisma.batch.findMany({
+      where: { unitCostMmk: { not: null } },
+      distinct: ["variantId"],
+      orderBy: [{ variantId: "asc" }, { createdAt: "desc" }],
+      select: { variantId: true, unitCostMmk: true },
+    }),
   ]);
-  const lastCost = new Map(lastBatches.map((b) => [b.variantId, b.unitCostVnd]));
-  return variants.map((v) => ({
-    id: v.id,
-    sku: v.sku,
-    name: productName(v.product.translations, v.product.slug),
-    label: v.label,
-    brand: v.product.brand.name,
-    requiresExpiry: v.product.requiresExpiry,
-    lastCostVnd: lastCost.get(v.id) ?? null,
-  }));
+  const vnd = new Map(lastVnd.map((b) => [b.variantId, b.unitCostVnd]));
+  const mmk = new Map(lastMmk.map((b) => [b.variantId, b.unitCostMmk]));
+  return variants.map((v) => {
+    // P24: loại tiền giá mua theo kho của SP (kho mua tại Myanmar → MMK).
+    const currency = v.product.stockLocation.pricingMode === "LOCAL_MMK" ? ("MMK" as const) : ("VND" as const);
+    return {
+      id: v.id,
+      sku: v.sku,
+      name: productName(v.product.translations, v.product.slug),
+      label: v.label,
+      brand: v.product.brand.name,
+      stockLocationId: v.product.stockLocationId,
+      requiresExpiry: v.product.requiresExpiry,
+      currency,
+      lastCost: (currency === "MMK" ? mmk.get(v.id) : vnd.get(v.id)) ?? null,
+    };
+  });
 }
 export type ReceiveVariant = Awaited<ReturnType<typeof listVariantsForReceive>>[number];
 

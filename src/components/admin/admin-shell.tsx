@@ -25,6 +25,7 @@ import {
   Truck,
   UserRound,
   Users,
+  Warehouse,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -52,6 +53,7 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   handshake: Handshake,
   userCircle: UserRound,
   map: MapPinned,
+  warehouse: Warehouse,
   gear: Settings,
 };
 

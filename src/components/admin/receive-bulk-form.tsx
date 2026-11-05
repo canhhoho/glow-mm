@@ -23,7 +23,8 @@ type Row = {
   expiryStatus: ExpiryStatus;
   expiryDate: string;
   mfgDate: string;
-  unitCostVnd: string;
+  /** Giá mua theo loại tiền của kho SP (VND hoặc MMK, P24). */
+  unitCost: string;
   /** "" = theo giá trị chung. */
   stockType: StockType | "";
 };
@@ -40,7 +41,7 @@ const newRow = (v: ReceiveVariant, key: number, split = false): Row => ({
   expiryStatus: v.requiresExpiry ? "DATED" : "NONE",
   expiryDate: "",
   mfgDate: "",
-  unitCostVnd: v.lastCostVnd == null ? "" : String(v.lastCostVnd),
+  unitCost: v.lastCost == null ? "" : String(v.lastCost),
   stockType: "",
 });
 
@@ -59,10 +60,10 @@ function effective(r: Row, d: Defaults) {
 
 function rowInvalid(r: Row, d: Defaults) {
   const e = effective(r, d);
-  return !Number.isInteger(Number(r.qty)) || !e.lotNo || r.unitCostVnd.trim() === "" || Number(r.unitCostVnd) < 0 || (r.expiryStatus === "DATED" && !e.expiryDate);
+  return !Number.isInteger(Number(r.qty)) || !e.lotNo || r.unitCost.trim() === "" || Number(r.unitCost) < 0 || (r.expiryStatus === "DATED" && !e.expiryDate);
 }
 
-type Location = { id: string; code: string; name: string };
+type Location = { id: string; code: string; name: string; sellable: boolean; pricingMode: "VN_IMPORT" | "LOCAL_MMK" | null };
 
 /** Phiếu nhập nhiều SP: bảng mọi biến thể, chỉ dòng có SL > 0 vào phiếu; dán từ Excel để điền nhanh. */
 export function ReceiveBulkForm({ locations, shipments, variants }: { locations: Location[]; shipments: { id: string; code: string }[]; variants: ReceiveVariant[] }) {
@@ -101,28 +102,41 @@ export function ReceiveBulkForm({ locations, shipments, variants }: { locations:
         const v = byId.get(rs[i].variantId)!;
         let end = i;
         while (end + 1 < rs.length && rs[end + 1].variantId === v.id) end++;
-        return [...rs.slice(0, end + 1), { ...newRow(v, nextKey.current++, true), unitCostVnd: rs[i].unitCostVnd }, ...rs.slice(end + 1)];
+        return [...rs.slice(0, end + 1), { ...newRow(v, nextKey.current++, true), unitCost: rs[i].unitCost }, ...rs.slice(end + 1)];
       }),
     [byId],
   );
   const remove = useCallback((key: number) => setRows((rs) => rs.filter((r) => r.key !== key)), []);
+
+  // P24: nhập vào kho bán → chỉ SP thuộc kho đó (server cũng chặn). Chưa chọn kho → chưa hiện bảng.
+  const toLoc = locations.find((l) => l.id === toId);
+  const inScope = useCallback((v: ReceiveVariant) => !!toLoc && (!toLoc.sellable || v.stockLocationId === toLoc.id), [toLoc]);
 
   const visible = useMemo(() => {
     const needle = fold(q.trim());
     return rows.filter((r) => {
       if (onlyFilled && !hasQty(r)) return false;
       const v = byId.get(r.variantId)!;
+      if (!inScope(v)) return false;
       if (brand && v.brand !== brand) return false;
       return !needle || fold(`${v.sku} ${v.name} ${v.label} ${v.brand}`).includes(needle);
     });
-  }, [rows, q, brand, onlyFilled, byId]);
+  }, [rows, q, brand, onlyFilled, byId, inScope]);
 
-  const filled = rows.filter(hasQty);
+  const filled = rows.filter((r) => hasQty(r) && inScope(byId.get(r.variantId)!));
   const totalQty = filled.reduce((s, r) => s + Number(r.qty), 0);
-  const totalVnd = filled.reduce((s, r) => s + Number(r.qty) * (Number(r.unitCostVnd) || 0), 0);
+  // Tổng tiền theo loại tiền (khu chờ kiểm tra có thể nhận cả SP Kho Thắm (VND) lẫn Kho Chi (MMK)).
+  const totals = filled.reduce<Record<string, number>>((m, r) => {
+    const c = byId.get(r.variantId)!.currency;
+    m[c] = (m[c] ?? 0) + Number(r.qty) * (Number(r.unitCost) || 0);
+    return m;
+  }, {});
+  const money = Object.entries(totals).map(([c, v]) => `${fmtInt(v)} ${c}`).join(" + ") || "0";
 
   const applyPaste = () => {
-    const { rows: pasted, errors } = parseReceivePaste(pasteText, bySku.keys());
+    const scoped = variants.filter(inScope).map((v) => v.sku);
+    const known = new Set(variants.map((v) => v.sku.toUpperCase()));
+    const { rows: pasted, errors } = parseReceivePaste(pasteText, scoped);
     setRows((rs) => {
       const next = [...rs];
       for (const p of pasted) {
@@ -132,7 +146,7 @@ export function ReceiveBulkForm({ locations, shipments, variants }: { locations:
           lotNo: p.lotNo,
           mfgDate: p.mfgDate,
           ...(v.requiresExpiry && { expiryStatus: "DATED" as const, expiryDate: p.expiryDate }),
-          ...(p.unitCostVnd != null && { unitCostVnd: String(p.unitCostVnd) }),
+          ...(p.unitCostVnd != null && { unitCost: String(p.unitCostVnd) }),
           ...(p.stockType && { stockType: p.stockType }),
         };
         // Ghi vào dòng trống (hoặc cùng lô) của SKU; hết thì tách thêm dòng.
@@ -146,7 +160,15 @@ export function ReceiveBulkForm({ locations, shipments, variants }: { locations:
       }
       return next;
     });
-    setPasteMsg({ filled: pasted.length, errors: errors.map((e) => t(`pasteErr.${e.code}`, { line: e.line, value: e.value ?? "" })) });
+    setPasteMsg({
+      filled: pasted.length,
+      errors: errors.map((e) =>
+        // SKU có nhưng thuộc kho khác → báo rõ thay vì "không có SKU".
+        e.code === "sku" && known.has((e.value ?? "").toUpperCase())
+          ? t("pasteErr.otherWarehouse", { line: e.line, value: e.value ?? "", warehouse: toLoc?.name ?? "" })
+          : t(`pasteErr.${e.code}`, { line: e.line, value: e.value ?? "" }),
+      ),
+    });
     if (pasted.length) {
       setOnlyFilled(true);
       setQ("");
@@ -185,7 +207,7 @@ export function ReceiveBulkForm({ locations, shipments, variants }: { locations:
           expiryStatus: r.expiryStatus,
           expiryDate: eff.expiryDate || undefined,
           mfgDate: eff.mfgDate || undefined,
-          unitCostVnd: r.unitCostVnd.trim(),
+          ...(byId.get(r.variantId)!.currency === "MMK" ? { unitCostMmk: r.unitCost.trim() } : { unitCostVnd: r.unitCost.trim() }),
           qty: r.qty,
           stockType: eff.stockType,
         };
@@ -310,7 +332,7 @@ export function ReceiveBulkForm({ locations, shipments, variants }: { locations:
               <th className="px-2 py-2 font-medium">{t("lotNo")}</th>
               <th className="px-2 py-2 font-medium">{t("expiry")}</th>
               <th className="px-2 py-2 font-medium">{t("mfg")}</th>
-              <th className="px-2 py-2 font-medium">{t("unitCost")}</th>
+              <th className="px-2 py-2 font-medium">{toLoc?.pricingMode === "LOCAL_MMK" ? t("unitCostMmk") : toLoc && !toLoc.sellable ? t("unitCostAny") : t("unitCost")}</th>
               <th className="px-2 py-2 font-medium">{t("stockType")}</th>
               <th className="px-2 py-2" />
             </tr>
@@ -319,7 +341,7 @@ export function ReceiveBulkForm({ locations, shipments, variants }: { locations:
             {visible.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
-                  {t("noMatch")}
+                  {toLoc ? t("noMatch") : t("chooseWarehouseFirst")}
                 </td>
               </tr>
             ) : (
@@ -336,7 +358,7 @@ export function ReceiveBulkForm({ locations, shipments, variants }: { locations:
           {t("saveDraft")}
         </Button>
         <span className="text-sm text-muted-foreground" aria-live="polite">
-          {t("summary", { lines: filled.length, qty: fmtInt(totalQty), vnd: fmtInt(totalVnd) })}
+          {t("summary", { lines: filled.length, qty: fmtInt(totalQty), money })}
         </span>
         {(clientError || state?.error) && (
           <p role="alert" className="w-full text-sm text-destructive">
@@ -381,6 +403,7 @@ const ReceiveRow = memo(function ReceiveRow({
   const ti = useTranslations("Inventory");
   const filled = hasQty(r);
   const label = (field: string) => `${field} ${v.sku}`;
+  const costLabel = v.currency === "MMK" ? t("unitCostMmk") : t("unitCost");
   return (
     <tr id={`rcv-${r.key}`} className={cn(filled && "bg-primary/5", invalid && "bg-destructive/10")}>
       <td className={cn(cell, "min-w-48 max-md:col-span-2")}>
@@ -420,8 +443,8 @@ const ReceiveRow = memo(function ReceiveRow({
         <input aria-label={label(t("mfg"))} type="date" value={r.mfgDate} onChange={(e) => onChange(r.key, { mfgDate: e.target.value })} className={cn(small, "w-36 max-w-full")} />
       </td>
       <td className={cell}>
-        <Cap>{t("unitCost")}</Cap>
-        <input aria-label={label(t("unitCost"))} type="number" min={0} step={1} inputMode="numeric" value={r.unitCostVnd} onChange={(e) => onChange(r.key, { unitCostVnd: e.target.value })} className={cn(small, "w-28")} />
+        <Cap>{costLabel}</Cap>
+        <input aria-label={label(costLabel)} type="number" min={0} step={1} inputMode="numeric" value={r.unitCost} onChange={(e) => onChange(r.key, { unitCost: e.target.value })} className={cn(small, "w-28")} />
       </td>
       <td className={cell}>
         <Cap>{t("stockType")}</Cap>

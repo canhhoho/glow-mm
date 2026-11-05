@@ -35,7 +35,10 @@ test("admin: lưu cài đặt; tính giá mới (xem trước) rồi huỷ", asy
   // Tên link kèm số bản xem trước đang chờ (vd "Tính giá 3").
   await page.getByRole("link", { name: /^Tính giá( \d+)?$/ }).click();
   await expect(page).toHaveURL(/tab=runs/);
+  // P24: kho mặc định = Kho Thắm (hàng nhập VN) → cần % lãi + phí ship theo kg.
+  await expect(page.getByRole("combobox", { name: "Kho", exact: true })).toHaveValue(/.+/);
   await page.getByLabel("% lãi").fill("40");
+  await page.getByLabel("Phí ship VN → MM (MMK/kg)").fill("8000");
   await page.getByRole("button", { name: "Xem trước" }).click();
   await expect(page).toHaveURL(/\/admin\/pricing\/runs\//, { timeout: 20_000 });
   await expect(page.getByRole("row", { name: /SV-SUN-50/ })).toBeVisible();

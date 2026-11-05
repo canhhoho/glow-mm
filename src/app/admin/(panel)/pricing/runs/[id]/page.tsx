@@ -21,6 +21,9 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
   const [t, run] = await Promise.all([getTranslations("Pricing"), getRun(id)]);
   if (!run) notFound();
   const editable = run.status === "PREVIEW";
+  // P24: cột theo cách tính giá của kho — MMK: vốn MMK + lãi cố định; VN: vốn VND + phí ship (MMK).
+  const mmk = run.location?.pricingMode === "LOCAL_MMK";
+  const extra = run.location ? (mmk ? t("profitCol") : t("shipCol")) : null;
 
   const table = (
     <DataTable
@@ -28,7 +31,8 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
         editable ? t("select") : "",
         t("sku"),
         t("product"),
-        t("cost"),
+        mmk ? t("costMmk") : t("cost"),
+        ...(extra ? [extra] : []),
         t("oldPrice"),
         t("newPrice"),
         t("change"),
@@ -57,7 +61,8 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
               {l.name}
               {stale && <div className="text-xs text-amber-700 dark:text-amber-400">{t("changedSince")}</div>}
             </Td>
-            <Td className="text-right tabular-nums">{fmtInt(l.costVnd)}</Td>
+            <Td className="text-right tabular-nums">{fmtInt(mmk ? l.costMmk : l.costVnd)}</Td>
+            {extra && <Td className="text-right tabular-nums">{fmtInt(mmk ? l.profitMmk : l.shipMmk)}</Td>}
             <Td className="text-right tabular-nums">{fmtInt(l.oldPriceMmk)}</Td>
             <Td className="text-right font-medium tabular-nums">{fmtInt(l.newPriceMmk)}</Td>
             <Td
@@ -82,12 +87,23 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
       />
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <Badge tone={RUN_TONE[run.status]}>{t(`st.${run.status}`)}</Badge>
-        <span>
-          {t("rate")}: <span className="tabular-nums">{rateDisplay(run.rate).vndPerMmk}</span>
-        </span>
-        <span>
-          {t("marginPct")}: {run.marginPct.toString()}%
-        </span>
+        {run.location && (
+          <span>
+            {t("warehouse")}: {run.location.name}
+          </span>
+        )}
+        {run.rate && (
+          <span>
+            {t("rate")}: <span className="tabular-nums">{rateDisplay(run.rate).vndPerMmk}</span>
+          </span>
+        )}
+        {run.marginPct != null && (
+          <span>
+            {t("marginPct")}: {run.marginPct.toString()}%
+          </span>
+        )}
+        {run.shipMmkPerKg != null && <span>{t("shipShort", { n: fmtInt(run.shipMmkPerKg) })}</span>}
+        {mmk && <span>{t("fixedProfit")}</span>}
         <span>
           {t("roundTo")}: {fmtInt(run.roundTo)}
         </span>

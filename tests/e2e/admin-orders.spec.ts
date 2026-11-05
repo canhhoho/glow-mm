@@ -118,7 +118,7 @@ test("đơn thủ công (Facebook, COD): tạo → xác nhận → bàn giao (FE
   await expect(row).toBeVisible();
   // Không chụp full-page: DB test local tích luỹ nhiều dòng "chờ kiểm tra" → trang rất dài, chụp quá 30s.
   await page.screenshot({ path: "test-results/screens/quarantine.png" });
-  await row.getByLabel("Nhập vào").selectOption({ label: "MM-STOCK" });
+  await expect(row).toContainText("Nhập vào: Kho Thắm"); // P24: nhập lại đúng kho của SP
   await row.getByRole("button", { name: "Nhập lại kho bán" }).click();
   await expect(page.getByTestId("quarantine-row").filter({ has: page.getByRole("link", { name: code }) })).toHaveCount(0, { timeout: 20_000 });
 });

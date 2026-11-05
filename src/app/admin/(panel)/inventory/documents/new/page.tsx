@@ -24,7 +24,7 @@ export default async function NewDocumentPage({ searchParams }: PageProps<"/admi
       <Page>
         <PageHeader title={`${t("new")}: ${t(type)}`} back={{ href: "/admin/inventory", label: t("back") }} />
         <ReceiveBulkForm
-          locations={locations.map((l) => ({ id: l.id, code: l.code, name: l.name }))}
+          locations={locations.map((l) => ({ id: l.id, code: l.code, name: l.name, sellable: l.sellable, pricingMode: l.pricingMode }))}
           shipments={shipments.map((s) => ({ id: s.id, code: s.code }))}
           variants={variants}
         />
@@ -33,7 +33,7 @@ export default async function NewDocumentPage({ searchParams }: PageProps<"/admi
   }
   const [t, locations, variants, batches, shipments] = await Promise.all([
     getTranslations("Docs"),
-    listLocations(),
+    listLocations({ includeInactive: true }), // xuất/chuyển được tồn còn ở kho đã ngừng dùng
     listVariantsForPicker(),
     batchesForForms(),
     listShipments(),

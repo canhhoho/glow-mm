@@ -22,14 +22,15 @@ import {
  */
 
 export const PAGE_SIZE = 25;
-export const STOCK_TABS = ["all", ...LOCATION_TYPES] as const;
+/** Tab = "all" hoặc mã kho (P24). Giá trị loại vị trí cũ (MM_STOCK, …) vẫn nhận → lọc theo loại. */
+const isLocationType = (tab: string): tab is (typeof LOCATION_TYPES)[number] => (LOCATION_TYPES as readonly string[]).includes(tab);
 /** near = cận hạn; blocked = ngừng bán (gồm hết hạn); expired = đã hết hạn. */
 export const EXPIRY_FILTERS = ["near", "blocked", "expired", "unknown", "none"] as const;
 export type ExpiryFilter = (typeof EXPIRY_FILTERS)[number];
 
 /** Bộ lọc lấy từ URL; giá trị lạ → mặc định (không báo lỗi). */
 export const stockFilterSchema = z.object({
-  tab: z.enum(STOCK_TABS).catch("all"),
+  tab: z.string().regex(/^[A-Za-z0-9_-]{1,20}$/).catch("all"),
   q: z
     .string()
     .trim()
@@ -83,13 +84,13 @@ function balanceWhere(f: StockFilter, now: Date, t: Thresholds): Prisma.StockBal
   return {
     qty: { not: 0 },
     stockType: f.stockType,
-    location: f.tab === "all" ? undefined : { type: f.tab },
+    location: f.tab === "all" ? undefined : isLocationType(f.tab) ? { type: f.tab } : { code: f.tab },
     batch: { AND: [expiryWhere(f.expiry, now, t), f.q ? batchSearch(f.q) : {}] },
   };
 }
 
 const ROW_INCLUDE = {
-  location: { select: { code: true, type: true, sellable: true } },
+  location: { select: { code: true, name: true, type: true, sellable: true } },
   batch: { select: { variantId: true, lotNo: true, expiryDate: true, expiryStatus: true, landedCostMmk: true } },
 } satisfies Prisma.StockBalanceInclude;
 
@@ -104,6 +105,7 @@ async function loadRows(where: Prisma.StockBalanceWhereInput): Promise<BalanceRo
     landedCostMmk: r.batch.landedCostMmk,
     locationId: r.locationId,
     locationCode: r.location.code,
+    locationName: r.location.name,
     locationType: r.location.type,
     sellable: r.location.sellable,
     stockType: r.stockType,
@@ -134,6 +136,24 @@ export async function stockSummary(opts: { q?: string; now?: Date } = {}) {
     thresholds: t,
   };
 }
+
+/**
+ * Tab + cột theo kho (P24): kho đang dùng và kho đã ngừng nhưng còn tồn.
+ * Thứ tự: kho bán → khu chờ kiểm tra → kho cũ.
+ */
+export async function stockTabs() {
+  const [locations, stocked] = await Promise.all([
+    prisma.location.findMany({
+      orderBy: [{ pricingMode: "asc" }, { code: "asc" }], // cùng thứ tự ô chọn kho: Kho Thắm (VN_IMPORT) trước
+      select: { id: true, code: true, name: true, type: true, sellable: true, active: true },
+    }),
+    prisma.stockBalance.groupBy({ by: ["locationId"], where: { qty: { not: 0 } } }),
+  ]);
+  const has = new Set(stocked.map((s) => s.locationId));
+  const rank = (l: { sellable: boolean; type: string }) => (l.sellable ? 0 : l.type === "QUARANTINE" ? 1 : 2);
+  return locations.filter((l) => l.active || has.has(l.id)).sort((a, b) => rank(a) - rank(b)); // sort ổn định giữ thứ tự DB
+}
+export type StockTab = Awaited<ReturnType<typeof stockTabs>>[number];
 
 type Page<T> = { rows: T[]; total: number; page: number; pageCount: number };
 const pageOf = <T>(rows: T[], total: number, page: number): Page<T> => ({
@@ -245,7 +265,7 @@ export async function stockLots(f: StockFilter, now = new Date()) {
     prisma.stockBalance.findMany({
       where,
       include: {
-        location: { select: { code: true, type: true } },
+        location: { select: { code: true, name: true, type: true } },
         batch: { include: { variant: { include: { product: { include: { translations: true } } } } } },
       },
       orderBy: [{ batch: { variant: { sku: "asc" } } }, { batch: { expiryDate: "asc" } }, { location: { code: "asc" } }],
@@ -265,6 +285,7 @@ export async function stockLots(f: StockFilter, now = new Date()) {
       expiryDate: r.batch.expiryDate,
     expiryStatus: r.batch.expiryStatus,
       locationCode: r.location.code,
+      locationName: r.location.name,
       locationType: r.location.type,
       stockType: r.stockType,
       qty: r.qty,

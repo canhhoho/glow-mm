@@ -41,8 +41,10 @@ export async function previewRunAction(_prev: ActionState, formData: FormData): 
     id = (
       await previewRun(
         {
-          rateId: formData.get("rateId"),
-          marginPct: formData.get("marginPct"),
+          locationId: opt(formData, "locationId"),
+          rateId: opt(formData, "rateId"),
+          marginPct: opt(formData, "marginPct"),
+          shipMmkPerKg: opt(formData, "shipMmkPerKg"),
           roundTo: opt(formData, "roundTo"),
           categoryId: opt(formData, "categoryId"),
           brandId: opt(formData, "brandId"),

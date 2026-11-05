@@ -13,14 +13,14 @@ async function postAndExpect(page: Page) {
   await expect(page.getByText("Đã ghi sổ", { exact: true }).filter({ visible: true })).toBeVisible();
 }
 
-test("quản lý kho: nhận → chuyển → xuất, tồn khớp theo lô và vị trí", async ({ page }) => {
+test("quản lý kho: nhận → chuyển chờ kiểm tra → xuất, tồn khớp theo lô và kho", async ({ page }) => {
   test.setTimeout(90_000); // ba phiếu liên tiếp; DB local có thể tích luỹ nhiều lô thử nghiệm
   const lot = `E2E${Date.now().toString(36).toUpperCase()}`;
   await login(page, "kho@glow.local");
 
-  // 1) Nhập 10 vào kho VN (bảng nhập nhanh: lọc SKU, điền dòng)
+  // 1) Nhập 10 vào Kho Thắm — kho của SP (bảng nhập nhanh: lọc SKU, điền dòng)
   await page.goto("/admin/inventory/documents/new?type=RECEIVE");
-  await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "VN-STOCK — Kho VN" });
+  await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "THAM — Kho Thắm" });
   await page.getByLabel("Tìm SKU, tên sản phẩm").fill(SKU);
   await page.getByLabel(`Số lượng ${SKU}`, { exact: true }).fill("10");
   await page.getByLabel(`Số lô ${SKU}`, { exact: true }).fill(lot);
@@ -28,30 +28,30 @@ test("quản lý kho: nhận → chuyển → xuất, tồn khớp theo lô và 
   await page.getByLabel(`Giá mua/đv (VND) ${SKU}`, { exact: true }).fill("90000");
   await postAndExpect(page);
 
-  // 2) Chuyển 4 sang kho Yangon (chọn đúng lô vừa nhập)
+  // 2) Chuyển 4 sang khu chờ kiểm tra (chọn đúng lô vừa nhập)
   await page.goto("/admin/inventory/documents/new?type=TRANSFER");
-  await page.getByLabel("Chọn vị trí xuất").selectOption({ label: "VN-STOCK — Kho VN" });
-  await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "MM-STOCK — Kho Yangon" });
+  await page.getByLabel("Chọn vị trí xuất").selectOption({ label: "THAM — Kho Thắm" });
+  await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "MM-QC — Chờ kiểm tra" });
   await page.getByLabel("Biến thể").selectOption({ label: VARIANT });
   await page.getByLabel("Lô").selectOption({ label: `${lot} · 2028-12-31 · 10` });
   await page.getByLabel("Số lượng").fill("4");
   await postAndExpect(page);
 
-  // 3) Xuất 1 ở kho Yangon (hàng hỏng)
+  // 3) Xuất 1 ở Kho Thắm (hàng hỏng)
   await page.goto("/admin/inventory/documents/new?type=ISSUE");
-  await page.getByLabel("Chọn vị trí xuất").selectOption({ label: "MM-STOCK — Kho Yangon" });
+  await page.getByLabel("Chọn vị trí xuất").selectOption({ label: "THAM — Kho Thắm" });
   await page.getByLabel("Lý do / ghi chú").fill("Hàng hỏng khi vận chuyển");
   await page.getByLabel("Biến thể").selectOption({ label: VARIANT });
-  await page.getByLabel("Lô").selectOption({ label: `${lot} · 2028-12-31 · 4` });
+  await page.getByLabel("Lô").selectOption({ label: `${lot} · 2028-12-31 · 6` });
   await page.getByLabel("Số lượng").fill("1");
   await postAndExpect(page);
 
-  // 4) Tồn (xem theo lô): VN còn 6, Yangon còn 3
+  // 4) Tồn (xem theo lô): Kho Thắm còn 5, chờ kiểm tra 4
   await page.goto(`/admin/inventory?q=${lot}&view=lots`);
   const rows = page.getByRole("row").filter({ hasText: lot });
   await expect(rows).toHaveCount(2);
-  await expect(rows.filter({ hasText: "VN-STOCK" })).toContainText("6");
-  await expect(rows.filter({ hasText: "MM-STOCK" })).toContainText("3");
+  await expect(rows.filter({ hasText: "Kho Thắm" })).toContainText("5");
+  await expect(rows.filter({ hasText: "Chờ kiểm tra" })).toContainText("4");
 });
 
 test("phiếu kho: lỗi server giữ lựa chọn; ghi sổ cần xác nhận; huỷ nháp", async ({ page }) => {
@@ -64,16 +64,16 @@ test("phiếu kho: lỗi server giữ lựa chọn; ghi sổ cần xác nhận; 
 
   // Vị trí đi = đến → server báo lỗi, các ô chọn giữ nguyên (không bị form reset về "—").
   const from = page.getByLabel("Chọn vị trí xuất");
-  await from.selectOption({ label: "MM-STOCK — Kho Yangon" });
-  await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "MM-STOCK — Kho Yangon" });
+  await from.selectOption({ label: "THAM — Kho Thắm" });
+  await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "THAM — Kho Thắm" });
   await page.getByLabel("Biến thể").selectOption({ label: VARIANT });
   await page.getByLabel("Số lượng").fill("1");
   await page.getByRole("button", { name: "Lưu nháp" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "khác nhau" })).toBeVisible({ timeout: 20_000 });
-  await expect(from.locator("option:checked")).toHaveText("MM-STOCK — Kho Yangon");
+  await expect(from.locator("option:checked")).toHaveText("THAM — Kho Thắm");
   await expect(page.getByLabel("Biến thể").locator("option:checked")).toHaveText(VARIANT);
 
-  await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "VN-STOCK — Kho VN" });
+  await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "MM-QC — Chờ kiểm tra" });
   await page.getByRole("button", { name: "Lưu nháp" }).click();
   // Next giữ trang danh sách phiếu ẩn trong DOM (có badge "Nháp"/"Đã huỷ" của phiếu khác) → chỉ xét phần tử đang hiện.
   const shown = (text: string | RegExp) => page.getByText(text, { exact: typeof text === "string" }).filter({ visible: true });
@@ -96,7 +96,7 @@ test("phiếu nhập: dán từ Excel điền nhiều dòng, báo dòng lỗi, d
   const lot = `PX${Date.now().toString(36).toUpperCase()}`;
   await login(page, "kho@glow.local");
   await page.goto("/admin/inventory/documents/new?type=RECEIVE");
-  await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "VN-STOCK — Kho VN" });
+  await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "THAM — Kho Thắm" });
   await page.getByRole("button", { name: "Dán từ Excel" }).click();
   await page.getByRole("textbox", { name: "Dán từ Excel" }).fill(
     `SKU\tSL\tLô\tHSD\tGiá\n${SKU}\t3\t${lot}\t31/12/2028\t90,000\n${SKU}\t2\t${lot}B\t\t90000\nKHONG-CO\t1\tX\t2028-01-01\t1`,

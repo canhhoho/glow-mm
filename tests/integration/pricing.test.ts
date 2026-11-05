@@ -17,6 +17,49 @@ async function receiveLot(f: Fixture, lot: string, unitCostVnd: number, variantI
 
 const linesOf = (runId: string) => prisma.priceRunLine.findMany({ where: { runId } });
 
+describe("Tính giá theo kho (P24)", () => {
+  it("Kho hàng nhập VN: vốn VND × tỷ giá × (1 + %) + ship/kg × khối lượng; thiếu khối lượng bị bỏ qua", async () => {
+    const f = await makeFixture();
+    await receiveLot(f, "A", 100_000);
+    const rate = await createRate({ mmkPerUsd: "4420", vndPerUsd: "26000" }, f.userId); // 1 VND = 0.17 MMK
+    await expect(previewRun({ locationId: f.mm.id, rateId: rate.id, marginPct: "30", shipMmkPerKg: 8_000 }, f.userId)).rejects.toThrow(/đủ dữ liệu/);
+
+    await prisma.variant.update({ where: { id: f.variantId }, data: { weightGrams: 80 } });
+    await expect(previewRun({ locationId: f.mm.id, rateId: rate.id, marginPct: "30" }, f.userId)).rejects.toThrow(/phí ship/);
+    const run = await previewRun({ locationId: f.mm.id, rateId: rate.id, marginPct: "30", shipMmkPerKg: 8_000, roundTo: 100 }, f.userId);
+    expect(run).toMatchObject({ locationId: f.mm.id, shipMmkPerKg: 8_000 });
+    expect(await linesOf(run.id)).toEqual([
+      expect.objectContaining({ variantId: f.variantId, costVnd: 100_000, shipMmk: 640, newPriceMmk: 22_800 }),
+    ]);
+  });
+
+  it("Kho mua MMK: lô giá MMK có giá vốn MMK ngay; giá = vốn MMK + lãi cố định; sai loại tiền bị chặn", async () => {
+    const f = await makeFixture();
+    await prisma.product.update({ where: { id: f.productId }, data: { stockLocationId: f.chi.id } });
+    // Kho Chi nhập giá MMK; nhập VND bị chặn.
+    await expect(
+      createDocument({ type: "RECEIVE", toId: f.chi.id, lines: [{ variantId: f.variantId, lotNo: "X", expiryDate: "2028-12-31", unitCostVnd: 1, qty: 1 }] }, f.userId),
+    ).rejects.toThrow(/nhập giá mua bằng MMK/);
+    const doc = await createDocument(
+      { type: "RECEIVE", toId: f.chi.id, lines: [{ variantId: f.variantId, lotNo: "M1", expiryDate: "2028-12-31", unitCostMmk: 18_250, qty: 3 }] },
+      f.userId,
+    );
+    await postDocument(doc.id, f.userId);
+    const batch = await prisma.batch.findUniqueOrThrow({ where: { variantId_lotNo: { variantId: f.variantId, lotNo: "M1" } } });
+    expect(batch).toMatchObject({ unitCostVnd: null, unitCostMmk: 18_250, landedCostMmk: 18_250, rateId: null });
+
+    await expect(previewRun({ locationId: f.chi.id }, f.userId)).rejects.toThrow(/đủ dữ liệu/); // chưa có lãi cố định
+    await prisma.product.update({ where: { id: f.productId }, data: { fixedProfitMmk: 5_000 } });
+    const run = await previewRun({ locationId: f.chi.id, roundTo: 100 }, f.userId);
+    expect(run).toMatchObject({ locationId: f.chi.id, rateId: null, marginPct: null });
+    expect(await linesOf(run.id)).toEqual([
+      expect.objectContaining({ variantId: f.variantId, costVnd: null, costMmk: 18_250, profitMmk: 5_000, newPriceMmk: 23_300 }),
+    ]);
+    expect(await applyRun(run.id, [f.variantId], f.userId)).toEqual({ applied: 1, skipped: [] });
+    expect((await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).priceMmk).toBe(23_300);
+  });
+});
+
 describe("Cập nhật giá hàng loạt", () => {
   it("xem trước dùng lô nhập gần nhất (ưu tiên landed cost) → áp dụng ghi lịch sử", async () => {
     const f = await makeFixture();
