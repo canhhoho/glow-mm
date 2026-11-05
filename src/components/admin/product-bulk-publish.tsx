@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -147,6 +148,21 @@ export function BulkPublishBar({
       {done?.kind === "delete" && <Notice>{t("deleteDone", { deleted: done.deleted, archived: done.archived })}</Notice>}
       {done && done.kind !== "delete" && (
         <Notice>{t(done.kind === "restore" ? "restoreDone" : done.kind === "move" ? "moveDone" : "bulkDone", { count: done.count })}</Notice>
+      )}
+      {state?.blocked && state.blocked.length > 0 && (
+        <div role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive" data-testid="publish-blocked">
+          <p className="font-medium">{t("readiness.blockedBulk", { count: state.blocked.length })}</p>
+          <ul className="mt-1 list-inside list-disc text-xs">
+            {state.blocked.map((b) => (
+              <li key={b.id}>
+                <Link href={`/admin/products/${b.id}`} className="underline">
+                  {b.name}
+                </Link>
+                : {b.reasons}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </form>
   );

@@ -80,6 +80,20 @@ test("tải mẫu Excel, điền và nhập sản phẩm trực tiếp qua trìn
   await expect(page.getByRole("textbox", { name: "SKU", exact: true }).first()).toHaveValue(sku);
   await expect(page.getByRole("textbox", { name: "Tên", exact: true }).last()).toHaveValue(name);
   await expect(page.getByRole("checkbox", { name: "Hiển thị trên web", exact: true })).not.toBeChecked();
+
+  // D2: đủ điều kiện (giá, khối lượng, kho) → "Có thể mở bán"; thiếu ảnh / hết hàng chỉ là cảnh báo.
+  const check = page.getByTestId("launch-check");
+  await expect(check).toContainText("Đủ điều kiện");
+  await expect(check.getByTestId("issue-NO_IMAGE")).toContainText("Cảnh báo");
+  await expect(check.getByTestId("issue-OUT_OF_STOCK")).toBeVisible();
+  // Đặt giá 0 rồi bật hiển thị → server chặn, báo lý do theo SKU, SP vẫn ẩn.
+  await page.getByRole("spinbutton", { name: "Giá (MMK)" }).first().fill("0");
+  await page.getByRole("checkbox", { name: "Hiển thị trên web", exact: true }).check();
+  await page.getByRole("button", { name: "Lưu", exact: true }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "Chưa bật hiển thị / lưu được" })).toContainText(`Giá bán ≤ 0 (${sku})`);
+  await page.goto(`/admin/products?q=${slug}`);
+  await expect(page.getByRole("row").filter({ hasText: slug }).getByTestId("product-readiness")).toContainText("Có thể mở bán");
+  await page.screenshot({ path: "test-results/screens/product-readiness.png", fullPage: true });
 });
 
 test("nhập hàng lần đầu: xem trước hai sheet, tạo nháp rồi ghi sổ tồn không hạn", async ({ page }) => {
@@ -110,7 +124,7 @@ test("nhập hàng lần đầu: xem trước hai sheet, tạo nháp rồi ghi s
   await expect(page.locator("span").filter({ hasText: /^Đã ghi sổ$/ }).filter({ visible: true })).toBeVisible();
   await page.goto(`/admin/products?q=${slug}`);
   const row = page.getByRole("row").filter({ hasText: sku });
-  await expect(row).toContainText("Ẩn");
+  await expect(row.getByTestId("product-readiness")).toContainText(/Có thể mở bán|Cần hoàn thiện/); // SP nhập lần đầu luôn ẩn (D2: hiện trạng thái mở bán)
   await row.getByRole("link", { name: "Sửa", exact: true }).click();
   await expect(page.getByRole("checkbox", { name: "Quản lý hạn sử dụng cho sản phẩm này", exact: true })).not.toBeChecked();
   await expect(page.getByRole("spinbutton", { name: "Hạn sau mở nắp (tháng, nếu có)", exact: true })).toHaveValue("12");

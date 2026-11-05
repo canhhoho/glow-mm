@@ -384,7 +384,9 @@
       "active": "Đang kinh doanh",
       "published": "Đang bán trên web",
       "hidden": "Đang ẩn",
-      "archived": "Ngừng kinh doanh"
+      "archived": "Ngừng kinh doanh",
+      "ready": "Có thể mở bán (đang ẩn)",
+      "incomplete": "Cần hoàn thiện (đang ẩn)"
     },
     "clearFilters": "Bỏ lọc",
     "count": "{count} sản phẩm",
@@ -469,7 +471,45 @@
     "launchCheck": "Kiểm tra trước khi mở bán",
     "checkImages": "Có ảnh sản phẩm",
     "checkPrice": "Biến thể đang dùng có giá bán lớn hơn 0",
-    "checkStock": "Có hàng khả dụng tại kho bán"
+    "checkStock": "Có hàng khả dụng tại kho bán",
+    "readiness": {
+      "error": "Lỗi",
+      "warning": "Cảnh báo",
+      "status": {
+        "ARCHIVED": "Ngừng kinh doanh",
+        "PUBLISHED": "Đang hiển thị",
+        "READY": "Có thể mở bán",
+        "INCOMPLETE": "Cần hoàn thiện"
+      },
+      "issue": {
+        "NO_ACTIVE_VARIANT": "Không có biến thể đang dùng",
+        "BAD_LOCATION": "Kho bán đã ngừng hoặc không phải kho bán",
+        "PRICE_ZERO": "Giá bán ≤ 0",
+        "NO_WEIGHT": "Thiếu khối lượng (cần cho cước/kg)",
+        "NO_IMAGE": "Chưa có ảnh",
+        "FEW_IMAGES": "Mới có 1 ảnh — nên thêm ảnh nhãn/bao bì",
+        "MISSING_ALT": "Ảnh đại diện chưa có mô tả (alt)",
+        "CONTENT_INCOMPLETE": "Thiếu mô tả hoặc cách dùng (MY/EN)",
+        "NO_WEIGHT_LOCAL": "Thiếu khối lượng (cần khi gửi VTP)",
+        "COST_MISSING": "Tồn bán thiếu giá vốn",
+        "COST_ESTIMATED": "Tồn bán đang dùng giá vốn tạm",
+        "OUT_OF_STOCK": "Hết hàng khả dụng (trang SP vẫn hiện, không mua được)",
+        "STOCK_OTHER_WAREHOUSE": "Có tồn ở kho bán khác — chuyển kho để bán"
+      },
+      "blockedSave": "Chưa bật hiển thị / lưu được:",
+      "blockedBulk": "{count} sản phẩm chưa bật được vì còn lỗi:",
+      "blockedHint": "Còn {count} lỗi phải sửa trước khi bật hiển thị trên web.",
+      "publishedWithErrors": "Đang hiển thị nhưng còn {count} lỗi — nên sửa sớm (hệ thống không tự ẩn).",
+      "readyHint": "Đủ điều kiện — tick «Hiển thị trên web» rồi Lưu để mở bán.",
+      "publishedOk": "Đang hiển thị trên web.",
+      "allGood": "Không còn lỗi hay cảnh báo",
+      "steps": "Các bước",
+      "stepImages": "Thêm ảnh",
+      "stepReceive": "Nhập hàng",
+      "stepPrice": "Tính giá",
+      "stepView": "Xem như khách",
+      "stepPublish": "Mở bán (tick Hiển thị trên web)"
+    }
   },
   "Orders": {
     "exportVtp": "Xuất Excel VTP",

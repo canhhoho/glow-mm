@@ -8,6 +8,9 @@ import { slugify } from "@/lib/slug";
 import { createDocument } from "@/server/inventory/documents";
 import { assertStockLocation, defaultStockLocationId, stockLocationByCode } from "@/server/inventory/warehouses";
 import type { Tx } from "@/server/inventory/ledger";
+import { productName } from "@/server/inventory/queries";
+import { loadReadiness, ReadinessError } from "./readiness";
+import { blockingErrors, type Issue } from "./readiness-rules";
 
 /** Quản lý sản phẩm (admin). Giá đổi → ghi PriceHistory. Chữ Myanmar → Unicode trước khi lưu. */
 
@@ -81,7 +84,7 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
       : null;
     if (input.copyFromId && !source) throw new CatalogError("Sản phẩm nguồn không còn tồn tại");
     const current = input.id
-      ? await tx.product.findUnique({ where: { id: input.id }, select: { archivedAt: true, stockLocationId: true } })
+      ? await tx.product.findUnique({ where: { id: input.id }, select: { archivedAt: true, stockLocationId: true, published: true } })
       : null;
     if (input.id && !current) throw new CatalogError("Không tìm thấy sản phẩm");
     if (current?.archivedAt && input.published) throw new CatalogError("Sản phẩm đã ngừng kinh doanh — khôi phục trước khi hiển thị trên web");
@@ -184,6 +187,13 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
       await tx.productImage.createMany({ data: source.images.map((image) => ({ ...image, productId: product.id })) });
     }
 
+    // D2: bật hiển thị phải hết lỗi mở bán; SP đang hiển thị chỉ bị chặn giá ≤ 0 / không còn biến thể.
+    if (input.published) {
+      const readiness = (await loadReadiness(tx, [product.id])).get(product.id)!;
+      const blocking = blockingErrors(readiness, !!current?.published);
+      if (blocking.length) throw new ReadinessError(blocking);
+    }
+
     await tx.auditLog.create({
       data: {
         userId, action: input.id ? "product.update" : "product.create", entity: "Product", entityId: product.id,
@@ -200,24 +210,39 @@ const bulkPublishSchema = z.object({
   published: z.boolean(),
 });
 
-/** Bật/tắt "Hiển thị trên web" cho nhiều SP một lần; chỉ ghi SP thực sự đổi trạng thái (audit từng SP). */
-export async function setProductsPublished(raw: unknown, userId: string) {
+export type BlockedProduct = { id: string; name: string; issues: Issue[] };
+
+/**
+ * Bật/tắt "Hiển thị trên web" cho nhiều SP một lần; chỉ ghi SP thực sự đổi trạng thái (audit từng SP).
+ * D2: khi bật, SP còn lỗi mở bán bị giữ ẩn và trả về `blocked` (kèm lý do); SP hợp lệ vẫn được bật.
+ */
+export async function setProductsPublished(raw: unknown, userId: string): Promise<{ changed: number; blocked: BlockedProduct[] }> {
   const { ids, published } = bulkPublishSchema.parse(raw);
   return prisma.$transaction(async (tx) => {
-    const changed = await tx.product.findMany({
+    const candidates = await tx.product.findMany({
       // SP ngừng kinh doanh không bật hiển thị được (khôi phục trước).
       where: { id: { in: [...new Set(ids)] }, published: !published, ...(published && { archivedAt: null }) },
-      select: { id: true },
+      select: { id: true, slug: true, translations: { select: { locale: true, name: true } } },
     });
+    const blocked: BlockedProduct[] = [];
+    let changed = candidates;
+    if (published) {
+      const readiness = await loadReadiness(tx, candidates.map((p) => p.id));
+      changed = candidates.filter((p) => {
+        const errors = readiness.get(p.id)?.errors ?? [];
+        if (errors.length) blocked.push({ id: p.id, name: productName(p.translations, p.slug), issues: errors });
+        return errors.length === 0;
+      });
+    }
     const changedIds = changed.map((p) => p.id);
-    if (changedIds.length === 0) return { changed: 0 };
+    if (changedIds.length === 0) return { changed: 0, blocked };
     await tx.product.updateMany({ where: { id: { in: changedIds } }, data: { published } });
     await tx.auditLog.createMany({
       data: changedIds.map((entityId) => ({
         userId, action: published ? "product.publish" : "product.unpublish", entity: "Product", entityId, data: { bulk: true },
       })),
     });
-    return { changed: changedIds.length };
+    return { changed: changedIds.length, blocked };
   });
 }
 

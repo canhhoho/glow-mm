@@ -8,9 +8,10 @@ import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
 import { ProductForm } from "@/components/admin/product-form";
 import { ProductImageUpload } from "@/components/admin/product-images";
+import Link from "next/link";
 import { Badge, fieldClass, Page, PageHeader } from "@/components/admin/ui";
-import { availableToSell } from "@/server/orders/availability";
-import { salesBlockDays } from "@/server/inventory/documents";
+import { loadReadiness } from "@/server/catalog/readiness";
+import { localizedPath } from "@/lib/site";
 import { prisma } from "@/lib/db";
 
 export default async function EditProductPage({ params, searchParams }: PageProps<"/admin/products/[id]">) {
@@ -24,19 +25,24 @@ export default async function EditProductPage({ params, searchParams }: PageProp
     getProductImages(id),
   ]);
   if (!product) notFound();
-  const availability = await availableToSell(prisma, product.variants.map((v) => v.id), { now: new Date(), blockDays: await salesBlockDays() });
-  const active = product.variants.filter((v) => v.active);
-  const checks = [
-    { label: t("checkImages"), ok: images.length > 0 },
-    { label: t("checkPrice"), ok: active.length > 0 && active.every((v) => v.priceMmk > 0) },
-    { label: t("checkStock"), ok: active.some((v) => (availability.get(v.id) ?? 0) > 0) },
+  // D2: cùng bộ kiểm tra với lúc lưu / bật hàng loạt / danh sách.
+  const readiness = (await loadReadiness(prisma, [product.id])).get(product.id) ?? { errors: [], warnings: [] };
+  const issues = [
+    ...readiness.errors.map((i) => ({ ...i, tone: "danger" as const, kind: t("readiness.error") })),
+    ...readiness.warnings.map((i) => ({ ...i, tone: "warning" as const, kind: t("readiness.warning") })),
+  ];
+  const steps = [
+    { href: "#product-images", label: t("readiness.stepImages") },
+    { href: "/admin/inventory/documents/new?type=RECEIVE", label: t("readiness.stepReceive") },
+    { href: "/admin/pricing?tab=runs", label: t("readiness.stepPrice") },
+    { href: localizedPath("my", `/p/${product.slug}`), label: t("readiness.stepView"), external: true },
   ];
   return (
     <Page>
       <PageHeader title={product.en.name || product.slug} back={{ href: "/admin/products", label: td("back") }} />
       {saved && <p className="mb-3 text-sm text-emerald-700 dark:text-emerald-400">{t("saved")}</p>}
-      <section aria-labelledby="product-images" className="mb-6 rounded-lg border p-4">
-        <h2 id="product-images" className="mb-3 font-medium">
+      <section id="product-images" aria-labelledby="product-images-title" className="mb-6 scroll-mt-20 rounded-lg border p-4">
+        <h2 id="product-images-title" className="mb-3 font-medium">
           {t("images")}
         </h2>
         <ProductImageUpload productId={product.id} />
@@ -85,9 +91,41 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           </ul>
         )}
       </section>
-      <section className="space-y-2 rounded-xl border p-4">
+      <section className="space-y-3 rounded-xl border p-4" data-testid="launch-check">
         <h2 className="font-medium">{t("launchCheck")}</h2>
-        <ul className="flex flex-wrap gap-3 text-sm">{checks.map((check) => <li key={check.label}><Badge tone={check.ok ? "success" : "warning"}>{check.ok ? "✓" : "○"} {check.label}</Badge></li>)}</ul>
+        <p className="text-sm">
+          {readiness.errors.length > 0
+            ? t(product.published ? "readiness.publishedWithErrors" : "readiness.blockedHint", { count: readiness.errors.length })
+            : t(product.published ? "readiness.publishedOk" : "readiness.readyHint")}
+        </p>
+        {issues.length > 0 ? (
+          <ul className="space-y-1.5 text-sm">
+            {issues.map((i) => (
+              <li key={i.code} className="flex flex-wrap items-start gap-2" data-testid={`issue-${i.code}`}>
+                <Badge tone={i.tone}>{i.kind}</Badge>
+                <span>
+                  {t(`readiness.issue.${i.code}`)}
+                  {i.skus?.length ? <span className="font-mono text-xs text-muted-foreground"> · {i.skus.join(", ")}</span> : null}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <Badge tone="success">✓ {t("readiness.allGood")}</Badge>
+        )}
+        <nav aria-label={t("readiness.steps")} className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t pt-3 text-sm">
+          <span className="text-muted-foreground">{t("readiness.steps")}:</span>
+          {steps.map((s, n) => (
+            <span key={s.href} className="flex items-center gap-2">
+              {n > 0 && <span aria-hidden>→</span>}
+              <Link href={s.href} className="text-primary underline" {...(s.external && { target: "_blank", rel: "noreferrer" })}>
+                {s.label}
+              </Link>
+            </span>
+          ))}
+          <span aria-hidden>→</span>
+          <span>{t("readiness.stepPublish")}</span>
+        </nav>
       </section>
       {/* key: nạp lại state form sau khi lưu */}
       <ProductForm key={JSON.stringify(product)} initial={product} options={options} />

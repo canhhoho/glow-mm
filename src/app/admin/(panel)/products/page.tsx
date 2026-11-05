@@ -2,6 +2,9 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { listProductsAdmin, PRODUCT_STATUSES, productFilterOptions, type ProductStatusFilter } from "@/server/catalog/admin-queries";
+import { loadReadiness } from "@/server/catalog/readiness";
+import { listStatus } from "@/server/catalog/readiness-rules";
+import { prisma } from "@/lib/db";
 import { BrandForm } from "@/components/admin/catalog-forms";
 import { BulkCheckbox, BulkPublishBar, RowProductAction } from "@/components/admin/product-bulk-publish";
 import { Badge, DataTable, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Section, Td, fieldClass } from "@/components/admin/ui";
@@ -17,13 +20,19 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
   const categoryId = str(sp.category);
   const warehouseId = str(sp.warehouse);
   const status: ProductStatusFilter = PRODUCT_STATUSES.find((s) => s === sp.status) ?? "active";
-  const [t, tn, tc, products, options] = await Promise.all([
+  const [t, tn, tc, listed, options] = await Promise.all([
     getTranslations("Products"),
     getTranslations("Nav"),
     getTranslations("Common"),
     listProductsAdmin({ q: query, brandId, categoryId, warehouseId, status }),
     productFilterOptions(),
   ]);
+  // D2: trạng thái mở bán (một lần cho cả trang); lọc "có thể mở bán" / "cần hoàn thiện" sau khi đánh giá.
+  const readiness = await loadReadiness(prisma, listed.map((p) => p.id));
+  const products = listed.filter((p) => {
+    const errors = readiness.get(p.id)?.errors.length ?? 0;
+    return status === "ready" ? errors === 0 : status === "incomplete" ? errors > 0 : true;
+  });
   const archivedView = status === "archived";
 
   return (
@@ -120,11 +129,19 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
               </ul>
             </Td>
             <Td label={t("colStatus")}>
-              {p.archived ? (
-                <Badge tone="warning">{t("archived")}</Badge>
-              ) : (
-                <Badge tone={p.published ? "success" : "neutral"}>{p.published ? t("published") : t("hidden")}</Badge>
-              )}
+              {(() => {
+                const r = readiness.get(p.id) ?? { errors: [], warnings: [] };
+                const st = listStatus(p, r);
+                const tone = { ARCHIVED: "neutral", PUBLISHED: "success", READY: "brand", INCOMPLETE: "warning" } as const;
+                return (
+                  <div className="flex flex-col items-start gap-1" data-testid="product-readiness">
+                    <Badge tone={tone[st]}>{t(`readiness.status.${st}`)}</Badge>
+                    {!p.archived && r.errors.length > 0 && (
+                      <span className="text-xs text-destructive">{r.errors.map((e) => t(`readiness.issue.${e.code}`)).join(", ")}</span>
+                    )}
+                  </div>
+                );
+              })()}
             </Td>
             <Td label={t("colActions")}>
               <div className="flex flex-wrap gap-2">

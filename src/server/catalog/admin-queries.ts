@@ -2,7 +2,8 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { productName } from "@/server/inventory/queries";
 
-export const PRODUCT_STATUSES = ["active", "published", "hidden", "archived"] as const;
+/** `ready` / `incomplete` (D2): SP đang ẩn, lọc thêm theo kiểm tra mở bán ở trang danh sách. */
+export const PRODUCT_STATUSES = ["active", "published", "hidden", "ready", "incomplete", "archived"] as const;
 export type ProductStatusFilter = (typeof PRODUCT_STATUSES)[number];
 
 /**
@@ -28,7 +29,7 @@ export async function listProductsAdmin(
       ...(filter.categoryId && { category: { OR: [{ id: filter.categoryId }, { parentId: filter.categoryId }] } }),
       archivedAt: status === "archived" ? { not: null } : null,
       ...(status === "published" && { published: true }),
-      ...(status === "hidden" && { published: false }),
+      ...((status === "hidden" || status === "ready" || status === "incomplete") && { published: false }),
     },
     orderBy: { updatedAt: "desc" },
     include: {

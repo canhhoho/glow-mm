@@ -384,7 +384,9 @@
       "active": "Active",
       "published": "Shown on web",
       "hidden": "Hidden",
-      "archived": "Discontinued"
+      "archived": "Discontinued",
+      "ready": "Ready to publish (hidden)",
+      "incomplete": "Needs work (hidden)"
     },
     "clearFilters": "Clear filters",
     "count": "{count} products",
@@ -469,7 +471,45 @@
     "launchCheck": "Before publishing",
     "checkImages": "Product images added",
     "checkPrice": "Active variants have a positive selling price",
-    "checkStock": "Sellable stock is available"
+    "checkStock": "Sellable stock is available",
+    "readiness": {
+      "error": "Error",
+      "warning": "Warning",
+      "status": {
+        "ARCHIVED": "Discontinued",
+        "PUBLISHED": "Visible",
+        "READY": "Ready to publish",
+        "INCOMPLETE": "Needs work"
+      },
+      "issue": {
+        "NO_ACTIVE_VARIANT": "No active variant",
+        "BAD_LOCATION": "Sales warehouse is inactive or not a sales warehouse",
+        "PRICE_ZERO": "Price ≤ 0",
+        "NO_WEIGHT": "Missing weight (needed for per-kg freight)",
+        "NO_IMAGE": "No images",
+        "FEW_IMAGES": "Only 1 image — add label/packaging photos",
+        "MISSING_ALT": "Cover image has no description (alt)",
+        "CONTENT_INCOMPLETE": "Missing description or usage (MY/EN)",
+        "NO_WEIGHT_LOCAL": "Missing weight (needed for VTP shipping)",
+        "COST_MISSING": "Sellable stock has no cost",
+        "COST_ESTIMATED": "Sellable stock uses an estimated cost",
+        "OUT_OF_STOCK": "Out of stock (page stays visible, cannot be bought)",
+        "STOCK_OTHER_WAREHOUSE": "Stock sits in another sales warehouse — transfer it to sell"
+      },
+      "blockedSave": "Cannot publish / save:",
+      "blockedBulk": "{count} products were not published because of errors:",
+      "blockedHint": "Fix {count} errors before showing this product on the web.",
+      "publishedWithErrors": "Visible but has {count} errors — fix soon (it is not hidden automatically).",
+      "readyHint": "Ready — tick “Show on web” and Save to publish.",
+      "publishedOk": "Visible on the web.",
+      "allGood": "No errors or warnings",
+      "steps": "Steps",
+      "stepImages": "Add images",
+      "stepReceive": "Receive stock",
+      "stepPrice": "Set prices",
+      "stepView": "View as customer",
+      "stepPublish": "Publish (tick Show on web)"
+    }
   },
   "Orders": {
     "exportVtp": "Export VTP Excel",

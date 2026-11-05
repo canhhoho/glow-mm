@@ -228,6 +228,11 @@ File: `orders/actions.ts`, `transitions.ts`, `cod.ts`, `admin-queries.ts`, `repo
 
 ## 8. D2 — Sẵn sàng mở bán và hướng dẫn công việc
 
+**Trạng thái: đã làm (05/11/2026).** Quyết định của chủ shop khác đề xuất ban đầu: **thiếu ảnh chỉ cảnh báo** (không chặn); SP **đang hiển thị** vẫn lưu được khi còn lỗi, chỉ chặn giá ≤ 0 / không còn biến thể đang dùng.
+- Quy tắc thuần `catalog/readiness-rules.ts` (lỗi: không biến thể đang dùng, kho không bán, giá ≤ 0, thiếu khối lượng ở kho VN_IMPORT — combo chưa khai báo thì cộng thành phần; cảnh báo: chưa/ít ảnh, ảnh đại diện thiếu alt, thiếu mô tả/cách dùng, thiếu khối lượng ở kho MMK, tồn thiếu vốn / vốn tạm, hết hàng, tồn ở kho bán khác). Nạp dữ liệu theo lô `catalog/readiness.ts` (`loadReadiness`).
+- Chặn ở server: `saveProduct` (trong transaction, rollback cả SP) và `setProductsPublished` (bật phần hợp lệ, trả `blocked` kèm lý do). Danh sách SP có trạng thái Cần hoàn thiện / Có thể mở bán / Đang hiển thị / Ngừng kinh doanh + bộ lọc; trang SP có checklist và các bước Thêm ảnh → Nhập hàng → Tính giá → Xem như khách → Mở bán.
+- Chưa làm: cảnh báo "giá biến động lớn / lãi sau hoa hồng thấp", danh sách việc còn thiếu sau import (import vẫn tạo SP ẩn; trạng thái hiện ở danh sách).
+
 ### D2.1 Một bộ kiểm tra dùng chung
 
 Xây service trả về `errors` (chặn) và `warnings` (cho phép nhưng cần biết), kèm SKU, lý do và liên kết xử lý. Tái sử dụng cho tạo/sửa, đăng hàng loạt, danh sách sản phẩm và trang chi tiết; không gọi một truy vấn DB cho mỗi SKU trong danh sách lớn.

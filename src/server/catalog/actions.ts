@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath, updateTag } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { z, ZodError } from "zod";
 import { directionSchema, formId } from "@/lib/schemas";
 import { requirePermission } from "@/server/auth/session";
@@ -13,6 +14,14 @@ import { createBrand, createCategory, importOpeningStockCsv, importProductsCsv, 
 import { readImportFile } from "./import-file";
 import { commitOpening, previewOpening, type OpeningPreview } from "./opening";
 import { deleteProducts, moveProductsToWarehouse, restoreProducts } from "./product-delete";
+import { ReadinessError } from "./readiness";
+import type { Issue } from "./readiness-rules";
+
+/** D2: lỗi mở bán → câu báo theo ngôn ngữ admin, kèm SKU liên quan. */
+async function issuesText(issues: Issue[]): Promise<string> {
+  const t = await getTranslations("Products");
+  return issues.map((i) => t(`readiness.issue.${i.code}`) + (i.skus?.length ? ` (${i.skus.join(", ")})` : "")).join("; ");
+}
 
 function message(e: unknown): string {
   if (e instanceof ZodError) return e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
@@ -26,6 +35,9 @@ export async function saveProductAction(_prev: ActionState, formData: FormData):
     const user = await requirePermission("catalog:manage");
     id = (await saveProduct(JSON.parse(String(formData.get("payload") ?? "{}")), user.id)).id;
   } catch (e) {
+    if (e instanceof ReadinessError) {
+      return { error: `${(await getTranslations("Products"))("readiness.blockedSave")} ${await issuesText(e.issues)}` };
+    }
     return { error: message(e) };
   }
   updateTag(CATALOG_TAG); // menu danh mục storefront (SP đăng/ẩn, đổi danh mục)
@@ -34,7 +46,12 @@ export async function saveProductAction(_prev: ActionState, formData: FormData):
 }
 
 export type ProductBulkState =
-  | { error?: string; done?: { kind: "publish" | "hide" | "restore" | "move"; count: number } | { kind: "delete"; deleted: number; archived: number } }
+  | {
+      error?: string;
+      done?: { kind: "publish" | "hide" | "restore" | "move"; count: number } | { kind: "delete"; deleted: number; archived: number };
+      /** D2: SP không bật được vì còn lỗi mở bán (tên + lý do đã dịch). */
+      blocked?: { id: string; name: string; reasons: string }[];
+    }
   | undefined;
 
 const bulkIntent = z.union([
@@ -48,6 +65,7 @@ const bulkIntent = z.union([
  */
 export async function productBulkAction(_prev: ProductBulkState, formData: FormData): Promise<ProductBulkState> {
   let done: NonNullable<ProductBulkState>["done"];
+  let blocked: NonNullable<ProductBulkState>["blocked"];
   try {
     const user = await requirePermission("catalog:manage");
     const intent = bulkIntent.parse(formData.get("intent"));
@@ -56,13 +74,17 @@ export async function productBulkAction(_prev: ProductBulkState, formData: FormD
     if (kind === "delete") done = { kind, ...(await deleteProducts(ids, user.id)) };
     else if (kind === "restore") done = { kind, count: await restoreProducts(ids, user.id) };
     else if (kind === "move") done = { kind, count: await moveProductsToWarehouse(ids, formData.get("toLocationId"), user.id) };
-    else done = { kind, count: (await setProductsPublished({ ids, published: kind === "publish" }, user.id)).changed };
+    else {
+      const res = await setProductsPublished({ ids, published: kind === "publish" }, user.id);
+      done = { kind, count: res.changed };
+      if (res.blocked.length) blocked = await Promise.all(res.blocked.map(async (b) => ({ id: b.id, name: b.name, reasons: await issuesText(b.issues) })));
+    }
   } catch (e) {
     return { error: message(e) };
   }
   updateTag(CATALOG_TAG); // thẻ/trang SP, menu danh mục, bộ lọc storefront
   revalidatePath("/admin/products");
-  return { done };
+  return { done, blocked };
 }
 
 export async function createBrandAction(_prev: ActionState, formData: FormData): Promise<ActionState> {

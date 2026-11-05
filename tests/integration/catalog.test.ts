@@ -53,19 +53,19 @@ describe("Sản phẩm", () => {
 
   it("bật/ẩn hàng loạt chỉ đổi SP khác trạng thái, ghi audit từng SP", async () => {
     const f = await makeFixture();
-    const a = await saveProduct({ ...base(f, `ba-${f.tag.toLowerCase()}`), variants: [{ sku: `BA-${f.tag}`, label: "x", priceMmk: 1 }] }, f.userId);
+    const a = await saveProduct({ ...base(f, `ba-${f.tag.toLowerCase()}`), variants: [{ sku: `BA-${f.tag}`, label: "x", priceMmk: 1, weightGrams: 100 }] }, f.userId);
     const b = await saveProduct(
-      { ...base(f, `bb-${f.tag.toLowerCase()}`), published: true, variants: [{ sku: `BB-${f.tag}`, label: "x", priceMmk: 1 }] },
+      { ...base(f, `bb-${f.tag.toLowerCase()}`), published: true, variants: [{ sku: `BB-${f.tag}`, label: "x", priceMmk: 1, weightGrams: 100 }] },
       f.userId,
     );
 
-    expect(await setProductsPublished({ ids: [a.id, b.id, a.id], published: true }, f.userId)).toEqual({ changed: 1 });
+    expect(await setProductsPublished({ ids: [a.id, b.id, a.id], published: true }, f.userId)).toMatchObject({ changed: 1, blocked: [] });
     const rows = await prisma.product.findMany({ where: { id: { in: [a.id, b.id] } }, select: { published: true } });
     expect(rows.every((r) => r.published)).toBe(true);
     expect(await prisma.auditLog.count({ where: { entityId: a.id, action: "product.publish" } })).toBe(1);
     expect(await prisma.auditLog.count({ where: { entityId: b.id, action: "product.publish" } })).toBe(0);
 
-    expect(await setProductsPublished({ ids: [a.id, b.id], published: false }, f.userId)).toEqual({ changed: 2 });
+    expect(await setProductsPublished({ ids: [a.id, b.id], published: false }, f.userId)).toMatchObject({ changed: 2, blocked: [] });
     expect(await prisma.product.count({ where: { id: { in: [a.id, b.id] }, published: true } })).toBe(0);
     await expect(setProductsPublished({ ids: [], published: true }, f.userId)).rejects.toThrow(/Chưa chọn/);
   });
@@ -73,11 +73,11 @@ describe("Sản phẩm", () => {
   it("xoá: SP chưa có lịch sử xoá hẳn; SP có lô → ngừng kinh doanh, không bật lại được, khôi phục được", async () => {
     const f = await makeFixture();
     const clean = await saveProduct(
-      { ...base(f, `del-${f.tag.toLowerCase()}`), published: true, variants: [{ sku: `DEL-${f.tag}`, label: "x", priceMmk: 1 }] },
+      { ...base(f, `del-${f.tag.toLowerCase()}`), published: true, variants: [{ sku: `DEL-${f.tag}`, label: "x", priceMmk: 1, weightGrams: 100 }] },
       f.userId,
     );
     await saveProduct(
-      { ...base(f, `del-${f.tag.toLowerCase()}`), id: clean.id, published: true, variants: [{ sku: `DEL-${f.tag}`, label: "x", priceMmk: 2 }] },
+      { ...base(f, `del-${f.tag.toLowerCase()}`), id: clean.id, published: true, variants: [{ sku: `DEL-${f.tag}`, label: "x", priceMmk: 2, weightGrams: 100 }] },
       f.userId,
     ); // có lịch sử giá — vẫn xoá được
     await createDocument(
@@ -94,7 +94,7 @@ describe("Sản phẩm", () => {
     expect(await prisma.auditLog.count({ where: { entityId: clean.id, action: "product.delete" } })).toBe(1);
 
     // Ngừng kinh doanh: không bật hiển thị; mặc định không hiện trong danh sách, có ở bộ lọc "archived".
-    expect(await setProductsPublished({ ids: [f.productId], published: true }, f.userId)).toEqual({ changed: 0 });
+    expect(await setProductsPublished({ ids: [f.productId], published: true }, f.userId)).toMatchObject({ changed: 0, blocked: [] });
     expect((await listProductsAdmin({ brandId: f.brandId })).map((p) => p.id)).not.toContain(f.productId);
     expect((await listProductsAdmin({ brandId: f.brandId, status: "archived" })).map((p) => p.id)).toEqual([f.productId]);
 
@@ -106,7 +106,7 @@ describe("Sản phẩm", () => {
     const f = await makeFixture();
     const child = await prisma.category.create({ data: { slug: `it-${f.tag.toLowerCase()}-child`, parentId: f.categoryId } });
     const inChild = await saveProduct(
-      { ...base(f, `fc-${f.tag.toLowerCase()}`), categoryId: child.id, published: true, variants: [{ sku: `FC-${f.tag}`, label: "x", priceMmk: 1 }] },
+      { ...base(f, `fc-${f.tag.toLowerCase()}`), categoryId: child.id, published: true, variants: [{ sku: `FC-${f.tag}`, label: "x", priceMmk: 1, weightGrams: 100 }] },
       f.userId,
     );
     const byCat = (await listProductsAdmin({ categoryId: f.categoryId })).map((p) => p.id);
