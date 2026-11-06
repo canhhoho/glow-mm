@@ -8,6 +8,7 @@ import { MIN_STAFF_PASSWORD } from "@/server/auth/roles";
 import { bpToPercent, type CommissionState } from "@/server/affiliates/commission";
 import {
   recordPayoutAction,
+  deleteAffiliateAction,
   resetAffiliatePasswordAction,
   setAffiliateActiveAction,
   setAffiliateParentAction,
@@ -304,7 +305,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
       </section>
 
       <div className="grid gap-6 md:grid-cols-2 [&>*]:min-w-0">
-        <section className="space-y-2">
+        <section id="profile" className="scroll-mt-4 space-y-2">
           <h2 className="font-medium">{t("profile")}</h2>
           <ActionForm action={updateAffiliateAction} submitLabel={t("save")} okText={t("saved")} className="space-y-3">
             <input type="hidden" name="id" value={a.id} />
@@ -351,6 +352,8 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
               variant={a.active ? "destructive" : "outline"}
               confirm={a.active ? t("lockConfirm", { name: a.user.name }) : undefined}
             />
+            <p className="text-xs text-muted-foreground">{t("deleteHint")}</p>
+            <ActionButton action={deleteAffiliateAction} fields={{ id: a.id }} label={t("delete")} variant="destructive" confirm={t("deleteConfirm", { name: a.user.name })} />
           </section>
         </div>
       </div>

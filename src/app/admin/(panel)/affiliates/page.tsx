@@ -5,6 +5,8 @@ import { requirePagePermission } from "@/server/auth/session";
 import { bpToPercent } from "@/server/affiliates/commission";
 import { listAffiliates } from "@/server/affiliates/affiliates";
 import { pendingApplicationsCount } from "@/server/affiliates/applications";
+import { deleteAffiliateAction } from "@/server/affiliates/actions";
+import { ActionButton } from "@/components/admin/action-button";
 import { Badge, DataTable, fieldClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Td } from "@/components/admin/ui";
 
 const str = (v: string | string[] | undefined) => (typeof v === "string" ? v.trim() : "");
@@ -55,7 +57,7 @@ export default async function AffiliatesPage({ searchParams }: PageProps<"/admin
       <DataTable
         stack
         empty={active === undefined ? t("empty") : t("emptyFiltered")}
-        head={[t("colCtv"), t("colCode"), t("colPercent"), t("colMonthSales"), t("colPending"), t("colPayable"), t("colPaid")]}
+        head={[t("colCtv"), t("colCode"), t("colPercent"), t("colMonthSales"), t("colPending"), t("colPayable"), t("colPaid"), t("actions")]}
         numeric={[3, 4, 5, 6]}
       >
         {affiliates.map((a) => (
@@ -81,6 +83,12 @@ export default async function AffiliatesPage({ searchParams }: PageProps<"/admin
             <Td label={t("colPending")} className="text-right tabular-nums">{fmtInt(a.summary.pendingMmk)}</Td>
             <Td label={t("colPayable")} className="text-right font-medium tabular-nums">{fmtInt(a.summary.payableMmk)}</Td>
             <Td label={t("colPaid")} className="text-right tabular-nums">{fmtInt(a.summary.paidMmk)}</Td>
+            <Td label={t("actions")}>
+              <div className="flex flex-wrap items-start gap-2">
+                <LinkButton href={`/admin/affiliates/${a.id}#profile`}>{t("edit")}</LinkButton>
+                <ActionButton action={deleteAffiliateAction} fields={{ id: a.id }} label={t("delete")} variant="destructive" confirm={t("deleteConfirm", { name: a.user.name })} />
+              </div>
+            </Td>
           </tr>
         ))}
       </DataTable>

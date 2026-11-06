@@ -4,6 +4,7 @@ import {
   affiliateOrders,
   assignOrderAffiliate,
   createAffiliate,
+  deleteAffiliate,
   getAffiliate,
   getAffiliateOrder,
   listAffiliates,
@@ -55,6 +56,45 @@ async function makeAffiliate(
 }
 
 describe("Gắn CTV khi tạo đơn (P10)", () => {
+  it("xoá CTV chưa phát sinh dữ liệu: xoá tài khoản, phiên, mật khẩu và ghi audit", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
+    const a = await makeAffiliate(f);
+    await prisma.session.create({ data: { id: `delete-${a.id}`, token: `delete-${a.id}`, userId: a.userId, expiresAt: new Date(Date.now() + 60_000) } });
+    await prisma.account.create({ data: { id: `delete-${a.id}`, accountId: a.userId, providerId: "credential", userId: a.userId, password: "test-hash" } });
+    await deleteAffiliate(a.id, admin(f));
+    expect(await prisma.affiliate.findUnique({ where: { id: a.id } })).toBeNull();
+    expect(await prisma.user.findUnique({ where: { id: a.userId } })).toBeNull();
+    expect(await prisma.session.count({ where: { userId: a.userId } })).toBe(0);
+    expect(await prisma.account.count({ where: { userId: a.userId } })).toBe(0);
+    expect(await prisma.auditLog.findFirst({ where: { action: "affiliate.delete", entityId: a.id } })).toMatchObject({ userId: f.userId });
+  });
+
+  it("không cho nhân viên đơn hàng hoặc kho xoá tài khoản", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
+    const a = await makeAffiliate(f);
+    for (const role of ["ORDER_STAFF", "WAREHOUSE_MANAGER"] as const) {
+      await expect(deleteAffiliate(a.id, { userId: a.userId, role })).rejects.toMatchObject({ code: "forbidden" });
+    }
+    expect(await prisma.user.findUnique({ where: { id: a.userId } })).not.toBeNull();
+  });
+
+  it("chặn xoá CTV đã có đơn hàng và giữ nguyên dữ liệu", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
+    const a = await makeAffiliate(f);
+    const order = await createOrder(orderInput(f, 1), { userId: null, affiliate: { source: "LINK", code: a.code } });
+    await expect(deleteAffiliate(a.id, admin(f))).rejects.toMatchObject({ code: "in_use" });
+    expect(await prisma.order.findUnique({ where: { id: order.id } })).toMatchObject({ affiliateId: a.id });
+    expect(await prisma.user.findUnique({ where: { id: a.userId } })).not.toBeNull();
+  });
+
+  it("chặn xoá CTV còn tuyến dưới", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
+    const a = await makeAffiliate(f);
+    const child = await makeAffiliate(f, { suffix: "D", parentId: a.id });
+    await expect(deleteAffiliate(a.id, admin(f))).rejects.toMatchObject({ code: "in_use" });
+    expect(await prisma.affiliate.findUnique({ where: { id: child.id } })).toMatchObject({ parentId: a.id });
+  });
+
   it("link giới thiệu hợp lệ → đơn thuộc CTV, chốt % lúc đặt (đổi % sau không ảnh hưởng)", async () => {
     const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
     const a = await makeAffiliate(f, { rateBp: 1200 });

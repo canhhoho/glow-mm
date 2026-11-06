@@ -77,4 +77,41 @@ test("admin: tạo CTV, gán vào đơn, đơn hoàn tất rồi ghi nhận chi 
   // Danh sách CTV tìm được theo mã.
   await page.goto(`/admin/affiliates?q=${code}`);
   await expect(page.getByTestId("affiliate-row")).toHaveCount(1);
+  const row = page.getByTestId("affiliate-row");
+  await expect(row.getByRole("link", { name: "Sửa", exact: true })).toHaveAttribute("href", /#profile$/);
+  page.once("dialog", (d) => d.accept());
+  await row.getByRole("button", { name: "Xóa CTV", exact: true }).click();
+  await expect(row.getByRole("alert")).toContainText("Hãy khóa tài khoản");
+});
+
+test("admin: sửa CTV từ danh sách, hủy xác nhận rồi xóa tài khoản chưa có dữ liệu", async ({ page }) => {
+  const code = `DEL${Date.now().toString(36).toUpperCase().slice(-6)}`;
+  await login(page, "admin@glow.local");
+  await page.goto("/admin/affiliates/new");
+  await page.getByLabel("Tên", { exact: true }).fill(`CTV ${code}`);
+  await page.getByLabel("Email đăng nhập").fill(`${code.toLowerCase()}@ctv.glow.local`);
+  await page.getByLabel("Số điện thoại").fill("09 7812 0000");
+  await page.getByLabel("Mã giới thiệu").fill(code);
+  await page.getByLabel("Hoa hồng (%)").fill("10");
+  await page.getByLabel("Mật khẩu tạm").fill("ctv-mat-khau-12");
+  await page.getByRole("button", { name: "Tạo CTV", exact: true }).click();
+  await expect(page).toHaveURL(/\?created=1$/);
+  await page.goto(`/admin/affiliates?q=${code}`);
+  await page.getByTestId("affiliate-row").getByRole("link", { name: "Sửa", exact: true }).click();
+  await expect(page).toHaveURL(/#profile$/);
+  const profile = page.locator("#profile");
+  await profile.getByLabel("Tên", { exact: true }).fill(`Updated ${code}`);
+  await profile.getByRole("button", { name: "Lưu", exact: true }).click();
+  await expect(profile.getByRole("status")).toHaveText("Đã lưu");
+  await page.goto(`/admin/affiliates?q=${code}`);
+  const row = page.getByTestId("affiliate-row");
+  await expect(row).toContainText(`Updated ${code}`);
+  page.once("dialog", (d) => d.dismiss());
+  await row.getByRole("button", { name: "Xóa CTV", exact: true }).click();
+  await expect(row).toHaveCount(1);
+  page.once("dialog", (d) => d.accept());
+  await row.getByRole("button", { name: "Xóa CTV", exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/affiliates$/);
+  await page.goto(`/admin/affiliates?q=${code}`);
+  await expect(page.getByTestId("affiliate-row")).toHaveCount(0);
 });
