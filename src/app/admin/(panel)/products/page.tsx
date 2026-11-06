@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Pencil } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { listProductsAdmin, PRODUCT_STATUSES, productFilterOptions, type ProductStatusFilter } from "@/server/catalog/admin-queries";
@@ -7,7 +9,7 @@ import { listStatus } from "@/server/catalog/readiness-rules";
 import { prisma } from "@/lib/db";
 import { BrandForm } from "@/components/admin/catalog-forms";
 import { BulkCheckbox, BulkPublishBar, RowProductAction } from "@/components/admin/product-bulk-publish";
-import { Badge, DataTable, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Section, Td, fieldClass } from "@/components/admin/ui";
+import { Badge, DataTable, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Td, fieldClass } from "@/components/admin/ui";
 import { fmtInt } from "@/lib/format";
 
 const str = (v: string | string[] | undefined) => (typeof v === "string" && v ? v : undefined);
@@ -20,9 +22,8 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
   const categoryId = str(sp.category);
   const warehouseId = str(sp.warehouse);
   const status: ProductStatusFilter = PRODUCT_STATUSES.find((s) => s === sp.status) ?? "active";
-  const [t, tn, tc, listed, options] = await Promise.all([
+  const [t, tc, listed, options] = await Promise.all([
     getTranslations("Products"),
-    getTranslations("Nav"),
     getTranslations("Common"),
     listProductsAdmin({ q: query, brandId, categoryId, warehouseId, status }),
     productFilterOptions(),
@@ -40,6 +41,17 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
       <PageHeader
         title={t("title")}
         actions={[
+          <details key="brand" className="relative">
+            <summary className={`${buttonVariants({ variant: "outline", size: "sm" })} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
+              {t("newBrand")}
+            </summary>
+            <div className="absolute top-full right-0 z-20 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-lg border bg-background p-4 shadow-lg">
+              <BrandForm />
+            </div>
+          </details>,
+          <Link key="category" href="/admin/categories#new-category" className={buttonVariants({ variant: "outline", size: "sm" })}>
+            {t("newCategory")}
+          </Link>,
           <LinkButton key="import" href="/admin/products/import">
             {t("import")}
           </LinkButton>,
@@ -144,23 +156,21 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
               })()}
             </Td>
             <Td label={t("colActions")}>
-              <div className="flex flex-wrap gap-2">
-                <LinkButton href={`/admin/products/${p.id}`}>{t("edit")}</LinkButton>
+              <div className="flex flex-nowrap items-center gap-2">
+                <Link
+                  href={`/admin/products/${p.id}`}
+                  className={buttonVariants({ variant: "outline", size: "icon-lg" })}
+                  aria-label={`${t("edit")} ${p.name}`}
+                  title={t("edit")}
+                >
+                  <Pencil aria-hidden="true" />
+                </Link>
                 <RowProductAction id={p.id} name={p.name} kind={p.archived ? "restore" : "delete"} />
               </div>
             </Td>
           </tr>
         ))}
       </DataTable>
-      <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
-        <Section title={t("newBrand")}>
-          <BrandForm />
-        </Section>
-        <Section title={t("newCategory")}>
-          {/* Thêm/sửa danh mục + icon: trang Danh mục (P6). */}
-          <LinkButton href="/admin/categories">{tn("categories")} →</LinkButton>
-        </Section>
-      </div>
     </Page>
   );
 }

@@ -96,6 +96,7 @@ export async function createBrandAction(_prev: ActionState, formData: FormData):
   }
   updateTag(CATALOG_TAG); // bộ lọc thương hiệu storefront
   revalidatePath("/admin/products");
+  revalidatePath("/admin/brands");
   return { ok: "brand" };
 }
 

@@ -2,25 +2,59 @@ import { describe, expect, it } from "vitest";
 import { activeHref, NAV, neededCounts, visibleNav } from "@/server/admin/nav";
 import { classifyExpiry } from "@/server/alerts/compute";
 import { sellableCutoff } from "@/server/inventory/fefo";
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
+import { can, ROLES } from "@/server/auth/roles";
 
 const hrefs = NAV.flatMap((g) => g.items.map((i) => i.href));
 
 describe("menu admin", () => {
   it("admin thấy mọi nhóm; mỗi href chỉ xuất hiện một lần", () => {
     const groups = visibleNav("ADMIN");
-    expect(groups.map((g) => g.key)).toEqual([null, "groupSales", "groupStock", "groupCatalog", "groupContent", "groupSystem"]);
+    expect(groups.map((g) => g.key)).toEqual([null, "orders", "products", "groupStock", "groupAccounts", "affiliates", "reports", "settings"]);
     expect(new Set(hrefs).size).toBe(hrefs.length);
   });
 
   it("lọc theo quyền, nhóm rỗng bị ẩn", () => {
     const staff = visibleNav("ORDER_STAFF");
-    expect(staff.map((g) => g.key)).toEqual([null, "groupSales", "groupStock"]);
+    expect(staff.map((g) => g.key)).toEqual([null, "orders", "groupStock"]);
     const stock = staff.find((g) => g.key === "groupStock")!.items.map((i) => i.key);
     expect(stock).toEqual(["inventory", "documents", "quarantine", "alerts"]); // không có Chuyến hàng
     const wh = visibleNav("WAREHOUSE_MANAGER").flatMap((g) => g.items.map((i) => i.key));
     expect(wh).toContain("shipments");
     expect(wh).not.toContain("reviews");
     expect(wh).not.toContain("users");
+  });
+
+  it("mọi mục chỉ hiển thị với đúng quyền, kể cả mục lồng trong Cài đặt", () => {
+    for (const role of ROLES) {
+      const shown = visibleNav(role).flatMap(g => g.items).map(i => i.href);
+      expect(shown.sort()).toEqual(NAV.flatMap(g => g.items).filter(i => can(role, i.permission)).map(i => i.href).sort());
+    }
+    expect(visibleNav("ADMIN").find(g => g.key === "groupAccounts")?.items.map(i => i.href)).toEqual([
+      "/admin/users", "/admin/affiliates", "/admin/customer-accounts",
+    ]);
+    expect(visibleNav("ADMIN").find(g => g.key === "settings")?.items.filter(i => i.section).map(i => i.href)).toEqual([
+      "/admin/content/banners", "/admin/content/collections",
+    ]);
+  });
+
+  it("mọi đường dẫn menu có trang thật và nhãn đủ ba ngôn ngữ", () => {
+    const root = path.resolve(import.meta.dirname, "../..");
+    for (const href of hrefs) {
+      const route = href.replace(/^\/admin\/?/, "");
+      expect(existsSync(path.join(root, "src/app/admin/(panel)", route, "page.tsx")), href).toBe(true);
+    }
+    for (const locale of ["vi", "en", "my"]) {
+      const labels = JSON.parse(readFileSync(path.join(root, `messages/admin.${locale}.json`), "utf8")).Nav;
+      for (const group of NAV) {
+        if (group.key) expect(labels[group.key], `${locale}:${group.key}`).toBeTruthy();
+        for (const item of group.items) {
+          expect(labels[item.key], `${locale}:${item.key}`).toBeTruthy();
+          if (item.section) expect(labels[item.section], `${locale}:${item.section}`).toBeTruthy();
+        }
+      }
+    }
   });
 
   it("chỉ tính badge của mục được thấy", () => {
@@ -39,6 +73,12 @@ describe("menu admin", () => {
     expect(activeHref("/admin/orders/x1", hrefs)).toBe("/admin/orders");
     expect(activeHref("/admin/ordersx", hrefs)).toBeNull();
     expect(activeHref("/admin/account", hrefs)).toBeNull();
+    expect(activeHref("/admin/orders/cod", hrefs)).toBe("/admin/orders/cod");
+    expect(activeHref("/admin/affiliates/abc", hrefs)).toBe("/admin/affiliates");
+    expect(activeHref("/admin/affiliates/applications", hrefs)).toBe("/admin/affiliates/applications");
+    expect(activeHref("/admin/affiliates/commissions", hrefs)).toBe("/admin/affiliates/commissions");
+    expect(activeHref("/admin/reports/data-health", hrefs)).toBe("/admin/reports/data-health");
+    expect(activeHref("/admin/content/banners/new", hrefs)).toBe("/admin/content/banners");
   });
 
   it("mốc ngừng bán (badge Cảnh báo) khớp classifyExpiry", () => {

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { parseCsvObjects } from "@/lib/csv";
 import { normalizeForSearch, toUnicode } from "@/lib/myanmar";
 import { slugify } from "@/lib/slug";
+import { resolveProductIdentifiers } from "@/lib/product-identifiers";
 import { createDocument } from "@/server/inventory/documents";
 import { assertStockLocation, defaultStockLocationId, stockLocationByCode } from "@/server/inventory/warehouses";
 import type { Tx } from "@/server/inventory/ledger";
@@ -26,6 +27,7 @@ const translation = z.object({
 const variantSchema = z.object({
   id: z.string().optional(),
   sku: z.string().trim().min(1).max(40).regex(/^[A-Za-z0-9._-]+$/, "SKU chỉ gồm chữ, số, . _ -"),
+  autoSku: z.boolean().default(false),
   label: z.string().trim().min(1).max(60),
   priceMmk: z.coerce.number().int().min(0),
   weightGrams: z.coerce.number().int().min(0).optional().nullable(),
@@ -41,6 +43,7 @@ export const productSchema = z.object({
   id: z.string().optional(),
   copyFromId: rawId.optional(),
   slug: slugSchema(80, "Slug chỉ gồm a-z, 0-9 và -"),
+  autoSlug: z.boolean().default(false),
   brandId: rawId,
   categoryId: rawId,
   /** Kho bán (P24). Bỏ trống: SP mới → kho mặc định; SP đang có → giữ kho cũ. */
@@ -66,17 +69,25 @@ export class CatalogError extends Error {
 }
 
 export async function saveProduct(raw: unknown, userId: string, transaction?: Tx) {
-  const input = productSchema.parse(raw);
-  if (input.copyFromId && input.id) throw new CatalogError("Chỉ sao chép khi tạo sản phẩm mới");
+  const parsed = productSchema.parse(raw);
+  if (parsed.copyFromId && parsed.id) throw new CatalogError("Chỉ sao chép khi tạo sản phẩm mới");
   const my = {
-    name: toUnicode(input.my.name),
-    description: toUnicode(input.my.description),
-    usage: toUnicode(input.my.usage),
+    name: toUnicode(parsed.my.name),
+    description: toUnicode(parsed.my.description),
+    usage: toUnicode(parsed.my.usage),
   };
-  const brand = await (transaction ?? prisma).brand.findUnique({ where: { id: input.brandId } });
+  const brand = await (transaction ?? prisma).brand.findUnique({ where: { id: parsed.brandId } });
   const brandName = brand?.name ?? "";
 
   const run = async (tx: Tx) => {
+    // Serialize catalog code allocation, including manual saves/imports, until commit.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('catalog.product-identifiers'))`;
+    const input = await resolveProductIdentifiers(parsed, async (kind, value) => {
+      const row = kind === "slug"
+        ? await tx.product.findUnique({ where: { slug: value }, select: { id: true } })
+        : await tx.variant.findUnique({ where: { sku: value }, select: { id: true } });
+      return !!row;
+    });
     // Coordinate with image deletion/reordering so shared image files remain referenced.
     if (input.copyFromId) await tx.$queryRaw`SELECT "id" FROM "Product" WHERE "id" = ${input.copyFromId} FOR UPDATE`;
     const source = input.copyFromId

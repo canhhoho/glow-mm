@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { login, openAdminNav } from "./helpers";
+import { login, openAdminGroup, openAdminNav } from "./helpers";
 
 test("admin tạo nhân viên → nhân viên đăng nhập đúng quyền → admin khoá → bị đăng xuất, không đăng nhập lại được", async ({
   page,
@@ -11,7 +11,7 @@ test("admin tạo nhân viên → nhân viên đăng nhập đúng quyền → a
   const password = `E2E-tam-${randomBytes(6).toString("hex")}`;
 
   await login(page, "admin@glow.local");
-  await (await openAdminNav(page)).getByRole("link", { name: "Nhân viên" }).click();
+  await (await openAdminGroup(page, "Tài khoản")).getByRole("link", { name: "Nhân viên" }).click();
   await page.getByRole("link", { name: "Thêm nhân viên" }).click();
   // React reset form sau mỗi lần gửi → điền lại toàn bộ.
   // getByRole bỏ qua các trang trước Next còn giữ ẩn trong DOM (ô tìm "…email", form đăng nhập).
@@ -42,7 +42,7 @@ test("admin tạo nhân viên → nhân viên đăng nhập đúng quyền → a
   try {
     await login(staff, email, password);
     const nav = await openAdminNav(staff);
-    await expect(nav.getByRole("link", { name: "Đơn hàng" })).toBeVisible();
+    await expect(nav.getByText("Đơn hàng", { exact: true })).toBeVisible();
     await expect(nav.getByRole("link", { name: "Nhân viên" })).toHaveCount(0);
     await staff.goto("/admin/users");
     await expect(staff).toHaveURL(/\/admin\?denied=1$/);

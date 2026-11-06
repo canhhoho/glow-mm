@@ -138,7 +138,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
         </div>
       </section>
 
-      <section className="space-y-2 rounded-lg border p-4">
+      <section id="affiliate-payouts" className="scroll-mt-20 space-y-2 rounded-lg border p-4">
         <h2 className="font-medium">{t("due")}</h2>
         {a.due.entries.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("dueEmpty")}</p>

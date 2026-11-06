@@ -30,28 +30,34 @@ export type NavIcon =
 /** Số đếm hiện ở badge (xem `navCounts`). */
 export type NavCountKey = "pendingOrders" | "quarantineLots" | "blockedLots" | "pendingApplications";
 
-export type NavItem = { href: string; key: string; permission: Permission; icon: NavIcon; count?: NavCountKey };
+export type NavItem = { href: string; key: string; permission: Permission; icon: NavIcon; count?: NavCountKey; section?: string };
 /** `key` null = nhóm không có tiêu đề (Tổng quan). */
-export type NavGroup = { key: string | null; items: NavItem[] };
+export type NavGroup = { key: string | null; icon?: NavIcon; items: NavItem[] };
 
 export const NAV: NavGroup[] = [
   { key: null, items: [{ href: "/admin", key: "dashboard", permission: "dashboard:view", icon: "home" }] },
   {
-    key: "groupSales",
+    key: "orders",
+    icon: "cart",
     items: [
-      { href: "/admin/orders", key: "orders", permission: "orders:view", icon: "cart", count: "pendingOrders" },
+      { href: "/admin/orders", key: "orderList", permission: "orders:view", icon: "cart", count: "pendingOrders" },
+      { href: "/admin/orders/cod", key: "codSettlement", permission: "orders:reconcile-cod", icon: "coins" },
       { href: "/admin/reviews", key: "reviews", permission: "reviews:moderate", icon: "star" },
-      {
-        href: "/admin/affiliates",
-        key: "affiliates",
-        permission: "affiliates:manage",
-        icon: "handshake",
-        count: "pendingApplications",
-      },
+    ],
+  },
+  {
+    key: "products",
+    icon: "tag",
+    items: [
+      { href: "/admin/products", key: "productList", permission: "catalog:manage", icon: "tag" },
+      { href: "/admin/categories", key: "categories", permission: "catalog:manage", icon: "folder" },
+      { href: "/admin/brands", key: "brands", permission: "catalog:manage", icon: "tag" },
+      { href: "/admin/pricing", key: "pricing", permission: "pricing:manage", icon: "coins" },
     ],
   },
   {
     key: "groupStock",
+    icon: "warehouse",
     items: [
       { href: "/admin/inventory", key: "inventory", permission: "stock:view", icon: "box" },
       { href: "/admin/inventory/documents", key: "documents", permission: "stock:view", icon: "file" },
@@ -62,34 +68,45 @@ export const NAV: NavGroup[] = [
         icon: "shield",
         count: "quarantineLots",
       },
-      { href: "/admin/shipments", key: "shipments", permission: "shipment:manage", icon: "truck" },
       { href: "/admin/alerts", key: "alerts", permission: "stock:view", icon: "bell", count: "blockedLots" },
+      { href: "/admin/shipments", key: "shipments", permission: "shipment:manage", icon: "truck" },
     ],
   },
   {
-    key: "groupCatalog",
+    key: "groupAccounts",
+    icon: "users",
     items: [
-      { href: "/admin/products", key: "products", permission: "catalog:manage", icon: "tag" },
-      { href: "/admin/categories", key: "categories", permission: "catalog:manage", icon: "folder" },
-      { href: "/admin/pricing", key: "pricing", permission: "pricing:manage", icon: "coins" },
-    ],
-  },
-  {
-    key: "groupContent",
-    items: [
-      { href: "/admin/content/banners", key: "banners", permission: "content:manage", icon: "image" },
-      { href: "/admin/content/collections", key: "collections", permission: "content:manage", icon: "layers" },
-    ],
-  },
-  {
-    key: "groupSystem",
-    items: [
-      { href: "/admin/reports", key: "reports", permission: "reports:view", icon: "chart" },
       { href: "/admin/users", key: "users", permission: "users:manage", icon: "users" },
+      { href: "/admin/affiliates", key: "affiliates", permission: "affiliates:manage", icon: "handshake" },
       { href: "/admin/customer-accounts", key: "customers", permission: "users:manage", icon: "userCircle" },
-      { href: "/admin/settings", key: "settings", permission: "settings:manage", icon: "gear" },
-      { href: "/admin/settings/warehouses", key: "warehouses", permission: "settings:manage", icon: "warehouse" },
+    ],
+  },
+  {
+    key: "affiliates",
+    icon: "handshake",
+    items: [
+      { href: "/admin/affiliates/applications", key: "affiliateApplications", permission: "affiliates:manage", icon: "file", count: "pendingApplications" },
+      { href: "/admin/affiliates/commissions", key: "affiliateCommissions", permission: "affiliates:manage", icon: "coins" },
+    ],
+  },
+  {
+    key: "reports",
+    icon: "chart",
+    items: [
+      { href: "/admin/reports", key: "salesReports", permission: "reports:view", icon: "chart" },
+      { href: "/admin/reports/analytics", key: "analyticsReports", permission: "reports:view", icon: "chart" },
+      { href: "/admin/reports/data-health", key: "dataHealth", permission: "reports:view", icon: "shield" },
+    ],
+  },
+  {
+    key: "settings",
+    icon: "gear",
+    items: [
+      { href: "/admin/settings", key: "storeSettings", permission: "settings:manage", icon: "gear" },
+      { href: "/admin/settings/warehouses", key: "warehouseManagement", permission: "settings:manage", icon: "warehouse" },
       { href: "/admin/settings/locations", key: "locations", permission: "settings:manage", icon: "map" },
+      { href: "/admin/content/banners", key: "banners", permission: "content:manage", icon: "image", section: "groupContent" },
+      { href: "/admin/content/collections", key: "collections", permission: "content:manage", icon: "layers", section: "groupContent" },
     ],
   },
 ];

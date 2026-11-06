@@ -7,6 +7,7 @@ import { fieldClass, fieldLabelClass } from "@/components/admin/ui";
 import { saveProductAction } from "@/server/catalog/actions";
 import type { ProductEditData } from "@/server/catalog/admin-queries";
 import { cn } from "@/lib/utils";
+import { suggestProductSlug, suggestVariantSku } from "@/lib/product-identifiers";
 
 type Options = {
   brands: { id: string; name: string }[];
@@ -19,11 +20,11 @@ type Options = {
 type Variant = ProductEditData["variants"][number] & { key: number };
 
 let seq = 0;
-const blankVariant = (): Variant => ({
+const blankVariant = (label: string): Variant => ({
   key: ++seq,
   id: "",
   sku: "",
-  label: "",
+  label,
   priceMmk: 0,
   weightGrams: null,
   lowStockAt: 5,
@@ -68,8 +69,9 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
   const [p, setP] = useState<ProductEditData>(initial ?? { ...EMPTY, stockLocationId: options.warehouses[0]?.id ?? "" });
   const initialWarehouse = initial?.id ? initial.stockLocationId : null;
   const [variants, setVariants] = useState<Variant[]>(
-    initial?.variants.length ? initial.variants.map((v) => ({ ...v, key: ++seq })) : [blankVariant()],
+    initial?.variants.length ? initial.variants.map((v) => ({ ...v, key: ++seq })) : [blankVariant(t("standardVariant"))],
   );
+  const slug = p.slug || suggestProductSlug(p.en.name, p.my.name);
 
   const set = <K extends keyof ProductEditData>(k: K, v: ProductEditData[K]) => setP((x) => ({ ...x, [k]: v }));
   const setVar = (key: number, patch: Partial<Variant>) =>
@@ -78,13 +80,22 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
   const payload = useMemo(
     () =>
       JSON.stringify({
+        // Giữ cả thông tin bổ sung và tag đã lưu dù không còn ô chỉnh sửa trên form.
         ...p,
+        slug,
+        autoSlug: !p.id && !p.slug,
         id: p.id || undefined,
         copyFromId: copySourceId,
         // key chỉ dùng cho React; undefined bị JSON.stringify bỏ qua.
-        variants: variants.map((v) => ({ ...v, key: undefined, id: v.id || undefined })),
+        variants: variants.map((v, index) => ({
+          ...v,
+          sku: v.sku || suggestVariantSku(slug, index),
+          autoSku: !v.id && !v.sku,
+          key: undefined,
+          id: v.id || undefined,
+        })),
       }),
-    [p, variants, copySourceId],
+    [p, slug, variants, copySourceId],
   );
 
   const textarea = (value: string, onChange: (v: string) => void, rows = 3) => (
@@ -103,7 +114,8 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
       <section className="grid gap-3 rounded-lg border p-4 sm:grid-cols-2">
         <h2 className="font-medium sm:col-span-2">{t("general")}</h2>
         <Field label={t("slug")}>
-          <input required value={p.slug} onChange={(e) => set("slug", e.target.value)} pattern="[a-z0-9\-]+" className={fieldClass} />
+          <input required aria-label={t("slug")} value={slug} onChange={(e) => set("slug", e.target.value)} pattern="[a-z0-9\-]+" maxLength={80} className={fieldClass} />
+          {!p.id && !p.slug && <span className="text-xs text-muted-foreground">{t("autoIdentifierHint")}</span>}
         </Field>
         <Field label={t("brand")}>
           <select required value={p.brandId} onChange={(e) => set("brandId", e.target.value)} className={fieldClass}>
@@ -153,17 +165,10 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
           <input type="checkbox" checked={p.published} onChange={(e) => set("published", e.target.checked)} />
           {t("publishedLabel")}
         </label>
-        <Field label={t("storageNote")}>
-          <input value={p.storageNote} onChange={(e) => set("storageNote", e.target.value)} className={fieldClass} />
-        </Field>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={p.requiresExpiry} onChange={(e) => set("requiresExpiry", e.target.checked)} />
           {t("requiresExpiry")}
         </label>
-        <Field label={t("paoMonths")}>
-          <input type="number" min={1} max={120} step={1} value={p.paoMonths ?? ""} onChange={(e) => set("paoMonths", e.target.value ? Number(e.target.value) : null)} className={fieldClass} />
-        </Field>
-        <Field label={t("ingredients")}>{textarea(p.ingredientsText, (v) => set("ingredientsText", v), 2)}</Field>
       </section>
 
       <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
@@ -186,35 +191,13 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
         ))}
       </div>
 
-      <section className="space-y-3 rounded-lg border p-4">
-        <h2 className="font-medium">{t("tags")}</h2>
-        {(["SKIN_TYPE", "CONCERN", "INGREDIENT"] as const).map((kind) => (
-          <div key={kind} className="flex flex-wrap items-center gap-3 text-sm">
-            <span className="w-40 text-muted-foreground">{t(kind)}</span>
-            {options.tags
-              .filter((x) => x.kind === kind)
-              .map((tag) => (
-                <label key={tag.id} className="flex items-center gap-1">
-                  <input
-                    type="checkbox"
-                    checked={p.tagIds.includes(tag.id)}
-                    onChange={(e) =>
-                      set("tagIds", e.target.checked ? [...p.tagIds, tag.id] : p.tagIds.filter((x) => x !== tag.id))
-                    }
-                  />
-                  {tag.name}
-                </label>
-              ))}
-          </div>
-        ))}
-      </section>
-
       <section className="space-y-3">
         <h2 className="font-medium">{t("variants")}</h2>
-        {variants.map((v) => (
-          <fieldset key={v.key} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-4 lg:grid-cols-8">
+        {variants.map((v, index) => (
+          <fieldset key={v.key} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-2 lg:grid-cols-5">
             <Field label={t("sku")}>
-              <input required value={v.sku} onChange={(e) => setVar(v.key, { sku: e.target.value })} className={fieldClass} />
+              <input required aria-label={t("sku")} value={v.sku || suggestVariantSku(slug, index)} onChange={(e) => setVar(v.key, { sku: e.target.value })} maxLength={40} className={fieldClass} />
+              {!v.id && !v.sku && <span className="text-xs text-muted-foreground">{t("autoIdentifierHint")}</span>}
             </Field>
             <Field label={t("label")} className="lg:col-span-2">
               <input required value={v.label} onChange={(e) => setVar(v.key, { label: e.target.value })} className={fieldClass} />
@@ -225,24 +208,12 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
             <Field label={t("weight")}>
               <input type="number" min={0} value={v.weightGrams ?? ""} onChange={(e) => setVar(v.key, { weightGrams: e.target.value ? Number(e.target.value) : null })} className={fieldClass} />
             </Field>
-            <Field label={t("lowStock")}>
-              <input type="number" min={0} value={v.lowStockAt} onChange={(e) => setVar(v.key, { lowStockAt: Number(e.target.value) })} className={fieldClass} />
-            </Field>
-            <Field label={t("leadTime")}>
-              <input type="number" min={0} value={v.leadTimeDays} onChange={(e) => setVar(v.key, { leadTimeDays: Number(e.target.value) })} className={fieldClass} />
-            </Field>
-            <Field label={t("safety")}>
-              <input type="number" min={0} value={v.safetyStock} onChange={(e) => setVar(v.key, { safetyStock: Number(e.target.value) })} className={fieldClass} />
-            </Field>
-            <div className="flex flex-wrap items-center gap-4 text-sm sm:col-span-4 lg:col-span-8">
+            <div className="col-span-full flex flex-wrap items-center gap-4 text-sm">
               <label className="flex items-center gap-1">
                 <input type="checkbox" checked={v.active} onChange={(e) => setVar(v.key, { active: e.target.checked })} />
                 {t("active")}
               </label>
-              <label className="flex items-center gap-1">
-                <input type="checkbox" checked={v.isBundle} onChange={(e) => setVar(v.key, { isBundle: e.target.checked })} />
-                {t("isBundle")}
-              </label>
+              {v.isBundle && <span className="rounded bg-muted px-2 py-1 text-xs">{t("isBundle")}</span>}
               {!v.id && variants.length > 1 && (
                 <Button type="button" size="lg" variant="outline" onClick={() => setVariants((vs) => vs.filter((x) => x.key !== v.key))}>
                   {td("remove")}
@@ -250,7 +221,7 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
               )}
             </div>
             {v.isBundle && (
-              <div className="space-y-2 sm:col-span-4 lg:col-span-8">
+              <div className="col-span-full space-y-2">
                 <p className="text-sm text-muted-foreground">{t("components")}</p>
                 {v.components.map((c, i) => (
                   <div key={i} className="flex gap-2">
@@ -297,7 +268,7 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
             )}
           </fieldset>
         ))}
-        <Button size="lg" type="button" variant="outline" onClick={() => setVariants((vs) => [...vs, blankVariant()])}>
+        <Button size="lg" type="button" variant="outline" onClick={() => setVariants((vs) => [...vs, blankVariant(t("standardVariant"))])}>
           + {t("addVariant")}
         </Button>
       </section>

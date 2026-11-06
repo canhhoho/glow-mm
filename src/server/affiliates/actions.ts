@@ -123,6 +123,7 @@ export async function recordPayoutAction(_prev: ActionState, fd: FormData): Prom
     return { error: await message(e) };
   }
   revalidatePath("/admin/affiliates");
+  revalidatePath("/admin/affiliates/commissions");
   return { ok: "paid" };
 }
 

@@ -61,11 +61,57 @@ export type ShellItem = {
   href: string;
   label: string;
   icon: NavIcon;
+  section?: string;
   badge?: { n: number; tone: "brand" | "neutral" | "warning" };
   /** Nội dung server stream riêng, không để số đếm chặn cả khung điều hướng. */
   badgeContent?: React.ReactNode;
 };
-export type ShellGroup = { label: string | null; items: ShellItem[] };
+export type ShellGroup = { label: string | null; icon?: NavIcon; items: ShellItem[] };
+
+function ItemBadge({ item }: { item: ShellItem }) {
+  return <>
+    {item.badgeContent}
+    {item.badge && <span className={cn("ml-auto rounded-full px-1.5 text-[11px] font-medium tabular-nums", TONES[item.badge.tone])}>{item.badge.n}</span>}
+  </>;
+}
+
+function MenuItems({ items, current, close }: { items: ShellItem[]; current: string | null; close: () => void }) {
+  const link = (item: ShellItem) => {
+    const Icon = ICONS[item.icon];
+    const active = item.href === current;
+    return <li key={item.href}>
+      <Link
+        href={item.href}
+        onClick={close}
+        aria-current={active ? "page" : undefined}
+        className={cn("flex min-h-10 items-center gap-2 rounded-md px-2 py-2", active ? "bg-primary/10 font-medium text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground")}
+      >
+        <Icon className="size-4 flex-none" aria-hidden />
+        <span className="min-w-0 flex-1">{item.label}</span>
+        <ItemBadge item={item} />
+      </Link>
+    </li>;
+  };
+  const sections = new Set<string>();
+  return <ul className="space-y-0.5">
+    {items.map(item => {
+      if (!item.section) return link(item);
+      if (sections.has(item.section)) return null;
+      sections.add(item.section);
+      const children = items.filter(child => child.section === item.section);
+      return <li key={item.section}>
+        <details open={children.some(child => child.href === current)} className="group/section">
+          <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 rounded-md px-2 py-2 text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+            <Layers className="size-4 flex-none" aria-hidden />
+            <span className="flex-1">{item.section}</span>
+            <ChevronRight className="size-3.5 transition-transform group-open/section:rotate-90" aria-hidden />
+          </summary>
+          <ul className="ml-3 space-y-0.5 border-l pl-2">{children.map(link)}</ul>
+        </details>
+      </li>;
+    })}
+  </ul>;
+}
 
 /**
  * Khung admin (P9a): menu nhóm + icon + badge, đánh dấu trang đang mở, breadcrumb "Nhóm › Mục".
@@ -137,46 +183,25 @@ export function AdminShell({
             <X className="size-5" aria-hidden />
           </button>
         </div>
-        <nav aria-label="Admin" className="flex-1 space-y-4 overflow-y-auto p-3 text-sm">
-          {groups.map((g, gi) => (
-            <div key={g.label ?? gi}>
-              {g.label && (
-                <div className="mb-1 px-2 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">{g.label}</div>
-              )}
-              <ul className="space-y-0.5">
-                {g.items.map((i) => {
-                  const Icon = ICONS[i.icon];
-                  const active = i.href === current;
-                  return (
-                    <li key={i.href}>
-                      <Link
-                        href={i.href}
-                        aria-current={active ? "page" : undefined}
-                        className={cn(
-                          "relative flex items-center gap-3 rounded-md px-2 py-2.5 lg:gap-2 lg:py-1.5",
-                          active
-                            ? "bg-primary/10 font-medium text-primary lg:bg-background lg:shadow-sm lg:ring-1 lg:ring-border"
-                            : "hover:bg-muted",
-                        )}
-                      >
-                        {active && <span className="absolute inset-y-1 -left-3 hidden w-[3px] rounded-r bg-primary lg:block" />}
-                        <Icon className="size-4 flex-none" aria-hidden />
-                        {i.label}
-                        {i.badgeContent}
-                        {i.badge && (
-                          <span
-                            className={cn("ml-auto rounded-full px-1.5 text-[11px] font-medium tabular-nums", TONES[i.badge.tone])}
-                          >
-                            {i.badge.n}
-                          </span>
-                        )}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
+        <nav aria-label="Admin" className="flex-1 space-y-1 overflow-y-auto p-3 text-sm">
+          {groups.map((g, gi) => {
+            if (!g.label) return <MenuItems key={gi} items={g.items} current={current} close={close} />;
+            const active = g.items.some(i => i.href === current);
+            const Icon = ICONS[g.icon ?? "folder"];
+            return <details key={`${pathname}:${g.label}`} open={active} className="group/nav">
+              <summary className={cn("flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md px-2 py-2.5 font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden", active && "text-primary")}>
+                <Icon className="size-4 flex-none" aria-hidden />
+                <span className="flex-1">{g.label}</span>
+                <span className="flex items-center gap-1 group-open/nav:hidden">
+                  {g.items.filter(i => i.badgeContent || i.badge).map(i => <span key={i.href} title={i.label}><ItemBadge item={i} /></span>)}
+                </span>
+                <ChevronRight className="size-3.5 flex-none transition-transform group-open/nav:rotate-90" aria-hidden />
+              </summary>
+              <div className="ml-3 border-l pl-2">
+                <MenuItems items={g.items} current={current} close={close} />
+              </div>
+            </details>;
+          })}
         </nav>
       </aside>
 
@@ -200,6 +225,10 @@ export function AdminShell({
                   <ChevronRight className="hidden size-3 md:block" aria-hidden />
                 </>
               )}
+              {item.section && <>
+                <span className="hidden md:inline">{item.section}</span>
+                <ChevronRight className="hidden size-3 md:block" aria-hidden />
+              </>}
               <span className="truncate font-medium text-foreground">{item.label}</span>
             </nav>
           )}

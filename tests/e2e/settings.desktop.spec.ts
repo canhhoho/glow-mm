@@ -10,7 +10,7 @@ test("cài đặt: thẻ tài khoản, lưu/kiểm tra dữ liệu và bố cụ
   await expect(accounts.getByRole("link")).toHaveCount(3);
   await expect(accounts.getByRole("link", { name: /^Nhân viên/ })).toHaveAttribute("href", "/admin/users");
   await expect(accounts.getByRole("link", { name: /^Cộng tác viên/ })).toHaveAttribute("href", "/admin/affiliates");
-  await accounts.getByRole("link", { name: /^Tài khoản khách/ }).click();
+  await accounts.getByRole("link", { name: /^Khách hàng/ }).click();
   await expect(page).toHaveURL(/\/admin\/customer-accounts$/);
   await page.goto("/admin/settings");
 

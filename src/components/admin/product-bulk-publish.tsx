@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { RotateCcw, Trash2 } from "lucide-react";
 import { useActionState, useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -33,12 +34,13 @@ export function RowProductAction({ id, name, kind }: { id: string; name: string;
       form={BULK_FORM_ID}
       name="intent"
       value={`${kind}:${id}`}
-      size="lg"
+      size="icon-lg"
       variant={kind === "delete" ? "destructive" : "outline"}
       aria-label={`${t(kind === "delete" ? "delete" : "restore")} ${name}`}
+      title={t(kind === "delete" ? "delete" : "restore")}
       onClick={kind === "delete" ? confirmOr(t("deleteOneConfirm", { name })) : undefined}
     >
-      {t(kind === "delete" ? "delete" : "restore")}
+      {kind === "delete" ? <Trash2 aria-hidden="true" /> : <RotateCcw aria-hidden="true" />}
     </Button>
   );
 }

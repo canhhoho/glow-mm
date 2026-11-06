@@ -27,11 +27,13 @@ export default async function PanelLayout({ children }: LayoutProps<"/admin">) {
 
   const groups: ShellGroup[] = nav.map((g) => ({
     label: g.key ? t(g.key) : null,
+    icon: g.icon,
     items: g.items.map((i) => {
       return {
         href: i.href,
         label: t(i.key),
         icon: i.icon,
+        section: i.section ? t(i.section) : undefined,
         badgeContent: i.count ? <Suspense fallback={null}><NavBadge counts={counts} kind={i.count} /></Suspense> : undefined,
       };
     }),

@@ -55,6 +55,14 @@ export async function openAdminNav(page: Page) {
   return nav;
 }
 
+/** Open a top-level accordion without changing the state of other menu groups. */
+export async function openAdminGroup(page: Page, label: string) {
+  const nav = await openAdminNav(page);
+  const summary = nav.locator(":scope > details > summary").filter({ has: page.getByText(label, { exact: true }) });
+  if (!(await summary.evaluate(el => el.parentElement?.hasAttribute("open")))) await summary.click();
+  return nav;
+}
+
 /** PNG đặc một màu size×size (đủ lớn để bộ tối ưu ảnh/next/image và trình duyệt giải mã bình thường). */
 export function solidPng(size: number): Buffer {
   const chunk = (type: string, data: Buffer) => {

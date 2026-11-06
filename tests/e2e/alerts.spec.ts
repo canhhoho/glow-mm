@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { login, openAdminNav } from "./helpers";
+import { login, openAdminGroup } from "./helpers";
 
 test("thủ kho xem cảnh báo: tồn thấp, hạn dùng, gợi ý đặt hàng", async ({ page }) => {
   await login(page, "kho@glow.local");
-  await (await openAdminNav(page)).getByRole("link", { name: "Cảnh báo" }).click();
+  await (await openAdminGroup(page, "Kho hàng")).getByRole("link", { name: "Cảnh báo" }).click();
   await expect(page).toHaveURL(/\/admin\/alerts(?:\?.*)?$/, { timeout: 15_000 });
   await expect(page.getByRole("heading", { name: "Cảnh báo kho", level: 1 })).toBeVisible();
 

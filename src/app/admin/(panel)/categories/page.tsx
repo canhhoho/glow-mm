@@ -121,10 +121,12 @@ export default async function CategoriesPage({ searchParams }: PageProps<"/admin
         </ul>
       )}
 
-      <Section title={t("newCategory")}>
-        <CategoryForm parents={roots} />
-        <p className="text-xs text-muted-foreground">{tp("catSlug")}: a-z, 0-9, -</p>
-      </Section>
+      <div id="new-category" className="scroll-mt-20">
+        <Section title={t("newCategory")}>
+          <CategoryForm parents={roots} />
+          <p className="text-xs text-muted-foreground">{tp("catSlug")}: a-z, 0-9, -</p>
+        </Section>
+      </div>
     </Page>
   );
 }
