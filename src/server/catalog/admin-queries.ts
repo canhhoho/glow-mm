@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import type { Prisma } from "@/generated/prisma/client";
 import { productName } from "@/server/inventory/queries";
 
 /** `ready` / `incomplete` (D2): SP đang ẩn, lọc thêm theo kiểm tra mở bán ở trang danh sách. */
@@ -112,12 +113,20 @@ export async function productFormOptions() {
   };
 }
 
+/** Include dùng chung cho form sửa SP và nhập Excel (cập nhật giữ nguyên các trường không có trong file). */
+export const PRODUCT_EDIT_INCLUDE = {
+  translations: true,
+  tags: true,
+  variants: { include: { bundleItems: true }, orderBy: { sku: "asc" } },
+} satisfies Prisma.ProductInclude;
+type ProductForEdit = Prisma.ProductGetPayload<{ include: typeof PRODUCT_EDIT_INCLUDE }>;
+
 export async function getProductForEdit(id: string) {
-  const p = await prisma.product.findUnique({
-    where: { id },
-    include: { translations: true, tags: true, variants: { include: { bundleItems: true }, orderBy: { sku: "asc" } } },
-  });
-  if (!p) return null;
+  const p = await prisma.product.findUnique({ where: { id }, include: PRODUCT_EDIT_INCLUDE });
+  return p ? toProductEditData(p) : null;
+}
+
+export function toProductEditData(p: ProductForEdit) {
   const tr = (locale: string) => p.translations.find((t) => t.locale === locale);
   return {
     id: p.id,

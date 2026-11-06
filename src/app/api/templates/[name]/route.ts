@@ -1,5 +1,7 @@
 import { toCsv } from "@/lib/csv";
 import { getStaffUser } from "@/server/auth/session";
+import { can } from "@/server/auth/roles";
+import { catalogTemplateFile } from "@/server/catalog/catalog-template";
 import { PRODUCT_CSV_COLUMNS, STOCK_CSV_COLUMNS } from "@/server/catalog/products";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -19,8 +21,23 @@ const TEMPLATES: Record<string, (string | number)[][]> = {
 };
 
 export async function GET(_req: Request, ctx: RouteContext<"/api/templates/[name]">) {
-  if (!(await getStaffUser())) return new Response("Unauthorized", { status: 401 });
+  const user = await getStaffUser();
+  if (!user) return new Response("Unauthorized", { status: 401 });
   const { name } = await ctx.params;
+  // File nhập/cập nhật SP một sheet: sinh lúc tải (danh sách thả xuống theo dữ liệu thật).
+  if (name === "catalog.xlsx" || name === "catalog-current.xlsx") {
+    if (!can(user.role, "catalog:manage")) return new Response("Forbidden", { status: 403 });
+    const current = name === "catalog-current.xlsx";
+    const bytes = await catalogTemplateFile(current);
+    const day = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+    return new Response(new Uint8Array(bytes), {
+      headers: {
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": `attachment; filename="${current ? `san-pham-hien-co-${day}` : "mau-nhap-san-pham"}.xlsx"`,
+        "Cache-Control": "private, no-store",
+      },
+    });
+  }
   if (name === "products.xlsx" || name === "stock.xlsx" || name === "opening.xlsx") {
     const bytes = await readFile(path.join(process.cwd(), "public", "templates", name));
     return new Response(new Uint8Array(bytes), {

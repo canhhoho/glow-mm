@@ -12,6 +12,8 @@ import { CATALOG_TAG } from "./category-tree";
 import { addProductImages, deleteProductImage, reorderProductImage, updateProductImageAlt } from "./images";
 import { createBrand, createCategory, importOpeningStockCsv, importProductsCsv, saveProduct, setProductsPublished, type ImportResult } from "./products";
 import { readImportFile } from "./import-file";
+import { readCatalogFile } from "./catalog-sheet-read";
+import { catalogImportInputSchema, commitCatalogImport, previewCatalogImport, type CatalogImportPreview } from "./catalog-import";
 import { commitOpening, previewOpening, type OpeningPreview } from "./opening";
 import { deleteProducts, moveProductsToWarehouse, restoreProducts } from "./product-delete";
 import { ReadinessError } from "./readiness";
@@ -290,6 +292,34 @@ export async function openingImportAction(_prev: OpeningState, formData: FormDat
     if (!(file instanceof File) || !file.name.toLowerCase().endsWith(".xlsx")) throw new Error("Dùng file Excel lần đầu (.xlsx) có cả hai sheet.");
     const [products, stock] = await Promise.all([readImportFile(file, "products"), readImportFile(file, "stock")]);
     const preview = await previewOpening({ products: products.csv, stock: stock.csv, locationCode: formData.get("locationCode"), productLines: products.lineNumbers, stockLines: stock.lineNumbers });
+    return { preview };
+  } catch (e) {
+    return { error: message(e) };
+  }
+}
+
+export type CatalogImportState =
+  | { preview?: CatalogImportPreview; result?: Awaited<ReturnType<typeof commitCatalogImport>>; error?: string }
+  | undefined;
+
+/** Nhập/cập nhật SP từ một sheet: bước "preview" (chỉ đọc) rồi "confirm" (ghi trong một transaction). */
+export async function catalogImportAction(_prev: CatalogImportState, formData: FormData): Promise<CatalogImportState> {
+  try {
+    const user = await requirePermission("catalog:manage");
+    if (formData.get("step") === "confirm") {
+      const input = catalogImportInputSchema.parse(JSON.parse(z.string().max(6_000_000).parse(formData.get("payload"))));
+      const check = await previewCatalogImport(input);
+      if (check.counts.stockLines > 0) await requirePermission("stock:receive");
+      const result = await commitCatalogImport(input, user.id);
+      updateTag(CATALOG_TAG);
+      revalidatePath("/admin/products");
+      revalidatePath("/admin/inventory/documents");
+      return { result };
+    }
+    const file = await readCatalogFile(formData.get("file"));
+    const standardLabel = (await getTranslations("Products"))("standardVariant");
+    const preview = await previewCatalogImport({ csv: file.csv, lines: file.lines, standardLabel });
+    if (preview.counts.stockLines > 0) await requirePermission("stock:receive");
     return { preview };
   } catch (e) {
     return { error: message(e) };

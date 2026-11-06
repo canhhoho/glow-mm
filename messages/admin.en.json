@@ -1841,5 +1841,40 @@
       "info": "Information",
       "other": "Other"
     }
+  },
+  "CatalogImport": {
+    "title": "Import / update products from Excel",
+    "help": "One file creates products, updates prices/details and receives stock. Always preview; you can confirm only when there are no errors.",
+    "templateBlank": "Download blank template",
+    "templateCurrent": "Download current products (to update)",
+    "setupHint": "Set up first:",
+    "categories": "Categories",
+    "warehouses": "Sales warehouses",
+    "rates": "Exchange rate (for VND stock)",
+    "file": "Product import Excel file",
+    "preview": "Preview",
+    "summary": "{created} new · {updated} updated · {unchanged} unchanged · {stock} stock lines",
+    "rateQuote": "Cost rate: 1 VND = {rate} MMK (pinned for these batches)",
+    "errorsTitle": "Fix these in the file before importing:",
+    "warningsTitle": "Notes:",
+    "colLine": "Row",
+    "colAction": "Action",
+    "colProduct": "Product",
+    "colSku": "SKU",
+    "colPrice": "Price",
+    "colStock": "Stock in",
+    "colCost": "Cost (MMK/unit)",
+    "action": {
+      "create": "New",
+      "update": "Update",
+      "same": "No change"
+    },
+    "expiryUnknown": "expiry unknown — not sellable",
+    "expiryNone": "no expiry",
+    "confirmHelp": "New products are created hidden. Stock creates DRAFT receipts per sales warehouse — open them, check, then Post.",
+    "confirm": "Confirm import",
+    "success": "Imported: {created} new, {updated} updated products.",
+    "reviewDraft": "review and post",
+    "finishProducts": "Back to products to add images and publish"
   }
 }
