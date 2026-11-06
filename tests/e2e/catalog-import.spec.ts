@@ -68,7 +68,7 @@ test("tải mẫu Excel, điền và nhập sản phẩm trực tiếp qua trìn
   await expect(row).toHaveCount(1);
   await expect(row).toContainText(name);
   await expect(row).toContainText(sku);
-  const editLink = row.getByRole("link", { name: "Sửa", exact: true });
+  const editLink = row.getByRole("link", { name: /^Sửa / });
   const editHref = await editLink.getAttribute("href");
   expect(editHref).toMatch(/^\/admin\/products\/(?!import$|new$)[^/?]+$/);
   const editUrl = new URL(editHref!, page.url()).toString();
@@ -125,8 +125,15 @@ test("nhập hàng lần đầu: xem trước hai sheet, tạo nháp rồi ghi s
   await page.goto(`/admin/products?q=${slug}`);
   const row = page.getByRole("row").filter({ hasText: sku });
   await expect(row.getByTestId("product-readiness")).toContainText(/Có thể mở bán|Cần hoàn thiện/); // SP nhập lần đầu luôn ẩn (D2: hiện trạng thái mở bán)
-  await row.getByRole("link", { name: "Sửa", exact: true }).click();
+  await row.getByRole("link", { name: /^Sửa / }).click();
   await expect(page.getByRole("checkbox", { name: "Quản lý hạn sử dụng cho sản phẩm này", exact: true })).not.toBeChecked();
-  await expect(page.getByRole("spinbutton", { name: "Hạn sau mở nắp (tháng, nếu có)", exact: true })).toHaveValue("12");
+  // The simplified form hides PAO but must retain its imported value across a save/reload.
+  await expect(page.getByRole("spinbutton", { name: "Hạn sau mở nắp (tháng, nếu có)", exact: true })).toHaveCount(0);
+  const payload = page.locator('input[name="payload"]');
+  expect(JSON.parse(await payload.inputValue()).paoMonths).toBe(12);
+  await page.getByRole("button", { name: "Lưu", exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/products\/[^/?]+\?saved=1$/);
+  await page.reload();
+  expect(JSON.parse(await payload.inputValue()).paoMonths).toBe(12);
   await page.screenshot({ path: "test-results/screens/opening-product.png", fullPage: true });
 });

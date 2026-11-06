@@ -29,7 +29,7 @@ test("admin đổi giá biến thể → trang SP và thẻ ở trang danh mục
 
   await login(page, "admin@glow.local");
   await page.goto(`/admin/products?q=${SLUG}`);
-  await page.getByRole("row", { name: new RegExp(SLUG) }).getByRole("link", { name: "Sửa", exact: true }).click();
+  await page.getByRole("row", { name: new RegExp(SLUG) }).getByRole("link", { name: /^Sửa / }).click();
   await expect(page).toHaveURL(/\/admin\/products\/[^/?]+$/);
   const adminUrl = page.url();
   const priceInput = page.getByLabel("Giá (MMK)").first();
