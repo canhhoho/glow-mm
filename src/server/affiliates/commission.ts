@@ -3,7 +3,9 @@ import type { OrderStatus } from "@/server/orders/state-machine";
 /**
  * Hoa hồng CTV (P10) — hàm thuần, tính lại mỗi lần xem (không lưu sẵn).
  * - Căn cứ = tiền hàng thực thu: Σ (qty − returnedQty) × đơn giá; không tính phí ship.
- * - Hoa hồng = floor(căn cứ × % chốt trên đơn), % tính bằng phần vạn (1000 = 10%).
+ * - Hoa hồng người bán = Σ (SL − SL trả) × mức cố định của dòng (chốt lúc gắn CTV, theo biến thể)
+ *   + floor(tiền hàng các dòng không có mức cố định × % chốt trên đơn); % tính bằng phần vạn (1000 = 10%).
+ * - Hoa hồng tầng trên luôn = floor(toàn bộ căn cứ × % tầng trên), không theo mức cố định của SP.
  * - Trạng thái: `pending` (đơn chưa xong / còn trong hạn giữ), `payable` (đã qua hạn giữ), `void` (huỷ / trả trước khi xong).
  * - Còn phải trả = hoa hồng − đã trả cho đơn đó; có thể âm (khách trả hàng sau khi đã chi) → trừ vào kỳ sau.
  */
@@ -13,7 +15,13 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 export type CommissionState = "pending" | "payable" | "void";
 
-export type CommissionItem = { qty: number; returnedQty: number; unitPriceMmk: number };
+export type CommissionItem = {
+  qty: number;
+  returnedQty: number;
+  unitPriceMmk: number;
+  /** Mức cố định MMK/cái chốt trên dòng đơn; null/undefined = dòng tính theo % của đơn. */
+  commissionPerUnitMmk?: number | null;
+};
 
 export type CommissionOrder = {
   status: OrderStatus;
@@ -42,6 +50,17 @@ export function commissionMmk(baseMmk: number, rateBp: number | null): number {
   return Math.floor((baseMmk * rateBp) / BP_DENOMINATOR);
 }
 
+/** Hoa hồng người bán: phần cố định theo dòng + phần % trên tiền hàng các dòng còn lại. */
+export function saleCommissionMmk(items: CommissionItem[], rateBp: number | null): number {
+  const fixed = items.reduce((s, i) => s + (i.commissionPerUnitMmk == null ? 0 : Math.max(0, i.qty - i.returnedQty) * i.commissionPerUnitMmk), 0);
+  return fixed + commissionMmk(commissionBaseMmk(items.filter((i) => i.commissionPerUnitMmk == null)), rateBp);
+}
+
+/** Đơn có dòng tính hoa hồng cố định theo sản phẩm (để giao diện ghi chú cạnh % của đơn). */
+export function hasFixedCommission(items: CommissionItem[]): boolean {
+  return items.some((i) => i.commissionPerUnitMmk != null);
+}
+
 export function commissionState(
   o: Pick<CommissionOrder, "status" | "completedAt">,
   opts: { now: Date; holdDays: number },
@@ -57,7 +76,7 @@ export function orderCommission(o: CommissionOrder, opts: { now: Date; holdDays:
   // Đã chi trả thì giữ trạng thái theo hạn để phần âm (thu hồi) vẫn vào kỳ chi trả.
   if (o.status === "RETURNED" && o.paidMmk === 0 && commissionBaseMmk(o.items) === 0) state = "void";
   const baseMmk = state === "void" ? 0 : commissionBaseMmk(o.items);
-  const amount = commissionMmk(baseMmk, o.commissionRateBp);
+  const amount = state === "void" ? 0 : saleCommissionMmk(o.items, o.commissionRateBp);
   const dueMmk = state === "pending" ? 0 : amount - o.paidMmk;
   return { baseMmk, commissionMmk: amount, state, paidMmk: o.paidMmk, dueMmk };
 }
@@ -101,7 +120,8 @@ export function splitCommissions(o: SplitCommissionOrder, opts: { now: Date; hol
     uplineCommission:
       o.uplineRateBp == null && uplinePaid === 0
         ? null
-        : orderCommission({ ...o, commissionRateBp: o.uplineRateBp, paidMmk: uplinePaid }, opts),
+        : // Tầng trên: % trên toàn bộ tiền hàng — bỏ mức cố định của dòng.
+          orderCommission({ ...o, items: o.items.map((i) => ({ ...i, commissionPerUnitMmk: null })), commissionRateBp: o.uplineRateBp, paidMmk: uplinePaid }, opts),
   };
 }
 

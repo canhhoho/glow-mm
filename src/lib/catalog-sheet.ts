@@ -35,6 +35,7 @@ export const CATALOG_COLUMNS: SheetColumn[] = [
   { key: "variant_label", label: "Biến thể", group: "product", type: "text", width: 18, hint: "Dung tích, kích cỡ hoặc màu. Để trống nếu sản phẩm chỉ có một loại.", aliases: ["Biến thể (dung tích/màu)"] },
   { key: "price_mmk", label: "Giá bán (MMK)", group: "product", type: "money", width: 16, required: true, hint: "Chỉ nhập số. Dòng cập nhật để trống = giữ giá cũ." },
   { key: "weight_g", label: "Khối lượng (g)", group: "product", type: "whole", width: 15, hint: "Gram. Cần trước khi mở bán hàng kho nhập từ Việt Nam." },
+  { key: "affiliate_commission_mmk", label: "Hoa hồng CTV (MMK/cái)", group: "product", type: "money", width: 18, hint: "Số tiền CTV nhận cho mỗi cái bán ra. Để trống = theo % của CTV (dòng cập nhật: giữ mức cũ). Muốn bỏ mức riêng thì xoá trong trang sản phẩm.", aliases: ["Hoa hồng CTV"] },
   { key: "description_my", label: "Mô tả Myanmar", group: "product", type: "text", width: 34, hint: "Tuỳ chọn. Có thể xuống dòng trong một ô." },
   { key: "description_en", label: "Mô tả tiếng Anh", group: "product", type: "text", width: 34, hint: "Tuỳ chọn." },
   { key: "warehouse_code", label: "Kho bán", group: "product", type: "text", width: 12, list: "warehouses", hint: "Mã kho bán. Để trống = kho mặc định. Sản phẩm đã có: đổi kho trong trang sản phẩm.", aliases: ["Mã kho bán"] },

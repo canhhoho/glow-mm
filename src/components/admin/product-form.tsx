@@ -27,6 +27,7 @@ const blankVariant = (label: string): Variant => ({
   label,
   priceMmk: 0,
   weightGrams: null,
+  affiliateCommissionMmk: null,
   lowStockAt: 5,
   leadTimeDays: 21,
   safetyStock: 0,
@@ -113,6 +114,23 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
     [p, slug, variants, copySourceId, matchedBrand, brandInput],
   );
 
+  // Hoa hồng CTV cố định MMK/cái; trống = theo % của CTV.
+  const commissionField = (v: Variant) => (
+    <Field label={t("affiliateCommission")}>
+      <input
+        type="number"
+        min={0}
+        step={100}
+        inputMode="numeric"
+        aria-label={t("affiliateCommission")}
+        value={v.affiliateCommissionMmk ?? ""}
+        onChange={(e) => setVar(v.key, { affiliateCommissionMmk: e.target.value === "" ? null : Number(e.target.value) })}
+        className={fieldClass}
+      />
+      <span className="text-xs text-muted-foreground">{t("affiliateCommissionHint")}</span>
+    </Field>
+  );
+
   const textarea = (value: string, onChange: (v: string) => void, rows = 3) => (
     <textarea
       rows={rows}
@@ -197,6 +215,7 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
                 className={fieldClass}
               />
             </Field>
+            {commissionField(variants[0])}
           </>
         )}
       </section>
@@ -228,6 +247,7 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
                 <Field label={t("weight")}>
                   <input type="number" min={0} value={v.weightGrams ?? ""} onChange={(e) => setVar(v.key, { weightGrams: e.target.value ? Number(e.target.value) : null })} className={fieldClass} />
                 </Field>
+                {commissionField(v)}
                 <div className="col-span-full flex flex-wrap items-center gap-4 text-sm">
                   {v.id && (
                     <label className="flex items-center gap-1">

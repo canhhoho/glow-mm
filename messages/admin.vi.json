@@ -538,7 +538,9 @@
     "descriptionEn": "Mô tả tiếng Anh",
     "addColorSize": "Thêm màu/dung tích",
     "otherSettings": "Thiết lập khác (mã, kho, hạn dùng)",
-    "nameHint": "Chỉ cần điền một tên; tên còn lại tự lấy theo tên này."
+    "nameHint": "Chỉ cần điền một tên; tên còn lại tự lấy theo tên này.",
+    "affiliateCommission": "Hoa hồng CTV (MMK/cái)",
+    "affiliateCommissionHint": "Để trống = tính theo % của CTV"
   },
   "Orders": {
     "exportVtp": "Xuất Excel VTP",
@@ -922,7 +924,8 @@
     "receiptInvalid": "Phiếu nhập không tồn tại hoặc chưa ghi sổ. Không tính giá toàn kho thay thế.",
     "receiptScope": "Chỉ tính các SKU trong phiếu {code}; vẫn áp dụng bộ lọc kho, danh mục và thương hiệu bên dưới.",
     "lowMarginWarning": "Lãi minh họa sau cước và hoa hồng {rate}%: {profit} MMK (≤ 5% giá bán). Chưa trừ phí bán khác; tỷ lệ CTV thực tế có thể khác.",
-    "largeChangeWarning": "Giá thay đổi từ 20% — kiểm tra trước khi áp dụng."
+    "largeChangeWarning": "Giá thay đổi từ 20% — kiểm tra trước khi áp dụng.",
+    "lowMarginWarningFixed": "Lãi minh họa sau cước, hoa hồng CTV {fixed} MMK/cái và tầng trên {rate}%: {profit} MMK (≤ 5% giá bán). Chưa trừ phí bán khác."
   },
   "Quarantine": {
     "title": "Hàng chờ kiểm tra (hàng trả)",
@@ -1386,7 +1389,8 @@
       "sale": "% hoa hồng CTV",
       "upline": "% tầng trên"
     },
-    "cancelledLocked": "Đơn đã huỷ — không đổi CTV được."
+    "cancelledLocked": "Đơn đã huỷ — không đổi CTV được.",
+    "fixedPerProduct": "có SP tính hoa hồng cố định"
   },
   "Ctv": {
     "metaTitle": "Cổng CTV — T&C Cosmetics",

@@ -136,7 +136,12 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
               commissionRateBp: affiliate.commissionRateBp,
               ...(await uplineSnapshot(tx, affiliate.parentId)),
             }),
-            items: { create: lines.map(({ variantId, sku, name, qty, unitPriceMmk }) => ({ variantId, sku, name, qty, unitPriceMmk })) },
+            // Đơn có CTV: chốt mức hoa hồng cố định của từng biến thể (null = dòng tính theo % của đơn).
+            items: {
+              create: lines.map(({ variantId, sku, name, qty, unitPriceMmk, affiliateCommissionMmk }) => ({
+                variantId, sku, name, qty, unitPriceMmk, commissionPerUnitMmk: affiliate ? affiliateCommissionMmk : null,
+              })),
+            },
             history: { create: { toStatus: "PENDING", userId: ctx.userId, createdAt: now } },
           },
         });
@@ -204,13 +209,15 @@ async function priceLines(tx: Tx, items: { variantId: string; qty: number }[], l
       name: `${tr?.name ?? v.sku} — ${v.label}`,
       qty: i.qty,
       unitPriceMmk: v.priceMmk,
+      affiliateCommissionMmk: v.affiliateCommissionMmk,
     };
   });
 }
 
 /** Phần đơn khách được xem (trang đơn storefront). */
 const customerOrderInclude = {
-  items: true,
+  // Khách không được thấy mức hoa hồng CTV chốt trên dòng đơn.
+  items: { omit: { commissionPerUnitMmk: true } },
   paymentProofs: { orderBy: { createdAt: "desc" }, select: { id: true, status: true, createdAt: true } },
   deliveries: { orderBy: { createdAt: "desc" } },
   history: { orderBy: { createdAt: "asc" }, select: { toStatus: true, createdAt: true } },

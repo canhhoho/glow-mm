@@ -23,7 +23,8 @@ const SKIP_REASONS = ["UNCHANGED", "PRICE_CHANGED", "INPUT_CHANGED", "CANCELLED"
 
 export default async function PriceRunPage({ params }: PageProps<"/admin/pricing/runs/[id]">) {
   await requirePagePermission("pricing:manage");
-  const commissionBp = (await getNumberSetting("affiliate.defaultRateBp")) + (await getNumberSetting("affiliate.uplineRateBp"));
+  const uplineBp = await getNumberSetting("affiliate.uplineRateBp");
+  const commissionBp = (await getNumberSetting("affiliate.defaultRateBp")) + uplineBp;
   const { id } = await params;
   const [t, run] = await Promise.all([getTranslations("Pricing"), getRun(id)]);
   if (!run) notFound();
@@ -61,7 +62,7 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
         const pendingLine = l.status === "PENDING";
         const stale = editable && pendingLine && l.currentPriceMmk !== l.oldPriceMmk;
         const costMmk = l.costMmk ?? (l.costVnd != null && run.rate ? convertVndToMmk(l.costVnd, run.rate) : null);
-        const risks = priceRisks({ oldPriceMmk: l.oldPriceMmk, priceMmk: l.newPriceMmk, costMmk, shipMmk: l.shipMmk ?? 0, commissionBp });
+        const risks = priceRisks({ oldPriceMmk: l.oldPriceMmk, priceMmk: l.newPriceMmk, costMmk, shipMmk: l.shipMmk ?? 0, commissionBp, fixedCommissionMmk: l.fixedCommissionMmk, uplineBp });
         return (
           <tr key={l.variantId} className={cn(stale && "bg-amber-50 dark:bg-amber-950/30")} data-testid="run-line">
             <Td>
@@ -73,7 +74,13 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
             <Td>
               {l.name}
               {stale && <div className="text-xs text-amber-700 dark:text-amber-400">{t("changedSince")}</div>}
-              {risks.lowMargin && <p className="text-xs text-amber-700 dark:text-amber-400">{t("lowMarginWarning", { profit: fmtInt(risks.profit), rate: commissionBp / 100 })}</p>}
+              {risks.lowMargin && (
+                <p className="text-xs text-amber-700 dark:text-amber-400">
+                  {l.fixedCommissionMmk != null
+                    ? t("lowMarginWarningFixed", { profit: fmtInt(risks.profit), fixed: fmtInt(l.fixedCommissionMmk), rate: uplineBp / 100 })
+                    : t("lowMarginWarning", { profit: fmtInt(risks.profit), rate: commissionBp / 100 })}
+                </p>
+              )}
               {risks.largeChange && <p className="text-xs text-amber-700 dark:text-amber-400">{t("largeChangeWarning")}</p>}
             </Td>
             <Td className="text-right tabular-nums">{fmtInt(mmk ? l.costMmk : l.costVnd)}</Td>

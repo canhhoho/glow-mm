@@ -9,7 +9,7 @@ import { getOrderAdmin, quarantineLocations } from "@/server/orders/admin-querie
 import { returnItemsAction, setShippingPayerAction, updateTrackingAction } from "@/server/orders/actions";
 import { assignOrderAffiliateAction, setOrderCommissionRatesAction } from "@/server/affiliates/actions";
 import { affiliateOptions } from "@/server/affiliates/affiliates";
-import { bpToPercent, splitCommissions } from "@/server/affiliates/commission";
+import { bpToPercent, hasFixedCommission, splitCommissions } from "@/server/affiliates/commission";
 import { getNumberSetting } from "@/server/settings";
 import { CommissionBadge } from "@/components/admin/affiliate-parts";
 import { availableTransitions, TRANSITIONS } from "@/server/orders/state-machine";
@@ -182,7 +182,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
             <dd className="flex flex-wrap items-center gap-2">
               <span className="tabular-nums">{fmtInt(commission.commissionMmk)} MMK</span>
               <span className="text-xs text-muted-foreground">
-                ({ta("rate")}: {bpToPercent(order.commissionRateBp ?? 0)}%)
+                ({ta("rate")}: {bpToPercent(order.commissionRateBp ?? 0)}%{hasFixedCommission(order.items) && ` · ${ta("fixedPerProduct")}`})
               </span>
               <CommissionBadge state={commission.state} />
             </dd>

@@ -35,6 +35,10 @@ Bản sao giữ nội dung, giá, biến thể và ảnh; không sao chép tồn
   File cũ có cột phụ (cách dùng, thành phần, bảo quản, PAO, ngày sản xuất, loại hàng) vẫn đọc được;
   mẫu hai sheet cũ (`San pham` + `Ton dau ky`) không dùng nữa.
 
+**Hoa hồng CTV theo sản phẩm:** ô **Hoa hồng CTV (MMK/cái)** trên từng biến thể (form sản phẩm hoặc cột cùng tên
+trong file Excel). Có mức thì CTV nhận số tiền đó cho mỗi cái bán ra; để trống thì tính theo % của CTV như trước.
+Mức được chốt vào đơn lúc gắn CTV — đổi mức sau không ảnh hưởng đơn cũ. Hoa hồng cấp trên vẫn là % trên tiền hàng.
+
 Hạn dùng quản lý theo sản phẩm/lô: lô có ngày (`DATED`), không áp dụng hạn (`NONE`, chỉ với sản phẩm
 không quản lý hạn) hoặc chưa biết hạn (`UNKNOWN` — để trống hạn khi nhập hàng có hạn): được nhập kho nhưng
 chưa bán, có cảnh báo, xác nhận ngày thật trong chi tiết lô. Hạn sau mở nắp (PAO) là thông tin riêng.

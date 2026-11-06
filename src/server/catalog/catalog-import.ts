@@ -258,6 +258,10 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
         if (!current && !priceText) throw new Error(`Chưa điền giá bán${sku ? ` cho SKU ${sku}` : ""}`);
         const price = priceText ? money.parse(priceText.replace(/[,\s]/g, "")) : current!.priceMmk;
         const weight = weightText ? money.parse(weightText.replace(/[,\s]/g, "")) : current?.weightGrams ?? null;
+        // Hoa hồng CTV cố định MMK/cái: trống = SP mới theo % CTV, SP có sẵn giữ mức cũ.
+        const commissionText = shared(vRows, "affiliate_commission_mmk", "Hoa hồng CTV");
+        const commission = commissionText ? money.parse(commissionText.replace(/[,\s]/g, "")) : current?.affiliateCommissionMmk ?? null;
+        if (commission != null && price > 0 && commission > price) throw new Error(`Hoa hồng CTV${sku ? ` của SKU ${sku}` : ""} lớn hơn giá bán`);
         const next = {
           id: current?.id ?? "",
           sku: current?.sku ?? sku,
@@ -265,6 +269,7 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
           label: label || current?.label || input.standardLabel,
           priceMmk: price,
           weightGrams: weight,
+          affiliateCommissionMmk: commission,
           lowStockAt: current?.lowStockAt ?? 5,
           leadTimeDays: current?.leadTimeDays ?? 21,
           safetyStock: current?.safetyStock ?? 0,
@@ -274,7 +279,7 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
           rows: vRows,
           isNew: !current,
           oldPrice: current?.priceMmk ?? null,
-          changed: !current || current.label !== (label || current.label) || current.priceMmk !== price || (current.weightGrams ?? null) !== weight,
+          changed: !current || current.label !== (label || current.label) || current.priceMmk !== price || (current.weightGrams ?? null) !== weight || (current.affiliateCommissionMmk ?? null) !== commission,
         };
         if (next.autoSku) next.sku = suggestVariantSku(base?.slug ?? (g.key.startsWith("s:") ? g.key.slice(2) : suggestProductSlug(nameEn, nameMy)), nextIndex++);
         variants.push(next);
@@ -298,7 +303,7 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
         my,
         en,
         tagIds: base?.tagIds ?? [],
-        variants: variants.map((v) => ({ id: v.id || undefined, sku: v.sku, autoSku: v.autoSku, label: v.label, priceMmk: v.priceMmk, weightGrams: v.weightGrams, lowStockAt: v.lowStockAt, leadTimeDays: v.leadTimeDays, safetyStock: v.safetyStock, active: v.active, isBundle: false, components: [] })),
+        variants: variants.map((v) => ({ id: v.id || undefined, sku: v.sku, autoSku: v.autoSku, label: v.label, priceMmk: v.priceMmk, weightGrams: v.weightGrams, affiliateCommissionMmk: v.affiliateCommissionMmk, lowStockAt: v.lowStockAt, leadTimeDays: v.leadTimeDays, safetyStock: v.safetyStock, active: v.active, isBundle: false, components: [] })),
       };
       const resolved = await resolveProductIdentifiers(draft, exists);
       allocated.slug.add(resolved.slug);

@@ -4,9 +4,11 @@ import {
   commissionBaseMmk,
   commissionMmk,
   effectiveUplineRateBp,
+  hasFixedCommission,
   orderCommission,
   payoutLines,
   percentToBp,
+  saleCommissionMmk,
   splitCommissions,
   summarizeCommissions,
   type CommissionOrder,
@@ -150,5 +152,34 @@ describe("% tầng trên riêng (P13)", () => {
     expect(effectiveUplineRateBp({ uplineRateBp: 300 }, 200)).toBe(300);
     expect(effectiveUplineRateBp({ uplineRateBp: null }, 200)).toBe(200);
     expect(effectiveUplineRateBp({ uplineRateBp: 0 }, 200)).toBe(0);
+  });
+});
+
+describe("Hoa hồng cố định theo sản phẩm (MMK/cái)", () => {
+  const items = [
+    { qty: 3, returnedQty: 1, unitPriceMmk: 20_000, commissionPerUnitMmk: 2_500 }, // cố định: 2 × 2.500
+    { qty: 1, returnedQty: 0, unitPriceMmk: 15_005, commissionPerUnitMmk: null }, // theo %: floor(15.005 × 10%)
+    { qty: 2, returnedQty: 0, unitPriceMmk: 9_000, commissionPerUnitMmk: 0 }, // mức 0 = không hoa hồng
+  ];
+
+  it("người bán = phần cố định (trừ hàng trả) + % trên tiền hàng các dòng còn lại; đơn cũ ra đúng số cũ", () => {
+    expect(saleCommissionMmk(items, 1000)).toBe(5_000 + 1_500);
+    expect(saleCommissionMmk(items, null)).toBe(5_000);
+    const legacy = [{ qty: 2, returnedQty: 0, unitPriceMmk: 15_000 }];
+    expect(saleCommissionMmk(legacy, 1000)).toBe(commissionMmk(commissionBaseMmk(legacy), 1000));
+    expect(hasFixedCommission(items)).toBe(true);
+    expect(hasFixedCommission(legacy)).toBe(false);
+  });
+
+  it("đơn: căn cứ vẫn là toàn bộ tiền hàng; tầng trên giữ % trên toàn bộ tiền hàng", () => {
+    const c = splitCommissions({ ...order({ items }), uplineRateBp: 200, lines: [] }, opts);
+    expect(c.commission).toMatchObject({ baseMmk: 40_000 + 15_005 + 18_000, commissionMmk: 6_500, state: "payable", dueMmk: 6_500 });
+    expect(c.uplineCommission).toMatchObject({ commissionMmk: Math.floor(73_005 * 0.02) });
+  });
+
+  it("huỷ → 0; trả hết sau khi chi phần cố định → số âm thu hồi", () => {
+    expect(orderCommission(order({ items, status: "CANCELLED", completedAt: null }), opts).commissionMmk).toBe(0);
+    const back = orderCommission(order({ status: "RETURNED", items: [{ qty: 2, returnedQty: 2, unitPriceMmk: 20_000, commissionPerUnitMmk: 2_500 }], paidMmk: 5_000 }), opts);
+    expect(back).toMatchObject({ commissionMmk: 0, dueMmk: -5_000 });
   });
 });

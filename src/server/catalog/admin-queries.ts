@@ -149,6 +149,7 @@ export function toProductEditData(p: ProductForEdit) {
       label: v.label,
       priceMmk: v.priceMmk,
       weightGrams: v.weightGrams,
+      affiliateCommissionMmk: v.affiliateCommissionMmk,
       lowStockAt: v.lowStockAt,
       leadTimeDays: v.leadTimeDays,
       safetyStock: v.safetyStock,

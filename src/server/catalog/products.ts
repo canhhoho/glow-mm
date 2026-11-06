@@ -29,6 +29,8 @@ const variantSchema = z.object({
   label: z.string().trim().min(1).max(60),
   priceMmk: z.coerce.number().int().min(0),
   weightGrams: z.coerce.number().int().min(0).optional().nullable(),
+  /** Hoa hồng CTV cố định MMK/cái; null = theo % của CTV. Bỏ qua (undefined) = giữ giá trị cũ. */
+  affiliateCommissionMmk: z.preprocess((v) => (v === "" ? null : v), z.coerce.number().int().min(0).max(1_000_000_000).nullable()).optional(),
   lowStockAt: z.coerce.number().int().min(0).default(5),
   leadTimeDays: z.coerce.number().int().min(0).default(21),
   safetyStock: z.coerce.number().int().min(0).default(0),
@@ -164,11 +166,15 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
 
     const savedIds = new Map<string, string>();
     for (const v of input.variants) {
+      if (v.affiliateCommissionMmk != null && v.priceMmk > 0 && v.affiliateCommissionMmk > v.priceMmk) {
+        throw new CatalogError(`Hoa hồng CTV của ${v.sku} lớn hơn giá bán`);
+      }
       const vData = {
         sku: v.sku,
         label: v.label,
         priceMmk: v.priceMmk,
         weightGrams: v.weightGrams ?? null,
+        ...(v.affiliateCommissionMmk !== undefined && { affiliateCommissionMmk: v.affiliateCommissionMmk }),
         lowStockAt: v.lowStockAt,
         leadTimeDays: v.leadTimeDays,
         safetyStock: v.safetyStock,

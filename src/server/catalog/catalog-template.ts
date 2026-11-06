@@ -31,7 +31,7 @@ export async function catalogTemplateFile(withProducts: boolean): Promise<Uint8A
       requiresExpiry: true,
       brand: { select: { name: true } },
       translations: { select: { locale: true, name: true, description: true } },
-      variants: { where: { isBundle: false }, orderBy: { sku: "asc" }, select: { sku: true, label: true, priceMmk: true, weightGrams: true } },
+      variants: { where: { isBundle: false }, orderBy: { sku: "asc" }, select: { sku: true, label: true, priceMmk: true, weightGrams: true, affiliateCommissionMmk: true } },
     },
   });
   const rows: TemplateRow[] = products.flatMap((p) => {
@@ -44,6 +44,7 @@ export async function catalogTemplateFile(withProducts: boolean): Promise<Uint8A
       variant_label: v.label,
       price_mmk: v.priceMmk,
       weight_g: v.weightGrams,
+      affiliate_commission_mmk: v.affiliateCommissionMmk,
       description_my: tr("my")?.description,
       description_en: tr("en")?.description,
       warehouse_code: warehouseCode.get(p.stockLocationId),

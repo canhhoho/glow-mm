@@ -538,7 +538,9 @@
     "descriptionEn": "အင်္ဂလိပ် ဖော်ပြချက်",
     "addColorSize": "အရောင်/ပမာဏ ထည့်ရန်",
     "otherSettings": "အခြား ဆက်တင်များ (ကုဒ်၊ ဂိုဒေါင်၊ သက်တမ်း)",
-    "nameHint": "အမည်တစ်ခုသာ ဖြည့်ရန်လိုသည်။ ကျန်ဘာသာစကားတွင် ထိုအမည်ကို သုံးမည်။"
+    "nameHint": "အမည်တစ်ခုသာ ဖြည့်ရန်လိုသည်။ ကျန်ဘာသာစကားတွင် ထိုအမည်ကို သုံးမည်။",
+    "affiliateCommission": "CTV ကော်မရှင် (MMK/ခု)",
+    "affiliateCommissionHint": "ဗလာထားလျှင် CTV ၏ % ဖြင့် တွက်မည်"
   },
   "Orders": {
     "exportVtp": "VTP Excel ထုတ်ရန်",
@@ -922,7 +924,8 @@
     "receiptInvalid": "Receipt not found or not posted. No full-warehouse pricing fallback.",
     "receiptScope": "Only SKUs in receipt {code}; warehouse, category and brand filters below still apply.",
     "lowMarginWarning": "Illustrative profit after freight and {rate}% commission: {profit} MMK (≤ 5% of price). Other sales fees excluded; actual affiliate rates may differ.",
-    "largeChangeWarning": "Price changes by at least 20% — review before applying."
+    "largeChangeWarning": "Price changes by at least 20% — review before applying.",
+    "lowMarginWarningFixed": "ပို့ခ၊ CTV ကော်မရှင် {fixed} MMK/ခု နှင့် အထက်အဆင့် {rate}% နုတ်ပြီး ဥပမာအမြတ်: {profit} MMK (ဈေး၏ ≤ 5%)။ အခြားရောင်းချခ မနုတ်ရသေး။"
   },
   "Quarantine": {
     "title": "စစ်ဆေးရန်စောင့်နေသော ပစ္စည်း (ပြန်ပို့)",
@@ -1386,7 +1389,8 @@
       "sale": "ကိုယ်စားလှယ် %",
       "upline": "အထက်လိုင်း %"
     },
-    "cancelledLocked": "အော်ဒါ ပယ်ဖျက်ပြီးဖြစ်၍ ကိုယ်စားလှယ် ပြောင်း၍မရပါ။"
+    "cancelledLocked": "အော်ဒါ ပယ်ဖျက်ပြီးဖြစ်၍ ကိုယ်စားလှယ် ပြောင်း၍မရပါ။",
+    "fixedPerProduct": "အချို့ကုန်ပစ္စည်းများ ပုံသေကော်မရှင်"
   },
   "Ctv": {
     "metaTitle": "ကိုယ်စားလှယ် ပေါ်တယ် — T&C Cosmetics",

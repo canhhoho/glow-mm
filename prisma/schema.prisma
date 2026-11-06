@@ -318,6 +318,8 @@ model Variant {
   leadTimeDays  Int                 @default(21)
   safetyStock   Int                 @default(0)
   lowStockAt    Int                 @default(5)
+  /// Hoa hồng CTV cố định (MMK/cái) cho biến thể này; null = tính theo % của CTV, 0 = không hoa hồng.
+  affiliateCommissionMmk Int?
   bundleItems   BundleItem[]        @relation("BundleParent")
   componentOf   BundleItem[]        @relation("BundleComponent")
   batches       Batch[]
@@ -1050,6 +1052,8 @@ model OrderItem {
   unitPriceMmk Int
   /// Số lượng khách đã trả lại (≤ qty). Doanh thu/giá vốn trừ phần này.
   returnedQty  Int               @default(0)
+  /// Hoa hồng CTV cố định (MMK/cái) chốt lúc gắn CTV cho đơn; null = dòng tính theo % hoa hồng của đơn.
+  commissionPerUnitMmk Int?
   allocations  OrderAllocation[]
   pickLines    OrderPickLine[]
 

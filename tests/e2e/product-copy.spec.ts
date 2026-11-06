@@ -81,10 +81,12 @@ test("tạo SP chỉ với tên Myanmar và thương hiệu gõ mới, không c�
   await expect(page.getByText("Thương hiệu mới — sẽ được tạo khi lưu")).toBeVisible();
   await page.getByRole("combobox", { name: "Danh mục", exact: true }).selectOption({ index: 1 });
   await page.getByRole("spinbutton", { name: "Giá (MMK)", exact: true }).fill("15000");
+  await page.getByRole("spinbutton", { name: "Hoa hồng CTV (MMK/cái)", exact: true }).fill("1500");
   await page.screenshot({ path: "test-results/screens/product-form-new.png", fullPage: true });
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/products\/[^/?]+\?saved=1$/);
   await expect(page.getByRole("textbox", { name: "Tên tiếng Anh", exact: true })).toHaveValue(`ဆပ်ပြာ ${tag}`);
   await expect(page.getByRole("combobox", { name: "Thương hiệu", exact: true })).toHaveValue(`E2E Brand ${tag}`);
   await expect(page.getByRole("spinbutton", { name: "Giá (MMK)", exact: true })).toHaveValue("15000");
+  await expect(page.getByRole("spinbutton", { name: "Hoa hồng CTV (MMK/cái)", exact: true })).toHaveValue("1500");
 });

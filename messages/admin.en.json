@@ -538,7 +538,9 @@
     "descriptionEn": "English description",
     "addColorSize": "Add colour/size",
     "otherSettings": "Other settings (codes, warehouse, expiry)",
-    "nameHint": "One name is enough; the other language uses it until translated."
+    "nameHint": "One name is enough; the other language uses it until translated.",
+    "affiliateCommission": "Affiliate commission (MMK/unit)",
+    "affiliateCommissionHint": "Leave blank to use the affiliate’s %"
   },
   "Orders": {
     "exportVtp": "Export VTP Excel",
@@ -922,7 +924,8 @@
     "receiptInvalid": "Receipt not found or not posted. No full-warehouse pricing fallback.",
     "receiptScope": "Only SKUs in receipt {code}; warehouse, category and brand filters below still apply.",
     "lowMarginWarning": "Illustrative profit after freight and {rate}% commission: {profit} MMK (≤ 5% of price). Other sales fees excluded; actual affiliate rates may differ.",
-    "largeChangeWarning": "Price changes by at least 20% — review before applying."
+    "largeChangeWarning": "Price changes by at least 20% — review before applying.",
+    "lowMarginWarningFixed": "Illustrative profit after shipping, affiliate commission {fixed} MMK/unit and upline {rate}%: {profit} MMK (≤ 5% of price). Other selling fees not deducted."
   },
   "Quarantine": {
     "title": "Quarantine (returned goods)",
@@ -1386,7 +1389,8 @@
       "sale": "Affiliate %",
       "upline": "Upline %"
     },
-    "cancelledLocked": "Order cancelled — affiliate can't be changed."
+    "cancelledLocked": "Order cancelled — affiliate can't be changed.",
+    "fixedPerProduct": "some products have a fixed commission"
   },
   "Ctv": {
     "metaTitle": "Affiliate portal — T&C Cosmetics",

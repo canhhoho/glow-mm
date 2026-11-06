@@ -54,6 +54,7 @@ export async function getRun(id: string) {
       newPriceMmk: l.newPriceMmk,
       currentPriceMmk: l.variant.priceMmk,
       isBundle: l.variant.isBundle,
+      fixedCommissionMmk: l.variant.affiliateCommissionMmk,
       status: l.status,
       skipReason: l.skipReason,
       source: l.sourceBatch && l.sourceDocument ? { batch: l.sourceBatch, document: l.sourceDocument, postedAt: l.sourcePostedAt } : null,

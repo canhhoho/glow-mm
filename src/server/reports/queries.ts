@@ -5,7 +5,7 @@ import { loadVariantStock } from "@/server/alerts/queries";
 import { salesBlockDays } from "@/server/inventory/documents";
 import { bundleDefs } from "@/server/orders/availability";
 import { getNumberSetting } from "@/server/settings";
-import { commissionBaseMmk, commissionMmk } from "@/server/affiliates/commission";
+import { commissionBaseMmk, commissionMmk, saleCommissionMmk } from "@/server/affiliates/commission";
 import { itemProfit } from "./profit";
 import { inventoryCost } from "@/server/inventory/cost";
 
@@ -104,7 +104,7 @@ export async function salesReport(range: Range, opts: { topN?: number } = {}) {
     // Hoa hồng CTV (P10) + tầng trên (P11) ghi nhận theo ngày hoàn tất, trên tiền hàng sau khi trừ hàng trả.
     const base = commissionBaseMmk(o.items);
     const upline = commissionMmk(base, o.uplineRateBp);
-    totals.commission += commissionMmk(base, o.commissionRateBp) + upline;
+    totals.commission += saleCommissionMmk(o.items, o.commissionRateBp) + upline;
     totals.uplineCommission += upline;
     day.orders++;
     if (missing) missingCostOrders.push(o.code);

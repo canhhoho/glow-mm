@@ -278,7 +278,7 @@ const orderForCommission = {
   affiliateSource: true,
   uplineAffiliateId: true,
   uplineRateBp: true,
-  items: { select: { qty: true, returnedQty: true, unitPriceMmk: true } },
+  items: { select: { qty: true, returnedQty: true, unitPriceMmk: true, commissionPerUnitMmk: true } },
   payoutLines: { select: { amountMmk: true, kind: true } },
 } satisfies Prisma.OrderSelect;
 
@@ -512,6 +512,11 @@ export async function assignOrderAffiliate(
       };
     }
     const updated = await tx.order.update({ where: { id: orderId }, data });
+    // Mức hoa hồng cố định theo SP: chốt lại theo biến thể hiện tại khi gán/đổi CTV, xoá khi bỏ CTV.
+    const items = await tx.orderItem.findMany({ where: { orderId }, select: { id: true, variant: { select: { affiliateCommissionMmk: true } } } });
+    for (const item of items) {
+      await tx.orderItem.update({ where: { id: item.id }, data: { commissionPerUnitMmk: affiliateId ? item.variant.affiliateCommissionMmk : null } });
+    }
     await tx.auditLog.create({
       data: {
         userId: actor.userId,
@@ -656,7 +661,7 @@ export async function getAffiliateOrder(affiliateId: string, orderId: string, no
       ...orderForCommission,
       shippingFeeMmk: true,
       paymentMethod: true,
-      items: { select: { id: true, sku: true, name: true, qty: true, returnedQty: true, unitPriceMmk: true } },
+      items: { select: { id: true, sku: true, name: true, qty: true, returnedQty: true, unitPriceMmk: true, commissionPerUnitMmk: true } },
       history: { select: { toStatus: true, createdAt: true }, orderBy: { createdAt: "asc" } },
     },
   });

@@ -152,4 +152,17 @@ describe("Sản phẩm", () => {
     expect(await prisma.brand.count({ where: { name: orphan } })).toBe(0);
     await expect(saveProduct({ ...noBrand, slug: `b4-${f.tag.toLowerCase()}`, variants: [{ sku: `B4-${f.tag}`, label: "x", priceMmk: 1 }] }, f.userId)).rejects.toThrow(/thương hiệu/);
   });
+
+  it("hoa hồng CTV cố định: lưu theo biến thể, giữ khi không gửi, chặn khi lớn hơn giá", async () => {
+    const f = await makeFixture();
+    const slug = `hh-${f.tag.toLowerCase()}`;
+    const p = await saveProduct({ ...base(f, slug), variants: [{ sku: `HH-${f.tag}`, label: "x", priceMmk: 10_000, affiliateCommissionMmk: 1500 }] }, f.userId);
+    const v = await prisma.variant.findFirstOrThrow({ where: { productId: p.id } });
+    expect(v.affiliateCommissionMmk).toBe(1500);
+    await saveProduct({ ...base(f, slug), id: p.id, variants: [{ id: v.id, sku: v.sku, label: "x", priceMmk: 12_000 }] }, f.userId);
+    expect((await prisma.variant.findUniqueOrThrow({ where: { id: v.id } })).affiliateCommissionMmk).toBe(1500);
+    await expect(saveProduct({ ...base(f, slug), id: p.id, variants: [{ id: v.id, sku: v.sku, label: "x", priceMmk: 12_000, affiliateCommissionMmk: 20_000 }] }, f.userId)).rejects.toThrow(/lớn hơn giá bán/);
+    await saveProduct({ ...base(f, slug), id: p.id, variants: [{ id: v.id, sku: v.sku, label: "x", priceMmk: 12_000, affiliateCommissionMmk: null }] }, f.userId);
+    expect((await prisma.variant.findUniqueOrThrow({ where: { id: v.id } })).affiliateCommissionMmk).toBeNull();
+  });
 });

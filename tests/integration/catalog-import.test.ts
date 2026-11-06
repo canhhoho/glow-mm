@@ -121,4 +121,17 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     await expect(commitCatalogImport(preview.input, f.userId)).rejects.toThrow("Tỷ giá");
     expect(await prisma.productTranslation.count({ where: { name: `Rate ${f.tag}` } })).toBe(0);
   });
+
+  it("cột Hoa hồng CTV: đổi mức là cập nhật, ô trống giữ mức cũ, lớn hơn giá bị chặn", async () => {
+    const { f } = await setup();
+    const sku = `IT-${f.tag}`;
+    const first = await previewCatalogImport(sheet([{ sku, affiliate_commission_mmk: 1200, brand: "", category: "" }]));
+    expect(first.rows[0].action).toBe("update");
+    await commitCatalogImport(first.input, f.userId);
+    expect((await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).affiliateCommissionMmk).toBe(1200);
+    const keep = await previewCatalogImport(sheet([{ sku, affiliate_commission_mmk: "", price_mmk: "", brand: "", category: "" }]));
+    expect(keep.rows[0].action).toBe("same");
+    const tooHigh = await previewCatalogImport(sheet([{ sku, affiliate_commission_mmk: 50_000, brand: "", category: "" }]));
+    expect(tooHigh.errors.join("\n")).toContain("lớn hơn giá bán");
+  });
 });

@@ -20,7 +20,7 @@ import {
   rejectApplication,
   submitApplication,
 } from "@/server/affiliates/applications";
-import { createOrder } from "@/server/orders/orders";
+import { createOrder, findOrderForCustomer } from "@/server/orders/orders";
 import { returnItems } from "@/server/orders/returns";
 import { transitionOrder } from "@/server/orders/transitions";
 import { admin, orderInput, saleFixture, unpublishTestProducts, type SaleFixture } from "./fixtures";
@@ -233,7 +233,7 @@ describe("Cổng CTV (P10c)", () => {
 
     const seen = await getAffiliateOrder(mine.id, order.id);
     expect(seen).toMatchObject({ id: order.id, recipientName: "Ma Hla", commission: { state: "pending", commissionMmk: 1000 } });
-    expect(Object.keys(seen!.items[0]).sort()).toEqual(["id", "name", "qty", "returnedQty", "sku", "unitPriceMmk"]);
+    expect(Object.keys(seen!.items[0]).sort()).toEqual(["commissionPerUnitMmk", "id", "name", "qty", "returnedQty", "sku", "unitPriceMmk"]);
     expect(await getAffiliateOrder(other.id, order.id)).toBeNull();
     expect(await getAffiliateOrder(mine.id, plain.id)).toBeNull();
   });
@@ -466,5 +466,48 @@ describe("Admin chỉnh % (P13)", () => {
 
     await recordPayout(down.id, {}, f.userId);
     await expect(setOrderCommissionRates(order.id, { commissionPercent: "20" }, admin(f))).rejects.toMatchObject({ code: "order_paid" });
+  });
+});
+
+describe("Hoa hồng cố định theo sản phẩm (MMK/cái)", () => {
+  it("tạo đơn có CTV chốt mức của biến thể; đổi mức sau không ảnh hưởng; khách không thấy mức", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
+    await prisma.variant.update({ where: { id: f.variantId }, data: { affiliateCommissionMmk: 1500 } });
+    const a = await makeAffiliate(f, { rateBp: 1000 });
+    const order = await createOrder(orderInput(f, 2), { userId: null, affiliate: { source: "LINK", code: a.code } });
+    const plain = await createOrder(orderInput(f, 1), { userId: null });
+    expect((await prisma.orderItem.findFirstOrThrow({ where: { orderId: order.id } })).commissionPerUnitMmk).toBe(1500);
+    expect((await prisma.orderItem.findFirstOrThrow({ where: { orderId: plain.id } })).commissionPerUnitMmk).toBeNull();
+
+    await prisma.variant.update({ where: { id: f.variantId }, data: { affiliateCommissionMmk: 4000 } });
+    // 2 cái × 1.500 (không phải 10% × 20.000 = 2.000), mức mới không áp vào đơn cũ.
+    expect((await getAffiliateOrder(a.id, order.id))!.commission).toMatchObject({ commissionMmk: 3000, baseMmk: 20_000 });
+    const forCustomer = await findOrderForCustomer(order.code, "+95 9 7812 3456");
+    expect(forCustomer!.items[0]).not.toHaveProperty("commissionPerUnitMmk");
+  });
+
+  it("gán / đổi / bỏ CTV: chốt lại mức theo biến thể hiện tại hoặc xoá", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
+    const a = await makeAffiliate(f);
+    const order = await createOrder(orderInput(f, 1), { userId: null });
+    const level = async () => (await prisma.orderItem.findFirstOrThrow({ where: { orderId: order.id } })).commissionPerUnitMmk;
+    await prisma.variant.update({ where: { id: f.variantId }, data: { affiliateCommissionMmk: 800 } });
+    await assignOrderAffiliate(order.id, a.id, admin(f));
+    expect(await level()).toBe(800);
+    await assignOrderAffiliate(order.id, null, admin(f));
+    expect(await level()).toBeNull();
+  });
+
+  it("chi trả theo mức cố định; cấp trên vẫn hưởng % trên tiền hàng", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 10 }]);
+    await prisma.variant.update({ where: { id: f.variantId }, data: { affiliateCommissionMmk: 1200 } });
+    const parent = await makeAffiliate(f, { suffix: "P" });
+    const child = await makeAffiliate(f, { suffix: "K", parentId: parent.id });
+    const order = await completedOrder(f, child.code, 3, 10); // 3 × 10.000 = 30.000
+    const seller = await recordPayout(child.id, {}, f.userId);
+    expect(seller).toMatchObject({ amountMmk: 3 * 1200 });
+    const up = await prisma.order.findUniqueOrThrow({ where: { id: order.id }, select: { uplineRateBp: true } });
+    const upline = await recordPayout(parent.id, {}, f.userId);
+    expect(upline).toMatchObject({ amountMmk: Math.floor((30_000 * (up.uplineRateBp ?? 0)) / 10_000) });
   });
 });

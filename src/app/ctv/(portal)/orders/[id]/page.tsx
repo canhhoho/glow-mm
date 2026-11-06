@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { fmtDateTime, fmtInt } from "@/lib/format";
 import { requireAffiliate } from "@/server/auth/session";
-import { bpToPercent } from "@/server/affiliates/commission";
+import { bpToPercent, hasFixedCommission } from "@/server/affiliates/commission";
 import { getAffiliateOrder } from "@/server/affiliates/affiliates";
 import { CommissionBadge } from "@/components/admin/affiliate-parts";
 import { OrderStatusBadge } from "@/components/admin/order-badges";
@@ -62,7 +62,7 @@ export default async function CtvOrderPage({ params, searchParams }: PageProps<"
           <dt className="text-muted-foreground">{ta("colCommission")}</dt>
           <dd className="flex flex-wrap items-center gap-2" data-testid="ctv-order-commission">
             <span className="font-medium tabular-nums">{fmtInt(order.commission.commissionMmk)} MMK</span>
-            <span className="text-xs text-muted-foreground">({bpToPercent(order.commissionRateBp ?? 0)}%)</span>
+            <span className="text-xs text-muted-foreground">({bpToPercent(order.commissionRateBp ?? 0)}%{hasFixedCommission(order.items) && ` · ${ta("fixedPerProduct")}`})</span>
             <CommissionBadge state={order.commission.state} />
           </dd>
         </dl>
