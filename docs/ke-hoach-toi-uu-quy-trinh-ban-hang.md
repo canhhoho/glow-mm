@@ -59,6 +59,8 @@ Kết quả: có thể tạo một sản phẩm mẫu, nhập thử, tính giá,
 
 Nhập hàng lần đầu số lượng lớn dùng workbook sản phẩm + tồn đầu kỳ. Nhập bổ sung SKU cũ dùng phiếu nhập; không dùng lại workbook tạo mới để tăng tồn.
 
+> Cập nhật 06/11/2026: workbook hai sheet đã thay bằng file Excel một sheet (mỗi dòng một SKU) vừa tạo mới, vừa cập nhật, vừa nhập tồn tuỳ chọn thành phiếu nhập nháp — kể cả SKU đã có. Nhập lại một file đã nhập tồn bị chặn; nhập bổ sung lẻ vẫn nên dùng phiếu nhập. Xem README → "Nhập / cập nhật bằng Excel".
+
 ### 3.3 Xử lý đơn
 
 Khách/nhân viên tạo đơn → PENDING, giữ hàng → xác nhận COD hoặc tiền chuyển khoản → chuẩn bị giao → in phiếu soạn (lô FEFO, có thể in cả loạt đơn) và lấy hàng theo phiếu → bàn giao (có thể cả loạt), xuất đúng lô trên phiếu và chụp giá vốn → SHIPPING → xác nhận giao thành công → COMPLETED → đối soát COD nếu có.

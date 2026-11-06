@@ -52,7 +52,6 @@ const nextConfig: NextConfig = {
   // Thư viện libvips của sharp (tối ưu ảnh next/image) không được file-tracing chép vào standalone trên Windows.
   outputFileTracingIncludes: {
     "*": ["./node_modules/@img/sharp-win32-*/lib/*.dll", "./node_modules/@img/sharp-libvips-*/lib/**"],
-    "/api/templates/*": ["./public/templates/*.xlsx"],
     "/api/admin/orders/vtp-export": ["./src/server/orders/templates/vtp-myanmar.xlsx"],
   },
   images: {

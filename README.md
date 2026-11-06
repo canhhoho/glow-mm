@@ -17,30 +17,28 @@ Tài khoản mẫu: `admin@glow.local`, `kho@glow.local`, `donhang@glow.local` �
 
 ## Quản lý sản phẩm
 
-Trong Admin → Sản phẩm, bấm **Sửa** trên từng dòng để chỉnh sản phẩm.
-Để dùng sản phẩm cũ làm mẫu, vào **Thêm sản phẩm** → chọn **Sản phẩm nguồn** → **Nạp thông tin**,
-chỉnh nội dung và nhập slug/SKU mới rồi bấm **Lưu**. Bản sao giữ nội dung, giá, biến thể và ảnh;
-không sao chép tồn kho, lô hàng hoặc giao dịch. Sản phẩm mới mặc định ẩn trên cửa hàng.
+Trong Admin → Sản phẩm, bấm biểu tượng **Sửa** trên từng dòng để chỉnh sản phẩm. Form chỉ cần
+một tên (Myanmar hoặc tiếng Anh — tên còn lại tự lấy theo), thương hiệu (chọn hoặc gõ tên mới), danh mục
+và giá; slug, SKU, kho bán, hạn dùng nằm trong **Thiết lập khác** (tự điền, sửa khi cần). Để dùng sản phẩm
+cũ làm mẫu, mở **Sao chép từ sản phẩm cũ** trên trang Thêm sản phẩm → chọn nguồn → **Nạp thông tin**.
+Bản sao giữ nội dung, giá, biến thể và ảnh; không sao chép tồn kho. Sản phẩm mới mặc định ẩn trên cửa hàng.
 
-Trang nhập sản phẩm nhận trực tiếp **Excel `.xlsx` hoặc CSV**. Tải mẫu Excel, điền
-từ dòng 7 trong sheet nhập liệu rồi tải lại file; hướng dẫn và ví dụ nằm ở sheet
-riêng. Mẫu tồn đầu kỳ tạo phiếu nhập nháp để kiểm tra trước khi ghi sổ.
+**Nhập / cập nhật bằng Excel** (Sản phẩm → Nhập từ Excel): một sheet `Nhap hang`, mỗi dòng một SKU.
+- **Tải file mẫu trống** để tạo mới, hoặc **Tải danh sách sản phẩm hiện có** để sửa giá/tên rồi tải lên lại.
+  File sinh lúc tải, có danh sách thả xuống (thương hiệu, danh mục, kho bán, Có/Không) theo dữ liệu thật.
+- Tạo mới: để trống SKU; các dòng cùng tên + thương hiệu là các màu/dung tích của một sản phẩm; mã tự sinh,
+  sản phẩm mới luôn ẩn. Cập nhật: điền SKU đã có, ô trống = giữ nguyên. Không đổi kho bán/combo qua Excel.
+- Nhập tồn (tuỳ chọn): Số lượng + Giá mua (VND hay MMK theo kho bán) [+ phí đưa về kho, số lô, hạn dùng].
+  Hệ thống tạo **phiếu nhập nháp** theo kho bán, chốt tỷ giá đã xem trước; mở phiếu kiểm tra rồi **Ghi sổ**.
+  File đã nhập tồn không nhập lại được; file chỉ sửa giá thì chạy lại được.
+- Luôn **Xem trước**: từng dòng ghi Tạo mới / Cập nhật (giá cũ → mới) / Không đổi; còn lỗi thì không xác nhận.
+  File cũ có cột phụ (cách dùng, thành phần, bảo quản, PAO, ngày sản xuất, loại hàng) vẫn đọc được;
+  mẫu hai sheet cũ (`San pham` + `Ton dau ky`) không dùng nữa.
 
-**Lần đầu mở bán:** vào Sản phẩm → Import → tải **Excel nhập hàng lần đầu**.
-Điền `San pham` và `Ton dau ky` trong cùng file, liên kết bằng SKU; mã kho có
-thể để trống để dùng kho chọn trên web (ghi nhớ sau lần xác nhận thành công).
-Xem trước lỗi, giá vốn và lãi dự kiến rồi xác nhận: sản phẩm ẩn + phiếu nhập nháp
-được tạo cùng transaction, chặn nhập lặp. Mở phiếu kiểm tra và ghi sổ, hoàn thiện
-ảnh/nội dung, thử đơn COD và chuyển khoản trước khi mở bán. Luồng này chỉ tạo
-hàng mới; nhập riêng vẫn dùng để cập nhật sản phẩm đã có.
-
-Hạn dùng quản lý theo sản phẩm/lô: `DATED` cần ngày thật; `NONE` chỉ dành cho
-sản phẩm không áp dụng hạn; `UNKNOWN` được nhập kho nhưng chưa được bán, có
-cảnh báo và có thể xác nhận ngày thật trong chi tiết lô. Hạn sau mở nắp (PAO,
-tháng) là thông tin riêng, không thay thế ngày hết hạn. Dữ liệu cũ giữ chế độ DATED.
-Giá vốn lần đầu = giá mua + phí đưa về kho (VND/đv), quy đổi theo tỷ giá đã xem
-trước và chốt khi tạo phiếu. Lãi dự kiến trừ phí bán đã nhập, không tự bao gồm
-phí chưa khai báo hoặc hoa hồng; phí bán tại màn xem trước không phải chi phí kế toán.
+Hạn dùng quản lý theo sản phẩm/lô: lô có ngày (`DATED`), không áp dụng hạn (`NONE`, chỉ với sản phẩm
+không quản lý hạn) hoặc chưa biết hạn (`UNKNOWN` — để trống hạn khi nhập hàng có hạn): được nhập kho nhưng
+chưa bán, có cảnh báo, xác nhận ngày thật trong chi tiết lô. Hạn sau mở nắp (PAO) là thông tin riêng.
+Giá vốn = giá mua + phí đưa về kho (VND/đv), quy đổi theo tỷ giá đã xem trước và chốt khi tạo phiếu.
 
 ## Xử lý đơn và xuất VTP
 

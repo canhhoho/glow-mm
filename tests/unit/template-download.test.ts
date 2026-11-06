@@ -1,29 +1,36 @@
-import { readFile } from "node:fs/promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const auth = vi.hoisted(() => ({ getStaffUser: vi.fn() }));
+const template = vi.hoisted(() => ({ catalogTemplateFile: vi.fn() }));
 vi.mock("@/server/auth/session", () => auth);
-vi.mock("@/server/catalog/products", () => ({ PRODUCT_CSV_COLUMNS: ["product_slug", "sku"], STOCK_CSV_COLUMNS: ["sku", "location_code"] }));
+vi.mock("@/server/catalog/catalog-template", () => template);
 import { GET } from "@/app/api/templates/[name]/route";
 
 const download = (name: string) => GET(new Request(`http://localhost/api/templates/${name}`), { params: Promise.resolve({ name }) });
 
-beforeEach(() => auth.getStaffUser.mockResolvedValue({ id: "staff" }));
+beforeEach(() => {
+  auth.getStaffUser.mockResolvedValue({ id: "staff", role: "ADMIN" });
+  template.catalogTemplateFile.mockImplementation(async (current: boolean) => new Uint8Array([current ? 2 : 1]));
+});
 
-describe("Tải file mẫu Excel", () => {
-  it.each(["products", "stock"])("%s: trả đúng file Excel và tên tải xuống", async (kind) => {
-    const response = await download(`${kind}.xlsx`);
-    expect(response.status).toBe(200);
-    expect(response.headers.get("Content-Type")).toContain("spreadsheetml.sheet");
-    expect(response.headers.get("Content-Disposition")).toContain(`${kind}.xlsx`);
-    expect(Buffer.from(await response.arrayBuffer())).toEqual(await readFile(`public/templates/${kind}.xlsx`));
+describe("Tải file Excel nhập/cập nhật sản phẩm", () => {
+  it("mẫu trống và danh sách hiện có: sinh lúc tải, đúng loại file và tên tải xuống", async () => {
+    const blank = await download("catalog.xlsx");
+    expect(blank.status).toBe(200);
+    expect(blank.headers.get("Content-Type")).toContain("spreadsheetml.sheet");
+    expect(blank.headers.get("Content-Disposition")).toContain("mau-nhap-san-pham.xlsx");
+    expect([...new Uint8Array(await blank.arrayBuffer())]).toEqual([1]);
+    const current = await download("catalog-current.xlsx");
+    expect(current.headers.get("Content-Disposition")).toMatch(/san-pham-hien-co-\d{8}\.xlsx/);
+    expect(template.catalogTemplateFile).toHaveBeenLastCalledWith(true);
   });
 
-  it("yêu cầu đăng nhập và từ chối tên file không hỗ trợ", async () => {
+  it("cần đăng nhập + quyền sản phẩm; tên file lạ / mẫu cũ → 404", async () => {
     auth.getStaffUser.mockResolvedValue(null);
-    expect((await download("products.xlsx")).status).toBe(401);
-    auth.getStaffUser.mockResolvedValue({ id: "staff" });
-    expect((await download("../products.xlsx")).status).toBe(404);
-    expect((await download("products.csv")).headers.get("Content-Type")).toContain("text/csv");
+    expect((await download("catalog.xlsx")).status).toBe(401);
+    auth.getStaffUser.mockResolvedValue({ id: "staff", role: "ORDER_STAFF" });
+    expect((await download("catalog.xlsx")).status).toBe(403);
+    auth.getStaffUser.mockResolvedValue({ id: "staff", role: "ADMIN" });
+    for (const name of ["../catalog.xlsx", "products.xlsx", "opening.xlsx", "products.csv"]) expect((await download(name)).status).toBe(404);
   });
 });

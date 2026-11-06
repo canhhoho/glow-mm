@@ -1,12 +1,11 @@
 import Rabbit from "rabbit-node";
 import { describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
-import { toCsv } from "@/lib/csv";
-import { importOpeningStockCsv, importProductsCsv, PRODUCT_CSV_COLUMNS, saveProduct, setProductsPublished, STOCK_CSV_COLUMNS } from "@/server/catalog/products";
-import { createDocument, postDocument } from "@/server/inventory/documents";
+import { saveProduct, setProductsPublished } from "@/server/catalog/products";
+import { createDocument } from "@/server/inventory/documents";
 import { listProductsAdmin } from "@/server/catalog/admin-queries";
 import { deleteProducts, restoreProducts } from "@/server/catalog/product-delete";
-import { balance, makeFixture } from "./fixtures";
+import { makeFixture } from "./fixtures";
 
 const base = (f: Awaited<ReturnType<typeof makeFixture>>, slug: string) => ({
   slug,
@@ -152,62 +151,5 @@ describe("Sản phẩm", () => {
     await expect(saveProduct({ ...noBrand, slug: `b3-${f.tag.toLowerCase()}`, brandName: orphan, variants: [{ sku, label: "x", priceMmk: 1 }] }, f.userId)).rejects.toThrow();
     expect(await prisma.brand.count({ where: { name: orphan } })).toBe(0);
     await expect(saveProduct({ ...noBrand, slug: `b4-${f.tag.toLowerCase()}`, variants: [{ sku: `B4-${f.tag}`, label: "x", priceMmk: 1 }] }, f.userId)).rejects.toThrow(/thương hiệu/);
-  });
-});
-
-describe("Import CSV", () => {
-  it("import sản phẩm gộp biến thể theo product_slug; chạy lại thì cập nhật, không nhân đôi", async () => {
-    const f = await makeFixture();
-    const cat = await prisma.category.findUniqueOrThrow({ where: { id: f.categoryId } });
-    const slug = `imp-${f.tag.toLowerCase()}`;
-    const row = (sku: string, label: string, price: number) => {
-      const r: Record<string, string | number> = {
-        product_slug: slug, brand: `Brand ${f.tag}`, category: cat.slug, name_my: "တိုနာ", name_en: "Toner",
-        sku, variant_label: label, price_mmk: price,
-      };
-      return PRODUCT_CSV_COLUMNS.map((c) => r[c] ?? "");
-    };
-    const csv = toCsv([[...PRODUCT_CSV_COLUMNS], row(`I1-${f.tag}`, "100ml", 15000), row(`I2-${f.tag}`, "200ml", 25000)]);
-    expect(await importProductsCsv(csv, f.userId)).toMatchObject({ ok: 2, errors: [] });
-    expect(await importProductsCsv(csv, f.userId)).toMatchObject({ ok: 2, errors: [] });
-    const p = await prisma.product.findUniqueOrThrow({ where: { slug }, include: { variants: true } });
-    expect(p.variants).toHaveLength(2);
-  });
-
-  it("báo lỗi theo dòng: danh mục chưa có", async () => {
-    const f = await makeFixture();
-    const r: Record<string, string> = {
-      product_slug: `bad-${f.tag.toLowerCase()}`, brand: "X", category: "khong-ton-tai", name_my: "a", name_en: "a",
-      sku: `B-${f.tag}`, variant_label: "x", price_mmk: "1",
-    };
-    const res = await importProductsCsv(toCsv([[...PRODUCT_CSV_COLUMNS], PRODUCT_CSV_COLUMNS.map((c) => r[c] ?? "")]), f.userId);
-    expect(res.ok).toBe(0);
-    expect(res.errors[0]).toMatch(/Dòng 2/);
-  });
-
-  it("import tồn đầu kỳ tạo phiếu NHẬP NHÁP; chỉ có tồn sau khi ghi sổ", async () => {
-    const f = await makeFixture();
-    const sku = (await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).sku;
-    const csv = toCsv([
-      [...STOCK_CSV_COLUMNS],
-      [sku, f.vn.code, "OP1", "2028-01-31", "", 80000, 12, "SELLABLE"],
-      [sku, f.vn.code, "OP1", "2028-01-31", "", 80000, 2, "TESTER"],
-    ]);
-    const res = await importOpeningStockCsv(csv, f.userId);
-    expect(res.errors).toEqual([]);
-    expect(res.documents).toHaveLength(1);
-    const batch = await prisma.batch.findFirstOrThrow({ where: { variantId: f.variantId, lotNo: "OP1" } });
-    expect(await balance(batch.id, f.vn.id)).toBe(0);
-    await postDocument(res.documents![0].id, f.userId);
-    expect(await balance(batch.id, f.vn.id)).toBe(12);
-    expect(await balance(batch.id, f.vn.id, "TESTER")).toBe(2);
-  });
-
-  it("import tồn: SKU / vị trí không tồn tại → không tạo phiếu nào", async () => {
-    const f = await makeFixture();
-    const csv = toCsv([[...STOCK_CSV_COLUMNS], ["NO-SKU", f.vn.code, "L", "2028-01-01", "", 1, 1, ""]]);
-    const res = await importOpeningStockCsv(csv, f.userId);
-    expect(res.documents).toBeUndefined();
-    expect(res.errors[0]).toMatch(/SKU/);
   });
 });

@@ -10,11 +10,9 @@ import type { ActionState } from "@/server/inventory/actions";
 import { deleteCategory, removeCategoryIcon, setCategoryIcon, updateCategory } from "./categories";
 import { CATALOG_TAG } from "./category-tree";
 import { addProductImages, deleteProductImage, reorderProductImage, updateProductImageAlt } from "./images";
-import { createBrand, createCategory, importOpeningStockCsv, importProductsCsv, saveProduct, setProductsPublished, type ImportResult } from "./products";
-import { readImportFile } from "./import-file";
+import { createBrand, createCategory, saveProduct, setProductsPublished } from "./products";
 import { readCatalogFile } from "./catalog-sheet-read";
 import { catalogImportInputSchema, commitCatalogImport, previewCatalogImport, type CatalogImportPreview } from "./catalog-import";
-import { commitOpening, previewOpening, type OpeningPreview } from "./opening";
 import { deleteProducts, moveProductsToWarehouse, restoreProducts } from "./product-delete";
 import { ReadinessError } from "./readiness";
 import type { Issue } from "./readiness-rules";
@@ -248,54 +246,6 @@ export async function deleteProductImageAction(_prev: ActionState, formData: For
     return { error: message(e) };
   }
   return { ok: "deleted" };
-}
-
-export type ImportState = (ImportResult & { error?: string }) | undefined;
-
-export async function importProductsAction(_prev: ImportState, formData: FormData): Promise<ImportState> {
-  try {
-    const user = await requirePermission("catalog:manage");
-    const input = await readImportFile(formData.get("file"), "products");
-    const result = await importProductsCsv(input.csv, user.id, input.lineNumbers);
-    updateTag(CATALOG_TAG);
-    revalidatePath("/admin/products");
-    return result;
-  } catch (e) {
-    return { ok: 0, errors: [], error: message(e) };
-  }
-}
-
-export async function importStockAction(_prev: ImportState, formData: FormData): Promise<ImportState> {
-  try {
-    const user = await requirePermission("stock:receive");
-    const input = await readImportFile(formData.get("file"), "stock");
-    return await importOpeningStockCsv(input.csv, user.id, input.lineNumbers);
-  } catch (e) {
-    return { ok: 0, errors: [], error: message(e) };
-  }
-}
-
-export type OpeningState = { preview?: OpeningPreview; result?: ImportResult; error?: string } | undefined;
-
-export async function openingImportAction(_prev: OpeningState, formData: FormData): Promise<OpeningState> {
-  try {
-    const user = await requirePermission("catalog:manage");
-    await requirePermission("stock:receive");
-    if (formData.get("step") === "confirm") {
-      const result = await commitOpening(JSON.parse(z.string().max(4_100_000).parse(formData.get("payload"))), user.id);
-      updateTag(CATALOG_TAG);
-      revalidatePath("/admin/products");
-      revalidatePath("/admin/inventory/documents");
-      return { result };
-    }
-    const file = formData.get("file");
-    if (!(file instanceof File) || !file.name.toLowerCase().endsWith(".xlsx")) throw new Error("Dùng file Excel lần đầu (.xlsx) có cả hai sheet.");
-    const [products, stock] = await Promise.all([readImportFile(file, "products"), readImportFile(file, "stock")]);
-    const preview = await previewOpening({ products: products.csv, stock: stock.csv, locationCode: formData.get("locationCode"), productLines: products.lineNumbers, stockLines: stock.lineNumbers });
-    return { preview };
-  } catch (e) {
-    return { error: message(e) };
-  }
 }
 
 export type CatalogImportState =

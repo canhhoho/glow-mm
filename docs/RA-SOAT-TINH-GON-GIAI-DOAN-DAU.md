@@ -11,6 +11,11 @@ Ngày: 05/11/2026. Báo cáo đề xuất, chưa triển khai thay đổi trong 
 3. Tự điền slug theo tên, SKU theo slug và số thứ tự; tên biến thể mới mặc định “Tiêu chuẩn” trong giao diện tiếng Việt. Có thể sửa trước khi lưu. Mã tự tạo trùng sẽ được thêm hậu tố; mã đã lưu không tự đổi khi đổi tên.
 4. Menu thu gọn thành Tổng quan, Đơn hàng, Sản phẩm, Kho hàng, Tài khoản, Cộng tác viên, Báo cáo và Cài đặt. Tài khoản chứa Nhân viên/CTV/Khách; Nội dung trang chủ nằm trong Cài đặt. Có trang Thương hiệu và Hoa hồng & chi trả; các đường dẫn cũ và phân quyền được giữ.
 
+### Đợt 2 — form sản phẩm và Excel (06/11/2026)
+
+5. Form sản phẩm: chỉ cần một tên (tên còn lại tự chép), thương hiệu chọn hoặc gõ mới; giá/khối lượng nằm ở khối chính khi chỉ có một loại; slug, SKU, kho bán (ẩn khi chỉ một kho), hạn dùng gom vào "Thiết lập khác". Bỏ ô cách dùng. Mục kiểm tra mở bán chỉ hiện lỗi chặn, lưu ý gom một dòng; bỏ cảnh báo ít ảnh/thiếu alt/thiếu cách dùng.
+6. Excel: một sheet, mỗi dòng một SKU, vừa tạo mới vừa cập nhật (ô trống giữ nguyên) vừa nhập tồn tuỳ chọn → phiếu nhập nháp. File mẫu và danh sách sản phẩm hiện có sinh lúc tải, có danh sách thả xuống. Bỏ ba file mẫu cũ, luồng nhập lần đầu hai sheet và hai mục nhập riêng.
+
 Các bảng bên dưới là đánh giá ban đầu và đề xuất cho những bước tiếp theo, không phải danh sách toàn bộ việc đã triển khai.
 
 ## Phạm vi và cách hiểu
