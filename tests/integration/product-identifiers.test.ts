@@ -22,7 +22,8 @@ describe("automatic catalog identifiers", () => {
 
   it("keeps old codes on rename and allocates an added variant without overwriting the old one", async () => {
     const f = await makeFixture();
-    const old = await prisma.product.findUniqueOrThrow({ where: { id: f.productId } });
+    // Legacy fixtures bypass validation and use uppercase tags; this edit must start with a valid slug.
+    const old = await prisma.product.update({ where: { id: f.productId }, data: { slug: `it-${f.tag.toLowerCase()}` } });
     const variant = await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } });
     const updated = await saveProduct({
       id: old.id, slug: old.slug, autoSlug: true,
