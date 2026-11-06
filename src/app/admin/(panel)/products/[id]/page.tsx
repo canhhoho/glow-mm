@@ -27,10 +27,22 @@ export default async function EditProductPage({ params, searchParams }: PageProp
   if (!product) notFound();
   // D2: cùng bộ kiểm tra với lúc lưu / bật hàng loạt / danh sách.
   const readiness = (await loadReadiness(prisma, [product.id])).get(product.id) ?? { errors: [], warnings: [] };
-  const issues = [
-    ...readiness.errors.map((i) => ({ ...i, tone: "danger" as const, kind: t("readiness.error") })),
-    ...readiness.warnings.map((i) => ({ ...i, tone: "warning" as const, kind: t("readiness.warning") })),
-  ];
+  type Row = (typeof readiness.errors)[number] & { tone: "danger" | "warning"; kind: string };
+  const errors: Row[] = readiness.errors.map((i) => ({ ...i, tone: "danger", kind: t("readiness.error") }));
+  const warnings: Row[] = readiness.warnings.map((i) => ({ ...i, tone: "warning", kind: t("readiness.warning") }));
+  const issueList = (list: Row[]) => (
+    <ul className="space-y-1.5 text-sm">
+      {list.map((i) => (
+        <li key={i.code} className="flex flex-wrap items-start gap-2" data-testid={`issue-${i.code}`}>
+          <Badge tone={i.tone}>{i.kind}</Badge>
+          <span>
+            {t(`readiness.issue.${i.code}`)}
+            {i.skus?.length ? <span className="font-mono text-xs text-muted-foreground"> · {i.skus.join(", ")}</span> : null}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
   const steps = [
     { href: "#product-images", label: t("readiness.stepImages") },
     { href: "/admin/inventory/documents/new?type=RECEIVE", label: t("readiness.stepReceive") },
@@ -98,21 +110,15 @@ export default async function EditProductPage({ params, searchParams }: PageProp
             ? t(product.published ? "readiness.publishedWithErrors" : "readiness.blockedHint", { count: readiness.errors.length })
             : t(product.published ? "readiness.publishedOk" : "readiness.readyHint")}
         </p>
-        {issues.length > 0 ? (
-          <ul className="space-y-1.5 text-sm">
-            {issues.map((i) => (
-              <li key={i.code} className="flex flex-wrap items-start gap-2" data-testid={`issue-${i.code}`}>
-                <Badge tone={i.tone}>{i.kind}</Badge>
-                <span>
-                  {t(`readiness.issue.${i.code}`)}
-                  {i.skus?.length ? <span className="font-mono text-xs text-muted-foreground"> · {i.skus.join(", ")}</span> : null}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <Badge tone="success">✓ {t("readiness.allGood")}</Badge>
+        {errors.length > 0 && issueList(errors)}
+        {/* Lưu ý không chặn mở bán: gom lại, mở khi cần. */}
+        {warnings.length > 0 && (
+          <details data-testid="readiness-warnings">
+            <summary className="cursor-pointer text-sm text-muted-foreground">{t("readiness.warningsCount", { count: warnings.length })}</summary>
+            <div className="mt-2">{issueList(warnings)}</div>
+          </details>
         )}
+        {errors.length + warnings.length === 0 && <Badge tone="success">✓ {t("readiness.allGood")}</Badge>}
         <nav aria-label={t("readiness.steps")} className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t pt-3 text-sm">
           <span className="text-muted-foreground">{t("readiness.steps")}:</span>
           {steps.map((s, n) => (

@@ -123,6 +123,36 @@ describe("Sản phẩm", () => {
       saveProduct({ ...base(f, `d-${f.tag.toLowerCase()}`), variants: [{ sku, label: "x", priceMmk: 1 }] }, f.userId),
     ).rejects.toThrow(/SKU/);
   });
+
+  it("chỉ cần một tên: tên còn lại chép theo; thiếu cả hai tên bị chặn", async () => {
+    const f = await makeFixture();
+    const slug = `n1-${f.tag.toLowerCase()}`;
+    const p = await saveProduct({ ...base(f, slug), en: { name: "" }, variants: [{ sku: `N1-${f.tag}`, label: "x", priceMmk: 1 }] }, f.userId);
+    const names = await prisma.productTranslation.findMany({ where: { productId: p.id }, orderBy: { locale: "asc" } });
+    expect(names.map((n) => [n.locale, n.name])).toEqual([["en", "နေကာခရင်မ်"], ["my", "နေကာခရင်မ်"]]);
+    await expect(
+      saveProduct({ ...base(f, `n2-${f.tag.toLowerCase()}`), my: { name: " " }, en: { name: "" }, variants: [{ sku: `N2-${f.tag}`, label: "x", priceMmk: 1 }] }, f.userId),
+    ).rejects.toThrow(/ít nhất một tên/);
+  });
+
+  it("gõ tên thương hiệu: có sẵn (khác hoa thường) thì dùng lại, chưa có thì tạo; lưu lỗi không để lại thương hiệu", async () => {
+    const f = await makeFixture();
+    const existing = await prisma.brand.findUniqueOrThrow({ where: { id: f.brandId } });
+    const { brandId: _ignored, ...noBrand } = base(f, `b1-${f.tag.toLowerCase()}`);
+    void _ignored;
+    const reused = await saveProduct({ ...noBrand, brandName: existing.name.toUpperCase(), variants: [{ sku: `B1-${f.tag}`, label: "x", priceMmk: 1 }] }, f.userId);
+    expect(reused.brandId).toBe(f.brandId);
+
+    const fresh = `Brand ${f.tag}`;
+    const created = await saveProduct({ ...noBrand, slug: `b2-${f.tag.toLowerCase()}`, brandName: fresh, variants: [{ sku: `B2-${f.tag}`, label: "x", priceMmk: 1 }] }, f.userId);
+    expect((await prisma.brand.findUniqueOrThrow({ where: { id: created.brandId } })).name).toBe(fresh);
+
+    const orphan = `Orphan ${f.tag}`;
+    const sku = (await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).sku; // SKU trùng → lưu lỗi
+    await expect(saveProduct({ ...noBrand, slug: `b3-${f.tag.toLowerCase()}`, brandName: orphan, variants: [{ sku, label: "x", priceMmk: 1 }] }, f.userId)).rejects.toThrow();
+    expect(await prisma.brand.count({ where: { name: orphan } })).toBe(0);
+    await expect(saveProduct({ ...noBrand, slug: `b4-${f.tag.toLowerCase()}`, variants: [{ sku: `B4-${f.tag}`, label: "x", priceMmk: 1 }] }, f.userId)).rejects.toThrow(/thương hiệu/);
+  });
 });
 
 describe("Import CSV", () => {

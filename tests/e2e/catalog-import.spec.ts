@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import columns from "../../src/lib/catalog-import-columns.json";
-import { login } from "./helpers";
+import { login, openProductSettings } from "./helpers";
 
 /** Fill the actual downloaded template, leaving its headers and guide intact. */
 function fillProductTemplate(template: Uint8Array, values: Record<string, string | number>, kind: "products" | "stock" = "products", sheetNumber = 1): Buffer {
@@ -74,16 +74,20 @@ test("tải mẫu Excel, điền và nhập sản phẩm trực tiếp qua trìn
   const editUrl = new URL(editHref!, page.url()).toString();
   await editLink.click();
   await expect(page).toHaveURL(editUrl);
+  await openProductSettings(page);
   await expect(page.getByRole("textbox", { name: "Slug (URL)", exact: true })).toHaveValue(slug);
   await page.reload(); // xác nhận dữ liệu đã lưu, không chỉ là kết quả form import
+  await openProductSettings(page);
   await expect(page.getByRole("textbox", { name: "Slug (URL)", exact: true })).toHaveValue(slug);
   await expect(page.getByRole("textbox", { name: "SKU", exact: true }).first()).toHaveValue(sku);
-  await expect(page.getByRole("textbox", { name: "Tên", exact: true }).last()).toHaveValue(name);
+  await expect(page.getByRole("textbox", { name: "Tên tiếng Anh", exact: true })).toHaveValue(name);
   await expect(page.getByRole("checkbox", { name: "Hiển thị trên web", exact: true })).not.toBeChecked();
 
   // D2: đủ điều kiện (giá, khối lượng, kho) → "Có thể mở bán"; thiếu ảnh / hết hàng chỉ là cảnh báo.
   const check = page.getByTestId("launch-check");
   await expect(check).toContainText("Đủ điều kiện");
+  // Lưu ý không chặn mở bán được gom trong một khối đóng sẵn.
+  await check.getByTestId("readiness-warnings").locator("summary").click();
   await expect(check.getByTestId("issue-NO_IMAGE")).toContainText("Cảnh báo");
   await expect(check.getByTestId("issue-OUT_OF_STOCK")).toBeVisible();
   // Đặt giá 0 rồi bật hiển thị → server chặn, báo lý do theo SKU, SP vẫn ẩn.
@@ -126,6 +130,7 @@ test("nhập hàng lần đầu: xem trước hai sheet, tạo nháp rồi ghi s
   const row = page.getByRole("row").filter({ hasText: sku });
   await expect(row.getByTestId("product-readiness")).toContainText(/Có thể mở bán|Cần hoàn thiện/); // SP nhập lần đầu luôn ẩn (D2: hiện trạng thái mở bán)
   await row.getByRole("link", { name: /^Sửa / }).click();
+  await openProductSettings(page);
   await expect(page.getByRole("checkbox", { name: "Quản lý hạn sử dụng cho sản phẩm này", exact: true })).not.toBeChecked();
   // The simplified form hides PAO but must retain its imported value across a save/reload.
   await expect(page.getByRole("spinbutton", { name: "Hạn sau mở nắp (tháng, nếu có)", exact: true })).toHaveCount(0);

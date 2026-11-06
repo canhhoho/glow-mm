@@ -439,8 +439,6 @@
     "publishedLabel": "Show on storefront",
     "storageNote": "Storage conditions",
     "ingredients": "Ingredients (INCI)",
-    "contentMy": "Myanmar content",
-    "contentEn": "English content",
     "name": "Name",
     "description": "Description",
     "usage": "How to use",
@@ -462,7 +460,6 @@
     "isBundle": "Is a bundle",
     "components": "Bundle components",
     "addComponent": "Add component",
-    "addVariant": "Add variant",
     "save": "Save",
     "newBrand": "Add brand",
     "newCategory": "Add category",
@@ -520,9 +517,7 @@
         "PRICE_ZERO": "Price ≤ 0",
         "NO_WEIGHT": "Missing weight (needed for per-kg freight)",
         "NO_IMAGE": "No images",
-        "FEW_IMAGES": "Only 1 image — add label/packaging photos",
-        "MISSING_ALT": "Cover image has no description (alt)",
-        "CONTENT_INCOMPLETE": "Missing description or usage (MY/EN)",
+        "CONTENT_INCOMPLETE": "Missing description (MY/EN)",
         "NO_WEIGHT_LOCAL": "Missing weight (needed for VTP shipping)",
         "COST_MISSING": "Sellable stock has no cost",
         "COST_ESTIMATED": "Sellable stock uses an estimated cost",
@@ -541,8 +536,18 @@
       "stepReceive": "Receive stock",
       "stepPrice": "Set prices",
       "stepView": "View as customer",
-      "stepPublish": "Publish (tick Show on web)"
-    }
+      "stepPublish": "Publish (tick Show on web)",
+      "warningsCount": "{count} notes (do not block publishing)"
+    },
+    "nameMy": "Myanmar name",
+    "nameEn": "English name",
+    "brandNewHint": "New brand — it will be created when you save",
+    "descriptions": "Description",
+    "descriptionMy": "Myanmar description",
+    "descriptionEn": "English description",
+    "addColorSize": "Add colour/size",
+    "otherSettings": "Other settings (codes, warehouse, expiry)",
+    "nameHint": "One name is enough; the other language uses it until translated."
   },
   "Orders": {
     "exportVtp": "Export VTP Excel",

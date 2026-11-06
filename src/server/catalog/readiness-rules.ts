@@ -7,8 +7,6 @@
 export const ERROR_CODES = ["NO_ACTIVE_VARIANT", "BAD_LOCATION", "PRICE_ZERO", "NO_WEIGHT"] as const;
 export const WARNING_CODES = [
   "NO_IMAGE",
-  "FEW_IMAGES",
-  "MISSING_ALT",
   "CONTENT_INCOMPLETE",
   "NO_WEIGHT_LOCAL",
   "COST_MISSING",
@@ -28,7 +26,6 @@ export const ALWAYS_BLOCKING: readonly ErrorCode[] = ["NO_ACTIVE_VARIANT", "PRIC
 export type ReadinessInput = {
   location: { active: boolean; sellable: boolean; pricingMode: "VN_IMPORT" | "LOCAL_MMK" | null };
   imageCount: number;
-  coverHasAlt: boolean;
   /** Mô tả + cách dùng theo ngôn ngữ nhập liệu (my, en). */
   content: { description: string | null; usage: string | null }[];
   variants: {
@@ -70,9 +67,7 @@ export function evaluateReadiness(p: ReadinessInput): Readiness {
   ];
   const warnings: Issue[] = [
     ...(p.imageCount === 0 ? [{ code: "NO_IMAGE" as const }] : []),
-    ...(p.imageCount === 1 ? [{ code: "FEW_IMAGES" as const }] : []),
-    ...(p.imageCount > 0 && !p.coverHasAlt ? [{ code: "MISSING_ALT" as const }] : []),
-    ...(p.content.some((c) => !c.description?.trim() || !c.usage?.trim()) ? [{ code: "CONTENT_INCOMPLETE" as const }] : []),
+    ...(p.content.some((c) => !c.description?.trim()) ? [{ code: "CONTENT_INCOMPLETE" as const }] : []),
     ...(localMode ? withSkus("NO_WEIGHT_LOCAL", noWeight) : []),
     ...withSkus("COST_MISSING", p.costMissingSkus),
     ...withSkus("COST_ESTIMATED", p.costEstimatedSkus),

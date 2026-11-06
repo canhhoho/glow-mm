@@ -4,7 +4,6 @@ import { blockingErrors, evaluateReadiness, listStatus, type ReadinessInput } fr
 const base = (over: Partial<ReadinessInput> = {}): ReadinessInput => ({
   location: { active: true, sellable: true, pricingMode: "VN_IMPORT" },
   imageCount: 3,
-  coverHasAlt: true,
   content: [
     { description: "d", usage: "u" },
     { description: "d", usage: "u" },
@@ -65,7 +64,8 @@ describe("evaluateReadiness (D2)", () => {
     );
     expect(r.errors).toEqual([]);
     expect(codes(r.warnings)).toEqual(["NO_IMAGE", "CONTENT_INCOMPLETE", "COST_MISSING", "COST_ESTIMATED", "OUT_OF_STOCK", "STOCK_OTHER_WAREHOUSE"]);
-    expect(codes(evaluateReadiness(base({ imageCount: 1, coverHasAlt: false })).warnings)).toEqual(["FEW_IMAGES", "MISSING_ALT"]);
+    // Một ảnh / ảnh chưa có alt / thiếu cách dùng không còn là lưu ý (form gọn, alt tự lấy tên SP).
+    expect(evaluateReadiness(base({ imageCount: 1, content: [{ description: "d", usage: "" }] })).warnings).toEqual([]);
   });
 
   it("chặn khi lưu: SP mới bật → mọi lỗi; SP đang hiển thị → chỉ giá ≤ 0 / không biến thể", () => {

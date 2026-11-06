@@ -54,7 +54,6 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
       evaluateReadiness({
         location: p.stockLocation,
         imageCount: p.images.length,
-        coverHasAlt: !!p.images[0]?.alt?.trim(),
         content: p.translations,
         variants: p.variants.map((v) => ({
           id: v.id,

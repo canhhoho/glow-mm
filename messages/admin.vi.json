@@ -439,8 +439,6 @@
     "publishedLabel": "Hiển thị trên web",
     "storageNote": "Điều kiện bảo quản",
     "ingredients": "Thành phần (INCI)",
-    "contentMy": "Nội dung tiếng Myanmar",
-    "contentEn": "Nội dung tiếng Anh",
     "name": "Tên",
     "description": "Mô tả",
     "usage": "Cách dùng",
@@ -462,7 +460,6 @@
     "isBundle": "Là combo",
     "components": "Thành phần combo",
     "addComponent": "Thêm thành phần",
-    "addVariant": "Thêm biến thể",
     "save": "Lưu",
     "newBrand": "Thêm thương hiệu",
     "newCategory": "Thêm danh mục",
@@ -520,9 +517,7 @@
         "PRICE_ZERO": "Giá bán ≤ 0",
         "NO_WEIGHT": "Thiếu khối lượng (cần cho cước/kg)",
         "NO_IMAGE": "Chưa có ảnh",
-        "FEW_IMAGES": "Mới có 1 ảnh — nên thêm ảnh nhãn/bao bì",
-        "MISSING_ALT": "Ảnh đại diện chưa có mô tả (alt)",
-        "CONTENT_INCOMPLETE": "Thiếu mô tả hoặc cách dùng (MY/EN)",
+        "CONTENT_INCOMPLETE": "Thiếu mô tả (MY/EN)",
         "NO_WEIGHT_LOCAL": "Thiếu khối lượng (cần khi gửi VTP)",
         "COST_MISSING": "Tồn bán thiếu giá vốn",
         "COST_ESTIMATED": "Tồn bán đang dùng giá vốn tạm",
@@ -541,8 +536,18 @@
       "stepReceive": "Nhập hàng",
       "stepPrice": "Tính giá",
       "stepView": "Xem như khách",
-      "stepPublish": "Mở bán (tick Hiển thị trên web)"
-    }
+      "stepPublish": "Mở bán (tick Hiển thị trên web)",
+      "warningsCount": "{count} lưu ý (không chặn mở bán)"
+    },
+    "nameMy": "Tên tiếng Myanmar",
+    "nameEn": "Tên tiếng Anh",
+    "brandNewHint": "Thương hiệu mới — sẽ được tạo khi lưu",
+    "descriptions": "Mô tả",
+    "descriptionMy": "Mô tả tiếng Myanmar",
+    "descriptionEn": "Mô tả tiếng Anh",
+    "addColorSize": "Thêm màu/dung tích",
+    "otherSettings": "Thiết lập khác (mã, kho, hạn dùng)",
+    "nameHint": "Chỉ cần điền một tên; tên còn lại tự lấy theo tên này."
   },
   "Orders": {
     "exportVtp": "Xuất Excel VTP",

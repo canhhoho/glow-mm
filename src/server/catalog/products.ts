@@ -19,7 +19,7 @@ import { blockingErrors, type Issue } from "./readiness-rules";
 const optionalText = (max: number) => z.string().trim().max(max).optional().default("");
 
 const translation = z.object({
-  name: z.string().trim().min(1).max(200),
+  name: z.string().trim().max(200).optional().default(""),
   description: optionalText(5000),
   usage: optionalText(3000),
 });
@@ -44,7 +44,8 @@ export const productSchema = z.object({
   copyFromId: rawId.optional(),
   slug: slugSchema(80, "Slug chỉ gồm a-z, 0-9 và -"),
   autoSlug: z.boolean().default(false),
-  brandId: rawId,
+  brandId: rawId.optional(),
+  brandName: z.string().trim().max(80).optional(),
   categoryId: rawId,
   /** Kho bán (P24). Bỏ trống: SP mới → kho mặc định; SP đang có → giữ kho cũ. */
   stockLocationId: z.preprocess((v) => (v === "" || v == null ? undefined : v), rawId.optional()),
@@ -59,6 +60,13 @@ export const productSchema = z.object({
   en: translation,
   tagIds: z.array(z.string()).default([]),
   variants: z.array(variantSchema).min(1),
+}).superRefine((data, ctx) => {
+  if (!data.my.name && !data.en.name) {
+    ctx.addIssue({ code: "custom", message: "Cần ít nhất một tên (Myanmar hoặc tiếng Anh)", path: ["my", "name"] });
+  }
+  if (!data.brandId && !data.brandName) {
+    ctx.addIssue({ code: "custom", message: "Cần chọn hoặc nhập tên thương hiệu", path: ["brandId"] });
+  }
 });
 
 export class CatalogError extends Error {
@@ -71,14 +79,14 @@ export class CatalogError extends Error {
 export async function saveProduct(raw: unknown, userId: string, transaction?: Tx) {
   const parsed = productSchema.parse(raw);
   if (parsed.copyFromId && parsed.id) throw new CatalogError("Chỉ sao chép khi tạo sản phẩm mới");
+  // Tên nào trống → chép tên còn lại (luôn có hai bản dịch).
+  const myName = toUnicode(parsed.my.name) || parsed.en.name;
+  const enName = parsed.en.name || toUnicode(parsed.my.name);
   const my = {
-    name: toUnicode(parsed.my.name),
+    name: myName,
     description: toUnicode(parsed.my.description),
     usage: toUnicode(parsed.my.usage),
   };
-  const brand = await (transaction ?? prisma).brand.findUnique({ where: { id: parsed.brandId } });
-  const brandName = brand?.name ?? "";
-
   const run = async (tx: Tx) => {
     // Serialize catalog code allocation, including manual saves/imports, until commit.
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('catalog.product-identifiers'))`;
@@ -108,9 +116,18 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
         throw new CatalogError(e instanceof Error ? e.message : String(e));
       }
     }
+    // Thương hiệu: chọn sẵn (brandId) hoặc gõ tên — tìm không phân biệt hoa thường, chưa có thì tạo
+    // trong cùng transaction (lưu lỗi → không để lại thương hiệu thừa).
+    const brand = parsed.brandId
+      ? await tx.brand.findUnique({ where: { id: parsed.brandId } })
+      : (await tx.brand.findFirst({ where: { name: { equals: parsed.brandName!, mode: "insensitive" } } })) ??
+        (await tx.brand.create({ data: { name: parsed.brandName!, slug: slugify(parsed.brandName!, `brand-${Date.now()}`) } }));
+    if (!brand) throw new CatalogError("Không tìm thấy thương hiệu");
+    const brandId = brand.id;
+    const brandName = brand.name;
     const data = {
       slug: input.slug,
-      brandId: input.brandId,
+      brandId,
       categoryId: input.categoryId,
       stockLocationId,
       ...(input.fixedProfitMmk !== undefined && { fixedProfitMmk: input.fixedProfitMmk }),
@@ -123,9 +140,10 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
       ? await tx.product.update({ where: { id: input.id }, data })
       : await tx.product.create({ data });
 
+    const en = { ...input.en, name: enName };
     for (const [locale, tr] of [
       ["my", my],
-      ["en", input.en],
+      ["en", en],
     ] as const) {
       const row = {
         name: tr.name,

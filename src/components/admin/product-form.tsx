@@ -73,6 +73,18 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
   );
   const slug = p.slug || suggestProductSlug(p.en.name, p.my.name);
 
+  // Thương hiệu: dùng brandId nếu chọn từ danh sách, brandName nếu gõ tay
+  const [brandInput, setBrandInput] = useState(
+    initial?.brandId ? options.brands.find((b) => b.id === initial.brandId)?.name ?? "" : "",
+  );
+  const matchedBrand = options.brands.find((b) => b.name.toLowerCase() === brandInput.trim().toLowerCase());
+
+  // Một biến thể thường: giá/khối lượng nằm ở khối chính. Combo luôn hiện khối biến thể để sửa thành phần.
+  const isSingleVariant = variants.length === 1 && !variants[0].isBundle;
+  const singleWh = options.warehouses.length <= 1;
+  const pricingMode = options.warehouses.find((w) => w.id === p.stockLocationId)?.pricingMode ?? null;
+  const showProfit = pricingMode === "LOCAL_MMK";
+
   const set = <K extends keyof ProductEditData>(k: K, v: ProductEditData[K]) => setP((x) => ({ ...x, [k]: v }));
   const setVar = (key: number, patch: Partial<Variant>) =>
     setVariants((vs) => vs.map((v) => (v.key === key ? { ...v, ...patch } : v)));
@@ -86,6 +98,9 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
         autoSlug: !p.id && !p.slug,
         id: p.id || undefined,
         copyFromId: copySourceId,
+        // Brand: gửi brandId nếu chọn từ danh sách, brandName nếu gõ tay
+        brandId: matchedBrand?.id || undefined,
+        brandName: !matchedBrand && brandInput.trim() ? brandInput.trim() : undefined,
         // key chỉ dùng cho React; undefined bị JSON.stringify bỏ qua.
         variants: variants.map((v, index) => ({
           ...v,
@@ -95,7 +110,7 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
           id: v.id || undefined,
         })),
       }),
-    [p, slug, variants, copySourceId],
+    [p, slug, variants, copySourceId, matchedBrand, brandInput],
   );
 
   const textarea = (value: string, onChange: (v: string) => void, rows = 3) => (
@@ -111,21 +126,42 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
     <form action={action} className="space-y-6">
       <input type="hidden" name="payload" value={payload} />
 
+      {/* ── 1. Thông tin chính ── */}
       <section className="grid gap-3 rounded-lg border p-4 sm:grid-cols-2">
         <h2 className="font-medium sm:col-span-2">{t("general")}</h2>
-        <Field label={t("slug")}>
-          <input required aria-label={t("slug")} value={slug} onChange={(e) => set("slug", e.target.value)} pattern="[a-z0-9\-]+" maxLength={80} className={fieldClass} />
-          {!p.id && !p.slug && <span className="text-xs text-muted-foreground">{t("autoIdentifierHint")}</span>}
+        <p className="text-xs text-muted-foreground sm:col-span-2">{t("nameHint")}</p>
+        <Field label={t("nameMy")}>
+          <input
+            value={p.my.name}
+            onChange={(e) => set("my", { ...p.my, name: e.target.value })}
+            maxLength={200}
+            className={fieldClass}
+          />
+        </Field>
+        <Field label={t("nameEn")}>
+          <input
+            value={p.en.name}
+            onChange={(e) => set("en", { ...p.en, name: e.target.value })}
+            maxLength={200}
+            className={fieldClass}
+          />
         </Field>
         <Field label={t("brand")}>
-          <select required value={p.brandId} onChange={(e) => set("brandId", e.target.value)} className={fieldClass}>
-            <option value="">—</option>
+          <input
+            list="brand-list"
+            value={brandInput}
+            onChange={(e) => setBrandInput(e.target.value)}
+            className={fieldClass}
+            required
+          />
+          <datalist id="brand-list">
             {options.brands.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
+              <option key={b.id} value={b.name} />
             ))}
-          </select>
+          </datalist>
+          {brandInput.trim() && !matchedBrand && (
+            <span className="text-xs text-muted-foreground">{t("brandNewHint")}</span>
+          )}
         </Field>
         <Field label={t("category")}>
           <select required value={p.categoryId} onChange={(e) => set("categoryId", e.target.value)} className={fieldClass}>
@@ -137,150 +173,215 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
             ))}
           </select>
         </Field>
-        <Field label={t("warehouse")}>
-          <select required value={p.stockLocationId} onChange={(e) => set("stockLocationId", e.target.value)} className={fieldClass}>
-            {options.warehouses.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name} ({w.code})
-              </option>
-            ))}
-          </select>
-          {initialWarehouse && p.stockLocationId !== initialWarehouse && <span className="text-xs text-amber-700 dark:text-amber-400">{t("warehouseChangeHint")}</span>}
-        </Field>
-        {options.warehouses.find((w) => w.id === p.stockLocationId)?.pricingMode === "LOCAL_MMK" && (
-          <Field label={t("fixedProfitMmk")}>
-            <input
-              type="number"
-              min={0}
-              step={1}
-              inputMode="numeric"
-              value={p.fixedProfitMmk ?? ""}
-              onChange={(e) => set("fixedProfitMmk", e.target.value === "" ? null : Number(e.target.value))}
-              className={fieldClass}
-            />
-            <span className="text-xs text-muted-foreground">{t("fixedProfitHint")}</span>
-          </Field>
-        )}
-        <label className="flex items-center gap-2 self-end text-sm">
-          <input type="checkbox" checked={p.published} onChange={(e) => set("published", e.target.checked)} />
-          {t("publishedLabel")}
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={p.requiresExpiry} onChange={(e) => set("requiresExpiry", e.target.checked)} />
-          {t("requiresExpiry")}
-        </label>
-      </section>
 
-      <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
-        {(["my", "en"] as const).map((loc) => (
-          <section key={loc} className="space-y-3 rounded-lg border p-4" lang={loc}>
-            <h2 className="font-medium">{loc === "my" ? t("contentMy") : t("contentEn")}</h2>
-            <Field label={t("name")}>
+        {/* Giá / Khối lượng — hiện ở đây khi 1 biến thể */}
+        {isSingleVariant && (
+          <>
+            <Field label={t("price")}>
               <input
                 required
-                value={p[loc].name}
-                onChange={(e) => set(loc, { ...p[loc], name: e.target.value })}
+                type="number"
+                min={0}
+                step={100}
+                value={variants[0].priceMmk}
+                onChange={(e) => setVar(variants[0].key, { priceMmk: Number(e.target.value) })}
                 className={fieldClass}
               />
             </Field>
-            <Field label={t("description")}>
-              {textarea(p[loc].description, (v) => set(loc, { ...p[loc], description: v }))}
+            <Field label={t("weight")}>
+              <input
+                type="number"
+                min={0}
+                value={variants[0].weightGrams ?? ""}
+                onChange={(e) => setVar(variants[0].key, { weightGrams: e.target.value ? Number(e.target.value) : null })}
+                className={fieldClass}
+              />
             </Field>
-            <Field label={t("usage")}>{textarea(p[loc].usage, (v) => set(loc, { ...p[loc], usage: v }), 2)}</Field>
-          </section>
-        ))}
-      </div>
+          </>
+        )}
+      </section>
 
+      {/* ── 2. Mô tả ── */}
+      <section className="space-y-3 rounded-lg border p-4">
+        <h2 className="font-medium">{t("descriptions")}</h2>
+        <Field label={t("descriptionMy")}>
+          {textarea(p.my.description, (v) => set("my", { ...p.my, description: v }))}
+        </Field>
+        <Field label={t("descriptionEn")}>
+          {textarea(p.en.description, (v) => set("en", { ...p.en, description: v }))}
+        </Field>
+      </section>
+
+      {/* ── 3. Màu / dung tích ── */}
       <section className="space-y-3">
         <h2 className="font-medium">{t("variants")}</h2>
-        {variants.map((v, index) => (
-          <fieldset key={v.key} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-2 lg:grid-cols-5">
-            <Field label={t("sku")}>
-              <input required aria-label={t("sku")} value={v.sku || suggestVariantSku(slug, index)} onChange={(e) => setVar(v.key, { sku: e.target.value })} maxLength={40} className={fieldClass} />
-              {!v.id && !v.sku && <span className="text-xs text-muted-foreground">{t("autoIdentifierHint")}</span>}
-            </Field>
-            <Field label={t("label")} className="lg:col-span-2">
-              <input required value={v.label} onChange={(e) => setVar(v.key, { label: e.target.value })} className={fieldClass} />
-            </Field>
-            <Field label={t("price")}>
-              <input required type="number" min={0} step={100} value={v.priceMmk} onChange={(e) => setVar(v.key, { priceMmk: Number(e.target.value) })} className={fieldClass} />
-            </Field>
-            <Field label={t("weight")}>
-              <input type="number" min={0} value={v.weightGrams ?? ""} onChange={(e) => setVar(v.key, { weightGrams: e.target.value ? Number(e.target.value) : null })} className={fieldClass} />
-            </Field>
-            <div className="col-span-full flex flex-wrap items-center gap-4 text-sm">
-              <label className="flex items-center gap-1">
-                <input type="checkbox" checked={v.active} onChange={(e) => setVar(v.key, { active: e.target.checked })} />
-                {t("active")}
-              </label>
-              {v.isBundle && <span className="rounded bg-muted px-2 py-1 text-xs">{t("isBundle")}</span>}
-              {!v.id && variants.length > 1 && (
-                <Button type="button" size="lg" variant="outline" onClick={() => setVariants((vs) => vs.filter((x) => x.key !== v.key))}>
-                  {td("remove")}
-                </Button>
-              )}
-            </div>
-            {v.isBundle && (
-              <div className="col-span-full space-y-2">
-                <p className="text-sm text-muted-foreground">{t("components")}</p>
-                {v.components.map((c, i) => (
-                  <div key={i} className="flex gap-2">
-                    <select
-                      required
-                      value={c.componentId}
-                      onChange={(e) =>
-                        setVar(v.key, {
-                          components: v.components.map((x, j) => (j === i ? { ...x, componentId: e.target.value } : x)),
-                        })
-                      }
-                      className={fieldClass}
-                    >
-                      <option value="">—</option>
-                      {options.components
-                        // Thành phần combo phải cùng kho với combo (P24).
-                        .filter((o) => o.id !== v.id && (o.stockLocationId === p.stockLocationId || o.id === c.componentId))
-                        .map((o) => (
-                          <option key={o.id} value={o.id}>
-                            {o.label}
-                          </option>
-                        ))}
-                    </select>
-                    <input
-                      type="number"
-                      min={1}
-                      value={c.qty}
-                      onChange={(e) =>
-                        setVar(v.key, {
-                          components: v.components.map((x, j) => (j === i ? { ...x, qty: Number(e.target.value) } : x)),
-                        })
-                      }
-                      className={cn(fieldClass, "w-24")}
-                    />
-                    <Button type="button" size="lg" variant="outline" onClick={() => setVar(v.key, { components: v.components.filter((_, j) => j !== i) })}>
+        {!isSingleVariant && (
+          <div className="space-y-3">
+            {variants.map((v) => (
+              <fieldset key={v.key} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-2 lg:grid-cols-5">
+                <Field label={t("label")} className="lg:col-span-2">
+                  <input required value={v.label} onChange={(e) => setVar(v.key, { label: e.target.value })} className={fieldClass} />
+                </Field>
+                <Field label={t("price")}>
+                  <input required type="number" min={0} step={100} value={v.priceMmk} onChange={(e) => setVar(v.key, { priceMmk: Number(e.target.value) })} className={fieldClass} />
+                </Field>
+                <Field label={t("weight")}>
+                  <input type="number" min={0} value={v.weightGrams ?? ""} onChange={(e) => setVar(v.key, { weightGrams: e.target.value ? Number(e.target.value) : null })} className={fieldClass} />
+                </Field>
+                <div className="col-span-full flex flex-wrap items-center gap-4 text-sm">
+                  {v.id && (
+                    <label className="flex items-center gap-1">
+                      <input type="checkbox" checked={v.active} onChange={(e) => setVar(v.key, { active: e.target.checked })} />
+                      {t("active")}
+                    </label>
+                  )}
+                  {v.isBundle && <span className="rounded bg-muted px-2 py-1 text-xs">{t("isBundle")}</span>}
+                  {!v.id && variants.length > 1 && (
+                    <Button type="button" size="lg" variant="outline" onClick={() => setVariants((vs) => vs.filter((x) => x.key !== v.key))}>
                       {td("remove")}
                     </Button>
+                  )}
+                </div>
+                {/* Combo components */}
+                {v.isBundle && (
+                  <div className="col-span-full space-y-2">
+                    <p className="text-sm text-muted-foreground">{t("components")}</p>
+                    {v.components.map((c, i) => (
+                      <div key={i} className="flex gap-2">
+                        <select
+                          required
+                          value={c.componentId}
+                          onChange={(e) =>
+                            setVar(v.key, {
+                              components: v.components.map((x, j) => (j === i ? { ...x, componentId: e.target.value } : x)),
+                            })
+                          }
+                          className={fieldClass}
+                        >
+                          <option value="">—</option>
+                          {options.components
+                            .filter((o) => o.id !== v.id && (o.stockLocationId === p.stockLocationId || o.id === c.componentId))
+                            .map((o) => (
+                              <option key={o.id} value={o.id}>
+                                {o.label}
+                              </option>
+                            ))}
+                        </select>
+                        <input
+                          type="number"
+                          min={1}
+                          value={c.qty}
+                          onChange={(e) =>
+                            setVar(v.key, {
+                              components: v.components.map((x, j) => (j === i ? { ...x, qty: Number(e.target.value) } : x)),
+                            })
+                          }
+                          className={cn(fieldClass, "w-24")}
+                        />
+                        <Button type="button" size="lg" variant="outline" onClick={() => setVar(v.key, { components: v.components.filter((_, j) => j !== i) })}>
+                          {td("remove")}
+                        </Button>
+                      </div>
+                    ))}
+                    <Button type="button" size="lg" variant="outline" onClick={() => setVar(v.key, { components: [...v.components, { componentId: "", qty: 1 }] })}>
+                      + {t("addComponent")}
+                    </Button>
                   </div>
-                ))}
-                <Button type="button" size="lg" variant="outline" onClick={() => setVar(v.key, { components: [...v.components, { componentId: "", qty: 1 }] })}>
-                  + {t("addComponent")}
-                </Button>
-              </div>
-            )}
-          </fieldset>
-        ))}
+                )}
+              </fieldset>
+            ))}
+          </div>
+        )}
         <Button size="lg" type="button" variant="outline" onClick={() => setVariants((vs) => [...vs, blankVariant(t("standardVariant"))])}>
-          + {t("addVariant")}
+          + {t("addColorSize")}
         </Button>
       </section>
+
+      {/* ── 4. Thiết lập khác ── */}
+      <details className="rounded-lg border p-4">
+        <summary className="cursor-pointer font-medium">{t("otherSettings")}</summary>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <Field label={t("slug")}>
+            <input aria-label={t("slug")} value={slug} onChange={(e) => set("slug", e.target.value)} pattern="[a-z0-9\-]+" maxLength={80} className={fieldClass} />
+            {!p.id && !p.slug && <span className="text-xs text-muted-foreground">{t("autoIdentifierHint")}</span>}
+          </Field>
+
+          {/* SKU từng biến thể */}
+          {variants.map((v, index) => (
+            <Field key={v.key} label={variants.length > 1 ? `${t("sku")} (${v.label})` : t("sku")}>
+              <input
+                aria-label={t("sku")}
+                value={v.sku || suggestVariantSku(slug, index)}
+                onChange={(e) => setVar(v.key, { sku: e.target.value })}
+                maxLength={40}
+                className={fieldClass}
+              />
+              {!v.id && !v.sku && <span className="text-xs text-muted-foreground">{t("autoIdentifierHint")}</span>}
+            </Field>
+          ))}
+
+          {/* Kho bán — ẩn nếu chỉ có 1 kho */}
+          {!singleWh && (
+            <Field label={t("warehouse")}>
+              <select required value={p.stockLocationId} onChange={(e) => set("stockLocationId", e.target.value)} className={fieldClass}>
+                {options.warehouses.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name} ({w.code})
+                  </option>
+                ))}
+              </select>
+              {initialWarehouse && p.stockLocationId !== initialWarehouse && <span className="text-xs text-amber-700 dark:text-amber-400">{t("warehouseChangeHint")}</span>}
+            </Field>
+          )}
+
+          {/* Lãi cố định MMK */}
+          {showProfit && (
+            <Field label={t("fixedProfitMmk")}>
+              <input
+                type="number"
+                min={0}
+                step={1}
+                inputMode="numeric"
+                value={p.fixedProfitMmk ?? ""}
+                onChange={(e) => set("fixedProfitMmk", e.target.value === "" ? null : Number(e.target.value))}
+                className={fieldClass}
+              />
+              <span className="text-xs text-muted-foreground">{t("fixedProfitHint")}</span>
+            </Field>
+          )}
+
+          {/* Biến thể duy nhất đã lưu: vẫn tắt/bật được (ô này ở khối biến thể khi có nhiều loại). */}
+          {isSingleVariant && variants[0].id && (
+            <label className="flex items-center gap-2 text-sm sm:col-span-2">
+              <input type="checkbox" checked={variants[0].active} onChange={(e) => setVar(variants[0].key, { active: e.target.checked })} />
+              {t("active")}
+            </label>
+          )}
+
+          {/* Quản lý hạn sử dụng */}
+          <label className="flex items-center gap-2 text-sm sm:col-span-2">
+            <input type="checkbox" checked={p.requiresExpiry} onChange={(e) => set("requiresExpiry", e.target.checked)} />
+            {t("requiresExpiry")}
+          </label>
+        </div>
+      </details>
+
+      {/* ── 5. Hiển thị + Lưu ── */}
+      <div className="flex items-center gap-4">
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={p.published} onChange={(e) => set("published", e.target.checked)} />
+          {t("publishedLabel")}
+        </label>
+        <Button size="lg" type="submit" disabled={pending}>
+          {t("save")}
+        </Button>
+      </div>
 
       {state?.error && (
         <p role="alert" className="text-sm text-destructive">
           {td("error")}: {state.error}
         </p>
       )}
-      <Button size="lg" type="submit" disabled={pending}>
-        {t("save")}
-      </Button>
     </form>
   );
 }

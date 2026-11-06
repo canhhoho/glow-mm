@@ -5,7 +5,7 @@ import { getProductForEdit, productCopyOptions, productFormOptions } from "@/ser
 import { productCopyDraft } from "@/server/catalog/product-copy";
 import { ProductForm } from "@/components/admin/product-form";
 import { Button } from "@/components/ui/button";
-import { fieldClass, Page, PageHeader, Section } from "@/components/admin/ui";
+import { fieldClass, Page, PageHeader } from "@/components/admin/ui";
 
 export default async function NewProductPage({ searchParams }: PageProps<"/admin/products/new">) {
   await requirePagePermission("catalog:manage");
@@ -19,8 +19,9 @@ export default async function NewProductPage({ searchParams }: PageProps<"/admin
   return (
     <Page>
       <PageHeader title={t("new")} back={{ href: "/admin/products", label: td("back") }} />
-      <Section title={t("copyFrom")}>
-        <form action="/admin/products/new" method="get" className="flex flex-wrap items-end gap-2">
+      <details open={!!source} className="mb-6 rounded-lg border p-4">
+        <summary className="cursor-pointer font-medium">{t("copyFrom")}</summary>
+        <form action="/admin/products/new" method="get" className="mt-3 flex flex-wrap items-end gap-2">
           <label className="grid min-w-0 flex-1 gap-1 text-sm">
             <span>{t("copySource")}</span>
             <select key={sourceId} name="copyFrom" defaultValue={sourceId} required className={fieldClass}>
@@ -32,7 +33,7 @@ export default async function NewProductPage({ searchParams }: PageProps<"/admin
         </form>
         <p className="mt-2 text-sm text-muted-foreground">{t("copyHelp")}</p>
         {source && <p role="status" className="mt-2 text-sm">{t("copyLoaded", { name: source.en.name || source.my.name || source.slug })}</p>}
-      </Section>
+      </details>
       <ProductForm key={sourceId} initial={source ? productCopyDraft(source) : null} options={options} copySourceId={source?.id} />
     </Page>
   );

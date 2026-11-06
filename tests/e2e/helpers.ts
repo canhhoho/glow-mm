@@ -55,6 +55,13 @@ export async function openAdminNav(page: Page) {
   return nav;
 }
 
+/** Form SP: mở khối "Thiết lập khác" (slug, SKU, kho, hạn dùng) nếu đang đóng. */
+export async function openProductSettings(page: Page) {
+  // :visible — sau khi lưu, Next giữ trang trước ở dạng ẩn nên có thể có 2 form trong DOM.
+  const summary = page.locator("summary:visible").filter({ hasText: "Thiết lập khác" });
+  if (!(await summary.evaluate((el) => el.parentElement?.hasAttribute("open")))) await summary.click();
+}
+
 /** Open a top-level accordion without changing the state of other menu groups. */
 export async function openAdminGroup(page: Page, label: string) {
   const nav = await openAdminNav(page);
