@@ -142,7 +142,7 @@ export default async function LocationsPage({ searchParams }: PageProps<"/admin/
       />
       <FilterBar>
         <SearchInput label={t("search")} defaultValue={q} />
-        <FilterButton>{t("find")}</FilterButton>
+        <FilterButton>{(await getTranslations("Common"))("filter")}</FilterButton>
       </FilterBar>
       {body}
     </Page>

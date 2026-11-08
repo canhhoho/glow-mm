@@ -15,7 +15,6 @@ export default async function DocumentsPage() {
     <Page>
       <PageHeader
         title={t("title")}
-        back={{ href: "/admin/inventory", label: t("back") }}
         actions={<NewDocMenu role={user.role} label={t("new")} td={t} />}
       />
       <DataTable

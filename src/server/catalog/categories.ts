@@ -36,28 +36,42 @@ const updateSchema = z.object({
 
 export type CategoryUpdateInput = z.input<typeof updateSchema>;
 
-/** Danh sách cho trang quản lý; `q` lọc theo slug/tên (giữ cả danh mục cha của mục khớp để thấy ngữ cảnh). */
-export async function listCategoriesAdmin(q?: string) {
-  const rows = await prisma.category.findMany({
-    orderBy: [{ sortOrder: "asc" }, { slug: "asc" }],
-    include: {
-      translations: true,
-      icon: { select: { url: true } },
-      _count: { select: { products: true, children: true } },
-    },
-  });
-  const name = (r: (typeof rows)[number], l: string) => r.translations.find((t) => t.locale === l)?.name ?? "";
-  const toRow = (r: (typeof rows)[number]) => ({
+const adminInclude = {
+  translations: true,
+  icon: { select: { url: true } },
+  _count: { select: { products: true, children: true } },
+} satisfies Prisma.CategoryInclude;
+
+type AdminCategory = Prisma.CategoryGetPayload<{ include: typeof adminInclude }>;
+
+function toAdminRow(r: AdminCategory) {
+  const name = (l: string) => r.translations.find((t) => t.locale === l)?.name ?? "";
+  return {
     id: r.id,
     slug: r.slug,
     parentId: r.parentId,
     sortOrder: r.sortOrder,
-    nameMy: name(r, "my"),
-    nameEn: name(r, "en"),
+    nameMy: name("my"),
+    nameEn: name("en"),
     iconUrl: r.icon?.url ?? null,
     products: r._count.products,
     children: r._count.children,
+  };
+}
+
+/** Một danh mục cho trang sửa `/admin/categories/[id]`; không có → null. */
+export async function getCategoryAdmin(id: string) {
+  const r = await prisma.category.findUnique({ where: { id }, include: adminInclude });
+  return r ? toAdminRow(r) : null;
+}
+
+/** Danh sách cho trang quản lý; `q` lọc theo slug/tên (giữ cả danh mục cha của mục khớp để thấy ngữ cảnh). */
+export async function listCategoriesAdmin(q?: string) {
+  const rows = await prisma.category.findMany({
+    orderBy: [{ sortOrder: "asc" }, { slug: "asc" }],
+    include: adminInclude,
   });
+  const toRow = toAdminRow;
   // Gốc trước, con nằm ngay dưới cha.
   const children = new Map<string, typeof rows>();
   for (const r of rows) if (r.parentId) children.set(r.parentId, [...(children.get(r.parentId) ?? []), r]);

@@ -41,7 +41,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
 
   return (
     <Page>
-      <PageHeader title={t("title")} description={t("basis")} />
+      <PageHeader title={(await getTranslations("Nav"))("salesReports")} description={t("basis")} />
       <ReportsTabs active="sales" />
       {/* key theo kỳ: điều hướng phía client giữ DOM → defaultValue cũ; đổi key để ô ngày hiện kỳ đã chuẩn hoá. */}
       <form key={`${range.from}|${range.to}`} className="flex flex-wrap items-end gap-2">
@@ -53,7 +53,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
           <span className="text-muted-foreground">{t("to")}</span>
           <input type="date" name="to" defaultValue={range.to} className={cn(fieldClass, "w-40")} />
         </label>
-        <FilterButton>{t("apply")}</FilterButton>
+        <FilterButton>{(await getTranslations("Common"))("filter")}</FilterButton>
       </form>
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">

@@ -9,6 +9,7 @@ import { resetCustomerPasswordAction, setCustomerActiveAction } from "@/server/a
 import { MIN_CUSTOMER_PASSWORD } from "@/server/accounts/phone";
 import { ActionForm } from "@/components/admin/action-form";
 import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Badge, DataTable, fieldClass, FilterBar, FilterButton, Page, PageHeader, SearchInput, Stat, Td } from "@/components/admin/ui";
 
 /**
@@ -24,24 +25,20 @@ export default async function CustomerAccountsPage({ searchParams }: PageProps<"
 
   return (
     <Page>
-      <PageHeader title={t("title")} description={t("description")} />
+      <PageHeader title={(await getTranslations("Nav"))("customers")} description={t("description")} />
       <div className="grid grid-cols-3 gap-3" data-testid="customer-summary">
         <Stat label={t("listCount")} value={accounts.length} />
         <Stat label={t("active")} value={activeCount} />
         <Stat label={t("locked")} value={accounts.length - activeCount} />
       </div>
       <section aria-labelledby="customer-list-title" className="space-y-3 [&_td]:align-middle">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-3 sm:p-4">
-          <div>
-            <h2 id="customer-list-title" className="text-sm font-semibold">{t("listTitle")}</h2>
-            <p className="mt-1 text-xs text-muted-foreground">{t("resultCount", { count: accounts.length })}</p>
-          </div>
-          <FilterBar className="w-full sm:w-auto">
-            <SearchInput label={t("search")} defaultValue={q} className="min-w-0 flex-1 sm:flex-none" />
-            <FilterButton>{t("find")}</FilterButton>
-            {q && <Link href="/admin/customer-accounts" className="px-2 py-2 text-sm text-muted-foreground underline underline-offset-4 max-sm:w-full">{t("clearSearch")}</Link>}
-          </FilterBar>
-        </div>
+        <h2 id="customer-list-title" className="sr-only">{t("listTitle")}</h2>
+        <FilterBar>
+          <SearchInput label={t("search")} defaultValue={q} />
+          <FilterButton>{(await getTranslations("Common"))("filter")}</FilterButton>
+          {q && <Link href="/admin/customer-accounts" className="flex h-9 items-center px-2 text-sm text-muted-foreground underline underline-offset-4">{t("clearSearch")}</Link>}
+        </FilterBar>
+        <p className="text-xs text-muted-foreground">{t("resultCount", { count: accounts.length })}</p>
         <DataTable
           stack
           empty={t("empty")}
@@ -83,7 +80,7 @@ export default async function CustomerAccountsPage({ searchParams }: PageProps<"
                   <div className="flex w-full flex-wrap items-start gap-2">
                     {hasPassword && (
                       <details className="group/password min-w-0 open:w-full" data-testid="customer-password-panel">
-                        <summary className={`${buttonVariants({ variant: "outline", size: "lg" })} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
+                        <summary className={cn(buttonVariants({ variant: "outline", size: "lg" }), "cursor-pointer list-none [&::-webkit-details-marker]:hidden")}>
                           <KeyRound aria-hidden />{t("passwordOptions")}
                           <ChevronDown className="transition-transform group-open/password:rotate-180" aria-hidden />
                         </summary>

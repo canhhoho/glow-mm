@@ -3,28 +3,31 @@ import { login, openAdminNav, solidPng } from "./helpers";
 
 // P6b: quản trị nội dung trang chủ (danh mục + icon, banner, bộ sưu tập) và phân quyền.
 
-test("danh mục: lưu, tải icon (hiện ảnh), xoá icon", async ({ page }) => {
+test("danh mục: mở trang sửa từ bảng, lưu, tải icon (hiện ảnh), xoá icon", async ({ page }) => {
   test.setTimeout(90_000);
   await login(page, "admin@glow.local");
   await page.goto("/admin/categories?q=skincare"); // lọc → trang nhẹ dù DB test có hàng nghìn danh mục fixture
-  // Lọc theo ô slug (ô chọn danh mục cha ở mọi hàng cũng chứa chữ "Skincare").
   const row = page.getByTestId("category-row").filter({ has: page.getByText("skincare", { exact: true }) });
+  await expect(row.getByRole("button", { name: "Xoá danh mục" })).toHaveCount(0); // còn SP → không xoá được
+  await row.getByRole("link", { name: "Sửa", exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/categories\/[^/?]+$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Skincare");
 
-  // DB test local tích luỹ nhiều danh mục fixture → trang nặng, server action có thể chậm vài giây.
-  await row.getByRole("button", { name: "Lưu" }).click();
-  await expect(row.getByRole("status").filter({ hasText: "Đã lưu" })).toBeVisible({ timeout: 20_000 });
+  // DB test local tích luỹ nhiều danh mục fixture → server action có thể chậm vài giây.
+  const main = page.getByRole("main");
+  await main.getByRole("button", { name: "Lưu" }).click();
+  await expect(main.getByRole("status").filter({ hasText: "Đã lưu" })).toBeVisible({ timeout: 20_000 });
 
-  await row.getByLabel("Chọn ảnh icon").setInputFiles({ name: "icon.png", mimeType: "image/png", buffer: solidPng(64) });
-  await row.getByRole("button", { name: "Tải icon" }).click();
-  await expect(row.getByRole("status").filter({ hasText: "Đã tải icon" })).toBeVisible({ timeout: 20_000 });
-  await expect(row.getByRole("img", { name: /Icon/ })).toBeVisible({ timeout: 20_000 });
+  await main.getByLabel("Chọn ảnh icon").setInputFiles({ name: "icon.png", mimeType: "image/png", buffer: solidPng(64) });
+  await main.getByRole("button", { name: "Tải icon" }).click();
+  await expect(main.getByRole("status").filter({ hasText: "Đã tải icon" })).toBeVisible({ timeout: 20_000 });
+  await expect(main.getByRole("img", { name: /Icon/ })).toBeVisible({ timeout: 20_000 });
   await page.screenshot({ path: "test-results/screens/admin-categories.png", fullPage: true });
 
   // Dọn: bỏ icon để không ảnh hưởng test khác.
   page.once("dialog", (d) => d.accept());
-  await row.getByRole("button", { name: "Xoá icon" }).click();
-  await expect(row.getByRole("img", { name: /Icon/ })).toHaveCount(0, { timeout: 20_000 });
-  await expect(row.getByRole("button", { name: "Xoá danh mục" })).toHaveCount(0); // còn SP → không xoá được
+  await main.getByRole("button", { name: "Xoá icon" }).click();
+  await expect(main.getByRole("img", { name: /Icon/ })).toHaveCount(0, { timeout: 20_000 });
 });
 
 test("danh mục: thêm danh mục trống rồi xoá", async ({ page }) => {

@@ -34,7 +34,7 @@ export default async function SettingsPage() {
 
   return (
     <Page>
-      <PageHeader title={t("title")} description={t("description")} />
+      <PageHeader title={tn("storeSettings")} description={t("description")} />
       <section className="space-y-3" data-testid="settings-accounts" aria-labelledby="settings-accounts-title">
         <div>
           <h2 id="settings-accounts-title" className="text-base font-semibold">{t("accounts")}</h2>

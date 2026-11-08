@@ -22,7 +22,7 @@ export default async function WarehousesPage({ searchParams }: PageProps<"/admin
 
   return (
     <Page>
-      <PageHeader title={t("title")} description={t("description")} />
+      <PageHeader title={(await getTranslations("Nav"))("warehouseManagement")} description={t("description")} />
 
       <Section title={t("create")}>
         <ActionForm action={createWarehouseAction} submitLabel={t("createSubmit")} okText={t("created")} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -55,12 +55,14 @@ export default async function WarehousesPage({ searchParams }: PageProps<"/admin
         <p className="text-xs text-muted-foreground">{t("createHint")}</p>
       </Section>
 
+      {/* Ô có ô nhập cao 36px → căn giữa dọc cả hàng để mã kho, số liệu, nút thẳng với ô nhập. */}
+      <div className="[&_td]:align-middle">
       <DataTable stack empty={t("empty")} head={[t("code"), t("name"), t("kind"), t("products"), t("stock"), t("status"), t("actions")]} numeric={[3, 4]}>
         {rows.map((r) => (
           <tr key={r.id} className={cn(!r.active && "opacity-60")} data-testid={`warehouse-${r.code}`}>
             <Td className="font-mono text-xs">{r.code}</Td>
             <Td>
-              <ActionForm action={updateWarehouseAction} submitLabel={t("save")} okText={t("saved")} className="flex flex-wrap items-end gap-2">
+              <ActionForm action={updateWarehouseAction} submitLabel={t("save")} okText={t("saved")} variant="outline" className="flex flex-wrap items-end gap-2">
                 <input type="hidden" name="id" value={r.id} />
                 <input name="name" required maxLength={60} defaultValue={r.name} aria-label={`${t("name")} ${r.code}`} className={cn(fieldClass, "w-40")} />
                 {r.sellable && (
@@ -95,6 +97,7 @@ export default async function WarehousesPage({ searchParams }: PageProps<"/admin
           </tr>
         ))}
       </DataTable>
+      </div>
       {inactiveCount > 0 && (
         <Link href={showAll ? "/admin/settings/warehouses" : "/admin/settings/warehouses?all=1"} className="text-sm text-primary underline">
           {showAll ? t("hideInactive") : t("showInactive", { count: inactiveCount })}

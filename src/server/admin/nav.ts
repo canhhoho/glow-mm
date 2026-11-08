@@ -77,7 +77,6 @@ export const NAV: NavGroup[] = [
     icon: "users",
     items: [
       { href: "/admin/users", key: "users", permission: "users:manage", icon: "users" },
-      { href: "/admin/affiliates", key: "affiliates", permission: "affiliates:manage", icon: "handshake" },
       { href: "/admin/customer-accounts", key: "customers", permission: "users:manage", icon: "userCircle" },
     ],
   },
@@ -85,6 +84,7 @@ export const NAV: NavGroup[] = [
     key: "affiliates",
     icon: "handshake",
     items: [
+      { href: "/admin/affiliates", key: "affiliateList", permission: "affiliates:manage", icon: "handshake" },
       { href: "/admin/affiliates/applications", key: "affiliateApplications", permission: "affiliates:manage", icon: "file", count: "pendingApplications" },
       { href: "/admin/affiliates/commissions", key: "affiliateCommissions", permission: "affiliates:manage", icon: "coins" },
     ],

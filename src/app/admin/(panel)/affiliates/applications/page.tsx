@@ -24,7 +24,7 @@ export default async function AffiliateApplicationsPage() {
 
   return (
     <Page>
-      <PageHeader title={t("apps.title")} back={{ href: "/admin/affiliates", label: t("back") }} />
+      <PageHeader title={t("apps.title")} />
       <p className="text-sm text-muted-foreground">{t("apps.hint")}</p>
       {pendingTotal > 0 && (
         <p className="text-sm font-medium" data-testid="apps-pending-total">

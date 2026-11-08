@@ -123,7 +123,7 @@ export async function createCategoryAction(_prev: ActionState, formData: FormDat
 /** Danh mục đổi → menu + nhóm hàng trang chủ (CATALOG_TAG) và trang quản lý. */
 function categoriesChanged() {
   updateTag(CATALOG_TAG);
-  revalidatePath("/admin/categories");
+  revalidatePath("/admin/categories", "layout"); // gồm trang sửa /admin/categories/[id]
 }
 
 export async function updateCategoryAction(_prev: ActionState, formData: FormData): Promise<ActionState> {

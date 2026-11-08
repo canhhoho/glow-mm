@@ -7,7 +7,7 @@ import { SCHEDULE_TONE, scheduleStatus } from "@/server/content/common";
 import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
 import { CollectionFields } from "@/components/admin/collection-fields";
-import { Badge, DataTable, LinkButton, Page, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, LinkButton, Page, PageHeader, Section, Td } from "@/components/admin/ui";
 
 export default async function CollectionsPage() {
   await requirePagePermission("content:manage");
@@ -17,6 +17,11 @@ export default async function CollectionsPage() {
   return (
     <Page>
       <PageHeader title={t("collectionsTitle")} />
+      <Section title={t("collectionNew")}>
+        <ActionForm action={createCollectionAction} submitLabel={t("create")}>
+          <CollectionFields />
+        </ActionForm>
+      </Section>
       <DataTable
         stack
         empty={t("collectionsEmpty")}
@@ -54,15 +59,6 @@ export default async function CollectionsPage() {
           );
         })}
       </DataTable>
-
-      <section aria-labelledby="new-collection" className="rounded-lg border p-4">
-        <h2 id="new-collection" className="mb-3 font-medium">
-          {t("collectionNew")}
-        </h2>
-        <ActionForm action={createCollectionAction} submitLabel={t("create")}>
-          <CollectionFields />
-        </ActionForm>
-      </section>
     </Page>
   );
 }

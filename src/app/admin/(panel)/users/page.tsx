@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { fmtDateTime } from "@/lib/format";
 import { requirePagePermission } from "@/server/auth/session";
@@ -70,9 +69,7 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
             </Td>
             <Td label={t("createdAt")} className="text-xs whitespace-nowrap">{fmtDateTime(u.createdAt)}</Td>
             <Td>
-              <Link href={`/admin/users/${u.id}`} className="text-sm text-primary underline">
-                {t("edit")}
-              </Link>
+              <LinkButton href={`/admin/users/${u.id}`}>{t("edit")}</LinkButton>
             </Td>
           </tr>
         ))}

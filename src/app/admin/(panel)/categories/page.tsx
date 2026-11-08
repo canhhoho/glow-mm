@@ -2,131 +2,97 @@ import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { rootCategories } from "@/server/catalog/admin-queries";
-import { deleteCategoryAction, removeCategoryIconAction, updateCategoryAction } from "@/server/catalog/actions";
+import { deleteCategoryAction } from "@/server/catalog/actions";
 import { listCategoriesAdmin } from "@/server/catalog/categories";
 import { ActionButton } from "@/components/admin/action-button";
-import { ActionForm } from "@/components/admin/action-form";
 import { CategoryForm } from "@/components/admin/catalog-forms";
-import { CategoryIconUpload } from "@/components/admin/category-icon-upload";
-import { ParentSelect } from "@/components/admin/parent-select";
-import { fieldClass, FilterBar, FilterButton, Page, PageHeader, SearchInput, Section } from "@/components/admin/ui";
+import { DataTable, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Section, Td } from "@/components/admin/ui";
 
-/** Quản lý danh mục: tên my/en, danh mục cha (tối đa 2 cấp), thứ tự, icon nhóm hàng trên trang chủ. */
+/**
+ * Danh mục: cùng khuôn với các trang danh sách khác — lọc, khối "Thêm" phía trên, bảng + nút Sửa
+ * (sửa tên/slug/cha/thứ tự/icon ở `/admin/categories/[id]`). Danh mục con nằm ngay dưới cha, thụt lề.
+ */
 export default async function CategoriesPage({ searchParams }: PageProps<"/admin/categories">) {
   await requirePagePermission("catalog:manage");
   const { q } = await searchParams;
   const query = typeof q === "string" ? q.trim() : "";
-  const [t, tp, categories, roots] = await Promise.all([
+  const [t, tp, tc, categories, roots] = await Promise.all([
     getTranslations("Categories"),
     getTranslations("Products"),
+    getTranslations("Common"),
     listCategoriesAdmin(query),
     rootCategories(),
   ]);
+  const nameOf = new Map(categories.map((c) => [c.id, c.nameEn || c.slug]));
 
   return (
     <Page>
       <PageHeader title={t("title")} description={t("intro")} />
       <FilterBar>
         <SearchInput label={t("search")} defaultValue={query} />
-        <FilterButton>{t("searchBtn")}</FilterButton>
+        <FilterButton>{tc("filter")}</FilterButton>
       </FilterBar>
-      {categories.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("empty")}</p>
-      ) : (
-        <ul className="space-y-3">
-          {categories.map((c) => (
-            <li
-              key={c.id}
-              data-testid="category-row"
-              className={`flex flex-wrap gap-4 rounded-lg border p-3 ${c.parentId ? "ml-6 border-dashed" : ""}`}
-            >
-              <div className="w-40 shrink-0 space-y-2">
-                <p className="font-mono text-sm">{c.slug}</p>
-                <p className="text-xs text-muted-foreground">
-                  {t("colProducts")}: {c.products}
-                </p>
-                <div className="relative grid size-16 place-items-center overflow-hidden rounded-full bg-muted text-xs text-muted-foreground">
-                  {c.iconUrl ? (
-                    <Image src={c.iconUrl} alt={`${t("colIcon")} ${c.nameEn}`} fill sizes="64px" className="object-cover" />
-                  ) : (
-                    t("noIcon")
-                  )}
-                </div>
-              </div>
-
-              <div className="min-w-64 flex-1 space-y-3">
-                <ActionForm
-                  action={updateCategoryAction}
-                  submitLabel={t("save")}
-                  okText={t("saved")}
-                  variant="outline"
-                  className="grid gap-2 sm:grid-cols-2"
-                >
-                  <input type="hidden" name="categoryId" value={c.id} />
-                  <label className="grid content-start gap-1 text-sm sm:col-span-2">
-                    <span className="text-muted-foreground">{t("slug")}</span>
-                    <input
-                      name="slug"
-                      required
-                      maxLength={60}
-                      pattern="[a-z0-9\-]+"
-                      defaultValue={c.slug}
-                      className={`${fieldClass} font-mono`}
-                    />
-                    <span className="text-xs text-muted-foreground">{t("slugHelp")}</span>
-                  </label>
-                  <label className="grid content-start gap-1 text-sm" lang="my">
-                    <span className="text-muted-foreground">{t("nameMy")}</span>
-                    <input name="nameMy" required defaultValue={c.nameMy} className={fieldClass} />
-                  </label>
-                  <label className="grid content-start gap-1 text-sm">
-                    <span className="text-muted-foreground">{t("nameEn")}</span>
-                    <input name="nameEn" required defaultValue={c.nameEn} className={fieldClass} />
-                  </label>
-                  <label className="grid content-start gap-1 text-sm">
-                    <span className="text-muted-foreground">{t("parent")}</span>
-                    <ParentSelect roots={roots} value={c.parentId} excludeId={c.id} noParentLabel={t("noParent")} />
-                  </label>
-                  <label className="grid content-start gap-1 text-sm">
-                    <span className="text-muted-foreground">{t("sortOrder")}</span>
-                    <input name="sortOrder" type="number" min={0} max={9999} defaultValue={c.sortOrder} className={fieldClass} />
-                  </label>
-                </ActionForm>
-
-                <div className="flex flex-wrap items-start gap-3 border-t pt-3">
-                  <CategoryIconUpload categoryId={c.id} />
-                  {c.iconUrl && (
-                    <ActionButton
-                      action={removeCategoryIconAction}
-                      fields={{ categoryId: c.id }}
-                      label={t("iconRemove")}
-                      variant="destructive"
-                      confirm={t("iconRemoveConfirm")}
-                    />
-                  )}
-                  {c.products === 0 && c.children === 0 && (
-                    <ActionButton
-                      action={deleteCategoryAction}
-                      fields={{ categoryId: c.id }}
-                      label={t("delete")}
-                      variant="destructive"
-                      confirm={t("deleteConfirm", { slug: c.slug })}
-                    />
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">{t("iconHelp")}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
       <div id="new-category" className="scroll-mt-20">
         <Section title={t("newCategory")}>
           <CategoryForm parents={roots} />
           <p className="text-xs text-muted-foreground">{tp("catSlug")}: a-z, 0-9, -</p>
         </Section>
       </div>
+      <DataTable
+        stack
+        empty={t("empty")}
+        head={[t("colIcon"), t("colName"), t("slug"), t("parent"), t("sortOrder"), t("colProducts"), tp("colActions")]}
+        numeric={[4, 5]}
+      >
+        {categories.map((c) => (
+          <tr key={c.id} data-testid="category-row">
+            <Td>
+              <div className="relative grid size-10 place-items-center overflow-hidden rounded-full bg-muted text-[10px] text-muted-foreground">
+                {c.iconUrl ? (
+                  <Image src={c.iconUrl} alt={`${t("colIcon")} ${c.nameEn}`} fill sizes="40px" className="object-cover" />
+                ) : (
+                  t("noIcon")
+                )}
+              </div>
+            </Td>
+            <Td label={t("colName")} className={c.parentId ? "md:pl-8" : undefined}>
+              <div className="font-medium">
+                {c.parentId && <span aria-hidden className="mr-1 text-muted-foreground">↳</span>}
+                {c.nameEn}
+              </div>
+              <div className="text-xs text-muted-foreground" lang="my">
+                {c.nameMy}
+              </div>
+            </Td>
+            <Td label={t("slug")} className="font-mono text-xs">
+              {c.slug}
+            </Td>
+            <Td label={t("parent")} className="text-xs">
+              {c.parentId ? nameOf.get(c.parentId) ?? "—" : "—"}
+            </Td>
+            <Td label={t("sortOrder")} className="text-right tabular-nums">
+              {c.sortOrder}
+            </Td>
+            <Td label={t("colProducts")} className="text-right tabular-nums">
+              {c.products}
+            </Td>
+            <Td>
+              <div className="flex flex-wrap items-start gap-2">
+                <LinkButton href={`/admin/categories/${c.id}`}>{tp("edit")}</LinkButton>
+                {c.products === 0 && c.children === 0 && (
+                  <ActionButton
+                    action={deleteCategoryAction}
+                    fields={{ categoryId: c.id }}
+                    label={t("delete")}
+                    variant="destructive"
+                    confirm={t("deleteConfirm", { slug: c.slug })}
+                  />
+                )}
+              </div>
+            </Td>
+          </tr>
+        ))}
+      </DataTable>
     </Page>
   );
 }

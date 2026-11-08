@@ -17,7 +17,7 @@ export default async function QuarantinePage() {
 
   return (
     <Page>
-      <PageHeader title={t("title")} back={{ href: "/admin/inventory", label: ti("title") }} />
+      <PageHeader title={(await getTranslations("Nav"))("quarantine")} />
       <p className="text-sm text-muted-foreground">{t("hint")}</p>
       <DataTable stack empty={t("empty")} head={[t("product"), t("lot"), t("qty"), t("orders"), ""]}>
         {rows.map((r) => {

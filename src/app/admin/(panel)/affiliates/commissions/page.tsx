@@ -1,9 +1,8 @@
-import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { fmtInt } from "@/lib/format";
 import { requirePagePermission } from "@/server/auth/session";
 import { listAffiliates } from "@/server/affiliates/affiliates";
-import { DataTable, FilterBar, FilterButton, Page, PageHeader, SearchInput, Td } from "@/components/admin/ui";
+import { DataTable, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Td } from "@/components/admin/ui";
 
 export default async function CommissionsPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
   await requirePagePermission("affiliates:manage");
@@ -21,7 +20,7 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
         <Td className="text-right tabular-nums">{fmtInt(a.summary.pendingMmk)} MMK</Td>
         <Td className="text-right font-medium tabular-nums">{fmtInt(a.summary.payableMmk)} MMK</Td>
         <Td className="text-right tabular-nums">{fmtInt(a.summary.paidMmk)} MMK</Td>
-        <Td><Link href={`/admin/affiliates/${a.id}#affiliate-payouts`} className="text-primary underline">{t("view")}</Link></Td>
+        <Td><LinkButton href={`/admin/affiliates/${a.id}#affiliate-payouts`}>{t("view")}</LinkButton></Td>
       </tr>)}
     </DataTable>
   </Page>;
