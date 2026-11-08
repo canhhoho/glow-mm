@@ -5,7 +5,7 @@ import { requirePagePermission } from "@/server/auth/session";
 import { bpToPercent } from "@/server/affiliates/commission";
 import { listAffiliates } from "@/server/affiliates/affiliates";
 import { pendingApplicationsCount } from "@/server/affiliates/applications";
-import { deleteAffiliateAction } from "@/server/affiliates/actions";
+import { deleteAffiliateAction, setAffiliateActiveAction } from "@/server/affiliates/actions";
 import { ActionButton } from "@/components/admin/action-button";
 import { Badge, DataTable, fieldClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Td } from "@/components/admin/ui";
 
@@ -86,6 +86,13 @@ export default async function AffiliatesPage({ searchParams }: PageProps<"/admin
             <Td label={t("actions")}>
               <div className="flex flex-wrap items-start gap-2">
                 <LinkButton href={`/admin/affiliates/${a.id}#profile`}>{t("edit")}</LinkButton>
+                <ActionButton
+                  action={setAffiliateActiveAction}
+                  fields={{ id: a.id, active: String(!a.active) }}
+                  label={a.active ? t("lock") : t("unlock")}
+                  variant="outline"
+                  confirm={a.active ? t("lockConfirm", { name: a.user.name }) : undefined}
+                />
                 <ActionButton action={deleteAffiliateAction} fields={{ id: a.id }} label={t("delete")} variant="destructive" confirm={t("deleteConfirm", { name: a.user.name })} />
               </div>
             </Td>

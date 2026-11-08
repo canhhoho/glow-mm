@@ -115,3 +115,46 @@ test("admin: sửa CTV từ danh sách, hủy xác nhận rồi xóa tài khoả
   await page.goto(`/admin/affiliates?q=${code}`);
   await expect(page.getByTestId("affiliate-row")).toHaveCount(0);
 });
+
+test("admin: khóa CTV từ danh sách → CTV không đăng nhập được; mở khóa → đăng nhập lại được", async ({ page, browser }) => {
+  const code = `LCK${Date.now().toString(36).toUpperCase().slice(-6)}`;
+  const email = `${code.toLowerCase()}@ctv.glow.local`;
+  const password = "ctv-mat-khau-12";
+  await login(page, "admin@glow.local");
+  await page.goto("/admin/affiliates/new");
+  await page.getByLabel("Tên", { exact: true }).fill(`CTV ${code}`);
+  await page.getByLabel("Email đăng nhập").fill(email);
+  await page.getByLabel("Số điện thoại").fill("09 7812 0000");
+  await page.getByLabel("Mã giới thiệu").fill(code);
+  await page.getByLabel("Hoa hồng (%)").fill("10");
+  await page.getByLabel("Mật khẩu tạm").fill(password);
+  await page.getByRole("button", { name: "Tạo CTV", exact: true }).click();
+  await expect(page).toHaveURL(/\?created=1$/);
+
+  await page.goto(`/admin/affiliates?q=${code}`);
+  const row = page.getByTestId("affiliate-row");
+  page.once("dialog", (d) => d.accept());
+  await row.getByRole("button", { name: "Khoá CTV", exact: true }).click();
+  await expect(row.getByRole("button", { name: "Mở khoá", exact: true })).toBeVisible();
+  await expect(row).toContainText("Đã khoá");
+
+  const ctvContext = await browser.newContext();
+  const ctv = await ctvContext.newPage();
+  try {
+    await ctv.context().addCookies([{ name: "CTV_LOCALE", value: "vi", url: `${test.info().project.use.baseURL}/ctv` }]);
+    await ctv.goto("/ctv/login");
+    await ctv.getByLabel("Email").fill(email);
+    await ctv.getByLabel("Mật khẩu", { exact: true }).fill(password);
+    await ctv.getByRole("button", { name: "Đăng nhập" }).click();
+    await expect(ctv.getByRole("alert").filter({ hasText: "Tài khoản đã bị khoá" })).toBeVisible();
+
+    await row.getByRole("button", { name: "Mở khoá", exact: true }).click();
+    await expect(row.getByRole("button", { name: "Khoá CTV", exact: true })).toBeVisible();
+    await expect(row).not.toContainText("Đã khoá");
+
+    await ctv.getByRole("button", { name: "Đăng nhập" }).click();
+    await expect(ctv.getByTestId("ctv-user")).toBeVisible();
+  } finally {
+    await ctvContext.close();
+  }
+});

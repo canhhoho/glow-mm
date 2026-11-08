@@ -9,6 +9,7 @@ import {
   getAffiliateOrder,
   listAffiliates,
   recordPayout,
+  setAffiliateActive,
   setAffiliateParent,
   setOrderCommissionRates,
   teamOverview,
@@ -192,6 +193,29 @@ describe("Quản lý CTV + chi trả (P10b)", () => {
     await expect(updateAffiliate(a.id, { ...profile, email: otherEmail }, f.userId)).rejects.toMatchObject({ code: "email_taken" });
     await updateAffiliate(a.id, profile, f.userId);
     expect((await prisma.user.findUniqueOrThrow({ where: { id: a.userId } })).email).toBe(newEmail);
+  });
+
+  it("khoá CTV: khoá hồ sơ + tài khoản, xoá phiên, ghi audit; mở khoá → hoạt động lại, đơn mới gắn CTV", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
+    const a = await makeAffiliate(f, { suffix: "K" });
+    await prisma.session.create({ data: { id: `lock-${a.id}`, token: `lock-${a.id}`, userId: a.userId, expiresAt: new Date(Date.now() + 60_000) } });
+
+    await setAffiliateActive(a.id, false, f.userId);
+    expect(await prisma.affiliate.findUniqueOrThrow({ where: { id: a.id } })).toMatchObject({ active: false });
+    expect(await prisma.user.findUniqueOrThrow({ where: { id: a.userId } })).toMatchObject({ active: false });
+    expect(await prisma.session.count({ where: { userId: a.userId } })).toBe(0);
+    expect(await prisma.auditLog.findFirst({ where: { action: "affiliate.deactivate", entityId: a.id } })).toMatchObject({ userId: f.userId });
+    const lockedOrder = await createOrder(orderInput(f, 1), { userId: null, affiliate: { source: "LINK", code: a.code } });
+    expect(lockedOrder.affiliateId).toBeNull();
+
+    await setAffiliateActive(a.id, true, f.userId);
+    expect(await prisma.affiliate.findUniqueOrThrow({ where: { id: a.id } })).toMatchObject({ active: true });
+    expect(await prisma.user.findUniqueOrThrow({ where: { id: a.userId } })).toMatchObject({ active: true });
+    expect(await prisma.auditLog.findFirst({ where: { action: "affiliate.activate", entityId: a.id } })).not.toBeNull();
+    const order = await createOrder(orderInput(f, 1), { userId: null, affiliate: { source: "LINK", code: a.code } });
+    expect(order.affiliateId).toBe(a.id);
+
+    await expect(setAffiliateActive("khong-ton-tai", false, f.userId)).rejects.toMatchObject({ code: "not_found" });
   });
 
   it("gán CTV cho đơn: chốt % hiện tại, kho không có quyền, CTV bị khoá → lỗi", async () => {
