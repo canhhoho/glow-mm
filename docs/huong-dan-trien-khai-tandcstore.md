@@ -713,7 +713,7 @@ bash /var/www/tandc/ops/deploy.sh release-YYYYMMDD-HHMM
 
 | Ngày | Nơi | Từ → về | Kết quả |
 |---|---|---|---|
-| _(chưa diễn tập)_ | | | |
+| 2026-11-08 | Máy dev (bản sao, project `glow-rehearsal`) | A → B → A → C (migration mới) → B | **Chưa trọn:** các nhánh chặn đúng (tag lạ, env, sao lưu lỗi → không deploy, quay lui qua migration bị chặn, build lỗi → giữ bản cũ). `npm ci` trong Docker lỗi mạng (SSL/ECONNRESET) nên chưa build được → chưa kiểm build/healthy/smoke và `--allow-older-schema`. |
 
 ---
 

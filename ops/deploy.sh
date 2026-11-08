@@ -134,15 +134,24 @@ say "Checkout $target"
 git -c advice.detachedHead=false checkout --quiet --detach "$target"
 say "Build và khởi động (3–10 phút; bản cũ vẫn phục vụ khách trong lúc build)"
 rollback_hint() {
-  if printf '%s' "$current_name" | grep -Eq "$TAG_RE"; then
+  if [ "$current_sha" = "$target_sha" ]; then
+    echo "   Đang deploy lại chính bản đang chạy → không có bản trước để quay về; gửi Claude."
+  elif printf '%s' "$current_name" | grep -Eq "$TAG_RE"; then
     echo "   Quay lại bản trước:  bash $APP_DIR/ops/deploy.sh $current_name"
   else
     echo "   Bản trước ($current_sha) không có tag release → gửi Claude để có lệnh quay lại."
   fi
 }
-if ! SOURCE_COMMIT="$target_sha" dc up -d --build; then
-  log "FAIL build/up to=$target"
-  echo "⛔ Build/khởi động lỗi. Gửi Claude: docker logs ${COMPOSE_PROJECT}-migrate-1 --tail 30; docker logs ${COMPOSE_PROJECT}-app-1 --tail 50"
+# Build riêng trước: build lỗi thì chưa container nào bị thay → trả mã nguồn về bản đang chạy, web không đổi.
+if ! SOURCE_COMMIT="$target_sha" dc build; then
+  git -c advice.detachedHead=false checkout --quiet --detach "$current_sha"
+  log "FAIL build to=$target (web vẫn chạy $current_name)"
+  echo "⛔ Build lỗi — web VẪN CHẠY bản cũ $current_name, mã nguồn đã trả về bản đó. Gửi Claude toàn bộ chữ ở trên."
+  exit 1
+fi
+if ! SOURCE_COMMIT="$target_sha" dc up -d; then
+  log "FAIL up to=$target"
+  echo "⛔ Khởi động lỗi. Gửi Claude: docker logs ${COMPOSE_PROJECT}-migrate-1 --tail 30; docker logs ${COMPOSE_PROJECT}-app-1 --tail 50"
   rollback_hint
   exit 1
 fi
