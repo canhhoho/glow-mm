@@ -49,6 +49,8 @@ test("admin tạo nhân viên → nhân viên đăng nhập đúng quyền → a
 
     // Admin khoá tài khoản.
     await row.getByRole("link", { name: "Sửa" }).click();
+    // Chờ sang trang sửa: dòng danh sách cũng có icon "Khoá tài khoản" — bấm trúng nó lúc đang chuyển trang thì treo.
+    await expect(page).toHaveURL(/\/admin\/users\/[^/?]+$/);
     page.once("dialog", (d) => d.accept());
     await page.getByRole("button", { name: "Khoá tài khoản" }).click();
     await expect(page.getByRole("button", { name: "Mở khoá tài khoản" })).toBeVisible();
