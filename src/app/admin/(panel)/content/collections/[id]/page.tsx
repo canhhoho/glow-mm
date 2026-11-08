@@ -1,3 +1,4 @@
+import { Trash2, Plus } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
@@ -82,7 +83,7 @@ export default async function EditCollectionPage({ params, searchParams }: PageP
                   action={removeCollectionProductAction}
                   fields={{ id: collection.id, productId: item.productId }}
                   label={t("remove")}
-                  variant="destructive"
+                  variant="destructive" iconOnly={true} icon={<Trash2 aria-hidden className="size-4 shrink-0" />}
                 />
               </li>
             ))}
@@ -111,7 +112,7 @@ export default async function EditCollectionPage({ params, searchParams }: PageP
                 {inCollection.has(p.id) ? (
                   <Badge tone="success">{t("inCollection")}</Badge>
                 ) : (
-                  <ActionButton action={addCollectionProductAction} fields={{ id: collection.id, productId: p.id }} label={t("add")} variant="outline" />
+                  <ActionButton action={addCollectionProductAction} fields={{ id: collection.id, productId: p.id }} label={t("add")} variant="outline" iconOnly={false} icon={<Plus aria-hidden className="size-4 shrink-0" />} />
                 )}
               </li>
             ))}
@@ -124,7 +125,7 @@ export default async function EditCollectionPage({ params, searchParams }: PageP
         fields={{ id: collection.id }}
         label={t("deleteCollection")}
         variant="destructive"
-        confirm={t("deleteCollectionConfirm")}
+        confirm={t("deleteCollectionConfirm")} iconOnly={false} icon={<Trash2 aria-hidden className="size-4 shrink-0" />}
       />
     </Page>
   );

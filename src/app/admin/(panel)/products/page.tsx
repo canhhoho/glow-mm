@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pencil } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
@@ -44,20 +44,18 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
         actions={[
           <details key="brand" className="relative">
             {/* cn(): gộp `border-transparent` (gốc) với `border-border` (outline) — nối chuỗi thô làm mất viền. */}
-            <summary className={cn(buttonVariants({ variant: "outline", size: "lg" }), "cursor-pointer list-none [&::-webkit-details-marker]:hidden")}>
-              {t("newBrand")}
-            </summary>
+            <summary aria-label={t("newBrand")} title={t("newBrand")} className={cn(buttonVariants({ variant: "outline", size: "lg" }), "cursor-pointer list-none [&::-webkit-details-marker]:hidden")}><Plus aria-hidden className="size-4 shrink-0" /> {t("newBrand")}</summary>
             <div className="absolute top-full right-0 z-20 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-lg border bg-background p-4 shadow-lg">
               <BrandForm />
             </div>
           </details>,
-          <LinkButton key="category" href="/admin/categories#new-category">
+          <LinkButton key="category" href="/admin/categories#new-category" icon="new" iconOnly={false}>
             {t("newCategory")}
           </LinkButton>,
           <LinkButton key="import" href="/admin/products/import">
             {t("import")}
           </LinkButton>,
-          <LinkButton key="new" href="/admin/products/new" variant="primary" icon="new">
+          <LinkButton key="new" href="/admin/products/new" variant="primary" icon="new" iconOnly={false}>
             {t("new")}
           </LinkButton>,
         ]}

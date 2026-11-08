@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { fieldClass } from "@/components/admin/ui";
@@ -25,11 +26,9 @@ export function BrandForm() {
     <form action={action} className="flex flex-wrap items-end gap-2">
       <label className="grid content-start gap-1 text-sm">
         <span className="text-muted-foreground">{t("brandName")}</span>
-        <input name="name" required className={fieldClass} />
+        <input name="name" required maxLength={80} className={fieldClass} />
       </label>
-      <Button size="lg" type="submit" variant="outline" disabled={pending}>
-        {t("add")}
-      </Button>
+      <Button size="lg" type="submit" variant="outline" disabled={pending} aria-label={t("newBrand")} title={t("newBrand")}><Plus aria-hidden className="size-4 shrink-0" /> {t("newBrand")}</Button>
       <div className="w-full">
         <Feedback error={state?.error} ok={state?.ok} />
       </div>
@@ -65,9 +64,7 @@ export function CategoryForm({ parents }: { parents: { id: string; name: string 
           ))}
         </select>
       </label>
-      <Button size="lg" type="submit" variant="outline" disabled={pending}>
-        {t("add")}
-      </Button>
+      <Button size="lg" type="submit" variant="outline" disabled={pending} aria-label={t("newCategory")} title={t("newCategory")}><Plus aria-hidden className="size-4 shrink-0" /> {t("newCategory")}</Button>
       <div className="w-full">
         <Feedback error={state?.error} ok={state?.ok} />
       </div>

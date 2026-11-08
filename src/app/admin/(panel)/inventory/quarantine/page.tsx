@@ -1,3 +1,4 @@
+import { RotateCcw, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
@@ -50,7 +51,7 @@ export default async function QuarantinePage() {
               <Td>
                 <div className="flex flex-col gap-2">
                   {canRestock && (
-                    <ActionForm action={restockAction} submitLabel={t("restock")} okText={t("restocked")} className="flex flex-wrap items-end gap-2">
+                    <ActionForm action={restockAction} submitLabel={t("restock")} okText={t("restocked")} className="flex flex-wrap items-end gap-2" icon={<RotateCcw aria-hidden className="size-4 shrink-0" />}>
                       {hidden}
                       <input
                         name="qty"
@@ -74,7 +75,7 @@ export default async function QuarantinePage() {
                       okText={t("discarded")}
                       variant="outline"
                       confirm={t("discardConfirm")}
-                      className="flex flex-wrap items-end gap-2"
+                      className="flex flex-wrap items-end gap-2" icon={<Trash2 aria-hidden className="size-4 shrink-0" />}
                     >
                       {hidden}
                       <input

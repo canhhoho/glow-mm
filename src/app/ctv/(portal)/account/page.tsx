@@ -1,3 +1,4 @@
+import { KeyRound } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { requireAffiliate } from "@/server/auth/session";
 import { changePasswordAction } from "@/server/auth/actions";
@@ -19,7 +20,7 @@ export default async function CtvAccountPage() {
       </p>
       <div className="rounded-2xl border bg-card p-4">
         <h2 className="mb-3 font-medium">{t("title")}</h2>
-        <ActionForm action={changePasswordAction} submitLabel={t("submit")} okText={t("changed")} className="space-y-3">
+        <ActionForm action={changePasswordAction} submitLabel={t("submit")} okText={t("changed")} className="space-y-3" icon={<KeyRound aria-hidden className="size-4 shrink-0" />}>
           {(["currentPassword", "newPassword", "confirmPassword"] as const).map((name) => (
             <label key={name} className="grid content-start gap-1 text-sm">
               <span>{t(name)}</span>

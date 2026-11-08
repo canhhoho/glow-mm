@@ -35,9 +35,7 @@ export function NewDocMenu({ role, label, td }: { role: Role; label: string; td:
       </summary>
       <div className="absolute right-0 z-20 mt-1 w-48 rounded-lg border bg-popover p-1 text-sm shadow-md">
         {types.map(([type]) => (
-          <Link key={type} href={`/admin/inventory/documents/new?type=${type}`} className="block rounded-md px-3 py-2 hover:bg-muted">
-            {td(type)}
-          </Link>
+          <Link key={type} href={`/admin/inventory/documents/new?type=${type}`} className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted"><Plus aria-hidden className="size-4 shrink-0" /> {td(type)}</Link>
         ))}
       </div>
     </details>

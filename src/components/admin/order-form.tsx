@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2, Plus } from "lucide-react";
 import { useActionState, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AddressPicker } from "@/components/address-picker";
@@ -220,20 +221,16 @@ export function OrderForm({
                   className={fieldClass}
                 />
               </label>
-              <Button size="lg"
+              <Button size="icon-lg"
                 type="button"
                 variant="outline"
                 disabled={lines.length === 1}
-                onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))}
-              >
-                {t("remove")}
-              </Button>
+                onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))} title={t("remove")} aria-label={t("remove")}
+              ><Trash2 aria-hidden className="size-4 shrink-0" /></Button>
             </fieldset>
           );
         })}
-        <Button size="lg" type="button" variant="outline" onClick={() => setLines((ls) => [...ls, blank()])}>
-          {t("addLine")}
-        </Button>
+        <Button size="lg" type="button" variant="outline" onClick={() => setLines((ls) => [...ls, blank()])}><Plus aria-hidden className="size-4 shrink-0" /> {t("addLine")}</Button>
       </div>
 
       <dl className="grid max-w-xs grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm" aria-label={t("estimate")}>
@@ -250,9 +247,7 @@ export function OrderForm({
           {t("error")}: {state.error}
         </p>
       )}
-      <Button size="lg" type="submit" disabled={pending}>
-        {t("create")}
-      </Button>
+      <Button size="lg" type="submit" disabled={pending}><Plus aria-hidden className="size-4 shrink-0" /> {t("create")}</Button>
     </form>
   );
 }

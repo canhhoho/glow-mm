@@ -13,6 +13,7 @@ export function ActionButton({
   variant = "default",
   confirm,
   icon,
+  iconOnly = true,
 }: {
   action: (prev: ActionState, fd: FormData) => Promise<ActionState>;
   fields: Record<string, string>;
@@ -21,6 +22,8 @@ export function ActionButton({
   confirm?: string;
   /** Render an icon button while retaining the accessible action label. */
   icon?: ReactNode;
+  /** Detail actions retain their label; row actions show only their icon. */
+  iconOnly?: boolean;
 }) {
   const t = useTranslations("Docs");
   const [state, formAction, pending] = useActionState(action, undefined);
@@ -36,15 +39,16 @@ export function ActionButton({
         <input key={k} type="hidden" name={k} value={v} />
       ))}
       <Button
-        size={icon ? "icon-lg" : "lg"}
+        size={icon && iconOnly ? "icon-lg" : "lg"}
         type="submit"
         variant={variant}
         disabled={pending}
         aria-label={label}
         title={icon ? label : undefined}
-        className={icon ? "size-11 md:size-9" : undefined}
+        className={icon && iconOnly ? "size-11 md:size-9" : undefined}
       >
-        {icon ?? label}
+        {icon}
+        {icon && iconOnly ? <span className="sr-only">{label}</span> : label}
       </Button>
       {state?.error && (
         <p role="alert" className="max-w-md text-sm text-destructive">

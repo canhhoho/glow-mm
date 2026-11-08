@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2, Plus, Save } from "lucide-react";
 import { useActionState, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -257,9 +258,7 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
                   )}
                   {v.isBundle && <span className="rounded bg-muted px-2 py-1 text-xs">{t("isBundle")}</span>}
                   {!v.id && variants.length > 1 && (
-                    <Button type="button" size="lg" variant="outline" onClick={() => setVariants((vs) => vs.filter((x) => x.key !== v.key))}>
-                      {td("remove")}
-                    </Button>
+                    <Button type="button" size="icon-lg" variant="outline" onClick={() => setVariants((vs) => vs.filter((x) => x.key !== v.key))} title={td("remove")} aria-label={td("remove")}><Trash2 aria-hidden className="size-4 shrink-0" /></Button>
                   )}
                 </div>
                 {/* Combo components */}
@@ -298,23 +297,17 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
                           }
                           className={cn(fieldClass, "w-24")}
                         />
-                        <Button type="button" size="lg" variant="outline" onClick={() => setVar(v.key, { components: v.components.filter((_, j) => j !== i) })}>
-                          {td("remove")}
-                        </Button>
+                        <Button type="button" size="icon-lg" variant="outline" onClick={() => setVar(v.key, { components: v.components.filter((_, j) => j !== i) })} title={td("remove")} aria-label={td("remove")}><Trash2 aria-hidden className="size-4 shrink-0" /></Button>
                       </div>
                     ))}
-                    <Button type="button" size="lg" variant="outline" onClick={() => setVar(v.key, { components: [...v.components, { componentId: "", qty: 1 }] })}>
-                      + {t("addComponent")}
-                    </Button>
+                    <Button type="button" size="lg" variant="outline" onClick={() => setVar(v.key, { components: [...v.components, { componentId: "", qty: 1 }] })}><Plus aria-hidden className="size-4 shrink-0" /> {t("addComponent")}</Button>
                   </div>
                 )}
               </fieldset>
             ))}
           </div>
         )}
-        <Button size="lg" type="button" variant="outline" onClick={() => setVariants((vs) => [...vs, blankVariant(t("standardVariant"))])}>
-          + {t("addColorSize")}
-        </Button>
+        <Button size="lg" type="button" variant="outline" onClick={() => setVariants((vs) => [...vs, blankVariant(t("standardVariant"))])}><Plus aria-hidden className="size-4 shrink-0" /> {t("addColorSize")}</Button>
       </section>
 
       {/* ── 4. Thiết lập khác ── */}
@@ -392,9 +385,7 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
           <input type="checkbox" checked={p.published} onChange={(e) => set("published", e.target.checked)} />
           {t("publishedLabel")}
         </label>
-        <Button size="lg" type="submit" disabled={pending}>
-          {t("save")}
-        </Button>
+        <Button size="lg" type="submit" disabled={pending}><Save aria-hidden className="size-4 shrink-0" /> {t("save")}</Button>
       </div>
 
       {state?.error && (

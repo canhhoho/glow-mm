@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2, Plus } from "lucide-react";
 import { startTransition, useActionState, useMemo, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -247,17 +248,13 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
               </label>
               {lines.length > 1 && (
                 <div className="flex items-end">
-                  <Button type="button" variant="outline" size="lg" onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))}>
-                    {t("remove")}
-                  </Button>
+                  <Button type="button" variant="outline" size="icon-lg" onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))} title={t("remove")} aria-label={t("remove")}><Trash2 aria-hidden className="size-4 shrink-0" /></Button>
                 </div>
               )}
             </fieldset>
           );
         })}
-        <Button size="lg" type="button" variant="outline" onClick={() => setLines((ls) => [...ls, blank()])}>
-          + {t("addLine")}
-        </Button>
+        <Button size="lg" type="button" variant="outline" onClick={() => setLines((ls) => [...ls, blank()])}><Plus aria-hidden className="size-4 shrink-0" /> {t("addLine")}</Button>
       </div>
 
       {state?.error && (
@@ -265,9 +262,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
           {t("error")}: {state.error}
         </p>
       )}
-      <Button size="lg" type="submit" disabled={pending}>
-        {t("saveDraft")}
-      </Button>
+      <Button size="lg" type="submit" disabled={pending}><Plus aria-hidden className="size-4 shrink-0" /> {t("saveDraft")}</Button>
     </form>
   );
 }

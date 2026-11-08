@@ -1,5 +1,6 @@
 "use client";
 
+import { Save } from "lucide-react";
 import { useActionState, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
@@ -112,9 +113,7 @@ export function BannerForm({ banner }: { banner?: BannerFormValue }) {
         </label>
       </div>
 
-      <Button size="lg" type="submit" disabled={pending}>
-        {t("save")}
-      </Button>
+      <Button size="lg" type="submit" disabled={pending}><Save aria-hidden className="size-4 shrink-0" /> {t("save")}</Button>
       {error && (
         <p role="alert" className="text-sm text-destructive">
           {td("error")}: {error}

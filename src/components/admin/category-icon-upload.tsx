@@ -1,5 +1,6 @@
 "use client";
 
+import { Upload } from "lucide-react";
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { FileField } from "@/components/admin/file-field";
@@ -24,9 +25,7 @@ export function CategoryIconUpload({ categoryId }: { categoryId: string }) {
       <input type="hidden" name="categoryId" value={categoryId} />
       <div className="flex flex-wrap items-center gap-2">
         <FileField name="icon" required accept="image/jpeg,image/png,image/webp" aria-label={t("iconUpload")} className="max-w-64" />
-        <Button size="lg" type="submit" variant="outline" disabled={pending}>
-          {t("iconUploadBtn")}
-        </Button>
+        <Button size="lg" type="submit" variant="outline" disabled={pending}><Upload aria-hidden className="size-4 shrink-0" /> {t("iconUploadBtn")}</Button>
       </div>
       {state?.error && (
         <p role="alert" className="text-sm text-destructive">

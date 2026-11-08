@@ -1,3 +1,4 @@
+import { Trash2 } from "lucide-react";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -95,7 +96,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
                     fields={{ imageId: img.id }}
                     label={t("imagesDelete")}
                     variant="destructive"
-                    confirm={t("imagesDeleteConfirm")}
+                    confirm={t("imagesDeleteConfirm")} iconOnly={true} icon={<Trash2 aria-hidden className="size-4 shrink-0" />}
                   />
                 </div>
               </li>

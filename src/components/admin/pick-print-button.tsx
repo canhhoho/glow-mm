@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Printer } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ export function PickPrintButton({ ids, hash, plannable }: { ids: string[]; hash:
           });
         }}
       >
+        <Printer aria-hidden />
         {plannable ? t("bulk.pickSaveAndPrint") : t("print")}
       </Button>
       {saved != null && (

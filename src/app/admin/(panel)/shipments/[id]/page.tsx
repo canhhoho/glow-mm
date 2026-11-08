@@ -1,3 +1,4 @@
+import { Trash2 } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
@@ -48,9 +49,7 @@ export default async function ShipmentPage({ params }: PageProps<"/admin/shipmen
                 <form action={removeShipmentCostAction}>
                   <input type="hidden" name="costId" value={c.id} />
                   <input type="hidden" name="shipmentId" value={s.id} />
-                  <button type="submit" className="text-xs text-destructive underline">
-                    {td("remove")}
-                  </button>
+                  <button type="submit" className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg border border-transparent bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:size-9" title={td("remove")} aria-label={td("remove")}><Trash2 aria-hidden className="size-4 shrink-0" /></button>
                 </form>
               </Td>
             </tr>

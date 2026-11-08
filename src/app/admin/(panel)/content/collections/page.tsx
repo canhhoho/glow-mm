@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { fmtDateTime } from "@/lib/format";
 import { requirePagePermission } from "@/server/auth/session";
@@ -18,7 +19,7 @@ export default async function CollectionsPage() {
     <Page>
       <PageHeader title={t("collectionsTitle")} />
       <Section title={t("collectionNew")}>
-        <ActionForm action={createCollectionAction} submitLabel={t("create")}>
+        <ActionForm action={createCollectionAction} submitLabel={t("create")} icon={<Plus aria-hidden className="size-4 shrink-0" />}>
           <CollectionFields />
         </ActionForm>
       </Section>
@@ -48,7 +49,7 @@ export default async function CollectionsPage() {
               </Td>
               <Td>
                 <div className="flex flex-wrap gap-1">
-                  <LinkButton href={`/admin/content/collections/${c.id}`}>{t("edit")}</LinkButton>
+                  <LinkButton href={`/admin/content/collections/${c.id}`} iconOnly={true} icon="edit">{t("edit")}</LinkButton>
                   {i > 0 && <ActionButton action={moveCollectionAction} fields={{ id: c.id, direction: "up" }} label={`↑ ${t("up")}`} variant="outline" />}
                   {i < collections.length - 1 && (
                     <ActionButton action={moveCollectionAction} fields={{ id: c.id, direction: "down" }} label={`↓ ${t("down")}`} variant="outline" />

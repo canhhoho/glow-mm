@@ -66,7 +66,7 @@ test("tự điền mã sản phẩm mới, cho sửa tay và điền tên biến
   await name.fill("Prada Bag");
   await expect(slug).toHaveValue("my-custom-url");
   await expect(sku).toHaveValue("MY-CODE");
-  await page.getByRole("button", { name: "+ Thêm màu/dung tích", exact: true }).click();
+  await page.getByRole("button", { name: "Thêm màu/dung tích", exact: true }).click();
   await expect(labels).toHaveCount(2);
   await expect(labels.nth(1)).toHaveValue("Tiêu chuẩn");
   await expect(page.getByRole("textbox", { name: "SKU", exact: true }).nth(1)).toHaveValue("MY-CUSTOM-URL-02");

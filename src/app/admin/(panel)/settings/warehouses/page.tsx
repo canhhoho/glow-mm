@@ -1,3 +1,4 @@
+import { Plus, LockKeyhole, LockKeyholeOpen } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
@@ -25,7 +26,7 @@ export default async function WarehousesPage({ searchParams }: PageProps<"/admin
       <PageHeader title={(await getTranslations("Nav"))("warehouseManagement")} description={t("description")} />
 
       <Section title={t("create")}>
-        <ActionForm action={createWarehouseAction} submitLabel={t("createSubmit")} okText={t("created")} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <ActionForm action={createWarehouseAction} submitLabel={t("createSubmit")} okText={t("created")} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5" icon={<Plus aria-hidden className="size-4 shrink-0" />}>
           <label className={fieldLabelClass}>
             <span className="text-muted-foreground">{t("kind")}</span>
             <select name="kind" defaultValue="sell" className={fieldClass}>
@@ -91,7 +92,7 @@ export default async function WarehousesPage({ searchParams }: PageProps<"/admin
                 fields={{ id: r.id, active: r.active ? "0" : "1" }}
                 label={r.active ? t("deactivate") : t("activate")}
                 variant="outline"
-                confirm={r.active ? t("deactivateConfirm", { name: r.name }) : undefined}
+                confirm={r.active ? t("deactivateConfirm", { name: r.name }) : undefined} iconOnly={true} icon={r.active ? <LockKeyhole aria-hidden className="size-4 shrink-0" /> : <LockKeyholeOpen aria-hidden className="size-4 shrink-0" />}
               />
             </Td>
           </tr>

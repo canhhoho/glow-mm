@@ -1,3 +1,4 @@
+import { Save, Trash2 } from "lucide-react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { cookies } from "next/headers";
@@ -75,16 +76,12 @@ async function CartContent({ params }: PageProps<"/[locale]/cart">) {
                   aria-label={`${l.name} ${l.label}`}
                   className={cn(storeField, "w-20")}
                 />
-                <button type="submit" className={outlineButton}>
-                  {t("update")}
-                </button>
+                <button type="submit" className={outlineButton + " gap-2"}><Save aria-hidden className="size-4 shrink-0" /> {t("update")}</button>
               </form>
               <form action={setCartQtyAction}>
                 <input type="hidden" name="variantId" value={l.variantId} />
                 <input type="hidden" name="qty" value="0" />
-                <button type="submit" className="min-h-11 px-2 text-sm text-muted-foreground underline">
-                  {t("remove")}
-                </button>
+                <button type="submit" className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg border border-transparent bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:size-9" title={t("remove")} aria-label={t("remove")}><Trash2 aria-hidden className="size-4 shrink-0" /></button>
               </form>
             </div>
           </li>

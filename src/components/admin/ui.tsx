@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Plus, Search } from "lucide-react";
+import { ArrowLeft, Pencil, Plus, Search } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -53,25 +53,27 @@ export function PageHeader({
   );
 }
 
-const LINK_ICONS = { new: Plus, back: ArrowLeft } as const;
+const LINK_ICONS = { new: Plus, back: ArrowLeft, edit: Pencil } as const;
 
 export function LinkButton({
   href,
   children,
   variant = "outline",
   icon,
+  iconOnly = false,
 }: {
   href: string;
   children: React.ReactNode;
   variant?: "primary" | "outline";
   /** `new` (+) cho nút tạo mới, `back` (←) cho nút quay lại. */
   icon?: keyof typeof LINK_ICONS;
+  iconOnly?: boolean;
 }) {
   const Icon = icon && LINK_ICONS[icon];
   return (
-    <Link href={href} className={cn(buttonVariants({ variant: variant === "primary" ? "default" : "outline", size: "lg" }))}>
+    <Link href={href} title={iconOnly && typeof children === "string" ? children : undefined} className={cn(buttonVariants({ variant: variant === "primary" ? "default" : "outline", size: iconOnly ? "icon-lg" : "lg" }))}>
       {Icon && <Icon aria-hidden />}
-      {children}
+      {iconOnly ? <span className="sr-only">{children}</span> : children}
     </Link>
   );
 }

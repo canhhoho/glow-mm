@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Printer } from "lucide-react";
+import { RotateCcw, Printer } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
@@ -364,7 +364,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
             submitLabel={t("ret.submit")}
             okText={t("ret.done")}
             confirm={t("ret.confirm")}
-            className="space-y-3 rounded-lg border p-3"
+            className="space-y-3 rounded-lg border p-3" icon={<RotateCcw aria-hidden className="size-4 shrink-0" />}
           >
             <input type="hidden" name="orderId" value={order.id} />
             <ul className="space-y-2">

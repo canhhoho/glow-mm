@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Download } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { fieldClass } from "@/components/admin/ui";
@@ -56,7 +57,7 @@ export function VtpExportForm({ orders, addresses, services, pickupTimes }: { or
         </table>
       </div>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-      <div className="flex flex-wrap items-center gap-3"><Button type="submit" disabled={busy || selected.size === 0}>{busy ? t("exporting") : t("download", { count: selected.size })}</Button><span className="text-xs text-muted-foreground">{t("noTransition")}</span></div>
+      <div className="flex flex-wrap items-center gap-3"><Button type="submit" size="lg" disabled={busy || selected.size === 0}><Download aria-hidden />{busy ? t("exporting") : t("download", { count: selected.size })}</Button><span className="text-xs text-muted-foreground">{t("noTransition")}</span></div>
     </form>
   );
 }

@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { createAffiliateAction } from "@/server/affiliates/actions";
@@ -19,7 +20,7 @@ export default async function NewAffiliatePage() {
   return (
     <Page width="narrow">
       <PageHeader title={t("new")} back={{ href: "/admin/affiliates", label: t("back") }} />
-      <ActionForm action={createAffiliateAction} submitLabel={t("create")} className="space-y-3">
+      <ActionForm action={createAffiliateAction} submitLabel={t("create")} className="space-y-3" icon={<Plus aria-hidden className="size-4 shrink-0" />}>
         <AffiliateFields
           withLogin
           values={{ code: suggestAffiliateCode(), commissionPercent: bpToPercent(defaultBp) }}

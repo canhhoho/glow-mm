@@ -38,7 +38,7 @@ test("danh mục: thêm danh mục trống rồi xoá", async ({ page }) => {
   await page.getByLabel("Slug danh mục").fill(slug);
   await page.getByLabel("Tên (Myanmar)").last().fill("စမ်းသပ်");
   await page.getByLabel("Tên (English)").last().fill("E2E category");
-  await page.getByRole("button", { name: "Thêm", exact: true }).click();
+  await page.getByRole("button", { name: "Thêm danh mục", exact: true }).click();
   const row = page.getByTestId("category-row").filter({ has: page.getByText(slug, { exact: true }) });
   await expect(row).toHaveCount(1, { timeout: 20_000 });
 
