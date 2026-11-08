@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { LockKeyhole, LockKeyholeOpen, Pencil, Trash2 } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { getTranslations } from "next-intl/server";
 import { fmtInt } from "@/lib/format";
 import { requirePagePermission } from "@/server/auth/session";
@@ -57,7 +60,7 @@ export default async function AffiliatesPage({ searchParams }: PageProps<"/admin
       <DataTable
         stack
         empty={active === undefined ? t("empty") : t("emptyFiltered")}
-        head={[t("colCtv"), t("colCode"), t("colPercent"), t("colMonthSales"), t("colPending"), t("colPayable"), t("colPaid"), t("actions")]}
+        head={[t("colCtv"), t("colCode"), t("colPercent"), t("colMonthSales"), t("colPending"), t("colPayable"), t("colPaid"), <span key="actions" className="block md:text-right">{t("actions")}</span>]}
         numeric={[3, 4, 5, 6]}
       >
         {affiliates.map((a) => (
@@ -83,17 +86,32 @@ export default async function AffiliatesPage({ searchParams }: PageProps<"/admin
             <Td label={t("colPending")} className="text-right tabular-nums">{fmtInt(a.summary.pendingMmk)}</Td>
             <Td label={t("colPayable")} className="text-right font-medium tabular-nums">{fmtInt(a.summary.payableMmk)}</Td>
             <Td label={t("colPaid")} className="text-right tabular-nums">{fmtInt(a.summary.paidMmk)}</Td>
-            <Td label={t("actions")}>
-              <div className="flex flex-wrap items-start gap-2">
-                <LinkButton href={`/admin/affiliates/${a.id}#profile`}>{t("edit")}</LinkButton>
+            <Td label={t("actions")} className="align-middle md:w-px md:whitespace-nowrap">
+              <div className="flex items-center justify-end gap-1">
+                <Link
+                  href={`/admin/affiliates/${a.id}#profile`}
+                  aria-label={t("edit")}
+                  title={t("edit")}
+                  className={cn(buttonVariants({ variant: "ghost", size: "icon-lg" }), "size-11 md:size-9")}
+                >
+                  <Pencil aria-hidden="true" />
+                </Link>
                 <ActionButton
                   action={setAffiliateActiveAction}
                   fields={{ id: a.id, active: String(!a.active) }}
                   label={a.active ? t("lock") : t("unlock")}
-                  variant="outline"
+                  variant="ghost"
+                  icon={a.active ? <LockKeyhole aria-hidden="true" /> : <LockKeyholeOpen aria-hidden="true" />}
                   confirm={a.active ? t("lockConfirm", { name: a.user.name }) : undefined}
                 />
-                <ActionButton action={deleteAffiliateAction} fields={{ id: a.id }} label={t("delete")} variant="destructive" confirm={t("deleteConfirm", { name: a.user.name })} />
+                <ActionButton
+                  action={deleteAffiliateAction}
+                  fields={{ id: a.id }}
+                  label={t("delete")}
+                  variant="destructive"
+                  icon={<Trash2 aria-hidden="true" />}
+                  confirm={t("deleteConfirm", { name: a.user.name })}
+                />
               </div>
             </Td>
           </tr>
