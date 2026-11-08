@@ -4,7 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { fmtDateTime } from "@/lib/format";
 import { requirePagePermission } from "@/server/auth/session";
 import { MIN_STAFF_PASSWORD } from "@/server/auth/roles";
-import { resetStaffPasswordAction, setStaffActiveAction, updateStaffAction } from "@/server/users/actions";
+import { deleteStaffAction, resetStaffPasswordAction, setStaffActiveAction, updateStaffAction } from "@/server/users/actions";
 import { getStaff } from "@/server/users/users";
 import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
@@ -88,6 +88,8 @@ export default async function EditUserPage({ params }: PageProps<"/admin/users/[
               variant={user.active ? "destructive" : "outline"}
               confirm={user.active ? t("lockConfirm", { name: user.name }) : undefined}
             />
+            <p className="text-xs text-muted-foreground">{t("deleteHint")}</p>
+            <ActionButton action={deleteStaffAction} fields={{ id: user.id }} label={t("delete")} variant="destructive" confirm={t("deleteConfirm", { name: user.name })} />
           </section>
         </>
       )}

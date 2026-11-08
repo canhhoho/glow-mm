@@ -8,7 +8,7 @@ import { formId } from "@/lib/schemas";
 import { requirePermission } from "@/server/auth/session";
 import { MIN_STAFF_PASSWORD } from "@/server/auth/roles";
 import type { ActionState } from "@/server/inventory/actions";
-import { createStaff, resetStaffPassword, setStaffActive, updateStaff, UserError } from "./users";
+import { createStaff, deleteStaff, resetStaffPassword, setStaffActive, updateStaff, UserError } from "./users";
 
 /** Server Action quản lý nhân viên (quyền `users:manage`). Lỗi trả về đã dịch theo ngôn ngữ admin. */
 
@@ -85,4 +85,16 @@ export async function resetStaffPasswordAction(_prev: ActionState, fd: FormData)
     return { error: await message(e) };
   }
   return { ok: "reset" };
+}
+
+/** Xoá tài khoản nhân viên tạo nhầm (chưa có dữ liệu) — xong quay về danh sách. */
+export async function deleteStaffAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("users:manage");
+    await deleteStaff(id.parse(fd.get("id")), user.id);
+  } catch (e) {
+    return { error: await message(e) };
+  }
+  revalidatePath("/admin/users", "layout");
+  redirect("/admin/users");
 }

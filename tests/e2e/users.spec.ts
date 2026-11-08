@@ -106,4 +106,39 @@ test("trang của chính mình: không có nút khoá / đặt lại mật khẩ
   await expect(page.getByRole("textbox", { name: "Email", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Khoá tài khoản" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Đặt mật khẩu tạm" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Xoá tài khoản" })).toHaveCount(0);
+  // Dòng của mình ở danh sách chỉ có Sửa.
+  await page.goto("/admin/users?q=admin%40glow.local");
+  const me = page.getByTestId("user-row").filter({ hasText: "admin@glow.local" });
+  await expect(me.getByRole("link", { name: "Sửa", exact: true })).toBeVisible();
+  await expect(me.getByRole("button")).toHaveCount(0);
+});
+
+test("danh sách nhân viên: icon Khoá/Mở khoá và Xoá tài khoản tạo nhầm", async ({ page }) => {
+  const email = `e2e-del-${randomBytes(4).toString("hex")}@glow.local`;
+  await login(page, "admin@glow.local");
+  await page.goto("/admin/users/new");
+  await page.getByRole("textbox", { name: "Họ tên" }).fill("Tạo nhầm E2E");
+  await page.getByRole("textbox", { name: "Email", exact: true }).fill(email);
+  await page.getByRole("combobox", { name: "Vai trò" }).selectOption("ORDER_STAFF");
+  await page.getByLabel("Mật khẩu tạm").fill(`E2E-tam-${randomBytes(6).toString("hex")}`);
+  await page.getByRole("button", { name: "Tạo tài khoản" }).click();
+  await expect(page).toHaveURL(/\/admin\/users\?saved=1$/);
+
+  await page.goto(`/admin/users?q=${encodeURIComponent(email)}`);
+  const row = page.getByTestId("user-row");
+  page.once("dialog", (d) => d.accept());
+  await row.getByRole("button", { name: "Khoá tài khoản", exact: true }).click();
+  await expect(row).toContainText("Đã khoá");
+  await row.getByRole("button", { name: "Mở khoá tài khoản", exact: true }).click();
+  await expect(row).toContainText("Đang hoạt động");
+
+  page.once("dialog", (d) => d.dismiss());
+  await row.getByRole("button", { name: "Xoá tài khoản", exact: true }).click();
+  await expect(row).toHaveCount(1);
+  page.once("dialog", (d) => d.accept());
+  await row.getByRole("button", { name: "Xoá tài khoản", exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/users$/);
+  await page.goto(`/admin/users?q=${encodeURIComponent(email)}`);
+  await expect(page.getByTestId("user-row")).toHaveCount(0);
 });

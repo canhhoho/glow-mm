@@ -1192,9 +1192,13 @@
       "tooShort": "Password must be at least {min} characters",
       "email_taken": "This email is already used by another account",
       "not_found": "Staff member not found",
-      "self": "You cannot change the role or email of, lock, or reset the password of your own account",
-      "last_admin": "At least one active administrator must remain"
-    }
+      "self": "You cannot change the role or email of, lock, delete, or reset the password of your own account",
+      "last_admin": "At least one active administrator must remain",
+      "in_use": "This staff member has activity or linked records. Lock the account to keep its history."
+    },
+    "delete": "Delete account",
+    "deleteConfirm": "Delete staff account {name}? This cannot be undone.",
+    "deleteHint": "Only accounts created by mistake with no activity can be deleted. Lock staff who have worked here to keep their history."
   },
   "Batch": {
     "title": "Lot {lotNo}",
@@ -1221,7 +1225,7 @@
   "Affiliates": {
     "actions": "Actions",
     "edit": "Edit",
-    "delete": "Delete affiliate",
+    "delete": "Delete account",
     "deleteConfirm": "Delete the affiliate account for {name}? This cannot be undone.",
     "deleteHint": "Only accounts without orders, payouts, downlines or linked applications can be deleted. Lock accounts with existing records.",
     "title": "Affiliates",
@@ -1265,8 +1269,8 @@
     "reset": "Reset",
     "resetDone": "Password reset",
     "access": "Access",
-    "lock": "Lock affiliate",
-    "unlock": "Unlock",
+    "lock": "Lock account",
+    "unlock": "Unlock account",
     "lockConfirm": "Lock {name}? They can't sign in and their referral link stops counting.",
     "lockHint": "Locked: cannot sign in, referral link stops counting. Commission already earned is kept.",
     "unlockHint": "Unlock to let the affiliate sign in and count referrals again.",
@@ -1541,15 +1545,29 @@
     "resetPassword": "Reset password",
     "tempPassword": "Temporary password (≥ {min} chars)",
     "passwordReset": "Temporary password set — the customer was signed out everywhere",
-    "lock": "Lock",
-    "unlock": "Unlock",
+    "lock": "Lock account",
+    "unlock": "Unlock account",
     "lockConfirm": "Lock {name}'s account? They will be signed out and cannot sign in.",
     "saved": "Saved",
     "err": {
       "not_found": "Customer account not found",
       "no_password": "This account signs in with Google and has no password",
-      "password": "Temporary password needs at least {min} characters"
-    }
+      "password": "Temporary password needs at least {min} characters",
+      "in_use": "This customer has orders. Lock the account to keep its history.",
+      "phone_taken": "This phone number is already used by another account",
+      "invalid_phone": "Invalid phone number",
+      "invalid": "Invalid data"
+    },
+    "deleteConfirm": "Delete customer account {name}? This cannot be undone.",
+    "deleteHint": "Only accounts without orders can be deleted. Lock customers who have ordered to keep their history.",
+    "phoneHint": "Changing the number changes the customer's sign-in phone.",
+    "lockHint": "Locking signs the customer out everywhere and blocks sign-in. Past orders are kept.",
+    "edit": "Edit",
+    "delete": "Delete account",
+    "profile": "Profile",
+    "save": "Save",
+    "access": "Access",
+    "phone": "Phone"
   },
   "VtpExport": {
     "title": "Export orders to VTP Myanmar",

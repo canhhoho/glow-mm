@@ -1,20 +1,17 @@
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
-import { ChevronDown, Info, KeyRound, Mail, Phone } from "lucide-react";
+import { ChevronDown, Info, Mail, Phone } from "lucide-react";
 import { fmtDateTime } from "@/lib/format";
 import { requirePagePermission } from "@/server/auth/session";
 import { isPhoneEmail } from "@/server/auth/customer-policy";
 import { listCustomerAccounts } from "@/server/accounts/admin";
-import { resetCustomerPasswordAction, setCustomerActiveAction } from "@/server/accounts/actions";
-import { MIN_CUSTOMER_PASSWORD } from "@/server/accounts/phone";
-import { ActionForm } from "@/components/admin/action-form";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { Badge, DataTable, fieldClass, FilterBar, FilterButton, Page, PageHeader, SearchInput, Stat, Td } from "@/components/admin/ui";
+import { deleteCustomerAccountAction, setCustomerActiveAction } from "@/server/accounts/actions";
+import { AccountRowActions } from "@/components/admin/account-row-actions";
+import { Badge, DataTable, FilterBar, FilterButton, Page, PageHeader, SearchInput, Stat, Td } from "@/components/admin/ui";
 
 /**
- * Tài khoản khách storefront (P17): tìm theo SĐT / email / tên; đặt lại mật khẩu tạm (khách SĐT quên mật khẩu nhắn shop);
- * khoá / mở khoá. Khách đăng nhập Google không có mật khẩu → không đặt lại được.
+ * Tài khoản khách storefront (P17): tìm theo SĐT / email / tên; mỗi dòng Sửa (tên, SĐT, mật khẩu tạm ở trang
+ * `/admin/customer-accounts/[id]`) · Khoá/Mở khoá · Xoá (chỉ tài khoản chưa có đơn).
  */
 export default async function CustomerAccountsPage({ searchParams }: PageProps<"/admin/customer-accounts">) {
   await requirePagePermission("users:manage");
@@ -76,47 +73,24 @@ export default async function CustomerAccountsPage({ searchParams }: PageProps<"
                 <Td label={t("status")}>
                   <Badge tone={a.active ? "success" : "danger"}>{a.active ? t("active") : t("locked")}</Badge>
                 </Td>
-                <Td className="md:w-64 md:min-w-64">
-                  <div className="flex w-full flex-wrap items-start gap-2">
-                    {hasPassword && (
-                      <details className="group/password min-w-0 open:w-full" data-testid="customer-password-panel">
-                        <summary className={cn(buttonVariants({ variant: "outline", size: "lg" }), "cursor-pointer list-none [&::-webkit-details-marker]:hidden")}>
-                          <KeyRound aria-hidden />{t("passwordOptions")}
-                          <ChevronDown className="transition-transform group-open/password:rotate-180" aria-hidden />
-                        </summary>
-                        <div className="mt-3 max-w-sm space-y-3 rounded-xl border bg-muted/30 p-3">
-                          <p className="text-xs leading-relaxed text-muted-foreground">{t("passwordHint")}</p>
-                          <ActionForm action={resetCustomerPasswordAction} submitLabel={t("resetPassword")} variant="outline" className="space-y-3">
-                            <input type="hidden" name="id" value={a.id} />
-                            <label className="grid gap-1.5 text-xs font-medium">
-                              {t("tempPassword", { min: MIN_CUSTOMER_PASSWORD })}
-                              <input
-                                name="password"
-                                type="text"
-                                required
-                                minLength={MIN_CUSTOMER_PASSWORD}
-                                maxLength={128}
-                                autoComplete="off"
-                                placeholder={t("tempPassword", { min: MIN_CUSTOMER_PASSWORD })}
-                                aria-label={`${t("tempPassword", { min: MIN_CUSTOMER_PASSWORD })} — ${a.name}`}
-                                className={fieldClass}
-                              />
-                            </label>
-                          </ActionForm>
-                        </div>
-                      </details>
-                    )}
-                    <ActionForm
-                      action={setCustomerActiveAction}
-                      submitLabel={a.active ? t("lock") : t("unlock")}
-                      variant={a.active ? "destructive" : "outline"}
-                      confirm={a.active ? t("lockConfirm", { name: a.name }) : undefined}
-                      className="space-y-1"
-                    >
-                      <input type="hidden" name="id" value={a.id} />
-                      <input type="hidden" name="active" value={a.active ? "false" : "true"} />
-                    </ActionForm>
-                  </div>
+                <Td className="align-middle md:w-px md:whitespace-nowrap">
+                  <AccountRowActions
+                    editHref={`/admin/customer-accounts/${a.id}`}
+                    editLabel={t("edit")}
+                    lock={{
+                      action: setCustomerActiveAction,
+                      fields: { id: a.id, active: String(!a.active) },
+                      active: a.active,
+                      lockLabel: t("lock"),
+                      unlockLabel: t("unlock"),
+                      confirm: t("lockConfirm", { name: a.name }),
+                    }}
+                    remove={
+                      a._count.orders === 0
+                        ? { action: deleteCustomerAccountAction, fields: { id: a.id }, label: t("delete"), confirm: t("deleteConfirm", { name: a.name }) }
+                        : undefined
+                    }
+                  />
                 </Td>
               </tr>
             );

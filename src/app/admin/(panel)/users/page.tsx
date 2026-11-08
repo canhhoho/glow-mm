@@ -3,6 +3,8 @@ import { fmtDateTime } from "@/lib/format";
 import { requirePagePermission } from "@/server/auth/session";
 import { isRole, ROLES } from "@/server/auth/roles";
 import { listStaff } from "@/server/users/users";
+import { deleteStaffAction, setStaffActiveAction } from "@/server/users/actions";
+import { AccountRowActions } from "@/components/admin/account-row-actions";
 import { Badge, DataTable, fieldClass, FilterBar, FilterButton, LinkButton, Notice, Page, PageHeader, SearchInput, Td } from "@/components/admin/ui";
 
 const str = (v: string | string[] | undefined) => (typeof v === "string" ? v.trim() : "");
@@ -53,7 +55,7 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
         </select>
         <FilterButton>{t("filter")}</FilterButton>
       </FilterBar>
-      <DataTable stack empty={t("empty")} head={[t("name"), t("email"), t("role"), t("status"), t("createdAt"), ""]}>
+      <DataTable stack empty={t("empty")} head={[t("name"), t("email"), t("role"), t("status"), t("createdAt"), (await getTranslations("Customers"))("actions")]}>
         {users.map((u) => (
           <tr key={u.id} data-testid="user-row">
             <Td>
@@ -68,8 +70,25 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
               <Badge tone={u.active ? "success" : "danger"}>{u.active ? t("active") : t("locked")}</Badge>
             </Td>
             <Td label={t("createdAt")} className="text-xs whitespace-nowrap">{fmtDateTime(u.createdAt)}</Td>
-            <Td>
-              <LinkButton href={`/admin/users/${u.id}`}>{t("edit")}</LinkButton>
+            <Td className="align-middle md:w-px md:whitespace-nowrap">
+              {/* Dòng của chính mình chỉ có Sửa: không tự khoá / tự xoá. */}
+              <AccountRowActions
+                editHref={`/admin/users/${u.id}`}
+                editLabel={t("edit")}
+                lock={
+                  u.id === me.id
+                    ? undefined
+                    : {
+                        action: setStaffActiveAction,
+                        fields: { id: u.id, active: String(!u.active) },
+                        active: u.active,
+                        lockLabel: t("lock"),
+                        unlockLabel: t("unlock"),
+                        confirm: t("lockConfirm", { name: u.name }),
+                      }
+                }
+                remove={u.id === me.id ? undefined : { action: deleteStaffAction, fields: { id: u.id }, label: t("delete"), confirm: t("deleteConfirm", { name: u.name }) }}
+              />
             </Td>
           </tr>
         ))}

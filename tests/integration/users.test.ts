@@ -5,6 +5,7 @@ import { auth } from "@/server/auth/auth";
 import {
   assertNotLastAdmin,
   createStaff,
+  deleteStaff,
   listStaff,
   resetStaffPassword,
   setStaffActive,
@@ -119,6 +120,27 @@ describe("Quản lý nhân viên", () => {
     });
     // Gửi lại đúng email hiện tại của mình thì không coi là đổi.
     expect(await updateStaff(actorId, { name: "IT", role: "ADMIN", email: "it-runner@glow.local" }, actorId)).toMatchObject({ role: "ADMIN" });
+  });
+
+  it("xoá nhân viên tạo nhầm: xoá cả phiên + ghi audit; có thao tác → in_use; tự xoá / không phải nhân viên → lỗi", async () => {
+    const actorId = await actor();
+    const fresh = await createStaff({ name: "Tạo nhầm", email: `it-del-${tag()}@glow.local`, role: "ORDER_STAFF", password: PASSWORD }, actorId);
+    await signIn(fresh.email);
+    expect(await prisma.session.count({ where: { userId: fresh.id } })).toBe(1);
+    await deleteStaff(fresh.id, actorId);
+    expect(await prisma.user.findUnique({ where: { id: fresh.id } })).toBeNull();
+    expect(await prisma.session.count({ where: { userId: fresh.id } })).toBe(0);
+    expect(await prisma.auditLog.findFirst({ where: { action: "user.delete", entityId: fresh.id } })).toMatchObject({ userId: actorId });
+
+    // Đã có thao tác (một dòng nhật ký do chính người đó tạo) → giữ lại, phải khoá.
+    const worked = await createStaff({ name: "Đã làm", email: `it-del-${tag()}@glow.local`, role: "WAREHOUSE_MANAGER", password: PASSWORD }, actorId);
+    await prisma.auditLog.create({ data: { userId: worked.id, action: "it.work", entity: "User", entityId: worked.id } });
+    await expect(deleteStaff(worked.id, actorId)).rejects.toMatchObject({ code: "in_use" });
+    expect(await prisma.user.findUnique({ where: { id: worked.id } })).not.toBeNull();
+
+    await expect(deleteStaff(actorId, actorId)).rejects.toMatchObject({ code: "self" });
+    const customer = await prisma.user.create({ data: { id: `it-cus-${tag()}`, email: `it-cus-${tag()}@glow.local`, name: "Khách", role: "CUSTOMER" } });
+    await expect(deleteStaff(customer.id, actorId)).rejects.toMatchObject({ code: "not_found" });
   });
 
   it("luôn còn ít nhất 1 ADMIN đang hoạt động", () => {

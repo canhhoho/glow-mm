@@ -1,7 +1,16 @@
 import { randomBytes } from "node:crypto";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
-import { listCustomerAccounts, resetCustomerPassword, setCustomerActive } from "@/server/accounts/admin";
+import {
+  deleteCustomerAccount,
+  getCustomerAccount,
+  listCustomerAccounts,
+  resetCustomerPassword,
+  setCustomerActive,
+  updateCustomerAccount,
+} from "@/server/accounts/admin";
+import { createOrder } from "@/server/orders/orders";
+import { orderInput, saleFixture, unpublishTestProducts } from "./fixtures";
 import { consumeRateLimit, registerPhoneCustomer } from "@/server/accounts/phone";
 import { customerAuth } from "@/server/auth/customer-auth";
 import { hitRateLimit } from "@/server/rate-limit";
@@ -25,6 +34,8 @@ async function phoneCustomer() {
   const phone = randomPhone();
   return registerPhoneCustomer({ name: "Ma Phone", phone, password: PASSWORD, confirmPassword: PASSWORD }, { ip: `it-${phone}` });
 }
+
+afterAll(unpublishTestProducts);
 
 describe("Tài khoản khách bằng SĐT + mật khẩu (P17)", () => {
   it("đăng ký: chuẩn hoá SĐT (+95, chữ số Myanmar), role CUSTOMER, email nội bộ; trùng SĐT bị từ chối", async () => {
@@ -99,6 +110,47 @@ describe("Tài khoản khách bằng SĐT + mật khẩu (P17)", () => {
       data: { id: `it-g-${randomBytes(3).toString("hex")}`, email: `it-g-${randomBytes(3).toString("hex")}@gmail.test`, name: "G", role: "CUSTOMER" },
     });
     await expect(resetCustomerPassword(google.id, "tam-thoi-123", actorId)).rejects.toMatchObject({ code: "no_password" });
+  });
+
+  it("admin sửa tên + SĐT: đăng nhập bằng số mới, số cũ hết dùng; SĐT trùng / sai → lỗi riêng", async () => {
+    const actorId = await actor();
+    const { userId, phone } = await phoneCustomer();
+    const other = await phoneCustomer();
+    const next = randomPhone();
+    await updateCustomerAccount(userId, { name: "Ma Đổi Tên", phone: `+95${next.slice(1)}` }, actorId);
+    expect(await getCustomerAccount(userId)).toMatchObject({ name: "Ma Đổi Tên", phoneNumber: next, email: `${next}@phone.glow.invalid` });
+    expect((await signIn(next)).token).toBeTruthy();
+    await expect(signIn(phone)).rejects.toBeTruthy();
+    expect(await prisma.auditLog.findFirst({ where: { action: "customer.update", entityId: userId }, orderBy: { createdAt: "desc" } })).toMatchObject({
+      data: { phone: { from: phone, to: next } },
+    });
+
+    await expect(updateCustomerAccount(userId, { name: "X", phone: other.phone }, actorId)).rejects.toMatchObject({ code: "phone_taken" });
+    await expect(updateCustomerAccount(userId, { name: "X", phone: "12" }, actorId)).rejects.toMatchObject({ code: "invalid_phone" });
+    // Không gửi SĐT (form tài khoản Google) → chỉ đổi tên.
+    await updateCustomerAccount(userId, { name: "Chỉ tên" }, actorId);
+    expect(await getCustomerAccount(userId)).toMatchObject({ name: "Chỉ tên", phoneNumber: next });
+  });
+
+  it("xoá khách chưa có đơn: xoá kèm phiên, địa chỉ, ghi audit; khách có đơn → in_use; nhân viên → not_found", async () => {
+    const actorId = await actor();
+    const { userId, phone } = await phoneCustomer();
+    await signIn(phone);
+    await deleteCustomerAccount(userId, actorId);
+    expect(await prisma.user.findUnique({ where: { id: userId } })).toBeNull();
+    expect(await prisma.session.count({ where: { userId } })).toBe(0);
+    expect(await prisma.auditLog.findFirst({ where: { action: "customer.delete", entityId: userId } })).toMatchObject({ userId: actorId });
+
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
+    const buyer = await phoneCustomer();
+    const order = await createOrder(orderInput(f, 1), { userId: null });
+    await prisma.order.update({ where: { id: order.id }, data: { accountId: buyer.userId } });
+    await expect(deleteCustomerAccount(buyer.userId, actorId)).rejects.toMatchObject({ code: "in_use" });
+    expect(await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).toMatchObject({ accountId: buyer.userId });
+
+    const staff = await createStaff({ name: "NV", email: `it-nv-${randomBytes(3).toString("hex")}@glow.local`, role: "ORDER_STAFF", password: PASSWORD }, actorId);
+    await expect(deleteCustomerAccount(staff.id, actorId)).rejects.toMatchObject({ code: "not_found" });
+    await expect(updateCustomerAccount(staff.id, { name: "X" }, actorId)).rejects.toMatchObject({ code: "not_found" });
   });
 
   it("giới hạn tần suất: vượt số lần trong cửa sổ → too_many", async () => {

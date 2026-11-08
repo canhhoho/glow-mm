@@ -1192,9 +1192,13 @@
       "tooShort": "Mật khẩu phải có ít nhất {min} ký tự",
       "email_taken": "Email đã được dùng cho tài khoản khác",
       "not_found": "Không tìm thấy nhân viên",
-      "self": "Không thể tự thay đổi vai trò, email, khoá hay đặt lại mật khẩu cho chính mình",
-      "last_admin": "Phải còn ít nhất 1 quản trị viên đang hoạt động"
-    }
+      "self": "Không thể tự thay đổi vai trò, email, khoá, xoá hay đặt lại mật khẩu cho chính mình",
+      "last_admin": "Phải còn ít nhất 1 quản trị viên đang hoạt động",
+      "in_use": "Nhân viên đã có thao tác hoặc dữ liệu liên quan; hãy khoá tài khoản để giữ lịch sử."
+    },
+    "delete": "Xoá tài khoản",
+    "deleteConfirm": "Xoá tài khoản nhân viên {name}? Thao tác này không thể hoàn tác.",
+    "deleteHint": "Chỉ xoá được tài khoản tạo nhầm, chưa có thao tác nào. Nhân viên đã làm việc thì dùng Khoá để giữ lịch sử."
   },
   "Batch": {
     "title": "Lô {lotNo}",
@@ -1221,7 +1225,7 @@
   "Affiliates": {
     "actions": "Thao tác",
     "edit": "Sửa",
-    "delete": "Xoá CTV",
+    "delete": "Xoá tài khoản",
     "deleteConfirm": "Xoá tài khoản CTV {name}? Thao tác này không thể hoàn tác.",
     "deleteHint": "Chỉ xoá tài khoản chưa có đơn hàng, chi trả, tuyến dưới hoặc đơn đăng ký liên quan. Tài khoản đã phát sinh dữ liệu nên dùng chức năng khoá.",
     "title": "Cộng tác viên",
@@ -1265,8 +1269,8 @@
     "reset": "Đặt lại",
     "resetDone": "Đã đặt lại mật khẩu",
     "access": "Truy cập",
-    "lock": "Khoá CTV",
-    "unlock": "Mở khoá",
+    "lock": "Khoá tài khoản",
+    "unlock": "Mở khoá tài khoản",
     "lockConfirm": "Khoá {name}? CTV không đăng nhập được và link giới thiệu ngừng tính.",
     "lockHint": "Khoá: CTV không đăng nhập được, link giới thiệu ngừng tính. Hoa hồng đã phát sinh vẫn giữ.",
     "unlockHint": "Mở khoá để CTV đăng nhập và link giới thiệu được tính lại.",
@@ -1541,15 +1545,29 @@
     "resetPassword": "Đặt lại mật khẩu",
     "tempPassword": "Mật khẩu tạm (≥ {min} ký tự)",
     "passwordReset": "Đã đặt mật khẩu tạm — khách bị đăng xuất khỏi mọi thiết bị",
-    "lock": "Khoá",
-    "unlock": "Mở khoá",
+    "lock": "Khoá tài khoản",
+    "unlock": "Mở khoá tài khoản",
     "lockConfirm": "Khoá tài khoản {name}? Khách sẽ bị đăng xuất và không đăng nhập được.",
     "saved": "Đã lưu",
     "err": {
       "not_found": "Không tìm thấy tài khoản khách",
       "no_password": "Tài khoản đăng nhập bằng Google, không có mật khẩu",
-      "password": "Mật khẩu tạm cần ít nhất {min} ký tự"
-    }
+      "password": "Mật khẩu tạm cần ít nhất {min} ký tự",
+      "in_use": "Khách đã có đơn hàng; hãy khoá tài khoản để giữ lịch sử.",
+      "phone_taken": "Số điện thoại đã được dùng cho tài khoản khác",
+      "invalid_phone": "Số điện thoại không hợp lệ",
+      "invalid": "Dữ liệu không hợp lệ"
+    },
+    "deleteConfirm": "Xoá tài khoản khách {name}? Thao tác này không thể hoàn tác.",
+    "deleteHint": "Chỉ xoá được tài khoản chưa có đơn hàng. Khách đã mua hàng thì dùng Khoá để giữ lịch sử.",
+    "phoneHint": "Đổi số thì khách đăng nhập bằng số mới.",
+    "lockHint": "Khoá → khách bị đăng xuất và không đăng nhập được. Đơn hàng cũ vẫn giữ nguyên.",
+    "edit": "Sửa",
+    "delete": "Xoá tài khoản",
+    "profile": "Thông tin",
+    "save": "Lưu",
+    "access": "Quyền truy cập",
+    "phone": "Số điện thoại"
   },
   "VtpExport": {
     "title": "Xuất đơn sang VTP Myanmar",
