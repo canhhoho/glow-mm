@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { Check, Eye } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { catalogImportAction } from "@/server/catalog/actions";
@@ -34,7 +35,7 @@ export function CatalogImport() {
       <form action={action} className="flex flex-wrap items-end gap-3">
         <input type="hidden" name="step" value="preview" />
         <FileField name="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required aria-label={t("file")} className="max-w-72" />
-        <Button type="submit" size="lg" disabled={pending}>{t("preview")}</Button>
+        <Button type="submit" size="lg" disabled={pending}><Eye aria-hidden />{t("preview")}</Button>
       </form>
       {state?.error && <p role="alert" className="text-sm whitespace-pre-line text-destructive">{state.error}</p>}
 
@@ -92,7 +93,7 @@ export function CatalogImport() {
             <form action={action}>
               <input type="hidden" name="step" value="confirm" />
               <input type="hidden" name="payload" value={JSON.stringify(preview.input)} />
-              <Button type="submit" size="lg" disabled={pending}>{t("confirm")}</Button>
+              <Button type="submit" size="lg" disabled={pending}><Check aria-hidden />{t("confirm")}</Button>
             </form>
           )}
         </div>

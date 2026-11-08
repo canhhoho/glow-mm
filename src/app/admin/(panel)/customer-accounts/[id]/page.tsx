@@ -1,3 +1,4 @@
+import { LockKeyhole, LockKeyholeOpen, Trash2, KeyRound } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { fmtDateTime } from "@/lib/format";
@@ -62,7 +63,7 @@ export default async function CustomerAccountPage({ params }: PageProps<"/admin/
       {hasPassword && (
         <Section title={t("resetPassword")}>
           <p className="text-xs text-muted-foreground">{t("passwordHint")}</p>
-          <ActionForm action={resetCustomerPasswordAction} submitLabel={t("resetPassword")} variant="outline" className="space-y-3">
+          <ActionForm action={resetCustomerPasswordAction} submitLabel={t("resetPassword")} variant="outline" className="space-y-3" icon={<KeyRound aria-hidden className="size-4 shrink-0" />}>
             <input type="hidden" name="id" value={a.id} />
             <label className={fieldLabelClass}>
               <span>{t("tempPassword", { min: MIN_CUSTOMER_PASSWORD })}</span>
@@ -79,10 +80,10 @@ export default async function CustomerAccountPage({ params }: PageProps<"/admin/
           fields={{ id: a.id, active: String(!a.active) }}
           label={a.active ? t("lock") : t("unlock")}
           variant={a.active ? "destructive" : "outline"}
-          confirm={a.active ? t("lockConfirm", { name: a.name }) : undefined}
+          confirm={a.active ? t("lockConfirm", { name: a.name }) : undefined} iconOnly={false} icon={a.active ? <LockKeyhole aria-hidden className="size-4 shrink-0" /> : <LockKeyholeOpen aria-hidden className="size-4 shrink-0" />}
         />
         <p className="text-xs text-muted-foreground">{t("deleteHint")}</p>
-        <ActionButton action={deleteCustomerAccountAction} fields={{ id: a.id }} label={t("delete")} variant="destructive" confirm={t("deleteConfirm", { name: a.name })} />
+        <ActionButton action={deleteCustomerAccountAction} fields={{ id: a.id }} label={t("delete")} variant="destructive" confirm={t("deleteConfirm", { name: a.name })} iconOnly={false} icon={<Trash2 aria-hidden className="size-4 shrink-0" />} />
       </Section>
     </Page>
   );

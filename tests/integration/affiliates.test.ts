@@ -285,6 +285,15 @@ describe("Quản lý CTV + chi trả (P10b)", () => {
     const a = await makeAffiliate(f);
     await expect(recordPayout(a.id, {}, f.userId)).rejects.toMatchObject({ code: "nothing_due" });
   });
+
+  it("chứng từ chi trả: kiểm theo nội dung file, không tin mime khai báo", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 10 }]);
+    const a = await makeAffiliate(f);
+    const html = Buffer.from("<html><script>alert(1)</script></html>");
+    for (const mime of ["application/pdf", "image/png"]) {
+      await expect(recordPayout(a.id, {}, f.userId, { proof: { data: html, mime } })).rejects.toMatchObject({ code: "invalid_file" });
+    }
+  });
 });
 
 describe("Cổng CTV (P10c)", () => {

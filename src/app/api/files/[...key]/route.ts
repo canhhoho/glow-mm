@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { storage } from "@/server/adapters/storage";
 import { assertSafeKey } from "@/server/adapters/storage/types";
+import { PAYOUT_PROOF_PREFIX } from "@/server/affiliates/proof-policy";
 import { can } from "@/server/auth/roles";
 import { getStaffUser } from "@/server/auth/session";
 
@@ -20,7 +21,9 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/files/[...key]"
   const isPrivate = meta?.visibility === "PRIVATE" || key.startsWith("proofs/");
   if (isPrivate) {
     const user = await getStaffUser();
-    if (!user || !can(user.role, "orders:view")) return new Response("Not found", { status: 404 });
+    // Chứng từ chi trả hoa hồng CTV: chỉ người quản lý CTV; biên lai đơn hàng: nhân viên xem đơn.
+    const perm = key.startsWith(PAYOUT_PROOF_PREFIX) ? "affiliates:manage" : "orders:view";
+    if (!user || !can(user.role, perm)) return new Response("Not found", { status: 404 });
   }
 
   const s = await storage();

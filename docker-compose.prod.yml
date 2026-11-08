@@ -3,13 +3,25 @@
 #   (-p glow-prod: tách khỏi project dev để không đụng container/volume dev)
 # Biến môi trường: local lấy từ .env.prod (tuỳ chọn); Coolify nhập trong giao diện (Environment Variables).
 # Không publish cổng DB ra ngoài (Docker bỏ qua ufw với cổng đã publish).
+
+# Server dùng chung với web khác: cấm leo thang quyền trong container + giới hạn log (không đầy ổ đĩa).
+x-hardening: &hardening
+  security_opt:
+    - no-new-privileges:true
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
 services:
   db:
+    <<: *hardening
     image: postgres:17.6-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: glow
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-glow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Cần đặt POSTGRES_PASSWORD}
       POSTGRES_DB: glow
       TZ: UTC
     volumes:
@@ -21,17 +33,19 @@ services:
       retries: 20
 
   migrate:
+    <<: *hardening
     build:
       context: .
       target: migrator
     environment:
-      DATABASE_URL: postgresql://glow:${POSTGRES_PASSWORD:-glow}@db:5432/glow
+      DATABASE_URL: postgresql://glow:${POSTGRES_PASSWORD:?Cần đặt POSTGRES_PASSWORD}@db:5432/glow
     depends_on:
       db:
         condition: service_healthy
     restart: "no"
 
   app:
+    <<: *hardening
     build:
       context: .
       target: runner
@@ -47,7 +61,7 @@ services:
       - path: .env.prod
         required: false
     environment:
-      DATABASE_URL: postgresql://glow:${POSTGRES_PASSWORD:-glow}@db:5432/glow
+      DATABASE_URL: postgresql://glow:${POSTGRES_PASSWORD:?Cần đặt POSTGRES_PASSWORD}@db:5432/glow
       APP_URL: ${APP_URL:-http://localhost:3000}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Cần đặt BETTER_AUTH_SECRET}
       CRON_SECRET: ${CRON_SECRET:?Cần đặt CRON_SECRET}

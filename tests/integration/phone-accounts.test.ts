@@ -167,6 +167,44 @@ describe("Tài khoản khách bằng SĐT + mật khẩu (P17)", () => {
     const now = new Date();
     const results = await Promise.all(Array.from({ length: 10 }, () => hitRateLimit(key, 3, 60_000, now)));
     expect(results.filter(Boolean)).toHaveLength(3);
-    await prisma.rateLimit.delete({ where: { key } });
+    await prisma.appRateLimit.delete({ where: { key } });
+  });
+
+  it("đăng nhập SĐT: tối đa 10 lần / 10 phút cho mỗi SĐT, kể cả gọi thẳng API, kể cả qua email nội bộ", async () => {
+    const { phone } = await phoneCustomer();
+    for (let i = 0; i < 10; i++) await expect(signIn(phone, "sai-mat-khau-1")).rejects.toMatchObject({ statusCode: 401 });
+    // Lần 11: bị chặn dù mật khẩu đúng (kẻ dò không biết lần nào trúng).
+    await expect(signIn(phone)).rejects.toMatchObject({ statusCode: 429, body: { code: "TOO_MANY_LOGINS" } });
+    // Đường email với `<SĐT>@phone.glow.invalid` dùng chung bộ đếm.
+    await expect(
+      customerAuth.api.signInEmail({ body: { email: `${phone}@phone.glow.invalid`, password: PASSWORD } }),
+    ).rejects.toMatchObject({ statusCode: 429 });
+    await prisma.appRateLimit.deleteMany({ where: { key: `login:phone:${phone}` } });
+    expect((await signIn(phone)).token).toBeTruthy();
+  });
+
+  it("đăng ký SĐT: lượt báo 'đã có tài khoản' cũng bị đếm (không dò SĐT được)", async () => {
+    const { phone } = await phoneCustomer();
+    const ip = `it-probe-${randomBytes(3).toString("hex")}`;
+    const probe = () => registerPhoneCustomer({ name: "X", phone, password: PASSWORD, confirmPassword: PASSWORD }, { ip });
+    for (let i = 0; i < 10; i++) await expect(probe()).rejects.toMatchObject({ code: "phone_taken" });
+    await expect(probe()).rejects.toMatchObject({ code: "too_many" });
+  });
+
+  it("không đăng ký email được bằng địa chỉ nội bộ của tài khoản SĐT", async () => {
+    const email = `${randomPhone()}@phone.glow.invalid`;
+    await expect(customerAuth.api.signUpEmail({ body: { name: "Chiếm SĐT", email, password: PASSWORD } })).rejects.toBeTruthy();
+    expect(await prisma.user.count({ where: { email } })).toBe(0);
+  });
+
+  it("bộ đếm tự viết không bị Better Auth xoá khi nó dọn bảng rateLimit của nó", async () => {
+    const key = `it-keep:${randomBytes(3).toString("hex")}`;
+    const start = new Date(Date.now() - 5 * 60_000); // cửa sổ 10 phút bắt đầu 5 phút trước
+    await hitRateLimit(key, 2, 10 * 60_000, start);
+    // Better Auth `deleteExpiredRows`: xoá dòng `rateLimit` cũ hơn cửa sổ dài nhất của nó (60s).
+    await prisma.rateLimit.deleteMany({ where: { lastRequest: { lt: BigInt(Date.now() - 60_000) } } });
+    expect(await hitRateLimit(key, 2, 10 * 60_000)).toBe(true);
+    expect(await hitRateLimit(key, 2, 10 * 60_000)).toBe(false); // vẫn tính lượt đầu tiên 5 phút trước
+    await prisma.appRateLimit.delete({ where: { key } });
   });
 });

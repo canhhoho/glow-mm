@@ -171,7 +171,8 @@
     "Product.image",
     "Product.paoMonths",
     "Product.paoTitle",
-    "Product.related"
+    "Product.related",
+    "Track.tooMany"
   ],
   "admin": [
     "Affiliates.access",
@@ -1051,7 +1052,14 @@
     "Products.allCategories",
     "Products.allWarehouses",
     "Products.archived",
+    "Products.brandCancel",
+    "Products.brandDeleteConfirm",
+    "Products.brandDuplicate",
+    "Products.brandInUse",
+    "Products.brandMissing",
     "Products.brandNewHint",
+    "Products.brandViewProducts",
+    "Products.brandsEmpty",
     "Products.bulkDelete",
     "Products.bulkDone",
     "Products.bulkHide",

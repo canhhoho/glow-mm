@@ -14,6 +14,7 @@ import { email } from "@/server/adapters/email";
 import { ORDERS_COOKIE, parseOrderAccess } from "@/server/cart/cart";
 import { normalizeMmPhone } from "@/lib/phone";
 import { USER_INACTIVE } from "./roles";
+import { authBeforeHook } from "./login-limit";
 import {
   CUSTOMER_AUTH_BASE_PATH,
   CUSTOMER_COOKIE_PREFIX,
@@ -52,7 +53,9 @@ export const customerAuth = betterAuth({
   appName: BRAND_NAME,
   baseURL: process.env.APP_URL,
   basePath: CUSTOMER_AUTH_BASE_PATH,
-  secret: deriveCustomerSecret(process.env.BETTER_AUTH_SECRET ?? ""),
+  // Thiếu BETTER_AUTH_SECRET → để Better Auth dùng secret mặc định, nó tự từ chối chạy ở production
+  // (không suy ra từ chuỗi rỗng — sẽ thành secret cố định ai cũng tính được).
+  secret: process.env.BETTER_AUTH_SECRET ? deriveCustomerSecret(process.env.BETTER_AUTH_SECRET) : undefined,
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   advanced: { cookiePrefix: CUSTOMER_COOKIE_PREFIX, ipAddress: { ipAddressHeaders: IP_HEADERS } },
   emailAndPassword: {
@@ -93,6 +96,7 @@ export const customerAuth = betterAuth({
     max: 100,
     customRules: {
       "/sign-in/email": { window: 60, max: 20 },
+      "/sign-in/phone-number": { window: 60, max: 20 },
       "/sign-up/email": { window: 300, max: 10 },
       "/request-password-reset": { window: 600, max: 5 },
       "/send-verification-email": { window: 600, max: 5 },
@@ -123,6 +127,10 @@ export const customerAuth = betterAuth({
         // Bỏ SĐT client gửi kèm (vd đăng ký email kèm phoneNumber của người khác): tài khoản SĐT chỉ tạo qua
         // `registerPhoneCustomer` (P17), không qua API Better Auth.
         async before(user, ctx) {
+          // Email nội bộ của tài khoản SĐT không được đăng ký qua email (chiếm trước SĐT của người khác).
+          if (isPhoneEmail(String(user.email ?? ""))) {
+            throw APIError.from("BAD_REQUEST", { message: "Email không hợp lệ", code: NOT_CUSTOMER });
+          }
           const body = ctx?.body as { callbackURL?: unknown } | undefined;
           return {
             data: {
@@ -162,6 +170,8 @@ export const customerAuth = betterAuth({
     "/phone-number/request-password-reset",
     "/phone-number/reset-password",
   ],
+  // Giới hạn đăng nhập theo tài khoản (SĐT/email) — cả qua HTTP lẫn Server Action.
+  hooks: { before: authBeforeHook() },
   plugins: [
     phoneNumber({
       requireVerification: false,

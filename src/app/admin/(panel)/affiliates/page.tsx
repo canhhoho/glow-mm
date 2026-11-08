@@ -37,7 +37,7 @@ export default async function AffiliatesPage({ searchParams }: PageProps<"/admin
                 </span>
               )}
             </LinkButton>
-            <LinkButton href="/admin/affiliates/new" variant="primary" icon="new">
+            <LinkButton href="/admin/affiliates/new" variant="primary" icon="new" iconOnly={false}>
               {t("new")}
             </LinkButton>
           </>

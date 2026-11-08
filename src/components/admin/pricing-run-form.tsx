@@ -1,5 +1,6 @@
 "use client";
 
+import { Eye } from "lucide-react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ActionForm } from "@/components/admin/action-form";
@@ -41,7 +42,7 @@ export function PricingRunForm({
       {vn && rates.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("noRate")}</p>
       ) : (
-        <ActionForm action={previewRunAction} submitLabel={t("preview")} className="grid gap-3 sm:grid-cols-2">
+        <ActionForm action={previewRunAction} submitLabel={t("preview")} className="grid gap-3 sm:grid-cols-2" icon={<Eye aria-hidden className="size-4 shrink-0" />}>
           {receiptId && <input type="hidden" name="receiptId" value={receiptId} />}
           <label className={label}>
             <span className="text-muted-foreground">{t("warehouse")}</span>

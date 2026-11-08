@@ -1,3 +1,4 @@
+import { Calculator } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -81,7 +82,7 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
         ))}
       </dl>
       {batch.unitCostVnd != null && batch.landedCostVnd == null && batch.landedCostMmk == null && can(user.role, "stock:receive") && (
-        <ActionForm action={estimateBatchCostAction} submitLabel={ti("estimateAction")} okText={ti("estimateSaved")} className="space-y-3 rounded-lg border p-4">
+        <ActionForm action={estimateBatchCostAction} submitLabel={ti("estimateAction")} okText={ti("estimateSaved")} className="space-y-3 rounded-lg border p-4" icon={<Calculator aria-hidden className="size-4 shrink-0" />}>
           <input type="hidden" name="batchId" value={batch.id} />
           <p className="text-sm text-muted-foreground">{ti("estimateExistingHelp")}</p>
           <label className="grid max-w-sm gap-1 text-sm">

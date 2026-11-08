@@ -10,7 +10,8 @@ import { storage } from "@/server/adapters/storage";
 import { can, MIN_STAFF_PASSWORD, type Role } from "@/server/auth/roles";
 import type { Tx } from "@/server/inventory/ledger";
 import { normalizeMmPhone, phoneSearchDigits } from "@/lib/phone";
-import { PROOF_MAX_BYTES, PROOF_MIME } from "@/server/affiliates/proof-policy";
+import { PAYOUT_PROOF_PREFIX, PROOF_MAX_BYTES, PROOF_MIME } from "@/server/affiliates/proof-policy";
+import { sniffImageMime } from "@/server/files/public-images";
 import { getNumberSetting } from "@/server/settings";
 import { uplineSnapshot } from "./upline";
 import {
@@ -673,13 +674,15 @@ function dueRows(tx: Tx, affiliateId: string) {
 }
 
 async function storeProof(file: { data: Buffer; mime: string }) {
-  const ext = PROOF_MIME[file.mime];
-  if (!ext || file.data.length === 0 || file.data.length > PROOF_MAX_BYTES) {
+  // Định dạng theo nội dung file (magic bytes), không tin mime trình duyệt gửi lên.
+  const mime = file.data.subarray(0, 5).toString("ascii") === "%PDF-" ? "application/pdf" : sniffImageMime(file.data);
+  const ext = mime ? PROOF_MIME[mime] : undefined;
+  if (!mime || !ext || !PROOF_MIME[file.mime] || file.data.length > PROOF_MAX_BYTES) {
     throw new AffiliateError("invalid_file", "File biên nhận không hợp lệ (JPG/PNG/WebP/PDF, tối đa 5MB)");
   }
-  // Tiền tố proofs/ → /api/files coi là riêng tư (chỉ nhân viên xem).
-  const key = `proofs/payout-${randomBytes(16).toString("hex")}.${ext}`;
-  return (await storage()).put(key, file.data, file.mime);
+  // Tiền tố proofs/payout- → /api/files coi là riêng tư, chỉ người quản lý CTV (affiliates:manage) xem.
+  const key = `${PAYOUT_PROOF_PREFIX}${randomBytes(16).toString("hex")}.${ext}`;
+  return (await storage()).put(key, file.data, mime);
 }
 
 // ── Cổng CTV ──

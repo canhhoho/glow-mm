@@ -7,6 +7,7 @@ import { IP_HEADERS } from "@/lib/client-ip";
 import { prisma } from "@/lib/db";
 import { USER_INACTIVE } from "./roles";
 import { NOT_STAFF, staffSessionDecision } from "./customer-policy";
+import { authBeforeHook } from "./login-limit";
 
 /**
  * Better Auth cho NHÂN VIÊN + CTV (/api/auth). Tự đăng ký bị tắt; admin tạo tài khoản (Prisma trực tiếp).
@@ -24,7 +25,8 @@ export const auth = betterAuth({
     minPasswordLength: 8,
   },
   // Lưu trong DB để mọi instance (Vercel serverless / nhiều container) dùng chung bộ đếm.
-  // Nhân viên cùng cửa hàng thường chung 1 IP → nới giới hạn đăng nhập: 10 lần / 60 giây / IP.
+  // Nhân viên cùng cửa hàng thường chung 1 IP → nới giới hạn đăng nhập: 10 lần / 60 giây / IP
+  // (cộng thêm 10 lần / 10 phút / tài khoản ở `authBeforeHook`).
   rateLimit: {
     enabled: true,
     storage: "database",
@@ -66,5 +68,7 @@ export const auth = betterAuth({
       },
     },
   },
+  // Giới hạn đăng nhập theo tài khoản + ép mật khẩu nhân viên ≥ MIN_STAFF_PASSWORD khi đổi/đặt lại qua API.
+  hooks: { before: authBeforeHook({ staffPasswords: true }) },
   plugins: [nextCookies()],
 });

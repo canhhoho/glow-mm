@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
@@ -61,7 +62,7 @@ async function RatesTab() {
           action={createRateAction}
           submitLabel={t("addRate")}
           okText={t("rateAdded")}
-          className="grid grid-cols-2 gap-x-2 gap-y-3 [&>div:last-of-type]:col-span-full"
+          className="grid grid-cols-2 gap-x-2 gap-y-3 [&>div:last-of-type]:col-span-full" icon={<Plus aria-hidden className="size-4 shrink-0" />}
         >
           <RateInputs />
           <label className="col-span-full grid content-start gap-1 text-sm">

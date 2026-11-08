@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -42,9 +43,7 @@ export function ShipmentCreateForm() {
       </label>
       <div className="sm:col-span-2">
         <ErrorText error={state?.error} />
-        <Button size="lg" type="submit" disabled={pending}>
-          {t("create")}
-        </Button>
+        <Button size="lg" type="submit" disabled={pending}><Plus aria-hidden className="size-4 shrink-0" /> {t("create")}</Button>
       </div>
     </form>
   );
@@ -72,9 +71,7 @@ export function ShipmentCostForm({ shipmentId }: { shipmentId: string }) {
         <span className="text-muted-foreground">{t("note")}</span>
         <input name="note" className={fieldClass} />
       </label>
-      <Button size="lg" type="submit" disabled={pending}>
-        {t("addCost")}
-      </Button>
+      <Button size="lg" type="submit" disabled={pending}><Plus aria-hidden className="size-4 shrink-0" /> {t("addCost")}</Button>
       <div className="w-full">
         <ErrorText error={state?.error} />
       </div>
@@ -110,5 +107,5 @@ export function AllocateForm({ shipmentId, method }: { shipmentId: string; metho
 export function AttachBatchForm({ shipmentId, batches }: { shipmentId: string; batches: { id: string; sku: string; lotNo: string }[] }) {
   const t = useTranslations("Ship");
   const [state, action, pending] = useActionState(attachBatchAction, undefined);
-  return <form action={action} className="flex flex-wrap items-end gap-2"><input type="hidden" name="shipmentId" value={shipmentId} /><label className="grid gap-1 text-sm"><span>{t("unlinkedBatch")}</span><select name="batchId" required className={fieldClass} defaultValue=""><option value="" disabled>—</option>{batches.map(b => <option key={b.id} value={b.id}>{b.sku} · {b.lotNo}</option>)}</select></label><Button type="submit" disabled={pending || !batches.length}>{t("attachBatch")}</Button><ErrorText error={state?.error} />{state?.ok && <p role="status">{t("attached")}</p>}</form>;
+  return <form action={action} className="flex flex-wrap items-end gap-2"><input type="hidden" name="shipmentId" value={shipmentId} /><label className="grid gap-1 text-sm"><span>{t("unlinkedBatch")}</span><select name="batchId" required className={fieldClass} defaultValue=""><option value="" disabled>—</option>{batches.map(b => <option key={b.id} value={b.id}>{b.sku} · {b.lotNo}</option>)}</select></label><Button size="lg" type="submit" disabled={pending || !batches.length}><Plus aria-hidden className="size-4 shrink-0" /> {t("attachBatch")}</Button><ErrorText error={state?.error} />{state?.ok && <p role="status">{t("attached")}</p>}</form>;
 }

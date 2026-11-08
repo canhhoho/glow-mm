@@ -1,5 +1,6 @@
 "use client";
 
+import { Upload } from "lucide-react";
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { FileField } from "@/components/admin/file-field";
@@ -35,9 +36,7 @@ export function ProductImageUpload({ productId }: { productId: string }) {
     <form action={action} className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
         <FileField name="files" multiple required accept="image/jpeg,image/png,image/webp" aria-label={t("imagesUpload")} className="max-w-72" />
-        <Button size="lg" type="submit" disabled={pending}>
-          {pending ? t("imagesUploading") : t("upload")}
-        </Button>
+        <Button size="lg" type="submit" disabled={pending}><Upload aria-hidden className="size-4 shrink-0" /> {pending ? t("imagesUploading") : t("upload")}</Button>
       </div>
       <p className="text-xs text-muted-foreground">{t("imagesHelp")}</p>
       {state?.error && (

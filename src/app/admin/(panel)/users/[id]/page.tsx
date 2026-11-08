@@ -1,3 +1,4 @@
+import { LockKeyhole, LockKeyholeOpen, Trash2, KeyRound } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -60,7 +61,7 @@ export default async function EditUserPage({ params }: PageProps<"/admin/users/[
         <>
           <section className="space-y-2">
             <h2 className="font-medium">{t("resetTitle")}</h2>
-            <ActionForm action={resetStaffPasswordAction} submitLabel={t("reset")} okText={t("resetDone")} className="space-y-3">
+            <ActionForm action={resetStaffPasswordAction} submitLabel={t("reset")} okText={t("resetDone")} className="space-y-3" icon={<KeyRound aria-hidden className="size-4 shrink-0" />}>
               <input type="hidden" name="id" value={user.id} />
               <label className="grid content-start gap-1 text-sm">
                 <span>{t("tempPassword")}</span>
@@ -86,10 +87,10 @@ export default async function EditUserPage({ params }: PageProps<"/admin/users/[
               fields={{ id: user.id, active: String(!user.active) }}
               label={user.active ? t("lock") : t("unlock")}
               variant={user.active ? "destructive" : "outline"}
-              confirm={user.active ? t("lockConfirm", { name: user.name }) : undefined}
+              confirm={user.active ? t("lockConfirm", { name: user.name }) : undefined} iconOnly={false} icon={user.active ? <LockKeyhole aria-hidden className="size-4 shrink-0" /> : <LockKeyholeOpen aria-hidden className="size-4 shrink-0" />}
             />
             <p className="text-xs text-muted-foreground">{t("deleteHint")}</p>
-            <ActionButton action={deleteStaffAction} fields={{ id: user.id }} label={t("delete")} variant="destructive" confirm={t("deleteConfirm", { name: user.name })} />
+            <ActionButton action={deleteStaffAction} fields={{ id: user.id }} label={t("delete")} variant="destructive" confirm={t("deleteConfirm", { name: user.name })} iconOnly={false} icon={<Trash2 aria-hidden className="size-4 shrink-0" />} />
           </section>
         </>
       )}

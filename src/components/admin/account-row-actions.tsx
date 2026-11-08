@@ -10,7 +10,7 @@ type Action = (prev: ActionState, fd: FormData) => Promise<ActionState>;
 /**
  * Nút thao tác ở mỗi dòng danh sách tài khoản (Nhân viên, CTV, Khách hàng) — cùng một bộ icon:
  * bút chì = Sửa, ổ khoá = Khoá/Mở khoá, thùng rác hồng = Xoá. Mỗi nút có `aria-label` + chú thích khi rê chuột;
- * Khoá/Xoá hỏi xác nhận. Trang chi tiết dùng nút có chữ.
+ * Khoá/Xoá hỏi xác nhận. Trang chi tiết dùng icon kèm chữ.
  */
 export function AccountRowActions({
   editHref,

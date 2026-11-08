@@ -1,3 +1,4 @@
+import { Check, X } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { fmtDateTime } from "@/lib/format";
@@ -54,7 +55,7 @@ export default async function AffiliateApplicationsPage() {
                 </div>
               </div>
               <div className="mt-3 grid gap-4 md:grid-cols-[2fr_1fr]">
-                <ActionForm action={approveApplicationAction} submitLabel={t("apps.approve")} className="space-y-2">
+                <ActionForm action={approveApplicationAction} submitLabel={t("apps.approve")} className="space-y-2" icon={<Check aria-hidden className="size-4 shrink-0" />}>
                   <input type="hidden" name="id" value={a.id} />
                   <div className="grid gap-2 sm:grid-cols-2">
                     <label className="grid content-start gap-1 text-sm">
@@ -94,7 +95,7 @@ export default async function AffiliateApplicationsPage() {
                   okText={t("apps.rejected")}
                   variant="outline"
                   confirm={t("apps.rejectConfirm", { name: a.name })}
-                  className="space-y-2"
+                  className="space-y-2" icon={<X aria-hidden className="size-4 shrink-0" />}
                 >
                   <input type="hidden" name="id" value={a.id} />
                   <label className="grid content-start gap-1 text-sm">

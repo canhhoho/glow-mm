@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { Trash2 } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { rootCategories } from "@/server/catalog/admin-queries";
@@ -78,14 +79,15 @@ export default async function CategoriesPage({ searchParams }: PageProps<"/admin
             </Td>
             <Td>
               <div className="flex flex-wrap items-start gap-2">
-                <LinkButton href={`/admin/categories/${c.id}`}>{tp("edit")}</LinkButton>
+                <LinkButton href={`/admin/categories/${c.id}`} icon="edit" iconOnly={true}>{tp("edit")}</LinkButton>
                 {c.products === 0 && c.children === 0 && (
                   <ActionButton
                     action={deleteCategoryAction}
                     fields={{ categoryId: c.id }}
                     label={t("delete")}
                     variant="destructive"
-                    confirm={t("deleteConfirm", { slug: c.slug })}
+                    icon={<Trash2 aria-hidden className="size-4 shrink-0" />}
+                    confirm={t("deleteConfirm", { slug: c.slug })} iconOnly={true}
                   />
                 )}
               </div>

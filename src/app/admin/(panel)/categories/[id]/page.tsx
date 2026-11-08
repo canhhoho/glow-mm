@@ -1,3 +1,4 @@
+import { Trash2 } from "lucide-react";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -65,7 +66,7 @@ export default async function CategoryEditPage({ params }: PageProps<"/admin/cat
                 fields={{ categoryId: c.id }}
                 label={t("iconRemove")}
                 variant="destructive"
-                confirm={t("iconRemoveConfirm")}
+                confirm={t("iconRemoveConfirm")} iconOnly={false} icon={<Trash2 aria-hidden className="size-4 shrink-0" />}
               />
             )}
             <p className="text-xs text-muted-foreground">{t("iconHelp")}</p>

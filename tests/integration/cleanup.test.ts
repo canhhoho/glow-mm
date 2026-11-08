@@ -10,6 +10,7 @@ afterAll(async () => {
   await prisma.user.deleteMany({ where: { id: userId } });
   await prisma.rateLimit.deleteMany({ where: { key: { startsWith: `it-cleanup:${tag}` } } });
   await prisma.customerRateLimit.deleteMany({ where: { key: { startsWith: `it-cleanup:${tag}` } } });
+  await prisma.appRateLimit.deleteMany({ where: { key: { startsWith: `it-cleanup:${tag}` } } });
   await prisma.verification.deleteMany({ where: { identifier: { startsWith: `it-cleanup:${tag}` } } });
 });
 
@@ -24,6 +25,12 @@ describe("Job cleanup (P19)", () => {
 
     await prisma.rateLimit.createMany({ data: [rl("old", old), rl("fresh", fresh)] });
     await prisma.customerRateLimit.createMany({ data: [rl("old", old), rl("fresh", fresh)] });
+    await prisma.appRateLimit.createMany({
+      data: [
+        { key: `it-cleanup:${tag}:old`, count: 1, windowStart: old },
+        { key: `it-cleanup:${tag}:fresh`, count: 1, windowStart: fresh },
+      ],
+    });
     await prisma.user.create({ data: { id: userId, name: "Cleanup", email: `${userId}@glow.local` } });
     await prisma.session.createMany({
       data: [
@@ -47,6 +54,8 @@ describe("Job cleanup (P19)", () => {
     const keys = (await prisma.rateLimit.findMany({ where: { key: { startsWith: `it-cleanup:${tag}` } } })).map((x) => x.key);
     expect(keys).toEqual([`it-cleanup:${tag}:fresh`]);
     expect(await prisma.customerRateLimit.count({ where: { key: { startsWith: `it-cleanup:${tag}` } } })).toBe(1);
+    expect(r.appRateLimits).toBeGreaterThanOrEqual(1);
+    expect(await prisma.appRateLimit.count({ where: { key: { startsWith: `it-cleanup:${tag}` } } })).toBe(1);
     expect((await prisma.session.findMany({ where: { userId } })).map((s) => s.id)).toEqual([`${userId}-b`]);
     expect(await prisma.verification.count({ where: { identifier: { startsWith: `it-cleanup:${tag}` } } })).toBe(1);
   });

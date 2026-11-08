@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus, Trash2 } from "lucide-react";
 import { memo, startTransition, useActionState, useCallback, useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -365,9 +366,7 @@ export function ReceiveBulkForm({ locations, shipments, variants, lastShip = nul
       </div>
 
       <div className="sticky bottom-0 flex flex-wrap items-center gap-3 border-t bg-background py-3">
-        <Button size="lg" type="submit" disabled={pending}>
-          {t("saveDraft")}
-        </Button>
+        <Button size="lg" type="submit" disabled={pending}><Plus aria-hidden className="size-4 shrink-0" /> {t("saveDraft")}</Button>
         <span className="text-sm text-muted-foreground" aria-live="polite">
           {t("summary", { lines: filled.length, qty: fmtInt(totalQty), money })}
         </span>
@@ -466,13 +465,9 @@ const ReceiveRow = memo(function ReceiveRow({
         </select>
       </td>
       <td className={cn(cell, "whitespace-nowrap max-md:col-span-2")}>
-        <Button type="button" variant="outline" size="sm" onClick={() => onSplit(r.key)} title={t("splitLotHelp")}>
-          {t("addLot")}
-        </Button>
+        <Button type="button" variant="outline" size="lg" onClick={() => onSplit(r.key)} title={t("splitLotHelp")}><Plus aria-hidden className="size-4 shrink-0" /> {t("addLot")}</Button>
         {r.split && (
-          <Button type="button" variant="ghost" size="sm" onClick={() => onRemove(r.key)}>
-            {t("remove")}
-          </Button>
+          <Button type="button" variant="ghost" size="icon-lg" onClick={() => onRemove(r.key)} title={t("remove")} aria-label={t("remove")}><Trash2 aria-hidden className="size-4 shrink-0" /></Button>
         )}
       </td>
     </tr>

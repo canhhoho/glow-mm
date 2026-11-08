@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { MIN_STAFF_PASSWORD } from "@/server/auth/roles";
@@ -12,7 +13,7 @@ export default async function NewUserPage() {
   return (
     <Page width="narrow">
       <PageHeader title={t("new")} back={{ href: "/admin/users", label: td("back") }} />
-      <ActionForm action={createStaffAction} submitLabel={t("create")} className="space-y-3">
+      <ActionForm action={createStaffAction} submitLabel={t("create")} className="space-y-3" icon={<Plus aria-hidden className="size-4 shrink-0" />}>
         <label className="grid content-start gap-1 text-sm">
           <span>{t("name")}</span>
           <input name="name" required maxLength={100} className={fieldClass} />

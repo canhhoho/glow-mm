@@ -3,6 +3,7 @@
 import { startTransition, useActionState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { Save } from "lucide-react";
 import type { ActionState } from "@/server/inventory/actions";
 
 /**
@@ -17,6 +18,7 @@ export function ActionForm({
   className,
   variant = "default",
   confirm,
+  icon = <Save aria-hidden />,
 }: {
   action: (prev: ActionState, fd: FormData) => Promise<ActionState>;
   children: React.ReactNode;
@@ -25,6 +27,7 @@ export function ActionForm({
   className?: string;
   variant?: "default" | "outline" | "destructive";
   confirm?: string;
+  icon?: React.ReactNode;
 }) {
   const t = useTranslations("Docs");
   const [state, formAction, pending] = useActionState(action, undefined);
@@ -49,6 +52,7 @@ export function ActionForm({
       {/* self-end: form dạng lưới/flex → nút nằm đáy ô, thẳng hàng với ô nhập cùng hàng (nút cao bằng ô: size lg). */}
       <div className="flex flex-wrap items-center gap-3 self-end">
         <Button size="lg" type="submit" variant={variant} disabled={pending}>
+          {icon}
           {submitLabel}
         </Button>
         {state?.ok && !state.error && (

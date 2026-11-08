@@ -1,5 +1,6 @@
 "use client";
 
+import { Save } from "lucide-react";
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -85,9 +86,7 @@ export function AddressForm({
       )}
       {state?.error && <Notice tone="error">{state.error}</Notice>}
       <div className="flex gap-2">
-        <button type="submit" disabled={pending} className={`${primaryButton} flex-1`}>
-          {t("save")}
-        </button>
+        <button type="submit" disabled={pending} className={`${primaryButton} flex-1` + " gap-2"}><Save aria-hidden className="size-4 shrink-0" /> {t("save")}</button>
         {address && (
           <Link href="/account/addresses" className={outlineButton}>
             {t("cancel")}
@@ -110,9 +109,7 @@ export function ProfileForm({ locale, name }: { locale: string; name: string }) 
       </label>
       {state?.error && <Notice tone="error">{state.error}</Notice>}
       {state?.ok && <Notice tone="success">{t("saved")}</Notice>}
-      <button type="submit" disabled={pending} className={primaryButton}>
-        {t("save")}
-      </button>
+      <button type="submit" disabled={pending} className={primaryButton + " gap-2"}><Save aria-hidden className="size-4 shrink-0" /> {t("save")}</button>
     </form>
   );
 }

@@ -28,7 +28,7 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
       <PageHeader
         title={t("title")}
         actions={
-          <LinkButton href="/admin/users/new" variant="primary" icon="new">
+          <LinkButton href="/admin/users/new" variant="primary" icon="new" iconOnly={false}>
             {t("new")}
           </LinkButton>
         }

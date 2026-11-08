@@ -183,7 +183,8 @@
     "code": "Mã đơn",
     "phone": "Số điện thoại đặt hàng",
     "submit": "Tìm đơn",
-    "notFound": "Không có đơn nào khớp mã đơn và số điện thoại này"
+    "notFound": "Không có đơn nào khớp mã đơn và số điện thoại này",
+    "tooMany": "Thử quá nhiều lần. Vui lòng đợi vài phút rồi thử lại."
   },
   "Review": {
     "title": "Đánh giá sản phẩm",

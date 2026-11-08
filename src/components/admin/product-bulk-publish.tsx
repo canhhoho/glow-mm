@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { RotateCcw, Trash2 } from "lucide-react";
+import { Eye, EyeOff, ArrowRightLeft, RotateCcw, Trash2 } from "lucide-react";
 import { useActionState, useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -115,19 +115,14 @@ export function BulkPublishBar({
         <div className="ml-auto flex flex-wrap gap-2">
           {archivedView ? (
             <Button type="submit" name="intent" value="restore" size="lg" disabled={none}>
+              <RotateCcw aria-hidden className="size-4 shrink-0" />
               {t("bulkRestore")}
             </Button>
           ) : (
             <>
-              <Button type="submit" name="intent" value="publish" size="lg" disabled={none}>
-                {t("bulkPublish")}
-              </Button>
-              <Button type="submit" name="intent" value="hide" size="lg" variant="outline" disabled={none}>
-                {t("bulkHide")}
-              </Button>
-              <Button type="submit" name="intent" value="delete" size="lg" variant="destructive" disabled={none} onClick={confirmOr(t("deleteConfirm", { count: selected }))}>
-                {t("bulkDelete")}
-              </Button>
+              <Button type="submit" name="intent" value="publish" size="lg" disabled={none}><Eye aria-hidden className="size-4 shrink-0" /> {t("bulkPublish")}</Button>
+              <Button type="submit" name="intent" value="hide" size="lg" variant="outline" disabled={none}><EyeOff aria-hidden className="size-4 shrink-0" /> {t("bulkHide")}</Button>
+              <Button type="submit" name="intent" value="delete" size="lg" variant="destructive" disabled={none} onClick={confirmOr(t("deleteConfirm", { count: selected }))} title={t("bulkDelete")} aria-label={t("bulkDelete")}><Trash2 aria-hidden className="size-4 shrink-0" /> {t("bulkDelete")}</Button>
               {warehouses.length > 1 && (
                 <span className="flex items-center gap-1">
                   <select name="toLocationId" aria-label={t("moveTo")} defaultValue={warehouses[0].id} className={cn(fieldClass, "w-auto")}>
@@ -138,6 +133,7 @@ export function BulkPublishBar({
                     ))}
                   </select>
                   <Button type="submit" name="intent" value="move" size="lg" variant="outline" disabled={none} onClick={confirmOr(t("moveConfirm", { count: selected }))}>
+                    <ArrowRightLeft aria-hidden className="size-4 shrink-0" />
                     {t("bulkMove")}
                   </Button>
                 </span>

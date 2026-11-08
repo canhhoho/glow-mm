@@ -15,6 +15,7 @@ import { localePrefix } from "@/lib/site";
 import { prisma } from "@/lib/db";
 import { customerAuth } from "@/server/auth/customer-auth";
 import { safeNextPath } from "@/server/auth/customer-policy";
+import { TOO_MANY_LOGINS } from "@/server/auth/login-policy";
 import { requireCustomer } from "@/server/auth/customer-session";
 import { requirePermission } from "@/server/auth/session";
 import type { ActionState } from "@/server/inventory/actions";
@@ -38,6 +39,7 @@ function phoneErrorKey(e: unknown): string {
   }
   if (isAPIError(e)) {
     const code = e.body?.code;
+    if (code === TOO_MANY_LOGINS || e.status === "TOO_MANY_REQUESTS") return "tooMany";
     if (code === "USER_INACTIVE") return "locked";
     if (code === "NOT_CUSTOMER") return "notCustomer";
     return "invalidPhoneLogin";
@@ -62,7 +64,7 @@ export async function phoneSignInAction(raw: { phone: string; password: string; 
     const input = phoneLoginSchema.parse(raw);
     const phone = normalizeMmPhone(input.phone);
     if (!phone) return { error: "invalidPhone" };
-    await consumePhoneLoginLimit(clientIp(await headers()), phone);
+    await consumePhoneLoginLimit(clientIp(await headers()));
     await signInWithPhone(phone, input.password);
   } catch (e) {
     return { error: phoneErrorKey(e) };

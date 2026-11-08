@@ -1,3 +1,4 @@
+import { Pencil, Trash2 } from "lucide-react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -60,9 +61,7 @@ async function AddressesContent({ params, searchParams }: PageProps<"/[locale]/a
             </p>
             {a.note && <p className="text-muted-foreground">{a.note}</p>}
             <div className="flex flex-wrap gap-1 border-t border-border pt-1">
-              <Link href={{ pathname: "/account/addresses", query: { edit: a.id } }} className={`${smallButton} text-accent-foreground`}>
-                {t("edit")}
-              </Link>
+              <Link href={{ pathname: "/account/addresses", query: { edit: a.id } }} className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg border border-border hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:size-9" title={t("edit")} aria-label={t("edit")}><Pencil aria-hidden className="size-4 shrink-0" /></Link>
               {!a.isDefault && (
                 <form action={setDefaultAddressAction}>
                   <input type="hidden" name="locale" value={locale} />
@@ -75,9 +74,7 @@ async function AddressesContent({ params, searchParams }: PageProps<"/[locale]/a
               <form action={deleteAddressAction}>
                 <input type="hidden" name="locale" value={locale} />
                 <input type="hidden" name="id" value={a.id} />
-                <button type="submit" className={`${smallButton} text-destructive`}>
-                  {t("delete")}
-                </button>
+                <button type="submit" className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg border border-transparent bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:size-9" title={t("delete")} aria-label={t("delete")}><Trash2 aria-hidden className="size-4 shrink-0" /></button>
               </form>
             </div>
           </li>

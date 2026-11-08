@@ -1,5 +1,6 @@
 "use client";
 
+import { ListChecks, Printer, ClipboardList, Check, Truck, CheckCheck } from "lucide-react";
 import { startTransition, useActionState, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -64,6 +65,7 @@ export function BulkOrderBar({ transitions }: { transitions: BulkTransition[] })
     <div className="space-y-2 rounded-lg border bg-muted/30 p-3" data-testid="bulk-bar">
       <div className="flex flex-wrap items-center gap-2">
         <Button type="button" variant="outline" size="lg" onClick={toggleAll}>
+          <ListChecks aria-hidden className="size-4 shrink-0" />
           {t("bulk.toggleAll")}
         </Button>
         <span className="text-sm tabular-nums" role="status" data-testid="bulk-count">
@@ -71,13 +73,16 @@ export function BulkOrderBar({ transitions }: { transitions: BulkTransition[] })
         </span>
         <span className="mx-1 hidden h-6 border-l sm:inline-block" />
         <Button type="button" variant="outline" size="lg" disabled={count === 0} onClick={() => print("print-labels")}>
+          <Printer aria-hidden className="size-4 shrink-0" />
           {t("bulk.printLabels")}
         </Button>
         <Button type="button" variant="outline" size="lg" disabled={count === 0} onClick={() => print("pick-list")}>
+          <ClipboardList aria-hidden className="size-4 shrink-0" />
           {t("bulk.printPick")}
         </Button>
         {transitions.includes("confirmCod") && (
           <Button type="button" size="lg" disabled={none} onClick={() => run("confirmCod")}>
+            <Check aria-hidden className="size-4 shrink-0" />
             {t("bulk.confirmCod")}
           </Button>
         )}
@@ -91,12 +96,14 @@ export function BulkOrderBar({ transitions }: { transitions: BulkTransition[] })
               className={cn(fieldClass, "w-24")}
             />
             <Button type="button" size="lg" disabled={none || !carrier.trim()} onClick={() => run("ship")}>
+              <Truck aria-hidden className="size-4 shrink-0" />
               {t("bulk.ship")}
             </Button>
           </span>
         )}
         {transitions.includes("complete") && (
           <Button type="button" size="lg" disabled={none} onClick={() => run("complete")}>
+            <CheckCheck aria-hidden className="size-4 shrink-0" />
             {t("bulk.complete")}
           </Button>
         )}

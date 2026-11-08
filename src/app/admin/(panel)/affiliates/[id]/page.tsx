@@ -1,3 +1,4 @@
+import { LockKeyhole, LockKeyholeOpen, Trash2, Wallet, KeyRound } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -163,7 +164,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
                 submitLabel={t("pay")}
                 okText={t("paid")}
                 confirm={t("payConfirm", { amount: fmtInt(a.due.totalMmk), name: a.user.name })}
-                className="space-y-3"
+                className="space-y-3" icon={<Wallet aria-hidden className="size-4 shrink-0" />}
               >
                 <input type="hidden" name="id" value={a.id} />
                 {a.payoutInfo && <p className="text-sm whitespace-pre-line">{a.payoutInfo}</p>}
@@ -326,7 +327,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
         <div className="space-y-6">
           <section className="space-y-2">
             <h2 className="font-medium">{t("resetTitle")}</h2>
-            <ActionForm action={resetAffiliatePasswordAction} submitLabel={t("reset")} okText={t("resetDone")} className="space-y-3">
+            <ActionForm action={resetAffiliatePasswordAction} submitLabel={t("reset")} okText={t("resetDone")} className="space-y-3" icon={<KeyRound aria-hidden className="size-4 shrink-0" />}>
               <input type="hidden" name="id" value={a.id} />
               <label className="grid content-start gap-1 text-sm">
                 <span>{t("tempPassword")}</span>
@@ -350,10 +351,10 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
               fields={{ id: a.id, active: String(!a.active) }}
               label={a.active ? t("lock") : t("unlock")}
               variant={a.active ? "destructive" : "outline"}
-              confirm={a.active ? t("lockConfirm", { name: a.user.name }) : undefined}
+              confirm={a.active ? t("lockConfirm", { name: a.user.name }) : undefined} iconOnly={false} icon={a.active ? <LockKeyhole aria-hidden className="size-4 shrink-0" /> : <LockKeyholeOpen aria-hidden className="size-4 shrink-0" />}
             />
             <p className="text-xs text-muted-foreground">{t("deleteHint")}</p>
-            <ActionButton action={deleteAffiliateAction} fields={{ id: a.id }} label={t("delete")} variant="destructive" confirm={t("deleteConfirm", { name: a.user.name })} />
+            <ActionButton action={deleteAffiliateAction} fields={{ id: a.id }} label={t("delete")} variant="destructive" confirm={t("deleteConfirm", { name: a.user.name })} iconOnly={false} icon={<Trash2 aria-hidden className="size-4 shrink-0" />} />
           </section>
         </div>
       </div>

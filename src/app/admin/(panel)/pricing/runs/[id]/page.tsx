@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -171,7 +172,7 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
       )}
       {editable && pending > 0 ? (
         <>
-          <ActionForm action={applyRunAction} submitLabel={t("apply")} confirm={t("applyConfirm")}>
+          <ActionForm action={applyRunAction} submitLabel={t("apply")} confirm={t("applyConfirm")} icon={<Check aria-hidden className="size-4 shrink-0" />}>
             <input type="hidden" name="runId" value={run.id} />
             {table}
           </ActionForm>

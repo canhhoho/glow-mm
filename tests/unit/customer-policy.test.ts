@@ -74,6 +74,12 @@ describe("Tách phiên khách / nhân viên (P14)", () => {
     expect(safeNextPath("//evil.com")).toBe("/account");
     expect(safeNextPath("https://evil.com")).toBe("/account");
     expect(safeNextPath("/\\evil.com")).toBe("/account");
+    // Trình duyệt bỏ tab/xuống dòng: "/\t/evil.com" → "//evil.com".
+    expect(safeNextPath("/\t/evil.com")).toBe("/account");
+    expect(safeNextPath("/\n/evil.com")).toBe("/account");
+    expect(safeNextPath("/\r\n//evil.com")).toBe("/account");
+    expect(safeNextPath("/ /evil.com")).toBe("/account");
+    expect(safeNextPath("/en/p/son-moi?x=1#top")).toBe("/en/p/son-moi?x=1#top");
     expect(safeNextPath(undefined, "/")).toBe("/");
 
     expect(decodeCookieValue(encodeURIComponent('[{"c":"OD-1","p":"09"}]'))).toBe('[{"c":"OD-1","p":"09"}]');

@@ -11,7 +11,7 @@ describe("Nội dung trang chủ — phần thuần", () => {
     expect(linkSchema.parse("https://m.me/glow")).toBe("https://m.me/glow");
     expect(linkSchema.parse("")).toBeNull();
     expect(linkSchema.parse(undefined)).toBeNull();
-    for (const bad of ["javascript:alert(1)", "//evil.com/x", "http://a.com", "data:text/html,x", "c/skincare", "/a b"]) {
+    for (const bad of ["javascript:alert(1)", "//evil.com/x", "http://a.com", "data:text/html,x", "c/skincare", "/a b", "/\\evil.com", "/\t/evil.com", "https://evil.com\\@shop.test"]) {
       expect(linkSchema.safeParse(bad).success, bad).toBe(false);
     }
   });
