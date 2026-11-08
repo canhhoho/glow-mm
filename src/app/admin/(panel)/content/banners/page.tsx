@@ -20,7 +20,7 @@ export default async function BannersPage({ searchParams }: PageProps<"/admin/co
       <PageHeader
         title={t("bannersTitle")}
         actions={
-          <LinkButton href="/admin/content/banners/new" variant="primary">
+          <LinkButton href="/admin/content/banners/new" variant="primary" icon="new">
             {t("bannerNew")}
           </LinkButton>
         }

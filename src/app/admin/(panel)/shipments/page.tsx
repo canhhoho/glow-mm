@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { listShipments } from "@/server/inventory/queries";
-import { DataTable, Page, PageHeader, Td } from "@/components/admin/ui";
+import { DataTable, Page, PageHeader, Section, Td } from "@/components/admin/ui";
 import { ShipmentCreateForm } from "@/components/admin/shipment-forms";
 import { fmtDay, fmtInt } from "@/lib/format";
 
@@ -12,6 +12,9 @@ export default async function ShipmentsPage() {
   return (
     <Page>
       <PageHeader title={t("title")} />
+      <Section title={t("new")}>
+        <ShipmentCreateForm />
+      </Section>
       <DataTable stack empty={t("empty")} head={[t("code"), t("method"), t("departedAt"), t("batches"), t("totalCosts")]}>
         {shipments.map((s) => (
           <tr key={s.id}>
@@ -27,10 +30,6 @@ export default async function ShipmentsPage() {
           </tr>
         ))}
       </DataTable>
-      <section className="max-w-xl rounded-lg border p-4">
-        <h2 className="mb-3 font-medium">{t("new")}</h2>
-        <ShipmentCreateForm />
-      </section>
     </Page>
   );
 }

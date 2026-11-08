@@ -86,7 +86,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
             ))}
           </select>
         )}
-        <label className="flex items-center gap-1.5 text-sm">
+        <label className="flex h-9 items-center gap-1.5 text-sm">
           <input type="checkbox" name="overdue" value="1" defaultChecked={filter.overdue} />
           {t("overdueOnly")}
         </label>

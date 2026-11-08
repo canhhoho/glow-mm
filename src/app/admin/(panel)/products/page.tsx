@@ -11,6 +11,7 @@ import { BrandForm } from "@/components/admin/catalog-forms";
 import { BulkCheckbox, BulkPublishBar, RowProductAction } from "@/components/admin/product-bulk-publish";
 import { Badge, DataTable, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Td, fieldClass } from "@/components/admin/ui";
 import { fmtInt } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 const str = (v: string | string[] | undefined) => (typeof v === "string" && v ? v : undefined);
 
@@ -42,16 +43,17 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
         title={t("title")}
         actions={[
           <details key="brand" className="relative">
-            <summary className={`${buttonVariants({ variant: "outline", size: "sm" })} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
+            {/* cn(): gộp `border-transparent` (gốc) với `border-border` (outline) — nối chuỗi thô làm mất viền. */}
+            <summary className={cn(buttonVariants({ variant: "outline", size: "lg" }), "cursor-pointer list-none [&::-webkit-details-marker]:hidden")}>
               {t("newBrand")}
             </summary>
             <div className="absolute top-full right-0 z-20 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-lg border bg-background p-4 shadow-lg">
               <BrandForm />
             </div>
           </details>,
-          <Link key="category" href="/admin/categories#new-category" className={buttonVariants({ variant: "outline", size: "sm" })}>
+          <LinkButton key="category" href="/admin/categories#new-category">
             {t("newCategory")}
-          </Link>,
+          </LinkButton>,
           <LinkButton key="import" href="/admin/products/import">
             {t("import")}
           </LinkButton>,
@@ -159,7 +161,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
               <div className="flex flex-nowrap items-center gap-2">
                 <Link
                   href={`/admin/products/${p.id}`}
-                  className={buttonVariants({ variant: "outline", size: "icon-lg" })}
+                  className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }))}
                   aria-label={`${t("edit")} ${p.name}`}
                   title={t("edit")}
                 >

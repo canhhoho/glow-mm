@@ -32,7 +32,11 @@ describe("menu admin", () => {
       expect(shown.sort()).toEqual(NAV.flatMap(g => g.items).filter(i => can(role, i.permission)).map(i => i.href).sort());
     }
     expect(visibleNav("ADMIN").find(g => g.key === "groupAccounts")?.items.map(i => i.href)).toEqual([
-      "/admin/users", "/admin/affiliates", "/admin/customer-accounts",
+      "/admin/users", "/admin/customer-accounts",
+    ]);
+    // Danh sách CTV chỉ nằm ở nhóm Cộng tác viên (không lặp ở Tài khoản).
+    expect(visibleNav("ADMIN").find(g => g.key === "affiliates")?.items.map(i => i.href)).toEqual([
+      "/admin/affiliates", "/admin/affiliates/applications", "/admin/affiliates/commissions",
     ]);
     expect(visibleNav("ADMIN").find(g => g.key === "settings")?.items.filter(i => i.section).map(i => i.href)).toEqual([
       "/admin/content/banners", "/admin/content/collections",

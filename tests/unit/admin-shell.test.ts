@@ -41,10 +41,10 @@ describe("admin shell accordion", () => {
     expect(html).toMatch(/aria-label="Vị trí trang"[^]*?Cài đặt[^]*?Nội dung trang chủ[^]*?Banner/);
   });
 
-  it("keeps affiliate profile pages under Accounts and commission pages under Affiliates", () => {
+  it("keeps affiliate list, profile and commission pages under the Affiliates group", () => {
     const profile = renderMenu("/admin/affiliates/person-1");
     const profileGroup = profile.match(/<details open="" class="group\/nav">([^]*?)<\/summary>/)?.[1];
-    expect(profileGroup).toContain("Tài khoản");
+    expect(profileGroup).toContain("Cộng tác viên");
     expect(profile).toContain('href="/admin/affiliates" aria-current="page"');
     const commissions = renderMenu("/admin/affiliates/commissions");
     const commissionGroup = commissions.match(/<details open="" class="group\/nav">([^]*?)<\/summary>/)?.[1];

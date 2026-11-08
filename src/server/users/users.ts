@@ -11,9 +11,10 @@ import { MIN_STAFF_PASSWORD, ROLES, type Role as StaffRole } from "@/server/auth
  * Quản lý tài khoản nhân viên (P8): tạo, đổi tên/vai trò/email, khoá/mở khoá, đặt lại mật khẩu.
  * Mật khẩu băm bằng `better-auth/crypto` (giống seed) và lưu ở `Account` providerId "credential".
  * Khoá / đặt lại mật khẩu → xoá mọi phiên của người đó. Luôn còn ít nhất 1 ADMIN đang hoạt động.
+ * Xoá chỉ cho tài khoản tạo nhầm (chưa có thao tác/dữ liệu nào) — người đã làm việc thì khoá để giữ lịch sử.
  */
 
-export type UserErrorCode = "email_taken" | "not_found" | "self" | "last_admin";
+export type UserErrorCode = "email_taken" | "not_found" | "self" | "last_admin" | "in_use";
 
 export class UserError extends Error {
   constructor(
@@ -187,5 +188,46 @@ export async function resetStaffPassword(id: string, rawPassword: unknown, actor
     }
     await tx.session.deleteMany({ where: { userId: id } });
     await tx.auditLog.create({ data: { userId: actorId, action: "user.resetPassword", entity: "User", entityId: id } });
+  });
+}
+
+/**
+ * Tài khoản đã để lại dấu vết nghiệp vụ? Các cột người thao tác là chuỗi thường (không FK) nên phải đếm từng bảng;
+ * nhật ký thao tác (`AuditLog.userId`) bắt gần như mọi việc nhân viên đã làm.
+ */
+async function staffHasData(tx: Prisma.TransactionClient, id: string) {
+  const counts: (() => Promise<number>)[] = [
+    () => tx.auditLog.count({ where: { userId: id } }),
+    () => tx.order.count({ where: { OR: [{ createdById: id }, { accountId: id }] } }),
+    () => tx.orderStatusHistory.count({ where: { userId: id } }),
+    () => tx.orderPick.count({ where: { printedById: id } }),
+    () => tx.paymentProof.count({ where: { reviewedById: id } }),
+    () => tx.stockDocument.count({ where: { OR: [{ createdById: id }, { postedById: id }] } }),
+    () => tx.stockLedger.count({ where: { userId: id } }),
+    () => tx.exchangeRate.count({ where: { createdById: id } }),
+    () => tx.priceUpdateRun.count({ where: { createdById: id } }),
+    () => tx.priceHistory.count({ where: { userId: id } }),
+    () => tx.shipmentAllocation.count({ where: { createdById: id } }),
+    () => tx.catalogOpeningImport.count({ where: { userId: id } }),
+    () => tx.affiliatePayout.count({ where: { createdById: id } }),
+    () => tx.affiliateApplication.count({ where: { reviewedById: id } }),
+  ];
+  // Tuần tự: cùng một kết nối của interactive transaction.
+  for (const count of counts) if ((await count()) > 0) return true;
+  return false;
+}
+
+/** Xoá nhân viên tạo nhầm. Không xoá chính mình, ADMIN cuối cùng, hay tài khoản đã có thao tác/dữ liệu (`in_use`). */
+export async function deleteStaff(id: string, actorId: string) {
+  if (id === actorId) throw new UserError("self", "Không thể tự xoá tài khoản của mình");
+  await prisma.$transaction(async (tx) => {
+    const cur = await lockStaff(tx, id);
+    if (!(ROLES as readonly string[]).includes(cur.role)) throw new UserError("not_found", "Không tìm thấy nhân viên");
+    if (cur.role === "ADMIN" && cur.active) await assertOtherActiveAdmin(tx, id);
+    if (await staffHasData(tx, id)) throw new UserError("in_use", "Nhân viên đã có dữ liệu liên quan; hãy khoá tài khoản");
+    await tx.user.delete({ where: { id } }); // phiên + mật khẩu xoá theo (onDelete: Cascade)
+    await tx.auditLog.create({
+      data: { userId: actorId, action: "user.delete", entity: "User", entityId: id, data: { email: cur.email, role: cur.role } },
+    });
   });
 }

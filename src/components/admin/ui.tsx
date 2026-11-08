@@ -76,13 +76,16 @@ export function LinkButton({
   );
 }
 
-/** Thanh lọc (GET, chạy không cần JS): ô tìm + select + nút Lọc; điện thoại: ô tìm cả hàng, select ~2 ô một hàng. */
+/**
+ * Thanh lọc (GET, chạy không cần JS): ô tìm + select + nút Lọc; điện thoại: ô tìm cả hàng, select ~2 ô một hàng.
+ * Căn đáy (`items-end`): ô có nhãn phía trên (ngày) vẫn thẳng hàng với ô không nhãn.
+ */
 export function FilterBar({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <form
       role="search"
       className={cn(
-        "flex flex-wrap items-center gap-2 [&>select]:min-w-0 [&>select]:flex-[1_1_9rem] sm:[&>select]:w-auto sm:[&>select]:flex-none",
+        "flex flex-wrap items-end gap-2 [&>select]:min-w-0 [&>select]:flex-[1_1_9rem] sm:[&>select]:w-auto sm:[&>select]:flex-none",
         className,
       )}
     >
@@ -164,7 +167,8 @@ export function Section({
   testId?: string;
 }) {
   return (
-    <section className={cn("space-y-3 rounded-lg border p-4", className)} data-testid={testId}>
+    // Tiêu đề chữ → section có tên (role region) để trình đọc màn hình/E2E tìm theo tên khối.
+    <section className={cn("space-y-3 rounded-lg border p-4", className)} data-testid={testId} aria-label={typeof title === "string" ? title : undefined}>
       {(title || actions) && (
         <div className="flex flex-wrap items-center justify-between gap-2">
           {title && <h2 className="font-medium">{title}</h2>}

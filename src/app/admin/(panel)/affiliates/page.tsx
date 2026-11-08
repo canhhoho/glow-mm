@@ -6,7 +6,7 @@ import { bpToPercent } from "@/server/affiliates/commission";
 import { listAffiliates } from "@/server/affiliates/affiliates";
 import { pendingApplicationsCount } from "@/server/affiliates/applications";
 import { deleteAffiliateAction, setAffiliateActiveAction } from "@/server/affiliates/actions";
-import { ActionButton } from "@/components/admin/action-button";
+import { AccountRowActions } from "@/components/admin/account-row-actions";
 import { Badge, DataTable, fieldClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Td } from "@/components/admin/ui";
 
 const str = (v: string | string[] | undefined) => (typeof v === "string" ? v.trim() : "");
@@ -57,7 +57,7 @@ export default async function AffiliatesPage({ searchParams }: PageProps<"/admin
       <DataTable
         stack
         empty={active === undefined ? t("empty") : t("emptyFiltered")}
-        head={[t("colCtv"), t("colCode"), t("colPercent"), t("colMonthSales"), t("colPending"), t("colPayable"), t("colPaid"), t("actions")]}
+        head={[t("colCtv"), t("colCode"), t("colPercent"), t("colMonthSales"), t("colPending"), t("colPayable"), t("colPaid"), <span key="actions" className="block md:text-right">{t("actions")}</span>]}
         numeric={[3, 4, 5, 6]}
       >
         {affiliates.map((a) => (
@@ -83,18 +83,20 @@ export default async function AffiliatesPage({ searchParams }: PageProps<"/admin
             <Td label={t("colPending")} className="text-right tabular-nums">{fmtInt(a.summary.pendingMmk)}</Td>
             <Td label={t("colPayable")} className="text-right font-medium tabular-nums">{fmtInt(a.summary.payableMmk)}</Td>
             <Td label={t("colPaid")} className="text-right tabular-nums">{fmtInt(a.summary.paidMmk)}</Td>
-            <Td label={t("actions")}>
-              <div className="flex flex-wrap items-start gap-2">
-                <LinkButton href={`/admin/affiliates/${a.id}#profile`}>{t("edit")}</LinkButton>
-                <ActionButton
-                  action={setAffiliateActiveAction}
-                  fields={{ id: a.id, active: String(!a.active) }}
-                  label={a.active ? t("lock") : t("unlock")}
-                  variant="outline"
-                  confirm={a.active ? t("lockConfirm", { name: a.user.name }) : undefined}
-                />
-                <ActionButton action={deleteAffiliateAction} fields={{ id: a.id }} label={t("delete")} variant="destructive" confirm={t("deleteConfirm", { name: a.user.name })} />
-              </div>
+            <Td label={t("actions")} className="align-middle md:w-px md:whitespace-nowrap">
+              <AccountRowActions
+                editHref={`/admin/affiliates/${a.id}#profile`}
+                editLabel={t("edit")}
+                lock={{
+                  action: setAffiliateActiveAction,
+                  fields: { id: a.id, active: String(!a.active) },
+                  active: a.active,
+                  lockLabel: t("lock"),
+                  unlockLabel: t("unlock"),
+                  confirm: t("lockConfirm", { name: a.user.name }),
+                }}
+                remove={{ action: deleteAffiliateAction, fields: { id: a.id }, label: t("delete"), confirm: t("deleteConfirm", { name: a.user.name }) }}
+              />
             </Td>
           </tr>
         ))}

@@ -10,14 +10,14 @@ test("dashboard (admin) + báo cáo có số liệu từ đơn mẫu seed", asyn
   await page.screenshot({ path: "test-results/screens/dashboard.png", fullPage: true });
 
   await page.getByRole("link", { name: "Xem báo cáo" }).click();
-  await expect(page.getByRole("heading", { name: "Báo cáo" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bán hàng & lợi nhuận" })).toBeVisible();
   // Seed có đơn mẫu hoàn tất trong 30 ngày → doanh thu > 0.
   await expect(page.getByTestId("r-orders")).not.toContainText(/\b0$/);
   await expect(page.getByTestId("stock-THAM")).toBeVisible();
   await page.screenshot({ path: "test-results/screens/reports.png", fullPage: true });
 
   // D0: báo cáo sức khoẻ dữ liệu (chỉ đọc) + tải mốc JSON.
-  await page.getByRole("link", { name: "Sức khoẻ dữ liệu" }).click();
+  await page.getByRole("main").getByRole("link", { name: "Sức khoẻ dữ liệu" }).click();
   await expect(page.getByRole("heading", { name: "Sức khoẻ dữ liệu" })).toBeVisible();
   for (const id of ["health-catalog", "health-cost", "health-operations", "health-baseline"]) await expect(page.getByTestId(id)).toBeVisible();
   await expect(page.getByTestId("check-publishedZeroPrice")).toContainText("SP đang hiển thị có giá bán ≤ 0");

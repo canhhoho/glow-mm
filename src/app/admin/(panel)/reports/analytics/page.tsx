@@ -25,7 +25,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/admin/
     <form key={`${from}|${to}`} className="flex flex-wrap items-end gap-3">
       <label className="grid gap-1 text-sm"><span>{t("from")}</span><input name="from" type="date" defaultValue={from} className={fieldClass} /></label>
       <label className="grid gap-1 text-sm"><span>{t("to")}</span><input name="to" type="date" defaultValue={to} className={fieldClass} /></label>
-      <FilterButton>{t("apply")}</FilterButton>
+      <FilterButton>{(await getTranslations("Common"))("filter")}</FilterButton>
     </form>
     <p className="text-sm text-muted-foreground">{t("collection", { started: report.startedAt ? fmtDateTime(report.startedAt) : "—", days: report.activeDays })}</p>
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

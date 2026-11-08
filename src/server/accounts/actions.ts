@@ -22,7 +22,7 @@ import { normalizeMmPhone } from "@/lib/phone";
 import { ORDERS_COOKIE } from "@/server/cart/cart";
 import type { StoreActionState } from "@/server/cart/actions";
 import { AccountError, createAddress, deleteAddress, setDefaultAddress, updateAddress, updateProfile } from "./accounts";
-import { CustomerAccountError, resetCustomerPassword, setCustomerActive } from "./admin";
+import { CustomerAccountError, deleteCustomerAccount, resetCustomerPassword, setCustomerActive, updateCustomerAccount } from "./admin";
 import { consumePhoneLoginLimit, MIN_CUSTOMER_PASSWORD, PhoneAccountError, registerPhoneCustomer } from "./phone";
 
 /** Server Action khu tài khoản khách (P14b) + đăng ký/đăng nhập bằng SĐT (P17). `requireCustomer` → userId lấy từ phiên. */
@@ -212,7 +212,7 @@ export async function resetCustomerPasswordAction(_prev: ActionState, formData: 
     if (e instanceof ZodError) return { error: t("err.password", { min: MIN_CUSTOMER_PASSWORD }) };
     return { error: e instanceof Error ? e.message : String(e) };
   }
-  revalidatePath("/admin/customer-accounts");
+  revalidatePath("/admin/customer-accounts", "layout");
   return { ok: t("passwordReset") };
 }
 
@@ -225,6 +225,40 @@ export async function setCustomerActiveAction(_prev: ActionState, formData: Form
     if (e instanceof CustomerAccountError) return { error: t(`err.${e.code}`) };
     return { error: e instanceof Error ? e.message : String(e) };
   }
-  revalidatePath("/admin/customer-accounts");
+  revalidatePath("/admin/customer-accounts", "layout");
   return { ok: t("saved") };
+}
+
+/** Sửa tên / SĐT đăng nhập của khách (trang `/admin/customer-accounts/[id]`). */
+export async function updateCustomerAccountAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const t = await getTranslations("Customers");
+  try {
+    const user = await requirePermission("users:manage");
+    const phone = formData.get("phone");
+    await updateCustomerAccount(
+      adminIdSchema.parse(formData.get("id")),
+      { name: String(formData.get("name") ?? ""), phone: phone === null ? undefined : String(phone) },
+      user.id,
+    );
+  } catch (e) {
+    if (e instanceof CustomerAccountError) return { error: t(`err.${e.code}`) };
+    if (e instanceof ZodError) return { error: t("err.invalid") };
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+  revalidatePath("/admin/customer-accounts", "layout");
+  return { ok: t("saved") };
+}
+
+/** Xoá tài khoản khách chưa có đơn — xong quay về danh sách. */
+export async function deleteCustomerAccountAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const t = await getTranslations("Customers");
+  try {
+    const user = await requirePermission("users:manage");
+    await deleteCustomerAccount(adminIdSchema.parse(formData.get("id")), user.id);
+  } catch (e) {
+    if (e instanceof CustomerAccountError) return { error: t(`err.${e.code}`) };
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+  revalidatePath("/admin/customer-accounts", "layout");
+  nextRedirect("/admin/customer-accounts");
 }

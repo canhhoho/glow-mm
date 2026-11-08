@@ -32,11 +32,12 @@
     "productList": "Danh sách sản phẩm",
     "codSettlement": "Đối soát COD",
     "brands": "Thương hiệu",
+    "affiliateList": "Danh sách CTV",
     "affiliateApplications": "Đơn đăng ký",
     "affiliateCommissions": "Hoa hồng & chi trả",
     "salesReports": "Bán hàng & lợi nhuận",
-    "analyticsReports": "Phân tích truy cập",
-    "dataHealth": "Kiểm tra dữ liệu",
+    "analyticsReports": "Hành vi mua hàng",
+    "dataHealth": "Sức khoẻ dữ liệu",
     "storeSettings": "Cấu hình cửa hàng",
     "warehouseManagement": "Quản lý kho",
     "subtitle": "Quản trị",
@@ -1191,9 +1192,13 @@
       "tooShort": "Mật khẩu phải có ít nhất {min} ký tự",
       "email_taken": "Email đã được dùng cho tài khoản khác",
       "not_found": "Không tìm thấy nhân viên",
-      "self": "Không thể tự thay đổi vai trò, email, khoá hay đặt lại mật khẩu cho chính mình",
-      "last_admin": "Phải còn ít nhất 1 quản trị viên đang hoạt động"
-    }
+      "self": "Không thể tự thay đổi vai trò, email, khoá, xoá hay đặt lại mật khẩu cho chính mình",
+      "last_admin": "Phải còn ít nhất 1 quản trị viên đang hoạt động",
+      "in_use": "Nhân viên đã có thao tác hoặc dữ liệu liên quan; hãy khoá tài khoản để giữ lịch sử."
+    },
+    "delete": "Xoá tài khoản",
+    "deleteConfirm": "Xoá tài khoản nhân viên {name}? Thao tác này không thể hoàn tác.",
+    "deleteHint": "Chỉ xoá được tài khoản tạo nhầm, chưa có thao tác nào. Nhân viên đã làm việc thì dùng Khoá để giữ lịch sử."
   },
   "Batch": {
     "title": "Lô {lotNo}",
@@ -1220,9 +1225,9 @@
   "Affiliates": {
     "actions": "Thao tác",
     "edit": "Sửa",
-    "delete": "Xóa CTV",
-    "deleteConfirm": "Xóa tài khoản CTV {name}? Thao tác này không thể hoàn tác.",
-    "deleteHint": "Chỉ xóa tài khoản chưa có đơn hàng, chi trả, tuyến dưới hoặc đơn đăng ký liên quan. Tài khoản đã phát sinh dữ liệu nên dùng chức năng khóa.",
+    "delete": "Xoá tài khoản",
+    "deleteConfirm": "Xoá tài khoản CTV {name}? Thao tác này không thể hoàn tác.",
+    "deleteHint": "Chỉ xoá tài khoản chưa có đơn hàng, chi trả, tuyến dưới hoặc đơn đăng ký liên quan. Tài khoản đã phát sinh dữ liệu nên dùng chức năng khoá.",
     "title": "Cộng tác viên",
     "new": "Thêm CTV",
     "create": "Tạo CTV",
@@ -1264,8 +1269,8 @@
     "reset": "Đặt lại",
     "resetDone": "Đã đặt lại mật khẩu",
     "access": "Truy cập",
-    "lock": "Khoá CTV",
-    "unlock": "Mở khoá",
+    "lock": "Khoá tài khoản",
+    "unlock": "Mở khoá tài khoản",
     "lockConfirm": "Khoá {name}? CTV không đăng nhập được và link giới thiệu ngừng tính.",
     "lockHint": "Khoá: CTV không đăng nhập được, link giới thiệu ngừng tính. Hoa hồng đã phát sinh vẫn giữ.",
     "unlockHint": "Mở khoá để CTV đăng nhập và link giới thiệu được tính lại.",
@@ -1322,7 +1327,7 @@
     "rate": "% chốt trên đơn",
     "pickLabel": "CTV (không bắt buộc)",
     "errors": {
-      "in_use": "CTV đã có đơn hàng, chi trả, tuyến dưới hoặc đơn đăng ký liên quan. Hãy khóa tài khoản để giữ lịch sử.",
+      "in_use": "CTV đã có đơn hàng, chi trả, tuyến dưới hoặc đơn đăng ký liên quan. Hãy khoá tài khoản để giữ lịch sử.",
       "email_taken": "Email đã được dùng cho tài khoản khác",
       "code_taken": "Mã giới thiệu đã được dùng",
       "invalid_code": "Mã giới thiệu 4–12 ký tự A–Z, 0–9",
@@ -1540,15 +1545,29 @@
     "resetPassword": "Đặt lại mật khẩu",
     "tempPassword": "Mật khẩu tạm (≥ {min} ký tự)",
     "passwordReset": "Đã đặt mật khẩu tạm — khách bị đăng xuất khỏi mọi thiết bị",
-    "lock": "Khoá",
-    "unlock": "Mở khoá",
+    "lock": "Khoá tài khoản",
+    "unlock": "Mở khoá tài khoản",
     "lockConfirm": "Khoá tài khoản {name}? Khách sẽ bị đăng xuất và không đăng nhập được.",
     "saved": "Đã lưu",
     "err": {
       "not_found": "Không tìm thấy tài khoản khách",
       "no_password": "Tài khoản đăng nhập bằng Google, không có mật khẩu",
-      "password": "Mật khẩu tạm cần ít nhất {min} ký tự"
-    }
+      "password": "Mật khẩu tạm cần ít nhất {min} ký tự",
+      "in_use": "Khách đã có đơn hàng; hãy khoá tài khoản để giữ lịch sử.",
+      "phone_taken": "Số điện thoại đã được dùng cho tài khoản khác",
+      "invalid_phone": "Số điện thoại không hợp lệ",
+      "invalid": "Dữ liệu không hợp lệ"
+    },
+    "deleteConfirm": "Xoá tài khoản khách {name}? Thao tác này không thể hoàn tác.",
+    "deleteHint": "Chỉ xoá được tài khoản chưa có đơn hàng. Khách đã mua hàng thì dùng Khoá để giữ lịch sử.",
+    "phoneHint": "Đổi số thì khách đăng nhập bằng số mới.",
+    "lockHint": "Khoá → khách bị đăng xuất và không đăng nhập được. Đơn hàng cũ vẫn giữ nguyên.",
+    "edit": "Sửa",
+    "delete": "Xoá tài khoản",
+    "profile": "Thông tin",
+    "save": "Lưu",
+    "access": "Quyền truy cập",
+    "phone": "Số điện thoại"
   },
   "VtpExport": {
     "title": "Xuất đơn sang VTP Myanmar",

@@ -80,8 +80,8 @@ test("admin: tạo CTV, gán vào đơn, đơn hoàn tất rồi ghi nhận chi 
   const row = page.getByTestId("affiliate-row");
   await expect(row.getByRole("link", { name: "Sửa", exact: true })).toHaveAttribute("href", /#profile$/);
   page.once("dialog", (d) => d.accept());
-  await row.getByRole("button", { name: "Xóa CTV", exact: true }).click();
-  await expect(row.getByRole("alert")).toContainText("Hãy khóa tài khoản");
+  await row.getByRole("button", { name: "Xoá tài khoản", exact: true }).click();
+  await expect(row.getByRole("alert")).toContainText("Hãy khoá tài khoản");
 });
 
 test("admin: sửa CTV từ danh sách, hủy xác nhận rồi xóa tài khoản chưa có dữ liệu", async ({ page }) => {
@@ -107,10 +107,10 @@ test("admin: sửa CTV từ danh sách, hủy xác nhận rồi xóa tài khoả
   const row = page.getByTestId("affiliate-row");
   await expect(row).toContainText(`Updated ${code}`);
   page.once("dialog", (d) => d.dismiss());
-  await row.getByRole("button", { name: "Xóa CTV", exact: true }).click();
+  await row.getByRole("button", { name: "Xoá tài khoản", exact: true }).click();
   await expect(row).toHaveCount(1);
   page.once("dialog", (d) => d.accept());
-  await row.getByRole("button", { name: "Xóa CTV", exact: true }).click();
+  await row.getByRole("button", { name: "Xoá tài khoản", exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/affiliates$/);
   await page.goto(`/admin/affiliates?q=${code}`);
   await expect(page.getByTestId("affiliate-row")).toHaveCount(0);
@@ -134,8 +134,8 @@ test("admin: khóa CTV từ danh sách → CTV không đăng nhập được; m�
   await page.goto(`/admin/affiliates?q=${code}`);
   const row = page.getByTestId("affiliate-row");
   page.once("dialog", (d) => d.accept());
-  await row.getByRole("button", { name: "Khoá CTV", exact: true }).click();
-  await expect(row.getByRole("button", { name: "Mở khoá", exact: true })).toBeVisible();
+  await row.getByRole("button", { name: "Khoá tài khoản", exact: true }).click();
+  await expect(row.getByRole("button", { name: "Mở khoá tài khoản", exact: true })).toBeVisible();
   await expect(row).toContainText("Đã khoá");
 
   const ctvContext = await browser.newContext();
@@ -148,8 +148,8 @@ test("admin: khóa CTV từ danh sách → CTV không đăng nhập được; m�
     await ctv.getByRole("button", { name: "Đăng nhập" }).click();
     await expect(ctv.getByRole("alert").filter({ hasText: "Tài khoản đã bị khoá" })).toBeVisible();
 
-    await row.getByRole("button", { name: "Mở khoá", exact: true }).click();
-    await expect(row.getByRole("button", { name: "Khoá CTV", exact: true })).toBeVisible();
+    await row.getByRole("button", { name: "Mở khoá tài khoản", exact: true }).click();
+    await expect(row.getByRole("button", { name: "Khoá tài khoản", exact: true })).toBeVisible();
     await expect(row).not.toContainText("Đã khoá");
 
     await ctv.getByRole("button", { name: "Đăng nhập" }).click();
