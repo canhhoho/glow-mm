@@ -3,6 +3,7 @@
  * Hai instance Better Auth dùng chung bảng user/session: mỗi instance chỉ cho tạo phiên với role của mình.
  */
 import { createHmac } from "node:crypto";
+import { isSafeInternalPath } from "@/lib/safe-path";
 import { AFFILIATE_ROLE, NOT_STAFF, ROLES } from "./roles";
 
 export { NOT_STAFF };
@@ -66,8 +67,7 @@ export function localeFromCallback(callbackURL: unknown): "my" | "en" | "vi" {
 
 /** `?next=` chỉ nhận đường dẫn nội bộ (chống open redirect); sai → fallback. */
 export function safeNextPath(raw: unknown, fallback = "/account"): string {
-  if (typeof raw !== "string" || !raw.startsWith("/") || raw.startsWith("//") || raw.includes("\\")) return fallback;
-  return raw;
+  return isSafeInternalPath(raw) ? raw : fallback;
 }
 
 /** Giá trị cookie có thể đã được encodeURIComponent (Next `cookies().set`). */

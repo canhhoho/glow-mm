@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isSafeInternalPath } from "@/lib/safe-path";
 
 /** Nội dung trang chủ (banner, bộ sưu tập) — phần dùng chung, không phụ thuộc Next/DB. */
 
@@ -14,7 +15,7 @@ export const linkSchema = z
   .max(500)
   .nullish()
   .transform((v) => (v ? v : null))
-  .refine((v) => v === null || /^\/(?!\/)\S*$/.test(v) || /^https:\/\/[^\s/]+\S*$/i.test(v), {
+  .refine((v) => v === null || isSafeInternalPath(v) || /^https:\/\/[^\s/\\]+[^\s\\]*$/i.test(v), {
     message: "Link phải là đường dẫn trong web (/...) hoặc https://",
   });
 

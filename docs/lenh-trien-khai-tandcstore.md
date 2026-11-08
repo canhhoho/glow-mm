@@ -237,6 +237,10 @@ certbot certonly --nginx -d tandcstore.com -d www.tandcstore.com
 🖥️ **DÁN VÀO SERVER** (8c — cấu hình chính thức):
 ```bash
 cat > /etc/nginx/sites-available/tandc <<'EOF'
+# Giới hạn tần suất theo IP (tên vùng có tiền tố tandc_ để không trùng cấu hình web VCM).
+limit_req_zone $binary_remote_addr zone=tandc_auth:10m rate=30r/m;
+limit_req_zone $binary_remote_addr zone=tandc_all:10m  rate=20r/s;
+
 server {
     listen 80;
     server_name tandcstore.com www.tandcstore.com;
@@ -259,18 +263,34 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/tandcstore.com/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
 
+    server_tokens off;
     client_max_body_size 10M;
+    limit_req_status 429;
+
+    # Dùng chung cho mọi location bên dưới.
+    proxy_http_version 1.1;
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host  $host;
+    proxy_buffering off;
+    proxy_read_timeout 120s;
+
+    # Tác vụ định kỳ chỉ gọi từ chính server (127.0.0.1:3000), không mở ra Internet.
+    location ^~ /api/cron/ {
+        return 404;
+    }
+
+    # Đăng nhập / đăng ký / quên mật khẩu: tối đa ~30 lần/phút/IP (cho phép dồn 20).
+    location ~ ^/(api/(auth|customer-auth)/|admin/login|ctv/login|(en/|vi/)?(login|register|track)) {
+        limit_req zone=tandc_auth burst=20 nodelay;
+        proxy_pass http://127.0.0.1:3000;
+    }
 
     location / {
+        limit_req zone=tandc_all burst=100 nodelay;
         proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Host              $host;
-        proxy_set_header X-Real-IP         $remote_addr;
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-Host  $host;
-        proxy_buffering off;
-        proxy_read_timeout 120s;
     }
 }
 EOF
@@ -525,6 +545,37 @@ Claude sẽ nhắn: *"đã merge main, có/không thay đổi database"*. Bạn 
    ```bash
    docker image prune -f
    ```
+
+---
+
+# PHẦN 5 — Tăng cường bảo mật server (làm một lần, 08/11/2026)
+
+📖 **ĐỌC ĐỂ HIỂU:** đợt vá bảo mật 08/11/2026 có **thay đổi database** (bảng `appRateLimit`) và bắt buộc `.env.prod` có `POSTGRES_PASSWORD`. Làm 5.1 **trước** khi cập nhật theo PHẦN 4; 5.2–5.4 làm sau, lúc nào rảnh.
+
+**5.1 Kiểm tra trước khi cập nhật bản 08/11** — 🖥️ **DÁN VÀO SERVER**:
+```bash
+cd /var/www/tandc && grep -c '^POSTGRES_PASSWORD=.\+' .env.prod && grep -c '^APP_URL=https://' .env.prod && ! grep -qi 'change-me' .env.prod && echo "ENV OK"
+```
+✅ **KẾT QUẢ ĐÚNG:** hai dòng `1` rồi `ENV OK`. Khác → ⛔ **không cập nhật**, gửi Claude (app mới từ chối chạy khi thiếu mật khẩu DB, `APP_URL` không phải https, hoặc còn khoá mẫu `change-me`).
+Sau đó làm PHẦN 4 (có bước 2 sao lưu).
+
+**5.2 Nginx: giới hạn tần suất, ẩn phiên bản, chặn `/api/cron` từ ngoài** — 🖥️ dán lại **nguyên lệnh 8c** (đã cập nhật ở PHẦN 2, bước 8). Nó chỉ ghi đè file `tandc`, không đụng web VCM.
+✅ `BUOC 8c OK`. Kiểm tra — 🖥️ **DÁN VÀO SERVER**:
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" https://tandcstore.com/api/cron/cleanup; curl -sI https://tandcstore.com | grep -i '^server'
+```
+✅ **KẾT QUẢ ĐÚNG:** `404` và `Server: nginx` (không còn số phiên bản). Web lỗi → dán lệnh tắt site ở bước 8c rồi gửi Claude.
+
+**5.3 Cảnh báo khi sao lưu lỗi** — 📖 hiện lỗi sao lưu chỉ nằm trong `/var/log/glow-backup.log`. Mỗi sáng thứ Hai, 🖥️ **DÁN VÀO SERVER** để xem lần sao lưu gần nhất:
+```bash
+tail -n 5 /var/log/glow-backup.log; ls -lt /var/backups/glow 2>/dev/null | head -n 3
+```
+✅ Có file trong 24 giờ gần nhất, log không có `ERROR`/`failed`. Khác → gửi Claude.
+[CẦN XÁC MINH] Bật **Object Lock** (khoá không cho xoá) cho bucket B2 và dùng khoá ứng dụng không có quyền xoá — để người chiếm được server cũng không xoá được bản sao lưu. Cần kiểm tra B2 có cho bật Object Lock trên bucket đã tạo không; Claude sẽ hướng dẫn khi bạn muốn làm.
+
+**5.4 Chạy thử khôi phục một lần** — chưa từng khôi phục bản sao lưu production. Làm theo mục "B7.7 Khôi phục thử" trong [huong-dan-trien-khai-tandcstore.md](huong-dan-trien-khai-tandcstore.md) (khôi phục vào database tạm, không đụng dữ liệu đang chạy), xong xoá khoá giải mã khỏi server như hướng dẫn.
+
+📖 **Rủi ro chấp nhận:** server dùng chung với web VCM — ai có quyền root/docker trên máy đọc được `.env.prod` và database. Chỉ cấp `sudo`/nhóm `docker` cho người thật sự cần.
 
 ---
 

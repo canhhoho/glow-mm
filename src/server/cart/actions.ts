@@ -1,13 +1,15 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect as nextRedirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { hasLocale } from "next-intl";
 import { z, ZodError } from "zod";
 import { redirect } from "@/i18n/navigation";
 import { routing, type StoreLocale } from "@/i18n/routing";
+import { clientIp } from "@/lib/client-ip";
 import { localePrefix } from "@/lib/site";
+import { hitRateLimit } from "@/server/rate-limit";
 import { prisma } from "@/lib/db";
 import { claimOrders } from "@/server/accounts/claims";
 import { normalizeRefCode, REF_COOKIE } from "@/server/affiliates/referral";
@@ -159,11 +161,11 @@ export async function placeOrderAction(_prev: StoreActionState, formData: FormDa
 /** Tra đơn bằng mã đơn + SĐT; đúng thì ghi nhớ trên trình duyệt và mở trang đơn. */
 export async function trackOrderAction(_prev: StoreActionState, formData: FormData): Promise<StoreActionState> {
   const locale = localeOf(formData);
+  const t = await getTranslations({ locale, namespace: "Track" });
+  // Chống dò mã đơn: 20 lần / 10 phút / IP (mạng di động dùng chung IP → không đặt quá chặt).
+  if (!(await hitRateLimit(`track:${clientIp(await headers()) || "unknown"}`, 20, 10 * 60_000))) return { error: t("tooMany") };
   const order = await findOrderForCustomer(String(formData.get("code") ?? ""), String(formData.get("phone") ?? ""));
-  if (!order) {
-    const t = await getTranslations({ locale, namespace: "Track" });
-    return { error: t("notFound") };
-  }
+  if (!order) return { error: t("notFound") };
   await rememberOrder(order.code, order.recipientPhone);
   // Đang đăng nhập: đơn vừa chứng minh được (mã + SĐT) gắn luôn vào tài khoản.
   const user = await getCustomerUser();

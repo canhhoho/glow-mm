@@ -117,6 +117,16 @@ model CustomerRateLimit {
   @@map("customerRateLimit")
 }
 
+/// Bộ đếm tự viết (`hitRateLimit`: đăng nhập theo SĐT/email, đăng ký, tra cứu đơn…). Tách khỏi `rateLimit` vì
+/// Better Auth xoá mọi dòng cũ hơn cửa sổ dài nhất của nó (60s) trong bảng đó → cửa sổ 10 phút/1 giờ bị xoá sớm.
+model AppRateLimit {
+  key         String @id
+  count       Int
+  windowStart BigInt
+
+  @@map("appRateLimit")
+}
+
 model AuditLog {
   id        String   @id @default(cuid())
   userId    String?

@@ -7,6 +7,14 @@ const analyticsEnvSchema = z.object({
 });
 export const analyticsConfig = () => analyticsEnvSchema.parse(process.env);
 
+/** Giá trị mẫu (`change-me…` trong .env.example) — không được dùng ở production. */
+export const isPlaceholderSecret = (v: string) => /change-?me/i.test(v);
+/** https, hoặc http trên máy (`next start` cục bộ / E2E chạy NODE_ENV=production ở localhost). */
+export const isProductionUrl = (url: string) => {
+  const u = new URL(url);
+  return u.protocol === "https:" || ["localhost", "127.0.0.1", "[::1]"].includes(u.hostname);
+};
+
 /**
  * Biến môi trường phía server. Xem .env.example cho ghi chú từng môi trường.
  * Validate lười (khi gọi lần đầu) để `next build` không cần DB/secret.
@@ -34,6 +42,15 @@ const schema = z
     /** Đăng nhập Google cho khách (P14) — để trống cả hai = ẩn nút Google. */
     GOOGLE_CLIENT_ID: z.string().optional(),
     GOOGLE_CLIENT_SECRET: z.string().optional(),
+  })
+  // Production: không chạy với secret mẫu trong .env.example hoặc APP_URL không phải https (cookie mất cờ Secure).
+  .refine((e) => e.NODE_ENV !== "production" || ![e.BETTER_AUTH_SECRET, e.CRON_SECRET].some(isPlaceholderSecret), {
+    message: "BETTER_AUTH_SECRET / CRON_SECRET vẫn là giá trị mẫu — sinh bằng `openssl rand -base64 32`",
+    path: ["BETTER_AUTH_SECRET"],
+  })
+  .refine((e) => e.NODE_ENV !== "production" || isProductionUrl(e.APP_URL), {
+    message: "APP_URL phải là https:// ở production",
+    path: ["APP_URL"],
   })
   .refine((e) => e.STORAGE_DRIVER !== "vercel-blob" || !!e.BLOB_READ_WRITE_TOKEN, {
     message: "BLOB_READ_WRITE_TOKEN là bắt buộc khi STORAGE_DRIVER=vercel-blob",

@@ -183,7 +183,8 @@
     "code": "Order code",
     "phone": "Phone number used for the order",
     "submit": "Find order",
-    "notFound": "No order matches this code and phone number"
+    "notFound": "No order matches this code and phone number",
+    "tooMany": "Too many attempts. Please wait a few minutes and try again."
   },
   "Review": {
     "title": "Rate your products",

@@ -50,10 +50,12 @@ export async function consumeRateLimit(key: string, max: number, windowMs: numbe
   if (!(await hitRateLimit(key, max, windowMs, now))) throw new PhoneAccountError("too_many", "Thử quá nhiều lần, thử lại sau");
 }
 
-/** Đăng nhập SĐT: tối đa 20 lần / phút / IP và 10 lần / 10 phút / SĐT (chống dò mật khẩu một số cụ thể). */
-export async function consumePhoneLoginLimit(ip: string, phone: string, now = new Date()) {
+/**
+ * Đăng nhập SĐT từ form: tối đa 20 lần / phút / IP. Giới hạn theo từng SĐT (10 lần / 10 phút) nằm ở hook
+ * Better Auth (`server/auth/login-limit.ts`) để áp cả cho người gọi thẳng `/api/customer-auth/sign-in/phone-number`.
+ */
+export async function consumePhoneLoginLimit(ip: string, now = new Date()) {
   await consumeRateLimit(`phone-login:${ip || "unknown"}`, 20, 60_000, now);
-  await consumeRateLimit(`phone-login-n:${phone}`, 10, 10 * 60_000, now);
 }
 
 /** Tạo khách mới bằng SĐT + mật khẩu. Trả SĐT đã chuẩn hoá (để đăng nhập ngay sau đó). */
@@ -61,10 +63,11 @@ export async function registerPhoneCustomer(raw: unknown, ctx: { ip: string; now
   const input = registerPhoneSchema.parse(raw);
   const phone = normalizeMmPhone(input.phone);
   if (!phone) throw new PhoneAccountError("invalid_phone", "Số điện thoại không hợp lệ");
+  // Đếm TRƯỚC khi báo "SĐT đã có tài khoản" — nếu không, form đăng ký thành công cụ dò SĐT nào đã đăng ký không giới hạn.
+  await consumeRateLimit(`phone-signup:${ctx.ip || "unknown"}`, MAX_PHONE_SIGNUPS_PER_IP_PER_HOUR, HOUR_MS, ctx.now ?? new Date());
   if (await prisma.user.findFirst({ where: { OR: [{ phoneNumber: phone }, { email: phoneEmail(phone) }] }, select: { id: true } })) {
     throw new PhoneAccountError("phone_taken", "Số điện thoại đã có tài khoản");
   }
-  await consumeRateLimit(`phone-signup:${ctx.ip || "unknown"}`, MAX_PHONE_SIGNUPS_PER_IP_PER_HOUR, HOUR_MS, ctx.now ?? new Date());
   const id = randomUUID();
   const hash = await hashPassword(input.password);
   try {
