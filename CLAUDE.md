@@ -68,7 +68,8 @@ npm run db:seed:demo     # + ~45 SP demo từ lengocanh.vn kèm ảnh (chỉ DB 
 npm run db:seed:placeholders  # ảnh minh hoạ tự vẽ (SP/banner/icon) cho Preview — không bản quyền; Blob cần --yes (xem DEPLOY.md §1.3)
 npm run seed:preview     # Windows: một lệnh nạp SP demo + ảnh minh hoạ vào Neon preview + Blob (hỏi ẩn chuỗi kết nối/token)
 npm run dev              # http://localhost:3000 (storefront) · /admin
-npm test                 # TẤT CẢ: lint + typecheck + vitest + playwright (DB glow_test, cổng 3100)
+npm run check            # NHANH: lint + typecheck + vitest unit (mặc định sau mỗi thay đổi)
+npm test                 # TẤT CẢ: lint + typecheck + vitest + playwright (DB glow_test, cổng 3100) — chỉ khi phát hành/rủi ro cao
 npm run test:unit        # chỉ Vitest unit
 npm run test:int         # chỉ Vitest integration (DB glow_test, cần docker)
 npm run test:e2e         # chỉ Playwright (build standalone rồi chạy)
@@ -83,6 +84,15 @@ docker compose -p glow-prod -f docker-compose.prod.yml up --build   # thử bả
 - Tài khoản seed: `admin@` / `kho@` / `donhang@glow.local` (admin), `ctv@glow.local` (cổng `/ctv`, mã MAUNG) và `ctv2@glow.local` (mã LINN, tuyến dưới của MAUNG), `khach@glow.local` (khách storefront `/login`), mật khẩu = `SEED_STAFF_PASSWORD` trong `.env`. Email xác minh/đặt lại mật khẩu khi dev: `./storage/outbox/*.json` (`EMAIL_DRIVER=outbox`).
 - Grep bỏ qua `.claude/worktrees/` (bản sao cũ). Khối hướng dẫn trong AGENTS.md do `next dev` tự ghi lại — không sửa tay.
 
+## Kiểm thử & triển khai
+- **Thay đổi local:** `npm run check` + test bị ảnh hưởng (`npx vitest run <file>`; integration khi đụng DB/transaction; `npx playwright test <spec> --project=…` chỉ spec liên quan). **Không** tự chạy full E2E sau thay đổi UI nhỏ.
+- **Component/layout dùng chung** (`src/components/*`, layout, `globals.css`, `messages/*`, `proxy.ts`, `lib/csp.ts`): grep nơi import → chạy spec của mọi trang bị ảnh hưởng (cả `mobile` và `desktop` nếu có).
+- **Full E2E** (`npm test` hoặc CI full qua `gh workflow run ci.yml --ref dev`): bắt buộc trước khi merge `main`/phát hành và cho thay đổi rủi ro cao — kho/ledger/FEFO, state-machine/transitions đơn, checkout, auth/RBAC/rate limit, migration Prisma, CSP/proxy, env.
+- **Báo cáo test** luôn đủ 4 dòng: Đạt / Lỗi / Bỏ qua / Không chạy (kèm lý do).
+- **Triển khai:** không có staging; người dùng tự deploy thủ công lên server từ tag `release-*` rồi chạy smoke. Claude **không** SSH/deploy. Sửa `docker-compose.prod.yml`, `Dockerfile`, `ops/*`, `.github/workflows/*`, cấu hình Nginx → phải được duyệt trước.
+- **Tag `release-YYYYMMDD-HHMM`** chỉ gắn lên commit `main` đã có CI full xanh (tag = đã qua kiểm tra bắt buộc); kiểm tra lỗi → không gắn tag, không deploy. Rollback = deploy lại tag trước (quy trình đã diễn tập, xem docs triển khai).
+- **Secret:** không in env/secret ra log, script, báo cáo test; test chỉ dùng giá trị `.env.test`.
+
 ## Git
-- Làm việc trên `dev`; `main` chỉ chứa code đã test. Merge vào `main` khi `npm test` và CI xanh.
+- Làm việc trên `dev`; `main` chỉ chứa code đã test. Merge vào `main` khi CI xanh, gồm cả full E2E (mục trên).
 - Commit sau mỗi bước hoàn thành.
