@@ -542,7 +542,7 @@ Chọn giờ ít khách (vd 22:00 Yangon). Ngừng ghi khoảng **30–60 phút*
 
 # PHẦN D — Cập nhật hằng ngày (sau khi đã chuyển)
 
-Claude làm trên nhánh `dev` → CI xanh → merge `main`. Bạn cập nhật server:
+Claude làm trên nhánh `dev` → CI đầy đủ (gồm E2E) xanh → merge `main` → gắn tag `release-YYYYMMDD-HHMM`. **Chỉ deploy tag `release-*`** — tag chỉ có khi mọi kiểm tra bắt buộc đã qua. Bạn cập nhật server (thủ công):
 
 ```bash
 ssh vcm_aio@10.201.42.65
@@ -550,22 +550,19 @@ ssh vcm_aio@10.201.42.65
 ```bash
 sudo su -
 ```
-
-**Backup trước** (bắt buộc khi bản mới có migration DB — Claude sẽ báo):
 ```bash
-bash -c 'set -a; . /opt/glow/cron.env; /opt/glow/backup.sh'
+bash /var/www/tandc/ops/deploy.sh
 ```
+`ops/deploy.sh` (không đối số = tag mới nhất):
+1. Từ chối ref không phải `release-*`; kiểm `.env.prod` (đủ biến, `APP_URL` https, không `change-me`), thư mục mã nguồn không bị sửa tay.
+2. So migration DB đang có với bản đích: có migration mới → **tự sao lưu** (`/opt/glow/backup.sh`, lỗi thì dừng); bản đích *cũ hơn* DB → dừng (xem F.13).
+3. Hỏi `YES`, ghi `/var/log/glow-deploy.log`, `git checkout --detach <tag>`, build + chạy (migration chạy trước app; bản cũ phục vụ khách trong lúc build).
+4. Chờ app healthy rồi chạy **smoke test** `ops/smoke.sh` (PHẦN E). Lỗi → in sẵn lệnh quay về bản trước.
 
-**Kéo code + build + chạy lại** (migration tự chạy trước app):
-```bash
-cd /var/www/tandc && git pull origin main && SOURCE_COMMIT=$(git rev-parse --short HEAD) docker compose -p tandc -f docker-compose.prod.yml --env-file .env.prod up -d --build && docker compose -p tandc ps -a
-```
-→ `tandc-migrate-1` Exited (0), `tandc-app-1` healthy. Trong lúc build, bản cũ vẫn phục vụ khách; chỉ gián đoạn vài giây khi đổi container.
+Xem các bản có sẵn và lịch sử: `bash /var/www/tandc/ops/deploy.sh --list`.
 
-**Kiểm tra:**
-```bash
-curl -s http://127.0.0.1:3000/api/health && docker logs tandc-app-1 --tail 50
-```
+**Lần đầu chuyển sang deploy.sh** (server đang ở nhánh `main`, chưa có script): `cd /var/www/tandc && git pull origin main`, rồi chạy `ops/deploy.sh` như trên. Từ đó server ở trạng thái *detached* trên tag — **không** dùng `git pull` nữa.
+
 Mở `https://tandcstore.com`, nhấn **Ctrl + Shift + R**.
 
 **Dọn image cũ** (mỗi vài lần cập nhật, giải phóng đĩa — không đụng volume dữ liệu):
@@ -575,7 +572,7 @@ docker image prune -f
 
 **Không bao giờ** đổi `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`, `BETTER_AUTH_SECRET` trong `.env.prod` (đổi cái sau = đăng xuất toàn bộ người dùng). Đổi biến khác trong `.env.prod` → chạy lại lệnh build ở trên (`APP_URL` và khoá Server Action được nhúng lúc build).
 
-**Hằng tháng:** `apt update && apt -y upgrade` (phối hợp với người quản lý web VCM vì dùng chung server), khôi phục thử backup (B7.7), `df -h` và `docker system df`.
+**Hằng tháng:** `apt update && apt -y upgrade` (phối hợp với người quản lý web VCM vì dùng chung server), khôi phục thử backup (B7.7), diễn tập rollback (F.13), `df -h` và `docker system df`.
 
 **Sau 1–2 tuần ổn định:** báo Claude dọn code chỉ dùng cho Vercel ([DEPLOY.md §5](../DEPLOY.md)); tắt hẳn Vercel + Neon + Blob sau khi đã giữ bản backup cuối.
 
@@ -583,7 +580,13 @@ docker image prune -f
 
 # PHẦN E — Kiểm tra sau khi deploy
 
-Chạy lần lượt, dừng ở bước nào lỗi:
+**Smoke test tự động** (chỉ đọc; `deploy.sh` tự chạy, chạy tay được bất cứ lúc nào):
+```bash
+bash /var/www/tandc/ops/smoke.sh
+```
+→ dòng cuối `SMOKE OK`. Có dòng `FAIL` → gửi Claude toàn bộ kết quả. Script gom các kiểm tra bên dưới (container, health nội bộ/công khai, trang chính, CSP/HSTS/nonce, chặn cron, cổng, chuyển hướng www, web VCM). Đặt `NEIGHBOR_URL=` để bỏ kiểm tra web VCM.
+
+Kiểm tra tay tương đương (khi cần soi từng bước), dừng ở bước nào lỗi:
 
 **Container còn sống?**
 ```bash
@@ -690,6 +693,27 @@ Gần như luôn do Nginx: khôi phục bằng cách tắt site mới rồi nạ
 rm /etc/nginx/sites-enabled/tandc && nginx -t && systemctl reload nginx
 ```
 Sau đó kiểm tra lại cấu hình `tandc` trước khi bật lại.
+
+## F.13 Quay lại bản trước (rollback)
+Rollback = deploy lại tag release trước, cùng script và cùng smoke test với lúc deploy:
+```bash
+bash /var/www/tandc/ops/deploy.sh --list
+```
+```bash
+bash /var/www/tandc/ops/deploy.sh release-YYYYMMDD-HHMM
+```
+- **Không có migration giữa hai bản** → quay lại an toàn, mất 3–10 phút build.
+- **Bản mới đã thêm migration** → script dừng: DB mới hơn app cũ. Database **không** bao giờ quay lui bằng cách xoá bảng/cột. Chọn:
+  1. Sửa lỗi, phát hành tag mới (khuyến nghị).
+  2. Claude xác nhận bản cũ chạy được với DB mới (migration chỉ thêm bảng/cột cho phép null) → chạy lại kèm `--allow-older-schema`. [CẦN XÁC MINH] hành vi `prisma migrate deploy` của bản cũ khi DB có migration nó không biết — kiểm trong lần diễn tập đầu.
+  3. Khôi phục backup trước deploy (B7.7, nhưng vào DB thật) → **mất mọi đơn/thay đổi sau thời điểm backup**; chỉ khi dữ liệu bị hỏng.
+- Bản trước không có tag (lần đầu chuyển sang deploy.sh) → gửi Claude để có lệnh riêng.
+
+**Diễn tập** (mỗi tháng, giờ ít khách, cùng B7.7): `deploy.sh <tag trước>` (chọn tag không khác migration) → `SMOKE OK` → `deploy.sh` (về bản mới nhất) → `SMOKE OK`. Ghi ngày + kết quả vào bảng dưới.
+
+| Ngày | Nơi | Từ → về | Kết quả |
+|---|---|---|---|
+| _(chưa diễn tập)_ | | | |
 
 ---
 

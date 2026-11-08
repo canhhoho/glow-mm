@@ -523,25 +523,37 @@ Sau cập nhật: đăng nhập admin kiểm trang COD, Báo cáo → Hành vi m
 
 Nếu cần quay lui sau khi đã dùng BY_WEIGHT/người trả cước SENDER/ngoại lệ COD: dùng bản app vẫn hiểu các trường và phương pháp này. App cũ có thể phân bổ theo số lượng hoặc xuất nhãn/cước sai. Không chuyển dữ liệu ngược hoặc xóa lịch sử tự động để chạy app cũ.
 
-Claude sẽ nhắn: *"đã merge main, có/không thay đổi database"*. Bạn làm:
+Claude sẽ nhắn: *"đã phát hành `release-…`"* (chỉ khi mọi kiểm tra tự động đã đạt). Bạn làm:
+
+📖 **Chỉ một lần, lần đầu dùng cách mới** (server chưa có script): làm **bước 1**, rồi 🖥️ **DÁN VÀO SERVER**:
+```bash
+cd /var/www/tandc && git pull origin main && echo "DA CO SCRIPT"
+```
+Từ lần sau **không** dùng `git pull` nữa.
 
 1. Làm **bước 1** (vào server).
-2. Nếu Claude báo **có thay đổi database** → 🖥️ **DÁN VÀO SERVER** để sao lưu trước:
+2. 🖥️ **DÁN VÀO SERVER** để cập nhật (mất 3–10 phút, khách chỉ bị gián đoạn vài giây):
    ```bash
-   bash -c 'set -a; . /opt/glow/cron.env; /opt/glow/backup.sh' && echo "DA SAO LUU"
+   bash /var/www/tandc/ops/deploy.sh
    ```
-3. 🖥️ **DÁN VÀO SERVER** để cập nhật (mất 3–10 phút, khách chỉ bị gián đoạn vài giây):
-   ```bash
-   cd /var/www/tandc && git pull origin main && SOURCE_COMMIT=$(git rev-parse --short HEAD) docker compose -p tandc -f docker-compose.prod.yml --env-file .env.prod up -d --build && docker compose -p tandc ps -a && curl -s http://127.0.0.1:3000/api/health; echo
-   ```
-   ✅ **KẾT QUẢ ĐÚNG:**
-   - `tandc-migrate-1` **Exited (0)**;
-   - `tandc-app-1` healthy;
-   - dòng cuối `{"ok":true}`.
+   📖 Script tự: kiểm tra cấu hình, **tự sao lưu** nếu bản mới đổi database, hiện kế hoạch "Từ … Đến …".
+   ⌨️ **MÀN HÌNH SẼ HỎI** `Gõ YES để tiếp tục` → gõ `YES` (chữ hoa) → Enter.
+   ✅ **KẾT QUẢ ĐÚNG:** gần cuối có `== Kết quả: … 0 FAIL …`, dòng `SMOKE OK` và `✅ Đang chạy release-…`.
+   ⛔ Thấy `⛔` hoặc `FAIL` → không làm gì thêm, copy toàn bộ chữ trên màn hình gửi Claude (script in sẵn lệnh quay lại bản trước nếu cần).
+3. 🖱️ Mở `https://tandcstore.com`, nhấn `Ctrl+Shift+R` để xem bản mới.
 
-   Khác → ⛔ gửi Claude.
-4. 🖱️ Mở `https://tandcstore.com`, nhấn `Ctrl+Shift+R` để xem bản mới.
-5. Mỗi tháng một lần, 🖥️ **DÁN VÀO SERVER** để dọn ổ đĩa:
+**Quay lại bản trước** (khi bản mới lỗi, **chỉ khi Claude bảo**):
+🖥️ **DÁN VÀO SERVER** để xem các bản:
+```bash
+bash /var/www/tandc/ops/deploy.sh --list
+```
+Rồi 🖥️ **DÁN VÀO SERVER** lệnh Claude gửi, dạng:
+```bash
+bash /var/www/tandc/ops/deploy.sh release-YYYYMMDD-HHMM
+```
+Nếu script báo *"Quay về bản cũ hơn database"* → ⛔ dừng, gửi Claude. **Không** tự thêm tuỳ chọn nào.
+
+4. Mỗi tháng một lần, 🖥️ **DÁN VÀO SERVER** để dọn ổ đĩa:
    ```bash
    docker image prune -f
    ```
@@ -607,6 +619,8 @@ tail -n 5 /var/log/glow-backup.log; ls -lt /var/backups/glow 2>/dev/null | head 
 
 | Việc | Lệnh |
 |---|---|
+| Kiểm tra toàn bộ web (chỉ xem) | `bash /var/www/tandc/ops/smoke.sh` |
+| Các bản phát hành + lịch sử cập nhật | `bash /var/www/tandc/ops/deploy.sh --list` |
 | Web có đang chạy không | `docker compose -p tandc ps -a` |
 | Xem lỗi gần đây của web | `docker logs tandc-app-1 --tail 100` |
 | Khởi động lại web | `docker restart tandc-app-1` |
