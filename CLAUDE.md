@@ -87,7 +87,7 @@ docker compose -p glow-prod -f docker-compose.prod.yml up --build   # thử bả
 ## Kiểm thử & triển khai
 - **Thay đổi local:** `npm run check` + test bị ảnh hưởng (`npx vitest run <file>`; integration khi đụng DB/transaction; `npx playwright test <spec> --project=…` chỉ spec liên quan). **Không** tự chạy full E2E sau thay đổi UI nhỏ.
 - **Component/layout dùng chung** (`src/components/*`, layout, `globals.css`, `messages/*`, `proxy.ts`, `lib/csp.ts`): grep nơi import → chạy spec của mọi trang bị ảnh hưởng (cả `mobile` và `desktop` nếu có).
-- **Full E2E** (`npm test` hoặc CI full qua `gh workflow run ci.yml --ref dev`): bắt buộc trước khi merge `main`/phát hành và cho thay đổi rủi ro cao — kho/ledger/FEFO, state-machine/transitions đơn, checkout, auth/RBAC/rate limit, migration Prisma, CSP/proxy, env.
+- **Full E2E** (`npm test` hoặc job `e2e` của CI: GitHub → Actions → CI → Run workflow trên `dev`; tự chạy khi PR vào `main` và hằng tuần): bắt buộc trước khi merge `main`/phát hành và cho thay đổi rủi ro cao — kho/ledger/FEFO, state-machine/transitions đơn, checkout, auth/RBAC/rate limit, migration Prisma, CSP/proxy, env.
 - **Báo cáo test** luôn đủ 4 dòng: Đạt / Lỗi / Bỏ qua / Không chạy (kèm lý do).
 - **Triển khai:** không có staging; người dùng tự deploy thủ công lên server từ tag `release-*` rồi chạy smoke. Claude **không** SSH/deploy. Sửa `docker-compose.prod.yml`, `Dockerfile`, `ops/*`, `.github/workflows/*`, cấu hình Nginx → phải được duyệt trước.
 - **Tag `release-YYYYMMDD-HHMM`** chỉ gắn lên commit `main` đã có CI full xanh (tag = đã qua kiểm tra bắt buộc); kiểm tra lỗi → không gắn tag, không deploy. Rollback = deploy lại tag trước (quy trình đã diễn tập, xem docs triển khai).
