@@ -14,6 +14,7 @@ import {
   AffiliateError,
   assignOrderAffiliate,
   createAffiliate,
+  deleteAffiliate,
   recordPayout,
   setAffiliateActive,
   setAffiliateParent,
@@ -84,6 +85,17 @@ export async function updateAffiliateAction(_prev: ActionState, fd: FormData): P
   }
   revalidatePath("/admin/affiliates");
   return { ok: "saved" };
+}
+
+export async function deleteAffiliateAction(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("affiliates:manage");
+    await deleteAffiliate(id.parse(fd.get("id")), { userId: user.id, role: user.role });
+  } catch (e) {
+    return { error: await message(e) };
+  }
+  revalidatePath("/admin/affiliates", "layout");
+  redirect("/admin/affiliates");
 }
 
 export async function setAffiliateActiveAction(_prev: ActionState, fd: FormData): Promise<ActionState> {

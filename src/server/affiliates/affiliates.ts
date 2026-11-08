@@ -1,7 +1,7 @@
 import "server-only";
 import { randomBytes, randomUUID } from "node:crypto";
 import { z } from "zod";
-import { emailSchema, mmText, newPasswordSchema, phoneSchema } from "@/lib/schemas";
+import { emailSchema, mmText, newPasswordSchema, phoneSchema, rawId } from "@/lib/schemas";
 import { hashPassword } from "better-auth/crypto";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
@@ -36,6 +36,7 @@ export type AffiliateErrorCode =
   | "invalid_code"
   | "invalid_phone"
   | "not_found"
+  | "in_use"
   | "forbidden"
   | "order_paid"
   | "order_cancelled"
@@ -254,6 +255,39 @@ export async function setAffiliateActive(id: string, active: boolean, actorId: s
       data: { userId: actorId, action: active ? "affiliate.activate" : "affiliate.deactivate", entity: "Affiliate", entityId: id },
     });
   });
+}
+
+/** Chỉ xoá tài khoản chưa phát sinh nghiệp vụ; giữ nguyên mọi lịch sử đơn và hoa hồng. */
+export async function deleteAffiliate(id: string, actor: { userId: string; role: Role }) {
+  if (!can(actor.role, "affiliates:manage")) throw new AffiliateError("forbidden", "Không có quyền xoá CTV");
+  const affiliateId = rawId.max(64).parse(id);
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "Affiliate" WHERE "id" = ${affiliateId} FOR UPDATE`;
+      const a = await tx.affiliate.findUnique({
+        where: { id: affiliateId },
+        include: { application: { select: { id: true } }, _count: { select: { orders: true, uplineOrders: true, payouts: true, children: true, invitations: true } } },
+      });
+      if (!a) throw new AffiliateError("not_found", "Không tìm thấy CTV");
+      await tx.$queryRaw`SELECT "id" FROM "user" WHERE "id" = ${a.userId} FOR UPDATE`;
+      const orders = await tx.order.count({ where: { OR: [{ accountId: a.userId }, { createdById: a.userId }] } });
+      if (a.application || Object.values(a._count).some(Boolean) || orders > 0) {
+        throw new AffiliateError("in_use", "CTV đã có dữ liệu liên quan; hãy khoá tài khoản");
+      }
+      const user = await tx.user.findUniqueOrThrow({ where: { id: a.userId }, select: { role: true } });
+      if (user.role !== "AFFILIATE" || a.userId === actor.userId) throw new AffiliateError("forbidden", "Không thể xoá tài khoản này");
+      await tx.affiliate.delete({ where: { id: affiliateId } });
+      await tx.user.delete({ where: { id: a.userId } });
+      await tx.auditLog.create({
+        data: { userId: actor.userId, action: "affiliate.delete", entity: "Affiliate", entityId: affiliateId, data: { code: a.code, userId: a.userId } },
+      });
+    });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2003") {
+      throw new AffiliateError("in_use", "CTV đã có dữ liệu liên quan; hãy khoá tài khoản");
+    }
+    throw e;
+  }
 }
 
 // ── Hoa hồng theo đơn ──

@@ -1218,6 +1218,11 @@
     "colOrder": "Order"
   },
   "Affiliates": {
+    "actions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete affiliate",
+    "deleteConfirm": "Delete the affiliate account for {name}? This cannot be undone.",
+    "deleteHint": "Only accounts without orders, payouts, downlines or linked applications can be deleted. Lock accounts with existing records.",
     "title": "Affiliates",
     "new": "Add affiliate",
     "create": "Create affiliate",
@@ -1317,6 +1322,7 @@
     "rate": "Rate locked on order",
     "pickLabel": "Affiliate (optional)",
     "errors": {
+      "in_use": "This affiliate has orders, payouts, downlines or linked applications. Lock the account to preserve its history.",
       "email_taken": "Email is already used by another account",
       "code_taken": "Referral code is already used",
       "invalid_code": "Referral code must be 4–12 characters A–Z, 0–9",
