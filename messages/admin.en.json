@@ -548,7 +548,61 @@
     "otherSettings": "Other settings (codes, warehouse, expiry)",
     "nameHint": "One name is enough; the other language uses it until translated.",
     "affiliateCommission": "Affiliate commission (MMK/unit)",
-    "affiliateCommissionHint": "Leave blank to use the affiliate’s %"
+    "affiliateCommissionHint": "Leave blank to use the affiliate’s %",
+    "newCombo": "New combo",
+    "created": "Product created. Next, step 2: receive stock.",
+    "create": {
+      "comboTitle": "New combo",
+      "intro": "Step 1/5 — basic details only. Price, images, description and visibility come in later steps on the product page.",
+      "name": "Product name",
+      "addOtherName": "+ Add {lang}",
+      "labels": "Options (colour / size)",
+      "labelsPlaceholder": "e.g. Red, 50ml",
+      "labelsHint": "Press Enter or comma to add. Leave empty if there is only one option.",
+      "removeLabel": "Remove {label}",
+      "components": "Combo components",
+      "componentsHint": "Only products in the same sales warehouse can be chosen.",
+      "qty": "Quantity",
+      "submit": "Create product",
+      "submitCombo": "Create combo",
+      "copyHelp": "Prefills name, brand, category and options. Creating copies the description, images and settings; price and stock are not copied."
+    },
+    "step": {
+      "create": "Create product",
+      "stock": "Receive stock + cost",
+      "price": "Selling price",
+      "review": "Review",
+      "publish": "Publish"
+    },
+    "stepState": {
+      "done": "Done",
+      "warn": "Has notes",
+      "todo": "To do",
+      "waiting": "Waiting for earlier step"
+    },
+    "stepsLabel": "Product workflow",
+    "block": {
+      "editInfo": "Edit product details",
+      "notReceived": "Not received yet: {skus}",
+      "receivedAll": "Every option has a posted receipt or transfer.",
+      "receive": "Receive stock",
+      "viewStock": "View stock",
+      "priceInterim": "Edit prices under «Edit product details» in step 1, or use a pricing run.",
+      "calcPrice": "Calculate price",
+      "reviewInterim": "For now the system checks whether the product is ready to sell; an approval button that records the reviewer will be added later.",
+      "published": "Visible on the website.",
+      "hidden": "Hidden from the website.",
+      "publishOn": "Show on website",
+      "publishOff": "Hide from website",
+      "publishWaiting": "Finish the earlier steps to publish.",
+      "viewAsCustomer": "View as customer",
+      "noIssues": "Nothing to do in this step."
+    },
+    "list": {
+      "step": "Step",
+      "stepAll": "All steps",
+      "stepDone": "Published"
+    }
   },
   "Orders": {
     "exportVtp": "Export VTP Excel",

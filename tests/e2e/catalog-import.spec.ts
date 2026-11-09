@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { readSheet } from "read-excel-file/node";
 import { CATALOG_HEADER_ROW, CATALOG_SHEET, sheetHeaderKey } from "../../src/lib/catalog-sheet";
-import { login, openProductSettings } from "./helpers";
+import { login, openProductEdit, openProductSettings } from "./helpers";
 
 const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
@@ -74,7 +74,8 @@ test("mẫu một sheet: tạo SP hai biến thể kèm tồn → xem trước �
   await expect(page).toHaveURL(/\/admin\/products\/[^/?]+$/);
   await expect(page.getByRole("textbox", { name: "Tên tiếng Anh", exact: true })).toHaveValue(name);
   await expect(page.getByRole("textbox", { name: "Tên biến thể (dung tích/màu)", exact: true })).toHaveCount(2);
-  await expect(page.getByRole("checkbox", { name: "Hiển thị trên web", exact: true })).not.toBeChecked();
+  // Hiển thị trên web ở bước 5 (khối riêng), SP nhập từ Excel luôn ẩn.
+  await expect(page.getByTestId("step-publish-block")).toContainText("Đang ẩn khỏi web");
   await openProductSettings(page);
   await expect(page.getByRole("textbox", { name: "Slug (URL)", exact: true })).toHaveValue(`excel-imported-${suffix}`);
 
@@ -84,10 +85,13 @@ test("mẫu một sheet: tạo SP hai biến thể kèm tồn → xem trước �
   await check.getByTestId("readiness-warnings").locator("summary").click();
   await expect(check.getByTestId("issue-NO_IMAGE")).toContainText("Cảnh báo");
   const sku = await page.getByRole("textbox", { name: "SKU", exact: true }).first().inputValue();
+  // Giá 0: lưu được khi đang ẩn, nhưng bước 4 báo lỗi theo SKU và bước 5 không cho bật hiển thị.
   await page.getByRole("spinbutton", { name: "Giá (MMK)" }).first().fill("0");
-  await page.getByRole("checkbox", { name: "Hiển thị trên web", exact: true }).check();
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
-  await expect(page.getByRole("alert").filter({ hasText: "Chưa bật hiển thị / lưu được" })).toContainText(`Giá bán ≤ 0 (${sku})`);
+  await expect(page).toHaveURL(/\?saved=1$/);
+  await expect(page.getByTestId("launch-check").getByTestId("issue-PRICE_ZERO")).toContainText(sku);
+  await expect(page.getByTestId("step-publish-block")).toContainText("Hoàn thành các bước trước");
+  await expect(page.getByTestId("step-publish-block").getByRole("button", { name: "Bật hiển thị trên web" })).toHaveCount(0);
 });
 
 test("cập nhật giá: danh sách SP hiện có chứa SKU; tải lên dòng SKU + giá mới → giá đổi, ô trống giữ nguyên", async ({ page }) => {
@@ -98,6 +102,7 @@ test("cập nhật giá: danh sách SP hiện có chứa SKU; tải lên dòng S
   await page.getByRole("row", { name: new RegExp(slug) }).getByRole("link", { name: /^Sửa / }).click();
   await expect(page).toHaveURL(/\/admin\/products\/[^/?]+$/);
   const productUrl = page.url();
+  await openProductEdit(page);
   const nameEn = await page.getByRole("textbox", { name: "Tên tiếng Anh", exact: true }).inputValue();
   await openProductSettings(page);
   const sku = await page.getByRole("textbox", { name: "SKU", exact: true }).first().inputValue();
@@ -123,6 +128,7 @@ test("cập nhật giá: danh sách SP hiện có chứa SKU; tải lên dòng S
     await page.getByRole("button", { name: "Xác nhận nhập", exact: true }).click();
     await expect(page.getByRole("status")).toContainText("1 SP cập nhật", { timeout: 30_000 });
     await page.goto(productUrl);
+    await openProductEdit(page);
     await expect(page.getByRole("textbox", { name: "Tên tiếng Anh", exact: true })).toHaveValue(nameEn);
     await openProductSettings(page);
     const variant = page.getByRole("textbox", { name: "SKU", exact: true }).first();
@@ -131,6 +137,7 @@ test("cập nhật giá: danh sách SP hiện có chứa SKU; tải lên dòng S
   } finally {
     // Trả giá cũ cho dữ liệu seed dùng chung.
     await page.goto(productUrl);
+    await openProductEdit(page);
     await page.getByRole("spinbutton", { name: "Giá (MMK)" }).first().fill(String(original));
     await page.getByRole("button", { name: "Lưu", exact: true }).click();
     await expect(page).toHaveURL(/\?saved=1$/);

@@ -548,7 +548,61 @@
     "otherSettings": "Thiết lập khác (mã, kho, hạn dùng)",
     "nameHint": "Chỉ cần điền một tên; tên còn lại tự lấy theo tên này.",
     "affiliateCommission": "Hoa hồng CTV (MMK/cái)",
-    "affiliateCommissionHint": "Để trống = tính theo % của CTV"
+    "affiliateCommissionHint": "Để trống = tính theo % của CTV",
+    "newCombo": "Tạo combo",
+    "created": "Đã tạo sản phẩm. Làm tiếp bước 2: nhập kho.",
+    "create": {
+      "comboTitle": "Tạo combo",
+      "intro": "Bước 1/5 — chỉ cần thông tin cơ bản. Giá, ảnh, mô tả và hiển thị làm ở các bước sau trên trang sản phẩm.",
+      "name": "Tên sản phẩm",
+      "addOtherName": "+ Thêm {lang}",
+      "labels": "Phân loại (màu / dung tích)",
+      "labelsPlaceholder": "VD: Đỏ, 50ml",
+      "labelsHint": "Nhấn Enter hoặc dấu phẩy để thêm. Để trống nếu chỉ có một loại.",
+      "removeLabel": "Xoá {label}",
+      "components": "Thành phần combo",
+      "componentsHint": "Chỉ chọn được sản phẩm cùng kho bán.",
+      "qty": "Số lượng",
+      "submit": "Tạo sản phẩm",
+      "submitCombo": "Tạo combo",
+      "copyHelp": "Điền sẵn tên, thương hiệu, danh mục và phân loại. Khi tạo sẽ chép mô tả, ảnh và thiết lập; không chép giá và tồn kho."
+    },
+    "step": {
+      "create": "Tạo sản phẩm",
+      "stock": "Nhập kho + giá vốn",
+      "price": "Giá bán",
+      "review": "Duyệt",
+      "publish": "Đăng bán"
+    },
+    "stepState": {
+      "done": "Xong",
+      "warn": "Có lưu ý",
+      "todo": "Cần làm",
+      "waiting": "Chờ bước trước"
+    },
+    "stepsLabel": "Quy trình sản phẩm",
+    "block": {
+      "editInfo": "Sửa thông tin sản phẩm",
+      "notReceived": "Chưa nhập hàng: {skus}",
+      "receivedAll": "Mọi phân loại đã có phiếu nhập hoặc chuyển kho đã ghi sổ.",
+      "receive": "Nhập hàng",
+      "viewStock": "Xem tồn kho",
+      "priceInterim": "Sửa giá trong «Sửa thông tin sản phẩm» ở bước 1 hoặc dùng bảng tính giá.",
+      "calcPrice": "Tính giá",
+      "reviewInterim": "Hiện tại bước này do hệ thống kiểm tra đủ điều kiện mở bán; nút Duyệt có lưu người duyệt sẽ được thêm sau.",
+      "published": "Đang hiển thị trên web.",
+      "hidden": "Đang ẩn khỏi web.",
+      "publishOn": "Bật hiển thị trên web",
+      "publishOff": "Ẩn khỏi web",
+      "publishWaiting": "Hoàn thành các bước trước để đăng bán.",
+      "viewAsCustomer": "Xem như khách",
+      "noIssues": "Không có việc cần làm ở bước này."
+    },
+    "list": {
+      "step": "Bước",
+      "stepAll": "Mọi bước",
+      "stepDone": "Đã đăng bán"
+    }
   },
   "Orders": {
     "exportVtp": "Xuất Excel VTP",

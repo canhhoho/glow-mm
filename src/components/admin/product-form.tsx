@@ -370,14 +370,8 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
         </div>
       </details>
 
-      {/* ── 5. Hiển thị + Lưu ── */}
-      <div className="flex items-center gap-4">
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={p.published} onChange={(e) => set("published", e.target.checked)} />
-          {t("publishedLabel")}
-        </label>
-        <Button size="lg" type="submit" disabled={pending}><Save aria-hidden className="size-4 shrink-0" /> {t("save")}</Button>
-      </div>
+      {/* Hiển thị trên web: bật/ẩn ở bước 5 "Đăng bán" của trang SP; lưu ở đây giữ nguyên trạng thái hiện tại. */}
+      <Button size="lg" type="submit" disabled={pending}><Save aria-hidden className="size-4 shrink-0" /> {t("save")}</Button>
 
       {state?.error && (
         <p role="alert" className="text-sm text-destructive">

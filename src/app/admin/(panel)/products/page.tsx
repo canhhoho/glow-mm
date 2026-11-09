@@ -5,7 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { listProductsAdmin, PRODUCT_STATUSES, productFilterOptions, type ProductStatusFilter } from "@/server/catalog/admin-queries";
 import { loadReadiness } from "@/server/catalog/readiness";
-import { listStatus } from "@/server/catalog/readiness-rules";
+import { listStatus, PRODUCT_STEPS, productSteps, type ProductStep } from "@/server/catalog/readiness-rules";
 import { prisma } from "@/lib/db";
 import { BrandForm } from "@/components/admin/catalog-forms";
 import { BulkCheckbox, BulkPublishBar, RowProductAction } from "@/components/admin/product-bulk-publish";
@@ -23,6 +23,8 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
   const categoryId = str(sp.category);
   const warehouseId = str(sp.warehouse);
   const status: ProductStatusFilter = PRODUCT_STATUSES.find((s) => s === sp.status) ?? "active";
+  // Quy trình 5 bước: lọc theo bước đang cần làm; "done" = đã đăng bán, không còn bước nào.
+  const stepFilter: ProductStep | "done" | undefined = [...PRODUCT_STEPS, "done" as const].find((s) => s === sp.step);
   const [t, tc, listed, options] = await Promise.all([
     getTranslations("Products"),
     getTranslations("Common"),
@@ -31,8 +33,15 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
   ]);
   // D2: trạng thái mở bán (một lần cho cả trang); lọc "có thể mở bán" / "cần hoàn thiện" sau khi đánh giá.
   const readiness = await loadReadiness(prisma, listed.map((p) => p.id));
+  const currentStep = new Map(
+    listed.map((p) => {
+      const r = readiness.get(p.id) ?? { errors: [], warnings: [], notReceivedSkus: [] };
+      return [p.id, p.archived ? null : (productSteps({ published: p.published, notReceivedSkus: r.notReceivedSkus }, r).current ?? "done")] as const;
+    }),
+  );
   const products = listed.filter((p) => {
     const errors = readiness.get(p.id)?.errors.length ?? 0;
+    if (stepFilter && currentStep.get(p.id) !== stepFilter) return false;
     return status === "ready" ? errors === 0 : status === "incomplete" ? errors > 0 : true;
   });
   const archivedView = status === "archived";
@@ -54,6 +63,9 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
           </LinkButton>,
           <LinkButton key="import" href="/admin/products/import">
             {t("import")}
+          </LinkButton>,
+          <LinkButton key="combo" href="/admin/products/new?type=combo" icon="new" iconOnly={false}>
+            {t("newCombo")}
           </LinkButton>,
           <LinkButton key="new" href="/admin/products/new" variant="primary" icon="new" iconOnly={false}>
             {t("new")}
@@ -87,14 +99,24 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
           ))}
         </select>
         <select name="status" defaultValue={status} aria-label={t("colStatus")} className={fieldClass}>
-          {PRODUCT_STATUSES.map((s) => (
+          {/* "Có thể mở bán / Cần hoàn thiện" thay bằng bộ lọc Bước (URL cũ vẫn dùng được). */}
+          {PRODUCT_STATUSES.filter((s) => (s !== "ready" && s !== "incomplete") || s === status).map((s) => (
             <option key={s} value={s}>
               {t(`status.${s}`)}
             </option>
           ))}
         </select>
+        <select name="step" defaultValue={stepFilter ?? ""} aria-label={t("list.step")} className={fieldClass}>
+          <option value="">{t("list.stepAll")}</option>
+          {PRODUCT_STEPS.map((s, i) => (
+            <option key={s} value={s}>
+              {i + 1}. {t(`step.${s}`)}
+            </option>
+          ))}
+          <option value="done">{t("list.stepDone")}</option>
+        </select>
         <FilterButton>{tc("filter")}</FilterButton>
-        {(query || brandId || categoryId || warehouseId || status !== "active") && (
+        {(query || brandId || categoryId || warehouseId || status !== "active" || stepFilter) && (
           <Link href="/admin/products" className="text-sm text-primary underline">
             {t("clearFilters")}
           </Link>
@@ -112,6 +134,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
           t("colCategory"),
           t("warehouse"),
           t("colVariants"),
+          t("list.step"),
           t("colStatus"),
           t("colActions"),
         ]}
@@ -139,6 +162,19 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
                   </li>
                 ))}
               </ul>
+            </Td>
+            <Td label={t("list.step")}>
+              {(() => {
+                const cur = currentStep.get(p.id);
+                if (!cur) return <span className="text-muted-foreground">—</span>;
+                return (
+                  <Link href={`/admin/products/${p.id}${cur === "done" ? "" : `#step-${cur}`}`} data-testid="product-step" data-step={cur}>
+                    <Badge tone={cur === "done" ? "success" : "brand"}>
+                      {cur === "done" ? t("list.stepDone") : `${PRODUCT_STEPS.indexOf(cur) + 1}. ${t(`step.${cur}`)}`}
+                    </Badge>
+                  </Link>
+                );
+              })()}
             </Td>
             <Td label={t("colStatus")}>
               {(() => {

@@ -56,8 +56,15 @@ export async function openAdminNav(page: Page) {
   return nav;
 }
 
+/** Trang SP (bước 1): mở khối "Sửa thông tin sản phẩm" nếu đang đóng (SP đã đăng bán thì đóng sẵn). */
+export async function openProductEdit(page: Page) {
+  const summary = page.locator("summary:visible").filter({ hasText: "Sửa thông tin sản phẩm" });
+  if (!(await summary.evaluate((el) => el.parentElement?.hasAttribute("open")))) await summary.click();
+}
+
 /** Form SP: mở khối "Thiết lập khác" (slug, SKU, kho, hạn dùng) nếu đang đóng. */
 export async function openProductSettings(page: Page) {
+  if (await page.locator("summary:visible").filter({ hasText: "Sửa thông tin sản phẩm" }).count()) await openProductEdit(page);
   // :visible — sau khi lưu, Next giữ trang trước ở dạng ẩn nên có thể có 2 form trong DOM.
   const summary = page.locator("summary:visible").filter({ hasText: "Thiết lập khác" });
   if (!(await summary.evaluate((el) => el.parentElement?.hasAttribute("open")))) await summary.click();

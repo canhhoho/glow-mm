@@ -9,7 +9,10 @@ import { evaluateReadiness, type Issue, type Readiness } from "./readiness-rules
  * D2: nạp dữ liệu và đánh giá "sẵn sàng mở bán" cho nhiều SP một lần (số truy vấn cố định, không theo từng SKU).
  * Dùng chung cho lưu SP, bật hàng loạt, danh sách và trang chi tiết.
  */
-export async function loadReadiness(db: Tx, productIds: string[], now = new Date()): Promise<Map<string, Readiness>> {
+/** `notReceivedSkus`: biến thể đang dùng chưa từng có phiếu nhập/chuyển kho đã ghi sổ (combo: xét thành phần) — bước 2. */
+export type LoadedReadiness = Readiness & { notReceivedSkus: string[] };
+
+export async function loadReadiness(db: Tx, productIds: string[], now = new Date()): Promise<Map<string, LoadedReadiness>> {
   const ids = [...new Set(productIds)];
   if (ids.length === 0) return new Map();
   const products = await db.product.findMany({
@@ -28,7 +31,7 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
           priceMmk: true,
           weightGrams: true,
           isBundle: true,
-          bundleItems: { select: { component: { select: { weightGrams: true } } } },
+          bundleItems: { select: { componentId: true, component: { select: { weightGrams: true } } } },
         },
       },
     },
@@ -44,14 +47,29 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
     },
   });
 
-  const out = new Map<string, Readiness>();
+  // Bước 2: đã từng nhập (RECEIVE) hoặc chuyển kho (TRANSFER) đã ghi sổ — một truy vấn cho mọi biến thể + thành phần combo.
+  const stockVariantIds = [...new Set(products.flatMap((p) => p.variants.flatMap((v) => (v.isBundle ? v.bundleItems.map((b) => b.componentId) : [v.id]))))];
+  const receivedRows = stockVariantIds.length
+    ? await db.stockDocumentLine.findMany({
+        where: { variantId: { in: stockVariantIds }, document: { status: "POSTED", type: { in: ["RECEIVE", "TRANSFER"] } } },
+        distinct: ["variantId"],
+        select: { variantId: true },
+      })
+    : [];
+  const received = new Set(receivedRows.map((r) => r.variantId));
+
+  const out = new Map<string, LoadedReadiness>();
   for (const p of products) {
     const mine = balances.filter((b) => b.batch.variant.productId === p.id);
     const here = mine.filter((b) => b.locationId === p.stockLocationId);
     const skusWhere = (rows: typeof mine, pred: (r: (typeof mine)[number]) => boolean) => [...new Set(rows.filter(pred).map((r) => r.batch.variant.sku))].sort();
-    out.set(
-      p.id,
-      evaluateReadiness({
+    const notReceivedSkus = p.variants
+      .filter((v) => v.active && !(v.isBundle ? v.bundleItems.length > 0 && v.bundleItems.every((b) => received.has(b.componentId)) : received.has(v.id)))
+      .map((v) => v.sku)
+      .sort();
+    out.set(p.id, {
+      notReceivedSkus,
+      ...evaluateReadiness({
         location: p.stockLocation,
         imageCount: p.images.length,
         content: p.translations,
@@ -70,7 +88,7 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
         // Tồn ở kho bán khác kho của SP → không bán được cho đến khi chuyển kho.
         otherWarehouseSkus: skusWhere(mine, (b) => b.locationId !== p.stockLocationId),
       }),
-    );
+    });
   }
   return out;
 }

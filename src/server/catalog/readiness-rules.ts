@@ -91,3 +91,51 @@ export function listStatus(p: { archived: boolean; published: boolean }, r: Read
   if (p.published) return "PUBLISHED";
   return r.errors.length ? "INCOMPLETE" : "READY";
 }
+
+/**
+ * Quy trình 5 bước (docs/ke-hoach-quy-trinh-san-pham.md): 1 Tạo → 2 Nhập kho + giá vốn → 3 Giá bán → 4 Duyệt → 5 Đăng bán.
+ * Mỗi lỗi/cảnh báo D2 thuộc về một bước; bước 2 còn cần mọi biến thể (hoặc thành phần combo) có phiếu nhập đã ghi sổ.
+ * `current` = bước đầu tiên còn "todo" (cảnh báo không chặn tiến trình); null khi đã đăng bán và không còn việc.
+ * Trước khi có nút Duyệt (QT2), bước 4 = "đủ điều kiện mở bán" (không còn lỗi D2).
+ */
+export const PRODUCT_STEPS = ["create", "stock", "price", "review", "publish"] as const;
+export type ProductStep = (typeof PRODUCT_STEPS)[number];
+export type StepState = "done" | "warn" | "todo" | "waiting";
+export type StepView = { key: ProductStep; state: StepState; issues: Issue[] };
+
+const STEP_OF: Record<IssueCode, ProductStep> = {
+  NO_ACTIVE_VARIANT: "create",
+  BAD_LOCATION: "create",
+  NO_IMAGE: "create",
+  CONTENT_INCOMPLETE: "create",
+  NO_WEIGHT: "stock",
+  NO_WEIGHT_LOCAL: "stock",
+  COST_MISSING: "stock",
+  COST_ESTIMATED: "stock",
+  OUT_OF_STOCK: "stock",
+  STOCK_OTHER_WAREHOUSE: "stock",
+  PRICE_ZERO: "price",
+};
+
+export function productSteps(
+  p: { published: boolean; notReceivedSkus: string[] },
+  r: Readiness,
+): { steps: StepView[]; current: ProductStep | null } {
+  const of = (step: ProductStep, list: Issue[]) => list.filter((i) => STEP_OF[i.code] === step);
+  const state = (errors: Issue[], warnings: Issue[], extraTodo = false): StepState =>
+    errors.length || extraTodo ? "todo" : warnings.length ? "warn" : "done";
+  const ready = r.errors.length === 0;
+  const steps: StepView[] = (["create", "stock", "price"] as const).map((key) => {
+    const errors = of(key, r.errors);
+    const warnings = of(key, r.warnings);
+    const notReceived = key === "stock" && p.notReceivedSkus.length > 0;
+    return {
+      key,
+      state: state(errors, warnings, notReceived),
+      issues: [...errors, ...warnings],
+    };
+  });
+  steps.push({ key: "review", state: ready ? "done" : "waiting", issues: [] });
+  steps.push({ key: "publish", state: p.published ? "done" : ready ? "todo" : "waiting", issues: [] });
+  return { steps, current: steps.find((s) => s.state === "todo")?.key ?? null };
+}

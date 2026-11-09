@@ -16,6 +16,7 @@ import { readCatalogFile } from "./catalog-sheet-read";
 import { catalogImportInputSchema, commitCatalogImport, previewCatalogImport, type CatalogImportPreview } from "./catalog-import";
 import { deleteProducts, moveProductsToWarehouse, restoreProducts } from "./product-delete";
 import { ReadinessError } from "./readiness";
+import { createProduct } from "./product-create";
 import type { Issue } from "./readiness-rules";
 
 /** D2: lỗi mở bán → câu báo theo ngôn ngữ admin, kèm SKU liên quan. */
@@ -44,6 +45,37 @@ export async function saveProductAction(_prev: ActionState, formData: FormData):
   updateTag(CATALOG_TAG); // menu danh mục storefront (SP đăng/ẩn, đổi danh mục)
   revalidatePath("/admin/products");
   redirect(`/admin/products/${id}?saved=1`);
+}
+
+/** Bước 1: tạo SP (5 ô) hoặc combo → sang trang SP để làm tiếp các bước. */
+export async function createProductAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  let id: string;
+  try {
+    const user = await requirePermission("catalog:manage");
+    id = (await createProduct(JSON.parse(String(formData.get("payload") ?? "{}")), user.id)).id;
+  } catch (e) {
+    return { error: message(e) };
+  }
+  revalidatePath("/admin/products");
+  redirect(`/admin/products/${id}?created=1`);
+}
+
+const publishOneSchema = z.object({ id: formId(40), published: z.enum(["1", "0"]).transform((v) => v === "1") });
+
+/** Bước 5 trên trang SP: bật/ẩn hiển thị một SP (cùng kiểm tra mở bán như bật hàng loạt). */
+export async function setProductPublishedAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("catalog:manage");
+    const { id, published } = publishOneSchema.parse({ id: formData.get("id"), published: formData.get("published") });
+    const res = await setProductsPublished({ ids: [id], published }, user.id);
+    if (res.blocked.length) return { error: `${(await getTranslations("Products"))("readiness.blockedSave")} ${await issuesText(res.blocked[0].issues)}` };
+    revalidatePath(`/admin/products/${id}`);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  updateTag(CATALOG_TAG);
+  revalidatePath("/admin/products");
+  return { ok: "1" };
 }
 
 export type ProductBulkState =
