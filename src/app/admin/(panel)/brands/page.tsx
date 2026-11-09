@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
-import { prisma } from "@/lib/db";
+import { listBrandsAdmin } from "@/server/catalog/brand-queries";
 import { requirePagePermission } from "@/server/auth/session";
 import { BrandForm } from "@/components/admin/catalog-forms";
 import { BrandActions } from "@/components/admin/brand-actions";
@@ -12,10 +12,7 @@ export default async function BrandsPage({ searchParams }: { searchParams: Promi
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const [t, tn, tc, brands] = await Promise.all([
     getTranslations("Products"), getTranslations("Nav"), getTranslations("Common"),
-    prisma.brand.findMany({
-      where: q ? { name: { contains: q, mode: "insensitive" } } : {},
-      orderBy: { name: "asc" }, include: { _count: { select: { products: true } } }, take: 200,
-    }),
+    listBrandsAdmin(q),
   ]);
   return <Page>
     <PageHeader title={tn("brands")} />
@@ -24,13 +21,15 @@ export default async function BrandsPage({ searchParams }: { searchParams: Promi
       <FilterButton>{tc("filter")}</FilterButton>
     </FilterBar>
     <Section title={t("newBrand")}><BrandForm /></Section>
-    <DataTable stack empty={t("brandsEmpty")} head={[t("brandName"), tn("products"), t("colActions")]} numeric={[1]}>
+    <p className="text-sm text-muted-foreground">{t("brandCountsHelp")}</p>
+    <DataTable stack empty={t("brandsEmpty")} head={[t("brandName"), t("brandManagedProducts"), t("brandInStockProducts"), t("colActions")]} numeric={[1, 2]}>
       {brands.map(brand => <tr key={brand.id}>
         <Td>{brand.name}</Td>
-        <Td label={tn("products")} className="text-right tabular-nums">
-          <Link href={`/admin/products?brand=${encodeURIComponent(brand.id)}`} className="text-primary underline" aria-label={t("brandViewProducts", { name: brand.name })}>{brand._count.products}</Link>
+        <Td label={t("brandManagedProducts")} className="text-right tabular-nums">
+          <Link href={`/admin/products?brand=${encodeURIComponent(brand.id)}`} className="text-primary underline" aria-label={t("brandViewProducts", { name: brand.name })}>{brand.managedProducts}</Link>
         </Td>
-        <Td label={t("colActions")}><BrandActions id={brand.id} name={brand.name} products={brand._count.products} /></Td>
+        <Td label={t("brandInStockProducts")} className="text-right tabular-nums">{brand.inStockProducts}</Td>
+        <Td label={t("colActions")}><BrandActions id={brand.id} name={brand.name} products={brand.totalProducts} /></Td>
       </tr>)}
     </DataTable>
   </Page>;
