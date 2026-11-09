@@ -82,6 +82,14 @@ Mỗi bước = một commit trên `dev`; **dừng chờ duyệt sau mỗi giai 
 
 **Test:** `npm run check`; integration pricing (F4, sửa tay có lý do), phiếu nhập ghi khối lượng; E2E `pricing-settings`, `inventory`, `catalog-import` + mở rộng `product-flow.spec.ts` (tạo SP → nhập kho có khối lượng → tính giá → thấy bước 4 chờ).
 
+**Đã làm (09/11/2026)** — ghi chú khác kế hoạch:
+- Domain sửa giá tay: `catalog/product-pricing.ts` (`saveProductPricing`, khoá dòng SP, cập nhật có điều kiện theo giá đang đọc); action `saveProductPricingAction` (`pricing:manage`). Chỉ đổi hoa hồng/lãi cố định thì không cần lý do, không ghi lịch sử giá (vẫn audit `product.pricing`).
+- `saveProduct`: `priceMmk` tuỳ chọn (bỏ qua = giữ giá); `saveProductAction` bỏ giá/hoa hồng/lãi cố định khỏi payload. Loại mới chưa có giá thêm vào **SP đang bán** được tạo ở trạng thái **tắt** (không thì lỗi `PRICE_ZERO` chặn lưu) — đặt giá ở bước 3 rồi bật trong form sửa.
+- Khối lượng: phiếu nháp không có chỗ lưu khối lượng (không đổi DB) → ghi lên biến thể **lúc lập phiếu** (không phải lúc ghi sổ), chỉ khi đang trống, audit `variant.weight` kèm `documentId`.
+- `PRICE_STALE` chỉ xét biến thể đã có `PriceHistory` (giá đặt lúc tạo theo cách cũ không có mốc → không cảnh báo); combo xét phiếu nhập của thành phần.
+- Khối "Giá bán" hiện giá mua của phiếu nhập ghi sổ mới nhất (theo loại tiền của kho); trạng thái giá vốn thật/tạm/thiếu vẫn hiện ở bước 2 (cảnh báo `COST_*`).
+- "Tính giá SP này" = `/admin/pricing?tab=runs&productId=…` (biến thể đang bán của SP, kho của SP).
+
 ### QT2 — Bước 4 Duyệt (migration nhỏ, rủi ro vừa)
 
 1. **Migration**: `Product.approvedAt DateTime?`, `approvedById String?`, `approvedHash String?` (dấu vân tay nội dung + giá đã duyệt). Quyền mới `catalog:approve` (ADMIN) trong `roles.ts`.

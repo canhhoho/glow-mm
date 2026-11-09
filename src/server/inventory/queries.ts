@@ -59,10 +59,13 @@ export async function listVariantsForReceive() {
     return {
       id: v.id,
       sku: v.sku,
+      productId: v.productId,
       name: productName(v.product.translations, v.product.slug),
       label: v.label,
       brand: v.product.brand.name,
       stockLocationId: v.product.stockLocationId,
+      /** QT1b: chưa có → nhập ở cột Khối lượng của phiếu nhập. */
+      weightGrams: v.weightGrams,
       requiresExpiry: v.product.requiresExpiry,
       currency,
       lastCost: (currency === "MMK" ? mmk.get(v.id) : vnd.get(v.id)) ?? null,

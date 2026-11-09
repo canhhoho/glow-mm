@@ -159,7 +159,7 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
         <details className="rounded-md border px-3 py-2 text-sm" data-testid="run-skipped">
           <summary className="cursor-pointer font-medium">{t("skippedTitle", { count: run.skippedVariants.length })}</summary>
           <ul className="mt-2 space-y-1 text-xs">
-            {(["NO_COST", "NO_WEIGHT", "NO_PROFIT"] as const).map((reason) => {
+            {(["NO_COST", "NO_WEIGHT", "NO_PROFIT", "PRICE_ZERO"] as const).map((reason) => {
               const skus = run.skippedVariants.filter((s) => s.reason === reason).map((s) => s.sku);
               return skus.length > 0 ? (
                 <li key={reason}>

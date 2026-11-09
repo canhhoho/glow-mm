@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { getProductForEdit, getProductImages, productFormOptions } from "@/server/catalog/admin-queries";
-import { deleteProductImageAction, reorderProductImageAction, setProductPublishedAction, updateProductImageAltAction } from "@/server/catalog/actions";
+import { deleteProductImageAction, reorderProductImageAction, saveProductPricingAction, setProductPublishedAction, updateProductImageAltAction } from "@/server/catalog/actions";
+import { loadProductPricing, type PriceSource } from "@/server/catalog/product-pricing";
 import { loadReadiness } from "@/server/catalog/readiness";
 import { productSteps, type Issue, type ProductStep } from "@/server/catalog/readiness-rules";
 import { ActionButton } from "@/components/admin/action-button";
@@ -13,7 +14,7 @@ import { ProductForm } from "@/components/admin/product-form";
 import { ProductImageUpload } from "@/components/admin/product-images";
 import { ProductStepsBar, StepTitle } from "@/components/admin/product-steps";
 import { Badge, DataTable, fieldClass, fieldLabelClass, LinkButton, Notice, Page, PageHeader, Section, Td } from "@/components/admin/ui";
-import { fmtInt } from "@/lib/format";
+import { fmtDay, fmtInt } from "@/lib/format";
 import { localizedPath } from "@/lib/site";
 import { prisma } from "@/lib/db";
 
@@ -34,6 +35,16 @@ export default async function EditProductPage({ params, searchParams }: PageProp
   if (!product) notFound();
   // D2: cùng bộ kiểm tra với lúc lưu / bật hàng loạt / danh sách.
   const readiness = (await loadReadiness(prisma, [product.id])).get(product.id) ?? { errors: [], warnings: [], notReceivedSkus: [] };
+  const pricingMode = options.warehouses.find((w) => w.id === product.stockLocationId)?.pricingMode ?? null;
+  const pricing = await loadProductPricing(product.variants.map((v) => v.id), pricingMode);
+  const sourceText = (s: PriceSource | undefined) =>
+    !s || s.kind === "none"
+      ? t("priceBlock.sourceNone")
+      : s.kind === "run"
+        ? <a href={`/admin/pricing/runs/${s.runId}`} className="text-primary underline">{t("priceBlock.sourceRun")} · {fmtDay(s.at)}</a>
+        : s.kind === "import"
+          ? `${t("priceBlock.sourceImport")} · ${fmtDay(s.at)}`
+          : `${t("priceBlock.sourceManual")} · ${fmtDay(s.at)}${s.note ? ` — ${s.note}` : ""}`;
   const flow = productSteps({ published: product.published, notReceivedSkus: readiness.notReceivedSkus }, readiness);
   const step = (key: ProductStep) => flow.steps.find((s) => s.key === key)!;
 
@@ -144,7 +155,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
         title={<StepTitle index={2} step={step("stock")} t={t} />}
         actions={
           <div className="flex flex-wrap gap-2">
-            <LinkButton href="/admin/inventory/documents/new?type=RECEIVE" icon="new">
+            <LinkButton href={`/admin/inventory/documents/new?type=RECEIVE&product=${product.id}`} icon="new">
               {t("block.receive")}
             </LinkButton>
             <LinkButton href={`/admin/inventory?q=${encodeURIComponent(product.variants[0]?.sku ?? product.slug)}`}>{t("block.viewStock")}</LinkButton>
@@ -157,24 +168,79 @@ export default async function EditProductPage({ params, searchParams }: PageProp
         {stepIssues("stock").length > 0 && issueList(stepIssues("stock"))}
       </Section>
 
-      {/* ── Bước 3: giá bán (sửa giá tại đây ở QT1b; tạm thời sửa trong form bước 1 hoặc bảng tính giá) ── */}
+      {/* ── Bước 3: giá bán — nơi duy nhất đặt giá ngoài bảng tính giá (QT1b) ── */}
       <Section
         id="step-price"
         className="scroll-mt-20"
         title={<StepTitle index={3} step={step("price")} t={t} />}
-        actions={<LinkButton href="/admin/pricing?tab=runs">{t("block.calcPrice")}</LinkButton>}
+        actions={<LinkButton href={`/admin/pricing?tab=runs&productId=${product.id}`}>{t("priceBlock.calcThis")}</LinkButton>}
       >
-        <DataTable stack head={[t("sku"), t("label"), t("price")]} numeric={[2]}>
-          {product.variants.map((v) => (
-            <tr key={v.id} data-testid="step-price-row">
-              <Td className="font-mono text-xs break-all">{v.sku}</Td>
-              <Td label={t("label")}>{v.label}</Td>
-              <Td label={t("price")} className={v.priceMmk > 0 ? "text-right tabular-nums" : "text-right text-destructive tabular-nums"}>{fmtInt(v.priceMmk)}</Td>
-            </tr>
-          ))}
+        <DataTable stack head={[t("sku"), t("label"), t("price"), t("priceBlock.source"), t("priceBlock.lastCost"), t("weight")]} numeric={[2]}>
+          {product.variants.map((v) => {
+            const row = pricing.get(v.id);
+            return (
+              <tr key={v.id} data-testid="step-price-row">
+                <Td className="text-xs break-all">
+                  <span className="font-mono">{v.sku}</span>
+                  {!v.active && <span className="ml-1 text-muted-foreground">({t("priceBlock.inactive")})</span>}
+                </Td>
+                <Td label={t("label")}>{v.label}</Td>
+                <Td label={t("price")} className={v.priceMmk > 0 ? "text-right tabular-nums" : "text-right text-destructive tabular-nums"}>{fmtInt(v.priceMmk)}</Td>
+                <Td label={t("priceBlock.source")} className="text-xs">{sourceText(row?.source)}</Td>
+                <Td label={t("priceBlock.lastCost")} className="text-xs tabular-nums">
+                  {row?.cost ? (
+                    <>
+                      {fmtInt(row.cost.amount)} {row.cost.currency}
+                      {row.cost.source && <div className="text-muted-foreground">{row.cost.source.documentCode}</div>}
+                    </>
+                  ) : (
+                    "—"
+                  )}
+                </Td>
+                <Td label={t("weight")} className="text-xs tabular-nums">{v.weightGrams ? `${fmtInt(v.weightGrams)} g` : "—"}</Td>
+              </tr>
+            );
+          })}
         </DataTable>
         {stepIssues("price").length > 0 && issueList(stepIssues("price"))}
-        <p className="text-xs text-muted-foreground">{t("block.priceInterim")}</p>
+        <details className="rounded-lg border p-4" data-testid="price-manual">
+          <summary className="cursor-pointer font-medium">{t("priceBlock.manual")}</summary>
+          {/* ActionForm reset sau khi lưu → ô về giá trị mới (defaultValue của lần render sau revalidate). */}
+          <div className="mt-3">
+            <ActionForm action={saveProductPricingAction} submitLabel={t("priceBlock.save")} okText={t("priceBlock.saved")} className="space-y-3">
+              <p className="text-xs text-muted-foreground">{t("priceBlock.manualHelp")}</p>
+              <input type="hidden" name="productId" value={product.id} />
+              {product.variants.map((v) => (
+                <fieldset key={v.id} className="grid gap-2 rounded-md border p-3 sm:grid-cols-2">
+                  <legend className="px-1 text-sm">
+                    {v.label} <span className="font-mono text-xs text-muted-foreground">{v.sku}</span>
+                  </legend>
+                  <input type="hidden" name="variantId" value={v.id} />
+                  <label className={fieldLabelClass}>
+                    <span className="text-muted-foreground">{t("price")}</span>
+                    <input name="priceMmk" aria-label={`${t("price")} ${v.sku}`} type="number" required min={1} step={1} inputMode="numeric" defaultValue={v.priceMmk || ""} className={fieldClass} />
+                  </label>
+                  <label className={fieldLabelClass}>
+                    <span className="text-muted-foreground">{t("affiliateCommission")}</span>
+                    <input name="affiliateCommissionMmk" aria-label={`${t("affiliateCommission")} ${v.sku}`} type="number" min={0} step={100} inputMode="numeric" defaultValue={v.affiliateCommissionMmk ?? ""} className={fieldClass} />
+                    <span className="text-xs text-muted-foreground">{t("affiliateCommissionHint")}</span>
+                  </label>
+                </fieldset>
+              ))}
+              {pricingMode === "LOCAL_MMK" && (
+                <label className={fieldLabelClass}>
+                  <span className="text-muted-foreground">{t("fixedProfitMmk")}</span>
+                  <input name="fixedProfitMmk" type="number" min={0} step={1} inputMode="numeric" defaultValue={product.fixedProfitMmk ?? ""} className={fieldClass} />
+                  <span className="text-xs text-muted-foreground">{t("fixedProfitHint")}</span>
+                </label>
+              )}
+              <label className={fieldLabelClass}>
+                <span className="text-muted-foreground">{t("priceBlock.reason")}</span>
+                <input name="reason" maxLength={200} className={fieldClass} />
+              </label>
+            </ActionForm>
+          </div>
+        </details>
       </Section>
 
       {/* ── Bước 4: duyệt (hiện = kiểm tra mở bán D2; nút Duyệt có lưu vết ở QT2) ── */}

@@ -65,7 +65,7 @@ export function CatalogImport() {
                 <Td>{r.name}<div className="text-xs text-muted-foreground">{r.label}</div></Td>
                 <Td className="font-mono text-xs">{r.sku}</Td>
                 <Td className="whitespace-nowrap tabular-nums">
-                  {r.oldPrice != null && r.oldPrice !== r.price && <span className="text-muted-foreground line-through">{fmtInt(r.oldPrice)}</span>} {fmtInt(r.price)}
+                  {r.oldPrice != null && r.oldPrice !== r.price && <span className="text-muted-foreground line-through">{fmtInt(r.oldPrice)}</span>} {r.price == null ? <span className="text-muted-foreground">—</span> : fmtInt(r.price)}
                 </Td>
                 <Td>
                   {r.stock && (

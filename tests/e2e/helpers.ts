@@ -70,6 +70,28 @@ export async function openProductSettings(page: Page) {
   if (!(await summary.evaluate((el) => el.parentElement?.hasAttribute("open")))) await summary.click();
 }
 
+/** Trang SP bước 3 (QT1b): mở khối "Sửa giá tay" nếu đang đóng. */
+export async function openPriceManual(page: Page) {
+  const box = page.getByTestId("price-manual").filter({ visible: true });
+  if (!(await box.evaluate((el) => el.hasAttribute("open")))) await box.locator("summary").click();
+  return box;
+}
+
+/** Ô giá (MMK) của từng biến thể trong "Sửa giá tay" — theo thứ tự biến thể trên trang. */
+export async function priceInputs(page: Page) {
+  return (await openPriceManual(page)).getByRole("spinbutton", { name: /^Giá \(MMK\) / });
+}
+
+/** Đặt giá ở bước 3 (bắt buộc lý do), chờ báo đã lưu. `prices[i]` = biến thể thứ i; bỏ trống = giữ nguyên. */
+export async function setPrices(page: Page, prices: (number | string | undefined)[], reason = "E2E") {
+  const box = await openPriceManual(page);
+  const inputs = box.getByRole("spinbutton", { name: /^Giá \(MMK\) / });
+  for (const [i, p] of prices.entries()) if (p !== undefined) await inputs.nth(i).fill(String(p));
+  await box.getByRole("textbox", { name: "Lý do sửa giá", exact: true }).fill(reason);
+  await box.getByRole("button", { name: "Lưu giá", exact: true }).click();
+  await expect(box.getByRole("status")).toContainText("Đã lưu giá", { timeout: 15_000 });
+}
+
 /** Open a top-level accordion without changing the state of other menu groups. */
 export async function openAdminGroup(page: Page, label: string) {
   const nav = await openAdminNav(page);

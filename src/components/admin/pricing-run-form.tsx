@@ -18,6 +18,7 @@ export function PricingRunForm({
   roundTo,
   lastShip,
   receiptId,
+  variantIds,
   initialLocationId,
 }: {
   warehouses: (Option & { pricingMode: "VN_IMPORT" | "LOCAL_MMK" })[];
@@ -27,6 +28,8 @@ export function PricingRunForm({
   roundTo: number;
   lastShip: number | null;
   receiptId?: string;
+  /** Giới hạn bản xem trước trong các biến thể này (vd "Tính giá SP này"). */
+  variantIds?: string[];
   initialLocationId?: string;
 }) {
   const t = useTranslations("Pricing");
@@ -43,6 +46,7 @@ export function PricingRunForm({
       ) : (
         <ActionForm action={previewRunAction} submitLabel={t("preview")} className="grid gap-3 sm:grid-cols-2" icon={<Eye aria-hidden className="size-4 shrink-0" />}>
           {receiptId && <input type="hidden" name="receiptId" value={receiptId} />}
+          {variantIds?.map((id) => <input key={id} type="hidden" name="variantIds" value={id} />)}
           <label className={fieldLabelClass}>
             <span className="text-muted-foreground">{t("warehouse")}</span>
             <select name="locationId" aria-label={t("warehouse")} value={locationId} onChange={(e) => setLocationId(e.target.value)} className={fieldClass}>

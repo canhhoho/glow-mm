@@ -328,7 +328,10 @@
     "estimateShip": "Cước tạm tính VN → MM (MMK/kg)",
     "estimateHelp": "Khi ghi sổ: giá vốn tạm = giá mua quy đổi MMK + cước × khối lượng. Để trống nếu chưa biết cước; thiếu tỷ giá hoặc khối lượng sẽ báo thiếu giá vốn. Chi phí thực tế của chuyến được ưu tiên khi đã phân bổ.",
     "priceReceived": "Tính giá SKU vừa nhập",
-    "pickedWarning": "Có phiếu soạn chưa bàn giao cho các SKU tại kho này: {codes}. Kiểm tra lô trước khi xuất/chuyển; dùng lô đã soạn có thể khiến đơn phải in lại phiếu."
+    "pickedWarning": "Có phiếu soạn chưa bàn giao cho các SKU tại kho này: {codes}. Kiểm tra lô trước khi xuất/chuyển; dùng lô đã soạn có thể khiến đơn phải in lại phiếu.",
+    "weightGrams": "Khối lượng (g)",
+    "productScope": "Đang hiện các loại của sản phẩm {name}.",
+    "showAllProducts": "Hiện tất cả sản phẩm"
   },
   "Ship": {
     "title": "Chuyến hàng VN → MM",
@@ -521,7 +524,8 @@
         "COST_MISSING": "Tồn bán thiếu giá vốn",
         "COST_ESTIMATED": "Tồn bán đang dùng giá vốn tạm",
         "OUT_OF_STOCK": "Hết hàng khả dụng (trang SP vẫn hiện, không mua được)",
-        "STOCK_OTHER_WAREHOUSE": "Có tồn ở kho bán khác — chuyển kho để bán"
+        "STOCK_OTHER_WAREHOUSE": "Có tồn ở kho bán khác — chuyển kho để bán",
+        "PRICE_STALE": "Có phiếu nhập mới sau lần đặt giá gần nhất — nên tính lại giá"
       },
       "blockedSave": "Chưa bật hiển thị / lưu được:",
       "blockedBulk": "{count} sản phẩm chưa bật được vì còn lỗi:",
@@ -587,7 +591,6 @@
       "receivedAll": "Mọi phân loại đã có phiếu nhập hoặc chuyển kho đã ghi sổ.",
       "receive": "Nhập hàng",
       "viewStock": "Xem tồn kho",
-      "priceInterim": "Sửa giá trong «Sửa thông tin sản phẩm» ở bước 1 hoặc dùng bảng tính giá.",
       "calcPrice": "Tính giá",
       "reviewInterim": "Hiện tại bước này do hệ thống kiểm tra đủ điều kiện mở bán; nút Duyệt có lưu người duyệt sẽ được thêm sau.",
       "published": "Đang hiển thị trên web.",
@@ -602,6 +605,21 @@
       "step": "Bước",
       "stepAll": "Mọi bước",
       "stepDone": "Đã đăng bán"
+    },
+    "priceBlock": {
+      "calcThis": "Tính giá SP này",
+      "source": "Nguồn giá",
+      "sourceRun": "Bảng tính giá",
+      "sourceManual": "Sửa tay",
+      "sourceImport": "Excel",
+      "sourceNone": "Chưa có lịch sử",
+      "lastCost": "Giá mua gần nhất",
+      "inactive": "đang tắt",
+      "manual": "Sửa giá tay",
+      "manualHelp": "Giá phải lớn hơn 0. Đổi giá cần ghi lý do (lưu vào lịch sử giá).",
+      "reason": "Lý do sửa giá",
+      "save": "Lưu giá",
+      "saved": "Đã lưu giá"
     }
   },
   "Orders": {
@@ -978,7 +996,8 @@
     "skippedReason": {
       "NO_COST": "Thiếu giá mua đã ghi sổ",
       "NO_WEIGHT": "Thiếu khối lượng",
-      "NO_PROFIT": "Thiếu lãi cố định"
+      "NO_PROFIT": "Thiếu lãi cố định",
+      "PRICE_ZERO": "Giá tính ra bằng 0"
     },
     "expiresAt": "Hết hạn {date}",
     "expired": "Bản xem trước đã hết hạn hoặc tạo theo cách tính cũ — tạo bản mới để áp dụng.",
@@ -987,7 +1006,9 @@
     "receiptScope": "Chỉ tính các SKU trong phiếu {code}; vẫn áp dụng bộ lọc kho, danh mục và thương hiệu bên dưới.",
     "lowMarginWarning": "Lãi minh họa sau cước và hoa hồng {rate}%: {profit} MMK (≤ 5% giá bán). Chưa trừ phí bán khác; tỷ lệ CTV thực tế có thể khác.",
     "largeChangeWarning": "Giá thay đổi từ 20% — kiểm tra trước khi áp dụng.",
-    "lowMarginWarningFixed": "Lãi minh họa sau cước, hoa hồng CTV {fixed} MMK/cái và tầng trên {rate}%: {profit} MMK (≤ 5% giá bán). Chưa trừ phí bán khác."
+    "lowMarginWarningFixed": "Lãi minh họa sau cước, hoa hồng CTV {fixed} MMK/cái và tầng trên {rate}%: {profit} MMK (≤ 5% giá bán). Chưa trừ phí bán khác.",
+    "productScope": "Chỉ tính các biến thể đang bán của sản phẩm {name}.",
+    "productInvalid": "Sản phẩm không tồn tại hoặc không còn biến thể đang bán."
   },
   "Quarantine": {
     "title": "Hàng chờ kiểm tra (hàng trả)",

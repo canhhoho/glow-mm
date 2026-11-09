@@ -328,7 +328,10 @@
     "estimateShip": "Estimated VN → MM freight (MMK/kg)",
     "estimateHelp": "On posting: estimated cost = purchase cost converted to MMK + freight × weight. Leave blank if unknown. Missing exchange rate or weight leaves the cost missing. Allocated actual shipment costs take priority.",
     "priceReceived": "Price received SKUs",
-    "pickedWarning": "Unshipped pick lists use these SKUs at this warehouse: {codes}. Check batches before issuing/transferring; using picked stock may require reprinting the order pick list."
+    "pickedWarning": "Unshipped pick lists use these SKUs at this warehouse: {codes}. Check batches before issuing/transferring; using picked stock may require reprinting the order pick list.",
+    "weightGrams": "Weight (g)",
+    "productScope": "Showing the variants of {name}.",
+    "showAllProducts": "Show all products"
   },
   "Ship": {
     "title": "Shipments VN → MM",
@@ -521,7 +524,8 @@
         "COST_MISSING": "Sellable stock has no cost",
         "COST_ESTIMATED": "Sellable stock uses an estimated cost",
         "OUT_OF_STOCK": "Out of stock (page stays visible, cannot be bought)",
-        "STOCK_OTHER_WAREHOUSE": "Stock sits in another sales warehouse — transfer it to sell"
+        "STOCK_OTHER_WAREHOUSE": "Stock sits in another sales warehouse — transfer it to sell",
+        "PRICE_STALE": "Stock was received after the last price change — recalculate the price"
       },
       "blockedSave": "Cannot publish / save:",
       "blockedBulk": "{count} products were not published because of errors:",
@@ -587,7 +591,6 @@
       "receivedAll": "Every option has a posted receipt or transfer.",
       "receive": "Receive stock",
       "viewStock": "View stock",
-      "priceInterim": "Edit prices under «Edit product details» in step 1, or use a pricing run.",
       "calcPrice": "Calculate price",
       "reviewInterim": "For now the system checks whether the product is ready to sell; an approval button that records the reviewer will be added later.",
       "published": "Visible on the website.",
@@ -602,6 +605,21 @@
       "step": "Step",
       "stepAll": "All steps",
       "stepDone": "Published"
+    },
+    "priceBlock": {
+      "calcThis": "Calculate this product",
+      "source": "Price source",
+      "sourceRun": "Pricing run",
+      "sourceManual": "Manual",
+      "sourceImport": "Excel",
+      "sourceNone": "No history",
+      "lastCost": "Latest purchase cost",
+      "inactive": "off",
+      "manual": "Edit prices manually",
+      "manualHelp": "Price must be above 0. Changing a price needs a reason (saved in price history).",
+      "reason": "Reason for price change",
+      "save": "Save prices",
+      "saved": "Prices saved"
     }
   },
   "Orders": {
@@ -978,7 +996,8 @@
     "skippedReason": {
       "NO_COST": "No posted purchase cost",
       "NO_WEIGHT": "Missing weight",
-      "NO_PROFIT": "Missing fixed profit"
+      "NO_PROFIT": "Missing fixed profit",
+      "PRICE_ZERO": "Calculated price is 0"
     },
     "expiresAt": "Expires {date}",
     "expired": "This preview has expired or uses the old method — create a new preview to apply prices.",
@@ -987,7 +1006,9 @@
     "receiptScope": "Only SKUs in receipt {code}; warehouse, category and brand filters below still apply.",
     "lowMarginWarning": "Illustrative profit after freight and {rate}% commission: {profit} MMK (≤ 5% of price). Other sales fees excluded; actual affiliate rates may differ.",
     "largeChangeWarning": "Price changes by at least 20% — review before applying.",
-    "lowMarginWarningFixed": "Illustrative profit after shipping, affiliate commission {fixed} MMK/unit and upline {rate}%: {profit} MMK (≤ 5% of price). Other selling fees not deducted."
+    "lowMarginWarningFixed": "Illustrative profit after shipping, affiliate commission {fixed} MMK/unit and upline {rate}%: {profit} MMK (≤ 5% of price). Other selling fees not deducted.",
+    "productScope": "Only the active variants of {name}.",
+    "productInvalid": "The product does not exist or has no active variants."
   },
   "Quarantine": {
     "title": "Quarantine (returned goods)",

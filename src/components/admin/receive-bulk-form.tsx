@@ -67,14 +67,31 @@ function rowInvalid(r: Row, d: Defaults) {
 type Location = { id: string; code: string; name: string; sellable: boolean; pricingMode: "VN_IMPORT" | "LOCAL_MMK" | null };
 
 /** Phiếu nhập nhiều SP: bảng mọi biến thể, chỉ dòng có SL > 0 vào phiếu; dán từ Excel để điền nhanh. */
-export function ReceiveBulkForm({ locations, shipments, variants, lastShip = null }: { locations: Location[]; shipments: { id: string; code: string }[]; variants: ReceiveVariant[]; lastShip?: number | null }) {
+/** `productId` (QT1b, nút "Nhập hàng" ở bước 2 trang SP): chỉ hiện biến thể của SP đó + chọn sẵn kho của SP. */
+export function ReceiveBulkForm({
+  locations,
+  shipments,
+  variants,
+  lastShip = null,
+  productId,
+}: {
+  locations: Location[];
+  shipments: { id: string; code: string }[];
+  variants: ReceiveVariant[];
+  lastShip?: number | null;
+  productId?: string;
+}) {
   const t = useTranslations("Docs");
   const ti = useTranslations("Inventory");
   const [state, action, pending] = useActionState(createDocumentAction, undefined);
   const byId = useMemo(() => new Map(variants.map((v) => [v.id, v])), [variants]);
   const bySku = useMemo(() => new Map(variants.map((v) => [v.sku, v])), [variants]);
 
-  const [toId, setToId] = useState("");
+  const focus = productId ? variants.filter((v) => v.productId === productId) : [];
+  const [productFilter, setProductFilter] = useState(focus.length ? productId! : "");
+  const [toId, setToId] = useState(() => (focus.length && locations.some((l) => l.id === focus[0].stockLocationId) ? focus[0].stockLocationId : ""));
+  /** Khối lượng (g) theo biến thể — chỉ cho biến thể chưa có khối lượng. */
+  const [weights, setWeights] = useState<Record<string, string>>({});
   const [shipmentId, setShipmentId] = useState("");
   const [estimatedShip, setEstimatedShip] = useState(lastShip == null ? "" : String(lastShip));
   const [reason, setReason] = useState("");
@@ -91,6 +108,8 @@ export function ReceiveBulkForm({ locations, shipments, variants, lastShip = nul
   const [pasteMsg, setPasteMsg] = useState<{ filled: number; errors: string[] } | null>(null);
 
   const brands = useMemo(() => [...new Set(variants.map((v) => v.brand))].sort((a, b) => a.localeCompare(b)), [variants]);
+
+  const setWeight = useCallback((variantId: string, value: string) => setWeights((w) => ({ ...w, [variantId]: value })), []);
 
   const update = useCallback((key: number, patch: Partial<Row>) => {
     setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)));
@@ -121,9 +140,10 @@ export function ReceiveBulkForm({ locations, shipments, variants, lastShip = nul
       const v = byId.get(r.variantId)!;
       if (!inScope(v)) return false;
       if (brand && v.brand !== brand) return false;
+      if (productFilter && v.productId !== productFilter) return false;
       return !needle || fold(`${v.sku} ${v.name} ${v.label} ${v.brand}`).includes(needle);
     });
-  }, [rows, q, brand, onlyFilled, byId, inScope]);
+  }, [rows, q, brand, onlyFilled, byId, inScope, productFilter]);
 
   const filled = rows.filter((r) => hasQty(r) && inScope(byId.get(r.variantId)!));
   const canUseShipment = (!!toLoc && toLoc.sellable && toLoc.pricingMode !== "LOCAL_MMK") || (!!toLoc && !toLoc.sellable && filled.length > 0 && filled.every((r) => byId.get(r.variantId)!.currency === "VND"));
@@ -216,6 +236,9 @@ export function ReceiveBulkForm({ locations, shipments, variants, lastShip = nul
           stockType: eff.stockType,
         };
       }),
+      weights: [...new Set(filled.map((r) => r.variantId))]
+        .filter((id) => !byId.get(id)!.weightGrams && Number(weights[id]) > 0)
+        .map((id) => ({ variantId: id, weightGrams: weights[id] })),
     };
     const fd = new FormData();
     fd.set("payload", JSON.stringify(payload));
@@ -287,6 +310,15 @@ export function ReceiveBulkForm({ locations, shipments, variants, lastShip = nul
         </label>
       )}
 
+      {productFilter && focus.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm" data-testid="receive-product-scope">
+          <span>{t("productScope", { name: focus[0].name })}</span>
+          <Button type="button" variant="outline" size="lg" onClick={() => setProductFilter("")}>
+            {t("showAllProducts")}
+          </Button>
+        </div>
+      )}
+
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("searchVariant")} aria-label={t("searchVariant")} className={cn(fieldClass, "w-full sm:w-72")} />
@@ -346,19 +378,31 @@ export function ReceiveBulkForm({ locations, shipments, variants, lastShip = nul
               <th className="px-2 py-2 font-medium">{t("mfg")}</th>
               <th className="px-2 py-2 font-medium">{toLoc?.pricingMode === "LOCAL_MMK" ? t("unitCostMmk") : toLoc && !toLoc.sellable ? t("unitCostAny") : t("unitCost")}</th>
               <th className="px-2 py-2 font-medium">{t("stockType")}</th>
+              <th className="px-2 py-2 font-medium">{t("weightGrams")}</th>
               <th className="px-2 py-2" />
             </tr>
           </thead>
           <tbody className="divide-y">
             {visible.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
+                <td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">
                   {toLoc ? t("noMatch") : t("chooseWarehouseFirst")}
                 </td>
               </tr>
             ) : (
               visible.map((r) => (
-                <ReceiveRow key={r.key} row={r} variant={byId.get(r.variantId)!} defaults={defaults} invalid={invalid.has(r.key)} onChange={update} onSplit={split} onRemove={remove} />
+                <ReceiveRow
+                  key={r.key}
+                  row={r}
+                  variant={byId.get(r.variantId)!}
+                  defaults={defaults}
+                  invalid={invalid.has(r.key)}
+                  weight={weights[r.variantId] ?? ""}
+                  onWeight={setWeight}
+                  onChange={update}
+                  onSplit={split}
+                  onRemove={remove}
+                />
               ))
             )}
           </tbody>
@@ -397,6 +441,8 @@ const ReceiveRow = memo(function ReceiveRow({
   variant: v,
   defaults: d,
   invalid,
+  weight,
+  onWeight,
   onChange,
   onSplit,
   onRemove,
@@ -405,6 +451,8 @@ const ReceiveRow = memo(function ReceiveRow({
   variant: ReceiveVariant;
   defaults: Defaults;
   invalid: boolean;
+  weight: string;
+  onWeight: (variantId: string, value: string) => void;
   onChange: (key: number, patch: Partial<Row>) => void;
   onSplit: (key: number) => void;
   onRemove: (key: number) => void;
@@ -463,6 +511,14 @@ const ReceiveRow = memo(function ReceiveRow({
           <option value="SELLABLE">{ti("SELLABLE")}</option>
           <option value="TESTER">{ti("TESTER")}</option>
         </select>
+      </td>
+      <td className={cell}>
+        <Cap>{t("weightGrams")}</Cap>
+        {v.weightGrams ? (
+          <span className="text-xs text-muted-foreground tabular-nums">{v.weightGrams} g</span>
+        ) : r.split ? null : (
+          <input aria-label={label(t("weightGrams"))} type="number" min={1} max={100000} step={1} inputMode="numeric" value={weight} onChange={(e) => onWeight(v.id, e.target.value)} className={cn(small, "w-20")} />
+        )}
       </td>
       <td className={cn(cell, "whitespace-nowrap max-md:col-span-2")}>
         <Button type="button" variant="outline" size="lg" onClick={() => onSplit(r.key)} title={t("splitLotHelp")}><Plus aria-hidden className="size-4 shrink-0" /> {t("addLot")}</Button>

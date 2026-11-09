@@ -13,6 +13,7 @@ export const WARNING_CODES = [
   "COST_ESTIMATED",
   "OUT_OF_STOCK",
   "STOCK_OTHER_WAREHOUSE",
+  "PRICE_STALE",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 export type WarningCode = (typeof WARNING_CODES)[number];
@@ -44,6 +45,8 @@ export type ReadinessInput = {
   costMissingSkus: string[];
   costEstimatedSkus: string[];
   otherWarehouseSkus: string[];
+  /** QT1b: có phiếu nhập ghi sổ sau lần đổi giá gần nhất (combo: của thành phần) → nên tính lại giá. */
+  staleSkus?: string[];
 };
 
 export type Readiness = { errors: Issue[]; warnings: Issue[] };
@@ -73,6 +76,7 @@ export function evaluateReadiness(p: ReadinessInput): Readiness {
     ...withSkus("COST_ESTIMATED", p.costEstimatedSkus),
     ...(active.length > 0 && active.every((v) => (p.available.get(v.id) ?? 0) <= 0) ? [{ code: "OUT_OF_STOCK" as const }] : []),
     ...withSkus("STOCK_OTHER_WAREHOUSE", p.otherWarehouseSkus),
+    ...withSkus("PRICE_STALE", p.staleSkus ?? []),
   ];
   return { errors, warnings };
 }
@@ -115,6 +119,7 @@ const STEP_OF: Record<IssueCode, ProductStep> = {
   OUT_OF_STOCK: "stock",
   STOCK_OTHER_WAREHOUSE: "stock",
   PRICE_ZERO: "price",
+  PRICE_STALE: "price",
 };
 
 export function productSteps(

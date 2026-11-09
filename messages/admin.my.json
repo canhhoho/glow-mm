@@ -328,7 +328,10 @@
     "estimateShip": "VN → MM ခန့်မှန်းပို့ဆောင်ခ (MMK/kg)",
     "estimateHelp": "စာရင်းသွင်းချိန် ခန့်မှန်းကုန်ကျစရိတ် = MMK ပြောင်းထားသော ဝယ်ဈေး + ပို့ခ × အလေးချိန်။ မသိလျှင် ဗလာထားပါ။ ငွေလဲနှုန်း သို့မဟုတ် အလေးချိန်မရှိလျှင် ကုန်ကျစရိတ်မပြည့်စုံဟု ပြမည်။ ခွဲဝေပြီးသော အမှန်ကုန်ကျစရိတ်ကို ဦးစားပေးမည်။",
     "priceReceived": "Price received SKUs",
-    "pickedWarning": "Unshipped pick lists use these SKUs at this warehouse: {codes}. Check batches before issuing/transferring; using picked stock may require reprinting the order pick list."
+    "pickedWarning": "Unshipped pick lists use these SKUs at this warehouse: {codes}. Check batches before issuing/transferring; using picked stock may require reprinting the order pick list.",
+    "weightGrams": "အလေးချိန် (g)",
+    "productScope": "{name} ၏ အမျိုးအစားများကို ပြနေသည်။",
+    "showAllProducts": "ပစ္စည်းအားလုံး ပြရန်"
   },
   "Ship": {
     "title": "ကုန်တင်ပို့မှု VN → MM",
@@ -521,7 +524,8 @@
         "COST_MISSING": "ရောင်းနိုင်သော လက်ကျန်တွင် ကုန်ကျစရိတ် မရှိ",
         "COST_ESTIMATED": "ရောင်းနိုင်သော လက်ကျန်သည် ခန့်မှန်း ကုန်ကျစရိတ် သုံးသည်",
         "OUT_OF_STOCK": "ကုန်ပြတ် (စာမျက်နှာ ပြသနေဆဲ၊ ဝယ်၍မရ)",
-        "STOCK_OTHER_WAREHOUSE": "အခြား ရောင်းဂိုဒေါင်တွင် လက်ကျန်ရှိ — ရောင်းရန် ဂိုဒေါင်ပြောင်းပါ"
+        "STOCK_OTHER_WAREHOUSE": "အခြား ရောင်းဂိုဒေါင်တွင် လက်ကျန်ရှိ — ရောင်းရန် ဂိုဒေါင်ပြောင်းပါ",
+        "PRICE_STALE": "နောက်ဆုံး ဈေးသတ်မှတ်ပြီးနောက် ပစ္စည်းအသစ် ဝင်လာသည် — ဈေး ပြန်တွက်ပါ"
       },
       "blockedSave": "ပြသ / သိမ်းဆည်း၍ မရပါ:",
       "blockedBulk": "အမှားရှိ၍ ပစ္စည်း {count} ခု မပြသနိုင်ပါ:",
@@ -587,7 +591,6 @@
       "receivedAll": "အမျိုးအစားခွဲအားလုံးတွင် စာရင်းသွင်းပြီးသော သွင်း/ပြောင်းရွှေ့ စာရွက် ရှိသည်။",
       "receive": "ပစ္စည်းသွင်းရန်",
       "viewStock": "လက်ကျန်ကြည့်ရန်",
-      "priceInterim": "ဈေးနှုန်းကို အဆင့် ၁ ရှိ «ပစ္စည်းအချက်အလက် ပြင်ရန်» တွင် ပြင်ပါ သို့မဟုတ် ဈေးတွက်ဇယား သုံးပါ။",
       "calcPrice": "ဈေးတွက်ရန်",
       "reviewInterim": "ယခုအဆင့်ကို စနစ်က ရောင်းရန် အဆင်သင့်ဖြစ်မှု စစ်ဆေးသည်။ အတည်ပြုသူ မှတ်တမ်းပါ ခလုတ်ကို နောက်မှ ထည့်မည်။",
       "published": "ဝက်ဘ်ဆိုက်တွင် ပြသနေသည်။",
@@ -602,6 +605,21 @@
       "step": "အဆင့်",
       "stepAll": "အဆင့်အားလုံး",
       "stepDone": "ရောင်းရန် တင်ပြီး"
+    },
+    "priceBlock": {
+      "calcThis": "ဤပစ္စည်း ဈေးတွက်ရန်",
+      "source": "ဈေး ရင်းမြစ်",
+      "sourceRun": "ဈေးတွက်ဇယား",
+      "sourceManual": "လက်ဖြင့် ပြင်",
+      "sourceImport": "Excel",
+      "sourceNone": "မှတ်တမ်း မရှိ",
+      "lastCost": "နောက်ဆုံး ဝယ်ဈေး",
+      "inactive": "ပိတ်ထား",
+      "manual": "ဈေးကို လက်ဖြင့် ပြင်ရန်",
+      "manualHelp": "ဈေးသည် 0 ထက် ကြီးရမည်။ ဈေးပြောင်းလျှင် အကြောင်းရင်း ရေးရမည် (ဈေးမှတ်တမ်းတွင် သိမ်းမည်)။",
+      "reason": "ဈေးပြင်ရသည့် အကြောင်းရင်း",
+      "save": "ဈေး သိမ်းရန်",
+      "saved": "ဈေး သိမ်းပြီး"
     }
   },
   "Orders": {
@@ -978,7 +996,8 @@
     "skippedReason": {
       "NO_COST": "စာရင်းသွင်းပြီး ဝယ်ဈေး မရှိ",
       "NO_WEIGHT": "အလေးချိန် မရှိ",
-      "NO_PROFIT": "ပုံသေ အမြတ် မရှိ"
+      "NO_PROFIT": "ပုံသေ အမြတ် မရှိ",
+      "PRICE_ZERO": "တွက်ထားသော ဈေး 0 ဖြစ်နေသည်"
     },
     "expiresAt": "{date} တွင် သက်တမ်းကုန်",
     "expired": "ဤကြိုကြည့်မှု သက်တမ်းကုန်ပြီ သို့မဟုတ် နည်းဟောင်းဖြင့် ဖန်တီးထားသည် — ဈေးအသုံးပြုရန် အသစ် ဖန်တီးပါ။",
@@ -987,7 +1006,9 @@
     "receiptScope": "Only SKUs in receipt {code}; warehouse, category and brand filters below still apply.",
     "lowMarginWarning": "Illustrative profit after freight and {rate}% commission: {profit} MMK (≤ 5% of price). Other sales fees excluded; actual affiliate rates may differ.",
     "largeChangeWarning": "Price changes by at least 20% — review before applying.",
-    "lowMarginWarningFixed": "ပို့ခ၊ CTV ကော်မရှင် {fixed} MMK/ခု နှင့် အထက်အဆင့် {rate}% နုတ်ပြီး ဥပမာအမြတ်: {profit} MMK (ဈေး၏ ≤ 5%)။ အခြားရောင်းချခ မနုတ်ရသေး။"
+    "lowMarginWarningFixed": "ပို့ခ၊ CTV ကော်မရှင် {fixed} MMK/ခု နှင့် အထက်အဆင့် {rate}% နုတ်ပြီး ဥပမာအမြတ်: {profit} MMK (ဈေး၏ ≤ 5%)။ အခြားရောင်းချခ မနုတ်ရသေး။",
+    "productScope": "{name} ၏ ရောင်းနေသော အမျိုးအစားများကိုသာ တွက်မည်။",
+    "productInvalid": "ပစ္စည်း မရှိပါ သို့မဟုတ် ရောင်းနေသော အမျိုးအစား မရှိပါ။"
   },
   "Quarantine": {
     "title": "စစ်ဆေးရန်စောင့်နေသော ပစ္စည်း (ပြန်ပို့)",

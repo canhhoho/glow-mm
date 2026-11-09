@@ -52,11 +52,22 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
   const receivedRows = stockVariantIds.length
     ? await db.stockDocumentLine.findMany({
         where: { variantId: { in: stockVariantIds }, document: { status: "POSTED", type: { in: ["RECEIVE", "TRANSFER"] } } },
-        distinct: ["variantId"],
-        select: { variantId: true },
+        select: { variantId: true, qty: true, document: { select: { type: true, postedAt: true } } },
       })
     : [];
   const received = new Set(receivedRows.map((r) => r.variantId));
+  // QT1b PRICE_STALE: lần ghi sổ phiếu NHẬP mới nhất theo biến thể so với lần đổi giá gần nhất (PriceHistory).
+  // Chưa có lịch sử giá (giá đặt lúc tạo theo cách cũ) → không đoán, không cảnh báo.
+  const lastReceive = new Map<string, number>();
+  for (const r of receivedRows) {
+    if (r.document.type !== "RECEIVE" || r.qty <= 0 || !r.document.postedAt) continue;
+    lastReceive.set(r.variantId, Math.max(lastReceive.get(r.variantId) ?? 0, r.document.postedAt.getTime()));
+  }
+  const allVariantIds = products.flatMap((p) => p.variants.map((v) => v.id));
+  const priceChanges = allVariantIds.length
+    ? await db.priceHistory.groupBy({ by: ["variantId"], where: { variantId: { in: allVariantIds } }, _max: { createdAt: true } })
+    : [];
+  const lastPriceChange = new Map(priceChanges.map((c) => [c.variantId, c._max.createdAt?.getTime() ?? 0]));
 
   const out = new Map<string, LoadedReadiness>();
   for (const p of products) {
@@ -65,6 +76,15 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
     const skusWhere = (rows: typeof mine, pred: (r: (typeof mine)[number]) => boolean) => [...new Set(rows.filter(pred).map((r) => r.batch.variant.sku))].sort();
     const notReceivedSkus = p.variants
       .filter((v) => v.active && !(v.isBundle ? v.bundleItems.length > 0 && v.bundleItems.every((b) => received.has(b.componentId)) : received.has(v.id)))
+      .map((v) => v.sku)
+      .sort();
+    const staleSkus = p.variants
+      .filter((v) => {
+        const changed = lastPriceChange.get(v.id);
+        if (!v.active || v.priceMmk <= 0 || !changed) return false;
+        const receivedAt = Math.max(0, ...(v.isBundle ? v.bundleItems.map((b) => lastReceive.get(b.componentId) ?? 0) : [lastReceive.get(v.id) ?? 0]));
+        return receivedAt > changed;
+      })
       .map((v) => v.sku)
       .sort();
     out.set(p.id, {
@@ -87,6 +107,7 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
         costEstimatedSkus: skusWhere(here, (b) => inventoryCost(b.batch).costStatus === "ESTIMATED"),
         // Tồn ở kho bán khác kho của SP → không bán được cho đến khi chuyển kho.
         otherWarehouseSkus: skusWhere(mine, (b) => b.locationId !== p.stockLocationId),
+        staleSkus,
       }),
     });
   }

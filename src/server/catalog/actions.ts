@@ -17,6 +17,7 @@ import { catalogImportInputSchema, commitCatalogImport, previewCatalogImport, ty
 import { deleteProducts, moveProductsToWarehouse, restoreProducts } from "./product-delete";
 import { ReadinessError } from "./readiness";
 import { createProduct } from "./product-create";
+import { saveProductPricing } from "./product-pricing";
 import type { Issue } from "./readiness-rules";
 
 /** D2: lỗi mở bán → câu báo theo ngôn ngữ admin, kèm SKU liên quan. */
@@ -31,11 +32,31 @@ function message(e: unknown): string {
   return String(e);
 }
 
+/**
+ * QT1b: form sửa SP (bước 1) không đổi giá / hoa hồng CTV / lãi cố định — các trường này chỉ sửa ở bước 3
+ * (`saveProductPricingAction`). Bỏ khỏi payload → `saveProduct` giữ giá trị đang có, biến thể mới = giá 0.
+ */
+function withoutPricing(payload: unknown): unknown {
+  if (!payload || typeof payload !== "object") return payload;
+  const out: Record<string, unknown> = { ...payload };
+  delete out.fixedProfitMmk;
+  if (Array.isArray(out.variants)) {
+    out.variants = out.variants.map((v: unknown) => {
+      if (!v || typeof v !== "object") return v;
+      const keep: Record<string, unknown> = { ...v };
+      delete keep.priceMmk;
+      delete keep.affiliateCommissionMmk;
+      return keep;
+    });
+  }
+  return out;
+}
+
 export async function saveProductAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   let id: string;
   try {
     const user = await requirePermission("catalog:manage");
-    id = (await saveProduct(JSON.parse(String(formData.get("payload") ?? "{}")), user.id)).id;
+    id = (await saveProduct(withoutPricing(JSON.parse(String(formData.get("payload") ?? "{}"))), user.id)).id;
   } catch (e) {
     if (e instanceof ReadinessError) {
       return { error: `${(await getTranslations("Products"))("readiness.blockedSave")} ${await issuesText(e.issues)}` };
@@ -323,4 +344,33 @@ export async function catalogImportAction(_prev: CatalogImportState, formData: F
   } catch (e) {
     return { error: message(e) };
   }
+}
+
+/**
+ * Bước 3 "Giá bán": sửa tay giá (bắt buộc lý do), hoa hồng CTV cố định, lãi cố định MMK của một SP.
+ * Ô cùng thứ tự: `variantId[]`, `priceMmk[]`, `affiliateCommissionMmk[]`.
+ */
+export async function saveProductPricingAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  let productId = "";
+  try {
+    const user = await requirePermission("pricing:manage");
+    productId = String(formData.get("productId") ?? "");
+    const prices = formData.getAll("priceMmk");
+    const commissions = formData.getAll("affiliateCommissionMmk");
+    await saveProductPricing(
+      {
+        productId,
+        reason: formData.get("reason") ?? "",
+        ...(formData.has("fixedProfitMmk") && { fixedProfitMmk: formData.get("fixedProfitMmk") }),
+        variants: formData.getAll("variantId").map((id, i) => ({ id, priceMmk: prices[i], affiliateCommissionMmk: commissions[i] ?? "" })),
+      },
+      user.id,
+    );
+  } catch (e) {
+    return { error: message(e) };
+  }
+  updateTag(CATALOG_TAG); // giá hiển thị cho khách
+  revalidatePath(`/admin/products/${productId}`);
+  revalidatePath("/admin/products");
+  return { ok: "1" };
 }

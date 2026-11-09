@@ -108,4 +108,12 @@ describe("productSteps (quy trình 5 bước)", () => {
     expect(states(steps).price).toBe("done");
     expect(steps.current).toBe("stock");
   });
+
+  it("QT1b: giá cũ hơn phiếu nhập mới nhất → cảnh báo PRICE_STALE ở bước 3, không chặn mở bán", () => {
+    const r = evaluateReadiness({ ...base(), staleSkus: ["A"] });
+    expect(r.errors).toEqual([]);
+    expect(r.warnings).toEqual([{ code: "PRICE_STALE", skus: ["A"] }]);
+    const steps = productSteps({ published: false, notReceivedSkus: [] }, r);
+    expect(states(steps)).toMatchObject({ price: "warn", review: "done", publish: "todo" });
+  });
 });

@@ -16,7 +16,7 @@ const TYPES: Record<string, Permission> = {
 };
 
 export default async function NewDocumentPage({ searchParams }: PageProps<"/admin/inventory/documents/new">) {
-  const { type } = await searchParams;
+  const { type, product } = await searchParams;
   if (typeof type !== "string" || !TYPES[type]) notFound();
   await requirePagePermission(TYPES[type]);
   if (type === "RECEIVE") {
@@ -29,6 +29,7 @@ export default async function NewDocumentPage({ searchParams }: PageProps<"/admi
           locations={locations.map((l) => ({ id: l.id, code: l.code, name: l.name, sellable: l.sellable, pricingMode: l.pricingMode }))}
           shipments={shipments.map((s) => ({ id: s.id, code: s.code }))}
           variants={variants}
+          productId={typeof product === "string" ? product : undefined}
         />
       </Page>
     );
