@@ -22,7 +22,7 @@ import { ActionForm } from "@/components/admin/action-form";
 import { FileField } from "@/components/admin/file-field";
 import { AffiliateFields, CommissionBadge } from "@/components/admin/affiliate-parts";
 import { OrderStatusBadge } from "@/components/admin/order-badges";
-import { Badge, DataTable, fieldClass, Page, PageHeader, Section, Stat, Td } from "@/components/admin/ui";
+import { Badge, DataTable, fieldClass, fieldLabelClass, Page, PageHeader, Section, Stat, Td } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ctv/copy-button";
 import { cn } from "@/lib/utils";
@@ -171,11 +171,11 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
               >
                 <input type="hidden" name="id" value={a.id} />
                 {a.payoutInfo && <p className="text-sm whitespace-pre-line">{a.payoutInfo}</p>}
-                <label className="grid content-start gap-1 text-sm">
+                <label className={fieldLabelClass}>
                   <span>{t("payNote")}</span>
                   <input name="note" maxLength={500} className={fieldClass} />
                 </label>
-                <label className="grid content-start gap-1 text-sm">
+                <label className={fieldLabelClass}>
                   <span>{t("payProof")}</span>
                   <FileField name="proof" accept="image/jpeg,image/png,image/webp,application/pdf" />
                 </label>
@@ -188,11 +188,11 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
       <section className="space-y-2">
         <h2 className="font-medium">{t("orders")}</h2>
         <form className="flex flex-wrap items-end gap-2" role="search">
-          <label className="grid content-start gap-1 text-sm">
+          <label className={fieldLabelClass}>
             <span className="text-muted-foreground">{t("month")}</span>
             <input name="month" type="month" defaultValue={month === "all" ? "" : month} className={cn(fieldClass, "w-44")} />
           </label>
-          <label className="grid content-start gap-1 text-sm">
+          <label className={fieldLabelClass}>
             <span className="text-muted-foreground">{t("state")}</span>
             <select name="state" defaultValue={state ?? ""} className={cn(fieldClass, "w-auto")}>
               <option value="">{t("allStates")}</option>
@@ -332,7 +332,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
             <h2 className="font-medium">{t("resetTitle")}</h2>
             <ActionForm action={resetAffiliatePasswordAction} submitLabel={t("reset")} okText={t("resetDone")} className="space-y-3" icon={<KeyRound aria-hidden className="size-4 shrink-0" />}>
               <input type="hidden" name="id" value={a.id} />
-              <label className="grid content-start gap-1 text-sm">
+              <label className={fieldLabelClass}>
                 <span>{t("tempPassword")}</span>
                 <input
                   name="password"

@@ -5,7 +5,8 @@ import { getProductForEdit, productCopyOptions, productFormOptions } from "@/ser
 import { productCopyDraft } from "@/server/catalog/product-copy";
 import { ProductForm } from "@/components/admin/product-form";
 import { Button } from "@/components/ui/button";
-import { fieldClass, Page, PageHeader } from "@/components/admin/ui";
+import { fieldClass, fieldLabelClass, Page, PageHeader } from "@/components/admin/ui";
+import { cn } from "@/lib/utils";
 
 export default async function NewProductPage({ searchParams }: PageProps<"/admin/products/new">) {
   await requirePagePermission("catalog:manage");
@@ -22,7 +23,7 @@ export default async function NewProductPage({ searchParams }: PageProps<"/admin
       <details open={!!source} className="mb-6 rounded-lg border p-4">
         <summary className="cursor-pointer font-medium">{t("copyFrom")}</summary>
         <form action="/admin/products/new" method="get" className="mt-3 flex flex-wrap items-end gap-2">
-          <label className="grid min-w-0 flex-1 gap-1 text-sm">
+          <label className={cn(fieldLabelClass, "min-w-0 flex-1")}>
             <span>{t("copySource")}</span>
             <select key={sourceId} name="copyFrom" defaultValue={sourceId} required className={fieldClass}>
               <option value="">—</option>

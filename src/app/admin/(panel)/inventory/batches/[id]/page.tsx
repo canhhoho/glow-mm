@@ -5,7 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { batchDetail, loadThresholds } from "@/server/inventory/overview";
 import { ExpiryTag } from "@/components/admin/stock-parts";
-import { Badge, DataTable, Page, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, fieldLabelClass, Page, PageHeader, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
 import { rateDisplay } from "@/server/pricing/formula";
 import { cn } from "@/lib/utils";
@@ -85,7 +85,7 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
         <ActionForm action={estimateBatchCostAction} submitLabel={ti("estimateAction")} okText={ti("estimateSaved")} className="space-y-3 rounded-lg border p-4" icon={<Calculator aria-hidden className="size-4 shrink-0" />}>
           <input type="hidden" name="batchId" value={batch.id} />
           <p className="text-sm text-muted-foreground">{ti("estimateExistingHelp")}</p>
-          <label className="grid max-w-sm gap-1 text-sm">
+          <label className={cn(fieldLabelClass, "max-w-sm")}>
             <span>{td("estimateShip")}</span>
             <input required type="number" name="shipMmkPerKg" min={0} max={2147483647} step={1} defaultValue={batch.estimatedShipMmkPerKg ?? lastShip ?? ""} className={fieldClass} />
           </label>
@@ -94,7 +94,7 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
       {batch.expiryStatus === "UNKNOWN" && can(user.role, "stock:receive") && <ActionForm action={resolveBatchExpiryAction} submitLabel={ti("resolveExpiry")} okText={ti("expiryDated")} className="space-y-2 rounded-lg border p-4">
         <input type="hidden" name="batchId" value={batch.id} />
         <p className="text-sm text-muted-foreground">{ti("resolveHelp")}</p>
-        <label className="grid max-w-xs gap-1 text-sm"><span>{t("expiry")}</span><input type="date" name="expiryDate" required className="rounded-md border px-3 py-2" /></label>
+        <label className={cn(fieldLabelClass, "max-w-xs")}><span>{t("expiry")}</span><input type="date" name="expiryDate" required className="rounded-md border px-3 py-2" /></label>
       </ActionForm>}
 
       <section className="space-y-2">

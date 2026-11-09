@@ -16,7 +16,8 @@ import { PricingRunForm } from "@/components/admin/pricing-run-form";
 import { getNumberSetting } from "@/server/settings";
 import { ActionForm } from "@/components/admin/action-form";
 import { RateInputs } from "@/components/admin/rate-inputs";
-import { Badge, DataTable, fieldClass, Page, PageHeader, Section, TabNav, Td } from "@/components/admin/ui";
+import { Badge, DataTable, fieldClass, fieldLabelClass, Page, PageHeader, Section, TabNav, Td } from "@/components/admin/ui";
+import { cn } from "@/lib/utils";
 import { rateDisplay } from "@/server/pricing/formula";
 import { fmtDate, fmtDateTime, fmtDecimal, fmtInt } from "@/lib/format";
 import { prisma } from "@/lib/db";
@@ -65,7 +66,7 @@ async function RatesTab() {
           className="grid grid-cols-2 gap-x-2 gap-y-3 [&>div:last-of-type]:col-span-full" icon={<Plus aria-hidden className="size-4 shrink-0" />}
         >
           <RateInputs />
-          <label className="col-span-full grid content-start gap-1 text-sm">
+          <label className={cn(fieldLabelClass, "col-span-full")}>
             <span className="text-muted-foreground">{t("note")}</span>
             <input name="note" maxLength={200} className={fieldClass} />
           </label>

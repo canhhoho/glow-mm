@@ -4,8 +4,9 @@ import { Trash2, Plus } from "lucide-react";
 import { startTransition, useActionState, useMemo, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { fieldClass } from "@/components/admin/ui";
+import { fieldClass, fieldLabelClass, fieldLabelSmClass } from "@/components/admin/ui";
 import { createDocumentAction } from "@/server/inventory/actions";
+import { cn } from "@/lib/utils";
 
 type DocType = "RECEIVE" | "TRANSFER" | "ISSUE" | "ADJUST";
 type StockType = "SELLABLE" | "TESTER";
@@ -96,7 +97,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
   }, [type, reason, fromId, toId, shipmentId, lines, needsFrom, needsTo]);
 
   const locSelect = (value: string, onChange: (v: string) => void, label: string, name: string) => (
-    <label className="grid content-start gap-1 text-sm">
+    <label className={fieldLabelClass}>
       <span className="text-muted-foreground">{label}</span>
       <select name={name} required value={value} onChange={(e) => onChange(e.target.value)} className={fieldClass}>
         <option value="">—</option>
@@ -124,7 +125,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
         {needsFrom && locSelect(fromId, setFromId, t("chooseFrom"), "fromId")}
         {needsTo && locSelect(toId, setToId, type === "ADJUST" ? t("chooseLocation") : t("chooseTo"), "toId")}
         {type === "RECEIVE" && (
-          <label className="grid content-start gap-1 text-sm">
+          <label className={fieldLabelClass}>
             <span className="text-muted-foreground">{t("shipment")}</span>
             <select value={shipmentId} onChange={(e) => setShipmentId(e.target.value)} className={fieldClass}>
               <option value="">{t("none")}</option>
@@ -136,7 +137,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
             </select>
           </label>
         )}
-        <label className="grid content-start gap-1 text-sm sm:col-span-3">
+        <label className={cn(fieldLabelClass, "sm:col-span-3")}>
           <span className="text-muted-foreground">{t("reason")}</span>
           <input
             value={reason}
@@ -155,7 +156,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
           );
           return (
             <fieldset key={l.key} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-6" aria-label={`${t("line")} ${i + 1}`}>
-              <label className="grid content-start gap-1 text-xs sm:col-span-2">
+              <label className={cn(fieldLabelSmClass, "sm:col-span-2")}>
                 <span className="text-muted-foreground">{t("variant")}</span>
                 <select
                   required
@@ -175,7 +176,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
 
               {type === "RECEIVE" ? (
                 <>
-                  <label className="grid content-start gap-1 text-xs">
+                  <label className={fieldLabelSmClass}>
                     <span className="text-muted-foreground">{t("expiryStatus")}</span>
                     <select value={l.expiryStatus} onChange={(e) => update(l.key, { expiryStatus: e.target.value as Line["expiryStatus"], expiryDate: "" })} className={fieldClass}>
                       {variants.find((v) => v.id === l.variantId)?.requiresExpiry !== false && <option value="DATED">{ti("expiryDated")}</option>}
@@ -183,25 +184,25 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
                       <option value="UNKNOWN">{ti("expiryUnknown")}</option>
                     </select>
                   </label>
-                  <label className="grid content-start gap-1 text-xs">
+                  <label className={fieldLabelSmClass}>
                     <span className="text-muted-foreground">{t("lotNo")}</span>
                     <input required name={`lot-${i}`} value={l.lotNo} onChange={(e) => update(l.key, { lotNo: e.target.value })} className={fieldClass} />
                   </label>
-                  <label className="grid content-start gap-1 text-xs">
+                  <label className={fieldLabelSmClass}>
                     <span className="text-muted-foreground">{t("expiry")}</span>
                     <input required={l.expiryStatus === "DATED"} disabled={l.expiryStatus !== "DATED"} type="date" name={`expiry-${i}`} value={l.expiryDate} onChange={(e) => update(l.key, { expiryDate: e.target.value })} className={fieldClass} />
                   </label>
-                  <label className="grid content-start gap-1 text-xs">
+                  <label className={fieldLabelSmClass}>
                     <span className="text-muted-foreground">{t("mfg")}</span>
                     <input type="date" name={`mfg-${i}`} value={l.mfgDate} onChange={(e) => update(l.key, { mfgDate: e.target.value })} className={fieldClass} />
                   </label>
-                  <label className="grid content-start gap-1 text-xs">
+                  <label className={fieldLabelSmClass}>
                     <span className="text-muted-foreground">{t("unitCost")}</span>
                     <input required type="number" min={0} step={1} inputMode="numeric" name={`cost-${i}`} value={l.unitCostVnd} onChange={(e) => update(l.key, { unitCostVnd: e.target.value })} className={fieldClass} />
                   </label>
                 </>
               ) : (
-                <label className="grid content-start gap-1 text-xs sm:col-span-2">
+                <label className={cn(fieldLabelSmClass, "sm:col-span-2")}>
                   <span className="text-muted-foreground">{t("batch")}</span>
                   <select
                     name={`batch-${i}`}
@@ -220,7 +221,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
                 </label>
               )}
 
-              <label className="grid content-start gap-1 text-xs">
+              <label className={fieldLabelSmClass}>
                 <span className="text-muted-foreground">{type === "ADJUST" ? t("qtySigned") : t("qty")}</span>
                 <input
                   required
@@ -234,7 +235,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
                   className={fieldClass}
                 />
               </label>
-              <label className="grid content-start gap-1 text-xs">
+              <label className={fieldLabelSmClass}>
                 <span className="text-muted-foreground">{t("stockType")}</span>
                 <select
                   name={`stockType-${i}`}

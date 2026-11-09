@@ -10,7 +10,7 @@ import { ActionForm } from "@/components/admin/action-form";
 import { ProductForm } from "@/components/admin/product-form";
 import { ProductImageUpload } from "@/components/admin/product-images";
 import Link from "next/link";
-import { Badge, fieldClass, Page, PageHeader, Section } from "@/components/admin/ui";
+import { Badge, fieldClass, fieldLabelClass, Page, PageHeader, Section } from "@/components/admin/ui";
 import { loadReadiness } from "@/server/catalog/readiness";
 import { localizedPath } from "@/lib/site";
 import { prisma } from "@/lib/db";
@@ -78,7 +78,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
                     className="flex flex-wrap items-end gap-2"
                   >
                     <input type="hidden" name="imageId" value={img.id} />
-                    <label className="grid content-start gap-1 text-sm">
+                    <label className={fieldLabelClass}>
                       <span className="text-muted-foreground">{t("imagesAlt")}</span>
                       <input name="alt" defaultValue={img.alt} maxLength={200} className={fieldClass} />
                     </label>

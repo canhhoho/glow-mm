@@ -4,7 +4,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { memo, startTransition, useActionState, useCallback, useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { fieldClass } from "@/components/admin/ui";
+import { fieldClass, fieldLabelClass, fieldLabelSmClass } from "@/components/admin/ui";
 import { fmtInt } from "@/lib/format";
 import { parseReceivePaste } from "@/lib/receive-paste";
 import { cn } from "@/lib/utils";
@@ -225,7 +225,7 @@ export function ReceiveBulkForm({ locations, shipments, variants, lastShip = nul
   return (
     <form onSubmit={submit} className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-3">
-        <label className="grid content-start gap-1 text-sm">
+        <label className={fieldLabelClass}>
           <span className="text-muted-foreground">{t("chooseTo")}</span>
           <select required value={toId} onChange={(e) => setToId(e.target.value)} className={fieldClass}>
             <option value="">—</option>
@@ -236,7 +236,7 @@ export function ReceiveBulkForm({ locations, shipments, variants, lastShip = nul
             ))}
           </select>
         </label>
-        {canUseShipment && <label className="grid content-start gap-1 text-sm">
+        {canUseShipment && <label className={fieldLabelClass}>
           <span className="text-muted-foreground">{t("shipment")}</span>
           <select value={shipmentId} onChange={(e) => setShipmentId(e.target.value)} className={fieldClass}>
             <option value="">{t("none")}</option>
@@ -247,7 +247,7 @@ export function ReceiveBulkForm({ locations, shipments, variants, lastShip = nul
             ))}
           </select>
         </label>}
-        <label className="grid content-start gap-1 text-sm">
+        <label className={fieldLabelClass}>
           <span className="text-muted-foreground">{t("reason")}</span>
           <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} className={fieldClass} />
         </label>
@@ -257,19 +257,19 @@ export function ReceiveBulkForm({ locations, shipments, variants, lastShip = nul
         <legend className="px-1 text-sm font-medium">{t("defaults")}</legend>
         <p className="text-xs text-muted-foreground">{t("defaultsHelp")}</p>
         <div className="grid gap-3 sm:grid-cols-4">
-          <label className="grid content-start gap-1 text-xs">
+          <label className={fieldLabelSmClass}>
             <span className="text-muted-foreground">{t("defaultLot")}</span>
             <input value={defaults.lotNo} maxLength={50} onChange={(e) => setDefaults((d) => ({ ...d, lotNo: e.target.value }))} className={fieldClass} />
           </label>
-          <label className="grid content-start gap-1 text-xs">
+          <label className={fieldLabelSmClass}>
             <span className="text-muted-foreground">{t("defaultExpiry")}</span>
             <input type="date" value={defaults.expiryDate} onChange={(e) => setDefaults((d) => ({ ...d, expiryDate: e.target.value }))} className={fieldClass} />
           </label>
-          <label className="grid content-start gap-1 text-xs">
+          <label className={fieldLabelSmClass}>
             <span className="text-muted-foreground">{t("defaultMfg")}</span>
             <input type="date" value={defaults.mfgDate} onChange={(e) => setDefaults((d) => ({ ...d, mfgDate: e.target.value }))} className={fieldClass} />
           </label>
-          <label className="grid content-start gap-1 text-xs">
+          <label className={fieldLabelSmClass}>
             <span className="text-muted-foreground">{t("defaultStockType")}</span>
             <select value={defaults.stockType} onChange={(e) => setDefaults((d) => ({ ...d, stockType: e.target.value as StockType }))} className={fieldClass}>
               <option value="SELLABLE">{ti("SELLABLE")}</option>
@@ -280,7 +280,7 @@ export function ReceiveBulkForm({ locations, shipments, variants, lastShip = nul
       </fieldset>
 
       {variants.some((v) => inScope(v) && v.currency === "VND") && (
-        <label className="grid max-w-xl gap-1 text-sm">
+        <label className={cn(fieldLabelClass, "max-w-xl")}>
           <span>{t("estimateShip")}</span>
           <input type="number" min={0} max={2147483647} step={1} value={estimatedShip} onChange={(e) => setEstimatedShip(e.target.value)} className={fieldClass} />
           <span className="text-xs text-muted-foreground">{t("estimateHelp")}</span>

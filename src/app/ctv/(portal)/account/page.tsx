@@ -4,7 +4,7 @@ import { requireAffiliate } from "@/server/auth/session";
 import { changePasswordAction } from "@/server/auth/actions";
 import { MIN_STAFF_PASSWORD } from "@/server/auth/roles";
 import { ActionForm } from "@/components/admin/action-form";
-import { PageHeader } from "@/components/admin/ui";
+import { fieldLabelClass, PageHeader } from "@/components/admin/ui";
 import { CtvLocaleSwitch, CtvSignOut } from "@/components/ctv/ctv-session-controls";
 import { cn } from "@/lib/utils";
 import { storeCard, storeField } from "@/components/store/ui";
@@ -23,7 +23,7 @@ export default async function CtvAccountPage() {
         <h2 className="mb-3 font-medium">{t("title")}</h2>
         <ActionForm density="touch" action={changePasswordAction} submitLabel={t("submit")} okText={t("changed")} className="space-y-3" icon={<KeyRound aria-hidden className="size-4 shrink-0" />}>
           {(["currentPassword", "newPassword", "confirmPassword"] as const).map((name) => (
-            <label key={name} className="grid content-start gap-1 text-sm">
+            <label key={name} className={fieldLabelClass}>
               <span>{t(name)}</span>
               <input
                 name={name}

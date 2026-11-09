@@ -3,7 +3,7 @@ import { fmtInt } from "@/lib/format";
 import { requireAffiliate } from "@/server/auth/session";
 import type { CommissionState } from "@/server/affiliates/commission";
 import { affiliateOrders, currentMonth } from "@/server/affiliates/affiliates";
-import { PageHeader } from "@/components/admin/ui";
+import { fieldLabelClass, PageHeader } from "@/components/admin/ui";
 import { CtvOrderCard } from "@/components/ctv/ctv-order-card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -29,7 +29,7 @@ export default async function CtvOrdersPage({ searchParams }: PageProps<"/ctv/or
     <div className="space-y-4">
       <PageHeader title={t("nav.orders")} />
       <form className="grid grid-cols-2 gap-2 sm:flex sm:items-end" role="search">
-        <label className="grid content-start gap-1 min-w-0 text-sm">
+        <label className={cn(fieldLabelClass, "min-w-0")}>
           <span className="block text-muted-foreground">{ta("month")}</span>
           {/* iOS Safari tự bung rộng + căn giữa input tháng nếu không bỏ appearance. */}
           <input
@@ -39,7 +39,7 @@ export default async function CtvOrdersPage({ searchParams }: PageProps<"/ctv/or
             className={cn(storeField, "min-w-0 appearance-none text-left sm:w-44 [&::-webkit-date-and-time-value]:text-left")}
           />
         </label>
-        <label className="grid content-start gap-1 min-w-0 text-sm">
+        <label className={cn(fieldLabelClass, "min-w-0")}>
           <span className="block text-muted-foreground">{ta("state")}</span>
           <select name="state" defaultValue={state ?? ""} className={cn(storeField, "min-w-0 sm:w-auto")}>
             <option value="">{ta("allStates")}</option>

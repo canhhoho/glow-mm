@@ -8,7 +8,7 @@ import {
   stockByLocation,
   type Range,
 } from "@/server/reports/queries";
-import { DataTable, fieldClass, FilterButton, Notice, Page, PageHeader, Stat, Td } from "@/components/admin/ui";
+import { DataTable, fieldClass, fieldLabelClass, FilterButton, Notice, Page, PageHeader, Stat, Td } from "@/components/admin/ui";
 import { ReportsTabs } from "@/components/admin/reports-tabs";
 import { fmtDay, fmtInt } from "@/lib/format";
 import { addDays } from "@/lib/time";
@@ -45,11 +45,11 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
       <ReportsTabs active="sales" />
       {/* key theo kỳ: điều hướng phía client giữ DOM → defaultValue cũ; đổi key để ô ngày hiện kỳ đã chuẩn hoá. */}
       <form key={`${range.from}|${range.to}`} className="flex flex-wrap items-end gap-2">
-        <label className="grid content-start gap-1 text-sm">
+        <label className={fieldLabelClass}>
           <span className="text-muted-foreground">{t("from")}</span>
           <input type="date" name="from" defaultValue={range.from} className={cn(fieldClass, "w-40")} />
         </label>
-        <label className="grid content-start gap-1 text-sm">
+        <label className={fieldLabelClass}>
           <span className="text-muted-foreground">{t("to")}</span>
           <input type="date" name="to" defaultValue={range.to} className={cn(fieldClass, "w-40")} />
         </label>

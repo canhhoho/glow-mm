@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Download } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { DataTable, fieldClass, Td } from "@/components/admin/ui";
+import { DataTable, fieldClass, fieldLabelClass, Td } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import type { VtpAddress, VtpPreview } from "@/server/orders/vtp-data";
 
@@ -33,9 +33,9 @@ export function VtpExportForm({ orders, addresses, services, pickupTimes }: { or
       finally { setBusy(false); }
     }}>
       <div className="grid gap-4 rounded-lg border p-4 md:grid-cols-3">
-        <label className="space-y-1 text-sm"><span>{t("service")}</span><select name="service" required className={fieldClass} defaultValue=""><option value="" disabled>{t("chooseService")}</option>{services.map((s) => <option key={s}>{s}</option>)}</select></label>
-        <label className="space-y-1 text-sm"><span>{t("chargePayer")}</span><select name="chargePayer" className={fieldClass} defaultValue="Order"><option value="Order">{t("payerFromOrder")}</option><option value="Receiver">{t("receiverPays")}</option><option value="Sender">{t("senderPays")}</option></select></label>
-        <label className="space-y-1 text-sm"><span>{t("pickup")}</span><select name="pickupTime" className={fieldClass} defaultValue=""><option value="">{t("noPickup")}</option>{pickupTimes.map((p) => <option key={p}>{p}</option>)}</select></label>
+        <label className={fieldLabelClass}><span>{t("service")}</span><select name="service" required className={fieldClass} defaultValue=""><option value="" disabled>{t("chooseService")}</option>{services.map((s) => <option key={s}>{s}</option>)}</select></label>
+        <label className={fieldLabelClass}><span>{t("chargePayer")}</span><select name="chargePayer" className={fieldClass} defaultValue="Order"><option value="Order">{t("payerFromOrder")}</option><option value="Receiver">{t("receiverPays")}</option><option value="Sender">{t("senderPays")}</option></select></label>
+        <label className={fieldLabelClass}><span>{t("pickup")}</span><select name="pickupTime" className={fieldClass} defaultValue=""><option value="">{t("noPickup")}</option>{pickupTimes.map((p) => <option key={p}>{p}</option>)}</select></label>
       </div>
       <p className="text-sm text-muted-foreground">{t("reviewHint")}</p>
       <DataTable

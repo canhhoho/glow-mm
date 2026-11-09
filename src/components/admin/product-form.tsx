@@ -4,7 +4,7 @@ import { Trash2, Plus, Save } from "lucide-react";
 import { useActionState, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { fieldClass, fieldLabelClass } from "@/components/admin/ui";
+import { Field, fieldClass } from "@/components/admin/ui";
 import { saveProductAction } from "@/server/catalog/actions";
 import type { ProductEditData } from "@/server/catalog/admin-queries";
 import { cn } from "@/lib/utils";
@@ -54,15 +54,6 @@ const EMPTY: ProductEditData = {
   tagIds: [],
   variants: [],
 };
-
-function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
-  return (
-    <label className={cn(fieldLabelClass, className)}>
-      <span className="text-muted-foreground">{label}</span>
-      {children}
-    </label>
-  );
-}
 
 export function ProductForm({ initial, options, copySourceId }: { initial: ProductEditData | null; options: Options; copySourceId?: string }) {
   const t = useTranslations("Products");

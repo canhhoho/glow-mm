@@ -1,12 +1,12 @@
 import { getTranslations } from "next-intl/server";
 import { ROLES, type Role } from "@/server/auth/roles";
-import { fieldClass } from "@/components/admin/ui";
+import { fieldClass, fieldLabelClass } from "@/components/admin/ui";
 
 /** Ô chọn vai trò nhân viên (server component, dùng trong form tạo/sửa). */
 export async function RoleSelect({ defaultValue = "ORDER_STAFF", disabled }: { defaultValue?: Role; disabled?: boolean }) {
   const [t, tr] = await Promise.all([getTranslations("Users"), getTranslations("Role")]);
   return (
-    <label className="grid content-start gap-1 text-sm">
+    <label className={fieldLabelClass}>
       <span>{t("role")}</span>
       <select name="role" defaultValue={defaultValue} disabled={disabled} className={fieldClass}>
         {ROLES.map((r) => (

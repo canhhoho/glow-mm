@@ -284,6 +284,20 @@ export const fieldClass = FIELD.compact;
 /** Nhãn trường: chữ nằm TRÊN ô (grid). Không dùng `space-y-1` — span + ô inline sẽ đứng cạnh nhau khi ô không `w-full`. */
 export const fieldLabelClass = "grid content-start gap-1 text-sm";
 
+/** Nhãn nhỏ (text-xs) cho form dày đặc: dòng nhập lô, bảng nhập nhiều cột. */
+export const fieldLabelSmClass = "grid content-start gap-1 text-xs";
+
+/** Ô form có nhãn phía trên (chữ nhãn màu phụ). `hint` = dòng gợi ý nhỏ dưới ô. */
+export function Field({ label, hint, className, children }: { label: React.ReactNode; hint?: React.ReactNode; className?: string; children: React.ReactNode }) {
+  return (
+    <label className={cn(fieldLabelClass, className)}>
+      <span className="text-muted-foreground">{label}</span>
+      {children}
+      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+    </label>
+  );
+}
+
 /** Ô chỉ số trên dashboard/báo cáo; có `href` thì bấm được. */
 export function Stat({
   label,

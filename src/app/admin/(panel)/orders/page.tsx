@@ -9,7 +9,7 @@ import { ORDER_FILTER_STATUSES, PREPARING_STATUSES, TRANSITIONS } from "@/server
 import { BULK_TRANSITIONS } from "@/server/orders/bulk";
 import { BulkOrderBar } from "@/components/admin/bulk-order-bar";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/admin/order-badges";
-import { Badge, DataTable, fieldClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Td } from "@/components/admin/ui";
+import { Badge, DataTable, fieldClass, fieldLabelClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Td } from "@/components/admin/ui";
 import { Pagination } from "@/components/ui/pagination";
 import { fmtDate, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -51,10 +51,10 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
         }
       />
       <FilterBar>
-        <label className="grid gap-1 text-sm"><span>{t("fromDate")}</span><input type="date" name="from" defaultValue={filter.from} className={fieldClass} /></label>
-        <label className="grid gap-1 text-sm"><span>{t("toDate")}</span><input type="date" name="to" defaultValue={filter.to} className={fieldClass} /></label>
+        <label className={fieldLabelClass}><span>{t("fromDate")}</span><input type="date" name="from" defaultValue={filter.from} className={fieldClass} /></label>
+        <label className={fieldLabelClass}><span>{t("toDate")}</span><input type="date" name="to" defaultValue={filter.to} className={fieldClass} /></label>
         <select name="locationId" defaultValue={filter.locationId ?? ""} aria-label={t("warehouse")} className={cn(fieldClass,"w-auto")}><option value="">{t("allWarehouses")}</option>{locations.map(l=><option key={l.id} value={l.id}>{l.code} — {l.name}</option>)}</select>
-        <label className="grid gap-1 text-sm"><span>{t("shippingDays")}</span><input type="number" name="shippingDays" min={1} max={365} defaultValue={filter.shippingDays} className={cn(fieldClass,"w-28")} /></label>
+        <label className={fieldLabelClass}><span>{t("shippingDays")}</span><input type="number" name="shippingDays" min={1} max={365} defaultValue={filter.shippingDays} className={cn(fieldClass,"w-28")} /></label>
         <SearchInput label={t("search")} defaultValue={filter.q} />
         <select name="status" defaultValue={filter.status ?? ""} aria-label={t("colStatus")} className={cn(fieldClass, "w-auto")}>
           <option value="">{t("allStatuses")}</option>

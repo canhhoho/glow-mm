@@ -7,7 +7,7 @@ import { bpToPercent } from "@/server/affiliates/commission";
 import { getAllSettings, PERCENT_SETTING_KEYS, type NumericSettingKey } from "@/server/settings";
 import { saveSettingsAction } from "@/server/settings-actions";
 import { ActionForm } from "@/components/admin/action-form";
-import { fieldClass, Page, PageHeader } from "@/components/admin/ui";
+import { fieldClass, fieldLabelClass, Page, PageHeader } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 
 const GROUPS: { title: string; icon: LucideIcon; keys: NumericSettingKey[] }[] = [
@@ -104,7 +104,7 @@ export default async function SettingsPage() {
             ))}
             <fieldset className="space-y-3 rounded-lg border p-4 lg:col-span-2 2xl:col-span-3">
               <legend className="inline-flex items-center gap-2 px-1 text-sm font-semibold"><Wallet className="size-4 text-primary" aria-hidden />{t("payment")}</legend>
-              <label className="grid content-start gap-1 text-sm">
+              <label className={fieldLabelClass}>
                 <span className="text-muted-foreground">{t("keys.payment.bankInstructions")}</span>
                 <textarea
                   name="payment.bankInstructions"
