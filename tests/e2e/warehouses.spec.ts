@@ -1,9 +1,18 @@
 import { expect, test } from "@playwright/test";
+import pg from "pg";
 import { login } from "./helpers";
 
 // P24: trang Quản lý kho — 2 kho bán + khu chờ kiểm tra; kho cũ đã ngừng; SP lọc / hiển thị theo kho.
 
 test("admin xem kho; danh sách SP lọc theo kho; thủ kho không vào được trang kho", async ({ page }) => {
+  // DB trắng của CI (chỉ seed) không có kho đã ngừng dùng → tạo một kho ngừng dùng cố định (không tồn, không chứng từ).
+  const db = new pg.Client({ connectionString: process.env.DATABASE_URL });
+  await db.connect();
+  try {
+    await db.query(`INSERT INTO "Location" (id, code, name, type, active) VALUES ('e2e-old-loc', 'E2E-OLD', 'Kho cũ E2E', 'VN_STOCK', false) ON CONFLICT (code) DO NOTHING`);
+  } finally {
+    await db.end();
+  }
   await login(page, "admin@glow.local");
   await page.goto("/admin/settings/warehouses");
   await expect(page.getByRole("heading", { name: "Quản lý kho" })).toBeVisible();
