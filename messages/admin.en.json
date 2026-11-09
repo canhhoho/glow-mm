@@ -70,7 +70,8 @@
     "affiliates": "Affiliates",
     "locations": "Delivery areas",
     "customers": "Customer accounts",
-    "warehouses": "Warehouses"
+    "warehouses": "Warehouses",
+    "preorders": "Pre-orders"
   },
   "Warehouses": {
     "title": "Warehouses",
@@ -151,7 +152,8 @@
     "longShipping": "Shipping for {days}+ days",
     "catalog": "Products",
     "toApprove": "Awaiting approval",
-    "reapprove": "Needs re-approval"
+    "reapprove": "Needs re-approval",
+    "awaitingStock": "Waiting for stock (pre-orders)"
   },
   "Role": {
     "ADMIN": "Administrator",
@@ -367,7 +369,9 @@
     "pickedWarning": "Unshipped pick lists use these SKUs at this warehouse: {codes}. Check batches before issuing/transferring; using picked stock may require reprinting the order pick list.",
     "weightGrams": "Weight (g)",
     "productScope": "Showing the variants of {name}.",
-    "showAllProducts": "Show all products"
+    "showAllProducts": "Show all products",
+    "preorderWaiting": "{count} pre-orders are waiting for items in this receipt.",
+    "preorderOpen": "Open the pre-order list"
   },
   "Ship": {
     "title": "Shipments VN → MM",
@@ -561,7 +565,7 @@
         "NO_WEIGHT_LOCAL": "Missing weight (needed for VTP shipping)",
         "COST_MISSING": "Sellable stock has no cost",
         "COST_ESTIMATED": "Sellable stock uses an estimated cost",
-        "OUT_OF_STOCK": "Out of stock (page stays visible, cannot be bought)",
+        "OUT_OF_STOCK": "Out of stock and pre-orders off (product page shows \"Out of stock\")",
         "STOCK_OTHER_WAREHOUSE": "Stock sits in another sales warehouse — transfer it to sell",
         "PRICE_STALE": "Stock was received after the last price change — recalculate the price",
         "NOT_APPROVED": "Not approved (step 4)"
@@ -667,6 +671,17 @@
       "stale": "Edited after approval — needs re-approval",
       "pending": "Not approved",
       "help": "Approve once steps 1–3 have no errors. Editing the name, description, category, brand, variants, prices, weight or images after approval requires approval again."
+    },
+    "preorder": {
+      "title": "Pre-order when out of stock",
+      "on": "on",
+      "off": "off",
+      "help": "When out of stock, customers can still order up to each variant's limit (blank = default {n} units, set in Settings). Bundles cannot be pre-ordered.",
+      "enabled": "Allow pre-orders when out of stock",
+      "limit": "Limit (units)",
+      "waiting": "Waiting for stock: {n} units",
+      "save": "Save pre-order",
+      "saved": "Pre-order settings saved"
     }
   },
   "Orders": {
@@ -699,7 +714,8 @@
       "SHIPPING": "Shipping",
       "COMPLETED": "Completed",
       "CANCELLED": "Cancelled",
-      "RETURNED": "Returned"
+      "RETURNED": "Returned",
+      "AWAITING_STOCK": "Waiting for stock"
     },
     "channel": {
       "WEB": "Website",
@@ -763,7 +779,8 @@
       "confirmPayment": "Payment received",
       "ship": "Handed to carrier",
       "complete": "Delivery successful",
-      "cancel": "Cancel order"
+      "cancel": "Cancel order",
+      "stockArrived": "Stock arrived — move to processing"
     },
     "confirmHint": {
       "COD": "Call the customer to verify the products, quantities, address and agreement to receive the order before confirming.",
@@ -892,7 +909,9 @@
     "nextPage": "Next",
     "pageCount": "Page {page}/{pages} · {total} orders",
     "saveTracking": "Save tracking",
-    "trackingSaved": "Tracking updated"
+    "trackingSaved": "Tracking updated",
+    "preorderHint": "Pre-order, no stock reserved yet. Once stock is available, click \"Stock arrived — move to processing\" to reserve it and handle it like a new order.",
+    "preorderTag": "Pre-order"
   },
   "Settings": {
     "description": "Manage accounts and store operating preferences.",
@@ -944,6 +963,9 @@
       },
       "orders": {
         "requirePickList": "Require a pick slip (locked lots) before handover"
+      },
+      "preorder": {
+        "defaultLimit": "Default pre-order limit per variant (units, 0 = off)"
       }
     },
     "save": "Save settings",
@@ -1992,5 +2014,16 @@
     "success": "Imported: {created} new, {updated} updated products.",
     "reviewDraft": "review and post",
     "finishProducts": "Back to products to add images and publish"
+  },
+  "Preorders": {
+    "title": "Pre-orders",
+    "help": "Orders waiting for stock, in the order they were placed. Current stock is assigned to the earliest orders first.",
+    "summary": "{count} orders waiting · {ready} ready",
+    "empty": "No pre-orders are waiting.",
+    "enough": "Stock ready",
+    "short": "Not enough stock",
+    "status": "Status",
+    "missing": "Short {n}",
+    "ok": "Ready"
   }
 }

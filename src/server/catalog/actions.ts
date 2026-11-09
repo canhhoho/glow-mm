@@ -19,6 +19,7 @@ import { ReadinessError } from "./readiness";
 import { createProduct } from "./product-create";
 import { saveProductPricing } from "./product-pricing";
 import { approveProduct } from "./approval";
+import { saveProductPreorder } from "./product-preorder";
 import type { Issue } from "./readiness-rules";
 
 /** D2: lỗi mở bán → câu báo theo ngôn ngữ admin, kèm SKU liên quan. */
@@ -414,5 +415,24 @@ export async function approveProductAction(_prev: ActionState, formData: FormDat
   revalidatePath(`/admin/products/${id}`);
   revalidatePath("/admin/products");
   revalidatePath("/admin");
+  return { ok: "1" };
+}
+
+/** Bước 5 (QT3): bật/tắt đặt trước khi hết hàng + hạn mức theo biến thể (`variantId[]` / `preorderLimit[]` cùng thứ tự). */
+export async function saveProductPreorderAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  let productId = "";
+  try {
+    const user = await requirePermission("catalog:manage");
+    productId = String(formData.get("productId") ?? "");
+    const limits = formData.getAll("preorderLimit");
+    await saveProductPreorder(
+      { productId, enabled: formData.get("preorderEnabled") === "on", limits: formData.getAll("variantId").map((id, i) => ({ id, limit: limits[i] ?? "" })) },
+      user.id,
+    );
+  } catch (e) {
+    return { error: message(e) };
+  }
+  updateTag(CATALOG_TAG); // nhãn "Đặt trước" trên storefront
+  revalidatePath(`/admin/products/${productId}`);
   return { ok: "1" };
 }

@@ -48,7 +48,10 @@
     "related": "Cùng danh mục",
     "paoTitle": "Hạn sau khi mở nắp",
     "paoMonths": "Dùng trong {months} tháng sau khi mở nắp và không quá ngày hết hạn trên bao bì.",
-    "image": "Ảnh"
+    "image": "Ảnh",
+    "preorder": "Đặt trước",
+    "preorderAvailable": "Hết hàng · nhận đặt trước",
+    "preorderNote": "Hàng đặt trước sẽ giao khi về kho. Đơn có hàng đặt trước được giao cùng lúc khi đủ hàng."
   },
   "Footer": {
     "contact": "Liên hệ",
@@ -98,7 +101,10 @@
     "checkout": "Thanh toán",
     "unavailable": "Không còn bán",
     "onlyLeft": "Chỉ còn {count}",
-    "fix": "Vui lòng điều chỉnh các sản phẩm được đánh dấu đỏ"
+    "fix": "Vui lòng điều chỉnh các sản phẩm được đánh dấu đỏ",
+    "preorderLine": "Đặt trước — giao khi hàng về",
+    "preorderLimit": "Chỉ nhận đặt trước tối đa {count}",
+    "preorderNotice": "Giỏ hàng có hàng đặt trước: cả đơn sẽ được giao khi đủ hàng. Chúng tôi sẽ liên hệ khi hàng về."
   },
   "Checkout": {
     "title": "Thanh toán",
@@ -138,7 +144,9 @@
     "orderingAs": "Đặt hàng bằng tài khoản {email}",
     "orderingAsAffiliate": "Bạn đang đặt hàng bằng tài khoản cộng tác viên {code} — đơn này được tính vào doanh số và hoa hồng của bạn.",
     "reviewCart": "Kiểm tra lại giỏ hàng",
-    "paymentReminder": "COD: trả tiền hàng khi nhận. Chuyển khoản: cửa hàng xác nhận sau khi nhận tiền."
+    "paymentReminder": "COD: trả tiền hàng khi nhận. Chuyển khoản: cửa hàng xác nhận sau khi nhận tiền.",
+    "preorderTag": "đặt trước",
+    "preorderNotice": "Đơn có hàng đặt trước: cả đơn sẽ được giao khi đủ hàng. Chúng tôi sẽ liên hệ xác nhận khi hàng về."
   },
   "Order": {
     "thanks": "Cảm ơn bạn! Đơn hàng đã được đặt.",
@@ -166,7 +174,8 @@
       "SHIPPING": "Đang giao",
       "COMPLETED": "Đã giao",
       "CANCELLED": "Đã huỷ",
-      "RETURNED": "Đã trả hàng"
+      "RETURNED": "Đã trả hàng",
+      "AWAITING_STOCK": "Chờ hàng về"
     },
     "pay": {
       "UNPAID": "Chưa thanh toán",
@@ -176,7 +185,8 @@
       "REFUNDED": "Đã hoàn tiền"
     },
     "askHelp": "Cần hỗ trợ? Liên hệ chúng tôi",
-    "createdPending": "Đã tạo đơn — chờ cửa hàng xác nhận. Tạo đơn chưa có nghĩa là đã thanh toán."
+    "createdPending": "Đã tạo đơn — chờ cửa hàng xác nhận. Tạo đơn chưa có nghĩa là đã thanh toán.",
+    "preorderInfo": "Đơn đặt trước: chúng tôi sẽ liên hệ xác nhận và giao hàng khi hàng về kho."
   },
   "Track": {
     "title": "Tra cứu đơn hàng",

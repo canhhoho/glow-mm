@@ -70,7 +70,8 @@
     "affiliates": "Cộng tác viên",
     "locations": "Địa bàn giao hàng",
     "customers": "Khách hàng",
-    "warehouses": "Kho hàng"
+    "warehouses": "Kho hàng",
+    "preorders": "Đơn đặt trước"
   },
   "Warehouses": {
     "title": "Kho hàng",
@@ -151,7 +152,8 @@
     "longShipping": "Đang giao từ {days} ngày",
     "catalog": "Sản phẩm",
     "toApprove": "SP chờ duyệt",
-    "reapprove": "SP cần duyệt lại"
+    "reapprove": "SP cần duyệt lại",
+    "awaitingStock": "Chờ hàng về (đặt trước)"
   },
   "Role": {
     "ADMIN": "Quản trị viên",
@@ -367,7 +369,9 @@
     "pickedWarning": "Có phiếu soạn chưa bàn giao cho các SKU tại kho này: {codes}. Kiểm tra lô trước khi xuất/chuyển; dùng lô đã soạn có thể khiến đơn phải in lại phiếu.",
     "weightGrams": "Khối lượng (g)",
     "productScope": "Đang hiện các loại của sản phẩm {name}.",
-    "showAllProducts": "Hiện tất cả sản phẩm"
+    "showAllProducts": "Hiện tất cả sản phẩm",
+    "preorderWaiting": "Có {count} đơn đặt trước đang chờ hàng trong phiếu này.",
+    "preorderOpen": "Mở danh sách đơn đặt trước"
   },
   "Ship": {
     "title": "Chuyến hàng VN → MM",
@@ -561,7 +565,7 @@
         "NO_WEIGHT_LOCAL": "Thiếu khối lượng (cần khi gửi VTP)",
         "COST_MISSING": "Tồn bán thiếu giá vốn",
         "COST_ESTIMATED": "Tồn bán đang dùng giá vốn tạm",
-        "OUT_OF_STOCK": "Hết hàng khả dụng (trang SP vẫn hiện, không mua được)",
+        "OUT_OF_STOCK": "Hết hàng và không nhận đặt trước (trang SP hiện \"Hết hàng\")",
         "STOCK_OTHER_WAREHOUSE": "Có tồn ở kho bán khác — chuyển kho để bán",
         "PRICE_STALE": "Có phiếu nhập mới sau lần đặt giá gần nhất — nên tính lại giá",
         "NOT_APPROVED": "Chưa duyệt (bước 4)"
@@ -667,6 +671,17 @@
       "stale": "Đã sửa sau khi duyệt — cần duyệt lại",
       "pending": "Chưa duyệt",
       "help": "Duyệt khi các bước 1–3 không còn lỗi. Sửa tên, mô tả, danh mục, thương hiệu, loại, giá, khối lượng hoặc ảnh sau khi duyệt sẽ phải duyệt lại."
+    },
+    "preorder": {
+      "title": "Đặt trước khi hết hàng",
+      "on": "đang nhận",
+      "off": "đã tắt",
+      "help": "Hết hàng thì khách vẫn đặt được, tối đa theo hạn mức của từng loại (để trống = mặc định {n} cái, đặt ở Cài đặt). Combo không nhận đặt trước.",
+      "enabled": "Cho đặt trước khi hết hàng",
+      "limit": "Hạn mức (cái)",
+      "waiting": "Đang chờ hàng: {n} cái",
+      "save": "Lưu đặt trước",
+      "saved": "Đã lưu cài đặt đặt trước"
     }
   },
   "Orders": {
@@ -699,7 +714,8 @@
       "SHIPPING": "Đang giao",
       "COMPLETED": "Hoàn tất",
       "CANCELLED": "Đã huỷ",
-      "RETURNED": "Trả hàng"
+      "RETURNED": "Trả hàng",
+      "AWAITING_STOCK": "Chờ hàng về"
     },
     "channel": {
       "WEB": "Website",
@@ -763,7 +779,8 @@
       "confirmPayment": "Đã nhận tiền",
       "ship": "Đã bàn giao vận chuyển",
       "complete": "Giao thành công",
-      "cancel": "Huỷ đơn"
+      "cancel": "Huỷ đơn",
+      "stockArrived": "Hàng đã về — chuyển xử lý"
     },
     "confirmHint": {
       "COD": "Gọi khách kiểm tra sản phẩm, số lượng, địa chỉ và xác nhận đồng ý nhận hàng trước khi bấm Xác nhận đơn.",
@@ -892,7 +909,9 @@
     "nextPage": "Trang sau",
     "pageCount": "Trang {page}/{pages} · {total} đơn",
     "saveTracking": "Lưu vận đơn",
-    "trackingSaved": "Đã cập nhật vận đơn"
+    "trackingSaved": "Đã cập nhật vận đơn",
+    "preorderHint": "Đơn đặt trước, chưa giữ hàng. Khi đủ hàng, bấm \"Hàng đã về — chuyển xử lý\" để giữ hàng và xử lý như đơn mới.",
+    "preorderTag": "Đặt trước"
   },
   "Settings": {
     "description": "Quản lý tài khoản và các thiết lập vận hành của cửa hàng.",
@@ -944,6 +963,9 @@
       },
       "orders": {
         "requirePickList": "Bắt buộc in phiếu soạn (chốt lô) trước khi bàn giao"
+      },
+      "preorder": {
+        "defaultLimit": "Hạn mức đặt trước mặc định mỗi biến thể (cái, 0 = không nhận)"
       }
     },
     "save": "Lưu cài đặt",
@@ -1992,5 +2014,16 @@
     "success": "Đã nhập: {created} SP mới, {updated} SP cập nhật.",
     "reviewDraft": "kiểm tra và ghi sổ",
     "finishProducts": "Về danh sách sản phẩm để thêm ảnh và bật hiển thị"
+  },
+  "Preorders": {
+    "title": "Đơn đặt trước",
+    "help": "Đơn chờ hàng về theo thứ tự đặt. Tồn hiện có được chia lần lượt từ đơn đặt sớm nhất.",
+    "summary": "{count} đơn đang chờ · {ready} đơn đã đủ hàng",
+    "empty": "Không có đơn đặt trước nào đang chờ.",
+    "enough": "Đủ hàng",
+    "short": "Chưa đủ hàng",
+    "status": "Tình trạng",
+    "missing": "Thiếu {n}",
+    "ok": "Đủ"
   }
 }

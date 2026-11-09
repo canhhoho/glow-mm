@@ -50,6 +50,8 @@ export type ReadinessInput = {
   staleSkus?: string[];
   /** QT2: đã duyệt (bước 4) và chưa sửa nội dung/giá/ảnh sau đó. Bỏ trống = coi như đã duyệt (dữ liệu thuần trong test). */
   approved?: boolean;
+  /** QT3: hết hàng vẫn nhận đặt trước → không cảnh báo hết hàng. Bỏ trống = không nhận (như trước QT3). */
+  preorderEnabled?: boolean;
 };
 
 export type Readiness = { errors: Issue[]; warnings: Issue[] };
@@ -78,7 +80,7 @@ export function evaluateReadiness(p: ReadinessInput): Readiness {
     ...(localMode ? withSkus("NO_WEIGHT_LOCAL", noWeight) : []),
     ...withSkus("COST_MISSING", p.costMissingSkus),
     ...withSkus("COST_ESTIMATED", p.costEstimatedSkus),
-    ...(active.length > 0 && active.every((v) => (p.available.get(v.id) ?? 0) <= 0) ? [{ code: "OUT_OF_STOCK" as const }] : []),
+    ...(!p.preorderEnabled && active.length > 0 && active.every((v) => (p.available.get(v.id) ?? 0) <= 0) ? [{ code: "OUT_OF_STOCK" as const }] : []),
     ...withSkus("STOCK_OTHER_WAREHOUSE", p.otherWarehouseSkus),
     ...withSkus("PRICE_STALE", p.staleSkus ?? []),
   ];

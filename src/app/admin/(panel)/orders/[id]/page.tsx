@@ -86,6 +86,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
 
       <div className="flex flex-wrap items-center gap-2" data-testid="order-status">
         <OrderStatusBadge status={order.status} />
+        {order.preorder && <Badge tone="warning">{t("preorderTag")}</Badge>}
         <PaymentStatusBadge status={order.paymentStatus} />
         {order.overdue && <Badge tone="danger">{t("overdue")}</Badge>}
       </div>
@@ -331,6 +332,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
       {(transitions.length > 0 || !canReturn) && (
         <section className="space-y-2">
           <h2 className="font-medium">{t("actions")}</h2>
+          {order.status === "AWAITING_STOCK" && <p className="text-sm text-muted-foreground" data-testid="preorder-hint">{t("preorderHint")}</p>}
           {order.status === "PENDING" && <p className="text-sm text-muted-foreground">{t(`confirmHint.${order.paymentMethod}`)}</p>}
           {order.status === "SHIPPING" && order.paymentMethod === "COD" && <p className="text-sm text-muted-foreground">{t("codCompleteHint")}</p>}
           {transitions.length === 0 ? (

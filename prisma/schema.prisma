@@ -269,6 +269,8 @@ model Product {
   approvedAt     DateTime?
   approvedById   String?
   approvedHash   String?
+  /// QT3: hết hàng thì nhận đặt trước (mặc định bật; tắt riêng SP không muốn nhận).
+  preorderEnabled Boolean             @default(true)
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
   translations   ProductTranslation[]
@@ -335,6 +337,8 @@ model Variant {
   lowStockAt    Int                 @default(5)
   /// Hoa hồng CTV cố định (MMK/cái) cho biến thể này; null = tính theo % của CTV, 0 = không hoa hồng.
   affiliateCommissionMmk Int?
+  /// QT3: tối đa số cái nhận đặt trước (cộng dồn các đơn đang chờ hàng); null = theo cài đặt `preorder.defaultLimit`.
+  preorderLimit Int?
   bundleItems   BundleItem[]        @relation("BundleParent")
   componentOf   BundleItem[]        @relation("BundleComponent")
   batches       Batch[]
@@ -818,6 +822,8 @@ model MmTownship {
 }
 
 enum OrderStatus {
+  /// QT3: đơn đặt trước — chưa giữ hàng, chờ hàng về rồi admin chuyển sang PENDING.
+  AWAITING_STOCK
   PENDING
   PAYMENT_CONFIRMED
   COD_CONFIRMED
@@ -894,6 +900,8 @@ model Order {
   townshipCode      String?
   channel           OrderChannel          @default(WEB)
   status            OrderStatus           @default(PENDING)
+  /// QT3: đơn tạo ở chế độ đặt trước (giữ nguyên sau khi hàng về để tra cứu).
+  preorder          Boolean               @default(false)
   paymentMethod     PaymentMethod
   shippingPayer     ShippingPayer @default(RECEIVER)
   paymentStatus     PaymentStatus         @default(UNPAID)

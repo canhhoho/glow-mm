@@ -210,7 +210,7 @@ export async function workQueue(now = new Date()) {
   const [byStatus, overdue, longShipping] = await Promise.all([
     prisma.order.groupBy({
       by: ["status", "paymentMethod"],
-      where: { status: { in: ["PENDING", "PAYMENT_CONFIRMED", "COD_CONFIRMED", "PACKING", "SHIPPING"] } },
+      where: { status: { in: ["AWAITING_STOCK", "PENDING", "PAYMENT_CONFIRMED", "COD_CONFIRMED", "PACKING", "SHIPPING"] } },
       _count: true,
     }),
     prisma.order.count({
@@ -221,6 +221,8 @@ export async function workQueue(now = new Date()) {
   const count = (pred: (r: (typeof byStatus)[number]) => boolean) =>
     byStatus.filter(pred).reduce((s, r) => s + r._count, 0);
   return {
+    /** QT3: đơn đặt trước chờ hàng về. */
+    awaitingStock: count((r) => r.status === "AWAITING_STOCK"),
     codToConfirm: count((r) => r.status === "PENDING" && r.paymentMethod === "COD"),
     bankToConfirm: count((r) => r.status === "PENDING" && r.paymentMethod === "BANK_TRANSFER"),
     preparing: count((r) => r.status === "PAYMENT_CONFIRMED" || r.status === "COD_CONFIRMED" || r.status === "PACKING"),

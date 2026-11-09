@@ -8,6 +8,7 @@ import type { NavCountKey } from "./nav";
 /**
  * Số đếm cho badge menu admin — chỉ tính những số được yêu cầu (theo quyền của người xem).
  *  - pendingOrders: đơn PENDING.
+ *  - awaitingStock: đơn đặt trước chờ hàng về (QT3).
  *  - quarantineLots: số lô còn hàng ở khu Chờ kiểm tra.
  *  - blockedLots: số lô còn hàng (mọi vị trí) đã ngừng bán / hết hạn — như mục "Hạn dùng" ở trang Cảnh báo.
  *  - pendingApplications: đơn đăng ký CTV chờ duyệt (P11).
@@ -19,6 +20,9 @@ export async function navCounts(keys: Set<NavCountKey>, now = new Date()): Promi
   const jobs: Promise<[NavCountKey, number]>[] = [];
   if (keys.has("pendingOrders")) {
     jobs.push(prisma.order.count({ where: { status: "PENDING" } }).then((n) => ["pendingOrders", n]));
+  }
+  if (keys.has("awaitingStock")) {
+    jobs.push(prisma.order.count({ where: { status: "AWAITING_STOCK" } }).then((n) => ["awaitingStock", n]));
   }
   if (keys.has("quarantineLots")) {
     jobs.push(distinctLots({ location: { type: "QUARANTINE" } }).then((n) => ["quarantineLots", n]));

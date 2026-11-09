@@ -14,7 +14,7 @@ import { getCartDetails } from "@/server/catalog/store-queries";
 import { getBoolSetting } from "@/server/settings";
 import { CheckoutForm } from "@/components/store/checkout-form";
 import { ContactLinks } from "@/components/store/contact-links";
-import { BlockSkeleton, PageTitle } from "@/components/store/ui";
+import { BlockSkeleton, Notice, PageTitle } from "@/components/store/ui";
 
 /** Thanh toán: không cho máy tìm kiếm index (SEO, P7). */
 export const metadata: Metadata = { robots: { index: false, follow: true } };
@@ -79,6 +79,7 @@ async function CheckoutContent({ params }: PageProps<"/[locale]/checkout">) {
             <li key={l.variantId} className="flex justify-between gap-3">
               <span>
                 {l.name} · {l.label} × {l.qty}
+                {l.preorder && <span className="text-xs text-muted-foreground"> · {t("preorderTag")}</span>}
               </span>
               <span className="whitespace-nowrap">{formatMmk(l.priceMmk * l.qty, locale)}</span>
             </li>
@@ -91,6 +92,11 @@ async function CheckoutContent({ params }: PageProps<"/[locale]/checkout">) {
         <p className="mt-1 text-xs text-muted-foreground" data-testid="shipping-note">
           {ta("shippingNote")}
         </p>
+        {cart.preorder && (
+          <Notice className="mt-2" data-testid="checkout-preorder">
+            {t("preorderNotice")}
+          </Notice>
+        )}
       </section>
       <div className="lg:col-start-1 lg:row-start-2 lg:rounded-xl lg:bg-card lg:p-4 lg:ring-1 lg:ring-border">
         {checkoutEnabled ? (

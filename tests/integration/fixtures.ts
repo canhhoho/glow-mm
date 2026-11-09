@@ -27,6 +27,8 @@ export async function makeFixture() {
       brandId: brand.id,
       categoryId: category.id,
       stockLocationId: mm.id,
+      // QT3: tắt đặt trước để các test tồn kho cũ vẫn kiểm "thiếu hàng → lỗi"; test đặt trước tự bật.
+      preorderEnabled: false,
       translations: { create: { locale: "en", name: `IT product ${tag}`, searchText: tag } },
       variants: { create: { sku: `IT-${tag}`, label: "50ml", priceMmk: 10000 } },
     },

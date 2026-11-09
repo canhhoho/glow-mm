@@ -62,9 +62,9 @@ describe("menu admin", () => {
   });
 
   it("chỉ tính badge của mục được thấy", () => {
-    expect([...neededCounts(visibleNav("ADMIN"))].sort()).toEqual(["blockedLots", "pendingApplications", "pendingOrders", "quarantineLots"]);
+    expect([...neededCounts(visibleNav("ADMIN"))].sort()).toEqual(["awaitingStock", "blockedLots", "pendingApplications", "pendingOrders", "quarantineLots"]);
     const onlyOrders = visibleNav("ORDER_STAFF").filter((g) => g.key !== "groupStock");
-    expect([...neededCounts(onlyOrders)]).toEqual(["pendingOrders"]);
+    expect([...neededCounts(onlyOrders)].sort()).toEqual(["awaitingStock", "pendingOrders"]);
   });
 
   it("mục đang mở = tiền tố dài nhất theo đoạn; /admin chỉ khớp chính nó", () => {

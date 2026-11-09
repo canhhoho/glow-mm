@@ -15,27 +15,29 @@ export async function ProductCard({ p, locale }: { p: ProductCardData; locale: s
   return (
     <li className="snap-start rounded-lg border border-border bg-card p-2 transition-shadow hover:shadow-md">
       <Link href={`/p/${p.slug}`} className="flex h-full flex-col">
-        <div className={cn("relative mb-2 aspect-square overflow-hidden rounded-md bg-accent", !p.inStock && "opacity-60")}>
+        <div className={cn("relative mb-2 aspect-square overflow-hidden rounded-md bg-accent", !p.inStock && !p.preorder && "opacity-60")}>
           {p.imageUrl ? (
             <Image src={p.imageUrl} alt={p.imageAlt ?? p.name} fill sizes={CARD_SIZES} className="object-cover" />
           ) : (
             <ImageFallback brand={p.brand} className="text-5xl" />
           )}
           {!p.inStock && (
-            <span className="absolute top-1 left-1 rounded bg-card/90 px-1.5 py-0.5 text-xs">{tp("outOfStock")}</span>
+            <span className="absolute top-1 left-1 rounded bg-card/90 px-1.5 py-0.5 text-xs" data-testid={p.preorder ? "card-preorder" : undefined}>
+              {p.preorder ? tp("preorder") : tp("outOfStock")}
+            </span>
           )}
         </div>
         <p className="text-xs text-muted-foreground">{p.brand}</p>
         <p className="line-clamp-2 text-sm">{p.name}</p>
         <p className="mt-auto pt-1 font-semibold text-brand">{t("from", { price: formatMmk(p.priceMmk, locale) })}</p>
-        {/* Cả thẻ là link tới trang SP (chọn biến thể ở đó); "nút" chỉ là gợi ý thị giác. Hết hàng → không mời "chọn". */}
+        {/* Cả thẻ là link tới trang SP (chọn biến thể ở đó); "nút" chỉ là gợi ý thị giác. Hết hàng → không mời "chọn" (trừ đặt trước). */}
         <span
           className={cn(
             "mt-2 flex min-h-9 items-center justify-center rounded-md text-sm",
-            p.inStock ? "bg-accent text-accent-foreground" : "border border-border text-muted-foreground",
+            p.inStock || p.preorder ? "bg-accent text-accent-foreground" : "border border-border text-muted-foreground",
           )}
         >
-          {p.inStock ? t("choose") : tp("outOfStock")}
+          {p.inStock ? t("choose") : p.preorder ? tp("preorder") : tp("outOfStock")}
         </span>
       </Link>
     </li>

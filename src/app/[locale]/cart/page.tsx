@@ -59,9 +59,18 @@ async function CartContent({ params }: PageProps<"/[locale]/cart">) {
               </Link>
               <span className="font-medium whitespace-nowrap">{formatMmk(l.priceMmk * l.qty, locale)}</span>
             </div>
+            {l.preorder && (
+              <p className="text-xs text-secondary-foreground" data-testid="cart-preorder">
+                {t("preorderLine")}
+              </p>
+            )}
             {!l.ok && (
               <p className="text-xs text-destructive">
-                {l.available <= 0 ? t("unavailable") : t("onlyLeft", { count: l.available })}
+                {l.preorderLimit > 0 && l.qty > l.available
+                  ? t("preorderLimit", { count: l.preorderLimit })
+                  : l.available <= 0
+                    ? t("unavailable")
+                    : t("onlyLeft", { count: l.available })}
               </p>
             )}
             <div className="flex items-center gap-2">
@@ -96,6 +105,7 @@ async function CartContent({ params }: PageProps<"/[locale]/cart">) {
           </span>
         </div>
         <p className="text-xs text-muted-foreground">{t("shippingNote")}</p>
+        {cart.ok && cart.preorder && <Notice>{t("preorderNotice")}</Notice>}
         {cart.ok ? (
           <Link href="/checkout" className={cn(primaryButton, "w-full")}>
             {t("checkout")}

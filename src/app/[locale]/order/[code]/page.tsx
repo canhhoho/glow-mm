@@ -83,6 +83,7 @@ async function OrderContent({ params, searchParams }: PageProps<"/[locale]/order
         )}
       </dl>
 
+      {order.status === "AWAITING_STOCK" && <Notice data-testid="order-preorder">{t("preorderInfo")}</Notice>}
       {order.status === "PENDING" && order.paymentMethod === "COD" && <Notice>{t("codInfo", { total })}</Notice>}
 
       {awaitingPayment && (

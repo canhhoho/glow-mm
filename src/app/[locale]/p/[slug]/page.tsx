@@ -88,7 +88,10 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
   ]);
   if (!p) notFound();
   const [reviews, tr] = await Promise.all([storeReviews(p.id), getTranslations({ locale, namespace: "Review" })]);
-  const firstAvailable = p.variants.find((v) => v.available > 0);
+  // QT3: hết hàng nhưng còn hạn mức đặt trước → vẫn chọn/mua được (ưu tiên chọn sẵn biến thể còn hàng).
+  const buyable = (v: (typeof p.variants)[number]) => v.available > 0 || v.preorder > 0;
+  const firstAvailable = p.variants.find((v) => v.available > 0) ?? p.variants.find(buyable);
+  const onlyPreorder = !!firstAvailable && firstAvailable.available <= 0;
   const minPrice = Math.min(...p.variants.map((v) => v.priceMmk));
   const sections = [
     { key: "description", title: t("description"), body: p.description },
@@ -164,7 +167,7 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
                     name="variantId"
                     value={v.id}
                     required
-                    disabled={v.available <= 0}
+                    disabled={!buyable(v)}
                     defaultChecked={v.id === firstAvailable?.id}
                   />
                   <span className="flex-1">
@@ -173,7 +176,9 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
                     </span>
                     <span className="block text-xs text-muted-foreground">
                       {v.available <= 0
-                        ? t("outOfStock")
+                        ? v.preorder > 0
+                          ? t("preorderAvailable")
+                          : t("outOfStock")
                         : v.available <= LOW_STOCK
                           ? t("lowStock", { count: v.available })
                           : t("inStock")}
@@ -185,6 +190,11 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
               ))}
             </fieldset>
             {p.variants.some((v) => v.expiryDate) && <p className="text-xs text-muted-foreground">{t("expiryNote")}</p>}
+            {p.variants.some((v) => v.available <= 0 && v.preorder > 0) && (
+              <p className="rounded-lg bg-secondary px-3 py-2 text-xs text-secondary-foreground" data-testid="preorder-note">
+                {t("preorderNote")}
+              </p>
+            )}
             {firstAvailable ? (
               <>
                 <label className="block w-24 space-y-1 text-sm">
@@ -196,7 +206,7 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
                     {t("addToCart")}
                   </button>
                   <button type="submit" name="intent" value="buy" className={primaryButton}>
-                    {t("buyNow")}
+                    {onlyPreorder ? t("preorder") : t("buyNow")}
                   </button>
                 </div>
               </>
