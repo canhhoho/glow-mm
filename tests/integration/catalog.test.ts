@@ -169,3 +169,39 @@ describe("Sản phẩm", () => {
     expect((await prisma.variant.findUniqueOrThrow({ where: { id: v.id } })).affiliateCommissionMmk).toBeNull();
   });
 });
+
+describe("Thương hiệu tự xoá khi không còn SP (không có trang Thương hiệu)", () => {
+  const brandOf = (name: string) => prisma.brand.findFirst({ where: { name } });
+
+  it("đổi thương hiệu của SP: thương hiệu cũ hết SP thì bị xoá, còn SP khác thì giữ", async () => {
+    const f = await makeFixture();
+    const tmp = `IT tmp ${f.tag}`;
+    const { brandId: _b, ...noBrand } = base(f, `bt1-${f.tag.toLowerCase()}`);
+    void _b;
+    const a = await saveProduct({ ...noBrand, brandName: tmp, variants: [{ sku: `BT1-${f.tag}`, label: "x" }] }, f.userId);
+    const b = await saveProduct({ ...noBrand, slug: `bt2-${f.tag.toLowerCase()}`, brandName: tmp, variants: [{ sku: `BT2-${f.tag}`, label: "x" }] }, f.userId);
+    const va = await prisma.variant.findUniqueOrThrow({ where: { sku: `BT1-${f.tag}` } });
+    const vb = await prisma.variant.findUniqueOrThrow({ where: { sku: `BT2-${f.tag}` } });
+
+    await saveProduct({ ...base(f, a.slug), id: a.id, variants: [{ id: va.id, sku: va.sku, label: "x" }] }, f.userId);
+    expect(await brandOf(tmp)).not.toBeNull(); // SP b vẫn dùng
+    await saveProduct({ ...base(f, b.slug), id: b.id, variants: [{ id: vb.id, sku: vb.sku, label: "x" }] }, f.userId);
+    expect(await brandOf(tmp)).toBeNull();
+    expect(await prisma.brand.findUnique({ where: { id: f.brandId } })).not.toBeNull();
+  });
+
+  it("xoá hẳn SP cuối cùng → thương hiệu bị xoá; SP chỉ ngừng kinh doanh → thương hiệu giữ", async () => {
+    const f = await makeFixture();
+    const tmp = `IT del ${f.tag}`;
+    const { brandId: _b, ...noBrand } = base(f, `bd-${f.tag.toLowerCase()}`);
+    void _b;
+    const p = await saveProduct({ ...noBrand, brandName: tmp, variants: [{ sku: `BD-${f.tag}`, label: "x" }] }, f.userId);
+    expect(await deleteProducts([p.id], f.userId)).toEqual({ deleted: 1, archived: 0 });
+    expect(await brandOf(tmp)).toBeNull();
+
+    // SP fixture có phiếu nhập nháp (lịch sử) → chỉ ngừng kinh doanh, thương hiệu fixture vẫn còn.
+    await createDocument({ type: "RECEIVE", toId: f.mm.id, lines: [{ variantId: f.variantId, lotNo: "H", expiryDate: "2029-01-01", unitCostVnd: 1, qty: 1 }] }, f.userId);
+    expect(await deleteProducts([f.productId], f.userId)).toEqual({ deleted: 0, archived: 1 });
+    expect(await prisma.brand.findUnique({ where: { id: f.brandId } })).not.toBeNull();
+  });
+});

@@ -11,6 +11,7 @@ import { productName } from "@/server/inventory/queries";
 import { loadReadiness, ReadinessError } from "./readiness";
 import { blockingErrors, type Issue } from "./readiness-rules";
 import { guardApproval } from "./approval";
+import { pruneEmptyBrands } from "./brands";
 
 /** Quản lý sản phẩm (admin). Giá đổi → ghi PriceHistory. Chữ Myanmar → Unicode trước khi lưu. */
 
@@ -106,7 +107,7 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
       : null;
     if (input.copyFromId && !source) throw new CatalogError("Sản phẩm nguồn không còn tồn tại");
     const current = input.id
-      ? await tx.product.findUnique({ where: { id: input.id }, select: { archivedAt: true, stockLocationId: true, published: true } })
+      ? await tx.product.findUnique({ where: { id: input.id }, select: { archivedAt: true, stockLocationId: true, published: true, brandId: true } })
       : null;
     if (input.id && !current) throw new CatalogError("Không tìm thấy sản phẩm");
     if (current?.archivedAt && input.published) throw new CatalogError("Sản phẩm đã ngừng kinh doanh — khôi phục trước khi hiển thị trên web");
@@ -240,6 +241,8 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
         ...(input.copyFromId && { data: { copyFromId: input.copyFromId } }),
       },
     });
+    // Đổi sang thương hiệu khác → thương hiệu cũ không còn SP nào thì tự xoá.
+    if (current && current.brandId !== brandId) await pruneEmptyBrands(tx, [current.brandId]);
     return product;
   };
   // QT2: SP đã duyệt mà nội dung/giá/ảnh đổi → huỷ duyệt.
@@ -286,11 +289,6 @@ export async function setProductsPublished(raw: unknown, userId: string): Promis
     });
     return { changed: changedIds.length, blocked };
   });
-}
-
-export async function createBrand(name: string) {
-  const clean = z.string().trim().min(1).max(80).parse(name);
-  return prisma.brand.create({ data: { name: clean, slug: slugify(clean, `brand-${Date.now()}`) } });
 }
 
 export async function createCategory(raw: unknown) {

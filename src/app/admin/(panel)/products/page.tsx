@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pencil, Plus } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
@@ -7,7 +7,6 @@ import { listProductsAdmin, PRODUCT_STATUSES, productFilterOptions, type Product
 import { loadReadiness } from "@/server/catalog/readiness";
 import { listStatus, PRODUCT_STEPS, productSteps, type ProductStep } from "@/server/catalog/readiness-rules";
 import { prisma } from "@/lib/db";
-import { BrandForm } from "@/components/admin/catalog-forms";
 import { BulkCheckbox, BulkPublishBar, RowProductAction } from "@/components/admin/product-bulk-publish";
 import { Badge, DataTable, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Td, fieldClass } from "@/components/admin/ui";
 import { fmtInt } from "@/lib/format";
@@ -53,13 +52,6 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
       <PageHeader
         title={t("title")}
         actions={[
-          <details key="brand" className="relative">
-            {/* cn(): gộp `border-transparent` (gốc) với `border-border` (outline) — nối chuỗi thô làm mất viền. */}
-            <summary aria-label={t("newBrand")} title={t("newBrand")} className={cn(buttonVariants({ variant: "outline", size: "lg" }), "cursor-pointer list-none [&::-webkit-details-marker]:hidden")}><Plus aria-hidden className="size-4 shrink-0" /> {t("newBrand")}</summary>
-            <div className="absolute top-full right-0 z-20 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-lg border bg-background p-4 shadow-lg">
-              <BrandForm />
-            </div>
-          </details>,
           <LinkButton key="category" href="/admin/categories#new-category" icon="new" iconOnly={false}>
             {t("newCategory")}
           </LinkButton>,
