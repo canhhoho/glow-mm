@@ -2,7 +2,30 @@
   "Meta": {
     "title": "Admin — T&C Cosmetics"
   },
+  "SellingPrices": {
+    "title": "Selling prices",
+    "automatic": "Automatic calculation",
+    "manual": "Manual entry",
+    "help": "Find a product and click Edit to enter a selling price for each variant.",
+    "search": "Search product name or SKU",
+    "filter": "Search",
+    "product": "Product",
+    "sku": "SKU / Variant",
+    "warehouse": "Warehouse",
+    "price": "Selling price (MMK)",
+    "actions": "Actions",
+    "edit": "Edit",
+    "reason": "Reason for price change",
+    "save": "Save price",
+    "saved": "Selling price saved",
+    "empty": "No products found",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {page} / {pages}",
+    "rates": "Exchange rate settings"
+  },
   "Nav": {
+    "sellingPrices": "Selling prices",
     "dashboard": "Dashboard",
     "products": "Products",
     "inventory": "Inventory",
@@ -245,6 +268,16 @@
     "estimateSaved": "Estimated cost saved."
   },
   "Docs": {
+    "receiveSelectStep": "Step 1 — Select products to receive",
+    "receiveDetailsStep": "Step 2 — Enter receipt details",
+    "receiveSelectHelp": "Choose the receiving location and select products for this receipt. Each variant/SKU has its own row.",
+    "receiveChoose": "Select",
+    "receiveSelectAll": "Select all results",
+    "receiveClearSelection": "Clear selection",
+    "receiveSelectedCount": "{count} SKUs selected",
+    "receiveNext": "Continue to receipt details",
+    "receiveBack": "Back to product selection",
+    "receivePasteNotSelected": "Line {line}: SKU \"{value}\" was not selected in step 1",
     "title": "Stock documents",
     "new": "New document",
     "code": "Code",

@@ -8,7 +8,7 @@ import { guardApproval } from "./approval";
 
 /**
  * Bước 3 "Giá bán" trên trang SP (QT1b, docs/ke-hoach-quy-trinh-san-pham.md):
- * nơi duy nhất sửa tay giá / hoa hồng CTV cố định / lãi cố định MMK của một SP (ngoài bảng tính giá và Excel SKU có sẵn).
+ * Dùng chung cho bước 3 trên trang SP và bảng nhập tay Giá bán.
  * Đổi giá bắt buộc lý do → `PriceHistory.reason = "manual: <lý do>"`. Giá phải > 0.
  */
 
@@ -27,6 +27,7 @@ export const productPricingSchema = z.object({
       z.object({
         id: rawId,
         priceMmk: z.coerce.number().int().min(1, "Giá bán phải lớn hơn 0").max(1_000_000_000),
+        expectedPriceMmk: z.coerce.number().int().min(0).max(1_000_000_000).optional(),
         /** Bỏ qua (undefined) = giữ nguyên; "" = theo % của CTV. */
         affiliateCommissionMmk: optionalMoney.optional(),
       }),
@@ -50,6 +51,7 @@ export async function saveProductPricing(raw: unknown, userId: string) {
     const priceChanges = input.variants.filter((v) => {
       const cur = current.get(v.id);
       if (!cur) throw new CatalogError("Biến thể không thuộc sản phẩm này");
+      if (v.expectedPriceMmk !== undefined && cur.priceMmk !== v.expectedPriceMmk) throw new CatalogError(`Giá của ${cur.sku} vừa được đổi ở nơi khác — tải lại trang`);
       return cur.priceMmk !== v.priceMmk;
     });
     if (priceChanges.length && !input.reason) throw new CatalogError("Nhập lý do sửa giá");

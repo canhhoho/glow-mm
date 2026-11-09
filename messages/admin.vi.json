@@ -2,7 +2,30 @@
   "Meta": {
     "title": "Quản trị — T&C Cosmetics"
   },
+  "SellingPrices": {
+    "title": "Giá bán",
+    "automatic": "Tự động tính",
+    "manual": "Nhập tay",
+    "help": "Tìm sản phẩm, bấm Sửa để nhập giá bán mới cho từng biến thể.",
+    "search": "Tìm tên sản phẩm hoặc SKU",
+    "filter": "Tìm kiếm",
+    "product": "Sản phẩm",
+    "sku": "SKU / Biến thể",
+    "warehouse": "Kho",
+    "price": "Giá bán (MMK)",
+    "actions": "Thao tác",
+    "edit": "Sửa",
+    "reason": "Lý do sửa giá",
+    "save": "Lưu giá",
+    "saved": "Đã lưu giá bán",
+    "empty": "Không tìm thấy sản phẩm",
+    "previous": "Trang trước",
+    "next": "Trang sau",
+    "page": "Trang {page} / {pages}",
+    "rates": "Thiết lập tỷ giá"
+  },
   "Nav": {
+    "sellingPrices": "Giá bán",
     "dashboard": "Tổng quan",
     "products": "Sản phẩm",
     "inventory": "Tồn kho",
@@ -245,6 +268,16 @@
     "estimateSaved": "Đã lưu giá vốn tạm."
   },
   "Docs": {
+    "receiveSelectStep": "Bước 1 — Chọn sản phẩm nhập kho",
+    "receiveDetailsStep": "Bước 2 — Nhập thông số nhập kho",
+    "receiveSelectHelp": "Chọn kho nhận và đánh dấu các sản phẩm nhập trong đợt này. Mỗi biến thể/SKU là một dòng riêng.",
+    "receiveChoose": "Chọn",
+    "receiveSelectAll": "Chọn tất cả kết quả",
+    "receiveClearSelection": "Bỏ chọn tất cả",
+    "receiveSelectedCount": "Đã chọn {count} SKU",
+    "receiveNext": "Tiếp tục nhập thông số",
+    "receiveBack": "Quay lại chọn sản phẩm",
+    "receivePasteNotSelected": "Dòng {line}: SKU \"{value}\" chưa được chọn ở bước 1",
     "title": "Phiếu kho",
     "new": "Tạo phiếu",
     "code": "Mã phiếu",

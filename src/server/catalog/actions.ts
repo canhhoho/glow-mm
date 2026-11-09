@@ -348,6 +348,32 @@ export async function catalogImportAction(_prev: CatalogImportState, formData: F
 }
 
 /**
+ * Trang "Giá bán" → Nhập tay: sửa giá một biến thể (bắt buộc lý do). `expectedPriceMmk` = giá lúc mở bảng —
+ * giá đã đổi ở nơi khác thì báo lỗi thay vì ghi đè. Hoa hồng CTV giữ nguyên.
+ */
+export async function saveSellingPriceAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const productId = String(formData.get("productId") ?? "");
+  try {
+    const user = await requirePermission("pricing:manage");
+    await saveProductPricing(
+      {
+        productId,
+        reason: formData.get("reason") ?? "",
+        variants: [{ id: formData.get("variantId"), priceMmk: formData.get("priceMmk"), expectedPriceMmk: formData.get("expectedPriceMmk") }],
+      },
+      user.id,
+    );
+  } catch (e) {
+    return { error: message(e) };
+  }
+  updateTag(CATALOG_TAG); // giá hiển thị cho khách
+  revalidatePath("/admin/selling-prices");
+  revalidatePath("/admin/products");
+  revalidatePath(`/admin/products/${productId}`);
+  return { ok: "1" };
+}
+
+/**
  * Bước 3 "Giá bán": sửa tay giá (bắt buộc lý do), hoa hồng CTV cố định, lãi cố định MMK của một SP.
  * Ô cùng thứ tự: `variantId[]`, `priceMmk[]`, `affiliateCommissionMmk[]`.
  */
