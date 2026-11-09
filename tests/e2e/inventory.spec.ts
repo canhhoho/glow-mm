@@ -22,6 +22,8 @@ test("quản lý kho: nhận → chuyển chờ kiểm tra → xuất, tồn kh�
   await page.goto("/admin/inventory/documents/new?type=RECEIVE");
   await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "THAM — Kho Thắm" });
   await page.getByLabel("Tìm SKU, tên sản phẩm").fill(SKU);
+  await page.getByRole("checkbox", { name: `Chọn ${SKU}`, exact: true }).check();
+  await page.getByRole("button", { name: "Tiếp tục nhập thông số", exact: true }).click();
   await page.getByLabel(`Số lượng ${SKU}`, { exact: true }).fill("10");
   await page.getByLabel(`Số lô ${SKU}`, { exact: true }).fill(lot);
   await page.getByLabel(`Hạn dùng ${SKU}`, { exact: true }).fill("2028-12-31");
@@ -60,7 +62,8 @@ test("phiếu kho: lỗi server giữ lựa chọn; ghi sổ cần xác nhận; 
   await page.goto("/admin/inventory/documents");
   await page.getByText("Tạo phiếu", { exact: true }).click(); // menu tạo phiếu có cả ở danh sách phiếu
   await page.getByRole("link", { name: "Chuyển kho" }).click();
-  await expect(page).toHaveURL(/type=TRANSFER$/);
+  // Form chuyển kho tải mọi lô — DB test tích luỹ nhiều lô nên có thể > 5s.
+  await expect(page).toHaveURL(/type=TRANSFER$/, { timeout: 20_000 });
 
   // Vị trí đi = đến → server báo lỗi, các ô chọn giữ nguyên (không bị form reset về "—").
   const from = page.getByLabel("Chọn vị trí xuất");
@@ -97,6 +100,9 @@ test("phiếu nhập: dán từ Excel điền nhiều dòng, báo dòng lỗi, d
   await login(page, "kho@glow.local");
   await page.goto("/admin/inventory/documents/new?type=RECEIVE");
   await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "THAM — Kho Thắm" });
+
+  await page.getByRole("checkbox", { name: `Chọn ${SKU}`, exact: true }).check();
+  await page.getByRole("button", { name: "Tiếp tục nhập thông số", exact: true }).click();
   await expect(page.getByLabel("Cước tạm tính VN → MM (MMK/kg)")).toBeVisible();
   await page.getByLabel("Cước tạm tính VN → MM (MMK/kg)").fill("8000");
   await page.getByRole("button", { name: "Dán từ Excel" }).click();

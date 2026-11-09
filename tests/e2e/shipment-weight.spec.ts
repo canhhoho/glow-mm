@@ -13,6 +13,8 @@ test("D8 nhập theo chuyến, phân bổ theo kg rồi thay chi phí báo cần
   const shipmentUrl = page.url();
   await page.goto("/admin/inventory/documents/new?type=RECEIVE");
   await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "THAM — Kho Thắm" });
+  await page.getByRole("checkbox", { name: "Chọn SV-SUN-50", exact: true }).check();
+  await page.getByRole("button", { name: "Tiếp tục nhập thông số", exact: true }).click();
   await page.getByRole("combobox", { name: "Chuyến hàng", exact: true }).selectOption({ label: code });
   await page.getByLabel("Tìm SKU, tên sản phẩm").fill("SV-SUN-50");
   await page.getByLabel("Số lượng SV-SUN-50", { exact: true }).fill("3");

@@ -19,6 +19,19 @@ const receive = async (f: Fixture, lot: string, extra: Record<string, unknown> =
 };
 const variant = (id: string) => prisma.variant.findUniqueOrThrow({ where: { id } });
 
+describe("Bảng nhập tay giá bán", () => {
+  it("giữ hoa hồng và chặn ghi đè giá đã đổi từ lúc mở bảng", async () => {
+    const f = await makeFixture();
+    await prisma.variant.update({ where: { id: f.variantId }, data: { affiliateCommissionMmk: 1_000 } });
+    const input = { productId: f.productId, reason: "Bảng giá mới", variants: [{ id: f.variantId, priceMmk: 15_000, expectedPriceMmk: 10_000 }] };
+    await saveProductPricing(input, f.userId);
+    expect(await variant(f.variantId)).toMatchObject({ priceMmk: 15_000, affiliateCommissionMmk: 1_000 });
+    await expect(saveProductPricing({ ...input, variants: [{ ...input.variants[0], priceMmk: 20_000 }] }, f.userId)).rejects.toThrow(/vừa được đổi/);
+    expect((await variant(f.variantId)).priceMmk).toBe(15_000);
+    expect(await prisma.priceHistory.count({ where: { variantId: f.variantId } })).toBe(1);
+  });
+});
+
 describe("F4: bảng tính giá không bao giờ ra giá 0", () => {
   it("kho mua MMK: vốn 0 + lãi 0 → dòng bị bỏ qua PRICE_ZERO, biến thể khác vẫn tính", async () => {
     const f = await makeFixture();

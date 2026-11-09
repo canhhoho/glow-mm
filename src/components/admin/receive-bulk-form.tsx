@@ -66,8 +66,10 @@ function rowInvalid(r: Row, d: Defaults) {
 
 type Location = { id: string; code: string; name: string; sellable: boolean; pricingMode: "VN_IMPORT" | "LOCAL_MMK" | null };
 
-/** Phiếu nhập nhiều SP: bảng mọi biến thể, chỉ dòng có SL > 0 vào phiếu; dán từ Excel để điền nhanh. */
-/** `productId` (QT1b, nút "Nhập hàng" ở bước 2 trang SP): chỉ hiện biến thể của SP đó + chọn sẵn kho của SP. */
+/**
+ * Phiếu nhập hai bước: chọn SKU, sau đó nhập thông số; giữ dữ liệu khi quay lại lựa chọn.
+ * `productId` (QT1b, nút "Nhập hàng" ở bước 2 trang SP): chọn sẵn các biến thể của SP + kho của SP.
+ */
 export function ReceiveBulkForm({
   locations,
   shipments,
@@ -88,6 +90,8 @@ export function ReceiveBulkForm({
   const bySku = useMemo(() => new Map(variants.map((v) => [v.sku, v])), [variants]);
 
   const focus = productId ? variants.filter((v) => v.productId === productId) : [];
+  const [step, setStep] = useState<1 | 2>(1);
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(focus.map((v) => v.id)));
   const [productFilter, setProductFilter] = useState(focus.length ? productId! : "");
   const [toId, setToId] = useState(() => (focus.length && locations.some((l) => l.id === focus[0].stockLocationId) ? focus[0].stockLocationId : ""));
   /** Khối lượng (g) theo biến thể — chỉ cho biến thể chưa có khối lượng. */
@@ -139,13 +143,15 @@ export function ReceiveBulkForm({
       if (onlyFilled && !hasQty(r)) return false;
       const v = byId.get(r.variantId)!;
       if (!inScope(v)) return false;
+      if (!selected.has(v.id)) return false;
       if (brand && v.brand !== brand) return false;
       if (productFilter && v.productId !== productFilter) return false;
       return !needle || fold(`${v.sku} ${v.name} ${v.label} ${v.brand}`).includes(needle);
     });
-  }, [rows, q, brand, onlyFilled, byId, inScope, productFilter]);
+  }, [rows, q, brand, onlyFilled, byId, inScope, productFilter, selected]);
 
-  const filled = rows.filter((r) => hasQty(r) && inScope(byId.get(r.variantId)!));
+  const selectedRows = rows.filter((r) => selected.has(r.variantId) && inScope(byId.get(r.variantId)!));
+  const filled = selectedRows.filter(hasQty);
   const canUseShipment = (!!toLoc && toLoc.sellable && toLoc.pricingMode !== "LOCAL_MMK") || (!!toLoc && !toLoc.sellable && filled.length > 0 && filled.every((r) => byId.get(r.variantId)!.currency === "VND"));
   const totalQty = filled.reduce((s, r) => s + Number(r.qty), 0);
   // Tổng tiền theo loại tiền (khu chờ kiểm tra có thể nhận cả SP Kho Thắm (VND) lẫn Kho Chi (MMK)).
@@ -157,7 +163,7 @@ export function ReceiveBulkForm({
   const money = Object.entries(totals).map(([c, v]) => `${fmtInt(v)} ${c}`).join(" + ") || "0";
 
   const applyPaste = () => {
-    const scoped = variants.filter(inScope).map((v) => v.sku);
+    const scoped = variants.filter((v) => inScope(v) && selected.has(v.id)).map((v) => v.sku);
     const known = new Set(variants.map((v) => v.sku.toUpperCase()));
     const { rows: pasted, errors } = parseReceivePaste(pasteText, scoped);
     setRows((rs) => {
@@ -188,7 +194,9 @@ export function ReceiveBulkForm({
       errors: errors.map((e) =>
         // SKU có nhưng thuộc kho khác → báo rõ thay vì "không có SKU".
         e.code === "sku" && known.has((e.value ?? "").toUpperCase())
-          ? t("pasteErr.otherWarehouse", { line: e.line, value: e.value ?? "", warehouse: toLoc?.name ?? "" })
+          ? bySku.get((e.value ?? "").toUpperCase()) && inScope(bySku.get((e.value ?? "").toUpperCase())!)
+            ? t("receivePasteNotSelected", { line: e.line, value: e.value ?? "" })
+            : t("pasteErr.otherWarehouse", { line: e.line, value: e.value ?? "", warehouse: toLoc?.name ?? "" })
           : t(`pasteErr.${e.code}`, { line: e.line, value: e.value ?? "" }),
       ),
     });
@@ -207,11 +215,11 @@ export function ReceiveBulkForm({
     e.preventDefault();
     setClientError("");
     if (filled.length === 0) return setClientError(t("noLines"));
-    const bad = filled.filter((r) => rowInvalid(r, defaults));
+    const bad = selectedRows.filter((r) => (!r.split && !hasQty(r)) || (hasQty(r) && rowInvalid(r, defaults)));
     if (bad.length) {
       setInvalid(new Set(bad.map((r) => r.key)));
       setClientError(t("lineMissing", { count: bad.length }));
-      setOnlyFilled(true);
+      setOnlyFilled(false);
       setQ("");
       setBrand("");
       requestAnimationFrame(() => document.getElementById(`rcv-${bad[0].key}`)?.scrollIntoView({ block: "center" }));
@@ -245,12 +253,82 @@ export function ReceiveBulkForm({
     startTransition(() => action(fd));
   };
 
+  const chooseStep = () => {
+    setQ("");
+    setBrand("");
+    setOnlyFilled(false);
+    setClientError("");
+    setStep(1);
+  };
+
+  if (step === 1) {
+    const needle = fold(q.trim());
+    const choices = variants.filter((v) => (!toLoc || inScope(v)) && (!brand || v.brand === brand) && (!productFilter || v.productId === productFilter) && (!needle || fold(`${v.sku} ${v.name} ${v.label} ${v.brand}`).includes(needle)));
+    const toggle = (id: string, checked: boolean) => setSelected((s) => {
+      const next = new Set(s);
+      if (checked) next.add(id); else next.delete(id);
+      return next;
+    });
+    const count = variants.filter((v) => selected.has(v.id) && (!toLoc || inScope(v))).length;
+    return <div className="space-y-4" data-testid="receive-selection">
+      <h2 className="font-medium">{t("receiveSelectStep")}</h2>
+      <p className="text-sm text-muted-foreground">{t("receiveSelectHelp")}</p>
+      <label className={cn(fieldLabelClass, "max-w-xl")}>
+        <span>{t("chooseTo")}</span>
+        <select value={toId} onChange={(e) => {
+          const id = e.target.value;
+          const loc = locations.find((l) => l.id === id);
+          setToId(id);
+          if (loc?.sellable) setSelected((s) => new Set([...s].filter((vid) => byId.get(vid)?.stockLocationId === id)));
+        }} className={fieldClass}>
+          <option value="">—</option>
+          {locations.map((l) => <option key={l.id} value={l.id}>{l.code} — {l.name}</option>)}
+        </select>
+      </label>
+      {productFilter && focus.length > 0 && <div className="flex flex-wrap items-center gap-2 text-sm" data-testid="receive-product-scope">
+        <span>{t("productScope", { name: focus[0].name })}</span>
+        <Button type="button" variant="outline" size="lg" onClick={() => setProductFilter("")}>{t("showAllProducts")}</Button>
+      </div>}
+      <div className="flex flex-wrap items-center gap-2">
+        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} aria-label={t("searchVariant")} placeholder={t("searchVariant")} className={cn(fieldClass, "w-full sm:w-72")} />
+        <select value={brand} onChange={(e) => setBrand(e.target.value)} aria-label={t("filterBrand")} className={cn(fieldClass, "w-auto")}>
+          <option value="">{t("allBrands")}</option>
+          {brands.map((b) => <option key={b}>{b}</option>)}
+        </select>
+        <Button type="button" variant="outline" size="lg" disabled={!choices.length} onClick={() => setSelected((s) => new Set([...s, ...choices.map((v) => v.id)]))}>{t("receiveSelectAll")}</Button>
+        <Button type="button" variant="outline" size="lg" disabled={!selected.size} onClick={() => setSelected(new Set())}>{t("receiveClearSelection")}</Button>
+      </div>
+      <div className="overflow-x-auto rounded-lg border">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-muted/50"><tr><th className="p-3">{t("receiveChoose")}</th><th className="p-3">{t("variant")}</th><th className="p-3">{t("filterBrand")}</th></tr></thead>
+          <tbody className="divide-y">
+            {choices.map((v) => <tr key={v.id} className={cn(selected.has(v.id) && "bg-primary/5")}>
+              <td className="p-3"><input id={`receive-pick-${v.id}`} type="checkbox" aria-label={`${t("receiveChoose")} ${v.sku}`} checked={selected.has(v.id)} onChange={(e) => toggle(v.id, e.target.checked)} className="size-4 accent-primary" /></td>
+              <td className="p-3"><label htmlFor={`receive-pick-${v.id}`} className="block cursor-pointer"><span className="font-mono text-xs">{v.sku}</span><span className="block">{v.name} <span className="text-muted-foreground">({v.label})</span></span></label></td>
+              <td className="p-3">{v.brand}</td>
+            </tr>)}
+            {!choices.length && <tr><td colSpan={3} className="p-6 text-center text-muted-foreground">{t("noMatch")}</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      <div className="sticky bottom-0 flex flex-wrap items-center gap-3 border-t bg-background py-3">
+        <span role="status" className="text-sm">{t("receiveSelectedCount", { count })}</span>
+        <Button type="button" size="lg" disabled={!toLoc || !count} onClick={() => { setQ(""); setBrand(""); setProductFilter(""); setOnlyFilled(false); setStep(2); }}>{t("receiveNext")}</Button>
+        {!toLoc && <p className="text-sm text-muted-foreground">{t("chooseWarehouseFirst")}</p>}
+      </div>
+    </div>;
+  }
+
   return (
     <form onSubmit={submit} className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-medium">{t("receiveDetailsStep")}</h2>
+        <Button type="button" variant="outline" size="lg" onClick={chooseStep} disabled={pending}>{t("receiveBack")}</Button>
+      </div>
       <div className="grid gap-3 sm:grid-cols-3">
         <label className={fieldLabelClass}>
           <span className="text-muted-foreground">{t("chooseTo")}</span>
-          <select required value={toId} onChange={(e) => setToId(e.target.value)} className={fieldClass}>
+          <select required disabled value={toId} className={fieldClass}>
             <option value="">—</option>
             {locations.map((l) => (
               <option key={l.id} value={l.id}>
