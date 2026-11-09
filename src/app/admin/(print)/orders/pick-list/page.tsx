@@ -56,11 +56,11 @@ export default async function PickListPage({ searchParams }: PageProps<"/admin/o
                     <td className={cell} />
                     <td className={`${cell} font-mono text-xs`}>{i === 0 ? l.sku : ""}</td>
                     <td className={cell}>{i === 0 ? l.name : ""}</td>
-                    <td className={`${cell} font-mono text-xs`} data-testid="pick-lot">
+                    <td className={`${cell} text-xs`} data-testid="pick-lot">
                       {lot.lotNo ? (
                         <>
-                          {lot.lotNo}
-                          {lot.expiryDate && <div className="font-sans">HSD {fmtDate(lot.expiryDate)}</div>}
+                          <span className="font-mono">{lot.lotNo}</span>
+                          {lot.expiryDate && <div>HSD {fmtDate(lot.expiryDate)}</div>}
                         </>
                       ) : (
                         "—"
@@ -83,10 +83,10 @@ export default async function PickListPage({ searchParams }: PageProps<"/admin/o
             {orders.map((o) => (
               <tr key={o.id} className="break-inside-avoid align-top" data-testid="pack-order">
                 <td className={`${cell} w-8`} />
-                <td className={`${cell} font-mono text-xs whitespace-nowrap`}>
-                  {o.code}
-                  <div className="font-sans">{t(`status.${o.status}`)}</div>
-                  <div className="font-sans text-muted-foreground" data-testid="pick-plan">
+                <td className={`${cell} text-xs whitespace-nowrap`}>
+                  <span className="font-mono">{o.code}</span>
+                  <div>{t(`status.${o.status}`)}</div>
+                  <div className="text-muted-foreground" data-testid="pick-plan">
                     {o.plan === "PLANNED" ? (o.pick && !o.pick.consumedAt ? t("bulk.pickPrintedAt", { time: fmtDateTime(o.pick.printedAt) }) : t("bulk.pickPlan.PLANNED")) : t(`bulk.pickPlan.${o.plan}`)}
                   </div>
                 </td>

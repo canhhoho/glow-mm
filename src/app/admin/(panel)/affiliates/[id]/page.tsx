@@ -151,10 +151,14 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
             </p>
             <ul className="flex flex-wrap gap-1.5 text-xs">
               {a.due.entries.map((e) => (
-                <li key={`${e.orderId}-${e.kind}`} className="rounded border px-1.5 py-0.5 font-mono">
-                  {e.code}
-                  {e.kind === "UPLINE" && <span className="ml-1 font-sans text-muted-foreground">({t("lineKind.UPLINE")})</span>}:{" "}
-                  {fmtInt(e.commission.dueMmk)}
+                <li key={`${e.orderId}-${e.kind}`} className="rounded border px-1.5 py-0.5">
+                  {/* Chỉ mã + số dùng font-mono: chữ thường giữ font Myanmar tự host (class font-sans trỏ sai tên font). */}
+                  <span className="font-mono">{e.code}</span>
+                  {e.kind === "UPLINE" && <span className="ml-1 text-muted-foreground">({t("lineKind.UPLINE")})</span>}
+                  <span className="font-mono">
+                    :{" "}
+                    {fmtInt(e.commission.dueMmk)}
+                  </span>
                 </li>
               ))}
             </ul>
