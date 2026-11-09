@@ -267,7 +267,9 @@
     "estimateWeight": "Freight weight (g)",
     "estimateAction": "Estimate cost",
     "estimateExistingHelp": "Uses purchase cost, the batch exchange rate (or the current rate if absent), and current weight. Existing order cost snapshots remain unchanged.",
-    "estimateSaved": "Estimated cost saved."
+    "estimateSaved": "Estimated cost saved.",
+    "notReceived": "Not received yet ({count}) — new products without a posted receipt",
+    "showReceived": "← Show received products"
   },
   "Docs": {
     "receiveSelectStep": "Step 1 — Select products to receive",
@@ -371,7 +373,10 @@
     "productScope": "Showing the variants of {name}.",
     "showAllProducts": "Show all products",
     "preorderWaiting": "{count} pre-orders are waiting for items in this receipt.",
-    "preorderOpen": "Open the pre-order list"
+    "preorderOpen": "Open the pre-order list",
+    "editDraft": "Edit",
+    "editTitle": "Edit draft receipt",
+    "updated": "Draft updated."
   },
   "Ship": {
     "title": "Shipments VN → MM",

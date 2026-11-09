@@ -5,6 +5,7 @@ import { Clock, FileText } from "lucide-react";
 import { requirePagePermission } from "@/server/auth/session";
 import { classifyExpiry, daysLeft } from "@/server/alerts/compute";
 import {
+  countNotReceived,
   EXPIRY_FILTERS,
   PAGE_SIZE,
   parseStockFilter,
@@ -36,7 +37,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
   const f = parseStockFilter(sp);
   const view: StockView = sp.view === "lots" ? "lots" : "products";
   const now = new Date();
-  const [t, td, locale, summary, products, lots, tabs] = await Promise.all([
+  const [t, td, locale, summary, products, lots, tabs, notReceived] = await Promise.all([
     getTranslations("Inventory"),
     getTranslations("Docs"),
     getLocale(),
@@ -44,6 +45,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
     view === "products" ? stockByVariant(f, now) : null,
     view === "lots" ? stockLots(f, now) : null,
     stockTabs(),
+    countNotReceived(),
   ]);
   // Cột theo kho bán (P24); tồn ở kho khác (kho cũ, chưa chuyển) gộp vào cột "Kho khác" nếu trang có.
   // Nhiều kho (vd. DB test) → chỉ cột của kho có hàng trong trang; tab giữ 20 kho nhiều tồn nhất + tab đang chọn.
@@ -56,7 +58,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
   const shownTabs = tabs.filter((l) => top.has(l) || l.code === f.tab);
   const th = summary.thresholds;
   const href = (patch: Partial<StockFilter> & { view?: StockView } = {}) => stockHref(f, view, patch);
-  const filtered = f.tab !== "all" || !!f.q || !!f.expiry || !!f.stockType;
+  const filtered = f.tab !== "all" || !!f.q || !!f.expiry || !!f.stockType || !!f.received;
 
   return (
     <Page>
@@ -133,6 +135,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
         <FilterBar key={`${f.tab}|${f.q}|${f.expiry}|${f.stockType}|${view}`} className="flex-1">
           {f.tab !== "all" && <input type="hidden" name="tab" value={f.tab} />}
           {view === "lots" && <input type="hidden" name="view" value="lots" />}
+          {f.received && <input type="hidden" name="received" value={f.received} />}
           <SearchInput label={t("search")} defaultValue={f.q} />
           <select name="expiry" defaultValue={f.expiry ?? ""} aria-label={t("expiryFilter")} className={cn(fieldClass, "w-auto")}>
             <option value="">{t("expiryAll")}</option>
@@ -168,6 +171,20 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
         </div>
       </div>
 
+      {/* SP chưa từng nhập hàng không nằm trong "Tất cả" — xem riêng ở đây. */}
+      {view === "products" && (f.received === "no" || notReceived > 0) && (
+        <p className="text-sm">
+          {f.received === "no" ? (
+            <Link href={href({ received: undefined })} className="text-primary underline">
+              {t("showReceived")}
+            </Link>
+          ) : (
+            <Link href={href({ received: "no", tab: "all", expiry: undefined, stockType: undefined })} className="text-primary underline" data-testid="not-received-link">
+              {t("notReceived", { count: notReceived })}
+            </Link>
+          )}
+        </p>
+      )}
       {products && <ProductView page={products} t={t} th={th} now={now} warehouses={sellableTabs} />}
       {lots && <LotView page={lots} t={t} th={th} now={now} />}
       <Pager

@@ -12,9 +12,9 @@ import { fmtDate, fmtDay, fmtInt } from "@/lib/format";
 
 const STATUS_TONE = { DRAFT: "warning", POSTED: "success", CANCELLED: "neutral" } as const;
 
-export default async function DocumentPage({ params }: PageProps<"/admin/inventory/documents/[id]">) {
+export default async function DocumentPage({ params, searchParams }: PageProps<"/admin/inventory/documents/[id]">) {
   const user = await requirePagePermission("stock:view");
-  const { id } = await params;
+  const [{ id }, { updated }] = await Promise.all([params, searchParams]);
   const [t, ti, doc] = await Promise.all([getTranslations("Docs"), getTranslations("Inventory"), getDocument(id)]);
   if (!doc) notFound();
   // QT3: phiếu nhập đã ghi sổ có hàng mà đơn đặt trước đang chờ → nhắc mở danh sách chờ.
@@ -30,6 +30,7 @@ export default async function DocumentPage({ params }: PageProps<"/admin/invento
         title={`${t(doc.type)} · ${doc.code}`}
         back={{ href: "/admin/inventory/documents", label: t("back") }}
       />
+      {updated && <Notice tone="success">{t("updated")}</Notice>}
       {doc.type === "RECEIVE" && doc.status === "POSTED" && can(user.role, "pricing:manage") && <LinkButton href={`/admin/pricing?tab=runs&receiptId=${doc.id}`}>{t("priceReceived")}</LinkButton>}
       {waitingPreorders > 0 && (
         <Notice tone="warning" data-testid="receipt-preorders">
@@ -100,6 +101,9 @@ export default async function DocumentPage({ params }: PageProps<"/admin/invento
 
       {doc.status === "DRAFT" ? (
         <div className="flex flex-wrap gap-3">
+          {doc.type === "RECEIVE" && can(user.role, "stock:receive") && (
+            <LinkButton href={`/admin/inventory/documents/${doc.id}/edit`}>{t("editDraft")}</LinkButton>
+          )}
           <ActionButton
             action={postDocumentAction}
             fields={{ id: doc.id }}

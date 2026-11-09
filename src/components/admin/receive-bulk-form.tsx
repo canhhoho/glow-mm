@@ -8,7 +8,7 @@ import { fieldClass, fieldLabelClass, fieldLabelSmClass } from "@/components/adm
 import { fmtInt } from "@/lib/format";
 import { parseReceivePaste } from "@/lib/receive-paste";
 import { cn } from "@/lib/utils";
-import { createDocumentAction } from "@/server/inventory/actions";
+import { createDocumentAction, updateDocumentAction } from "@/server/inventory/actions";
 import type { ReceiveVariant } from "@/server/inventory/queries";
 
 type StockType = "SELLABLE" | "TESTER";
@@ -66,9 +66,41 @@ function rowInvalid(r: Row, d: Defaults) {
 
 type Location = { id: string; code: string; name: string; sellable: boolean; pricingMode: "VN_IMPORT" | "LOCAL_MMK" | null };
 
+/** Phiếu nhập nháp đang sửa: thông tin chung + dòng (mỗi dòng một lô của một biến thể). */
+export type ReceiveDraft = {
+  id: string;
+  toId: string;
+  shipmentId: string;
+  reason: string;
+  estimatedShip: string;
+  lines: { variantId: string; qty: string; lotNo: string; expiryStatus: ExpiryStatus; expiryDate: string; mfgDate: string; unitCost: string; stockType: StockType }[];
+};
+
+/** Dòng ban đầu: mỗi biến thể một dòng trống; phiếu nháp đang sửa → điền dòng đầu, thêm dòng tách cho lô thứ 2…. */
+function initialRows(variants: ReceiveVariant[], draft?: ReceiveDraft): { rows: Row[]; next: number } {
+  const rows = variants.map((v, i) => newRow(v, i));
+  let next = variants.length;
+  if (!draft) return { rows, next };
+  const index = new Map(variants.map((v, i) => [v.id, i]));
+  const seen = new Set<string>();
+  const extra = new Map<string, Row[]>();
+  for (const l of draft.lines) {
+    const i = index.get(l.variantId);
+    if (i === undefined) continue; // biến thể đã ngừng dùng — bỏ qua
+    const patch = { qty: l.qty, lotNo: l.lotNo, expiryStatus: l.expiryStatus, expiryDate: l.expiryDate, mfgDate: l.mfgDate, unitCost: l.unitCost, stockType: l.stockType };
+    if (!seen.has(l.variantId)) {
+      seen.add(l.variantId);
+      rows[i] = { ...rows[i], ...patch };
+    } else extra.set(l.variantId, [...(extra.get(l.variantId) ?? []), { ...newRow(variants[i], next++, true), ...patch }]);
+  }
+  return { rows: rows.flatMap((r) => (!r.split && extra.has(r.variantId) ? [r, ...extra.get(r.variantId)!] : [r])), next };
+}
+
 /**
  * Phiếu nhập hai bước: chọn SKU, sau đó nhập thông số; giữ dữ liệu khi quay lại lựa chọn.
  * `productId` (QT1b, nút "Nhập hàng" ở bước 2 trang SP): chọn sẵn các biến thể của SP + kho của SP.
+ * `draft`: sửa phiếu nháp — mở thẳng bước 2 với dòng đã lưu; "Lưu nháp" cập nhật đúng phiếu đó.
+ * Mỗi lần mở form một khoá chống trùng: bấm lưu 2 lần / gửi lại không tạo phiếu thứ hai.
  */
 export function ReceiveBulkForm({
   locations,
@@ -76,32 +108,38 @@ export function ReceiveBulkForm({
   variants,
   lastShip = null,
   productId,
+  draft,
 }: {
   locations: Location[];
   shipments: { id: string; code: string }[];
   variants: ReceiveVariant[];
   lastShip?: number | null;
   productId?: string;
+  draft?: ReceiveDraft;
 }) {
   const t = useTranslations("Docs");
   const ti = useTranslations("Inventory");
-  const [state, action, pending] = useActionState(createDocumentAction, undefined);
+  const [state, action, pending] = useActionState(draft ? updateDocumentAction : createDocumentAction, undefined);
+  const idempotencyKey = useRef<string | null>(null);
   const byId = useMemo(() => new Map(variants.map((v) => [v.id, v])), [variants]);
   const bySku = useMemo(() => new Map(variants.map((v) => [v.sku, v])), [variants]);
 
   const focus = productId ? variants.filter((v) => v.productId === productId) : [];
-  const [step, setStep] = useState<1 | 2>(1);
-  const [selected, setSelected] = useState<Set<string>>(() => new Set(focus.map((v) => v.id)));
+  const [step, setStep] = useState<1 | 2>(draft ? 2 : 1);
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(draft ? draft.lines.map((l) => l.variantId) : focus.map((v) => v.id)));
   const [productFilter, setProductFilter] = useState(focus.length ? productId! : "");
-  const [toId, setToId] = useState(() => (focus.length && locations.some((l) => l.id === focus[0].stockLocationId) ? focus[0].stockLocationId : ""));
+  const [toId, setToId] = useState(() =>
+    draft ? draft.toId : focus.length && locations.some((l) => l.id === focus[0].stockLocationId) ? focus[0].stockLocationId : "",
+  );
   /** Khối lượng (g) theo biến thể — chỉ cho biến thể chưa có khối lượng. */
   const [weights, setWeights] = useState<Record<string, string>>({});
-  const [shipmentId, setShipmentId] = useState("");
-  const [estimatedShip, setEstimatedShip] = useState(lastShip == null ? "" : String(lastShip));
-  const [reason, setReason] = useState("");
+  const [shipmentId, setShipmentId] = useState(draft?.shipmentId ?? "");
+  const [estimatedShip, setEstimatedShip] = useState(draft ? draft.estimatedShip : lastShip == null ? "" : String(lastShip));
+  const [reason, setReason] = useState(draft?.reason ?? "");
   const [defaults, setDefaults] = useState<Defaults>({ lotNo: "", expiryDate: "", mfgDate: "", stockType: "SELLABLE" });
-  const [rows, setRows] = useState<Row[]>(() => variants.map((v, i) => newRow(v, i)));
-  const nextKey = useRef(variants.length);
+  const [init] = useState(() => initialRows(variants, draft));
+  const [rows, setRows] = useState<Row[]>(init.rows);
+  const nextKey = useRef(init.next);
   const [q, setQ] = useState("");
   const [brand, setBrand] = useState("");
   const [onlyFilled, setOnlyFilled] = useState(false);
@@ -248,8 +286,11 @@ export function ReceiveBulkForm({
         .filter((id) => !byId.get(id)!.weightGrams && Number(weights[id]) > 0)
         .map((id) => ({ variantId: id, weightGrams: weights[id] })),
     };
+    // Khoá chống trùng sinh một lần cho form này (gửi lại sau lỗi dùng lại khoá — server trả phiếu đã tạo nếu có).
+    idempotencyKey.current ??= crypto.randomUUID();
     const fd = new FormData();
-    fd.set("payload", JSON.stringify(payload));
+    fd.set("payload", JSON.stringify(draft ? payload : { ...payload, idempotencyKey: idempotencyKey.current }));
+    if (draft) fd.set("id", draft.id);
     startTransition(() => action(fd));
   };
 

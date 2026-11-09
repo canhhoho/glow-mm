@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
-import type { DocType, StockType } from "@/generated/prisma/client";
+import { Prisma, type DocType, type StockType } from "@/generated/prisma/client";
 import { newCode } from "@/server/codes";
 import { getNumberSetting } from "@/server/settings";
 import { pickFefo } from "./fefo";
@@ -123,7 +123,6 @@ async function assertBatch(tx: Tx, batchId: string, variantId: string) {
   if (!b || b.variantId !== variantId) throw new DocumentError("Lô không thuộc biến thể đã chọn");
 }
 
-/** Tạo phiếu NHÁP. RECEIVE tạo (hoặc dùng lại) lô theo (biến thể, số lô). */
 /**
  * QT1b: ghi khối lượng nhập ở phiếu nhập lên biến thể **đang trống** (không ghi đè số đã có), audit `variant.weight`.
  * Ghi lúc lập phiếu (phiếu nháp chưa có chỗ lưu khối lượng; khối lượng là thuộc tính SP, không phụ thuộc phiếu được ghi sổ).
@@ -142,101 +141,129 @@ async function fillWeights(tx: Tx, weights: { variantId: string; weightGrams: nu
   });
 }
 
+type DocumentInput = z.infer<typeof documentSchema>;
+type ReceiveInput = z.infer<typeof receiveSchema>;
+type DraftLine = { variantId: string; batchId: string | null; stockType: StockType; qty: number };
+
+/** Kiểm vị trí đi/đến của phiếu (kho đang dùng, đúng kho của SP với hàng vào kho bán…). */
+async function checkLocations(tx: Tx, input: DocumentInput) {
+  const fromId = "fromId" in input ? input.fromId : undefined;
+  const toId = "toId" in input ? input.toId : undefined;
+  if (fromId) await assertLocation(tx, fromId); // xuất/chuyển từ kho đã ngừng dùng vẫn được (dọn tồn cũ)
+  const to = toId ? await assertLocation(tx, toId) : null;
+  if (to && !to.active) throw new DocumentError(`Kho ${to.name} đã ngừng dùng`);
+  if (input.type === "RETURN" && to?.type !== "QUARANTINE") {
+    throw new DocumentError("Hàng trả phải nhập vào vị trí Chờ kiểm tra");
+  }
+  if (fromId && toId && fromId === toId) throw new DocumentError("Vị trí đi và đến phải khác nhau");
+  // P24: hàng vào kho bán (nhập, chuyển) phải đúng kho của SP; điều chỉnh lô đã có ở kho thì không chặn.
+  if (to?.sellable && (input.type === "RECEIVE" || input.type === "TRANSFER")) {
+    const wrong = await tx.variant.findFirst({
+      where: { id: { in: input.lines.map((l) => l.variantId) }, product: { stockLocationId: { not: to.id } } },
+      select: { sku: true, product: { select: { stockLocation: { select: { name: true } } } } },
+    });
+    if (wrong) throw new DocumentError(`SKU ${wrong.sku}: sản phẩm thuộc ${wrong.product.stockLocation.name}, không nhập vào ${to.name}`);
+  }
+  return { fromId, toId };
+}
+
+/** Dòng phiếu NHẬP: tạo (hoặc dùng lại) lô theo (biến thể, số lô), kiểm hạn dùng / loại tiền / chuyến hàng. */
+async function buildReceiveLines(tx: Tx, input: ReceiveInput): Promise<DraftLine[]> {
+  const lines: DraftLine[] = [];
+  // Tải trước biến thể + lô đã có một lần (phiếu nhiều dòng không tốn 2–3 truy vấn mỗi dòng).
+  const variantIds = [...new Set(input.lines.map((l) => l.variantId))];
+  const variants = new Map(
+    (
+      await tx.variant.findMany({
+        where: { id: { in: variantIds } },
+        include: { product: { include: { stockLocation: { select: { pricingMode: true, name: true } } } } },
+      })
+    ).map((v) => [v.id, v]),
+  );
+  const lotKey = (variantId: string, lotNo: string) => `${variantId}\u0000${lotNo}`;
+  const wanted = new Set(input.lines.map((l) => lotKey(l.variantId, l.lotNo)));
+  const batches = new Map(
+    (await tx.batch.findMany({ where: { variantId: { in: variantIds }, lotNo: { in: [...new Set(input.lines.map((l) => l.lotNo))] } } }))
+      .filter((b) => wanted.has(lotKey(b.variantId, b.lotNo)))
+      .map((b) => [lotKey(b.variantId, b.lotNo), b]),
+  );
+  for (const l of input.lines) {
+    const variant = variants.get(l.variantId);
+    if (!variant) throw new DocumentError("Biến thể không tồn tại");
+    const fail = (msg: string): never => {
+      throw new DocumentError(`SKU ${variant.sku}: ${msg}`);
+    };
+    if (variant.isBundle) fail("Không nhập kho trực tiếp cho combo — nhập từng thành phần");
+    const existing = batches.get(lotKey(l.variantId, l.lotNo));
+    const expiryStatus = l.expiryStatus ?? (variant.product.requiresExpiry ? "DATED" : "NONE");
+    if (expiryStatus === "NONE" && variant.product.requiresExpiry) fail("Sản phẩm này yêu cầu quản lý hạn sử dụng");
+    if (expiryStatus !== "NONE" && !variant.product.requiresExpiry) fail("Sản phẩm này không áp dụng hạn sử dụng; chọn NONE");
+    if (expiryStatus === "DATED" && !l.expiryDate) fail("Cần nhập hạn sử dụng hoặc chọn Chưa biết hạn");
+    if (expiryStatus !== "DATED" && l.expiryDate) fail("Chỉ nhập ngày khi đã biết hạn sử dụng");
+    if (l.mfgDate && l.expiryDate && l.mfgDate > l.expiryDate) fail("Ngày sản xuất phải trước hạn sử dụng");
+    // P24: loại tiền theo kho của SP — kho mua tại Myanmar (LOCAL_MMK) nhập giá MMK, kho hàng nhập VN nhập VND.
+    const mmk = variant.product.stockLocation.pricingMode === "LOCAL_MMK";
+    if (mmk && l.unitCostMmk === undefined) fail(`${variant.product.stockLocation.name} nhập giá mua bằng MMK`);
+    if (!mmk && l.unitCostVnd === undefined) fail(`${variant.product.stockLocation.name} nhập giá mua bằng VND`);
+    if (mmk && input.shipmentId) fail("Lô giá MMK không gắn chuyến hàng VN → MM");
+    if (existing && (existing.shipmentId ?? null) !== (input.shipmentId ?? null)) fail(`Lô ${l.lotNo} có chuyến hàng khác. Chọn đúng chuyến hoặc dùng thao tác gắn lô trước khi lập phiếu.`);
+    const unitCostVnd = l.unitCostVnd ?? null;
+    const unitCostMmk = l.unitCostMmk ?? null;
+    if (
+      existing &&
+      (existing.expiryDate?.getTime() !== l.expiryDate?.getTime() ||
+        existing.expiryStatus !== expiryStatus ||
+        existing.unitCostVnd !== unitCostVnd ||
+        existing.unitCostMmk !== unitCostMmk ||
+        (l.landedCostVnd !== undefined && existing.landedCostVnd !== l.landedCostVnd))
+    ) {
+      fail(`Lô ${l.lotNo} đã có với hạn dùng khác hoặc giá vốn khác`);
+    }
+    const batch =
+      existing ??
+      (await tx.batch.create({
+        data: {
+          variantId: l.variantId,
+          lotNo: l.lotNo,
+          expiryDate: l.expiryDate,
+          expiryStatus,
+          landedCostVnd: l.landedCostVnd,
+          mfgDate: l.mfgDate,
+          unitCostVnd,
+          unitCostMmk,
+          // Lô MMK: giá vốn MMK có ngay (không tỷ giá, không phân bổ chuyến) → báo cáo lãi, giá vốn đơn chạy sẵn.
+          landedCostMmk: unitCostMmk,
+          shipmentId: input.shipmentId,
+        },
+      }));
+    batches.set(lotKey(l.variantId, l.lotNo), batch); // dòng sau cùng (SKU, lô) dùng lại lô này
+    lines.push({ variantId: l.variantId, batchId: batch.id, stockType: l.stockType, qty: l.qty });
+  }
+  return lines;
+}
+
+const idempotencyKeySchema = z.string().trim().min(8).max(100).optional();
+const idempotencyKeyOf = (raw: unknown) =>
+  idempotencyKeySchema.parse(raw && typeof raw === "object" ? (raw as { idempotencyKey?: unknown }).idempotencyKey : undefined);
+
+/**
+ * Tạo phiếu NHÁP. RECEIVE tạo (hoặc dùng lại) lô theo (biến thể, số lô).
+ * `idempotencyKey` (mỗi lần mở form một khoá): gửi lại cùng form (bấm 2 lần, mạng chậm) → trả phiếu đã tạo, không tạo thêm.
+ */
 export async function createDocument(raw: unknown, userId: string, transaction?: Tx) {
   const input = documentSchema.parse(raw);
+  const idempotencyKey = idempotencyKeyOf(raw);
+  const db = transaction ?? prisma;
+  if (idempotencyKey) {
+    const existing = await db.stockDocument.findUnique({ where: { idempotencyKey } });
+    if (existing) return existing;
+  }
 
   const run = async (tx: Tx) => {
-    const fromId = "fromId" in input ? input.fromId : undefined;
-    const toId = "toId" in input ? input.toId : undefined;
-    if (fromId) await assertLocation(tx, fromId); // xuất/chuyển từ kho đã ngừng dùng vẫn được (dọn tồn cũ)
-    const to = toId ? await assertLocation(tx, toId) : null;
-    if (to && !to.active) throw new DocumentError(`Kho ${to.name} đã ngừng dùng`);
-    if (input.type === "RETURN" && to?.type !== "QUARANTINE") {
-      throw new DocumentError("Hàng trả phải nhập vào vị trí Chờ kiểm tra");
-    }
-    if (fromId && toId && fromId === toId) throw new DocumentError("Vị trí đi và đến phải khác nhau");
-    // P24: hàng vào kho bán (nhập, chuyển) phải đúng kho của SP; điều chỉnh lô đã có ở kho thì không chặn.
-    if (to?.sellable && (input.type === "RECEIVE" || input.type === "TRANSFER")) {
-      const wrong = await tx.variant.findFirst({
-        where: { id: { in: input.lines.map((l) => l.variantId) }, product: { stockLocationId: { not: to.id } } },
-        select: { sku: true, product: { select: { stockLocation: { select: { name: true } } } } },
-      });
-      if (wrong) throw new DocumentError(`SKU ${wrong.sku}: sản phẩm thuộc ${wrong.product.stockLocation.name}, không nhập vào ${to.name}`);
-    }
-
-    const lines: { variantId: string; batchId: string | null; stockType: StockType; qty: number }[] = [];
-
-    if (input.type === "RECEIVE") {
-      // Tải trước biến thể + lô đã có một lần (phiếu nhiều dòng không tốn 2–3 truy vấn mỗi dòng).
-      const variantIds = [...new Set(input.lines.map((l) => l.variantId))];
-      const variants = new Map(
-        (
-          await tx.variant.findMany({
-            where: { id: { in: variantIds } },
-            include: { product: { include: { stockLocation: { select: { pricingMode: true, name: true } } } } },
-          })
-        ).map((v) => [v.id, v]),
-      );
-      const lotKey = (variantId: string, lotNo: string) => `${variantId}\u0000${lotNo}`;
-      const wanted = new Set(input.lines.map((l) => lotKey(l.variantId, l.lotNo)));
-      const batches = new Map(
-        (await tx.batch.findMany({ where: { variantId: { in: variantIds }, lotNo: { in: [...new Set(input.lines.map((l) => l.lotNo))] } } }))
-          .filter((b) => wanted.has(lotKey(b.variantId, b.lotNo)))
-          .map((b) => [lotKey(b.variantId, b.lotNo), b]),
-      );
-      for (const l of input.lines) {
-        const variant = variants.get(l.variantId);
-        if (!variant) throw new DocumentError("Biến thể không tồn tại");
-        const fail = (msg: string): never => {
-          throw new DocumentError(`SKU ${variant.sku}: ${msg}`);
-        };
-        if (variant.isBundle) fail("Không nhập kho trực tiếp cho combo — nhập từng thành phần");
-        const existing = batches.get(lotKey(l.variantId, l.lotNo));
-        const expiryStatus = l.expiryStatus ?? (variant.product.requiresExpiry ? "DATED" : "NONE");
-        if (expiryStatus === "NONE" && variant.product.requiresExpiry) fail("Sản phẩm này yêu cầu quản lý hạn sử dụng");
-        if (expiryStatus !== "NONE" && !variant.product.requiresExpiry) fail("Sản phẩm này không áp dụng hạn sử dụng; chọn NONE");
-        if (expiryStatus === "DATED" && !l.expiryDate) fail("Cần nhập hạn sử dụng hoặc chọn Chưa biết hạn");
-        if (expiryStatus !== "DATED" && l.expiryDate) fail("Chỉ nhập ngày khi đã biết hạn sử dụng");
-        if (l.mfgDate && l.expiryDate && l.mfgDate > l.expiryDate) fail("Ngày sản xuất phải trước hạn sử dụng");
-        // P24: loại tiền theo kho của SP — kho mua tại Myanmar (LOCAL_MMK) nhập giá MMK, kho hàng nhập VN nhập VND.
-        const mmk = variant.product.stockLocation.pricingMode === "LOCAL_MMK";
-        if (mmk && l.unitCostMmk === undefined) fail(`${variant.product.stockLocation.name} nhập giá mua bằng MMK`);
-        if (!mmk && l.unitCostVnd === undefined) fail(`${variant.product.stockLocation.name} nhập giá mua bằng VND`);
-        if (mmk && input.shipmentId) fail("Lô giá MMK không gắn chuyến hàng VN → MM");
-        if (existing && (existing.shipmentId ?? null) !== (input.shipmentId ?? null)) fail(`Lô ${l.lotNo} có chuyến hàng khác. Chọn đúng chuyến hoặc dùng thao tác gắn lô trước khi lập phiếu.`);
-        const unitCostVnd = l.unitCostVnd ?? null;
-        const unitCostMmk = l.unitCostMmk ?? null;
-        if (
-          existing &&
-          (existing.expiryDate?.getTime() !== l.expiryDate?.getTime() ||
-            existing.expiryStatus !== expiryStatus ||
-            existing.unitCostVnd !== unitCostVnd ||
-            existing.unitCostMmk !== unitCostMmk ||
-            (l.landedCostVnd !== undefined && existing.landedCostVnd !== l.landedCostVnd))
-        ) {
-          fail(`Lô ${l.lotNo} đã có với hạn dùng khác hoặc giá vốn khác`);
-        }
-        const batch =
-          existing ??
-          (await tx.batch.create({
-            data: {
-              variantId: l.variantId,
-              lotNo: l.lotNo,
-              expiryDate: l.expiryDate,
-              expiryStatus,
-              landedCostVnd: l.landedCostVnd,
-              mfgDate: l.mfgDate,
-              unitCostVnd,
-              unitCostMmk,
-              // Lô MMK: giá vốn MMK có ngay (không tỷ giá, không phân bổ chuyến) → báo cáo lãi, giá vốn đơn chạy sẵn.
-              landedCostMmk: unitCostMmk,
-              shipmentId: input.shipmentId,
-            },
-          }));
-        batches.set(lotKey(l.variantId, l.lotNo), batch); // dòng sau cùng (SKU, lô) dùng lại lô này
-        lines.push({ variantId: l.variantId, batchId: batch.id, stockType: l.stockType, qty: l.qty });
-      }
-    } else {
+    const { fromId, toId } = await checkLocations(tx, input);
+    const lines: DraftLine[] = [];
+    if (input.type === "RECEIVE") lines.push(...(await buildReceiveLines(tx, input)));
+    else {
       for (const l of input.lines) {
         if (l.batchId) await assertBatch(tx, l.batchId, l.variantId);
         lines.push({ variantId: l.variantId, batchId: l.batchId ?? null, stockType: l.stockType, qty: l.qty });
@@ -254,6 +281,7 @@ export async function createDocument(raw: unknown, userId: string, transaction?:
         orderId: input.type === "RETURN" ? input.orderId : undefined,
         reason: input.reason,
         estimatedShipMmkPerKg: input.type === "RECEIVE" ? input.estimatedShipMmkPerKg : undefined,
+        idempotencyKey,
         createdById: userId,
         lines: { create: lines },
       },
@@ -261,7 +289,75 @@ export async function createDocument(raw: unknown, userId: string, transaction?:
     if (input.type === "RECEIVE" && input.weights?.length) await fillWeights(tx, input.weights, new Set(lines.map((l) => l.variantId)), doc.id, userId);
     return doc;
   };
-  return transaction ? run(transaction) : prisma.$transaction(run);
+  try {
+    return await (transaction ? run(transaction) : prisma.$transaction(run));
+  } catch (e) {
+    // Hai request cùng khoá chạy song song: request thua trả về phiếu đã tạo.
+    if (idempotencyKey && !transaction && e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      const existing = await prisma.stockDocument.findUnique({ where: { idempotencyKey } });
+      if (existing) return existing;
+    }
+    throw e;
+  }
+}
+
+/**
+ * Bỏ lô khỏi các dòng của phiếu nháp và xoá lô nào chỉ phiếu này dùng (chưa có sổ kho / tồn / dòng phiếu khác /
+ * phân bổ đơn / phiếu soạn / dòng tính giá). Dùng khi huỷ hoặc sửa phiếu nháp — lô nháp không chặn nhập lại cùng số lô.
+ */
+export async function releaseDraftBatches(tx: Tx, documentId: string) {
+  const lines = await tx.stockDocumentLine.findMany({ where: { documentId, batchId: { not: null } }, select: { batchId: true } });
+  const batchIds = [...new Set(lines.map((l) => l.batchId!))];
+  if (batchIds.length === 0) return 0;
+  await tx.stockDocumentLine.updateMany({ where: { documentId }, data: { batchId: null } });
+  const orphan = await tx.batch.findMany({
+    where: {
+      id: { in: batchIds },
+      ledger: { none: {} },
+      balances: { none: {} },
+      documentLines: { none: {} },
+      allocations: { none: {} },
+      pickLines: { none: {} },
+      priceRunLines: { none: {} },
+    },
+    select: { id: true },
+  });
+  if (orphan.length) await tx.batch.deleteMany({ where: { id: { in: orphan.map((b) => b.id) } } });
+  return orphan.length;
+}
+
+/**
+ * Sửa phiếu NHẬP đang nháp: thay toàn bộ dòng (lô cũ chỉ phiếu này dùng bị xoá), kho / chuyến / lý do / cước tạm.
+ * Khối lượng điền như lúc tạo (chỉ biến thể đang trống).
+ */
+export async function updateReceiveDraft(documentId: string, raw: unknown, userId: string) {
+  const input = receiveSchema.parse(raw);
+  return prisma.$transaction(
+    async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "StockDocument" WHERE "id" = ${documentId} FOR UPDATE`;
+      const doc = await tx.stockDocument.findUnique({ where: { id: documentId }, select: { id: true, type: true, status: true } });
+      if (!doc) throw new DocumentError("Không tìm thấy phiếu");
+      if (doc.type !== "RECEIVE" || doc.status !== "DRAFT") throw new DocumentError("Chỉ sửa được phiếu nhập đang nháp");
+      const { toId } = await checkLocations(tx, input);
+      await releaseDraftBatches(tx, doc.id);
+      await tx.stockDocumentLine.deleteMany({ where: { documentId: doc.id } });
+      const lines = await buildReceiveLines(tx, input);
+      const updated = await tx.stockDocument.update({
+        where: { id: doc.id },
+        data: {
+          toId,
+          shipmentId: input.shipmentId ?? null,
+          reason: input.reason ?? null,
+          estimatedShipMmkPerKg: input.estimatedShipMmkPerKg ?? null,
+          lines: { create: lines },
+        },
+      });
+      if (input.weights?.length) await fillWeights(tx, input.weights, new Set(lines.map((l) => l.variantId)), doc.id, userId);
+      await tx.auditLog.create({ data: { userId, action: "stock.update", entity: "StockDocument", entityId: doc.id, data: { lines: lines.length } } });
+      return updated;
+    },
+    { maxWait: 10_000, timeout: 30_000 },
+  );
 }
 
 /** Tồn khả dụng theo lô của một biến thể tại một vị trí (dùng cho FEFO). */
@@ -383,15 +479,45 @@ export async function postDocumentTx(tx: Tx, documentId: string, userId: string,
   return doc.code;
 }
 
+/**
+ * Huỷ phiếu nháp: giữ phiếu "Đã huỷ" để tra cứu, xoá lô chỉ phiếu này tạo ra (nhập lại cùng số lô được)
+ * và trả lại khối lượng phiếu này đã điền (nếu chưa ai sửa khác đi).
+ */
 export async function cancelDocument(documentId: string, userId: string) {
-  const res = await prisma.stockDocument.updateMany({
-    where: { id: documentId, status: "DRAFT" },
-    data: { status: "CANCELLED" },
+  await prisma.$transaction(async (tx) => {
+    const res = await tx.stockDocument.updateMany({ where: { id: documentId, status: "DRAFT" }, data: { status: "CANCELLED" } });
+    if (res.count !== 1) throw new DocumentError("Chỉ huỷ được phiếu nháp");
+    const batches = await releaseDraftBatches(tx, documentId);
+    const weights = await revertDraftWeights(tx, documentId, userId);
+    await tx.auditLog.create({
+      data: { userId, action: "stock.cancel", entity: "StockDocument", entityId: documentId, data: { batchesRemoved: batches, weightsReverted: weights } },
+    });
   });
-  if (res.count !== 1) throw new DocumentError("Chỉ huỷ được phiếu nháp");
-  await prisma.auditLog.create({
-    data: { userId, action: "stock.cancel", entity: "StockDocument", entityId: documentId },
+}
+
+/** Khối lượng do phiếu (nháp) điền (`variant.weight` + documentId) mà vẫn còn nguyên giá trị đó → đặt lại trống. */
+async function revertDraftWeights(tx: Tx, documentId: string, userId: string) {
+  const logs = await tx.auditLog.findMany({
+    where: { action: "variant.weight", entity: "Variant", data: { path: ["documentId"], equals: documentId } },
+    select: { entityId: true, data: true },
   });
+  const filled = logs.flatMap((l) => {
+    const grams = (l.data as { weightGrams?: unknown } | null)?.weightGrams;
+    return l.entityId && typeof grams === "number" ? [{ variantId: l.entityId, grams }] : [];
+  });
+  if (filled.length === 0) return 0;
+  const productIds = (await tx.variant.findMany({ where: { id: { in: filled.map((f) => f.variantId) } }, select: { productId: true } })).map((v) => v.productId);
+  let reverted = 0;
+  await guardApproval(tx, productIds, userId, async () => {
+    for (const f of filled) {
+      const res = await tx.variant.updateMany({ where: { id: f.variantId, weightGrams: f.grams }, data: { weightGrams: null } });
+      if (res.count === 1) {
+        reverted++;
+        await tx.auditLog.create({ data: { userId, action: "variant.weight.revert", entity: "Variant", entityId: f.variantId, data: { weightGrams: f.grams, documentId } } });
+      }
+    }
+  });
+  return reverted;
 }
 
 /** Ngưỡng hạn dùng cho bán hàng (dùng ở P2). */

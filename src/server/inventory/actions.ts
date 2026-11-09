@@ -7,7 +7,7 @@ import { estimateBatchCost } from "./estimate";
 import type { DocType } from "@/generated/prisma/client";
 import { requirePermission } from "@/server/auth/session";
 import type { Permission } from "@/server/auth/roles";
-import { cancelDocument, createDocument, postDocument, resolveBatchExpiry } from "./documents";
+import { cancelDocument, createDocument, postDocument, resolveBatchExpiry, updateReceiveDraft } from "./documents";
 import { discardFromQuarantine, restockFromQuarantine } from "./quarantine";
 import { createWarehouse, setWarehouseActive, updateWarehouse } from "./warehouses";
 import {
@@ -143,7 +143,23 @@ export async function cancelDocumentAction(_prev: ActionState, formData: FormDat
     return { error: message(e) };
   }
   revalidatePath(`/admin/inventory/documents/${id}`);
+  revalidatePath("/admin/inventory/documents");
+  revalidatePath("/admin/inventory");
   return { ok: "cancelled" };
+}
+
+/** Sửa phiếu NHẬP đang nháp (form nhập nhiều SP, `payload` như lúc tạo + `id`). */
+export async function updateDocumentAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const id = String(formData.get("id") ?? "");
+  try {
+    const user = await requirePermission("stock:receive");
+    await updateReceiveDraft(id, JSON.parse(String(formData.get("payload") ?? "{}")), user.id);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  revalidatePath(`/admin/inventory/documents/${id}`);
+  revalidatePath("/admin/inventory/documents");
+  redirect(`/admin/inventory/documents/${id}?updated=1`);
 }
 
 // ── Chuyến hàng ──

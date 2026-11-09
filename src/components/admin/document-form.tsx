@@ -1,7 +1,7 @@
 "use client";
 
 import { Trash2, Plus } from "lucide-react";
-import { startTransition, useActionState, useMemo, useState, type FormEvent } from "react";
+import { startTransition, useActionState, useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { fieldClass, fieldLabelClass, fieldLabelSmClass } from "@/components/admin/ui";
@@ -56,6 +56,8 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
   const t = useTranslations("Docs");
   const ti = useTranslations("Inventory");
   const [state, action, pending] = useActionState(createDocumentAction, undefined);
+  /** Chống tạo trùng: một khoá cho form này (gửi lại sau lỗi dùng lại khoá). */
+  const idempotencyKey = useRef<string | null>(null);
   const [fromId, setFromId] = useState("");
   const [toId, setToId] = useState("");
   const [shipmentId, setShipmentId] = useState("");
@@ -115,6 +117,8 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    idempotencyKey.current ??= crypto.randomUUID();
+    fd.set("payload", JSON.stringify({ ...JSON.parse(String(fd.get("payload") ?? "{}")), idempotencyKey: idempotencyKey.current }));
     startTransition(() => action(fd));
   };
 

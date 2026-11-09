@@ -267,7 +267,9 @@
     "estimateWeight": "Khối lượng tính cước (g)",
     "estimateAction": "Tính giá vốn tạm",
     "estimateExistingHelp": "Dùng giá mua gốc, tỷ giá đã gắn với lô (hoặc tỷ giá hiện hành nếu chưa có) và khối lượng hiện tại. Giá vốn đã chụp trên đơn cũ được giữ nguyên.",
-    "estimateSaved": "Đã lưu giá vốn tạm."
+    "estimateSaved": "Đã lưu giá vốn tạm.",
+    "notReceived": "Chưa nhập hàng ({count}) — SP mới tạo, chưa có phiếu nhập ghi sổ",
+    "showReceived": "← Xem SP đã nhập hàng"
   },
   "Docs": {
     "receiveSelectStep": "Bước 1 — Chọn sản phẩm nhập kho",
@@ -371,7 +373,10 @@
     "productScope": "Đang hiện các loại của sản phẩm {name}.",
     "showAllProducts": "Hiện tất cả sản phẩm",
     "preorderWaiting": "Có {count} đơn đặt trước đang chờ hàng trong phiếu này.",
-    "preorderOpen": "Mở danh sách đơn đặt trước"
+    "preorderOpen": "Mở danh sách đơn đặt trước",
+    "editDraft": "Sửa phiếu",
+    "editTitle": "Sửa phiếu nhập nháp",
+    "updated": "Đã cập nhật phiếu nháp."
   },
   "Ship": {
     "title": "Chuyến hàng VN → MM",

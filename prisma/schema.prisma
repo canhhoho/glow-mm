@@ -648,6 +648,8 @@ model StockDocument {
   order       Order?              @relation(fields: [orderId], references: [id])
   reason      String?
   estimatedShipMmkPerKg Int?
+  /// Chống tạo trùng khi gửi lại cùng một form (mỗi lần mở form một khoá).
+  idempotencyKey String?            @unique
   createdById String
   postedById  String?
   createdAt   DateTime            @default(now())
