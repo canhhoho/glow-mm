@@ -25,6 +25,10 @@
 | P2 | Thanh toán preorder | **Như đơn thường** (COD/chuyển khoản), đơn đánh dấu "Đặt trước", chờ hàng về mới giao. |
 | P3 | Giới hạn | **Giới hạn theo SP** (số tối đa nhận đặt trước); hết hạn mức → báo hết. |
 | P4 | Hàng về | **Danh sách chờ, admin xác nhận**: liệt kê đơn đặt trước theo thứ tự đặt, báo đủ/thiếu; admin bấm chuyển sang xử lý như đơn thường. |
+| G1 | Ô ở form tạo SP | **Tối giản 5 ô**: Tên · Thương hiệu · Danh mục · Kho bán (chỉ khi có > 1 kho) · Phân loại (tuỳ chọn). Còn lại tự sinh hoặc làm ở bước sau. |
+| G2 | Khối lượng | **Nhập ở bước 2** khi nhập kho (quản lý kho cân hàng thật). |
+| G3 | Trang chi tiết SP | **Sắp theo 5 bước**: thanh 5 bước ở đầu, bên dưới mỗi bước một khối có nút làm/sửa riêng. |
+| G4 | Combo | **Nút "Tạo combo" riêng**; form SP thường không còn phần combo. |
 
 **Giả định mặc định (đổi được khi duyệt kế hoạch):**
 - SP đang hiển thị mà bị "về Chờ duyệt" (vì đổi giá/nội dung) **không tự ẩn** (giữ nguyên tắc D2 "hệ thống không tự ẩn") — chỉ gắn nhãn "Cần duyệt lại" ở danh sách + dashboard; SP đang ẩn thì phải duyệt lại mới bật được.
@@ -35,18 +39,48 @@
 
 Mỗi bước = một commit trên `dev`; **dừng chờ duyệt sau mỗi giai đoạn**. Chuỗi giao diện mới → `messages/admin.{vi,en,my}.json`, storefront `messages/store.{my,en,vi}.json` + `review-my.json`.
 
-### QT1 — Sắp đúng thứ tự bước 1→3 (không đổi DB, rủi ro thấp–vừa)
+### QT1a — Giao diện tạo SP tối giản + trang SP theo 5 bước (không đổi DB, rủi ro vừa)
+
+**Ô nào đi đâu** (form dài hiện tại ~15 ô → chia theo bước):
+
+| Ô hiện có | Mới |
+|---|---|
+| Tên MY + EN | Bước 1: **một ô "Tên sản phẩm"** (theo ngôn ngữ admin) + link "thêm tên tiếng khác"; tên còn lại chép theo như hiện nay |
+| Thương hiệu, Danh mục | Bước 1 (bắt buộc; gõ thương hiệu mới vẫn tạo được) |
+| Kho bán | Bước 1, chỉ hiện khi có > 1 kho đang dùng (quyết định cách tính giá + phiếu nhập) |
+| Phân loại (màu/dung tích) | Bước 1, tuỳ chọn: ô nhập nhanh dạng thẻ "Đỏ", "Hồng"…; trống = một loại chuẩn |
+| Slug, SKU | Tự sinh; sửa ở khối "Thông tin & nội dung" → "Thiết lập khác" (đóng sẵn) |
+| Quản lý hạn dùng | Mặc định bật; sửa ở "Thiết lập khác" |
+| Mô tả MY/EN, ảnh | Khối "Thông tin & nội dung" sau khi tạo (checklist duyệt cảnh báo nếu thiếu) |
+| Khối lượng | Bước 2 — cột trên phiếu nhập (QT1b) + sửa được ở "Thiết lập khác" |
+| Giá, hoa hồng CTV cố định, lãi cố định MMK (kho Chi) | Bước 3 — khối "Giá bán" (QT1b) |
+| Hiển thị trên web | Bước 5 — khối "Đăng bán" (sau QT2 chỉ bật được khi đã duyệt) |
+| Thành phần combo | Form **"Tạo combo"** riêng |
+
+1. **Form tạo SP mới** (`/admin/products/new`, component mới `product-create-form.tsx`): 5 ô như trên + nút "Tạo sản phẩm" → `createProduct` (domain mới trong `catalog/products.ts`, dùng lại advisory lock + sinh slug/SKU + tạo thương hiệu của `saveProduct`; biến thể giá 0, `published=false`) → chuyển sang trang SP. "Sao chép từ SP cũ" giữ: điền sẵn 5 ô, chép nội dung + ảnh, **không chép giá**.
+2. **Form "Tạo combo"** (`/admin/products/new?type=combo`): tên, danh mục, kho, thành phần (chọn biến thể cùng kho + số lượng). Sửa thành phần combo ở khối "Thông tin & nội dung" của combo.
+3. **Trang SP theo 5 bước** (`products/[id]/page.tsx` sắp lại): thanh 5 bước (✓ xong / ● đang cần làm / ! cảnh báo / chờ) — mỗi bước bấm cuộn tới khối của nó. Các khối:
+   - **Thông tin & nội dung**: hiển thị gọn; nút "Sửa" mở form sửa (tên MY/EN, thương hiệu, danh mục, mô tả, phân loại thêm/tắt, "Thiết lập khác"); khối ảnh hiện có đặt trong đây.
+   - **Kho & giá vốn**: tồn khả dụng theo biến thể, lô gần nhất, trạng thái giá vốn (thật/tạm/thiếu); nút "Nhập hàng" mở phiếu nhập điền sẵn SP.
+   - **Giá bán** (QT1b), **Duyệt** (QT2; trước đó hiện checklist hiện có), **Đăng bán** (ô hiển thị trên web + preorder ở QT3).
+   - Tính trạng thái bước = hàm thuần `productSteps()` trong `catalog/readiness-rules.ts` (unit test).
+4. **Danh sách SP**: cột + bộ lọc **"Bước"** (1–5) thay cho nhóm "Có thể mở bán / Cần hoàn thiện"; nút "Thêm sản phẩm" + "Tạo combo".
+5. `saveProduct` (sửa) vẫn nhận đủ trường như cũ cho khối sửa + Excel; bỏ hẳn file `product-form.tsx` khi các khối mới thay xong.
+
+**Test:** unit `productSteps`; integration `createProduct` (sinh mã, thương hiệu mới, combo cùng kho); E2E sửa các spec đang dùng form SP cũ (`product-copy`, `product-images`, `catalog-import`, `admin-content`, helper `openProductSettings`) + spec mới `product-flow.spec.ts` (tạo 5 ô → trang SP thấy bước 2 đang cần làm) — mobile + desktop.
+
+### QT1b — Giá chỉ ở bước 3, khối lượng ở bước 2 (không đổi DB, rủi ro thấp–vừa)
 
 1. **Sửa lỗi F4**: `applyRun` (`pricing/runs.ts`) và `computeLines` bỏ qua dòng có giá mới ≤ 0 (lý do `PRICE_ZERO`) — bảng tính giá không bao giờ áp giá 0. Test integration.
-2. **Bỏ giá khỏi bước 1**:
-   - Form SP (`product-form.tsx`): SP **mới** không có ô giá (biến thể tạo với giá 0); SP đã có → ô giá chỉ đọc + link "Đặt giá ở bước 3". `saveProduct` giữ nguyên giá cũ của biến thể đã có, biến thể mới = 0.
+2. **Bỏ giá khỏi các đường còn lại của bước 1**:
+   - Khối sửa "Thông tin & nội dung" không có ô giá; `saveProduct` giữ nguyên giá biến thể đã có, biến thể mới thêm = giá 0.
    - Sao chép SP (`product-copy.ts`): không chép giá (đặt 0).
    - Excel (`catalog-import.ts`): SKU **mới** không bắt cột giá (có thì bỏ qua + cảnh báo trong xem trước); SKU **đã có** cập nhật giá vẫn được, ghi `PriceHistory.reason = "import"` (coi là sửa tay hàng loạt ở bước 3).
-3. **Khối "Giá bán" (bước 3) trên trang SP** (`products/[id]`): mỗi biến thể hiện giá hiện tại, nguồn (bảng tính giá #… / sửa tay / Excel), giá vốn lô mới nhất + trạng thái (thật/tạm/thiếu); nút **"Tính giá SP này"** (tạo bảng tính giá chỉ các biến thể của SP, dùng `variantIds` đã có) và **"Sửa tay"** (bắt nhập lý do, ghi `PriceHistory.reason = "manual: <lý do>"`). Action mới trong `catalog/actions.ts`, quyền `pricing:manage`.
+3. **Khối "Giá bán" (bước 3)** trên trang SP: mỗi biến thể hiện giá hiện tại, nguồn (bảng tính giá #… / sửa tay / Excel), giá vốn lô mới nhất + trạng thái (thật/tạm/thiếu), khối lượng; nút **"Tính giá SP này"** (bảng tính giá chỉ các biến thể của SP, dùng `variantIds` đã có) và **"Sửa tay"** (bắt nhập lý do, ghi `PriceHistory.reason = "manual: <lý do>"`). Hoa hồng CTV cố định/cái và lãi cố định MMK (kho Chi) chuyển về khối này. Action mới trong `catalog/actions.ts`, quyền `pricing:manage`.
 4. **Cảnh báo giá cũ**: quy tắc readiness mới `PRICE_STALE` (cảnh báo) khi có phiếu RECEIVE ghi sổ sau lần đổi giá gần nhất của biến thể.
-5. **Thanh 5 bước** thay cho dãy "Các bước" hiện tại ở trang SP: mỗi bước có trạng thái (xong / cần làm / cảnh báo) + nút đi tới đúng chỗ. Bước 2 mở phiếu nhập **điền sẵn SP** (`/admin/inventory/documents/new?type=RECEIVE&product=<id>` — thêm hỗ trợ tham số này cho `receive-bulk-form`). Danh sách SP: thêm cột/bộ lọc **"Bước"** (1–5). Logic tính bước là hàm thuần trong `catalog/readiness-rules.ts` (unit test).
+5. **Khối lượng ở bước 2**: phiếu nhập (`receive-bulk-form.tsx`) nhận tham số `?product=<id>` để điền sẵn các biến thể của SP; thêm cột **"Khối lượng (g)"** hiện cho biến thể chưa có khối lượng (đã có thì chỉ đọc). Khi **ghi sổ** phiếu, khối lượng nhập vào được ghi lên `Variant.weightGrams` (chỉ khi đang trống; audit `variant.weight`) trong cùng transaction — quyền `stock:receive` (quản lý kho làm được). Readiness `NO_WEIGHT` trỏ người dùng về bước 2.
 
-**Test:** `npm run check`; integration pricing/catalog (`tests/integration/*pricing*`, `*catalog*`); E2E `catalog-import`, `product-copy`, `product-images`, `pricing-settings`, `admin-content` + spec mới `product-flow.spec.ts` (tạo SP → nhập kho → tính giá → thấy bước 4 chờ). Một số E2E hiện gõ giá ở form SP sẽ phải sửa theo luồng mới.
+**Test:** `npm run check`; integration pricing (F4, sửa tay có lý do), phiếu nhập ghi khối lượng; E2E `pricing-settings`, `inventory`, `catalog-import` + mở rộng `product-flow.spec.ts` (tạo SP → nhập kho có khối lượng → tính giá → thấy bước 4 chờ).
 
 ### QT2 — Bước 4 Duyệt (migration nhỏ, rủi ro vừa)
 
@@ -76,7 +110,7 @@ Mỗi bước = một commit trên `dev`; **dừng chờ duyệt sau mỗi giai 
 
 | Rủi ro | Giảm thiểu |
 |---|---|
-| E2E/seed hiện tạo SP có giá ngay ở form → hỏng khi bỏ ô giá (QT1) | Sửa helper tạo SP trong test dùng luồng mới; seed (`prisma/seed.ts`) vẫn ghi giá trực tiếp (dữ liệu mẫu, không qua form). |
+| E2E/seed hiện tạo SP có giá ngay ở form → hỏng khi đổi form (QT1a/b) | Sửa helper tạo SP trong test dùng luồng mới; seed (`prisma/seed.ts`) vẫn ghi giá trực tiếp (dữ liệu mẫu, không qua form). |
 | SP đang bán trên production chưa có `approvedAt` (QT2) | Migration đánh dấu **mọi SP đang hiển thị = đã duyệt** (approvedAt = thời điểm migrate, người duyệt = hệ thống) để không chặn sửa/đăng lại. |
 | Đặt trước làm sai tồn/giữ hàng (QT3) | Đơn `AWAITING_STOCK` không tạo `Reservation`; chỉ giữ hàng qua đúng `reserveForOrder` khi chuyển `PENDING`; khoá dòng Variant khi kiểm hạn mức; full E2E + integration đồng thời. |
 | Khách chờ lâu, đơn treo | Hiện ngày dự kiến; admin huỷ được đơn `AWAITING_STOCK`; dashboard đếm đơn chờ quá ngày dự kiến. |
@@ -86,6 +120,7 @@ Mỗi bước = một commit trên `dev`; **dừng chờ duyệt sau mỗi giai 
 
 | Giai đoạn | Migration | File (ước) | Test chính |
 |---|---|---|---|
-| QT1 | Không | ~15 | integration pricing/catalog + E2E liên quan + spec mới |
+| QT1a | Không | ~20 | integration createProduct + E2E form SP + spec mới |
+| QT1b | Không | ~12 | integration pricing/phiếu nhập + E2E liên quan |
 | QT2 | Có (nhỏ) | ~15 | integration + E2E bật hiển thị |
 | QT3 | Có (enum + cột) | ~30 | integration đồng thời + full E2E |
