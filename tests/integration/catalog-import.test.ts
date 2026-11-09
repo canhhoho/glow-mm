@@ -38,6 +38,9 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     expect(preview.rows[0].stock).toMatchObject({ qty: 5, expiryStatus: "DATED", costMmk: 21000, location: f.mm.code });
     expect(preview.rows[2].stock).toMatchObject({ expiryStatus: "UNKNOWN", expiryDate: null });
     expect(preview.warnings.join("\n")).toContain("chưa có hạn sử dụng");
+    // QT1b: SKU mới bỏ qua cột giá (giá đặt ở bước 3) → cảnh báo, xem trước hiện "—".
+    expect(preview.warnings.join("\n")).toContain("bỏ qua giá bán của SKU mới");
+    expect(preview.rows.every((r) => r.price === null)).toBe(true);
     expect(preview.rows[3].stock).toMatchObject({ expiryStatus: "NONE", costMmk: 30000, location: f.chi.code });
     expect(await prisma.brand.count({ where: { name: brand } })).toBe(0); // xem trước không ghi
 
@@ -46,7 +49,7 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     const toner = await prisma.product.findFirstOrThrow({ where: { translations: { some: { name: `Toner ${f.tag}` } } }, include: { variants: { orderBy: { sku: "asc" } }, translations: true, brand: true } });
     expect(toner).toMatchObject({ published: false, stockLocationId: f.mm.id, requiresExpiry: true, brand: { name: brand } });
     expect(toner.translations.map((t) => t.name)).toEqual([`Toner ${f.tag}`, `Toner ${f.tag}`]); // tên còn thiếu chép theo
-    expect(toner.variants.map((v) => [v.label, v.priceMmk])).toEqual([["100ml", 20000], ["200ml", 35000]]);
+    expect(toner.variants.map((v) => [v.label, v.priceMmk])).toEqual([["100ml", 0], ["200ml", 0]]);
     const bag = await prisma.product.findFirstOrThrow({ where: { translations: { some: { name: `အိတ် ${f.tag}` } } } });
     expect(bag).toMatchObject({ stockLocationId: f.chi.id, requiresExpiry: false });
 
@@ -78,7 +81,7 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     expect(after.variants[0].priceMmk).toBe(12000);
     expect(after).toMatchObject({ brandId: before.brandId, categoryId: before.categoryId, stockLocationId: before.stockLocationId, published: before.published });
     expect(after.translations.find((t) => t.locale === "en")?.name).toBe(`IT product ${f.tag}`);
-    expect(await prisma.priceHistory.count({ where: { variantId: f.variantId, newPriceMmk: 12000 } })).toBe(1);
+    expect(await prisma.priceHistory.findMany({ where: { variantId: f.variantId, newPriceMmk: 12000 }, select: { reason: true } })).toEqual([{ reason: "import" }]);
 
     const again = await previewCatalogImport(input);
     expect(again.counts).toMatchObject({ updatedProducts: 0, unchangedProducts: 1 });
@@ -98,15 +101,16 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     expect(preview.counts).toMatchObject({ createdProducts: 0, updatedProducts: 1 });
     await commitCatalogImport(preview.input, f.userId);
     const variants = await prisma.variant.findMany({ where: { productId: f.productId }, orderBy: { label: "asc" } });
-    expect(variants.map((v) => v.label)).toEqual(["100ml", "50ml"]);
+    expect(variants.map((v) => [v.label, v.priceMmk])).toEqual([["100ml", 0], ["50ml", 10000]]);
   });
 
-  it("chặn: đổi kho qua Excel, combo, thiếu giá/tên, tồn sai kho, tỷ giá đổi giữa xem trước và xác nhận", async () => {
+  it("chặn: đổi kho qua Excel, combo, thiếu tên, tồn sai kho, tỷ giá đổi giữa xem trước và xác nhận", async () => {
     const { f, cat } = await setup();
     const sku = `IT-${f.tag}`;
     const errors = async (rows: Record<string, string | number>[]) => (await previewCatalogImport(sheet(rows))).errors.join("\n");
     expect(await errors([{ sku, warehouse_code: f.chi.code, brand: "", category: "" }])).toContain("đổi kho trong trang sản phẩm");
-    expect(await errors([{ name_en: `X ${f.tag}`, brand: "B", category: cat }])).toContain("Chưa điền giá bán");
+    // QT1b: SP mới không cần cột giá.
+    expect(await errors([{ name_en: `X ${f.tag}`, brand: "B", category: cat }])).toBe("");
     expect(await errors([{ brand: "B", category: cat, price_mmk: 1, variant_label: "x" }])).toContain("ít nhất một tên");
     expect(await errors([{ name_en: `Y ${f.tag}`, brand: "B", category: "khong-co", price_mmk: 1 }])).toContain("Danh mục");
     expect(await errors([{ name_en: `Z ${f.tag}`, brand: "B", category: cat, price_mmk: 1, warehouse_code: f.chi.code, qty: 1, unit_cost: 100, inbound_unit_vnd: 50 }])).toContain("không có phí đưa về kho");

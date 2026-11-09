@@ -9,7 +9,7 @@ import { suggestAffiliateCode } from "@/server/affiliates/affiliates";
 import { listApplications, pendingApplicationsCount } from "@/server/affiliates/applications";
 import { getNumberSetting } from "@/server/settings";
 import { ActionForm } from "@/components/admin/action-form";
-import { Badge, DataTable, fieldClass, Page, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, fieldClass, fieldLabelClass, Page, PageHeader, Td } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 
 /** Duyệt đơn đăng ký CTV qua link mời (P11b). */
@@ -58,7 +58,7 @@ export default async function AffiliateApplicationsPage() {
                 <ActionForm action={approveApplicationAction} submitLabel={t("apps.approve")} className="space-y-2" icon={<Check aria-hidden className="size-4 shrink-0" />}>
                   <input type="hidden" name="id" value={a.id} />
                   <div className="grid gap-2 sm:grid-cols-2">
-                    <label className="grid content-start gap-1 text-sm">
+                    <label className={fieldLabelClass}>
                       <span>{t("code")}</span>
                       <input
                         name="code"
@@ -70,7 +70,7 @@ export default async function AffiliateApplicationsPage() {
                         className={cn(fieldClass, "font-mono uppercase")}
                       />
                     </label>
-                    <label className="grid content-start gap-1 text-sm">
+                    <label className={fieldLabelClass}>
                       <span>{t("percent")}</span>
                       <input
                         name="commissionPercent"
@@ -84,7 +84,7 @@ export default async function AffiliateApplicationsPage() {
                       />
                     </label>
                   </div>
-                  <label className="grid content-start gap-1 text-sm">
+                  <label className={fieldLabelClass}>
                     <span>{t("payoutInfo")}</span>
                     <input name="payoutInfo" maxLength={500} className={fieldClass} />
                   </label>
@@ -98,7 +98,7 @@ export default async function AffiliateApplicationsPage() {
                   className="space-y-2" icon={<X aria-hidden className="size-4 shrink-0" />}
                 >
                   <input type="hidden" name="id" value={a.id} />
-                  <label className="grid content-start gap-1 text-sm">
+                  <label className={fieldLabelClass}>
                     <span>{t("apps.reason")}</span>
                     <input name="note" maxLength={500} className={fieldClass} />
                   </label>

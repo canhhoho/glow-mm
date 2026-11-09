@@ -255,8 +255,9 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
         const label = shared(vRows, "variant_label", "Biến thể");
         const priceText = shared(vRows, "price_mmk", "Giá bán");
         const weightText = shared(vRows, "weight_g", "Khối lượng");
-        if (!current && !priceText) throw new Error(`Chưa điền giá bán${sku ? ` cho SKU ${sku}` : ""}`);
-        const price = priceText ? money.parse(priceText.replace(/[,\s]/g, "")) : current!.priceMmk;
+        // QT1b: SKU mới vào giá 0 (đặt giá ở bước 3); cột giá chỉ cập nhật SKU đã có (ghi lịch sử giá "import").
+        if (!current && priceText) warnings.push(`Dòng ${vRows.map((r) => r.__line).join(", ")}: bỏ qua giá bán của SKU mới — đặt giá ở bước 3 (Giá bán) trên trang sản phẩm.`);
+        const price = current ? (priceText ? money.parse(priceText.replace(/[,\s]/g, "")) : current.priceMmk) : 0;
         const weight = weightText ? money.parse(weightText.replace(/[,\s]/g, "")) : current?.weightGrams ?? null;
         // Hoa hồng CTV cố định MMK/cái: trống = SP mới theo % CTV, SP có sẵn giữ mức cũ.
         const commissionText = shared(vRows, "affiliate_commission_mmk", "Hoa hồng CTV");
@@ -337,7 +338,7 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
       const seen = new Map<string, Row>();
       for (const v of variants) {
         for (const r of v.rows) {
-          const view: ImportRowView = { line: Number(r.__line), action: !base || v.isNew ? "create" : v.changed || productChanged ? "update" : "same", name: display, sku: v.sku, label: v.label, price: v.priceMmk, oldPrice: v.oldPrice, stock: null };
+          const view: ImportRowView = { line: Number(r.__line), action: !base || v.isNew ? "create" : v.changed || productChanged ? "update" : "same", name: display, sku: v.sku, label: v.label, price: v.isNew ? null : v.priceMmk, oldPrice: v.oldPrice, stock: null };
           views.push(view);
           const stockCells = ["qty", "expiry_date", "unit_cost", "unit_cost_vnd", "unit_cost_mmk", "inbound_unit_vnd", "lot_no"].some((k) => (r[k] ?? "").trim());
           if (!stockCells) continue;
@@ -423,7 +424,7 @@ export async function commitCatalogImport(raw: unknown, userId: string) {
     }
     if (preview.input.rateId !== input.rateId) throw new Error("Tỷ giá vừa thay đổi. Tải file lên xem trước lại trước khi xác nhận.");
 
-    for (const payload of saves) await saveProduct(payload, userId, tx);
+    for (const payload of saves) await saveProduct(payload, userId, tx, { priceReason: "import" });
 
     const ids = new Map((await tx.variant.findMany({ where: { sku: { in: stock.map((s) => s.sku) } }, select: { id: true, sku: true } })).map((v) => [v.sku, v.id]));
     const byLocation = new Map<string, StockPlan[]>();

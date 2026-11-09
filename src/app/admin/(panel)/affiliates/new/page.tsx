@@ -7,7 +7,7 @@ import { bpToPercent } from "@/server/affiliates/commission";
 import { getNumberSetting } from "@/server/settings";
 import { ActionForm } from "@/components/admin/action-form";
 import { AffiliateFields } from "@/components/admin/affiliate-parts";
-import { fieldClass, Page, PageHeader } from "@/components/admin/ui";
+import { fieldClass, fieldLabelClass, Page, PageHeader } from "@/components/admin/ui";
 
 export default async function NewAffiliatePage() {
   await requirePagePermission("affiliates:manage");
@@ -26,7 +26,7 @@ export default async function NewAffiliatePage() {
           values={{ code: suggestAffiliateCode(), commissionPercent: bpToPercent(defaultBp) }}
           globalUplinePercent={bpToPercent(uplineBp)}
         />
-        <label className="grid content-start gap-1 text-sm">
+        <label className={fieldLabelClass}>
           <span>{t("tree.parentOptional")}</span>
           <select name="parentId" defaultValue="" className={fieldClass}>
             <option value="">{t("tree.noParent")}</option>

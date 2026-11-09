@@ -3,9 +3,10 @@
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { fieldClass } from "@/components/admin/ui";
+import { fieldClass, fieldLabelSmClass } from "@/components/admin/ui";
 import { transitionOrderAction } from "@/server/orders/actions";
 import { cn } from "@/lib/utils";
+import { confirmOrPrevent } from "@/lib/confirm";
 
 export type TransitionField = {
   name: "reason" | "carrier" | "trackingNo" | "fromLocationId" | "note";
@@ -36,15 +37,13 @@ export function TransitionForm({
   return (
     <form
       action={action}
-      onSubmit={(e) => {
-        if (confirm && !window.confirm(confirm)) e.preventDefault();
-      }}
+      onSubmit={confirmOrPrevent(confirm)}
       className="flex flex-wrap items-end gap-2 rounded-lg border p-3"
     >
       <input type="hidden" name="id" value={orderId} />
       <input type="hidden" name="transition" value={transition} />
       {fields.map((f) => (
-        <label key={f.name} className="grid content-start gap-1 text-xs">
+        <label key={f.name} className={fieldLabelSmClass}>
           <span className="text-muted-foreground">{f.label}</span>
           {f.options ? (
             <select name={f.name} required={f.required} defaultValue={f.defaultValue} className={cn(fieldClass, "w-48")}>

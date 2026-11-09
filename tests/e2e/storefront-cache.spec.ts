@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import pg from "pg";
-import { login } from "./helpers";
+import { login, priceInputs, setPrices } from "./helpers";
 
 // P20: nội dung SP được cache ("use cache"), tồn kho thì không. Kiểm tra admin sửa → storefront đổi ngay,
 // và tồn đổi (giữ hàng) → trang SP phản ánh ngay dù nội dung đang nằm trong cache.
@@ -32,13 +32,11 @@ test("admin đổi giá biến thể → trang SP và thẻ ở trang danh mục
   await page.getByRole("row", { name: new RegExp(SLUG) }).getByRole("link", { name: /^Sửa / }).click();
   await expect(page).toHaveURL(/\/admin\/products\/[^/?]+$/);
   const adminUrl = page.url();
-  const priceInput = page.getByLabel("Giá (MMK)").first();
-  const original = await priceInput.inputValue();
+  // QT1b: giá sửa ở bước 3 "Giá bán" (có lý do), không còn trong form sửa.
+  const original = await (await priceInputs(page)).first().inputValue();
 
   try {
-    await priceInput.fill(String(price));
-    await page.getByRole("button", { name: "Lưu", exact: true }).click();
-    await expect(page).toHaveURL(/\?saved=1$/);
+    await setPrices(page, [price], "E2E cache");
 
     await page.goto(`/en/p/${SLUG}`);
     await expect(page.getByText(shown).first()).toBeVisible();
@@ -46,9 +44,7 @@ test("admin đổi giá biến thể → trang SP và thẻ ở trang danh mục
     await expect(page.getByRole("link", { name: new RegExp(shown) }).first()).toBeVisible();
   } finally {
     await page.goto(adminUrl);
-    await page.getByLabel("Giá (MMK)").first().fill(original);
-    await page.getByRole("button", { name: "Lưu", exact: true }).click();
-    await expect(page).toHaveURL(/\?saved=1$/);
+    await setPrices(page, [original], "E2E trả giá cũ");
   }
   await page.goto(`/en/p/${SLUG}`);
   await expect(page.getByText(shown)).toHaveCount(0);

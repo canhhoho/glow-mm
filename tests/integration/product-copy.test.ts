@@ -19,7 +19,7 @@ describe("Sao chép sản phẩm", () => {
     } });
     const draft = productCopyDraft(original);
     expect(draft).toMatchObject({ id: "", slug: "", published: false });
-    expect(draft.variants[0]).toMatchObject({ id: "", sku: "", priceMmk: original.variants[0].priceMmk });
+    expect(draft.variants[0]).toMatchObject({ id: "", sku: "", priceMmk: 0, affiliateCommissionMmk: null });
     // Editing the draft must not mutate the source data in memory either.
     draft.en.name = "New product";
     expect(original.en.name).not.toBe(draft.en.name);

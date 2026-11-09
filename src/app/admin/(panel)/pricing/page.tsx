@@ -16,10 +16,12 @@ import { PricingRunForm } from "@/components/admin/pricing-run-form";
 import { getNumberSetting } from "@/server/settings";
 import { ActionForm } from "@/components/admin/action-form";
 import { RateInputs } from "@/components/admin/rate-inputs";
-import { Badge, DataTable, fieldClass, Page, PageHeader, Section, TabNav, Td } from "@/components/admin/ui";
+import { Badge, DataTable, fieldClass, fieldLabelClass, Page, PageHeader, Section, TabNav, Td } from "@/components/admin/ui";
+import { cn } from "@/lib/utils";
 import { rateDisplay } from "@/server/pricing/formula";
 import { fmtDate, fmtDateTime, fmtDecimal, fmtInt } from "@/lib/format";
 import { prisma } from "@/lib/db";
+import { productName } from "@/server/inventory/queries";
 
 const RUN_TONE = { PREVIEW: "warning", APPLIED: "success", CANCELLED: "neutral" } as const;
 
@@ -29,7 +31,7 @@ type Tab = (typeof TABS)[number];
 
 export default async function PricingPage({ searchParams }: PageProps<"/admin/pricing">) {
   await requirePagePermission("pricing:manage");
-  const { tab: rawTab, receiptId } = await searchParams;
+  const { tab: rawTab, receiptId, productId } = await searchParams;
   const tab: Tab = TABS.includes(rawTab as Tab) ? (rawTab as Tab) : "rates";
   const [t, previews] = await Promise.all([getTranslations("Pricing"), countPreviewRuns()]);
   const tabLabel: Record<Tab, string> = { rates: t("tabRates"), runs: t("tabRuns"), history: t("tabHistory") };
@@ -47,7 +49,9 @@ export default async function PricingPage({ searchParams }: PageProps<"/admin/pr
         }))}
       />
       {tab === "rates" && <RatesTab />}
-      {tab === "runs" && <RunsTab receiptId={typeof receiptId === "string" ? receiptId : undefined} />}
+      {tab === "runs" && (
+        <RunsTab receiptId={typeof receiptId === "string" ? receiptId : undefined} productId={typeof productId === "string" ? productId : undefined} />
+      )}
       {tab === "history" && <HistoryTab />}
     </Page>
   );
@@ -65,7 +69,7 @@ async function RatesTab() {
           className="grid grid-cols-2 gap-x-2 gap-y-3 [&>div:last-of-type]:col-span-full" icon={<Plus aria-hidden className="size-4 shrink-0" />}
         >
           <RateInputs />
-          <label className="col-span-full grid content-start gap-1 text-sm">
+          <label className={cn(fieldLabelClass, "col-span-full")}>
             <span className="text-muted-foreground">{t("note")}</span>
             <input name="note" maxLength={200} className={fieldClass} />
           </label>
@@ -104,7 +108,7 @@ async function RatesTab() {
   );
 }
 
-async function RunsTab({ receiptId }: { receiptId?: string }) {
+async function RunsTab({ receiptId, productId }: { receiptId?: string; productId?: string }) {
   const [t, rates, runs, options, gaps, roundTo, lastShip] = await Promise.all([
     getTranslations("Pricing"),
     listRates(),
@@ -116,6 +120,14 @@ async function RunsTab({ receiptId }: { receiptId?: string }) {
   ]);
   const receipt = receiptId ? await prisma.stockDocument.findFirst({ where: { id: receiptId, type: "RECEIVE", status: "POSTED" }, select: { code: true, lines: { select: { variant: { select: { product: { select: { stockLocationId: true } } } } } } } }) : null;
   if (receiptId && !receipt) return <p role="alert">{t("receiptInvalid")}</p>;
+  // QT1b "Tính giá SP này" (bước 3 trang SP): chỉ các biến thể đang bán của một SP, kho = kho của SP.
+  const product = productId
+    ? await prisma.product.findUnique({
+        where: { id: productId },
+        select: { stockLocationId: true, slug: true, translations: { select: { locale: true, name: true } }, variants: { where: { active: true }, select: { id: true } } },
+      })
+    : null;
+  if (productId && !product?.variants.length) return <p role="alert">{t("productInvalid")}</p>;
   const gapLine = (label: string, skus: string[]) =>
     skus.length > 0 && (
       <p className="text-xs break-words text-muted-foreground">
@@ -126,10 +138,16 @@ async function RunsTab({ receiptId }: { receiptId?: string }) {
     <>
       <Section title={t("newRun")} className="max-w-3xl">
         {receipt && <p className="text-sm">{t("receiptScope", { code: receipt.code })}</p>}
+        {product && (
+          <p className="text-sm" data-testid="pricing-product-scope">
+            {t("productScope", { name: productName(product.translations, product.slug) })}
+          </p>
+        )}
         <PricingRunForm
-          key={receiptId ?? "all"}
+          key={receiptId ?? productId ?? "all"}
           receiptId={receiptId}
-          initialLocationId={receipt?.lines[0]?.variant.product.stockLocationId}
+          variantIds={product?.variants.map((v) => v.id)}
+          initialLocationId={receipt?.lines[0]?.variant.product.stockLocationId ?? product?.stockLocationId}
           warehouses={options.warehouses}
           rates={rates.map((r) => ({ id: r.id, label: `1 MMK = ${rateDisplay(r).vndPerMmk} VND · ${fmtDate(r.effectiveAt)}` }))}
           categories={options.categories}

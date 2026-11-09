@@ -4,7 +4,7 @@ import { can } from "@/server/auth/roles";
 import { affiliateOptions } from "@/server/affiliates/affiliates";
 import { findCustomerByPhone, orderFormOptions } from "@/server/orders/admin-queries";
 import { OrderForm, type OrderFormInitial } from "@/components/admin/order-form";
-import { fieldClass, Page, PageHeader } from "@/components/admin/ui";
+import { fieldClass, fieldLabelClass, Page, PageHeader } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +31,7 @@ export default async function NewOrderPage({ searchParams }: PageProps<"/admin/o
     <Page>
       <PageHeader title={t("new")} back={{ href: "/admin/orders", label: t("back") }} />
       <form role="search" className="flex flex-wrap items-end gap-2">
-        <label className="grid content-start gap-1 text-sm">
+        <label className={fieldLabelClass}>
           <span className="text-muted-foreground">{t("lookupPhone")}</span>
           <input name="phone" type="tel" inputMode="tel" defaultValue={lookup} className={cn(fieldClass, "w-56")} />
         </label>

@@ -18,11 +18,12 @@ export async function CtvLocaleSwitch({ className }: { className?: string }) {
   );
 }
 
-export async function CtvSignOut({ className, buttonClassName }: { className?: string; buttonClassName?: string }) {
+/** `block`: nút cao h-11 chiếm cả hàng (trang Tài khoản trên điện thoại); mặc định nút nhỏ ở header. */
+export async function CtvSignOut({ className, block = false }: { className?: string; block?: boolean }) {
   const t = await getTranslations("Ctv");
   return (
     <form action={ctvSignOutAction} className={className}>
-      <Button type="submit" size="sm" variant="outline" className={buttonClassName}>
+      <Button type="submit" size={block ? "touch" : "sm"} variant="outline" className={block ? "w-full" : undefined}>
         {t("logout")}
       </Button>
     </form>

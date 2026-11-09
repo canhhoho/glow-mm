@@ -7,7 +7,7 @@ import { bpToPercent } from "@/server/affiliates/commission";
 import { getAllSettings, PERCENT_SETTING_KEYS, type NumericSettingKey } from "@/server/settings";
 import { saveSettingsAction } from "@/server/settings-actions";
 import { ActionForm } from "@/components/admin/action-form";
-import { fieldClass, Page, PageHeader } from "@/components/admin/ui";
+import { fieldClass, fieldLabelClass, Page, PageHeader } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 
 const GROUPS: { title: string; icon: LucideIcon; keys: NumericSettingKey[] }[] = [
@@ -37,12 +37,12 @@ export default async function SettingsPage() {
       <PageHeader title={tn("storeSettings")} description={t("description")} />
       <section className="space-y-3" data-testid="settings-accounts" aria-labelledby="settings-accounts-title">
         <div>
-          <h2 id="settings-accounts-title" className="text-base font-semibold">{t("accounts")}</h2>
+          <h2 id="settings-accounts-title" className="font-medium">{t("accounts")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{t("accountsHint")}</p>
         </div>
         <div className="grid gap-3 md:grid-cols-3">
           {accountLinks.map((l) => (
-            <Link key={l.href} href={l.href} className="group flex h-full flex-col gap-3 rounded-xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-5">
+            <Link key={l.href} href={l.href} className="group flex h-full flex-col gap-3 rounded-lg border p-4 transition-colors hover:border-primary/40 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-5">
               <div className="flex items-center gap-3">
                 <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><l.icon className="size-5" aria-hidden /></span>
                 <h3 className="font-semibold">{l.label}</h3>
@@ -59,12 +59,12 @@ export default async function SettingsPage() {
       </section>
       <section aria-labelledby="settings-operations-title" className="space-y-3">
         <div>
-          <h2 id="settings-operations-title" className="flex items-center gap-2 text-base font-semibold"><SlidersHorizontal className="size-4 text-muted-foreground" aria-hidden />{t("operations")}</h2>
+          <h2 id="settings-operations-title" className="flex items-center gap-2 font-medium"><SlidersHorizontal className="size-4 text-muted-foreground" aria-hidden />{t("operations")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{t("operationsHint")}</p>
         </div>
-        <ActionForm action={saveSettingsAction} submitLabel={t("save")} okText={t("saved")} className="space-y-4 [&>div:last-of-type]:rounded-xl [&>div:last-of-type]:border [&>div:last-of-type]:bg-card [&>div:last-of-type]:p-3 [&>div:last-of-type]:shadow-sm">
+        <ActionForm action={saveSettingsAction} submitLabel={t("save")} okText={t("saved")} className="space-y-4 [&>div:last-of-type]:rounded-lg [&>div:last-of-type]:border [&>div:last-of-type]:bg-card [&>div:last-of-type]:p-3 [&>div:last-of-type]:shadow-sm">
           <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3 [&>*]:min-w-0">
-            <fieldset className="space-y-4 rounded-xl border bg-card p-4 sm:p-5">
+            <fieldset className="space-y-4 rounded-lg border p-4">
               <legend className="inline-flex items-center gap-2 px-1 text-sm font-semibold"><ShoppingBag className="size-4 text-primary" aria-hidden />{t("store")}</legend>
               <label className="flex cursor-pointer items-center gap-3 rounded-lg border bg-muted/30 p-3 text-sm font-medium">
                 <input name="store.checkoutEnabled" type="checkbox" defaultChecked={settings.checkoutEnabled} className="size-5 shrink-0 accent-primary" />
@@ -78,7 +78,7 @@ export default async function SettingsPage() {
               <p className="text-xs leading-relaxed text-muted-foreground">{t("requirePickHint")}</p>
             </fieldset>
             {GROUPS.map((g) => (
-              <fieldset key={g.title} className="space-y-4 rounded-xl border bg-card p-4 sm:p-5">
+              <fieldset key={g.title} className="space-y-4 rounded-lg border p-4">
                 <legend className="inline-flex items-center gap-2 px-1 text-sm font-semibold"><g.icon className="size-4 text-primary" aria-hidden />{t(g.title)}</legend>
                 {g.keys.map((k) => (
                   <label key={k} className="grid content-start gap-1.5 text-sm">
@@ -102,9 +102,9 @@ export default async function SettingsPage() {
                 ))}
               </fieldset>
             ))}
-            <fieldset className="space-y-3 rounded-xl border bg-card p-4 sm:p-5 lg:col-span-2 2xl:col-span-3">
+            <fieldset className="space-y-3 rounded-lg border p-4 lg:col-span-2 2xl:col-span-3">
               <legend className="inline-flex items-center gap-2 px-1 text-sm font-semibold"><Wallet className="size-4 text-primary" aria-hidden />{t("payment")}</legend>
-              <label className="grid content-start gap-1 text-sm">
+              <label className={fieldLabelClass}>
                 <span className="text-muted-foreground">{t("keys.payment.bankInstructions")}</span>
                 <textarea
                   name="payment.bankInstructions"

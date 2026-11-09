@@ -198,9 +198,9 @@ function Tile({
   testId?: string;
 }) {
   const cls = cn(
-    "block w-40 flex-none rounded-xl border p-3 lg:w-auto lg:p-4",
-    tone === "warning" && "border-amber-200 bg-amber-50/60 text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300",
-    tone === "danger" && "border-red-200 bg-red-50/60 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300",
+    "block w-40 flex-none rounded-lg border p-3 lg:w-auto lg:p-4",
+    tone === "warning" && "border-warning-border bg-warning-subtle/60 text-warning-foreground",
+    tone === "danger" && "border-danger-border bg-danger-subtle/60 text-danger-foreground",
     href && "hover:brightness-95",
   );
   const body = (
@@ -235,43 +235,35 @@ const dash = <Td className="text-right text-muted-foreground">—</Td>;
 
 function LotsTable({ lots, t, th, now }: { lots: BalanceRow[]; t: T; th: Thresholds; now: Date }) {
   return (
-    <table className="w-full overflow-hidden rounded-lg border bg-background text-xs">
-      <thead className="bg-muted/50 text-left text-muted-foreground">
-        <tr>
-          <th className="px-3 py-1.5 font-medium">{t("colLot")}</th>
-          <th className="px-3 py-1.5 font-medium">{t("colExpiry")}</th>
-          <th className="px-3 py-1.5 font-medium">{t("colLocation")}</th>
-          <th className="px-3 py-1.5 font-medium">{t("colType")}</th>
-          <th className="px-3 py-1.5 text-right font-medium">{t("colQty")}</th>
-          <th className="px-3 py-1.5 text-right font-medium">{t("colUnitCost")}</th>
-          <th className="px-3 py-1.5" />
+    <DataTable
+      dense
+      className="bg-background"
+      numeric={[4, 5]}
+      head={[t("colLot"), t("colExpiry"), t("colLocation"), t("colType"), t("colQty"), t("colUnitCost"), ""]}
+    >
+      {lots.map((l) => (
+        <tr key={`${l.batchId}|${l.locationId}|${l.stockType}`} data-testid="lot-row">
+          <Td className="font-mono">{l.lotNo}</Td>
+          <Td>
+            <ExpiryTag date={l.expiryDate} status={l.expiryStatus} now={now} t={t} th={th} />
+          </Td>
+          <Td>{l.locationName ?? l.locationCode}</Td>
+          <Td>
+            <Badge tone={l.stockType === "TESTER" ? "brand" : "neutral"}>{t(l.stockType)}</Badge>
+          </Td>
+          <Td className="text-right tabular-nums">{fmtInt(l.qty)}</Td>
+          <Td className={cn("text-right tabular-nums", l.landedCostMmk == null && "text-muted-foreground")}>
+            {l.landedCostMmk == null ? t("unallocated") : fmtInt(l.landedCostMmk)}
+            <div className="text-[11px] text-muted-foreground">{t(`cost${l.costStatus ?? (l.landedCostMmk == null ? "MISSING" : "ACTUAL")}`)}</div>
+          </Td>
+          <Td className="text-right">
+            <Link href={`/admin/inventory/batches/${l.batchId}`} className="text-primary underline">
+              {t("history")}
+            </Link>
+          </Td>
         </tr>
-      </thead>
-      <tbody className="divide-y">
-        {lots.map((l) => (
-          <tr key={`${l.batchId}|${l.locationId}|${l.stockType}`} data-testid="lot-row">
-            <td className="px-3 py-1.5 font-mono">{l.lotNo}</td>
-            <td className="px-3 py-1.5">
-              <ExpiryTag date={l.expiryDate} status={l.expiryStatus} now={now} t={t} th={th} />
-            </td>
-            <td className="px-3 py-1.5">{l.locationName ?? l.locationCode}</td>
-            <td className="px-3 py-1.5">
-              <Badge tone={l.stockType === "TESTER" ? "brand" : "neutral"}>{t(l.stockType)}</Badge>
-            </td>
-            <td className="px-3 py-1.5 text-right tabular-nums">{fmtInt(l.qty)}</td>
-            <td className={cn("px-3 py-1.5 text-right tabular-nums", l.landedCostMmk == null && "text-muted-foreground")}>
-              {l.landedCostMmk == null ? t("unallocated") : fmtInt(l.landedCostMmk)}
-              <div className="text-[11px] text-muted-foreground">{t(`cost${l.costStatus ?? (l.landedCostMmk == null ? "MISSING" : "ACTUAL")}`)}</div>
-            </td>
-            <td className="px-3 py-1.5 text-right">
-              <Link href={`/admin/inventory/batches/${l.batchId}`} className="text-primary underline">
-                {t("history")}
-              </Link>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+      ))}
+    </DataTable>
   );
 }
 
@@ -378,7 +370,7 @@ function ProductView({
           const e = c?.earliest;
           const level = e ? classifyExpiry(e.expiryDate, now, th) : null;
           return (
-            <div key={r.variantId} data-testid="stock-card" className={cn("rounded-xl border p-3", level && level !== "near" && "border-red-200")}>
+            <div key={r.variantId} data-testid="stock-card" className={cn("rounded-lg border p-3", level && level !== "near" && "border-danger-border")}>
               <div className="flex gap-3">
                 <Thumb url={r.imageUrl} alt={r.name} size="md" />
                 <div className="min-w-0 flex-1">
@@ -402,7 +394,7 @@ function ProductView({
                 <div
                   className={cn(
                     "mt-2 flex items-center gap-1 text-xs",
-                    level === "near" ? "text-amber-800 dark:text-amber-300" : "text-destructive",
+                    level === "near" ? "text-warning-foreground" : "text-destructive",
                   )}
                 >
                   <Clock className="size-3.5 flex-none" aria-hidden />

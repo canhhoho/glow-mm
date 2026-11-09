@@ -11,6 +11,8 @@ import { addressCatalog } from "@/server/locations/cached";
 import { AccountShell } from "@/components/store/account-shell";
 import { AddressForm } from "@/components/store/account-forms";
 import { BlockSkeleton, Notice, storeCard } from "@/components/store/ui";
+import { ConfirmSubmitButton } from "@/components/ui/confirm-submit";
+import { buttonVariants } from "@/components/ui/button-variants";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
@@ -74,7 +76,7 @@ async function AddressesContent({ params, searchParams }: PageProps<"/[locale]/a
               <form action={deleteAddressAction}>
                 <input type="hidden" name="locale" value={locale} />
                 <input type="hidden" name="id" value={a.id} />
-                <button type="submit" className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg border border-transparent bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:size-9" title={t("delete")} aria-label={t("delete")}><Trash2 aria-hidden className="size-4 shrink-0" /></button>
+                <ConfirmSubmitButton confirm={t("deleteAddressConfirm")} className={buttonVariants({ variant: "destructive", size: "icon-lg" })} title={t("delete")} aria-label={t("delete")}><Trash2 aria-hidden className="size-4 shrink-0" /></ConfirmSubmitButton>
               </form>
             </div>
           </li>

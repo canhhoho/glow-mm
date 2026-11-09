@@ -6,7 +6,7 @@ import { defaultRange } from "@/server/reports/queries";
 import { addDays } from "@/lib/time";
 import { fmtDateTime, fmtInt } from "@/lib/format";
 import { ReportsTabs } from "@/components/admin/reports-tabs";
-import { DataTable, fieldClass, FilterButton, Page, PageHeader, Stat, Td } from "@/components/admin/ui";
+import { DataTable, fieldClass, fieldLabelClass, FilterButton, Page, PageHeader, Stat, Td } from "@/components/admin/ui";
 
 export default async function AnalyticsPage({ searchParams }: PageProps<"/admin/reports/analytics">) {
   await requirePagePermission("reports:view");
@@ -23,8 +23,8 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/admin/
     <ReportsTabs active="analytics" />
     {!report.enabled && <p role="status" className="text-sm text-muted-foreground">{t("disabled")}</p>}
     <form key={`${from}|${to}`} className="flex flex-wrap items-end gap-3">
-      <label className="grid gap-1 text-sm"><span>{t("from")}</span><input name="from" type="date" defaultValue={from} className={fieldClass} /></label>
-      <label className="grid gap-1 text-sm"><span>{t("to")}</span><input name="to" type="date" defaultValue={to} className={fieldClass} /></label>
+      <label className={fieldLabelClass}><span>{t("from")}</span><input name="from" type="date" defaultValue={from} className={fieldClass} /></label>
+      <label className={fieldLabelClass}><span>{t("to")}</span><input name="to" type="date" defaultValue={to} className={fieldClass} /></label>
       <FilterButton>{(await getTranslations("Common"))("filter")}</FilterButton>
     </form>
     <p className="text-sm text-muted-foreground">{t("collection", { started: report.startedAt ? fmtDateTime(report.startedAt) : "—", days: report.activeDays })}</p>

@@ -39,7 +39,7 @@ export function PickPrintButton({ ids, hash, plannable }: { ids: string[]; hash:
         {plannable ? t("bulk.pickSaveAndPrint") : t("print")}
       </Button>
       {saved != null && (
-        <span role="status" className="text-sm text-emerald-700 dark:text-emerald-400">
+        <span role="status" className="text-sm text-success">
           {t("bulk.pickSaved", { count: saved })}
         </span>
       )}

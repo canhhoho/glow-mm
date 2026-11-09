@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { Eye, EyeOff, ArrowRightLeft, RotateCcw, Trash2 } from "lucide-react";
-import { useActionState, useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Notice, fieldClass } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
+import { confirmOrPrevent } from "@/lib/confirm";
 import { productBulkAction, type ProductBulkState } from "@/server/catalog/actions";
 
 export const BULK_FORM_ID = "product-bulk-publish";
@@ -19,11 +20,6 @@ export function BulkCheckbox({ id, label }: { id: string; label: string }) {
 function boxes() {
   return [...document.querySelectorAll<HTMLInputElement>(`input[name="ids"][form="${BULK_FORM_ID}"]`)];
 }
-
-/** Hỏi lại trước khi gửi; bấm Huỷ → không gửi form. */
-const confirmOr = (text: string) => (e: MouseEvent) => {
-  if (!window.confirm(text)) e.preventDefault();
-};
 
 /** Nút Xoá / Khôi phục ở từng dòng — gửi form chung với `intent = "delete:<id>"`. */
 export function RowProductAction({ id, name, kind }: { id: string; name: string; kind: "delete" | "restore" }) {
@@ -38,7 +34,7 @@ export function RowProductAction({ id, name, kind }: { id: string; name: string;
       variant={kind === "delete" ? "destructive" : "outline"}
       aria-label={`${t(kind === "delete" ? "delete" : "restore")} ${name}`}
       title={t(kind === "delete" ? "delete" : "restore")}
-      onClick={kind === "delete" ? confirmOr(t("deleteOneConfirm", { name })) : undefined}
+      onClick={kind === "delete" ? confirmOrPrevent(t("deleteOneConfirm", { name })) : undefined}
     >
       {kind === "delete" ? <Trash2 aria-hidden="true" /> : <RotateCcw aria-hidden="true" />}
     </Button>
@@ -122,7 +118,7 @@ export function BulkPublishBar({
             <>
               <Button type="submit" name="intent" value="publish" size="lg" disabled={none}><Eye aria-hidden className="size-4 shrink-0" /> {t("bulkPublish")}</Button>
               <Button type="submit" name="intent" value="hide" size="lg" variant="outline" disabled={none}><EyeOff aria-hidden className="size-4 shrink-0" /> {t("bulkHide")}</Button>
-              <Button type="submit" name="intent" value="delete" size="lg" variant="destructive" disabled={none} onClick={confirmOr(t("deleteConfirm", { count: selected }))} title={t("bulkDelete")} aria-label={t("bulkDelete")}><Trash2 aria-hidden className="size-4 shrink-0" /> {t("bulkDelete")}</Button>
+              <Button type="submit" name="intent" value="delete" size="lg" variant="destructive" disabled={none} onClick={confirmOrPrevent(t("deleteConfirm", { count: selected }))} title={t("bulkDelete")} aria-label={t("bulkDelete")}><Trash2 aria-hidden className="size-4 shrink-0" /> {t("bulkDelete")}</Button>
               {warehouses.length > 1 && (
                 <span className="flex items-center gap-1">
                   <select name="toLocationId" aria-label={t("moveTo")} defaultValue={warehouses[0].id} className={cn(fieldClass, "w-auto")}>
@@ -132,7 +128,7 @@ export function BulkPublishBar({
                       </option>
                     ))}
                   </select>
-                  <Button type="submit" name="intent" value="move" size="lg" variant="outline" disabled={none} onClick={confirmOr(t("moveConfirm", { count: selected }))}>
+                  <Button type="submit" name="intent" value="move" size="lg" variant="outline" disabled={none} onClick={confirmOrPrevent(t("moveConfirm", { count: selected }))}>
                     <ArrowRightLeft aria-hidden className="size-4 shrink-0" />
                     {t("bulkMove")}
                   </Button>
@@ -143,12 +139,12 @@ export function BulkPublishBar({
         </div>
       </div>
       {state?.error && <Notice tone="danger">{state.error}</Notice>}
-      {done?.kind === "delete" && <Notice>{t("deleteDone", { deleted: done.deleted, archived: done.archived })}</Notice>}
+      {done?.kind === "delete" && <Notice tone="success">{t("deleteDone", { deleted: done.deleted, archived: done.archived })}</Notice>}
       {done && done.kind !== "delete" && (
-        <Notice>{t(done.kind === "restore" ? "restoreDone" : done.kind === "move" ? "moveDone" : "bulkDone", { count: done.count })}</Notice>
+        <Notice tone="success">{t(done.kind === "restore" ? "restoreDone" : done.kind === "move" ? "moveDone" : "bulkDone", { count: done.count })}</Notice>
       )}
       {state?.blocked && state.blocked.length > 0 && (
-        <div role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive" data-testid="publish-blocked">
+        <Notice tone="danger" data-testid="publish-blocked">
           <p className="font-medium">{t("readiness.blockedBulk", { count: state.blocked.length })}</p>
           <ul className="mt-1 list-inside list-disc text-xs">
             {state.blocked.map((b) => (
@@ -160,7 +156,7 @@ export function BulkPublishBar({
               </li>
             ))}
           </ul>
-        </div>
+        </Notice>
       )}
     </form>
   );

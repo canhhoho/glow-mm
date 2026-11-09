@@ -6,9 +6,11 @@ import { requireAffiliate } from "@/server/auth/session";
 import { bpToPercent } from "@/server/affiliates/commission";
 import { affiliateOrders, getAffiliate } from "@/server/affiliates/affiliates";
 import { getNumberSetting } from "@/server/settings";
-import { Stat } from "@/components/admin/ui";
+import { PageHeader, Stat } from "@/components/admin/ui";
 import { CopyButton } from "@/components/ctv/copy-button";
 import { CtvOrderCard } from "@/components/ctv/ctv-order-card";
+import { storeCard } from "@/components/store/ui";
+import { cn } from "@/lib/utils";
 
 export default async function CtvHomePage() {
   const user = await requireAffiliate();
@@ -23,10 +25,10 @@ export default async function CtvHomePage() {
   const s = a!.summary;
 
   return (
-    <div className="space-y-5">
-      <h1 className="text-xl font-semibold">{t("hello", { name: user.name })}</h1>
+    <div className="space-y-4">
+      <PageHeader title={t("hello", { name: user.name })} />
 
-      <section className="space-y-2 rounded-2xl border bg-card p-4 shadow-sm">
+      <section className={cn(storeCard, "space-y-2")}>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="font-medium">{t("refLink")}</h2>
           <span className="text-sm text-muted-foreground">
@@ -64,7 +66,7 @@ export default async function CtvHomePage() {
       <section className="space-y-2">
         <div className="flex items-baseline justify-between">
           <h2 className="font-medium">{t("recent")}</h2>
-          <Link href="/ctv/orders" className="text-sm text-primary underline">
+          <Link href="/ctv/orders" className="text-sm text-brand underline">
             {t("seeAll")}
           </Link>
         </div>

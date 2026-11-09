@@ -45,7 +45,7 @@ export function ProductImageUpload({ productId }: { productId: string }) {
         </p>
       )}
       {state?.ok && !state.error && (
-        <p role="status" className="text-sm text-emerald-700 dark:text-emerald-400">
+        <p role="status" className="text-sm text-success">
           {t("imagesUploaded")}
         </p>
       )}

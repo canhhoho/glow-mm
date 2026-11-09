@@ -264,6 +264,11 @@ model Product {
   published      Boolean              @default(false)
   /// Ngừng kinh doanh: SP đã có lịch sử kho/đơn nên không xoá hẳn được — ẩn khỏi web, danh sách mặc định và form nhập kho.
   archivedAt     DateTime?
+  /// QT2 — bước 4 Duyệt: thời điểm + người duyệt (null = hệ thống, lúc chuyển đổi) + dấu vân tay nội dung/giá đã duyệt.
+  /// Đổi nội dung/giá/ảnh sau khi duyệt → approvedAt = null, giữ approvedHash ("cần duyệt lại").
+  approvedAt     DateTime?
+  approvedById   String?
+  approvedHash   String?
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
   translations   ProductTranslation[]

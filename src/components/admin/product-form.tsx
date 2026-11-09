@@ -4,7 +4,7 @@ import { Trash2, Plus, Save } from "lucide-react";
 import { useActionState, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { fieldClass, fieldLabelClass } from "@/components/admin/ui";
+import { Field, fieldClass } from "@/components/admin/ui";
 import { saveProductAction } from "@/server/catalog/actions";
 import type { ProductEditData } from "@/server/catalog/admin-queries";
 import { cn } from "@/lib/utils";
@@ -55,15 +55,6 @@ const EMPTY: ProductEditData = {
   variants: [],
 };
 
-function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
-  return (
-    <label className={cn(fieldLabelClass, className)}>
-      <span className="text-muted-foreground">{label}</span>
-      {children}
-    </label>
-  );
-}
-
 export function ProductForm({ initial, options, copySourceId }: { initial: ProductEditData | null; options: Options; copySourceId?: string }) {
   const t = useTranslations("Products");
   const td = useTranslations("Docs");
@@ -81,11 +72,10 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
   );
   const matchedBrand = options.brands.find((b) => b.name.toLowerCase() === brandInput.trim().toLowerCase());
 
-  // Một biến thể thường: giá/khối lượng nằm ở khối chính. Combo luôn hiện khối biến thể để sửa thành phần.
+  // Một biến thể thường: không cần khối biến thể. Combo luôn hiện khối biến thể để sửa thành phần.
+  // QT1b: giá, hoa hồng CTV, lãi cố định sửa ở bước 3 "Giá bán" (action bỏ các trường này khỏi payload).
   const isSingleVariant = variants.length === 1 && !variants[0].isBundle;
   const singleWh = options.warehouses.length <= 1;
-  const pricingMode = options.warehouses.find((w) => w.id === p.stockLocationId)?.pricingMode ?? null;
-  const showProfit = pricingMode === "LOCAL_MMK";
 
   const set = <K extends keyof ProductEditData>(k: K, v: ProductEditData[K]) => setP((x) => ({ ...x, [k]: v }));
   const setVar = (key: number, patch: Partial<Variant>) =>
@@ -113,23 +103,6 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
         })),
       }),
     [p, slug, variants, copySourceId, matchedBrand, brandInput],
-  );
-
-  // Hoa hồng CTV cố định MMK/cái; trống = theo % của CTV.
-  const commissionField = (v: Variant) => (
-    <Field label={t("affiliateCommission")}>
-      <input
-        type="number"
-        min={0}
-        step={100}
-        inputMode="numeric"
-        aria-label={t("affiliateCommission")}
-        value={v.affiliateCommissionMmk ?? ""}
-        onChange={(e) => setVar(v.key, { affiliateCommissionMmk: e.target.value === "" ? null : Number(e.target.value) })}
-        className={fieldClass}
-      />
-      <span className="text-xs text-muted-foreground">{t("affiliateCommissionHint")}</span>
-    </Field>
   );
 
   const textarea = (value: string, onChange: (v: string) => void, rows = 3) => (
@@ -193,32 +166,6 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
           </select>
         </Field>
 
-        {/* Giá / Khối lượng — hiện ở đây khi 1 biến thể */}
-        {isSingleVariant && (
-          <>
-            <Field label={t("price")}>
-              <input
-                required
-                type="number"
-                min={0}
-                step={100}
-                value={variants[0].priceMmk}
-                onChange={(e) => setVar(variants[0].key, { priceMmk: Number(e.target.value) })}
-                className={fieldClass}
-              />
-            </Field>
-            <Field label={t("weight")}>
-              <input
-                type="number"
-                min={0}
-                value={variants[0].weightGrams ?? ""}
-                onChange={(e) => setVar(variants[0].key, { weightGrams: e.target.value ? Number(e.target.value) : null })}
-                className={fieldClass}
-              />
-            </Field>
-            {commissionField(variants[0])}
-          </>
-        )}
       </section>
 
       {/* ── 2. Mô tả ── */}
@@ -238,17 +185,10 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
         {!isSingleVariant && (
           <div className="space-y-3">
             {variants.map((v) => (
-              <fieldset key={v.key} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-2 lg:grid-cols-5">
-                <Field label={t("label")} className="lg:col-span-2">
+              <fieldset key={v.key} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-2">
+                <Field label={t("label")}>
                   <input required value={v.label} onChange={(e) => setVar(v.key, { label: e.target.value })} className={fieldClass} />
                 </Field>
-                <Field label={t("price")}>
-                  <input required type="number" min={0} step={100} value={v.priceMmk} onChange={(e) => setVar(v.key, { priceMmk: Number(e.target.value) })} className={fieldClass} />
-                </Field>
-                <Field label={t("weight")}>
-                  <input type="number" min={0} value={v.weightGrams ?? ""} onChange={(e) => setVar(v.key, { weightGrams: e.target.value ? Number(e.target.value) : null })} className={fieldClass} />
-                </Field>
-                {commissionField(v)}
                 <div className="col-span-full flex flex-wrap items-center gap-4 text-sm">
                   {v.id && (
                     <label className="flex items-center gap-1">
@@ -333,6 +273,21 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
             </Field>
           ))}
 
+          {/* Khối lượng: thường nhập ở bước 2 (phiếu nhập); sửa ở đây khi cần. */}
+          {variants.map((v) => (
+            <Field key={`w-${v.key}`} label={variants.length > 1 ? `${t("weight")} (${v.label})` : t("weight")}>
+              <input
+                aria-label={t("weight")}
+                type="number"
+                min={0}
+                inputMode="numeric"
+                value={v.weightGrams ?? ""}
+                onChange={(e) => setVar(v.key, { weightGrams: e.target.value ? Number(e.target.value) : null })}
+                className={fieldClass}
+              />
+            </Field>
+          ))}
+
           {/* Kho bán — ẩn nếu chỉ có 1 kho */}
           {!singleWh && (
             <Field label={t("warehouse")}>
@@ -343,23 +298,7 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
                   </option>
                 ))}
               </select>
-              {initialWarehouse && p.stockLocationId !== initialWarehouse && <span className="text-xs text-amber-700 dark:text-amber-400">{t("warehouseChangeHint")}</span>}
-            </Field>
-          )}
-
-          {/* Lãi cố định MMK */}
-          {showProfit && (
-            <Field label={t("fixedProfitMmk")}>
-              <input
-                type="number"
-                min={0}
-                step={1}
-                inputMode="numeric"
-                value={p.fixedProfitMmk ?? ""}
-                onChange={(e) => set("fixedProfitMmk", e.target.value === "" ? null : Number(e.target.value))}
-                className={fieldClass}
-              />
-              <span className="text-xs text-muted-foreground">{t("fixedProfitHint")}</span>
+              {initialWarehouse && p.stockLocationId !== initialWarehouse && <span className="text-xs text-warning">{t("warehouseChangeHint")}</span>}
             </Field>
           )}
 
@@ -379,14 +318,8 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
         </div>
       </details>
 
-      {/* ── 5. Hiển thị + Lưu ── */}
-      <div className="flex items-center gap-4">
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={p.published} onChange={(e) => set("published", e.target.checked)} />
-          {t("publishedLabel")}
-        </label>
-        <Button size="lg" type="submit" disabled={pending}><Save aria-hidden className="size-4 shrink-0" /> {t("save")}</Button>
-      </div>
+      {/* Hiển thị trên web: bật/ẩn ở bước 5 "Đăng bán" của trang SP; lưu ở đây giữ nguyên trạng thái hiện tại. */}
+      <Button size="lg" type="submit" disabled={pending}><Save aria-hidden className="size-4 shrink-0" /> {t("save")}</Button>
 
       {state?.error && (
         <p role="alert" className="text-sm text-destructive">

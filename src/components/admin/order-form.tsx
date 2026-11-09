@@ -5,11 +5,13 @@ import { useActionState, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AddressPicker } from "@/components/address-picker";
 import { Button } from "@/components/ui/button";
-import { fieldClass, fieldLabelClass } from "@/components/admin/ui";
+import { fieldLabelClass, fieldLabelSmClass } from "@/components/admin/ui";
+import { FIELD, type Density } from "@/components/ui/field";
 import { fmtInt } from "@/lib/format";
 import { createOrderAction } from "@/server/orders/actions";
 import type { OrderFormOptions } from "@/server/orders/admin-queries";
 import type { ActionState } from "@/server/inventory/actions";
+import { cn } from "@/lib/utils";
 
 type Line = { key: number; variantId: string; qty: string };
 export type OrderFormInitial = { phone: string; phone2: string; name: string; townshipId: string; addressLine: string };
@@ -28,12 +30,17 @@ export function OrderForm({
   initial,
   affiliates,
   action: submit = createOrderAction,
+  density = "compact",
 }: {
   options: OrderFormOptions;
   initial: OrderFormInitial;
   affiliates?: { id: string; label: string }[];
   action?: (prev: ActionState, formData: FormData) => Promise<ActionState>;
+  /** `touch`: ô nhập + nút cao h-11 cho cổng CTV trên điện thoại; admin giữ `compact` (h-9). */
+  density?: Density;
 }) {
+  const field = FIELD[density];
+  const btn = density === "touch" ? "touch" : "lg";
   const t = useTranslations("Orders");
   const ta = useTranslations("Affiliates");
   const [state, action, pending] = useActionState(submit, undefined);
@@ -78,9 +85,9 @@ export function OrderForm({
     <form action={action} className="space-y-4">
       <input type="hidden" name="payload" value={payload} />
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="grid content-start gap-1 text-sm">
+        <label className={fieldLabelClass}>
           <span className="text-muted-foreground">{t("channelLabel")}</span>
-          <select name="channel" value={channel} onChange={(e) => setChannel(e.target.value)} className={fieldClass}>
+          <select name="channel" value={channel} onChange={(e) => setChannel(e.target.value)} className={field}>
             {(["FACEBOOK", "VIBER", "PHONE", "WEB"] as const).map((c) => (
               <option key={c} value={c}>
                 {t(`channel.${c}`)}
@@ -88,22 +95,22 @@ export function OrderForm({
             ))}
           </select>
         </label>
-        <label className="grid content-start gap-1 text-sm">
+        <label className={fieldLabelClass}>
           <span className="text-muted-foreground">{t("paymentMethod")}</span>
           <select
             name="paymentMethod"
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(e.target.value)}
-            className={fieldClass}
+            className={field}
           >
             <option value="COD">{t("method.COD")}</option>
             <option value="BANK_TRANSFER">{t("method.BANK_TRANSFER")}</option>
           </select>
         </label>
         {affiliates && affiliates.length > 0 && (
-          <label className="grid content-start gap-1 text-sm">
+          <label className={fieldLabelClass}>
             <span className="text-muted-foreground">{ta("pickLabel")}</span>
-            <select name="affiliateId" defaultValue="" className={fieldClass}>
+            <select name="affiliateId" defaultValue="" className={field}>
               <option value="">{ta("assignNone")}</option>
               {affiliates.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -113,18 +120,18 @@ export function OrderForm({
             </select>
           </label>
         )}
-        <label className="grid content-start gap-1 text-sm">
+        <label className={fieldLabelClass}>
           <span className="text-muted-foreground">{t("shippingPayer")}</span>
-          <select value={shippingPayer} onChange={(e) => setShippingPayer(e.target.value)} className={fieldClass}>
+          <select value={shippingPayer} onChange={(e) => setShippingPayer(e.target.value)} className={field}>
             <option value="RECEIVER">{t("receiverPays")}</option>
             <option value="SENDER">{t("senderPays")}</option>
           </select>
         </label>
-        <label className="grid content-start gap-1 text-sm">
+        <label className={fieldLabelClass}>
           <span className="text-muted-foreground">{t("name")}</span>
-          <input name="name" required value={name} onChange={(e) => setName(e.target.value)} className={fieldClass} />
+          <input name="name" required value={name} onChange={(e) => setName(e.target.value)} className={field} />
         </label>
-        <label className="grid content-start gap-1 text-sm">
+        <label className={fieldLabelClass}>
           <span className="text-muted-foreground">{t("phone")}</span>
           <input
             name="phone"
@@ -133,10 +140,10 @@ export function OrderForm({
             inputMode="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className={fieldClass}
+            className={field}
           />
         </label>
-        <label className="grid content-start gap-1 text-sm">
+        <label className={fieldLabelClass}>
           <span className="text-muted-foreground">{t("phone2")}</span>
           <input
             name="phone2"
@@ -144,7 +151,7 @@ export function OrderForm({
             inputMode="tel"
             value={phone2}
             onChange={(e) => setPhone2(e.target.value)}
-            className={fieldClass}
+            className={field}
           />
         </label>
         <AddressPicker
@@ -159,24 +166,24 @@ export function OrderForm({
           }}
           defaultTownshipId={initial.townshipId}
           name="townshipIdSelect"
-          fieldClass={fieldClass}
+          fieldClass={field}
           labelClass={fieldLabelClass}
           textClass="text-muted-foreground"
           onTownshipChange={setTownshipId}
         />
-        <label className="grid content-start gap-1 text-sm">
+        <label className={fieldLabelClass}>
           <span className="text-muted-foreground">{t("address")}</span>
           <input
             name="addressLine"
             required
             value={addressLine}
             onChange={(e) => setAddressLine(e.target.value)}
-            className={fieldClass}
+            className={field}
           />
         </label>
-        <label className="grid content-start gap-1 text-sm sm:col-span-2">
+        <label className={cn(fieldLabelClass, "sm:col-span-2")}>
           <span className="text-muted-foreground">{t("note")}</span>
-          <input name="note" value={note} onChange={(e) => setNote(e.target.value)} className={fieldClass} />
+          <input name="note" value={note} onChange={(e) => setNote(e.target.value)} className={field} />
         </label>
       </div>
 
@@ -189,14 +196,14 @@ export function OrderForm({
               aria-label={`${t("line")} ${i + 1}`}
               className="grid items-end gap-2 rounded-lg border p-3 sm:grid-cols-[1fr_6rem_auto]"
             >
-              <label className="grid content-start gap-1 text-xs">
+              <label className={fieldLabelSmClass}>
                 <span className="text-muted-foreground">{t("variant")}</span>
                 <select
                   name={`variant-${i}`}
                   required
                   value={l.variantId}
                   onChange={(e) => update(l.key, { variantId: e.target.value })}
-                  className={fieldClass}
+                  className={field}
                 >
                   <option value="">—</option>
                   {options.variants.map((o) => (
@@ -206,7 +213,7 @@ export function OrderForm({
                   ))}
                 </select>
               </label>
-              <label className="grid content-start gap-1 text-xs">
+              <label className={fieldLabelSmClass}>
                 <span className="text-muted-foreground">{t("qty")}</span>
                 <input
                   name={`qty-${i}`}
@@ -218,10 +225,10 @@ export function OrderForm({
                   inputMode="numeric"
                   value={l.qty}
                   onChange={(e) => update(l.key, { qty: e.target.value })}
-                  className={fieldClass}
+                  className={field}
                 />
               </label>
-              <Button size="icon-lg"
+              <Button size={density === "touch" ? "icon-touch" : "icon-lg"}
                 type="button"
                 variant="outline"
                 disabled={lines.length === 1}
@@ -230,7 +237,7 @@ export function OrderForm({
             </fieldset>
           );
         })}
-        <Button size="lg" type="button" variant="outline" onClick={() => setLines((ls) => [...ls, blank()])}><Plus aria-hidden className="size-4 shrink-0" /> {t("addLine")}</Button>
+        <Button size={btn} type="button" variant="outline" onClick={() => setLines((ls) => [...ls, blank()])}><Plus aria-hidden className="size-4 shrink-0" /> {t("addLine")}</Button>
       </div>
 
       <dl className="grid max-w-xs grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm" aria-label={t("estimate")}>
@@ -247,7 +254,7 @@ export function OrderForm({
           {t("error")}: {state.error}
         </p>
       )}
-      <Button size="lg" type="submit" disabled={pending}><Plus aria-hidden className="size-4 shrink-0" /> {t("create")}</Button>
+      <Button size={btn} type="submit" disabled={pending}><Plus aria-hidden className="size-4 shrink-0" /> {t("create")}</Button>
     </form>
   );
 }

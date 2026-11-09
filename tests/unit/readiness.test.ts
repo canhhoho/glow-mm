@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { blockingErrors, evaluateReadiness, listStatus, type ReadinessInput } from "@/server/catalog/readiness-rules";
+import { blockingErrors, evaluateReadiness, listStatus, productSteps, type ReadinessInput } from "@/server/catalog/readiness-rules";
 
 const base = (over: Partial<ReadinessInput> = {}): ReadinessInput => ({
   location: { active: true, sellable: true, pricingMode: "VN_IMPORT" },
@@ -76,5 +76,57 @@ describe("evaluateReadiness (D2)", () => {
     expect(listStatus({ archived: false, published: false }, { errors: [], warnings: [] })).toBe("READY");
     expect(listStatus({ archived: false, published: true }, r)).toBe("PUBLISHED");
     expect(listStatus({ archived: true, published: false }, r)).toBe("ARCHIVED");
+  });
+});
+
+describe("productSteps (quy trình 5 bước)", () => {
+  const states = (r: ReturnType<typeof productSteps>) => Object.fromEntries(r.steps.map((s) => [s.key, s.state]));
+
+  it("SP mới tạo: giá 0, chưa nhập hàng, thiếu ảnh → bước hiện tại là Nhập kho", () => {
+    const r = evaluateReadiness(base({ imageCount: 0, variants: [{ ...base().variants[0], priceMmk: 0, weightGrams: null }], available: new Map() }));
+    const steps = productSteps({ published: false, notReceivedSkus: ["A"] }, r);
+    expect(states(steps)).toEqual({ create: "warn", stock: "todo", price: "todo", review: "waiting", publish: "waiting" });
+    expect(steps.current).toBe("stock");
+  });
+
+  it("đã nhập + có giá, chưa đăng → chờ đăng bán; cảnh báo giá vốn tạm không chặn", () => {
+    const r = evaluateReadiness(base({ costEstimatedSkus: ["A"] }));
+    const steps = productSteps({ published: false, notReceivedSkus: [] }, r);
+    expect(states(steps)).toEqual({ create: "done", stock: "warn", price: "done", review: "done", publish: "todo" });
+    expect(steps.current).toBe("publish");
+    expect(steps.steps.find((s) => s.key === "stock")?.issues).toEqual([{ code: "COST_ESTIMATED", skus: ["A"] }]);
+  });
+
+  it("đang hiển thị, đủ dữ liệu → không còn bước cần làm", () => {
+    const steps = productSteps({ published: true, notReceivedSkus: [] }, evaluateReadiness(base()));
+    expect(steps.current).toBeNull();
+    expect(states(steps).publish).toBe("done");
+  });
+
+  it("có giá nhưng chưa từng nhập kho (dữ liệu cũ) → bước 2 vẫn cần làm", () => {
+    const steps = productSteps({ published: false, notReceivedSkus: ["A"] }, evaluateReadiness(base()));
+    expect(states(steps).price).toBe("done");
+    expect(steps.current).toBe("stock");
+  });
+
+  it("QT1b: giá cũ hơn phiếu nhập mới nhất → cảnh báo PRICE_STALE ở bước 3, không chặn mở bán", () => {
+    const r = evaluateReadiness({ ...base(), staleSkus: ["A"] });
+    expect(r.errors).toEqual([]);
+    expect(r.warnings).toEqual([{ code: "PRICE_STALE", skus: ["A"] }]);
+    const steps = productSteps({ published: false, notReceivedSkus: [] }, r);
+    expect(states(steps)).toMatchObject({ price: "warn", review: "done", publish: "todo" });
+  });
+
+  it("QT2: đủ dữ liệu nhưng chưa duyệt → bước 4 cần làm, bước 5 chờ; còn lỗi bước trước → bước 4 chờ", () => {
+    const r = evaluateReadiness({ ...base(), approved: false });
+    expect(r.errors).toEqual([{ code: "NOT_APPROVED" }]);
+    const steps = productSteps({ published: false, notReceivedSkus: [] }, r);
+    expect(states(steps)).toMatchObject({ price: "done", review: "todo", publish: "waiting" });
+    expect(steps.current).toBe("review");
+    const zero = evaluateReadiness({ ...base(), approved: false, variants: base().variants.map((v) => ({ ...v, priceMmk: 0 })) });
+    expect(states(productSteps({ published: false, notReceivedSkus: [] }, zero))).toMatchObject({ price: "todo", review: "waiting" });
+    // SP đang hiển thị sửa sau khi duyệt: chưa duyệt không chặn lưu (không tự ẩn).
+    expect(blockingErrors(r, true)).toEqual([]);
+    expect(states(productSteps({ published: true, notReceivedSkus: [] }, r))).toMatchObject({ review: "todo", publish: "done" });
   });
 });

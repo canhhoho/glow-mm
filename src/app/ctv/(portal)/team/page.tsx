@@ -4,8 +4,10 @@ import { siteUrl } from "@/lib/site";
 import { requireAffiliate } from "@/server/auth/session";
 import { bpToPercent } from "@/server/affiliates/commission";
 import { teamOverview } from "@/server/affiliates/affiliates";
-import { Badge, Stat } from "@/components/admin/ui";
+import { Badge, PageHeader, Stat } from "@/components/admin/ui";
 import { CopyButton } from "@/components/ctv/copy-button";
+import { storeCard } from "@/components/store/ui";
+import { cn } from "@/lib/utils";
 
 /** Tuyến dưới (P11c): link mời + CTV mình tuyển trực tiếp và hoa hồng tầng trên — không có thông tin khách. */
 export default async function CtvTeamPage() {
@@ -15,10 +17,10 @@ export default async function CtvTeamPage() {
   const amount = (n: number) => `${fmtInt(n)} MMK`;
 
   return (
-    <div className="space-y-5">
-      <h1 className="text-xl font-semibold">{t("team.title")}</h1>
+    <div className="space-y-4">
+      <PageHeader title={t("team.title")} />
 
-      <section className="space-y-2 rounded-2xl border bg-card p-4 shadow-sm">
+      <section className={cn(storeCard, "space-y-2")}>
         <h2 className="font-medium">{t("team.inviteLink")}</h2>
         <div className="flex flex-wrap items-center gap-2">
           <code className="min-w-0 flex-1 truncate rounded-lg bg-muted px-3 py-2.5 text-sm" data-testid="ctv-invite-link">
@@ -45,11 +47,11 @@ export default async function CtvTeamPage() {
           {t("team.members")} ({team.children.length})
         </h2>
         {team.children.length === 0 ? (
-          <p className="rounded-2xl border bg-card p-6 text-center text-sm text-muted-foreground">{t("team.empty")}</p>
+          <p className={cn(storeCard, "text-center text-sm text-muted-foreground")}>{t("team.empty")}</p>
         ) : (
           <ul className="space-y-2">
             {team.children.map((c) => (
-              <li key={c.id} className="rounded-2xl border bg-card p-3 shadow-sm" data-testid="ctv-team-member">
+              <li key={c.id} className={storeCard} data-testid="ctv-team-member">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-medium">
                     {c.user.name} <span className="font-mono text-xs text-muted-foreground">{c.code}</span>

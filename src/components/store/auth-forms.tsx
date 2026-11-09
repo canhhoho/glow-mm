@@ -2,10 +2,10 @@
 
 import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Eye, EyeOff } from "lucide-react";
 import { customerAuthClient } from "@/lib/customer-auth-client";
 import { phoneRegisterAction, phoneSignInAction } from "@/server/accounts/actions";
 import { Notice, outlineButton, primaryButton, storeField } from "./ui";
+import { PasswordToggle } from "@/components/ui/password-toggle";
 
 /**
  * Form đăng nhập / đăng ký / quên & đặt lại mật khẩu của khách (P14b) — gọi /api/customer-auth qua client Better Auth.
@@ -51,15 +51,7 @@ function PasswordInput({ name, autoComplete, label }: { name: string; autoComple
           autoComplete={autoComplete}
           className={`${storeField} pr-11`}
         />
-        <button
-          type="button"
-          onClick={() => setShow((v) => !v)}
-          aria-label={t(show ? "hidePassword" : "showPassword")}
-          aria-pressed={show}
-          className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-r-lg text-muted-foreground hover:text-foreground"
-        >
-          {show ? <EyeOff className="size-4" aria-hidden /> : <Eye className="size-4" aria-hidden />}
-        </button>
+        <PasswordToggle shown={show} onToggle={() => setShow((v) => !v)} showLabel={t("showPassword")} hideLabel={t("hidePassword")} />
       </span>
     </label>
   );
@@ -95,7 +87,7 @@ export function GoogleButton({ prefix, next }: { prefix: string; next: string })
         });
         if (error) setPending(false);
       }}
-      className={`${outlineButton} w-full gap-2`}
+      className={`${outlineButton} w-full`}
     >
       <svg viewBox="0 0 24 24" className="size-5" aria-hidden>
         <path fill="currentColor" d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" />
@@ -156,7 +148,7 @@ export function LoginForm({ prefix, next, emailEnabled }: { prefix: string; next
         />
       </label>
       <PasswordInput name="password" autoComplete="current-password" label={t("password")} />
-      {error && <Notice tone="error">{t(`err.${error}`, { min: 8 })}</Notice>}
+      {error && <Notice tone="danger">{t(`err.${error}`, { min: 8 })}</Notice>}
       <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
         {t("submitLogin")}
       </button>
@@ -192,7 +184,7 @@ export function PhoneRegisterForm({ locale, next }: { locale: string; next: stri
       <PasswordInput name="password" autoComplete="new-password" label={t("password")} />
       <p className="-mt-2 text-xs text-muted-foreground">{t("passwordHint")}</p>
       <PasswordInput name="confirmPassword" autoComplete="new-password" label={t("confirmPassword")} />
-      {state?.error && <Notice tone="error">{t(`err.${state.error}`, { min: 8 })}</Notice>}
+      {state?.error && <Notice tone="danger">{t(`err.${state.error}`, { min: 8 })}</Notice>}
       <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
         {t("submitRegister")}
       </button>
@@ -236,7 +228,7 @@ export function RegisterForm({ prefix, next }: { prefix: string; next: string })
       <PasswordInput name="password" autoComplete="new-password" label={t("password")} />
       <p className="-mt-2 text-xs text-muted-foreground">{t("passwordHint")}</p>
       <PasswordInput name="confirmPassword" autoComplete="new-password" label={t("confirmPassword")} />
-      {error && <Notice tone="error">{t(`err.${error}`, { min: 8 })}</Notice>}
+      {error && <Notice tone="danger">{t(`err.${error}`, { min: 8 })}</Notice>}
       <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
         {t("submitRegister")}
       </button>
@@ -265,7 +257,7 @@ export function ForgotPasswordForm({ prefix }: { prefix: string }) {
   return (
     <form onSubmit={onSubmit} className="space-y-3">
       <EmailInput />
-      {error && <Notice tone="error">{t(`err.${error}`, { min: 8 })}</Notice>}
+      {error && <Notice tone="danger">{t(`err.${error}`, { min: 8 })}</Notice>}
       <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
         {t("sendLink")}
       </button>
@@ -307,7 +299,7 @@ export function ResetPasswordForm({ token, loginHref }: { token: string; loginHr
       <PasswordInput name="password" autoComplete="new-password" label={t("newPassword")} />
       <p className="-mt-2 text-xs text-muted-foreground">{t("passwordHint")}</p>
       <PasswordInput name="confirmPassword" autoComplete="new-password" label={t("confirmPassword")} />
-      {error && <Notice tone="error">{t(`err.${error}`, { min: 8 })}</Notice>}
+      {error && <Notice tone="danger">{t(`err.${error}`, { min: 8 })}</Notice>}
       <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
         {t("savePassword")}
       </button>

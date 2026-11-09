@@ -33,7 +33,7 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
           </LinkButton>
         }
       />
-      {sp.saved && <Notice>{t("created")}</Notice>}
+      {sp.saved && <Notice tone="success">{t("created")}</Notice>}
       <FilterBar>
         <SearchInput label={t("search")} defaultValue={q} />
         <select name="role" defaultValue={role ?? ""} aria-label={t("role")} className={fieldClass}>

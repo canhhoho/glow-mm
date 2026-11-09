@@ -9,6 +9,7 @@ import { LinkButton, Notice, Page, PageHeader, Stat } from "@/components/admin/u
 import { fmtInt } from "@/lib/format";
 import { yangonDayKey } from "@/lib/time";
 import { prisma } from "@/lib/db";
+import { approvalCounts } from "@/server/catalog/approval";
 
 export default async function DashboardPage({ searchParams }: PageProps<"/admin">) {
   const user = await requirePagePermission("dashboard:view");
@@ -25,6 +26,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
       {denied && <Notice tone="danger">{t("denied")}</Notice>}
       <PageHeader title={t("welcome", { name: user.name })} description={<span data-testid="role">{t("role", { role: tr(user.role) })}</span>} />
       {showOrders && <Suspense fallback={<DashboardLoading label={t("todo")} />}><OrderQueue canReconcile={can(user.role, "orders:reconcile-cod")} /></Suspense>}
+      {can(user.role, "catalog:approve") && <Suspense fallback={<DashboardLoading label={t("catalog")} />}><CatalogQueue /></Suspense>}
       {showStock && <Suspense fallback={<DashboardLoading label={t("alerts")} />}><StockAlerts /></Suspense>}
       {showSales && <Suspense fallback={<DashboardLoading label={t("sales")} />}><SalesOverview /></Suspense>}
     </Page>
@@ -58,6 +60,21 @@ async function OrderQueue({ canReconcile }: { canReconcile: boolean }) {
             {codPending != null && <Stat label={tc("waiting")} value={codPending} href="/admin/orders/cod" tone={tone(codPending)} />}
           </div>
         </section>
+  );
+}
+
+/** QT2: SP chờ duyệt / cần duyệt lại (bước 4). */
+async function CatalogQueue() {
+  await connection();
+  const [t, counts] = await Promise.all([getTranslations("Dashboard"), approvalCounts()]);
+  return (
+    <section className="space-y-2">
+      <h2 className="font-medium">{t("catalog")}</h2>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <Stat label={t("toApprove")} value={counts.toApprove} href="/admin/products?status=toApprove" tone={tone(counts.toApprove)} testId="todo-approve" />
+        <Stat label={t("reapprove")} value={counts.reapprove} href="/admin/products?status=reapprove" tone={tone(counts.reapprove)} testId="todo-reapprove" />
+      </div>
+    </section>
   );
 }
 

@@ -7,6 +7,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { getNumberSetting } from "@/server/settings";
 import type { Tx } from "@/server/inventory/ledger";
 import { variantCosts } from "./cost";
+import { guardApproval } from "@/server/catalog/approval";
 import { mmkPerVndFromUsd, parseScaled, priceLocalMmk, priceVnImport, shippingMmk, suggestPrice } from "./formula";
 
 /**
@@ -102,7 +103,8 @@ type RunCtx = {
   shipMmkPerKg: number | null;
   roundTo: number;
 };
-export type SkipReason = "NO_COST" | "NO_WEIGHT" | "NO_PROFIT";
+/** PRICE_ZERO (F4): công thức ra giá ≤ 0 (vd vốn 0 + lãi 0) — không bao giờ đưa vào bản xem trước. */
+export type SkipReason = "NO_COST" | "NO_WEIGHT" | "NO_PROFIT" | "PRICE_ZERO";
 type ComputedLine = {
   variantId: string;
   costVnd?: number;
@@ -211,7 +213,10 @@ async function computeLines(tx: Tx, variantIds: string[], ctx: RunCtx) {
     const newPriceMmk = suggestPrice({ ...ctx.rate!, costVnd: cost.costVnd, marginPct: ctx.marginPct!, roundTo: ctx.roundTo });
     lines.push({ ...base, costVnd: cost.costVnd, newPriceMmk, weightFromComponents: false, fingerprint: fingerprintOf(inputs) });
   }
-  return { lines, skipped };
+  // F4: giá bán phải > 0 — dòng ra giá ≤ 0 chuyển sang danh sách bỏ qua (lúc áp dụng thiếu dòng → INPUT_CHANGED).
+  const sku = new Map(variants.map((v) => [v.id, v.sku]));
+  for (const l of lines.filter((l) => l.newPriceMmk <= 0)) skipped.push({ variantId: l.variantId, sku: sku.get(l.variantId)!, reason: "PRICE_ZERO" });
+  return { lines: lines.filter((l) => l.newPriceMmk > 0), skipped };
 }
 
 /**
@@ -316,6 +321,9 @@ export async function applyRun(runId: string, variantIds: string[], userId: stri
         roundTo: run.roundTo,
       };
       const fresh = new Map((await computeLines(tx, lines.map((l) => l.variantId), ctx)).lines.map((l) => [l.variantId, l]));
+      // QT2: đổi giá SP đã duyệt → huỷ duyệt (cần duyệt lại).
+      const productIds = (await tx.variant.findMany({ where: { id: { in: lines.map((l) => l.variantId) } }, select: { productId: true } })).map((v) => v.productId);
+      return guardApproval(tx, productIds, userId, async () => {
 
       let applied = 0;
       const skipped: ApplySkip[] = [];
@@ -325,7 +333,7 @@ export async function applyRun(runId: string, variantIds: string[], userId: stri
       };
       for (const l of lines) {
         const f = fresh.get(l.variantId);
-        if (!l.fingerprint || !f || f.fingerprint !== l.fingerprint || f.newPriceMmk !== l.newPriceMmk) {
+        if (!l.fingerprint || !f || f.fingerprint !== l.fingerprint || f.newPriceMmk !== l.newPriceMmk || l.newPriceMmk <= 0) {
           await skip(l, "INPUT_CHANGED");
           continue;
         }
@@ -347,6 +355,7 @@ export async function applyRun(runId: string, variantIds: string[], userId: stri
         data: { userId, action: "pricing.apply", entity: "PriceUpdateRun", entityId: runId, data: { applied, skipped, remaining } },
       });
       return { applied, skipped, remaining };
+      });
     },
     { maxWait: 10_000, timeout: 30_000 },
   );

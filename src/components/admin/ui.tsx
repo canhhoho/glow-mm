@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Pencil, Plus, Search } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { FIELD } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
 
 /** Khối giao diện nhỏ dùng chung cho các trang admin (server components). */
@@ -156,12 +157,15 @@ export function TabNav({
 
 /** Khối nội dung có khung + tiêu đề (form tạo mới, nhóm thông tin). */
 export function Section({
+  id,
   title,
   actions,
   className,
   children,
   testId,
 }: {
+  /** Neo `#id` để link nhảy tới khối (thêm `scroll-mt-*` qua `className` nếu có header dính). */
+  id?: string;
   title?: React.ReactNode;
   actions?: React.ReactNode;
   className?: string;
@@ -170,7 +174,7 @@ export function Section({
 }) {
   return (
     // Tiêu đề chữ → section có tên (role region) để trình đọc màn hình/E2E tìm theo tên khối.
-    <section className={cn("space-y-3 rounded-lg border p-4", className)} data-testid={testId} aria-label={typeof title === "string" ? title : undefined}>
+    <section id={id} className={cn("space-y-3 rounded-lg border p-4", className)} data-testid={testId} aria-label={typeof title === "string" ? title : undefined}>
       {(title || actions) && (
         <div className="flex flex-wrap items-center justify-between gap-2">
           {title && <h2 className="font-medium">{title}</h2>}
@@ -182,22 +186,8 @@ export function Section({
   );
 }
 
-/** Thông báo đã lưu / lỗi ngắn ở đầu trang. */
-export function Notice({ tone = "success", children }: { tone?: "success" | "danger"; children: React.ReactNode }) {
-  return (
-    <p
-      role={tone === "danger" ? "alert" : "status"}
-      className={cn(
-        "rounded-md px-3 py-2 text-sm",
-        tone === "success"
-          ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-          : "bg-destructive/10 text-destructive",
-      )}
-    >
-      {children}
-    </p>
-  );
-}
+/** Thông báo đã lưu / lỗi ngắn ở đầu trang — bản dùng chung (`components/ui/notice`). */
+export { Notice } from "@/components/ui/notice";
 
 /**
  * `numeric`: chỉ số các cột số — tiêu đề căn phải cho thẳng với số (ô dữ liệu tự đặt `text-right`).
@@ -210,17 +200,26 @@ export function DataTable({
   empty,
   numeric = [],
   stack = false,
+  dense = false,
+  className,
+  tableClassName,
 }: {
   head: React.ReactNode[];
   children: React.ReactNode;
   empty?: string;
   numeric?: number[];
   stack?: boolean;
+  /** Bảng phụ (vd lô trong dòng mở rộng): chữ xs, ô thấp hơn (py-1.5). */
+  dense?: boolean;
+  /** Lớp thêm cho khung ngoài (vd nền `bg-background` khi lồng trong dòng khác). */
+  className?: string;
+  /** Lớp thêm cho `<table>` (vd `min-w-[1050px]` để cuộn ngang thay vì bóp cột). */
+  tableClassName?: string;
 }) {
   const hasRows = Array.isArray(children) ? children.length > 0 : !!children;
   return (
-    <div className="overflow-x-auto rounded-lg border">
-      <table className={cn("w-full text-sm", stack && STACK)}>
+    <div className={cn("overflow-x-auto rounded-lg border", className)}>
+      <table className={cn("w-full text-sm", stack && STACK, dense && DENSE, tableClassName)}>
         <thead className={cn("bg-muted/50 text-left text-xs text-muted-foreground", stack && "max-md:hidden")}>
           <tr>
             {head.map((h, i) => (
@@ -246,6 +245,9 @@ export function DataTable({
   );
 }
 
+/** `DataTable dense`: chữ nhỏ + ô thấp; selector con thắng `py-2` của `Td`. */
+const DENSE = "text-xs [&_td]:py-1.5 [&_th]:py-1.5";
+
 /** Lớp cho `DataTable stack`: dòng → thẻ, ô → hàng flex có nhãn `data-label` bên trái (chỉ dưới md). */
 const STACK = [
   "max-md:block max-md:[&_tbody]:block max-md:[&_tr]:block max-md:[&_tr]:space-y-1.5 max-md:[&_tr]:p-3",
@@ -266,9 +268,9 @@ export function Td({ children, className, label }: { children?: React.ReactNode;
 
 export const TONES = {
   neutral: "bg-muted text-muted-foreground",
-  success: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
-  warning: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
-  danger: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
+  success: "bg-success-muted text-success-foreground",
+  warning: "bg-warning-muted text-warning-foreground",
+  danger: "bg-danger-muted text-danger-foreground",
   brand: "bg-primary/10 text-primary",
 } as const;
 
@@ -277,11 +279,24 @@ export function Badge({ tone = "neutral", children }: { tone?: keyof typeof TONE
 }
 
 /** Ô nhập admin cao 36px (h-9) — nút cạnh ô dùng `size="lg"` (cũng h-9) để thẳng hàng. */
-export const fieldClass =
-  "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+export const fieldClass = FIELD.compact;
 
 /** Nhãn trường: chữ nằm TRÊN ô (grid). Không dùng `space-y-1` — span + ô inline sẽ đứng cạnh nhau khi ô không `w-full`. */
 export const fieldLabelClass = "grid content-start gap-1 text-sm";
+
+/** Nhãn nhỏ (text-xs) cho form dày đặc: dòng nhập lô, bảng nhập nhiều cột. */
+export const fieldLabelSmClass = "grid content-start gap-1 text-xs";
+
+/** Ô form có nhãn phía trên (chữ nhãn màu phụ). `hint` = dòng gợi ý nhỏ dưới ô. */
+export function Field({ label, hint, className, children }: { label: React.ReactNode; hint?: React.ReactNode; className?: string; children: React.ReactNode }) {
+  return (
+    <label className={cn(fieldLabelClass, className)}>
+      <span className="text-muted-foreground">{label}</span>
+      {children}
+      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+    </label>
+  );
+}
 
 /** Ô chỉ số trên dashboard/báo cáo; có `href` thì bấm được. */
 export function Stat({
@@ -303,7 +318,7 @@ export function Stat({
       <div
         className={cn(
           "text-xl font-medium tabular-nums",
-          tone === "warning" && "text-amber-700 dark:text-amber-400",
+          tone === "warning" && "text-warning",
           tone === "danger" && "text-destructive",
         )}
       >

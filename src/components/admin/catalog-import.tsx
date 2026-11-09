@@ -7,7 +7,7 @@ import Link from "next/link";
 import { catalogImportAction } from "@/server/catalog/actions";
 import { Button } from "@/components/ui/button";
 import { FileField } from "@/components/admin/file-field";
-import { Badge } from "@/components/admin/ui";
+import { Badge, DataTable, Notice, Td } from "@/components/admin/ui";
 import { fmtInt } from "@/lib/format";
 
 const ACTION_TONE = { create: "brand", update: "warning", same: "neutral" } as const;
@@ -18,9 +18,9 @@ export function CatalogImport() {
   const [state, action, pending] = useActionState(catalogImportAction, undefined);
   const preview = state?.preview;
   return (
-    <section className="space-y-4 rounded-xl border p-4 sm:p-6">
+    <section className="space-y-4 rounded-lg border p-4">
       <div>
-        <h2 className="text-lg font-semibold">{t("title")}</h2>
+        <h2 className="font-medium">{t("title")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{t("help")}</p>
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
@@ -46,10 +46,10 @@ export function CatalogImport() {
           </p>
           {preview.rate && <p className="text-sm text-muted-foreground">{t("rateQuote", { rate: preview.rate })}</p>}
           {preview.errors.length > 0 && (
-            <div role="alert" className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive">
+            <Notice tone="danger" className="p-4">
               <p className="font-medium">{t("errorsTitle")}</p>
               <ul className="mt-1 list-disc space-y-1 pl-5">{preview.errors.map((e, i) => <li key={i} className="whitespace-pre-line">{e}</li>)}</ul>
-            </div>
+            </Notice>
           )}
           {preview.warnings.length > 0 && (
             <div className="rounded-lg bg-muted p-4 text-sm">
@@ -57,37 +57,30 @@ export function CatalogImport() {
               <ul className="mt-1 list-disc space-y-1 pl-5">{preview.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
             </div>
           )}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr>{["colLine", "colAction", "colProduct", "colSku", "colPrice", "colStock", "colCost"].map((k) => <th key={k} className="border-b p-2 whitespace-nowrap">{t(k)}</th>)}</tr>
-              </thead>
-              <tbody>
-                {preview.rows.map((r, i) => (
-                  <tr key={i} className="border-b align-top">
-                    <td className="p-2 tabular-nums">{r.line}</td>
-                    <td className="p-2"><Badge tone={ACTION_TONE[r.action]}>{t(`action.${r.action}`)}</Badge></td>
-                    <td className="p-2">{r.name}<div className="text-xs text-muted-foreground">{r.label}</div></td>
-                    <td className="p-2 font-mono text-xs">{r.sku}</td>
-                    <td className="p-2 whitespace-nowrap tabular-nums">
-                      {r.oldPrice != null && r.oldPrice !== r.price && <span className="text-muted-foreground line-through">{fmtInt(r.oldPrice)}</span>} {fmtInt(r.price)}
-                    </td>
-                    <td className="p-2">
-                      {r.stock && (
-                        <>
-                          {fmtInt(r.stock.qty)} · {r.stock.lotNo} · {r.stock.location}
-                          <div className={`text-xs ${r.stock.expiryStatus === "UNKNOWN" ? "text-destructive" : "text-muted-foreground"}`}>
-                            {r.stock.expiryDate ?? t(r.stock.expiryStatus === "NONE" ? "expiryNone" : "expiryUnknown")}
-                          </div>
-                        </>
-                      )}
-                    </td>
-                    <td className="p-2 tabular-nums">{r.stock ? fmtInt(r.stock.costMmk) : ""}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable head={["colLine", "colAction", "colProduct", "colSku", "colPrice", "colStock", "colCost"].map((k) => t(k))}>
+            {preview.rows.map((r, i) => (
+              <tr key={i}>
+                <Td className="tabular-nums">{r.line}</Td>
+                <Td><Badge tone={ACTION_TONE[r.action]}>{t(`action.${r.action}`)}</Badge></Td>
+                <Td>{r.name}<div className="text-xs text-muted-foreground">{r.label}</div></Td>
+                <Td className="font-mono text-xs">{r.sku}</Td>
+                <Td className="whitespace-nowrap tabular-nums">
+                  {r.oldPrice != null && r.oldPrice !== r.price && <span className="text-muted-foreground line-through">{fmtInt(r.oldPrice)}</span>} {r.price == null ? <span className="text-muted-foreground">—</span> : fmtInt(r.price)}
+                </Td>
+                <Td>
+                  {r.stock && (
+                    <>
+                      {fmtInt(r.stock.qty)} · {r.stock.lotNo} · {r.stock.location}
+                      <div className={`text-xs ${r.stock.expiryStatus === "UNKNOWN" ? "text-destructive" : "text-muted-foreground"}`}>
+                        {r.stock.expiryDate ?? t(r.stock.expiryStatus === "NONE" ? "expiryNone" : "expiryUnknown")}
+                      </div>
+                    </>
+                  )}
+                </Td>
+                <Td className="tabular-nums">{r.stock ? fmtInt(r.stock.costMmk) : ""}</Td>
+              </tr>
+            ))}
+          </DataTable>
           <p className="text-sm text-muted-foreground">{t("confirmHelp")}</p>
           {preview.errors.length === 0 && (
             <form action={action}>

@@ -10,7 +10,7 @@ import { getStaff } from "@/server/users/users";
 import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
 import { RoleSelect } from "@/components/admin/role-select";
-import { Badge, fieldClass, Page, PageHeader } from "@/components/admin/ui";
+import { Badge, fieldClass, fieldLabelClass, Page, PageHeader } from "@/components/admin/ui";
 
 export default async function EditUserPage({ params }: PageProps<"/admin/users/[id]">) {
   const me = await requirePagePermission("users:manage");
@@ -42,13 +42,13 @@ export default async function EditUserPage({ params }: PageProps<"/admin/users/[
         <h2 className="font-medium">{t("profile")}</h2>
         <ActionForm action={updateStaffAction} submitLabel={t("save")} okText={t("saved")} className="space-y-3">
           <input type="hidden" name="id" value={user.id} />
-          <label className="grid content-start gap-1 text-sm">
+          <label className={fieldLabelClass}>
             <span>{t("name")}</span>
             <input name="name" required maxLength={100} defaultValue={user.name} className={fieldClass} />
           </label>
           {/* Không tự đổi email của mình (đăng nhập bằng email) → trang của mình không có ô email. */}
           {!self && (
-            <label className="grid content-start gap-1 text-sm">
+            <label className={fieldLabelClass}>
               <span>{t("email")}</span>
               <input name="email" type="email" required maxLength={254} defaultValue={user.email} className={fieldClass} />
             </label>
@@ -63,7 +63,7 @@ export default async function EditUserPage({ params }: PageProps<"/admin/users/[
             <h2 className="font-medium">{t("resetTitle")}</h2>
             <ActionForm action={resetStaffPasswordAction} submitLabel={t("reset")} okText={t("resetDone")} className="space-y-3" icon={<KeyRound aria-hidden className="size-4 shrink-0" />}>
               <input type="hidden" name="id" value={user.id} />
-              <label className="grid content-start gap-1 text-sm">
+              <label className={fieldLabelClass}>
                 <span>{t("tempPassword")}</span>
                 <input
                   name="password"

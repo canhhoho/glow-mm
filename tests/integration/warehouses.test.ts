@@ -6,7 +6,7 @@ import { moveProductsToWarehouse } from "@/server/catalog/product-delete";
 import { saveProduct } from "@/server/catalog/products";
 import { createOrder } from "@/server/orders/orders";
 import { transitionOrder } from "@/server/orders/transitions";
-import { admin, avail, isoDay, orderInput, saleFixture, unpublishTestProducts } from "./fixtures";
+import { admin, avail, isoDay, orderInput, saleFixture, unpublishTestProducts, markApproved } from "./fixtures";
 
 /** P24: hai kho bán — SP thuộc một kho; nhập, tồn bán, xuất đơn theo kho của SP. */
 
@@ -56,13 +56,13 @@ describe("Kho của sản phẩm", () => {
         brandId: f.brandId,
         categoryId: f.categoryId,
         stockLocationId: f.chi.id,
-        published: true,
         my: { name: "ခရင်မ်" },
         en: { name: "Cream" },
         variants: [{ sku: `CHI-${f.tag}`, label: "30ml", priceMmk: 20_000 }],
       },
       f.userId,
     );
+    await markApproved(other.id, { published: true });
     const chiVariant = await prisma.variant.findFirstOrThrow({ where: { productId: other.id } });
     await postDocument((await receive(f, f.chi.id, chiVariant.id, "C1", 2, true)).id, f.userId);
 

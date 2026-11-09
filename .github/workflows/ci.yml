@@ -1,13 +1,57 @@
 name: CI
 
+# check: lint + typecheck + unit + integration — mọi push dev và mọi PR.
+# e2e (full Playwright): chỉ PR vào main, chạy tay (Actions → CI → Run workflow) và lịch hằng tuần.
 on:
   pull_request:
     branches: [main, dev]
   push:
     branches: [dev]
+  workflow_dispatch:
+  schedule:
+    # Chủ nhật 20:00 UTC (= thứ Hai 02:30 Yangon). Chạy trên nhánh mặc định của repo.
+    - cron: "0 20 * * 0"
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_USER: glow
+          POSTGRES_PASSWORD: glow
+          POSTGRES_DB: glow_test
+        ports: ["15432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U glow -d glow_test"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:unit
+      # Integration dùng DB glow_test (.env.test)
+      - run: npm run test:int
+        env:
+          CI: "true"
+
+  e2e:
+    needs: check
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
+      (github.event_name == 'pull_request' && github.base_ref == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
@@ -29,8 +73,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      # Một lệnh chạy tất cả: lint + typecheck + vitest + playwright (dùng .env.test)
-      - run: npm test
+      # Build standalone + Playwright (dùng .env.test, cổng 3100)
+      - run: npm run test:e2e
         env:
           CI: "true"
       - uses: actions/upload-artifact@v4

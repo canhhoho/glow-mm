@@ -6,8 +6,9 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { FileField } from "@/components/admin/file-field";
 import { Button } from "@/components/ui/button";
-import { fieldClass } from "@/components/admin/ui";
+import { fieldClass, fieldLabelClass } from "@/components/admin/ui";
 import { saveBannerAction } from "@/server/content/actions";
+import { cn } from "@/lib/utils";
 
 const MAX_EACH = 5 * 1024 * 1024;
 // Giới hạn body Server Action 6MB (next.config) — chừa chỗ cho phần còn lại của form.
@@ -49,7 +50,7 @@ export function BannerForm({ banner }: { banner?: BannerFormValue }) {
 
       <fieldset className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <label className="grid content-start gap-1 text-sm">
+          <label className={fieldLabelClass}>
             <span className="text-muted-foreground">{t("desktopImage")}</span>
             <FileField name="desktop" required={!banner} accept="image/jpeg,image/png,image/webp" />
           </label>
@@ -63,7 +64,7 @@ export function BannerForm({ banner }: { banner?: BannerFormValue }) {
           )}
         </div>
         <div className="space-y-2">
-          <label className="grid content-start gap-1 text-sm">
+          <label className={fieldLabelClass}>
             <span className="text-muted-foreground">{t("mobileImage")}</span>
             <FileField name="mobile" accept="image/jpeg,image/png,image/webp" />
           </label>
@@ -82,15 +83,15 @@ export function BannerForm({ banner }: { banner?: BannerFormValue }) {
       </fieldset>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="grid content-start gap-1 text-sm sm:col-span-2">
+        <label className={cn(fieldLabelClass, "sm:col-span-2")}>
           <span className="text-muted-foreground">{t("alt")}</span>
           <input name="alt" required maxLength={200} defaultValue={banner?.alt} className={fieldClass} />
         </label>
-        <label className="grid content-start gap-1 text-sm sm:col-span-2">
+        <label className={cn(fieldLabelClass, "sm:col-span-2")}>
           <span className="text-muted-foreground">{t("href")}</span>
           <input name="href" maxLength={500} defaultValue={banner?.href ?? ""} placeholder="/c/skincare" className={fieldClass} />
         </label>
-        <label className="grid content-start gap-1 text-sm">
+        <label className={fieldLabelClass}>
           <span className="text-muted-foreground">{t("locale")}</span>
           <select name="locale" defaultValue={banner?.locale ?? ""} className={fieldClass}>
             <option value="">{t("localeAll")}</option>
@@ -103,11 +104,11 @@ export function BannerForm({ banner }: { banner?: BannerFormValue }) {
           <input type="checkbox" name="active" defaultChecked={banner?.active ?? true} />
           {t("active")}
         </label>
-        <label className="grid content-start gap-1 text-sm">
+        <label className={fieldLabelClass}>
           <span className="text-muted-foreground">{t("startAt")}</span>
           <input type="datetime-local" name="startAt" defaultValue={banner?.startAt} className={fieldClass} />
         </label>
-        <label className="grid content-start gap-1 text-sm">
+        <label className={fieldLabelClass}>
           <span className="text-muted-foreground">{t("endAt")}</span>
           <input type="datetime-local" name="endAt" defaultValue={banner?.endAt} className={fieldClass} />
         </label>

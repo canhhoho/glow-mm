@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Save } from "lucide-react";
 import type { ActionState } from "@/server/inventory/actions";
+import { askConfirm } from "@/lib/confirm";
+import type { Density } from "@/components/ui/field";
 
 /**
  * Form gửi server action với các ô nhập render sẵn (children, có thể là Server Component).
@@ -19,6 +21,7 @@ export function ActionForm({
   variant = "default",
   confirm,
   icon = <Save aria-hidden />,
+  density = "compact",
 }: {
   action: (prev: ActionState, fd: FormData) => Promise<ActionState>;
   children: React.ReactNode;
@@ -28,6 +31,8 @@ export function ActionForm({
   variant?: "default" | "outline" | "destructive";
   confirm?: string;
   icon?: React.ReactNode;
+  /** `touch`: nút cao h-11 (cổng CTV / storefront). */
+  density?: Density;
 }) {
   const t = useTranslations("Docs");
   const [state, formAction, pending] = useActionState(action, undefined);
@@ -42,7 +47,7 @@ export function ActionForm({
       ref={formRef}
       onSubmit={(e) => {
         e.preventDefault();
-        if (confirm && !window.confirm(confirm)) return;
+        if (!askConfirm(confirm)) return;
         const fd = new FormData(e.currentTarget, (e.nativeEvent as SubmitEvent).submitter);
         startTransition(() => formAction(fd));
       }}
@@ -51,12 +56,12 @@ export function ActionForm({
       {children}
       {/* self-end: form dạng lưới/flex → nút nằm đáy ô, thẳng hàng với ô nhập cùng hàng (nút cao bằng ô: size lg). */}
       <div className="flex flex-wrap items-center gap-3 self-end">
-        <Button size="lg" type="submit" variant={variant} disabled={pending}>
+        <Button size={density === "touch" ? "touch" : "lg"} type="submit" variant={variant} disabled={pending}>
           {icon}
           {submitLabel}
         </Button>
         {state?.ok && !state.error && (
-          <p role="status" className="text-sm text-emerald-700 dark:text-emerald-400">
+          <p role="status" className="text-sm text-success">
             {okText ?? state.ok}
           </p>
         )}

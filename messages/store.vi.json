@@ -341,6 +341,7 @@
     "setDefault": "Đặt làm mặc định",
     "edit": "Sửa",
     "delete": "Xoá",
+    "deleteAddressConfirm": "Xoá địa chỉ này?",
     "save": "Lưu",
     "cancel": "Huỷ",
     "saved": "Đã lưu.",

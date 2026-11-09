@@ -22,7 +22,7 @@ import { ActionForm } from "@/components/admin/action-form";
 import { FileField } from "@/components/admin/file-field";
 import { AffiliateFields, CommissionBadge } from "@/components/admin/affiliate-parts";
 import { OrderStatusBadge } from "@/components/admin/order-badges";
-import { Badge, DataTable, fieldClass, Page, PageHeader, Stat, Td } from "@/components/admin/ui";
+import { Badge, DataTable, fieldClass, fieldLabelClass, Page, PageHeader, Section, Stat, Td } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ctv/copy-button";
 import { cn } from "@/lib/utils";
@@ -52,8 +52,8 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
   return (
     <Page>
       <PageHeader title={a.user.name} back={{ href: "/admin/affiliates", label: t("back") }} />
-      {sp.created && <p className="text-sm text-emerald-700 dark:text-emerald-400">{t("created")}</p>}
-      {sp.approved && <p className="text-sm text-emerald-700 dark:text-emerald-400">{t("apps.approvedNote")}</p>}
+      {sp.created && <p className="text-sm text-success">{t("created")}</p>}
+      {sp.approved && <p className="text-sm text-success">{t("apps.approvedNote")}</p>}
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <span className="font-mono">{a.user.email}</span>
         <Badge tone={a.active ? "success" : "danger"}>{a.active ? t("active") : t("locked")}</Badge>
@@ -140,8 +140,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
         </div>
       </section>
 
-      <section id="affiliate-payouts" className="scroll-mt-20 space-y-2 rounded-lg border p-4">
-        <h2 className="font-medium">{t("due")}</h2>
+      <Section id="affiliate-payouts" title={t("due")} className="scroll-mt-20 space-y-2">
         {a.due.entries.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("dueEmpty")}</p>
         ) : (
@@ -151,10 +150,14 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
             </p>
             <ul className="flex flex-wrap gap-1.5 text-xs">
               {a.due.entries.map((e) => (
-                <li key={`${e.orderId}-${e.kind}`} className="rounded border px-1.5 py-0.5 font-mono">
-                  {e.code}
-                  {e.kind === "UPLINE" && <span className="ml-1 font-sans text-muted-foreground">({t("lineKind.UPLINE")})</span>}:{" "}
-                  {fmtInt(e.commission.dueMmk)}
+                <li key={`${e.orderId}-${e.kind}`} className="rounded border px-1.5 py-0.5">
+                  {/* Chỉ mã + số dùng font-mono: chữ thường giữ font Myanmar tự host (class font-sans trỏ sai tên font). */}
+                  <span className="font-mono">{e.code}</span>
+                  {e.kind === "UPLINE" && <span className="ml-1 text-muted-foreground">({t("lineKind.UPLINE")})</span>}
+                  <span className="font-mono">
+                    :{" "}
+                    {fmtInt(e.commission.dueMmk)}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -168,11 +171,11 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
               >
                 <input type="hidden" name="id" value={a.id} />
                 {a.payoutInfo && <p className="text-sm whitespace-pre-line">{a.payoutInfo}</p>}
-                <label className="grid content-start gap-1 text-sm">
+                <label className={fieldLabelClass}>
                   <span>{t("payNote")}</span>
                   <input name="note" maxLength={500} className={fieldClass} />
                 </label>
-                <label className="grid content-start gap-1 text-sm">
+                <label className={fieldLabelClass}>
                   <span>{t("payProof")}</span>
                   <FileField name="proof" accept="image/jpeg,image/png,image/webp,application/pdf" />
                 </label>
@@ -180,16 +183,16 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
             )}
           </>
         )}
-      </section>
+      </Section>
 
       <section className="space-y-2">
         <h2 className="font-medium">{t("orders")}</h2>
         <form className="flex flex-wrap items-end gap-2" role="search">
-          <label className="grid content-start gap-1 text-sm">
+          <label className={fieldLabelClass}>
             <span className="text-muted-foreground">{t("month")}</span>
             <input name="month" type="month" defaultValue={month === "all" ? "" : month} className={cn(fieldClass, "w-44")} />
           </label>
-          <label className="grid content-start gap-1 text-sm">
+          <label className={fieldLabelClass}>
             <span className="text-muted-foreground">{t("state")}</span>
             <select name="state" defaultValue={state ?? ""} className={cn(fieldClass, "w-auto")}>
               <option value="">{t("allStates")}</option>
@@ -329,7 +332,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
             <h2 className="font-medium">{t("resetTitle")}</h2>
             <ActionForm action={resetAffiliatePasswordAction} submitLabel={t("reset")} okText={t("resetDone")} className="space-y-3" icon={<KeyRound aria-hidden className="size-4 shrink-0" />}>
               <input type="hidden" name="id" value={a.id} />
-              <label className="grid content-start gap-1 text-sm">
+              <label className={fieldLabelClass}>
                 <span>{t("tempPassword")}</span>
                 <input
                   name="password"

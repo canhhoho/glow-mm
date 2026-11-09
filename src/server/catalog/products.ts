@@ -10,6 +10,7 @@ import type { Tx } from "@/server/inventory/ledger";
 import { productName } from "@/server/inventory/queries";
 import { loadReadiness, ReadinessError } from "./readiness";
 import { blockingErrors, type Issue } from "./readiness-rules";
+import { guardApproval } from "./approval";
 
 /** Quản lý sản phẩm (admin). Giá đổi → ghi PriceHistory. Chữ Myanmar → Unicode trước khi lưu. */
 
@@ -27,7 +28,8 @@ const variantSchema = z.object({
   sku: z.string().trim().min(1).max(40).regex(/^[A-Za-z0-9._-]+$/, "SKU chỉ gồm chữ, số, . _ -"),
   autoSku: z.boolean().default(false),
   label: z.string().trim().min(1).max(60),
-  priceMmk: z.coerce.number().int().min(0),
+  /** Bỏ qua (undefined) = giữ giá đang có; biến thể mới = 0 (QT1b: giá đặt ở bước 3 — khối "Giá bán" / bảng tính giá). */
+  priceMmk: z.coerce.number().int().min(0).optional(),
   weightGrams: z.coerce.number().int().min(0).optional().nullable(),
   /** Hoa hồng CTV cố định MMK/cái; null = theo % của CTV. Bỏ qua (undefined) = giữ giá trị cũ. */
   affiliateCommissionMmk: z.preprocess((v) => (v === "" ? null : v), z.coerce.number().int().min(0).max(1_000_000_000).nullable()).optional(),
@@ -76,7 +78,8 @@ export class CatalogError extends Error {
   }
 }
 
-export async function saveProduct(raw: unknown, userId: string, transaction?: Tx) {
+/** `priceReason`: lý do ghi vào PriceHistory khi payload có đổi giá (mặc định "manual"; Excel = "import"). */
+export async function saveProduct(raw: unknown, userId: string, transaction?: Tx, opts: { priceReason?: string } = {}) {
   const parsed = productSchema.parse(raw);
   if (parsed.copyFromId && parsed.id) throw new CatalogError("Chỉ sao chép khi tạo sản phẩm mới");
   // Tên nào trống → chép tên còn lại (luôn có hai bản dịch).
@@ -87,7 +90,7 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
     description: toUnicode(parsed.my.description),
     usage: toUnicode(parsed.my.usage),
   };
-  const run = async (tx: Tx) => {
+  const body = async (tx: Tx) => {
     // Serialize catalog code allocation, including manual saves/imports, until commit.
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('catalog.product-identifiers'))`;
     const input = await resolveProductIdentifiers(parsed, async (kind, value) => {
@@ -166,35 +169,39 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
 
     const savedIds = new Map<string, string>();
     for (const v of input.variants) {
-      if (v.affiliateCommissionMmk != null && v.priceMmk > 0 && v.affiliateCommissionMmk > v.priceMmk) {
+      const existing = v.id
+        ? await tx.variant.findUnique({ where: { id: v.id } })
+        : await tx.variant.findUnique({ where: { sku: v.sku } });
+      if (existing && existing.productId !== product.id) throw new CatalogError(`SKU ${v.sku} đã thuộc sản phẩm khác`);
+      const price = v.priceMmk ?? existing?.priceMmk ?? 0;
+      const commission = v.affiliateCommissionMmk !== undefined ? v.affiliateCommissionMmk : existing?.affiliateCommissionMmk ?? null;
+      if (commission != null && price > 0 && commission > price) {
         throw new CatalogError(`Hoa hồng CTV của ${v.sku} lớn hơn giá bán`);
       }
+      // Loại mới chưa có giá thêm vào SP đang bán → tạo ở trạng thái tắt (đặt giá ở bước 3 rồi bật), không chặn lưu.
+      const parkNew = !existing && price <= 0 && !!current?.published;
       const vData = {
         sku: v.sku,
         label: v.label,
-        priceMmk: v.priceMmk,
+        priceMmk: price,
         weightGrams: v.weightGrams ?? null,
         ...(v.affiliateCommissionMmk !== undefined && { affiliateCommissionMmk: v.affiliateCommissionMmk }),
         lowStockAt: v.lowStockAt,
         leadTimeDays: v.leadTimeDays,
         safetyStock: v.safetyStock,
-        active: v.active,
+        active: parkNew ? false : v.active,
         isBundle: v.isBundle,
       };
-      const existing = v.id
-        ? await tx.variant.findUnique({ where: { id: v.id } })
-        : await tx.variant.findUnique({ where: { sku: v.sku } });
-      if (existing && existing.productId !== product.id) throw new CatalogError(`SKU ${v.sku} đã thuộc sản phẩm khác`);
       const saved = existing
         ? await tx.variant.update({ where: { id: existing.id }, data: vData })
         : await tx.variant.create({ data: { ...vData, productId: product.id } });
-      if (existing && existing.priceMmk !== v.priceMmk) {
+      if (existing && existing.priceMmk !== price) {
         await tx.priceHistory.create({
           data: {
             variantId: saved.id,
             oldPriceMmk: existing.priceMmk,
-            newPriceMmk: v.priceMmk,
-            reason: "manual",
+            newPriceMmk: price,
+            reason: opts.priceReason ?? "manual",
             userId,
           },
         });
@@ -235,6 +242,8 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
     });
     return product;
   };
+  // QT2: SP đã duyệt mà nội dung/giá/ảnh đổi → huỷ duyệt.
+  const run = (tx: Tx) => guardApproval(tx, parsed.id ? [parsed.id] : [], userId, () => body(tx));
   return transaction ? run(transaction) : prisma.$transaction(run);
 }
 

@@ -9,6 +9,7 @@ import { AddressPicker } from "../address-picker";
 import { useAddressLabels } from "./address-labels";
 import { changeCustomerPasswordAction, saveAddressAction, updateProfileAction } from "@/server/accounts/actions";
 import { Notice, outlineButton, primaryButton, storeField } from "./ui";
+import { cn } from "@/lib/utils";
 
 /** Form khu tài khoản khách (P14b) — Server Action, JS chỉ để hiện lỗi/trạng thái. */
 
@@ -84,9 +85,9 @@ export function AddressForm({
           {t("makeDefault")}
         </label>
       )}
-      {state?.error && <Notice tone="error">{state.error}</Notice>}
+      {state?.error && <Notice tone="danger">{state.error}</Notice>}
       <div className="flex gap-2">
-        <button type="submit" disabled={pending} className={`${primaryButton} flex-1` + " gap-2"}><Save aria-hidden className="size-4 shrink-0" /> {t("save")}</button>
+        <button type="submit" disabled={pending} className={cn(primaryButton, "flex-1")}><Save aria-hidden className="size-4 shrink-0" /> {t("save")}</button>
         {address && (
           <Link href="/account/addresses" className={outlineButton}>
             {t("cancel")}
@@ -107,9 +108,9 @@ export function ProfileForm({ locale, name }: { locale: string; name: string }) 
         <span>{t("name")}</span>
         <input name="name" required maxLength={100} autoComplete="name" defaultValue={name} className={storeField} />
       </label>
-      {state?.error && <Notice tone="error">{state.error}</Notice>}
+      {state?.error && <Notice tone="danger">{state.error}</Notice>}
       {state?.ok && <Notice tone="success">{t("saved")}</Notice>}
-      <button type="submit" disabled={pending} className={primaryButton + " gap-2"}><Save aria-hidden className="size-4 shrink-0" /> {t("save")}</button>
+      <button type="submit" disabled={pending} className={primaryButton}><Save aria-hidden className="size-4 shrink-0" /> {t("save")}</button>
     </form>
   );
 }
@@ -129,7 +130,7 @@ export function ChangePasswordForm({ locale }: { locale: string }) {
       {field("currentPassword", t("currentPassword"), "current-password")}
       {field("newPassword", t("newPassword"), "new-password")}
       {field("confirmPassword", t("confirmPassword"), "new-password")}
-      {state?.error && <Notice tone="error">{state.error}</Notice>}
+      {state?.error && <Notice tone="danger">{state.error}</Notice>}
       {state?.ok && <Notice tone="success">{t("passwordChanged")}</Notice>}
       <button type="submit" disabled={pending} className={primaryButton}>
         {t("changePassword")}

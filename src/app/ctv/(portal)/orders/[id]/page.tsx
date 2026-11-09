@@ -7,6 +7,9 @@ import { bpToPercent, hasFixedCommission } from "@/server/affiliates/commission"
 import { getAffiliateOrder } from "@/server/affiliates/affiliates";
 import { CommissionBadge } from "@/components/admin/affiliate-parts";
 import { OrderStatusBadge } from "@/components/admin/order-badges";
+import { Notice } from "@/components/ui/notice";
+import { storeCard, storeListCard } from "@/components/store/ui";
+import { cn } from "@/lib/utils";
 
 export default async function CtvOrderPage({ params, searchParams }: PageProps<"/ctv/orders/[id]">) {
   const user = await requireAffiliate();
@@ -21,13 +24,11 @@ export default async function CtvOrderPage({ params, searchParams }: PageProps<"
 
   return (
     <div className="space-y-4">
-      <Link href="/ctv/orders" className="text-sm text-primary underline">
+      <Link href="/ctv/orders" className="text-sm text-brand underline">
         {t("back")}
       </Link>
       {sp.created && (
-        <p role="status" className="rounded-lg bg-secondary px-3 py-2 text-sm text-secondary-foreground">
-          {t("orderCreated")}
-        </p>
+        <Notice tone="success">{t("orderCreated")}</Notice>
       )}
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="font-mono text-xl font-semibold">{order.code}</h1>
@@ -37,7 +38,7 @@ export default async function CtvOrderPage({ params, searchParams }: PageProps<"
       </div>
       <p className="text-sm text-muted-foreground">{t("orderHint")}</p>
 
-      <section className="grid gap-3 rounded-2xl border bg-card p-4 text-sm sm:grid-cols-2">
+      <section className={cn(storeCard, "grid gap-3 text-sm sm:grid-cols-2")}>
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
           <dt className="text-muted-foreground">{t("customer")}</dt>
           <dd>{order.recipientName}</dd>
@@ -70,7 +71,7 @@ export default async function CtvOrderPage({ params, searchParams }: PageProps<"
 
       <section className="space-y-2">
         <h2 className="font-medium">{t("items")}</h2>
-        <ul className="divide-y rounded-2xl border bg-card text-sm">
+        <ul className={cn(storeListCard, "text-sm")}>
           {order.items.map((i) => (
             <li key={i.id} className="flex flex-wrap items-baseline justify-between gap-2 p-3">
               <span className="min-w-0 flex-1">

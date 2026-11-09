@@ -33,7 +33,7 @@ export const CATALOG_COLUMNS: SheetColumn[] = [
   { key: "brand", label: "Thương hiệu", group: "product", type: "text", width: 22, required: true, list: "brands", hint: "Chọn trong danh sách hoặc gõ tên mới — thương hiệu mới sẽ được tạo." },
   { key: "category", label: "Danh mục", group: "product", type: "text", width: 26, required: true, list: "categories", hint: "Chọn trong danh sách (nhận cả tên hoặc mã danh mục).", aliases: ["Mã danh mục"] },
   { key: "variant_label", label: "Biến thể", group: "product", type: "text", width: 18, hint: "Dung tích, kích cỡ hoặc màu. Để trống nếu sản phẩm chỉ có một loại.", aliases: ["Biến thể (dung tích/màu)"] },
-  { key: "price_mmk", label: "Giá bán (MMK)", group: "product", type: "money", width: 16, required: true, hint: "Chỉ nhập số. Dòng cập nhật để trống = giữ giá cũ." },
+  { key: "price_mmk", label: "Giá bán (MMK)", group: "product", type: "money", width: 16, hint: "Chỉ cập nhật giá SKU đã có (để trống = giữ giá cũ). SKU mới bỏ qua cột này — đặt giá ở bước 3 trên trang sản phẩm." },
   { key: "weight_g", label: "Khối lượng (g)", group: "product", type: "whole", width: 15, hint: "Gram. Cần trước khi mở bán hàng kho nhập từ Việt Nam." },
   { key: "affiliate_commission_mmk", label: "Hoa hồng CTV (MMK/cái)", group: "product", type: "money", width: 18, hint: "Số tiền CTV nhận cho mỗi cái bán ra. Để trống = theo % của CTV (dòng cập nhật: giữ mức cũ). Muốn bỏ mức riêng thì xoá trong trang sản phẩm.", aliases: ["Hoa hồng CTV"] },
   { key: "description_my", label: "Mô tả Myanmar", group: "product", type: "text", width: 34, hint: "Tuỳ chọn. Có thể xuống dòng trong một ô." },

@@ -2,7 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { storeFilters } from "@/server/catalog/cached";
 import type { StoreSort } from "@/server/catalog/store-queries";
 import { outlineButton, storeField } from "./ui";
-import { Link } from "@/i18n/navigation";
+import { Pagination } from "@/components/ui/pagination";
 
 export type CatalogParams = { q?: string; brand?: string; tags: string[]; sort: StoreSort; page: number };
 
@@ -26,11 +26,19 @@ export async function CatalogPagination({ current, page, pages, total, locale }:
     for (const tag of current.tags) sp.append("tag", tag);
     return `?${sp}`;
   };
-  return <nav aria-label={t("pagination")} className="mt-4 flex flex-wrap items-center justify-center gap-3">
-    {page > 1 && <Link href={href(page - 1)} className={outlineButton}>{t("previous")}</Link>}
-    <span className="text-sm" aria-live="polite">{t("pageCount", { page, pages, total })}</span>
-    {page < pages && <Link href={href(page + 1)} className={outlineButton}>{t("next")}</Link>}
-  </nav>;
+  return (
+    <Pagination
+      label={t("pagination")}
+      page={page}
+      pages={pages}
+      hrefFor={href}
+      prevLabel={t("previous")}
+      nextLabel={t("next")}
+      status={t("pageCount", { page, pages, total })}
+      density="touch"
+      className="mt-4"
+    />
+  );
 }
 
 /**

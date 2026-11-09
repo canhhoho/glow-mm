@@ -125,7 +125,10 @@
     "today": "Today",
     "viewReports": "View reports",
     "unknownExpiry": "Batches with unknown expiry",
-    "longShipping": "Shipping for {days}+ days"
+    "longShipping": "Shipping for {days}+ days",
+    "catalog": "Products",
+    "toApprove": "Awaiting approval",
+    "reapprove": "Needs re-approval"
   },
   "Role": {
     "ADMIN": "Administrator",
@@ -328,7 +331,10 @@
     "estimateShip": "Estimated VN → MM freight (MMK/kg)",
     "estimateHelp": "On posting: estimated cost = purchase cost converted to MMK + freight × weight. Leave blank if unknown. Missing exchange rate or weight leaves the cost missing. Allocated actual shipment costs take priority.",
     "priceReceived": "Price received SKUs",
-    "pickedWarning": "Unshipped pick lists use these SKUs at this warehouse: {codes}. Check batches before issuing/transferring; using picked stock may require reprinting the order pick list."
+    "pickedWarning": "Unshipped pick lists use these SKUs at this warehouse: {codes}. Check batches before issuing/transferring; using picked stock may require reprinting the order pick list.",
+    "weightGrams": "Weight (g)",
+    "productScope": "Showing the variants of {name}.",
+    "showAllProducts": "Show all products"
   },
   "Ship": {
     "title": "Shipments VN → MM",
@@ -418,7 +424,9 @@
       "hidden": "Hidden",
       "archived": "Discontinued",
       "ready": "Ready to publish (hidden)",
-      "incomplete": "Needs work (hidden)"
+      "incomplete": "Needs work (hidden)",
+      "toApprove": "Awaiting approval",
+      "reapprove": "Needs re-approval"
     },
     "clearFilters": "Clear filters",
     "count": "{count} products",
@@ -521,13 +529,15 @@
         "COST_MISSING": "Sellable stock has no cost",
         "COST_ESTIMATED": "Sellable stock uses an estimated cost",
         "OUT_OF_STOCK": "Out of stock (page stays visible, cannot be bought)",
-        "STOCK_OTHER_WAREHOUSE": "Stock sits in another sales warehouse — transfer it to sell"
+        "STOCK_OTHER_WAREHOUSE": "Stock sits in another sales warehouse — transfer it to sell",
+        "PRICE_STALE": "Stock was received after the last price change — recalculate the price",
+        "NOT_APPROVED": "Not approved (step 4)"
       },
       "blockedSave": "Cannot publish / save:",
       "blockedBulk": "{count} products were not published because of errors:",
       "blockedHint": "Fix {count} errors before showing this product on the web.",
       "publishedWithErrors": "Visible but has {count} errors — fix soon (it is not hidden automatically).",
-      "readyHint": "Ready — tick “Show on web” and Save to publish.",
+      "readyHint": "Ready — turn on “Show on web” in step 5 (Publish).",
       "publishedOk": "Visible on the web.",
       "allGood": "No errors or warnings",
       "steps": "Steps",
@@ -548,7 +558,83 @@
     "otherSettings": "Other settings (codes, warehouse, expiry)",
     "nameHint": "One name is enough; the other language uses it until translated.",
     "affiliateCommission": "Affiliate commission (MMK/unit)",
-    "affiliateCommissionHint": "Leave blank to use the affiliate’s %"
+    "affiliateCommissionHint": "Leave blank to use the affiliate’s %",
+    "newCombo": "New combo",
+    "created": "Product created. Next, step 2: receive stock.",
+    "create": {
+      "comboTitle": "New combo",
+      "intro": "Step 1/5 — basic details only. Price, images, description and visibility come in later steps on the product page.",
+      "name": "Product name",
+      "addOtherName": "+ Add {lang}",
+      "labels": "Options (colour / size)",
+      "labelsPlaceholder": "e.g. Red, 50ml",
+      "labelsHint": "Press Enter or comma to add. Leave empty if there is only one option.",
+      "removeLabel": "Remove {label}",
+      "components": "Combo components",
+      "componentsHint": "Only products in the same sales warehouse can be chosen.",
+      "qty": "Quantity",
+      "submit": "Create product",
+      "submitCombo": "Create combo",
+      "copyHelp": "Prefills name, brand, category and options. Creating copies the description, images and settings; price and stock are not copied."
+    },
+    "step": {
+      "create": "Create product",
+      "stock": "Receive stock + cost",
+      "price": "Selling price",
+      "review": "Review",
+      "publish": "Publish"
+    },
+    "stepState": {
+      "done": "Done",
+      "warn": "Has notes",
+      "todo": "To do",
+      "waiting": "Waiting for earlier step"
+    },
+    "stepsLabel": "Product workflow",
+    "block": {
+      "editInfo": "Edit product details",
+      "notReceived": "Not received yet: {skus}",
+      "receivedAll": "Every option has a posted receipt or transfer.",
+      "receive": "Receive stock",
+      "viewStock": "View stock",
+      "calcPrice": "Calculate price",
+      "published": "Visible on the website.",
+      "hidden": "Hidden from the website.",
+      "publishOn": "Show on website",
+      "publishOff": "Hide from website",
+      "publishWaiting": "Finish the earlier steps to publish.",
+      "viewAsCustomer": "View as customer",
+      "noIssues": "Nothing to do in this step."
+    },
+    "list": {
+      "step": "Step",
+      "stepAll": "All steps",
+      "stepDone": "Published"
+    },
+    "priceBlock": {
+      "calcThis": "Calculate this product",
+      "source": "Price source",
+      "sourceRun": "Pricing run",
+      "sourceManual": "Manual",
+      "sourceImport": "Excel",
+      "sourceNone": "No history",
+      "lastCost": "Latest purchase cost",
+      "inactive": "off",
+      "manual": "Edit prices manually",
+      "manualHelp": "Price must be above 0. Changing a price needs a reason (saved in price history).",
+      "reason": "Reason for price change",
+      "save": "Save prices",
+      "saved": "Prices saved"
+    },
+    "approval": {
+      "approve": "Approve",
+      "confirm": "Approve this product? Editing content, prices or images afterwards requires approval again.",
+      "approvedBy": "Approved by {name} · {at}",
+      "approvedSystem": "Approved (system, at migration)",
+      "stale": "Edited after approval — needs re-approval",
+      "pending": "Not approved",
+      "help": "Approve once steps 1–3 have no errors. Editing the name, description, category, brand, variants, prices, weight or images after approval requires approval again."
+    }
   },
   "Orders": {
     "exportVtp": "Export VTP Excel",
@@ -924,7 +1010,8 @@
     "skippedReason": {
       "NO_COST": "No posted purchase cost",
       "NO_WEIGHT": "Missing weight",
-      "NO_PROFIT": "Missing fixed profit"
+      "NO_PROFIT": "Missing fixed profit",
+      "PRICE_ZERO": "Calculated price is 0"
     },
     "expiresAt": "Expires {date}",
     "expired": "This preview has expired or uses the old method — create a new preview to apply prices.",
@@ -933,7 +1020,9 @@
     "receiptScope": "Only SKUs in receipt {code}; warehouse, category and brand filters below still apply.",
     "lowMarginWarning": "Illustrative profit after freight and {rate}% commission: {profit} MMK (≤ 5% of price). Other sales fees excluded; actual affiliate rates may differ.",
     "largeChangeWarning": "Price changes by at least 20% — review before applying.",
-    "lowMarginWarningFixed": "Illustrative profit after shipping, affiliate commission {fixed} MMK/unit and upline {rate}%: {profit} MMK (≤ 5% of price). Other selling fees not deducted."
+    "lowMarginWarningFixed": "Illustrative profit after shipping, affiliate commission {fixed} MMK/unit and upline {rate}%: {profit} MMK (≤ 5% of price). Other selling fees not deducted.",
+    "productScope": "Only the active variants of {name}.",
+    "productInvalid": "The product does not exist or has no active variants."
   },
   "Quarantine": {
     "title": "Quarantine (returned goods)",

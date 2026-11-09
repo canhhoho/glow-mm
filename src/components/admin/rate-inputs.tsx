@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { fieldClass } from "@/components/admin/ui";
+import { fieldClass, fieldLabelClass } from "@/components/admin/ui";
 import { rateDisplay } from "@/server/pricing/formula";
 
 /** Bỏ dấu phẩy/khoảng trắng phân cách nghìn (giống server). */
@@ -25,7 +25,7 @@ export function RateInputs() {
   const preview = previewOf(mmk, vnd);
   return (
     <>
-      <label className="grid content-start gap-1 text-sm">
+      <label className={fieldLabelClass}>
         <span className="text-muted-foreground">{t("mmkPerUsd")}</span>
         <input
           name="mmkPerUsd"
@@ -37,7 +37,7 @@ export function RateInputs() {
           className={fieldClass}
         />
       </label>
-      <label className="grid content-start gap-1 text-sm">
+      <label className={fieldLabelClass}>
         <span className="text-muted-foreground">{t("vndPerUsd")}</span>
         <input
           name="vndPerUsd"

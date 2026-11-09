@@ -4,7 +4,7 @@ import { Eye } from "lucide-react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ActionForm } from "@/components/admin/action-form";
-import { fieldClass } from "@/components/admin/ui";
+import { fieldClass, fieldLabelClass } from "@/components/admin/ui";
 import { previewRunAction } from "@/server/pricing/actions";
 
 type Option = { id: string; name: string };
@@ -18,6 +18,7 @@ export function PricingRunForm({
   roundTo,
   lastShip,
   receiptId,
+  variantIds,
   initialLocationId,
 }: {
   warehouses: (Option & { pricingMode: "VN_IMPORT" | "LOCAL_MMK" })[];
@@ -27,13 +28,14 @@ export function PricingRunForm({
   roundTo: number;
   lastShip: number | null;
   receiptId?: string;
+  /** Giới hạn bản xem trước trong các biến thể này (vd "Tính giá SP này"). */
+  variantIds?: string[];
   initialLocationId?: string;
 }) {
   const t = useTranslations("Pricing");
   const [locationId, setLocationId] = useState(warehouses.some(w=>w.id === initialLocationId) ? initialLocationId! : warehouses[0]?.id ?? "");
   const mode = warehouses.find((w) => w.id === locationId)?.pricingMode ?? "VN_IMPORT";
   const vn = mode === "VN_IMPORT";
-  const label = "grid content-start gap-1 text-sm";
 
   return (
     <div className="space-y-2">
@@ -44,7 +46,8 @@ export function PricingRunForm({
       ) : (
         <ActionForm action={previewRunAction} submitLabel={t("preview")} className="grid gap-3 sm:grid-cols-2" icon={<Eye aria-hidden className="size-4 shrink-0" />}>
           {receiptId && <input type="hidden" name="receiptId" value={receiptId} />}
-          <label className={label}>
+          {variantIds?.map((id) => <input key={id} type="hidden" name="variantIds" value={id} />)}
+          <label className={fieldLabelClass}>
             <span className="text-muted-foreground">{t("warehouse")}</span>
             <select name="locationId" aria-label={t("warehouse")} value={locationId} onChange={(e) => setLocationId(e.target.value)} className={fieldClass}>
               {warehouses.map((w) => (
@@ -56,7 +59,7 @@ export function PricingRunForm({
           </label>
           {vn && (
             <>
-              <label className={label}>
+              <label className={fieldLabelClass}>
                 <span className="text-muted-foreground">{t("rate")}</span>
                 <select name="rateId" defaultValue={rates[0]?.id} className={fieldClass}>
                   {rates.map((r) => (
@@ -66,21 +69,21 @@ export function PricingRunForm({
                   ))}
                 </select>
               </label>
-              <label className={label}>
+              <label className={fieldLabelClass}>
                 <span className="text-muted-foreground">{t("marginPct")}</span>
                 <input name="marginPct" required inputMode="decimal" placeholder="40" className={fieldClass} />
               </label>
-              <label className={label}>
+              <label className={fieldLabelClass}>
                 <span className="text-muted-foreground">{t("shipMmkPerKg")}</span>
                 <input name="shipMmkPerKg" required type="number" min={0} step={1} inputMode="numeric" defaultValue={lastShip ?? ""} className={fieldClass} />
               </label>
             </>
           )}
-          <label className={label}>
+          <label className={fieldLabelClass}>
             <span className="text-muted-foreground">{t("roundTo")}</span>
             <input name="roundTo" type="number" min={1} defaultValue={roundTo} className={fieldClass} />
           </label>
-          <label className={label}>
+          <label className={fieldLabelClass}>
             <span className="text-muted-foreground">{t("category")}</span>
             <select name="categoryId" defaultValue="" className={fieldClass}>
               <option value="">{t("all")}</option>
@@ -91,7 +94,7 @@ export function PricingRunForm({
               ))}
             </select>
           </label>
-          <label className={label}>
+          <label className={fieldLabelClass}>
             <span className="text-muted-foreground">{t("brand")}</span>
             <select name="brandId" defaultValue="" className={fieldClass}>
               <option value="">{t("all")}</option>
