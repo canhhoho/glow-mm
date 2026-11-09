@@ -5,7 +5,7 @@ import { Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { fieldClass, fieldLabelClass } from "@/components/admin/ui";
-import { createBrandAction, createCategoryAction } from "@/server/catalog/actions";
+import { createCategoryAction } from "@/server/catalog/actions";
 
 function Feedback({ error, ok }: { error?: string; ok?: string }) {
   const t = useTranslations("Products");
@@ -17,23 +17,6 @@ function Feedback({ error, ok }: { error?: string; ok?: string }) {
       </p>
     );
   return ok ? <p className="text-sm text-success">{t("added")}</p> : null;
-}
-
-export function BrandForm() {
-  const t = useTranslations("Products");
-  const [state, action, pending] = useActionState(createBrandAction, undefined);
-  return (
-    <form action={action} className="flex flex-wrap items-end gap-2">
-      <label className={fieldLabelClass}>
-        <span className="text-muted-foreground">{t("brandName")}</span>
-        <input name="name" required maxLength={80} className={fieldClass} />
-      </label>
-      <Button size="lg" type="submit" variant="outline" disabled={pending} aria-label={t("newBrand")} title={t("newBrand")}><Plus aria-hidden className="size-4 shrink-0" /> {t("newBrand")}</Button>
-      <div className="w-full">
-        <Feedback error={state?.error} ok={state?.ok} />
-      </div>
-    </form>
-  );
 }
 
 export function CategoryForm({ parents }: { parents: { id: string; name: string }[] }) {

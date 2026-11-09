@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { deleteFileIfUnused, deleteStoredKeys } from "@/server/files/public-images";
 import { assertStockLocation } from "@/server/inventory/warehouses";
 import { CatalogError } from "./products";
+import { pruneEmptyBrands } from "./brands";
 
 /**
  * Xoá sản phẩm khỏi danh mục admin.
@@ -67,6 +68,7 @@ export async function deleteProducts(rawIds: unknown, userId: string): Promise<D
 
     const keys: (string | null)[] = [];
     if (toDelete.length) {
+      const brandIds = (await tx.product.findMany({ where: { id: { in: toDelete } }, select: { brandId: true } })).map((p) => p.brandId);
       const delVariants = variants.filter((v) => toDelete.includes(v.productId)).map((v) => v.id);
       const images = await tx.productImage.findMany({ where: { productId: { in: toDelete } }, select: { fileId: true } });
       await tx.bundleItem.deleteMany({ where: { OR: [{ bundleId: { in: delVariants } }, { componentId: { in: delVariants } }] } });
@@ -80,6 +82,7 @@ export async function deleteProducts(rawIds: unknown, userId: string): Promise<D
       await tx.variant.deleteMany({ where: { id: { in: delVariants } } });
       // Bản dịch, tag, ảnh, đánh giá, mục bộ sưu tập xoá theo cascade.
       await tx.product.deleteMany({ where: { id: { in: toDelete } } });
+      await pruneEmptyBrands(tx, brandIds); // thương hiệu không còn SP nào → xoá theo
       for (const fileId of new Set(images.map((i) => i.fileId))) keys.push(await deleteFileIfUnused(tx, fileId));
     }
 

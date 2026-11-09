@@ -52,7 +52,6 @@ export const NAV: NavGroup[] = [
     items: [
       { href: "/admin/products", key: "productList", permission: "catalog:manage", icon: "tag" },
       { href: "/admin/categories", key: "categories", permission: "catalog:manage", icon: "folder" },
-      { href: "/admin/brands", key: "brands", permission: "catalog:manage", icon: "tag" },
       { href: "/admin/selling-prices", key: "sellingPrices", permission: "pricing:manage", icon: "coins" },
       { href: "/admin/pricing", key: "pricing", permission: "pricing:manage", icon: "coins" },
     ],

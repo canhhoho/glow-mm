@@ -28,14 +28,15 @@ import { getNumberSetting } from "@/server/settings";
 export default async function EditProductPage({ params, searchParams }: PageProps<"/admin/products/[id]">) {
   const user = await requirePagePermission("catalog:manage");
   const [{ id }, { saved, created }] = await Promise.all([params, searchParams]);
-  const [t, td, product, options, images] = await Promise.all([
+  const [t, td, product, images] = await Promise.all([
     getTranslations("Products"),
     getTranslations("Docs"),
     getProductForEdit(id),
-    productFormOptions(),
     getProductImages(id),
   ]);
   if (!product) notFound();
+  // Gợi ý thương hiệu luôn gồm thương hiệu của SP này (kể cả khi chỉ còn SP ngừng kinh doanh).
+  const options = await productFormOptions(product.brandId);
   // QT2: trạng thái duyệt (bước 4) + người duyệt.
   const approval = await prisma.product.findUniqueOrThrow({
     where: { id: product.id },

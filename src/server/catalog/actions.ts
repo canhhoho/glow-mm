@@ -8,10 +8,9 @@ import { directionSchema, formId } from "@/lib/schemas";
 import { requirePermission } from "@/server/auth/session";
 import type { ActionState } from "@/server/inventory/actions";
 import { deleteCategory, removeCategoryIcon, setCategoryIcon, updateCategory } from "./categories";
-import { BrandError, deleteBrand, updateBrand } from "./brands";
 import { CATALOG_TAG } from "./category-tree";
 import { addProductImages, deleteProductImage, reorderProductImage, updateProductImageAlt } from "./images";
-import { createBrand, createCategory, saveProduct, setProductsPublished } from "./products";
+import { createCategory, saveProduct, setProductsPublished } from "./products";
 import { readCatalogFile } from "./catalog-sheet-read";
 import { catalogImportInputSchema, commitCatalogImport, previewCatalogImport, type CatalogImportPreview } from "./catalog-import";
 import { deleteProducts, moveProductsToWarehouse, restoreProducts } from "./product-delete";
@@ -141,35 +140,6 @@ export async function productBulkAction(_prev: ProductBulkState, formData: FormD
   updateTag(CATALOG_TAG); // thẻ/trang SP, menu danh mục, bộ lọc storefront
   revalidatePath("/admin/products");
   return { done, blocked };
-}
-
-export async function createBrandAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  try {
-    await requirePermission("catalog:manage");
-    await createBrand(String(formData.get("name") ?? ""));
-  } catch (e) {
-    return { error: message(e) };
-  }
-  updateTag(CATALOG_TAG); // bộ lọc thương hiệu storefront
-  revalidatePath("/admin/products");
-  revalidatePath("/admin/brands");
-  return { ok: "brand" };
-}
-
-export async function manageBrandAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  try {
-    await requirePermission("catalog:manage");
-    const id = formId(40).parse(formData.get("brandId"));
-    const intent = z.enum(["update", "delete"]).parse(formData.get("intent"));
-    if (intent === "delete") await deleteBrand(id);
-    else await updateBrand(id, String(formData.get("name") ?? ""));
-  } catch (e) {
-    return { error: e instanceof BrandError ? (await getTranslations("Products"))(e.code) : message(e) };
-  }
-  updateTag(CATALOG_TAG);
-  revalidatePath("/admin/brands");
-  revalidatePath("/admin/products", "layout");
-  return { ok: "brand" };
 }
 
 export async function createCategoryAction(_prev: ActionState, formData: FormData): Promise<ActionState> {

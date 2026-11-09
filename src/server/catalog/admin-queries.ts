@@ -95,9 +95,16 @@ export async function productCopyOptions() {
   return products.map((p) => ({ id: p.id, label: `${productName(p.translations, p.slug)} (${p.slug})` }));
 }
 
-export async function productFormOptions() {
+/**
+ * Lựa chọn cho form tạo/sửa SP. Gợi ý thương hiệu: chỉ thương hiệu có SP chưa ngừng kinh doanh (+ thương hiệu của SP
+ * đang sửa, `brandId`) — thương hiệu chỉ còn SP ngừng KD không lẫn vào gợi ý; gõ đúng tên vẫn dùng lại được.
+ */
+export async function productFormOptions(brandId?: string) {
   const [brands, categories, tags, variants, warehouses] = await Promise.all([
-    prisma.brand.findMany({ orderBy: { name: "asc" } }),
+    prisma.brand.findMany({
+      where: { OR: [{ products: { some: { archivedAt: null } } }, ...(brandId ? [{ id: brandId }] : [])] },
+      orderBy: { name: "asc" },
+    }),
     prisma.category.findMany({ include: { translations: true }, orderBy: { sortOrder: "asc" } }),
     prisma.tag.findMany({ include: { translations: true }, orderBy: [{ kind: "asc" }, { slug: "asc" }] }),
     prisma.variant.findMany({
