@@ -20,6 +20,9 @@ export type TemplateLists = { brands: string[]; categories: string[]; warehouses
 export type TemplateRow = Record<string, string | number | null | undefined>;
 
 const YES_NO = ["Có", "Không"];
+// Giá/hoa hồng đặt ở bước Giá. Các cột phụ vẫn có thể mở bằng dấu + trong Excel.
+const PRICING_COLUMNS = new Set(["price_mmk", "affiliate_commission_mmk"]);
+const EXTRA_COLUMNS = new Set(["weight_g", "description_my", "description_en", "has_expiry", "sku", "inbound_unit_vnd", "lot_no"]);
 
 const xml = (s: string) =>
   s
@@ -59,9 +62,9 @@ function inputSheet(columns: SheetColumn[], lists: TemplateLists, rows: Template
   const firstStock = columns.findIndex((c) => c.group === "stock");
   const out: string[] = [
     row(1, [cell("A1", `${BRAND_NAME} — Nhập / cập nhật sản phẩm`, S.title)], 24),
-    row(2, [cell("A2", "Mỗi dòng là một SKU. Cột đỏ (*) bắt buộc khi tạo sản phẩm mới. Tạo mới: để trống SKU. Cập nhật: điền SKU đã có, ô để trống = giữ nguyên.", S.note)]),
-    row(3, [cell("A3", "Các dòng cùng tên + thương hiệu là các biến thể (màu/dung tích) của một sản phẩm. Chọn một ô để xem hướng dẫn của cột.", S.note)]),
-    row(4, [cell("A4", "Phần NHẬP TỒN (cột xanh) tuỳ chọn: có Số lượng → tạo phiếu nhập nháp theo kho bán, kiểm tra rồi ghi sổ.", S.note)]),
+    row(2, [cell("A2", "Tạo mới: điền một tên, Thương hiệu và Danh mục. Biến thể tuỳ chọn. Không cần giá bán; đặt giá ở bước 3 trên website.", S.note)]),
+    row(3, [cell("A3", "Mỗi dòng một biến thể; cùng tên + thương hiệu để gộp sản phẩm. Mở dấu + để thêm thông tin hoặc điền SKU khi cập nhật; ô trống giữ nguyên.", S.note)]),
+    row(4, [cell("A4", "Không nhập tồn: để trống toàn bộ cột xanh. Có nhập tồn: điền Số lượng + Giá mua (VND/MMK theo kho). Giá mua khác giá bán.", S.note)]),
     row(5, [cell("A5", "SẢN PHẨM", S.group), ...(firstStock >= 0 ? [cell(`${colName(firstStock)}5`, "NHẬP TỒN (tuỳ chọn)", S.group)] : [])]),
     row(
       CATALOG_HEADER_ROW,
@@ -73,7 +76,13 @@ function inputSheet(columns: SheetColumn[], lists: TemplateLists, rows: Template
       return row(n, columns.map((c, i) => cell(`${colName(i)}${n}`, values[c.key], dataStyle(c))));
     }),
   ];
-  const cols = columns.map((c, i) => `<col min="${i + 1}" max="${i + 1}" width="${c.width}" style="${dataStyle(c)}" customWidth="1"/>`).join("");
+  const cols = columns.map((c, i) => {
+    // SKU của file cập nhật phải luôn thấy để nhận diện đúng dòng cần sửa.
+    const hidden = EXTRA_COLUMNS.has(c.key) && !(c.key === "sku" && rows.length > 0);
+    const previous = columns[i - 1];
+    const collapsed = !hidden && previous && EXTRA_COLUMNS.has(previous.key) && !(previous.key === "sku" && rows.length > 0);
+    return `<col min="${i + 1}" max="${i + 1}" width="${c.width}" style="${dataStyle(c)}" customWidth="1"${hidden ? ' hidden="1" outlineLevel="1"' : ""}${collapsed ? ' collapsed="1"' : ""}/>`;
+  }).join("") + `<col min="${columns.length + 1}" max="${columns.length + 1}" width="3" customWidth="1" collapsed="1"/>`;
   const listCol = { brands: "A", categories: "B", warehouses: "C", yesno: "D" } as const;
   const listLen = { brands: lists.brands.length, categories: lists.categories.length, warehouses: lists.warehouses.length, yesno: YES_NO.length };
   const validations = columns.map((c, i) => {
@@ -88,27 +97,28 @@ function inputSheet(columns: SheetColumn[], lists: TemplateLists, rows: Template
     return `<dataValidation allowBlank="1" ${prompt} sqref="${range}"/>`;
   });
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetViews><sheetView workbookViewId="0" tabSelected="1"><pane ySplit="${CATALOG_HEADER_ROW}" topLeftCell="A${CATALOG_HEADER_ROW + 1}" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A${CATALOG_HEADER_ROW + 1}" sqref="A${CATALOG_HEADER_ROW + 1}"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>${cols}</cols><sheetData>${out.join("")}</sheetData><dataValidations count="${validations.length}">${validations.join("")}</dataValidations></worksheet>`;
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetPr><outlinePr summaryRight="1"/></sheetPr><sheetViews><sheetView workbookViewId="0" tabSelected="1" showOutlineSymbols="1"><pane ySplit="${CATALOG_HEADER_ROW}" topLeftCell="A${CATALOG_HEADER_ROW + 1}" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A${CATALOG_HEADER_ROW + 1}" sqref="A${CATALOG_HEADER_ROW + 1}"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="15" outlineLevelCol="1"/><cols>${cols}</cols><sheetData>${out.join("")}</sheetData><dataValidations count="${validations.length}">${validations.join("")}</dataValidations></worksheet>`;
 }
 
 function guideSheet(columns: SheetColumn[]) {
   const rules = [
-    "Tạo sản phẩm mới: điền Tên (Myanmar hoặc tiếng Anh), Thương hiệu, Danh mục, Giá bán; để trống SKU. Sản phẩm mới luôn ở trạng thái ẨN, bật hiển thị trong trang sản phẩm.",
+    "Tạo sản phẩm mới: chỉ cần một tên (Myanmar hoặc tiếng Anh), Thương hiệu và Danh mục. SKU tự sinh. Sản phẩm mới ở trạng thái ẨN, chưa có giá bán; đặt giá ở bước 3 trên website.",
     "Nhiều màu/dung tích: mỗi loại một dòng, cùng tên và thương hiệu, khác cột Biến thể.",
-    "Cập nhật: tải file 'Danh sách sản phẩm hiện có', sửa ô cần đổi rồi tải lên. Ô để trống = giữ nguyên. Không đổi kho bán và combo qua Excel.",
-    "Nhập tồn: điền Số lượng nhập và Giá mua; nhiều lô của cùng SKU thì lặp lại dòng với số lô/hạn khác nhau. Hệ thống tạo phiếu nhập NHÁP — kiểm tra rồi bấm Ghi sổ mới có tồn.",
+    "Cột phụ được thu gọn: bấm dấu + phía trên cột để mở mô tả, khối lượng, SKU, hạn dùng, phí đưa về kho và số lô. Tạo mới để trống SKU; khối lượng có thể điền ở bước Nhập kho.",
+    "Cập nhật: tải file 'Danh sách sản phẩm hiện có', giữ SKU và sửa thông tin cần đổi. Ô trống = giữ nguyên. Giá bán và hoa hồng chỉnh ở bước 3; không đổi kho bán/combo qua Excel.",
+    "Không nhập tồn: để trống toàn bộ cột xanh, kể cả hạn và số lô. Có nhập tồn: cần Số lượng nhập + Giá mua (VND cho kho nhập Việt Nam, MMK cho kho mua tại Myanmar). Giá mua để tính vốn, không phải giá bán. Phiếu nhập là NHÁP, kiểm tra rồi Ghi sổ mới có tồn.",
     "Hàng có hạn dùng mà để trống Hạn sử dụng → lô chưa biết hạn, chưa bán được đến khi cập nhật hạn thật.",
     "Luôn bấm Xem trước để kiểm tra; chỉ khi không còn lỗi mới xác nhận được.",
   ];
   const head = row(1, [cell("A1", "Hướng dẫn nhập / cập nhật sản phẩm", S.title)], 24);
-  const ruleRows = rules.map((r, i) => row(i + 3, [cell(`A${i + 3}`, `${i + 1}. ${r}`, S.note)]));
+  const ruleRows = rules.map((r, i) => row(i + 3, [cell(`A${i + 3}`, `${i + 1}. ${r}`, S.wrap)], 44));
   const start = rules.length + 4;
   const table = [
     row(start, [cell(`A${start}`, "Cột", S.guideHead), cell(`B${start}`, "Bắt buộc khi tạo mới", S.guideHead), cell(`C${start}`, "Hướng dẫn", S.guideHead)]),
-    ...columns.map((c, i) => row(start + 1 + i, [cell(`A${start + 1 + i}`, c.label, S.text), cell(`B${start + 1 + i}`, c.required ? "Có" : "", S.text), cell(`C${start + 1 + i}`, c.hint, S.wrap)])),
+    ...columns.map((c, i) => row(start + 1 + i, [cell(`A${start + 1 + i}`, c.label, S.text), cell(`B${start + 1 + i}`, c.required ? "Có" : "", S.text), cell(`C${start + 1 + i}`, c.hint, S.wrap)], 44)),
   ];
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetFormatPr defaultRowHeight="15"/><cols><col min="1" max="1" width="26" customWidth="1"/><col min="2" max="2" width="18" customWidth="1"/><col min="3" max="3" width="90" customWidth="1"/></cols><sheetData>${[head, ...ruleRows, ...table].join("")}</sheetData></worksheet>`;
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetFormatPr defaultRowHeight="15"/><cols><col min="1" max="1" width="26" customWidth="1"/><col min="2" max="2" width="18" customWidth="1"/><col min="3" max="3" width="90" customWidth="1"/></cols><sheetData>${[head, ...ruleRows, ...table].join("")}</sheetData><mergeCells count="${rules.length + 1}"><mergeCell ref="A1:C1"/>${rules.map((_, i) => `<mergeCell ref="A${i + 3}:C${i + 3}"/>`).join("")}</mergeCells></worksheet>`;
 }
 
 function listSheet(lists: TemplateLists) {
@@ -153,7 +163,12 @@ const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 /** Ghép workbook. `rows` trống = file mẫu; có dữ liệu = danh sách SP hiện có để sửa. */
 export function buildCatalogWorkbook(lists: TemplateLists, rows: TemplateRow[] = []): Uint8Array {
   // Chỉ một kho bán → bỏ cột Kho bán (luôn dùng kho đó).
-  const columns = CATALOG_COLUMNS.filter((c) => c.key !== "warehouse_code" || lists.warehouses.length > 1);
+  const columns = CATALOG_COLUMNS
+    .filter((c) => !PRICING_COLUMNS.has(c.key) && (c.key !== "warehouse_code" || lists.warehouses.length > 1))
+    .sort((a, b) => {
+      const order = (c: SheetColumn) => c.group === "product" ? EXTRA_COLUMNS.has(c.key) ? 1 : 0 : EXTRA_COLUMNS.has(c.key) ? 3 : 2;
+      return order(a) - order(b);
+    });
   const sheets = [
     { name: CATALOG_SHEET, body: inputSheet(columns, lists, rows) },
     { name: CATALOG_GUIDE_SHEET, body: guideSheet(columns) },

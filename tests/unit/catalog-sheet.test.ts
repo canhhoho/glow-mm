@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readSheet } from "read-excel-file/node";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
-import { CATALOG_HEADER_ROW, CATALOG_LIST_SHEET, CATALOG_SHEET, parseYesNo, sheetHeaderKey } from "@/lib/catalog-sheet";
+import { CATALOG_HEADER_ROW, CATALOG_GUIDE_SHEET, CATALOG_LIST_SHEET, CATALOG_SHEET, parseYesNo, sheetHeaderKey } from "@/lib/catalog-sheet";
 import { parseCsvObjects } from "@/lib/csv";
 import { buildCatalogWorkbook } from "@/server/catalog/catalog-workbook";
 import { readCatalogFile, sheetRowsToCsv } from "@/server/catalog/catalog-sheet-read";
@@ -27,7 +27,9 @@ describe("File Excel nhập/cập nhật sản phẩm (một sheet)", () => {
     const rows = await readSheet(Buffer.from(buildCatalogWorkbook({ ...lists, warehouses: ["THAM"] })), CATALOG_SHEET);
     const header = rows[CATALOG_HEADER_ROW - 1].map(sheetHeaderKey);
     expect(header).not.toContain("warehouse_code");
-    expect(header).toEqual(expect.arrayContaining(["name_my", "brand", "category", "price_mmk", "sku", "qty", "unit_cost", "lot_no"]));
+    expect(header).toEqual(expect.arrayContaining(["name_my", "brand", "category", "sku", "qty", "unit_cost", "lot_no"]));
+    expect(header).not.toContain("price_mmk");
+    expect(header).not.toContain("affiliate_commission_mmk");
   });
 
   it("file SP hiện có: đọc lại đúng giá trị, giữ SKU số 0 đầu, xuống dòng và chữ Myanmar", async () => {
@@ -36,7 +38,35 @@ describe("File Excel nhập/cập nhật sản phẩm (một sheet)", () => {
     ]);
     const { csv, lines } = await readCatalogFile(asFile(bytes));
     expect(lines).toEqual([CATALOG_HEADER_ROW + 1]);
-    expect(parseCsvObjects(csv)[0]).toMatchObject({ name_my: "နေကာခရင်မ်", sku: "000123", price_mmk: "25000", weight_g: "80", description_en: "Line 1\nLine 2", has_expiry: "Có", qty: "" });
+    expect(parseCsvObjects(csv)[0]).toMatchObject({ name_my: "နေကာခရင်မ်", sku: "000123", weight_g: "80", description_en: "Line 1\nLine 2", has_expiry: "Có", qty: "" });
+    expect(parseCsvObjects(csv)[0]).not.toHaveProperty("price_mmk");
+  });
+
+  it("mẫu đơn giản: 9 cột hiện, cột phụ mở được và SKU luôn hiện trên file cập nhật", async () => {
+    for (const rows of [[], [{ name_en: "Cream", brand: "Sen Việt", category: "Skincare", sku: "000123" }]]) {
+      const bytes = buildCatalogWorkbook(lists, rows);
+      const sheet = strFromU8(unzipSync(bytes)["xl/worksheets/sheet1.xml"]);
+      const header = (await readSheet(Buffer.from(bytes), CATALOG_SHEET))[CATALOG_HEADER_ROW - 1].map(sheetHeaderKey);
+      const colTags = [...sheet.matchAll(/<col\s[^>]*\/>/g)].map((m) => m[0]);
+      const visible = header.filter((_, i) => !colTags[i].includes('hidden="1"'));
+      expect(visible).toEqual(["name_my", "name_en", "brand", "category", "variant_label", "warehouse_code", ...(rows.length ? ["sku"] : []), "qty", "expiry_date", "unit_cost"]);
+      expect(sheet).toContain('showOutlineSymbols="1"');
+      expect(sheet).toContain('outlineLevel="1"');
+      expect(sheet).toContain('collapsed="1"');
+      expect(header).not.toContain("price_mmk");
+      expect(header).not.toContain("affiliate_commission_mmk");
+    }
+  });
+
+  it("file tạo mới chỉ có tên/thương hiệu/danh mục đọc lại được, hướng dẫn không yêu cầu giá bán", async () => {
+    const bytes = buildCatalogWorkbook(lists, [{ name_en: "Cream", brand: "Sen Việt", category: "Skincare" }]);
+    const { csv } = await readCatalogFile(asFile(bytes));
+    expect(parseCsvObjects(csv)[0]).toMatchObject({ name_en: "Cream", brand: "Sen Việt", category: "Skincare", sku: "", qty: "", unit_cost: "" });
+    const guide = (await readSheet(Buffer.from(bytes), CATALOG_GUIDE_SHEET)).flat().join(" ");
+    expect(guide).toContain("chỉ cần một tên");
+    expect(guide).toContain("đặt giá ở bước 3");
+    expect(guide).toContain("Giá mua để tính vốn, không phải giá bán");
+    expect(guide).not.toContain("Danh mục, Giá bán;");
   });
 
   it("đọc ngày Excel và dd/mm/yyyy; ngày sai báo đúng dòng", () => {
