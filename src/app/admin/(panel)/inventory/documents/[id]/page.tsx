@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
@@ -16,6 +17,11 @@ export default async function DocumentPage({ params }: PageProps<"/admin/invento
   const { id } = await params;
   const [t, ti, doc] = await Promise.all([getTranslations("Docs"), getTranslations("Inventory"), getDocument(id)]);
   if (!doc) notFound();
+  // QT3: phiếu nhập đã ghi sổ có hàng mà đơn đặt trước đang chờ → nhắc mở danh sách chờ.
+  const waitingPreorders =
+    doc.type === "RECEIVE" && doc.status === "POSTED"
+      ? await prisma.order.count({ where: { status: "AWAITING_STOCK", items: { some: { variantId: { in: doc.lines.map((l) => l.variantId) } } } } })
+      : 0;
   const picked = doc.status === "DRAFT" && ["ISSUE", "TRANSFER"].includes(doc.type) && doc.fromId ? await prisma.orderPickLine.findMany({ where: { locationId: doc.fromId, variantId: { in: doc.lines.map(l=>l.variantId) }, pick: { consumedAt: null, order: { status: { in: ["COD_CONFIRMED", "PAYMENT_CONFIRMED"] } } } }, select: { pick: { select: { order: { select: { code: true } } } } }, take: 50 }) : [];
 
   return (
@@ -25,6 +31,14 @@ export default async function DocumentPage({ params }: PageProps<"/admin/invento
         back={{ href: "/admin/inventory/documents", label: t("back") }}
       />
       {doc.type === "RECEIVE" && doc.status === "POSTED" && can(user.role, "pricing:manage") && <LinkButton href={`/admin/pricing?tab=runs&receiptId=${doc.id}`}>{t("priceReceived")}</LinkButton>}
+      {waitingPreorders > 0 && (
+        <Notice tone="warning" data-testid="receipt-preorders">
+          {t("preorderWaiting", { count: waitingPreorders })}{" "}
+          <Link href="/admin/orders/preorders" className="underline">
+            {t("preorderOpen")}
+          </Link>
+        </Notice>
+      )}
       {picked.length > 0 && <Notice tone="warning">{t("pickedWarning", { codes: [...new Set(picked.map(p=>p.pick.order.code))].join(", ") })}</Notice>}
       <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-[auto_1fr]">
         <dt className="text-muted-foreground">{t("status")}</dt>

@@ -40,7 +40,9 @@ describe("Sẵn sàng mở bán (D2)", () => {
     expect(ok.published).toBe(true);
     const r = (await loadReadiness(prisma, [ok.id])).get(ok.id)!;
     expect(r.errors).toEqual([]);
-    expect(r.warnings.map((w) => w.code)).toEqual(expect.arrayContaining(["NO_IMAGE", "OUT_OF_STOCK"]));
+    // QT3: SP mới mặc định nhận đặt trước → hết hàng không còn là cảnh báo.
+    expect(r.warnings.map((w) => w.code)).toEqual(expect.arrayContaining(["NO_IMAGE"]));
+    expect(r.warnings.map((w) => w.code)).not.toContain("OUT_OF_STOCK");
   });
 
   it("SP đang hiển thị: lưu được dù còn lỗi khác (không tự ẩn), nhưng không cho đặt giá 0", async () => {

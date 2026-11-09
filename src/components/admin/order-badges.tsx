@@ -3,6 +3,7 @@ import { Badge } from "@/components/admin/ui";
 import type { OrderStatus, PaymentStatus } from "@/generated/prisma/client";
 
 const STATUS_TONE: Record<OrderStatus, "neutral" | "success" | "warning" | "danger" | "brand"> = {
+  AWAITING_STOCK: "warning",
   PENDING: "warning",
   PAYMENT_CONFIRMED: "brand",
   COD_CONFIRMED: "brand",

@@ -21,9 +21,9 @@
 | Q2 | Thứ tự giá | **Giá chỉ đặt ở bước 3**: tạo SP không nhập giá; bước 3 = bảng tính giá từ phiếu nhập đã ghi sổ, hoặc sửa tay tại bước 3 có ghi lý do. |
 | Q3 | Điều kiện đăng bán | Hết hàng **vẫn đăng bán, ở chế độ đặt trước (preorder)**. Giá vốn thiếu/tạm giữ là cảnh báo. |
 | Q4 | Phân quyền | Giữ nguyên: Quản lý kho làm bước 2; Admin làm bước 1, 3, 4, 5. |
-| P1 | Bật preorder | **Riêng từng SP**: ô "Cho đặt trước khi hết hàng" + ngày dự kiến có hàng. SP không bật → hết hàng như hiện tại. |
+| P1 | Bật preorder | ~~Riêng từng SP~~ → **đổi 09/11: mặc định bật cho mọi SP hết hàng, tắt riêng từng SP**. **Không hiện ngày dự kiến.** |
 | P2 | Thanh toán preorder | **Như đơn thường** (COD/chuyển khoản), đơn đánh dấu "Đặt trước", chờ hàng về mới giao. |
-| P3 | Giới hạn | **Giới hạn theo SP** (số tối đa nhận đặt trước); hết hạn mức → báo hết. |
+| P3 | Giới hạn | **Hạn mức mặc định chung** (Cài đặt `preorder.defaultLimit`, mặc định 20 cái/biến thể) + **sửa riêng từng biến thể**; hết hạn mức → báo hết. |
 | P4 | Hàng về | **Danh sách chờ, admin xác nhận**: liệt kê đơn đặt trước theo thứ tự đặt, báo đủ/thiếu; admin bấm chuyển sang xử lý như đơn thường. |
 | G1 | Ô ở form tạo SP | **Tối giản 5 ô**: Tên · Thương hiệu · Danh mục · Kho bán (chỉ khi có > 1 kho) · Phân loại (tuỳ chọn). Còn lại tự sinh hoặc làm ở bước sau. |
 | G2 | Khối lượng | **Nhập ở bước 2** khi nhập kho (quản lý kho cân hàng thật). |
@@ -119,6 +119,14 @@ Mỗi bước = một commit trên `dev`; **dừng chờ duyệt sau mỗi giai 
 6. CTV: hoa hồng tính như đơn thường (chỉ khi đơn hoàn tất).
 
 **Test:** unit state-machine (chuyển mới + cấm cũ); integration tạo đơn preorder (hạn mức, đồng thời 2 đơn tranh hạn mức cuối, combo), `stockArrived` thiếu hàng bị chặn, cron không huỷ; E2E mới `preorder.spec.ts` (khách đặt trước → nhập kho → admin chuyển xử lý → giao) + **full E2E** (đụng checkout, state-machine, kho — vùng rủi ro cao theo CLAUDE.md).
+
+**Đã làm (09/11/2026)** — migration `20261109150000_preorder` (`Product.preorderEnabled` mặc định **true**, `Variant.preorderLimit`, `Order.preorder`, `OrderStatus.AWAITING_STOCK`); không có `preorderEta` (không hiện ngày). Ghi chú khác kế hoạch:
+- Logic ở `orders/preorder.ts`: `preorderCapacity` (hạn mức − tổng SL đơn `AWAITING_STOCK`), `planOrderStock` (khoá Variant, quyết định đơn thường / đặt trước trước khi tạo đơn), `preorderQueue` (danh sách chờ, chia tồn FIFO, chỉ đọc).
+- **Chỉ đơn khách đặt trên web** mới thành đơn đặt trước; đơn nhân viên/CTV tạo tay thiếu hàng vẫn báo "Không đủ hàng".
+- **Combo không đặt trước** (thiếu thành phần → hết hàng như cũ).
+- `stockArrived` (quyền `orders:confirm-payment`) giữ hàng với hạn giữ tính từ lúc chuyển (COD / chuyển khoản như đơn mới); khách chuyển khoản/xác nhận sau khi hàng về.
+- Admin: trang `/admin/orders/preorders` (menu Đơn hàng, badge số đơn chờ), ô dashboard "Chờ hàng về", nhắc trên phiếu nhập đã ghi sổ, bước 5 trang SP có ô bật/tắt + hạn mức theo biến thể (không thuộc dấu vân tay duyệt). Cảnh báo `OUT_OF_STOCK` chỉ còn khi SP tắt đặt trước.
+- Fixture integration tạo SP với `preorderEnabled: false` để các test tồn kho cũ giữ nguyên ý nghĩa; test đặt trước tự bật.
 
 ## 4. Rủi ro chính
 

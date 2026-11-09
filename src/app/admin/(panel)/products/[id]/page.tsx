@@ -6,7 +6,7 @@ import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { approvalState } from "@/server/catalog/approval-rules";
 import { getProductForEdit, getProductImages, productFormOptions } from "@/server/catalog/admin-queries";
-import { approveProductAction, deleteProductImageAction, reorderProductImageAction, saveProductPricingAction, setProductPublishedAction, updateProductImageAltAction } from "@/server/catalog/actions";
+import { approveProductAction, saveProductPreorderAction, deleteProductImageAction, reorderProductImageAction, saveProductPricingAction, setProductPublishedAction, updateProductImageAltAction } from "@/server/catalog/actions";
 import { loadProductPricing, type PriceSource } from "@/server/catalog/product-pricing";
 import { loadReadiness } from "@/server/catalog/readiness";
 import { productSteps, type Issue, type ProductStep } from "@/server/catalog/readiness-rules";
@@ -19,6 +19,7 @@ import { Badge, DataTable, fieldClass, fieldLabelClass, LinkButton, Notice, Page
 import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
 import { localizedPath } from "@/lib/site";
 import { prisma } from "@/lib/db";
+import { getNumberSetting } from "@/server/settings";
 
 /**
  * Trang SP theo quy trình 5 bước (docs/ke-hoach-quy-trinh-san-pham.md): thanh bước ở đầu, mỗi bước một khối.
@@ -36,7 +37,17 @@ export default async function EditProductPage({ params, searchParams }: PageProp
   ]);
   if (!product) notFound();
   // QT2: trạng thái duyệt (bước 4) + người duyệt.
-  const approval = await prisma.product.findUniqueOrThrow({ where: { id: product.id }, select: { approvedAt: true, approvedById: true, approvedHash: true } });
+  const approval = await prisma.product.findUniqueOrThrow({
+    where: { id: product.id },
+    select: { approvedAt: true, approvedById: true, approvedHash: true, preorderEnabled: true, variants: { select: { id: true, preorderLimit: true } } },
+  });
+  // QT3: đặt trước — hạn mức riêng / mặc định + số đang chờ hàng theo biến thể.
+  const [preorderDefault, preorderWaiting] = await Promise.all([
+    getNumberSetting("preorder.defaultLimit"),
+    prisma.orderItem.groupBy({ by: ["variantId"], where: { variantId: { in: product.variants.map((v) => v.id) }, order: { status: "AWAITING_STOCK" } }, _sum: { qty: true } }),
+  ]);
+  const preorderLimit = new Map(approval.variants.map((v) => [v.id, v.preorderLimit]));
+  const waitingQty = new Map(preorderWaiting.map((w) => [w.variantId, w._sum.qty ?? 0]));
   const approver = approval.approvedById ? await prisma.user.findUnique({ where: { id: approval.approvedById }, select: { name: true } }) : null;
   const approvalNow = approvalState(approval);
   // D2: cùng bộ kiểm tra với lúc lưu / bật hàng loạt / danh sách.
@@ -294,6 +305,47 @@ export default async function EditProductPage({ params, searchParams }: PageProp
             iconOnly={false}
           />
         )}
+        {/* QT3: hết hàng → nhận đặt trước (mặc định bật); combo không đặt trước. */}
+        <details className="rounded-lg border p-4" data-testid="preorder-settings">
+          <summary className="cursor-pointer font-medium">
+            {t("preorder.title")} · {approval.preorderEnabled ? t("preorder.on") : t("preorder.off")}
+          </summary>
+          <div className="mt-3">
+            <ActionForm action={saveProductPreorderAction} submitLabel={t("preorder.save")} okText={t("preorder.saved")} className="space-y-3">
+              <p className="text-xs text-muted-foreground">{t("preorder.help", { n: preorderDefault })}</p>
+              <input type="hidden" name="productId" value={product.id} />
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="preorderEnabled" defaultChecked={approval.preorderEnabled} className="size-4 accent-primary" />
+                {t("preorder.enabled")}
+              </label>
+              {product.variants
+                .filter((v) => !v.isBundle)
+                .map((v) => (
+                  <div key={v.id} className="grid gap-1 sm:grid-cols-[1fr_10rem] sm:items-end">
+                    <input type="hidden" name="variantId" value={v.id} />
+                    <span className="text-sm">
+                      {v.label} <span className="font-mono text-xs text-muted-foreground">{v.sku}</span>
+                      <span className="block text-xs text-muted-foreground">{t("preorder.waiting", { n: waitingQty.get(v.id) ?? 0 })}</span>
+                    </span>
+                    <label className={fieldLabelClass}>
+                      <span className="text-muted-foreground">{t("preorder.limit")}</span>
+                      <input
+                        name="preorderLimit"
+                        aria-label={`${t("preorder.limit")} ${v.sku}`}
+                        type="number"
+                        min={0}
+                        step={1}
+                        inputMode="numeric"
+                        placeholder={String(preorderDefault)}
+                        defaultValue={preorderLimit.get(v.id) ?? ""}
+                        className={fieldClass}
+                      />
+                    </label>
+                  </div>
+                ))}
+            </ActionForm>
+          </div>
+        </details>
       </Section>
     </Page>
   );

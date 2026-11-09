@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 const GROUPS: { title: string; icon: LucideIcon; keys: NumericSettingKey[] }[] = [
   { title: "expiry", icon: Clock, keys: ["expiry.blockDays", "expiry.warnDays"] },
-  { title: "orders", icon: Package, keys: ["reservation.transferHours", "cod.confirmHours"] },
+  { title: "orders", icon: Package, keys: ["reservation.transferHours", "cod.confirmHours", "preorder.defaultLimit"] },
   { title: "pricing", icon: Tags, keys: ["pricing.roundTo", "pricing.previewDays"] },
   { title: "reorder", icon: TrendingUp, keys: ["reorder.coverDays", "reorder.salesWindowDays"] },
   { title: "affiliate", icon: Handshake, keys: ["affiliate.holdDays", "affiliate.defaultRateBp", "affiliate.uplineRateBp"] },

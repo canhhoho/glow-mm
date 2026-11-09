@@ -26,6 +26,15 @@ describe("Máy trạng thái đơn", () => {
     expect(availableTransitions(bank("PAYMENT_CONFIRMED"))).toEqual(["ship", "cancel"]);
   });
 
+  it("QT3: đơn đặt trước chỉ chuyển sang chờ xác nhận khi hàng về, hoặc huỷ; không giữ hàng", () => {
+    expect(availableTransitions(cod("AWAITING_STOCK"))).toEqual(["stockArrived", "cancel"]);
+    expect(assertTransition("stockArrived", bank("AWAITING_STOCK"))).toBe("PENDING");
+    expect(canTransition("confirmCod", cod("AWAITING_STOCK"))).toBe(false);
+    expect(canTransition("ship", cod("AWAITING_STOCK"))).toBe(false);
+    expect(canTransition("stockArrived", cod("PENDING"))).toBe(false);
+    expect(holdsReservation("AWAITING_STOCK")).toBe(false);
+  });
+
   it("đơn đóng gói cũ vẫn bàn giao được; không được giao lại", () => {
     expect(assertTransition("ship", cod("PACKING"))).toBe("SHIPPING");
     expect(canTransition("ship", cod("SHIPPING"))).toBe(false);

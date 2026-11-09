@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 const BADGE_TONE: Record<NavCountKey, NonNullable<ShellItem["badge"]>["tone"]> = {
   pendingOrders: "brand",
+  awaitingStock: "warning",
   quarantineLots: "neutral",
   blockedLots: "warning",
   pendingApplications: "brand",

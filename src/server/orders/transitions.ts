@@ -7,12 +7,12 @@ import { can, type Role } from "@/server/auth/roles";
 import { postDocumentTx, salesBlockDays } from "@/server/inventory/documents";
 import { inventoryCost } from "@/server/inventory/cost";
 import { InsufficientStockError } from "@/server/inventory/fefo";
-import { getBoolSetting } from "@/server/settings";
+import { getBoolSetting, getNumberSetting } from "@/server/settings";
 import type { Tx } from "@/server/inventory/ledger";
 import { newCode } from "@/server/codes";
 import { OrderError } from "./errors";
 import { allocateFefo, manifestPicks, orderNeeds } from "./picking";
-import { holdIndefinitely, releaseReservations } from "./reservations";
+import { holdIndefinitely, releaseReservations, reserveForOrder } from "./reservations";
 import { assertTransition, TRANSITIONS, TransitionError, type TransitionName } from "./state-machine";
 
 /**
@@ -79,6 +79,13 @@ export async function transitionInTx(
 
   const data: Parameters<typeof tx.order.update>[0]["data"] = { status: to };
   switch (name) {
+    case "stockArrived": {
+      // QT3: hàng về → giữ hàng như đơn mới (kiểm đủ tồn, khoá dòng); thời hạn giữ tính từ lúc chuyển.
+      const items = await tx.orderItem.findMany({ where: { orderId: order.id }, select: { variantId: true, qty: true } });
+      const hours = await getNumberSetting(order.paymentMethod === "COD" ? "cod.confirmHours" : "reservation.transferHours");
+      await reserveForOrder(tx, { orderId: order.id, items, expiresAt: new Date(opts.now.getTime() + hours * 3_600_000) }, opts);
+      break;
+    }
     case "confirmCod":
       await holdIndefinitely(tx, order.id, opts);
       data.codConfirmedAt = opts.now;

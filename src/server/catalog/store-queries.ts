@@ -7,6 +7,7 @@ import type { CartLine } from "@/server/cart/cart";
 import { salesBlockDays } from "@/server/inventory/documents";
 import { sellableCutoff } from "@/server/inventory/fefo";
 import { availableToSell } from "@/server/orders/availability";
+import { preorderCapacity } from "@/server/orders/preorder";
 import { pick } from "./queries";
 
 /** Truy vấn cho storefront (chỉ sản phẩm đã đăng, biến thể đang bán). Tồn = khả dụng để bán (đã trừ giữ hàng). */
@@ -118,14 +119,21 @@ export async function loadCardPage(query: ProductListQuery) {
 
 export async function loadCardRows(query: ProductListQuery): Promise<CardRow[]> { return (await loadCardPage(query)).rows; }
 
-export type ProductCardData = Omit<CardRow, "variantIds"> & { inStock: boolean };
+/** `preorder` (QT3): hết hàng nhưng còn biến thể nhận đặt trước. */
+export type ProductCardData = Omit<CardRow, "variantIds"> & { inStock: boolean; preorder: boolean };
 
-/** Gắn "còn hàng" cho nhiều nhóm thẻ bằng MỘT lần tính tồn (trang chủ có nhiều dải SP). */
+/** Gắn "còn hàng" / "đặt trước" cho nhiều nhóm thẻ bằng MỘT lần tính tồn (trang chủ có nhiều dải SP). */
 export async function withStock(groups: CardRow[][]): Promise<ProductCardData[][]> {
   const ids = [...new Set(groups.flatMap((g) => g.flatMap((c) => c.variantIds)))];
   const avail = ids.length > 0 ? await availability(ids) : new Map<string, number>();
+  // Hạn mức đặt trước chỉ cần cho thẻ đã hết hàng.
+  const outIds = groups.flatMap((g) => g.filter((c) => !c.variantIds.some((id) => (avail.get(id) ?? 0) > 0)).flatMap((c) => c.variantIds));
+  const capacity = outIds.length > 0 ? await preorderCapacity(prisma, outIds) : new Map<string, number>();
   return groups.map((g) =>
-    g.map(({ variantIds, ...card }) => ({ ...card, inStock: variantIds.some((id) => (avail.get(id) ?? 0) > 0) })),
+    g.map(({ variantIds, ...card }) => {
+      const inStock = variantIds.some((id) => (avail.get(id) ?? 0) > 0);
+      return { ...card, inStock, preorder: !inStock && variantIds.some((id) => (capacity.get(id) ?? 0) > 0) };
+    }),
   );
 }
 
@@ -216,8 +224,9 @@ export type ProductContent = NonNullable<Awaited<ReturnType<typeof loadProductCo
 export async function withProductStock(content: ProductContent, now = new Date()) {
   const ids = content.variants.map((v) => v.id);
   const blockDays = await storeBlockDays();
-  const [avail, lots] = await Promise.all([
+  const [avail, capacity, lots] = await Promise.all([
     availableToSell(prisma, ids, { now, blockDays }),
+    preorderCapacity(prisma, ids),
     // Chỉ lô còn bán được ở kho bán của SP (các biến thể cùng một SP → cùng một kho, P24).
     prisma.stockBalance.findMany({
       where: {
@@ -234,7 +243,13 @@ export async function withProductStock(content: ProductContent, now = new Date()
   for (const l of lots) if (l.batch.expiryDate && !nextExpiry.has(l.batch.variantId)) nextExpiry.set(l.batch.variantId, l.batch.expiryDate);
   return {
     ...content,
-    variants: content.variants.map((v) => ({ ...v, available: avail.get(v.id) ?? 0, expiryDate: nextExpiry.get(v.id) ?? null })),
+    // `preorder` (QT3): số cái còn nhận đặt trước — chỉ ý nghĩa khi hết hàng (`available` ≤ 0).
+    variants: content.variants.map((v) => ({
+      ...v,
+      available: avail.get(v.id) ?? 0,
+      preorder: (avail.get(v.id) ?? 0) > 0 ? 0 : (capacity.get(v.id) ?? 0),
+      expiryDate: nextExpiry.get(v.id) ?? null,
+    })),
   };
 }
 
@@ -243,20 +258,24 @@ export async function getStoreProduct(slug: string, locale: string, now = new Da
   return content ? withProductStock(content, now) : null;
 }
 
-/** Dòng giỏ hàng kèm giá/tên hiện hành; dòng không còn bán hoặc vượt tồn bị đánh dấu. */
+/**
+ * Dòng giỏ hàng kèm giá/tên hiện hành; dòng không còn bán hoặc vượt tồn bị đánh dấu.
+ * QT3: vượt tồn nhưng trong hạn mức đặt trước → hợp lệ, `preorder: true` (cả đơn sẽ là đơn đặt trước).
+ */
 export async function getCartDetails(lines: CartLine[], locale: string) {
-  if (lines.length === 0) return { lines: [], subtotalMmk: 0, ok: false };
+  if (lines.length === 0) return { lines: [], subtotalMmk: 0, ok: false, preorder: false };
   const variants = await prisma.variant.findMany({
     where: { id: { in: lines.map((l) => l.variantId) } },
     include: { product: { include: { translations: true } } },
   });
   const byId = new Map(variants.map((v) => [v.id, v]));
-  const avail = await availability(variants.map((v) => v.id));
+  const [avail, capacity] = await Promise.all([availability(variants.map((v) => v.id)), preorderCapacity(prisma, variants.map((v) => v.id))]);
   const rows = lines.flatMap((l) => {
     const v = byId.get(l.variantId);
     if (!v) return [];
     const sellable = v.active && v.product.published;
     const available = sellable ? (avail.get(v.id) ?? 0) : 0;
+    const preorder = sellable && l.qty > available && l.qty <= (capacity.get(v.id) ?? 0);
     return [
       {
         variantId: v.id,
@@ -266,7 +285,9 @@ export async function getCartDetails(lines: CartLine[], locale: string) {
         priceMmk: v.priceMmk,
         qty: l.qty,
         available,
-        ok: sellable && l.qty <= available,
+        preorder,
+        preorderLimit: capacity.get(v.id) ?? 0,
+        ok: sellable && (l.qty <= available || preorder),
       },
     ];
   });
@@ -274,5 +295,6 @@ export async function getCartDetails(lines: CartLine[], locale: string) {
     lines: rows,
     subtotalMmk: rows.reduce((s, r) => s + r.priceMmk * r.qty, 0),
     ok: rows.length > 0 && rows.every((r) => r.ok),
+    preorder: rows.some((r) => r.preorder),
   };
 }

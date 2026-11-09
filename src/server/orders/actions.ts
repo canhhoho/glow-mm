@@ -136,6 +136,7 @@ export async function transitionOrderAction(_prev: ActionState, formData: FormDa
   }
   revalidatePath(`/admin/orders/${id}`);
   revalidatePath("/admin/orders");
+  revalidatePath("/admin/orders/preorders"); // QT3: đơn chuyển khỏi danh sách chờ hàng
   revalidatePath("/admin");
   return { ok: name };
 }

@@ -48,7 +48,10 @@
     "related": "More in this category",
     "paoTitle": "Period after opening",
     "paoMonths": "Use within {months} months after opening and before the expiry date on the packaging.",
-    "image": "Image"
+    "image": "Image",
+    "preorder": "Pre-order",
+    "preorderAvailable": "Out of stock · pre-order available",
+    "preorderNote": "Pre-ordered items ship when they arrive. An order with pre-ordered items ships once everything is in stock."
   },
   "Footer": {
     "contact": "Contact",
@@ -98,7 +101,10 @@
     "checkout": "Checkout",
     "unavailable": "No longer available",
     "onlyLeft": "Only {count} available",
-    "fix": "Please adjust the items marked in red"
+    "fix": "Please adjust the items marked in red",
+    "preorderLine": "Pre-order — ships when back in stock",
+    "preorderLimit": "Pre-order limited to {count}",
+    "preorderNotice": "Your cart has pre-order items: the whole order ships once everything is in stock. We will contact you when it arrives."
   },
   "Checkout": {
     "title": "Checkout",
@@ -138,7 +144,9 @@
     "orderingAs": "Ordering as {email}",
     "orderingAsAffiliate": "You are ordering with affiliate account {code} — this order counts towards your sales and commission.",
     "reviewCart": "Review cart",
-    "paymentReminder": "COD: pay for goods on delivery. Bank transfer: the store confirms after receiving payment."
+    "paymentReminder": "COD: pay for goods on delivery. Bank transfer: the store confirms after receiving payment.",
+    "preorderTag": "pre-order",
+    "preorderNotice": "This order has pre-order items: the whole order ships once everything is in stock. We will contact you to confirm when it arrives."
   },
   "Order": {
     "thanks": "Thank you! Your order has been placed.",
@@ -166,7 +174,8 @@
       "SHIPPING": "On the way",
       "COMPLETED": "Delivered",
       "CANCELLED": "Cancelled",
-      "RETURNED": "Returned"
+      "RETURNED": "Returned",
+      "AWAITING_STOCK": "Waiting for stock"
     },
     "pay": {
       "UNPAID": "Unpaid",
@@ -176,7 +185,8 @@
       "REFUNDED": "Refunded"
     },
     "askHelp": "Questions? Contact us",
-    "createdPending": "Order created — waiting for store confirmation. Creating an order does not confirm payment."
+    "createdPending": "Order created — waiting for store confirmation. Creating an order does not confirm payment.",
+    "preorderInfo": "Pre-order: we will contact you to confirm and ship once the items arrive."
   },
   "Track": {
     "title": "Track your order",

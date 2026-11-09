@@ -9,6 +9,8 @@ export const SETTING_DEFAULTS = {
   "expiry.warnDays": 180,
   "reservation.transferHours": 24,
   "cod.confirmHours": 24,
+  /** QT3: số cái tối đa nhận đặt trước cho mỗi biến thể hết hàng (biến thể đặt hạn mức riêng thì dùng số riêng). 0 = không nhận. */
+  "preorder.defaultLimit": 20,
   "pricing.roundTo": 100,
   /** D1: bản xem trước giá hết hạn sau số ngày này (đầu vào đổi thì dòng bị chặn bất kể hạn). */
   "pricing.previewDays": 3,
@@ -79,6 +81,7 @@ export const settingsSchema = z
     "expiry.warnDays": int(0, 1095),
     "reservation.transferHours": int(1, 168),
     "cod.confirmHours": int(1, 168),
+    "preorder.defaultLimit": int(0, 100_000),
     "pricing.roundTo": int(1, 100_000),
     "pricing.previewDays": int(1, 30),
     "reorder.coverDays": int(0, 365),

@@ -53,6 +53,7 @@ async function OrderQueue({ canReconcile }: { canReconcile: boolean }) {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <Stat label={t("codToConfirm")} value={queue.codToConfirm} href="/admin/orders?status=PENDING&paymentMethod=COD" tone={tone(queue.codToConfirm)} testId="todo-cod" />
             <Stat label={t("bankToConfirm")} value={queue.bankToConfirm} href="/admin/orders?status=PENDING&paymentMethod=BANK_TRANSFER" tone={tone(queue.bankToConfirm)} testId="todo-bank" />
+            <Stat label={t("awaitingStock")} value={queue.awaitingStock} href="/admin/orders/preorders" tone={tone(queue.awaitingStock)} testId="todo-preorder" />
             <Stat label={t("preparing")} value={queue.preparing} href="/admin/orders?status=PREPARING" tone={tone(queue.preparing)} testId="todo-preparing" />
             <Stat label={t("shipping")} value={queue.shipping} href="/admin/orders?status=SHIPPING" />
             <Stat label={t("longShipping", { days: 7 })} value={queue.longShipping} href="/admin/orders?shippingDays=7" tone={tone(queue.longShipping, "danger")} />

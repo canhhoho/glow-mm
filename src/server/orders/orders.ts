@@ -14,12 +14,14 @@ import { OrderError } from "./errors";
 import { normalizeMmPhone } from "@/lib/phone";
 import { orderTotals } from "./pricing";
 import { reserveForOrder } from "./reservations";
+import { planOrderStock } from "./preorder";
 import { recordOrderEvent } from "@/server/analytics/record";
 
 /**
  * Tạo đơn — dùng chung cho storefront (khách tự đặt) và admin (đơn từ FB/Viber/điện thoại).
  * Giá và phí ship luôn lấy từ DB, không tin số liệu từ client.
  * Một transaction: khách/địa chỉ → đơn + dòng (snapshot) → giữ hàng → lịch sử.
+ * QT3: thiếu hàng nhưng đặt trước được → đơn `AWAITING_STOCK` (`preorder`), không giữ hàng (`planOrderStock`).
  */
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -89,6 +91,9 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
     return await prisma.$transaction(
       async (tx) => {
         const lines = await priceLines(tx, items, input.locale);
+        // QT3: chỉ đơn khách tự đặt trên web mới thành đơn đặt trước; đơn tạo tay (nhân viên / CTV) thiếu hàng → lỗi như cũ.
+        const stock = await planOrderStock(tx, items, { now, blockDays, allowPreorder: !ctx.userId });
+        const status = stock.preorder ? ("AWAITING_STOCK" as const) : ("PENDING" as const);
         const township = await findActiveTownship(input.townshipId, tx);
         if (!township) throw new OrderError("invalid_zone", "Địa chỉ giao hàng không hợp lệ");
         // P15: phí ship do đơn vị vận chuyển (VTP) thu trực tiếp khi giao → đơn chỉ tính tiền hàng.
@@ -130,6 +135,8 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
             createdById: ctx.userId,
             accountId: ctx.accountId ?? null,
             createdAt: now,
+            status,
+            preorder: stock.preorder,
             ...(affiliate && {
               affiliateId: affiliate.id,
               affiliateSource: ctx.affiliate!.source,
@@ -142,22 +149,24 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
                 variantId, sku, name, qty, unitPriceMmk, commissionPerUnitMmk: affiliate ? affiliateCommissionMmk : null,
               })),
             },
-            history: { create: { toStatus: "PENDING", userId: ctx.userId, createdAt: now } },
+            history: { create: { toStatus: status, userId: ctx.userId, createdAt: now } },
           },
         });
 
-        await reserveForOrder(
-          tx,
-          { orderId: order.id, items, expiresAt: new Date(now.getTime() + holdHours * HOUR_MS) },
-          { now, blockDays },
-        );
+        if (!stock.preorder) {
+          await reserveForOrder(
+            tx,
+            { orderId: order.id, items, expiresAt: new Date(now.getTime() + holdHours * HOUR_MS) },
+            { now, blockDays },
+          );
+        }
         await tx.auditLog.create({
           data: {
             userId: ctx.userId,
             action: "order.create",
             entity: "Order",
             entityId: order.id,
-            data: { code: order.code, channel, ...(affiliate && { affiliateId: affiliate.id, affiliateSource: ctx.affiliate!.source }) },
+            data: { code: order.code, channel, ...(stock.preorder && { preorder: true }), ...(affiliate && { affiliateId: affiliate.id, affiliateSource: ctx.affiliate!.source }) },
           },
         });
         await recordOrderEvent(tx, "purchase", order, { context: ctx.analytics });
