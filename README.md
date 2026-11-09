@@ -17,6 +17,12 @@ Tài khoản mẫu: `admin@glow.local`, `kho@glow.local`, `donhang@glow.local` �
 
 ## Quản lý sản phẩm
 
+Trang **Thương hiệu** tách số **Sản phẩm đang quản lý** (không gồm ngừng kinh doanh) và
+**Sản phẩm còn hàng** (ít nhất một biến thể đang dùng còn tồn khả dụng tại kho bán, mỗi sản phẩm đếm một lần,
+kể cả sản phẩm đang ẩn). Thương hiệu còn liên kết với sản phẩm ngừng kinh doanh vẫn không được xoá.
+Trang **Danh mục** dùng hai số đếm tương tự; danh mục cha tính cả các danh mục con.
+Chỉ được xoá danh mục không còn sản phẩm liên quan (kể cả ngừng kinh doanh) và không còn danh mục con.
+
 Trong Admin → Sản phẩm, bấm biểu tượng **Sửa** trên từng dòng để chỉnh sản phẩm. Form chỉ cần
 một tên (Myanmar hoặc tiếng Anh — tên còn lại tự lấy theo), thương hiệu (chọn hoặc gõ tên mới), danh mục
 và giá; slug, SKU, kho bán, hạn dùng nằm trong **Thiết lập khác** (tự điền, sửa khi cần). Để dùng sản phẩm
@@ -50,6 +56,9 @@ chưa bán, có cảnh báo, xác nhận ngày thật trong chi tiết lô. Hạ
 Giá vốn = giá mua + phí đưa về kho (VND/đv), quy đổi theo tỷ giá đã xem trước và chốt khi tạo phiếu.
 
 ## Xử lý đơn và xuất VTP
+
+Danh sách **Phiếu kho** chỉ gồm hai nhóm **Đã ghi sổ** (mặc định) và **Nháp**.
+Phiếu đã huỷ không hiện trong danh sách; dữ liệu lịch sử và trang chi tiết vẫn được giữ.
 
 Quy trình: **Chờ xác nhận → Chuẩn bị giao → Đang giao → Hoàn tất**. Nhân viên gọi
 xác nhận đơn COD hoặc đối chiếu tiền chuyển khoản rồi bấm **Đã nhận tiền**; khách

@@ -60,6 +60,10 @@ test("phiếu kho: lỗi server giữ lựa chọn; ghi sổ cần xác nhận; 
   test.setTimeout(60_000); // gồm lỗi server, lưu nháp và hai hộp xác nhận
   await login(page, "kho@glow.local");
   await page.goto("/admin/inventory/documents");
+  const statusTabs = page.getByRole("navigation", { name: "Trạng thái", exact: true });
+  await expect(statusTabs.getByRole("link")).toHaveCount(2);
+  await expect(statusTabs.getByRole("link", { name: "Đã ghi sổ", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect(statusTabs.getByRole("link", { name: "Nháp", exact: true })).toHaveAttribute("href", /status=DRAFT$/);
   await page.getByText("Tạo phiếu", { exact: true }).click(); // menu tạo phiếu có cả ở danh sách phiếu
   await page.getByRole("link", { name: "Chuyển kho" }).click();
   // Form chuyển kho tải mọi lô — DB test tích luỹ nhiều lô nên có thể > 5s.
@@ -81,6 +85,7 @@ test("phiếu kho: lỗi server giữ lựa chọn; ghi sổ cần xác nhận; 
   // Next giữ trang danh sách phiếu ẩn trong DOM (có badge "Nháp"/"Đã huỷ" của phiếu khác) → chỉ xét phần tử đang hiện.
   const shown = (text: string | RegExp) => page.getByText(text, { exact: typeof text === "string" }).filter({ visible: true });
   await expect(shown("Nháp")).toBeVisible();
+  const draftPath = new URL(page.url()).pathname;
 
   // Bấm "Ghi sổ" rồi từ chối hộp xác nhận → vẫn là nháp.
   page.once("dialog", (d) => d.dismiss());
@@ -92,6 +97,9 @@ test("phiếu kho: lỗi server giữ lựa chọn; ghi sổ cần xác nhận; 
   await expect(shown("Đã huỷ")).toBeVisible();
   await expect(shown(/không ảnh hưởng tồn kho/)).toBeVisible();
   await expect(shown(/Phiếu đã ghi sổ/)).toHaveCount(0);
+  await page.goto("/admin/inventory/documents?status=DRAFT");
+  await expect(page.getByRole("link").filter({ hasText: "Đã huỷ" })).toHaveCount(0);
+  await expect(page.locator(`a[href="${draftPath}"]`)).toHaveCount(0);
 });
 
 test("phiếu nhập: dán từ Excel điền nhiều dòng, báo dòng lỗi, dòng thiếu hạn bị chặn", async ({ page }) => {

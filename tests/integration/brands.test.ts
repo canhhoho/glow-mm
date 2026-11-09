@@ -3,9 +3,27 @@ import { describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { normalizeForSearch } from "@/lib/myanmar";
 import { deleteBrand, updateBrand } from "@/server/catalog/brands";
-import { makeFixture } from "./fixtures";
+import { listBrandsAdmin } from "@/server/catalog/brand-queries";
+import { makeFixture, saleFixture } from "./fixtures";
 
 describe("Brand management", () => {
+  it("đếm SP quản lý/còn hàng bằng tồn khả dụng; ngừng kinh doanh không còn được đếm", async () => {
+    const f = await saleFixture([{ lot: "BRAND", expiryInDays: 365, qty: 3 }]);
+    const name = `IT ${f.tag}`;
+    const row = async () => (await listBrandsAdmin(name)).find((b) => b.id === f.brandId);
+    try {
+      expect(await row()).toMatchObject({ totalProducts: 1, managedProducts: 1, inStockProducts: 1 });
+      await prisma.variant.update({ where: { id: f.variantId }, data: { active: false } });
+      expect(await row()).toMatchObject({ managedProducts: 1, inStockProducts: 0 });
+      await prisma.variant.update({ where: { id: f.variantId }, data: { active: true } });
+      await prisma.product.update({ where: { id: f.productId }, data: { archivedAt: new Date(), published: false } });
+      expect(await row()).toMatchObject({ totalProducts: 1, managedProducts: 0, inStockProducts: 0 });
+      await expect(deleteBrand(f.brandId)).rejects.toMatchObject({ code: "brandInUse" });
+    } finally {
+      await prisma.product.update({ where: { id: f.productId }, data: { published: false } });
+    }
+  });
+
   it("renames a brand without breaking its slug and refreshes product search text", async () => {
     const f = await makeFixture();
     const before = await prisma.brand.findUniqueOrThrow({ where: { id: f.brandId } });
