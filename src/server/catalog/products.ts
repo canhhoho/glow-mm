@@ -10,6 +10,7 @@ import type { Tx } from "@/server/inventory/ledger";
 import { productName } from "@/server/inventory/queries";
 import { loadReadiness, ReadinessError } from "./readiness";
 import { blockingErrors, type Issue } from "./readiness-rules";
+import { guardApproval } from "./approval";
 
 /** Quản lý sản phẩm (admin). Giá đổi → ghi PriceHistory. Chữ Myanmar → Unicode trước khi lưu. */
 
@@ -89,7 +90,7 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
     description: toUnicode(parsed.my.description),
     usage: toUnicode(parsed.my.usage),
   };
-  const run = async (tx: Tx) => {
+  const body = async (tx: Tx) => {
     // Serialize catalog code allocation, including manual saves/imports, until commit.
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('catalog.product-identifiers'))`;
     const input = await resolveProductIdentifiers(parsed, async (kind, value) => {
@@ -241,6 +242,8 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
     });
     return product;
   };
+  // QT2: SP đã duyệt mà nội dung/giá/ảnh đổi → huỷ duyệt.
+  const run = (tx: Tx) => guardApproval(tx, parsed.id ? [parsed.id] : [], userId, () => body(tx));
   return transaction ? run(transaction) : prisma.$transaction(run);
 }
 

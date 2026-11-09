@@ -7,6 +7,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { getNumberSetting } from "@/server/settings";
 import type { Tx } from "@/server/inventory/ledger";
 import { variantCosts } from "./cost";
+import { guardApproval } from "@/server/catalog/approval";
 import { mmkPerVndFromUsd, parseScaled, priceLocalMmk, priceVnImport, shippingMmk, suggestPrice } from "./formula";
 
 /**
@@ -320,6 +321,9 @@ export async function applyRun(runId: string, variantIds: string[], userId: stri
         roundTo: run.roundTo,
       };
       const fresh = new Map((await computeLines(tx, lines.map((l) => l.variantId), ctx)).lines.map((l) => [l.variantId, l]));
+      // QT2: đổi giá SP đã duyệt → huỷ duyệt (cần duyệt lại).
+      const productIds = (await tx.variant.findMany({ where: { id: { in: lines.map((l) => l.variantId) } }, select: { productId: true } })).map((v) => v.productId);
+      return guardApproval(tx, productIds, userId, async () => {
 
       let applied = 0;
       const skipped: ApplySkip[] = [];
@@ -351,6 +355,7 @@ export async function applyRun(runId: string, variantIds: string[], userId: stri
         data: { userId, action: "pricing.apply", entity: "PriceUpdateRun", entityId: runId, data: { applied, skipped, remaining } },
       });
       return { applied, skipped, remaining };
+      });
     },
     { maxWait: 10_000, timeout: 30_000 },
   );

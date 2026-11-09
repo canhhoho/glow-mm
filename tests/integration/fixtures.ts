@@ -102,6 +102,10 @@ export function orderInput(f: SaleFixture, qty: number, extra: Record<string, un
 export const avail = async (variantId: string, now = new Date()) =>
   (await prisma.$transaction((tx) => availableToSell(tx, [variantId], { now, blockDays: 90 }))).get(variantId);
 
+/** QT2: coi SP như đã được duyệt ở bước 4 (test cần SP đang bán / bật hiển thị mà không đi qua checklist). */
+export const markApproved = (productId: string, extra: { published?: boolean } = {}) =>
+  prisma.product.update({ where: { id: productId }, data: { approvedAt: new Date(), ...extra } });
+
 /** Gỡ đăng sản phẩm test khi xong file (storefront của E2E dùng chung DB glow_test). */
 export async function unpublishTestProducts() {
   await prisma.product.updateMany({ where: { slug: { startsWith: "it-" }, published: true }, data: { published: false } });

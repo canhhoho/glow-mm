@@ -100,6 +100,12 @@ Mỗi bước = một commit trên `dev`; **dừng chờ duyệt sau mỗi giai 
 
 **Test:** unit hash + bước; integration duyệt/huỷ duyệt/chặn publish; E2E sửa các spec bật hiển thị (phải duyệt trước) + mở rộng `product-flow.spec.ts` đến bước 5. **Migration** → chạy integration + E2E trên DB tạm; cần backup khi cập nhật server.
 
+**Đã làm (09/11/2026)** — migration `20261109120000_product_approval`; ghi chú khác kế hoạch:
+- Hàm thuần `catalog/approval-rules.ts` (`approvalHash`, `approvalState`); DB ở `catalog/approval.ts` (`approveProduct`, `guardApproval`, `approvalCounts`). Dấu vân tay **không** gồm mô tả "cách dùng", alt ảnh, tag, kho bán.
+- Huỷ duyệt so dấu vân tay **trước/sau** mỗi lần sửa (không so với `approvedHash`) → SP được duyệt lúc chuyển đổi (chưa có hash) vẫn phát hiện được. Huỷ duyệt giữ `approvedHash` (hoặc ghi hash trước khi sửa) để phân biệt "cần duyệt lại" với "chưa duyệt". Đường sửa có gác: `saveProduct` (form, Excel), sửa giá tay, áp bảng tính giá, thêm/xoá/đổi thứ tự ảnh, điền khối lượng ở phiếu nhập.
+- Lần lưu đầu của SP thiếu một tên (chép tên còn lại) cũng đổi dấu vân tay — duyệt sau khi lưu.
+- Trạng thái "Chờ duyệt" (danh sách, dashboard) = chưa từng duyệt **và** bước 1–3 không còn lỗi; "Cần duyệt lại" = sửa sau khi duyệt. Seed/seed-demo tạo SP đang hiển thị với `approvedAt`.
+
 ### QT3 — Đặt trước khi hết hàng (migration + máy trạng thái đơn, **rủi ro cao**)
 
 1. **Migration**:

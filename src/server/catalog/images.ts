@@ -11,6 +11,7 @@ import {
   type ImageUpload,
 } from "@/server/files/public-images";
 import type { Tx } from "@/server/inventory/ledger";
+import { guardApproval } from "./approval";
 import { CatalogError } from "./products";
 
 /**
@@ -37,7 +38,7 @@ export async function addProductImages(productId: string, files: ImageUpload[], 
 
   const stored = await putPublicImages(`products/${product.slug}`, files, CatalogError);
   try {
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx) => guardApproval(tx, [product.id], userId, async () => {
       await lockProduct(tx, product.id);
       const last = await tx.productImage.aggregate({ where: { productId: product.id }, _max: { sortOrder: true } });
       let sortOrder = (last._max.sortOrder ?? -1) + 1;
@@ -50,7 +51,7 @@ export async function addProductImages(productId: string, files: ImageUpload[], 
         data: { userId, action: "product.image.add", entity: "Product", entityId: product.id, data: { imageIds: images.map((i) => i.id) } },
       });
       return images;
-    }, TX);
+    }), TX);
   } catch (e) {
     await discardStored(stored);
     throw e;
@@ -66,7 +67,7 @@ async function findImage(imageId: string) {
 export async function reorderProductImage(imageId: string, direction: "up" | "down", userId: string) {
   const dir = directionSchema.parse(direction);
   const { productId } = await findImage(imageId);
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => guardApproval(tx, [productId], userId, async () => {
     await lockProduct(tx, productId);
     const list = await tx.productImage.findMany({ where: { productId }, orderBy: [{ sortOrder: "asc" }, { id: "asc" }] });
     const from = list.findIndex((i) => i.id === imageId);
@@ -81,7 +82,7 @@ export async function reorderProductImage(imageId: string, direction: "up" | "do
       data: { userId, action: "product.image.reorder", entity: "Product", entityId: productId, data: { imageId, direction: dir } },
     });
     return { productId, moved: true };
-  }, TX);
+  }), TX);
 }
 
 export async function updateProductImageAlt(imageId: string, alt: string, userId: string) {
@@ -99,7 +100,7 @@ export async function updateProductImageAlt(imageId: string, alt: string, userId
 /** Xoá ảnh; FileObject + file trên storage chỉ xoá khi không còn dòng nào khác dùng. */
 export async function deleteProductImage(imageId: string, userId: string) {
   const image = await findImage(imageId);
-  const orphanKey = await prisma.$transaction(async (tx) => {
+  const orphanKey = await prisma.$transaction(async (tx) => guardApproval(tx, [image.productId], userId, async () => {
     await lockProduct(tx, image.productId);
     await tx.productImage.delete({ where: { id: image.id } });
     const key = await deleteFileIfUnused(tx, image.fileId);
@@ -107,7 +108,7 @@ export async function deleteProductImage(imageId: string, userId: string) {
       data: { userId, action: "product.image.delete", entity: "Product", entityId: image.productId, data: { imageId, fileId: image.fileId } },
     });
     return key;
-  }, TX);
+  }), TX);
   await deleteStoredKeys([orphanKey]);
   return { productId: image.productId, fileDeleted: !!orphanKey };
 }

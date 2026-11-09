@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { createDocument, postDocument } from "@/server/inventory/documents";
 import { loadReadiness } from "@/server/catalog/readiness";
 import { saveProduct, setProductsPublished } from "@/server/catalog/products";
-import { makeFixture, unpublishTestProducts, type Fixture } from "./fixtures";
+import { makeFixture, markApproved, unpublishTestProducts, type Fixture } from "./fixtures";
 
 afterAll(unpublishTestProducts);
 
@@ -24,15 +24,19 @@ describe("Sẵn sàng mở bán (D2)", () => {
     const slug = `rd-${f.tag.toLowerCase()}`;
     await expect(saveProduct(product(f, slug, { sku: `RD-${f.tag}`, priceMmk: 10_000 }, { published: true }), f.userId)).rejects.toMatchObject({
       name: "ReadinessError",
-      issues: [{ code: "NO_WEIGHT", skus: [`RD-${f.tag}`] }],
+      issues: [{ code: "NO_WEIGHT", skus: [`RD-${f.tag}`] }, { code: "NOT_APPROVED" }],
     });
     expect(await prisma.product.findUnique({ where: { slug } })).toBeNull(); // rollback cả SP
 
     await expect(
       saveProduct(product(f, slug, { sku: `RD-${f.tag}`, priceMmk: 0, weightGrams: 100 }, { published: true }), f.userId),
-    ).rejects.toMatchObject({ issues: [{ code: "PRICE_ZERO" }] });
+    ).rejects.toMatchObject({ issues: [{ code: "PRICE_ZERO" }, { code: "NOT_APPROVED" }] });
 
-    const ok = await saveProduct(product(f, slug, { sku: `RD-${f.tag}`, priceMmk: 10_000, weightGrams: 100 }, { published: true }), f.userId);
+    // QT2: SP mới phải được duyệt (bước 4) trước khi bật hiển thị.
+    const draft = await saveProduct(product(f, slug, { sku: `RD-${f.tag}`, priceMmk: 10_000, weightGrams: 100 }), f.userId);
+    await markApproved(draft.id);
+    const v = await prisma.variant.findUniqueOrThrow({ where: { sku: `RD-${f.tag}` } });
+    const ok = await saveProduct(product(f, slug, { id: v.id, sku: `RD-${f.tag}`, priceMmk: 10_000, weightGrams: 100 }, { id: draft.id, published: true }), f.userId);
     expect(ok.published).toBe(true);
     const r = (await loadReadiness(prisma, [ok.id])).get(ok.id)!;
     expect(r.errors).toEqual([]);
@@ -42,11 +46,12 @@ describe("Sẵn sàng mở bán (D2)", () => {
   it("SP đang hiển thị: lưu được dù còn lỗi khác (không tự ẩn), nhưng không cho đặt giá 0", async () => {
     const f = await makeFixture();
     const slug = `rp-${f.tag.toLowerCase()}`;
-    const p = await saveProduct(product(f, slug, { sku: `RP-${f.tag}`, priceMmk: 10_000, weightGrams: 100 }, { published: true }), f.userId);
+    const p = await saveProduct(product(f, slug, { sku: `RP-${f.tag}`, priceMmk: 10_000, weightGrams: 100 }), f.userId);
+    await markApproved(p.id, { published: true });
     const variant = await prisma.variant.findUniqueOrThrow({ where: { sku: `RP-${f.tag}` } });
-    // Bỏ khối lượng: vẫn lưu được (SP cũ đang bán), danh sách báo lỗi.
+    // Bỏ khối lượng: vẫn lưu được (SP cũ đang bán), danh sách báo lỗi; nội dung đổi → cần duyệt lại (QT2).
     await saveProduct(product(f, slug, { id: variant.id, sku: `RP-${f.tag}`, priceMmk: 10_000, weightGrams: null }, { id: p.id, published: true }), f.userId);
-    expect((await loadReadiness(prisma, [p.id])).get(p.id)!.errors).toEqual([{ code: "NO_WEIGHT", skus: [`RP-${f.tag}`] }]);
+    expect((await loadReadiness(prisma, [p.id])).get(p.id)!.errors).toEqual([{ code: "NO_WEIGHT", skus: [`RP-${f.tag}`] }, { code: "NOT_APPROVED" }]);
     await expect(
       saveProduct(product(f, slug, { id: variant.id, sku: `RP-${f.tag}`, priceMmk: 0, weightGrams: null }, { id: p.id, published: true }), f.userId),
     ).rejects.toMatchObject({ issues: [{ code: "PRICE_ZERO" }] });
@@ -57,6 +62,7 @@ describe("Sẵn sàng mở bán (D2)", () => {
     const f = await makeFixture();
     const good = await saveProduct(product(f, `rg-${f.tag.toLowerCase()}`, { sku: `RG-${f.tag}`, priceMmk: 5_000, weightGrams: 50 }), f.userId);
     const bad = await saveProduct(product(f, `rb-${f.tag.toLowerCase()}`, { sku: `RB-${f.tag}`, priceMmk: 0 }), f.userId);
+    await markApproved(good.id);
     const res = await setProductsPublished({ ids: [good.id, bad.id], published: true }, f.userId);
     expect(res.changed).toBe(1);
     expect(res.blocked).toEqual([
@@ -65,6 +71,7 @@ describe("Sẵn sàng mở bán (D2)", () => {
         issues: [
           { code: "PRICE_ZERO", skus: [`RB-${f.tag}`] },
           { code: "NO_WEIGHT", skus: [`RB-${f.tag}`] },
+          { code: "NOT_APPROVED" },
         ],
       }),
     ]);

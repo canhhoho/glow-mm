@@ -8,6 +8,7 @@ import { getNumberSetting } from "@/server/settings";
 import { pickFefo } from "./fefo";
 import { applyMoves, type StockMove, type Tx } from "./ledger";
 import { vndToMmk } from "./landed-cost";
+import { guardApproval } from "@/server/catalog/approval";
 import { shippingMmk } from "@/server/pricing/formula";
 
 /**
@@ -128,13 +129,17 @@ async function assertBatch(tx: Tx, batchId: string, variantId: string) {
  * Ghi lúc lập phiếu (phiếu nháp chưa có chỗ lưu khối lượng; khối lượng là thuộc tính SP, không phụ thuộc phiếu được ghi sổ).
  */
 async function fillWeights(tx: Tx, weights: { variantId: string; weightGrams: number }[], inDocument: Set<string>, documentId: string, userId: string) {
-  for (const w of weights) {
+  // QT2: khối lượng thuộc dấu vân tay duyệt → SP đã duyệt được điền khối lượng thì cần duyệt lại.
+  const productIds = (await tx.variant.findMany({ where: { id: { in: weights.map((w) => w.variantId) } }, select: { productId: true } })).map((v) => v.productId);
+  await guardApproval(tx, productIds, userId, async () => {
+    for (const w of weights) {
     if (!inDocument.has(w.variantId)) throw new DocumentError("Khối lượng chỉ nhập cho SKU có trong phiếu");
     const res = await tx.variant.updateMany({ where: { id: w.variantId, OR: [{ weightGrams: null }, { weightGrams: 0 }] }, data: { weightGrams: w.weightGrams } });
     if (res.count === 1) {
       await tx.auditLog.create({ data: { userId, action: "variant.weight", entity: "Variant", entityId: w.variantId, data: { weightGrams: w.weightGrams, documentId } } });
     }
-  }
+    }
+  });
 }
 
 export async function createDocument(raw: unknown, userId: string, transaction?: Tx) {

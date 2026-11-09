@@ -4,7 +4,8 @@
  * Quyết định của chủ shop: thiếu ảnh chỉ cảnh báo; SP đang hiển thị vẫn lưu được, chỉ chặn giá ≤ 0 / không còn biến thể.
  */
 
-export const ERROR_CODES = ["NO_ACTIVE_VARIANT", "BAD_LOCATION", "PRICE_ZERO", "NO_WEIGHT"] as const;
+/** NOT_APPROVED (QT2): chưa duyệt / sửa sau khi duyệt — chặn bật hiển thị; SP đang hiển thị không bị tự ẩn. */
+export const ERROR_CODES = ["NO_ACTIVE_VARIANT", "BAD_LOCATION", "PRICE_ZERO", "NO_WEIGHT", "NOT_APPROVED"] as const;
 export const WARNING_CODES = [
   "NO_IMAGE",
   "CONTENT_INCOMPLETE",
@@ -47,6 +48,8 @@ export type ReadinessInput = {
   otherWarehouseSkus: string[];
   /** QT1b: có phiếu nhập ghi sổ sau lần đổi giá gần nhất (combo: của thành phần) → nên tính lại giá. */
   staleSkus?: string[];
+  /** QT2: đã duyệt (bước 4) và chưa sửa nội dung/giá/ảnh sau đó. Bỏ trống = coi như đã duyệt (dữ liệu thuần trong test). */
+  approved?: boolean;
 };
 
 export type Readiness = { errors: Issue[]; warnings: Issue[] };
@@ -67,6 +70,7 @@ export function evaluateReadiness(p: ReadinessInput): Readiness {
     ...withSkus("PRICE_ZERO", active.filter((v) => v.priceMmk <= 0).map((v) => v.sku)),
     // Kho hàng nhập VN: công thức giá cần khối lượng (combo chưa khai báo → cộng thành phần).
     ...(localMode ? [] : withSkus("NO_WEIGHT", noWeight)),
+    ...(p.approved === false ? [{ code: "NOT_APPROVED" as const }] : []),
   ];
   const warnings: Issue[] = [
     ...(p.imageCount === 0 ? [{ code: "NO_IMAGE" as const }] : []),
@@ -100,7 +104,7 @@ export function listStatus(p: { archived: boolean; published: boolean }, r: Read
  * Quy trình 5 bước (docs/ke-hoach-quy-trinh-san-pham.md): 1 Tạo → 2 Nhập kho + giá vốn → 3 Giá bán → 4 Duyệt → 5 Đăng bán.
  * Mỗi lỗi/cảnh báo D2 thuộc về một bước; bước 2 còn cần mọi biến thể (hoặc thành phần combo) có phiếu nhập đã ghi sổ.
  * `current` = bước đầu tiên còn "todo" (cảnh báo không chặn tiến trình); null khi đã đăng bán và không còn việc.
- * Trước khi có nút Duyệt (QT2), bước 4 = "đủ điều kiện mở bán" (không còn lỗi D2).
+ * Bước 4 (QT2): "chờ" khi các bước trước còn lỗi; "cần làm" khi chỉ còn thiếu duyệt; "xong" khi đã duyệt.
  */
 export const PRODUCT_STEPS = ["create", "stock", "price", "review", "publish"] as const;
 export type ProductStep = (typeof PRODUCT_STEPS)[number];
@@ -120,6 +124,7 @@ const STEP_OF: Record<IssueCode, ProductStep> = {
   STOCK_OTHER_WAREHOUSE: "stock",
   PRICE_ZERO: "price",
   PRICE_STALE: "price",
+  NOT_APPROVED: "review",
 };
 
 export function productSteps(
@@ -140,7 +145,9 @@ export function productSteps(
       issues: [...errors, ...warnings],
     };
   });
-  steps.push({ key: "review", state: ready ? "done" : "waiting", issues: [] });
+  const earlier = r.errors.filter((e) => STEP_OF[e.code] !== "review");
+  const review = of("review", r.errors);
+  steps.push({ key: "review", state: earlier.length ? "waiting" : review.length ? "todo" : "done", issues: review });
   steps.push({ key: "publish", state: p.published ? "done" : ready ? "todo" : "waiting", issues: [] });
   return { steps, current: steps.find((s) => s.state === "todo")?.key ?? null };
 }

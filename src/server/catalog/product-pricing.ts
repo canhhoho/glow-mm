@@ -4,6 +4,7 @@ import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { variantCosts, type CostSource } from "@/server/pricing/cost";
 import { CatalogError } from "./products";
+import { guardApproval } from "./approval";
 
 /**
  * Bước 3 "Giá bán" trên trang SP (QT1b, docs/ke-hoach-quy-trinh-san-pham.md):
@@ -38,7 +39,7 @@ export const MANUAL_PRICE_PREFIX = "manual: ";
 
 export async function saveProductPricing(raw: unknown, userId: string) {
   const input = productPricingSchema.parse(raw);
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => guardApproval(tx, [input.productId], userId, async () => {
     await tx.$queryRaw`SELECT "id" FROM "Product" WHERE "id" = ${input.productId} FOR UPDATE`;
     const product = await tx.product.findUnique({
       where: { id: input.productId },
@@ -92,7 +93,7 @@ export async function saveProductPricing(raw: unknown, userId: string) {
       });
     }
     return { changed: changes.length + (profitChanged ? 1 : 0) };
-  });
+  }));
 }
 
 export type PriceSource =

@@ -4,7 +4,8 @@ import type { Prisma } from "@/generated/prisma/client";
 import { productName } from "@/server/inventory/queries";
 
 /** `ready` / `incomplete` (D2): SP đang ẩn, lọc thêm theo kiểm tra mở bán ở trang danh sách. */
-export const PRODUCT_STATUSES = ["active", "published", "hidden", "ready", "incomplete", "archived"] as const;
+/** toApprove / reapprove (QT2): chưa từng duyệt (trang danh sách lọc thêm: chỉ còn thiếu duyệt) / sửa sau khi duyệt. */
+export const PRODUCT_STATUSES = ["active", "published", "hidden", "toApprove", "reapprove", "ready", "incomplete", "archived"] as const;
 export type ProductStatusFilter = (typeof PRODUCT_STATUSES)[number];
 
 /**
@@ -31,6 +32,8 @@ export async function listProductsAdmin(
       archivedAt: status === "archived" ? { not: null } : null,
       ...(status === "published" && { published: true }),
       ...((status === "hidden" || status === "ready" || status === "incomplete") && { published: false }),
+      ...(status === "toApprove" && { approvedAt: null, approvedHash: null }),
+      ...(status === "reapprove" && { approvedAt: null, approvedHash: { not: null } }),
     },
     orderBy: { updatedAt: "desc" },
     include: {

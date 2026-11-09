@@ -125,7 +125,10 @@
     "today": "Hôm nay",
     "viewReports": "Xem báo cáo",
     "unknownExpiry": "Lô chưa biết hạn sử dụng",
-    "longShipping": "Đang giao từ {days} ngày"
+    "longShipping": "Đang giao từ {days} ngày",
+    "catalog": "Sản phẩm",
+    "toApprove": "SP chờ duyệt",
+    "reapprove": "SP cần duyệt lại"
   },
   "Role": {
     "ADMIN": "Quản trị viên",
@@ -421,7 +424,9 @@
       "hidden": "Đang ẩn",
       "archived": "Ngừng kinh doanh",
       "ready": "Có thể mở bán (đang ẩn)",
-      "incomplete": "Cần hoàn thiện (đang ẩn)"
+      "incomplete": "Cần hoàn thiện (đang ẩn)",
+      "toApprove": "Chờ duyệt",
+      "reapprove": "Cần duyệt lại"
     },
     "clearFilters": "Bỏ lọc",
     "count": "{count} sản phẩm",
@@ -525,13 +530,14 @@
         "COST_ESTIMATED": "Tồn bán đang dùng giá vốn tạm",
         "OUT_OF_STOCK": "Hết hàng khả dụng (trang SP vẫn hiện, không mua được)",
         "STOCK_OTHER_WAREHOUSE": "Có tồn ở kho bán khác — chuyển kho để bán",
-        "PRICE_STALE": "Có phiếu nhập mới sau lần đặt giá gần nhất — nên tính lại giá"
+        "PRICE_STALE": "Có phiếu nhập mới sau lần đặt giá gần nhất — nên tính lại giá",
+        "NOT_APPROVED": "Chưa duyệt (bước 4)"
       },
       "blockedSave": "Chưa bật hiển thị / lưu được:",
       "blockedBulk": "{count} sản phẩm chưa bật được vì còn lỗi:",
       "blockedHint": "Còn {count} lỗi phải sửa trước khi bật hiển thị trên web.",
       "publishedWithErrors": "Đang hiển thị nhưng còn {count} lỗi — nên sửa sớm (hệ thống không tự ẩn).",
-      "readyHint": "Đủ điều kiện — tick «Hiển thị trên web» rồi Lưu để mở bán.",
+      "readyHint": "Đủ điều kiện — bật hiển thị ở bước 5 «Đăng bán».",
       "publishedOk": "Đang hiển thị trên web.",
       "allGood": "Không còn lỗi hay cảnh báo",
       "steps": "Các bước",
@@ -592,7 +598,6 @@
       "receive": "Nhập hàng",
       "viewStock": "Xem tồn kho",
       "calcPrice": "Tính giá",
-      "reviewInterim": "Hiện tại bước này do hệ thống kiểm tra đủ điều kiện mở bán; nút Duyệt có lưu người duyệt sẽ được thêm sau.",
       "published": "Đang hiển thị trên web.",
       "hidden": "Đang ẩn khỏi web.",
       "publishOn": "Bật hiển thị trên web",
@@ -620,6 +625,15 @@
       "reason": "Lý do sửa giá",
       "save": "Lưu giá",
       "saved": "Đã lưu giá"
+    },
+    "approval": {
+      "approve": "Duyệt",
+      "confirm": "Duyệt sản phẩm này? Sửa nội dung, giá hoặc ảnh sau đó sẽ phải duyệt lại.",
+      "approvedBy": "Đã duyệt bởi {name} · {at}",
+      "approvedSystem": "Đã duyệt (hệ thống, khi chuyển đổi)",
+      "stale": "Đã sửa sau khi duyệt — cần duyệt lại",
+      "pending": "Chưa duyệt",
+      "help": "Duyệt khi các bước 1–3 không còn lỗi. Sửa tên, mô tả, danh mục, thương hiệu, loại, giá, khối lượng hoặc ảnh sau khi duyệt sẽ phải duyệt lại."
     }
   },
   "Orders": {

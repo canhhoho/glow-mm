@@ -5,7 +5,7 @@ import { saveProduct, setProductsPublished } from "@/server/catalog/products";
 import { createDocument } from "@/server/inventory/documents";
 import { listProductsAdmin } from "@/server/catalog/admin-queries";
 import { deleteProducts, restoreProducts } from "@/server/catalog/product-delete";
-import { makeFixture } from "./fixtures";
+import { makeFixture, markApproved } from "./fixtures";
 
 const base = (f: Awaited<ReturnType<typeof makeFixture>>, slug: string) => ({
   slug,
@@ -54,9 +54,11 @@ describe("Sản phẩm", () => {
     const f = await makeFixture();
     const a = await saveProduct({ ...base(f, `ba-${f.tag.toLowerCase()}`), variants: [{ sku: `BA-${f.tag}`, label: "x", priceMmk: 1, weightGrams: 100 }] }, f.userId);
     const b = await saveProduct(
-      { ...base(f, `bb-${f.tag.toLowerCase()}`), published: true, variants: [{ sku: `BB-${f.tag}`, label: "x", priceMmk: 1, weightGrams: 100 }] },
+      { ...base(f, `bb-${f.tag.toLowerCase()}`), variants: [{ sku: `BB-${f.tag}`, label: "x", priceMmk: 1, weightGrams: 100 }] },
       f.userId,
     );
+    await markApproved(a.id);
+    await markApproved(b.id, { published: true });
 
     expect(await setProductsPublished({ ids: [a.id, b.id, a.id], published: true }, f.userId)).toMatchObject({ changed: 1, blocked: [] });
     const rows = await prisma.product.findMany({ where: { id: { in: [a.id, b.id] } }, select: { published: true } });
@@ -72,11 +74,11 @@ describe("Sản phẩm", () => {
   it("xoá: SP chưa có lịch sử xoá hẳn; SP có lô → ngừng kinh doanh, không bật lại được, khôi phục được", async () => {
     const f = await makeFixture();
     const clean = await saveProduct(
-      { ...base(f, `del-${f.tag.toLowerCase()}`), published: true, variants: [{ sku: `DEL-${f.tag}`, label: "x", priceMmk: 1, weightGrams: 100 }] },
+      { ...base(f, `del-${f.tag.toLowerCase()}`), variants: [{ sku: `DEL-${f.tag}`, label: "x", priceMmk: 1, weightGrams: 100 }] },
       f.userId,
     );
     await saveProduct(
-      { ...base(f, `del-${f.tag.toLowerCase()}`), id: clean.id, published: true, variants: [{ sku: `DEL-${f.tag}`, label: "x", priceMmk: 2, weightGrams: 100 }] },
+      { ...base(f, `del-${f.tag.toLowerCase()}`), id: clean.id, variants: [{ sku: `DEL-${f.tag}`, label: "x", priceMmk: 2, weightGrams: 100 }] },
       f.userId,
     ); // có lịch sử giá — vẫn xoá được
     await createDocument(
@@ -105,9 +107,10 @@ describe("Sản phẩm", () => {
     const f = await makeFixture();
     const child = await prisma.category.create({ data: { slug: `it-${f.tag.toLowerCase()}-child`, parentId: f.categoryId } });
     const inChild = await saveProduct(
-      { ...base(f, `fc-${f.tag.toLowerCase()}`), categoryId: child.id, published: true, variants: [{ sku: `FC-${f.tag}`, label: "x", priceMmk: 1, weightGrams: 100 }] },
+      { ...base(f, `fc-${f.tag.toLowerCase()}`), categoryId: child.id, variants: [{ sku: `FC-${f.tag}`, label: "x", priceMmk: 1, weightGrams: 100 }] },
       f.userId,
     );
+    await markApproved(inChild.id, { published: true });
     const byCat = (await listProductsAdmin({ categoryId: f.categoryId })).map((p) => p.id);
     expect(byCat.sort()).toEqual([f.productId, inChild.id].sort());
     expect((await listProductsAdmin({ categoryId: child.id })).map((p) => p.id)).toEqual([inChild.id]);

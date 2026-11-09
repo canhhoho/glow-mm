@@ -5,6 +5,9 @@ test("dashboard (admin) + báo cáo có số liệu từ đơn mẫu seed", asyn
   await login(page, "admin@glow.local");
   await expect(page.getByRole("heading", { name: "Việc cần làm" })).toBeVisible();
   await expect(page.getByTestId("todo-cod")).toBeVisible();
+  // QT2: ô "SP chờ duyệt" mở danh sách lọc "Chờ duyệt".
+  await expect(page.getByTestId("todo-approve")).toBeVisible();
+  await expect(page.getByTestId("todo-approve")).toHaveAttribute("href", "/admin/products?status=toApprove");
   await expect(page.getByTestId("alert-low")).not.toContainText(/^0$/);
   await expect(page.getByTestId("month-revenue")).toBeVisible();
   await page.screenshot({ path: "test-results/screens/dashboard.png", fullPage: true });

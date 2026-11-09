@@ -18,6 +18,7 @@ import { deleteProducts, moveProductsToWarehouse, restoreProducts } from "./prod
 import { ReadinessError } from "./readiness";
 import { createProduct } from "./product-create";
 import { saveProductPricing } from "./product-pricing";
+import { approveProduct } from "./approval";
 import type { Issue } from "./readiness-rules";
 
 /** D2: lỗi mở bán → câu báo theo ngôn ngữ admin, kèm SKU liên quan. */
@@ -372,5 +373,20 @@ export async function saveProductPricingAction(_prev: ActionState, formData: For
   updateTag(CATALOG_TAG); // giá hiển thị cho khách
   revalidatePath(`/admin/products/${productId}`);
   revalidatePath("/admin/products");
+  return { ok: "1" };
+}
+
+/** Bước 4 (QT2): duyệt SP — chỉ khi checklist mở bán không còn lỗi nào khác; lưu người + thời điểm + dấu vân tay. */
+export async function approveProductAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  let id = "";
+  try {
+    const user = await requirePermission("catalog:approve");
+    id = (await approveProduct({ id: formData.get("id") }, user.id)).id;
+  } catch (e) {
+    return { error: message(e) };
+  }
+  revalidatePath(`/admin/products/${id}`);
+  revalidatePath("/admin/products");
+  revalidatePath("/admin");
   return { ok: "1" };
 }

@@ -42,6 +42,8 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
   const products = listed.filter((p) => {
     const errors = readiness.get(p.id)?.errors.length ?? 0;
     if (stepFilter && currentStep.get(p.id) !== stepFilter) return false;
+    // QT2 "Chờ duyệt": chỉ SP đã xong các bước trước (lỗi duy nhất còn lại là chưa duyệt).
+    if (status === "toApprove") return readiness.get(p.id)?.errors.every((e) => e.code === "NOT_APPROVED") ?? false;
     return status === "ready" ? errors === 0 : status === "incomplete" ? errors > 0 : true;
   });
   const archivedView = status === "archived";

@@ -14,6 +14,8 @@ export const AFFILIATE_ROLE = "AFFILIATE";
 export const PERMISSIONS = {
   "dashboard:view": ["ADMIN", "WAREHOUSE_MANAGER", "ORDER_STAFF"],
   "catalog:manage": ["ADMIN"],
+  /** QT2: bước 4 — duyệt SP trước khi đăng bán (có lưu vết). */
+  "catalog:approve": ["ADMIN"],
   /** Nội dung trang chủ: banner, bộ sưu tập (P6). */
   "content:manage": ["ADMIN"],
   "pricing:manage": ["ADMIN"],

@@ -3,8 +3,10 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
+import { can } from "@/server/auth/roles";
+import { approvalState } from "@/server/catalog/approval-rules";
 import { getProductForEdit, getProductImages, productFormOptions } from "@/server/catalog/admin-queries";
-import { deleteProductImageAction, reorderProductImageAction, saveProductPricingAction, setProductPublishedAction, updateProductImageAltAction } from "@/server/catalog/actions";
+import { approveProductAction, deleteProductImageAction, reorderProductImageAction, saveProductPricingAction, setProductPublishedAction, updateProductImageAltAction } from "@/server/catalog/actions";
 import { loadProductPricing, type PriceSource } from "@/server/catalog/product-pricing";
 import { loadReadiness } from "@/server/catalog/readiness";
 import { productSteps, type Issue, type ProductStep } from "@/server/catalog/readiness-rules";
@@ -14,7 +16,7 @@ import { ProductForm } from "@/components/admin/product-form";
 import { ProductImageUpload } from "@/components/admin/product-images";
 import { ProductStepsBar, StepTitle } from "@/components/admin/product-steps";
 import { Badge, DataTable, fieldClass, fieldLabelClass, LinkButton, Notice, Page, PageHeader, Section, Td } from "@/components/admin/ui";
-import { fmtDay, fmtInt } from "@/lib/format";
+import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
 import { localizedPath } from "@/lib/site";
 import { prisma } from "@/lib/db";
 
@@ -23,7 +25,7 @@ import { prisma } from "@/lib/db";
  * 1 Thông tin & nội dung (ảnh + form sửa) · 2 Nhập kho + giá vốn · 3 Giá bán · 4 Duyệt (hiện = kiểm tra mở bán D2) · 5 Đăng bán.
  */
 export default async function EditProductPage({ params, searchParams }: PageProps<"/admin/products/[id]">) {
-  await requirePagePermission("catalog:manage");
+  const user = await requirePagePermission("catalog:manage");
   const [{ id }, { saved, created }] = await Promise.all([params, searchParams]);
   const [t, td, product, options, images] = await Promise.all([
     getTranslations("Products"),
@@ -33,6 +35,10 @@ export default async function EditProductPage({ params, searchParams }: PageProp
     getProductImages(id),
   ]);
   if (!product) notFound();
+  // QT2: trạng thái duyệt (bước 4) + người duyệt.
+  const approval = await prisma.product.findUniqueOrThrow({ where: { id: product.id }, select: { approvedAt: true, approvedById: true, approvedHash: true } });
+  const approver = approval.approvedById ? await prisma.user.findUnique({ where: { id: approval.approvedById }, select: { name: true } }) : null;
+  const approvalNow = approvalState(approval);
   // D2: cùng bộ kiểm tra với lúc lưu / bật hàng loạt / danh sách.
   const readiness = (await loadReadiness(prisma, [product.id])).get(product.id) ?? { errors: [], warnings: [], notReceivedSkus: [] };
   const pricingMode = options.warehouses.find((w) => w.id === product.stockLocationId)?.pricingMode ?? null;
@@ -243,8 +249,22 @@ export default async function EditProductPage({ params, searchParams }: PageProp
         </details>
       </Section>
 
-      {/* ── Bước 4: duyệt (hiện = kiểm tra mở bán D2; nút Duyệt có lưu vết ở QT2) ── */}
+      {/* ── Bước 4: duyệt (QT2) — checklist mở bán + nút Duyệt có lưu vết; sửa nội dung/giá/ảnh sau khi duyệt → cần duyệt lại ── */}
       <Section id="step-review" className="scroll-mt-20" title={<StepTitle index={4} step={step("review")} t={t} />} testId="launch-check">
+        <div className="flex flex-wrap items-center gap-2 text-sm" data-testid="approval-status">
+          {approvalNow === "APPROVED" ? (
+            <Badge tone="success">
+              ✓ {approver ? t("approval.approvedBy", { name: approver.name, at: fmtDateTime(approval.approvedAt) }) : t("approval.approvedSystem")}
+            </Badge>
+          ) : approvalNow === "STALE" ? (
+            <Badge tone="warning">{t("approval.stale")}</Badge>
+          ) : (
+            <Badge tone="neutral">{t("approval.pending")}</Badge>
+          )}
+          {approvalNow !== "APPROVED" && step("review").state === "todo" && can(user.role, "catalog:approve") && (
+            <ActionButton action={approveProductAction} fields={{ id: product.id }} label={t("approval.approve")} confirm={t("approval.confirm")} iconOnly={false} />
+          )}
+        </div>
         <p className="text-sm">
           {readiness.errors.length > 0
             ? t(product.published ? "readiness.publishedWithErrors" : "readiness.blockedHint", { count: readiness.errors.length })
@@ -259,7 +279,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           </details>
         )}
         {errors.length + warnings.length === 0 && <Badge tone="success">✓ {t("readiness.allGood")}</Badge>}
-        <p className="text-xs text-muted-foreground">{t("block.reviewInterim")}</p>
+        <p className="text-xs text-muted-foreground">{t("approval.help")}</p>
       </Section>
 
       {/* ── Bước 5: đăng bán ── */}
