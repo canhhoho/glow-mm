@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Download } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { fieldClass } from "@/components/admin/ui";
+import { DataTable, fieldClass, Td } from "@/components/admin/ui";
+import { cn } from "@/lib/utils";
 import type { VtpAddress, VtpPreview } from "@/server/orders/vtp-data";
 
 export function VtpExportForm({ orders, addresses, services, pickupTimes }: { orders: VtpPreview[]; addresses: VtpAddress[]; services: string[]; pickupTimes: string[] }) {
@@ -37,25 +38,26 @@ export function VtpExportForm({ orders, addresses, services, pickupTimes }: { or
         <label className="space-y-1 text-sm"><span>{t("pickup")}</span><select name="pickupTime" className={fieldClass} defaultValue=""><option value="">{t("noPickup")}</option>{pickupTimes.map((p) => <option key={p}>{p}</option>)}</select></label>
       </div>
       <p className="text-sm text-muted-foreground">{t("reviewHint")}</p>
-      <div className="overflow-x-auto rounded-lg border">
-        <table className="w-full min-w-[1050px] text-sm">
-          <thead className="bg-muted text-left"><tr>
-            <th className="p-3"><input aria-label={t("selectAll")} type="checkbox" checked={selected.size === orders.length} onChange={(e) => setSelected(e.target.checked ? new Set(orders.map((o) => o.id)) : new Set())} /></th>
-            {["order", "destination", "weight", "cod", "note"].map((key) => <th key={key} className="p-3">{t(key)}</th>)}
-          </tr></thead>
-          <tbody>{orders.map((order) => {
+      <DataTable
+        tableClassName="min-w-[1050px]"
+        numeric={[4]}
+        head={[
+          <input key="all" aria-label={t("selectAll")} type="checkbox" checked={selected.size === orders.length} onChange={(e) => setSelected(e.target.checked ? new Set(orders.map((o) => o.id)) : new Set())} />,
+          ...["order", "destination", "weight", "cod", "note"].map((key) => t(key)),
+        ]}
+      >
+          {orders.map((order) => {
             const enabled = selected.has(order.id);
-            return <tr key={order.id} className="border-t align-top">
-              <td className="p-3"><input aria-label={`${t("select")} ${order.code}`} type="checkbox" checked={enabled} onChange={() => setSelected((current) => { const next = new Set(current); if (next.has(order.id)) next.delete(order.id); else next.add(order.id); return next; })} /></td>
-              <td className="w-60 space-y-1 p-3"><a className="font-mono text-primary underline" href={`/admin/orders/${order.id}`}>{order.code}</a><input name={`name:${order.id}`} aria-label={`${t("recipient")} ${order.code}`} defaultValue={order.recipientName} required={enabled} disabled={!enabled || busy} className={fieldClass} /><p className="font-mono text-xs">{order.phone}</p><p className="max-w-60 text-xs text-muted-foreground">{order.goods}</p></td>
-              <td className="max-w-sm space-y-2 p-3"><p>{order.addressText}</p>{order.address ? <><p className="text-xs text-muted-foreground">{order.address.label}</p><input type="hidden" name={`address:${order.id}`} value={order.address.key} /></> : <><p className="text-xs text-warning">{t("addressMissing")} {order.zoneName}</p><select className={fieldClass} name={`address:${order.id}`} required={enabled} disabled={!enabled || busy} defaultValue=""><option value="" disabled>{t("chooseAddress")}</option>{addresses.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}</select></>}</td>
-              <td className="w-40 p-3"><input className={fieldClass} name={`weight:${order.id}`} aria-label={`${t("weight")} ${order.code}`} type="number" min={1} max={2147483647} step={1} defaultValue={order.weightGrams ?? ""} required={enabled} disabled={!enabled || busy} />{order.missingWeights.length > 0 && <p className="mt-1 text-xs text-warning">{t("weightMissing")}: {order.missingWeights.join(", ")}</p>}</td>
-              <td className="p-3 text-right font-mono whitespace-nowrap">{order.codMmk.toLocaleString("en-US")}<p className="text-xs text-muted-foreground">{order.chargePayer === "Sender" ? t("senderPays") : t("receiverPays")}</p></td>
-              <td className="w-64 p-3"><textarea className={fieldClass} rows={3} name={`note:${order.id}`} aria-label={`${t("note")} ${order.code}`} defaultValue={order.note} maxLength={150} disabled={!enabled || busy} /><p className="text-xs text-muted-foreground">{t("noteLimit")}</p></td>
+            return <tr key={order.id}>
+              <Td><input aria-label={`${t("select")} ${order.code}`} type="checkbox" checked={enabled} onChange={() => setSelected((current) => { const next = new Set(current); if (next.has(order.id)) next.delete(order.id); else next.add(order.id); return next; })} /></Td>
+              <Td className="w-60"><div className="space-y-1"><a className="font-mono text-primary underline" href={`/admin/orders/${order.id}`}>{order.code}</a><input name={`name:${order.id}`} aria-label={`${t("recipient")} ${order.code}`} defaultValue={order.recipientName} required={enabled} disabled={!enabled || busy} className={fieldClass} /><p className="font-mono text-xs">{order.phone}</p><p className="max-w-60 text-xs text-muted-foreground">{order.goods}</p></div></Td>
+              <Td className="max-w-sm"><div className="space-y-2"><p>{order.addressText}</p>{order.address ? <><p className="text-xs text-muted-foreground">{order.address.label}</p><input type="hidden" name={`address:${order.id}`} value={order.address.key} /></> : <><p className="text-xs text-warning">{t("addressMissing")} {order.zoneName}</p><select className={fieldClass} name={`address:${order.id}`} required={enabled} disabled={!enabled || busy} defaultValue=""><option value="" disabled>{t("chooseAddress")}</option>{addresses.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}</select></>}</div></Td>
+              <Td className="w-40"><input className={fieldClass} name={`weight:${order.id}`} aria-label={`${t("weight")} ${order.code}`} type="number" min={1} max={2147483647} step={1} defaultValue={order.weightGrams ?? ""} required={enabled} disabled={!enabled || busy} />{order.missingWeights.length > 0 && <p className="mt-1 text-xs text-warning">{t("weightMissing")}: {order.missingWeights.join(", ")}</p>}</Td>
+              <Td className="text-right font-mono whitespace-nowrap">{order.codMmk.toLocaleString("en-US")}<p className="text-xs text-muted-foreground">{order.chargePayer === "Sender" ? t("senderPays") : t("receiverPays")}</p></Td>
+              <Td className="w-64"><textarea className={cn(fieldClass, "h-auto py-2")} rows={3} name={`note:${order.id}`} aria-label={`${t("note")} ${order.code}`} defaultValue={order.note} maxLength={150} disabled={!enabled || busy} /><p className="text-xs text-muted-foreground">{t("noteLimit")}</p></Td>
             </tr>;
-          })}</tbody>
-        </table>
-      </div>
+          })}
+      </DataTable>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       <div className="flex flex-wrap items-center gap-3"><Button type="submit" size="lg" disabled={busy || selected.size === 0}><Download aria-hidden />{busy ? t("exporting") : t("download", { count: selected.size })}</Button><span className="text-xs text-muted-foreground">{t("noTransition")}</span></div>
     </form>

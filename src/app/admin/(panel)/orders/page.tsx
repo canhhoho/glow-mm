@@ -10,6 +10,7 @@ import { BULK_TRANSITIONS } from "@/server/orders/bulk";
 import { BulkOrderBar } from "@/components/admin/bulk-order-bar";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/admin/order-badges";
 import { Badge, DataTable, fieldClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Td } from "@/components/admin/ui";
+import { Pagination } from "@/components/ui/pagination";
 import { fmtDate, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -148,7 +149,15 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
           </tr>
         ))}
       </DataTable>
-      <nav aria-label={t("pagination")} className="flex flex-wrap items-center justify-center gap-3">{result.page > 1 && <LinkButton href={pageHref(result.page-1)}>{t("previousPage")}</LinkButton>}<span className="text-sm">{t("pageCount", { page:result.page, pages:result.pages, total:result.total })}</span>{result.page < result.pages && <LinkButton href={pageHref(result.page+1)}>{t("nextPage")}</LinkButton>}</nav>
+      <Pagination
+        label={t("pagination")}
+        page={result.page}
+        pages={result.pages}
+        hrefFor={pageHref}
+        prevLabel={t("previousPage")}
+        nextLabel={t("nextPage")}
+        status={t("pageCount", { page: result.page, pages: result.pages, total: result.total })}
+      />
       {filtered && orders.length === 0 && (
         <LinkButton href="/admin/orders">{t("clearFilters")}</LinkButton>
       )}

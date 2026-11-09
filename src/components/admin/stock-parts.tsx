@@ -7,6 +7,7 @@ import type { StockFilter } from "@/server/inventory/overview";
 import type { Thresholds } from "@/server/inventory/stock-summary";
 import { Badge } from "@/components/admin/ui";
 import { buttonVariants } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
 import { fmtDay } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -71,6 +72,7 @@ export function ExpiryTag({ date, status, now, t, th }: { date: Date | null; sta
   );
 }
 
+/** Phân trang trang Kho — dùng `Pagination` chung; trạng thái = "từ–đến / tổng". */
 export function Pager({
   page,
   pageCount,
@@ -89,29 +91,16 @@ export function Pager({
   if (total === 0) return null;
   const from = Math.min(total, (page - 1) * pageSize + 1);
   const to = Math.min(total, page * pageSize);
-  const btn = "inline-flex h-8 items-center rounded-md border bg-background px-2.5";
   return (
-    <nav aria-label={t("pagination")} className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-      <span data-testid="page-info">{t("pageInfo", { from, to, total })}</span>
-      <div className="flex gap-1">
-        {page > 1 ? (
-          <Link href={href(page - 1)} className={cn(btn, "hover:bg-muted")}>
-            {t("prev")}
-          </Link>
-        ) : (
-          <span className={cn(btn, "opacity-50")}>{t("prev")}</span>
-        )}
-        <span className={cn(btn, "border-primary text-primary")} aria-current="page">
-          {page} / {pageCount}
-        </span>
-        {page < pageCount ? (
-          <Link href={href(page + 1)} className={cn(btn, "hover:bg-muted")}>
-            {t("next")}
-          </Link>
-        ) : (
-          <span className={cn(btn, "opacity-50")}>{t("next")}</span>
-        )}
-      </div>
-    </nav>
+    <Pagination
+      label={t("pagination")}
+      page={page}
+      pages={pageCount}
+      hrefFor={href}
+      prevLabel={t("prev")}
+      nextLabel={t("next")}
+      status={t("pageInfo", { from, to, total })}
+      statusTestId="page-info"
+    />
   );
 }

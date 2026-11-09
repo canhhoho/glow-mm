@@ -7,7 +7,7 @@ import Link from "next/link";
 import { catalogImportAction } from "@/server/catalog/actions";
 import { Button } from "@/components/ui/button";
 import { FileField } from "@/components/admin/file-field";
-import { Badge, Notice } from "@/components/admin/ui";
+import { Badge, DataTable, Notice, Td } from "@/components/admin/ui";
 import { fmtInt } from "@/lib/format";
 
 const ACTION_TONE = { create: "brand", update: "warning", same: "neutral" } as const;
@@ -57,37 +57,30 @@ export function CatalogImport() {
               <ul className="mt-1 list-disc space-y-1 pl-5">{preview.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
             </div>
           )}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr>{["colLine", "colAction", "colProduct", "colSku", "colPrice", "colStock", "colCost"].map((k) => <th key={k} className="border-b p-2 whitespace-nowrap">{t(k)}</th>)}</tr>
-              </thead>
-              <tbody>
-                {preview.rows.map((r, i) => (
-                  <tr key={i} className="border-b align-top">
-                    <td className="p-2 tabular-nums">{r.line}</td>
-                    <td className="p-2"><Badge tone={ACTION_TONE[r.action]}>{t(`action.${r.action}`)}</Badge></td>
-                    <td className="p-2">{r.name}<div className="text-xs text-muted-foreground">{r.label}</div></td>
-                    <td className="p-2 font-mono text-xs">{r.sku}</td>
-                    <td className="p-2 whitespace-nowrap tabular-nums">
-                      {r.oldPrice != null && r.oldPrice !== r.price && <span className="text-muted-foreground line-through">{fmtInt(r.oldPrice)}</span>} {fmtInt(r.price)}
-                    </td>
-                    <td className="p-2">
-                      {r.stock && (
-                        <>
-                          {fmtInt(r.stock.qty)} · {r.stock.lotNo} · {r.stock.location}
-                          <div className={`text-xs ${r.stock.expiryStatus === "UNKNOWN" ? "text-destructive" : "text-muted-foreground"}`}>
-                            {r.stock.expiryDate ?? t(r.stock.expiryStatus === "NONE" ? "expiryNone" : "expiryUnknown")}
-                          </div>
-                        </>
-                      )}
-                    </td>
-                    <td className="p-2 tabular-nums">{r.stock ? fmtInt(r.stock.costMmk) : ""}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable head={["colLine", "colAction", "colProduct", "colSku", "colPrice", "colStock", "colCost"].map((k) => t(k))}>
+            {preview.rows.map((r, i) => (
+              <tr key={i}>
+                <Td className="tabular-nums">{r.line}</Td>
+                <Td><Badge tone={ACTION_TONE[r.action]}>{t(`action.${r.action}`)}</Badge></Td>
+                <Td>{r.name}<div className="text-xs text-muted-foreground">{r.label}</div></Td>
+                <Td className="font-mono text-xs">{r.sku}</Td>
+                <Td className="whitespace-nowrap tabular-nums">
+                  {r.oldPrice != null && r.oldPrice !== r.price && <span className="text-muted-foreground line-through">{fmtInt(r.oldPrice)}</span>} {fmtInt(r.price)}
+                </Td>
+                <Td>
+                  {r.stock && (
+                    <>
+                      {fmtInt(r.stock.qty)} · {r.stock.lotNo} · {r.stock.location}
+                      <div className={`text-xs ${r.stock.expiryStatus === "UNKNOWN" ? "text-destructive" : "text-muted-foreground"}`}>
+                        {r.stock.expiryDate ?? t(r.stock.expiryStatus === "NONE" ? "expiryNone" : "expiryUnknown")}
+                      </div>
+                    </>
+                  )}
+                </Td>
+                <Td className="tabular-nums">{r.stock ? fmtInt(r.stock.costMmk) : ""}</Td>
+              </tr>
+            ))}
+          </DataTable>
           <p className="text-sm text-muted-foreground">{t("confirmHelp")}</p>
           {preview.errors.length === 0 && (
             <form action={action}>

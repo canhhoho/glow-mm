@@ -235,43 +235,35 @@ const dash = <Td className="text-right text-muted-foreground">—</Td>;
 
 function LotsTable({ lots, t, th, now }: { lots: BalanceRow[]; t: T; th: Thresholds; now: Date }) {
   return (
-    <table className="w-full overflow-hidden rounded-lg border bg-background text-xs">
-      <thead className="bg-muted/50 text-left text-muted-foreground">
-        <tr>
-          <th className="px-3 py-1.5 font-medium">{t("colLot")}</th>
-          <th className="px-3 py-1.5 font-medium">{t("colExpiry")}</th>
-          <th className="px-3 py-1.5 font-medium">{t("colLocation")}</th>
-          <th className="px-3 py-1.5 font-medium">{t("colType")}</th>
-          <th className="px-3 py-1.5 text-right font-medium">{t("colQty")}</th>
-          <th className="px-3 py-1.5 text-right font-medium">{t("colUnitCost")}</th>
-          <th className="px-3 py-1.5" />
+    <DataTable
+      dense
+      className="bg-background"
+      numeric={[4, 5]}
+      head={[t("colLot"), t("colExpiry"), t("colLocation"), t("colType"), t("colQty"), t("colUnitCost"), ""]}
+    >
+      {lots.map((l) => (
+        <tr key={`${l.batchId}|${l.locationId}|${l.stockType}`} data-testid="lot-row">
+          <Td className="font-mono">{l.lotNo}</Td>
+          <Td>
+            <ExpiryTag date={l.expiryDate} status={l.expiryStatus} now={now} t={t} th={th} />
+          </Td>
+          <Td>{l.locationName ?? l.locationCode}</Td>
+          <Td>
+            <Badge tone={l.stockType === "TESTER" ? "brand" : "neutral"}>{t(l.stockType)}</Badge>
+          </Td>
+          <Td className="text-right tabular-nums">{fmtInt(l.qty)}</Td>
+          <Td className={cn("text-right tabular-nums", l.landedCostMmk == null && "text-muted-foreground")}>
+            {l.landedCostMmk == null ? t("unallocated") : fmtInt(l.landedCostMmk)}
+            <div className="text-[11px] text-muted-foreground">{t(`cost${l.costStatus ?? (l.landedCostMmk == null ? "MISSING" : "ACTUAL")}`)}</div>
+          </Td>
+          <Td className="text-right">
+            <Link href={`/admin/inventory/batches/${l.batchId}`} className="text-primary underline">
+              {t("history")}
+            </Link>
+          </Td>
         </tr>
-      </thead>
-      <tbody className="divide-y">
-        {lots.map((l) => (
-          <tr key={`${l.batchId}|${l.locationId}|${l.stockType}`} data-testid="lot-row">
-            <td className="px-3 py-1.5 font-mono">{l.lotNo}</td>
-            <td className="px-3 py-1.5">
-              <ExpiryTag date={l.expiryDate} status={l.expiryStatus} now={now} t={t} th={th} />
-            </td>
-            <td className="px-3 py-1.5">{l.locationName ?? l.locationCode}</td>
-            <td className="px-3 py-1.5">
-              <Badge tone={l.stockType === "TESTER" ? "brand" : "neutral"}>{t(l.stockType)}</Badge>
-            </td>
-            <td className="px-3 py-1.5 text-right tabular-nums">{fmtInt(l.qty)}</td>
-            <td className={cn("px-3 py-1.5 text-right tabular-nums", l.landedCostMmk == null && "text-muted-foreground")}>
-              {l.landedCostMmk == null ? t("unallocated") : fmtInt(l.landedCostMmk)}
-              <div className="text-[11px] text-muted-foreground">{t(`cost${l.costStatus ?? (l.landedCostMmk == null ? "MISSING" : "ACTUAL")}`)}</div>
-            </td>
-            <td className="px-3 py-1.5 text-right">
-              <Link href={`/admin/inventory/batches/${l.batchId}`} className="text-primary underline">
-                {t("history")}
-              </Link>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+      ))}
+    </DataTable>
   );
 }
 

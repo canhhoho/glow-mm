@@ -200,17 +200,26 @@ export function DataTable({
   empty,
   numeric = [],
   stack = false,
+  dense = false,
+  className,
+  tableClassName,
 }: {
   head: React.ReactNode[];
   children: React.ReactNode;
   empty?: string;
   numeric?: number[];
   stack?: boolean;
+  /** Bảng phụ (vd lô trong dòng mở rộng): chữ xs, ô thấp hơn (py-1.5). */
+  dense?: boolean;
+  /** Lớp thêm cho khung ngoài (vd nền `bg-background` khi lồng trong dòng khác). */
+  className?: string;
+  /** Lớp thêm cho `<table>` (vd `min-w-[1050px]` để cuộn ngang thay vì bóp cột). */
+  tableClassName?: string;
 }) {
   const hasRows = Array.isArray(children) ? children.length > 0 : !!children;
   return (
-    <div className="overflow-x-auto rounded-lg border">
-      <table className={cn("w-full text-sm", stack && STACK)}>
+    <div className={cn("overflow-x-auto rounded-lg border", className)}>
+      <table className={cn("w-full text-sm", stack && STACK, dense && DENSE, tableClassName)}>
         <thead className={cn("bg-muted/50 text-left text-xs text-muted-foreground", stack && "max-md:hidden")}>
           <tr>
             {head.map((h, i) => (
@@ -235,6 +244,9 @@ export function DataTable({
     </div>
   );
 }
+
+/** `DataTable dense`: chữ nhỏ + ô thấp; selector con thắng `py-2` của `Td`. */
+const DENSE = "text-xs [&_td]:py-1.5 [&_th]:py-1.5";
 
 /** Lớp cho `DataTable stack`: dòng → thẻ, ô → hàng flex có nhãn `data-label` bên trái (chỉ dưới md). */
 const STACK = [
