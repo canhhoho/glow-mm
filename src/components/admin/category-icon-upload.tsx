@@ -33,7 +33,7 @@ export function CategoryIconUpload({ categoryId }: { categoryId: string }) {
         </p>
       )}
       {state?.ok && !state.error && (
-        <p role="status" className="text-sm text-emerald-700">
+        <p role="status" className="text-sm text-success">
           {t("iconUploaded")}
         </p>
       )}

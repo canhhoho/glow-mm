@@ -53,7 +53,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
   return (
     <Page>
       <PageHeader title={product.en.name || product.slug} back={{ href: "/admin/products", label: td("back") }} />
-      {saved && <p className="mb-3 text-sm text-emerald-700">{t("saved")}</p>}
+      {saved && <p className="mb-3 text-sm text-success">{t("saved")}</p>}
       <section id="product-images" aria-labelledby="product-images-title" className="mb-6 scroll-mt-20 rounded-lg border p-4">
         <h2 id="product-images-title" className="mb-3 font-medium">
           {t("images")}

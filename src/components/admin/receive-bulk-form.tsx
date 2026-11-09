@@ -323,7 +323,7 @@ export function ReceiveBulkForm({ locations, shipments, variants, lastShip = nul
         )}
         {pasteMsg && (
           <div role="status" className="space-y-1 text-sm">
-            <p className="text-emerald-700">{t("pasteDone", { count: pasteMsg.filled })}</p>
+            <p className="text-success">{t("pasteDone", { count: pasteMsg.filled })}</p>
             {pasteMsg.errors.length > 0 && (
               <ul className="list-inside list-disc text-destructive">
                 {pasteMsg.errors.map((e, i) => (

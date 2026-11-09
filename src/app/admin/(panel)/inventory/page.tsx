@@ -199,8 +199,8 @@ function Tile({
 }) {
   const cls = cn(
     "block w-40 flex-none rounded-xl border p-3 lg:w-auto lg:p-4",
-    tone === "warning" && "border-amber-200 bg-amber-50/60 text-amber-800",
-    tone === "danger" && "border-red-200 bg-red-50/60 text-red-800",
+    tone === "warning" && "border-warning-border bg-warning-subtle/60 text-warning-foreground",
+    tone === "danger" && "border-danger-border bg-danger-subtle/60 text-danger-foreground",
     href && "hover:brightness-95",
   );
   const body = (
@@ -378,7 +378,7 @@ function ProductView({
           const e = c?.earliest;
           const level = e ? classifyExpiry(e.expiryDate, now, th) : null;
           return (
-            <div key={r.variantId} data-testid="stock-card" className={cn("rounded-xl border p-3", level && level !== "near" && "border-red-200")}>
+            <div key={r.variantId} data-testid="stock-card" className={cn("rounded-xl border p-3", level && level !== "near" && "border-danger-border")}>
               <div className="flex gap-3">
                 <Thumb url={r.imageUrl} alt={r.name} size="md" />
                 <div className="min-w-0 flex-1">
@@ -402,7 +402,7 @@ function ProductView({
                 <div
                   className={cn(
                     "mt-2 flex items-center gap-1 text-xs",
-                    level === "near" ? "text-amber-800" : "text-destructive",
+                    level === "near" ? "text-warning-foreground" : "text-destructive",
                   )}
                 >
                   <Clock className="size-3.5 flex-none" aria-hidden />

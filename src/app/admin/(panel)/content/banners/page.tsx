@@ -26,7 +26,7 @@ export default async function BannersPage({ searchParams }: PageProps<"/admin/co
           </LinkButton>
         }
       />
-      {saved && <p className="text-sm text-emerald-700">{t("saved")}</p>}
+      {saved && <p className="text-sm text-success">{t("saved")}</p>}
       <DataTable
         stack
         empty={t("bannersEmpty")}

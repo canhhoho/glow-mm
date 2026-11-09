@@ -56,7 +56,7 @@ export function ActionForm({
           {submitLabel}
         </Button>
         {state?.ok && !state.error && (
-          <p role="status" className="text-sm text-emerald-700">
+          <p role="status" className="text-sm text-success">
             {okText ?? state.ok}
           </p>
         )}

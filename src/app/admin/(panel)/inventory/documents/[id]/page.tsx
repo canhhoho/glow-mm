@@ -25,7 +25,7 @@ export default async function DocumentPage({ params }: PageProps<"/admin/invento
         back={{ href: "/admin/inventory/documents", label: t("back") }}
       />
       {doc.type === "RECEIVE" && doc.status === "POSTED" && can(user.role, "pricing:manage") && <LinkButton href={`/admin/pricing?tab=runs&receiptId=${doc.id}`}>{t("priceReceived")}</LinkButton>}
-      {picked.length > 0 && <p role="alert" className="rounded-lg border border-amber-500 p-3 text-sm">{t("pickedWarning", { codes: [...new Set(picked.map(p=>p.pick.order.code))].join(", ") })}</p>}
+      {picked.length > 0 && <p role="alert" className="rounded-lg border border-warning p-3 text-sm">{t("pickedWarning", { codes: [...new Set(picked.map(p=>p.pick.order.code))].join(", ") })}</p>}
       <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-[auto_1fr]">
         <dt className="text-muted-foreground">{t("status")}</dt>
         <dd>

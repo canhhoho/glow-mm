@@ -73,7 +73,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
       <p className="text-sm text-muted-foreground">{t("recordedCostBasis", { pending: totals.unsettledCodOrders, sender: totals.senderPaysOrders })}</p>
 
       {report.missingCostOrders.length > 0 && (
-        <p role="alert" className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <p role="alert" className="rounded-md bg-warning-subtle px-3 py-2 text-sm text-warning-foreground">
           {t("missingCost")} <span className="font-mono">{report.missingCostOrders.slice(0, 10).join(", ")}</span>
           {report.missingCostOrders.length > 10 && ` ${t("andMore", { count: report.missingCostOrders.length - 10 })}`}
         </p>

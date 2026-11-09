@@ -136,7 +136,7 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
               <Td>
                 <Badge tone={e.stockType === "TESTER" ? "brand" : "neutral"}>{ti(e.stockType)}</Badge>
               </Td>
-              <Td className={cn("text-right font-medium tabular-nums", e.qtyDelta < 0 ? "text-destructive" : "text-emerald-700")}>
+              <Td className={cn("text-right font-medium tabular-nums", e.qtyDelta < 0 ? "text-destructive" : "text-success")}>
                 {e.qtyDelta > 0 ? `+${fmtInt(e.qtyDelta)}` : fmtInt(e.qtyDelta)}
               </Td>
               <Td className="text-right tabular-nums">{fmtInt(e.balanceAfter)}</Td>
