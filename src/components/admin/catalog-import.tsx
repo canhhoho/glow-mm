@@ -57,6 +57,14 @@ export function CatalogImport() {
               <ul className="mt-1 list-disc space-y-1 pl-5">{preview.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
             </div>
           )}
+          <form action={action} className="space-y-2">
+            <input type="hidden" name="step" value="confirm" />
+            <input type="hidden" name="payload" value={JSON.stringify(preview.input)} />
+            <Button type="submit" size="lg" disabled={pending || preview.errors.length > 0} aria-describedby="catalog-import-confirm-help"><Check aria-hidden />{t("confirm")}</Button>
+            <p id="catalog-import-confirm-help" className="text-sm text-muted-foreground">
+              {t(preview.errors.length > 0 ? "confirmBlocked" : "confirmHelp")}
+            </p>
+          </form>
           <DataTable head={["colLine", "colAction", "colProduct", "colSku", "colPrice", "colStock", "colCost"].map((k) => t(k))}>
             {preview.rows.map((r, i) => (
               <tr key={i}>
@@ -81,14 +89,6 @@ export function CatalogImport() {
               </tr>
             ))}
           </DataTable>
-          <p className="text-sm text-muted-foreground">{t("confirmHelp")}</p>
-          {preview.errors.length === 0 && (
-            <form action={action}>
-              <input type="hidden" name="step" value="confirm" />
-              <input type="hidden" name="payload" value={JSON.stringify(preview.input)} />
-              <Button type="submit" size="lg" disabled={pending}><Check aria-hidden />{t("confirm")}</Button>
-            </form>
-          )}
         </div>
       )}
 

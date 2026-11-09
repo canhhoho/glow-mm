@@ -419,6 +419,7 @@
     "CatalogImport.colSku",
     "CatalogImport.colStock",
     "CatalogImport.confirm",
+    "CatalogImport.confirmBlocked",
     "CatalogImport.confirmHelp",
     "CatalogImport.errorsTitle",
     "CatalogImport.expiryNone",

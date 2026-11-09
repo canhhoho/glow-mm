@@ -42,6 +42,25 @@ async function upload(page: Page, name: string, buffer: Buffer) {
   await expect(page.getByTestId("catalog-import-preview")).toBeVisible({ timeout: 30_000 });
 }
 
+test("file lỗi vẫn hiện Xác nhận nhập; sửa file và xem trước lại thì mở nút", async ({ page }) => {
+  await login(page, "admin@glow.local");
+  await page.goto("/admin/products/import");
+  const template = await download(page, "Tải file mẫu trống");
+  const product = { name_en: `Preview only ${Date.now()}`, brand: "Sen Việt", category: "skincare" };
+  await upload(page, "loi.xlsx", fillCatalogTemplate(template.bytes, [{ ...product, category: `missing-${Date.now()}` }]));
+  const preview = page.getByTestId("catalog-import-preview");
+  const confirm = preview.getByRole("button", { name: "Xác nhận nhập", exact: true });
+  await expect(confirm).toBeVisible();
+  await expect(confirm).toBeDisabled();
+  await expect(preview).toContainText("Chưa thể xác nhận vì file còn lỗi");
+
+  await upload(page, "da-sua.xlsx", fillCatalogTemplate(template.bytes, [product]));
+  await expect(confirm).toBeVisible();
+  await expect(confirm).toBeEnabled();
+  await expect(preview).not.toContainText("Chưa thể xác nhận vì file còn lỗi");
+  // Chỉ kiểm tra xem trước, không ghi sản phẩm/tồn vào DB.
+});
+
 test("mẫu một sheet: tạo SP hai biến thể kèm tồn → xem trước → xác nhận → ghi sổ phiếu nháp", async ({ page }) => {
   test.setTimeout(150_000);
   const suffix = Date.now();
