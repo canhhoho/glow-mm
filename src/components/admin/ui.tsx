@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Pencil, Plus, Search } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { FIELD } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
 
 /** Khối giao diện nhỏ dùng chung cho các trang admin (server components). */
@@ -266,8 +267,7 @@ export function Badge({ tone = "neutral", children }: { tone?: keyof typeof TONE
 }
 
 /** Ô nhập admin cao 36px (h-9) — nút cạnh ô dùng `size="lg"` (cũng h-9) để thẳng hàng. */
-export const fieldClass =
-  "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+export const fieldClass = FIELD.compact;
 
 /** Nhãn trường: chữ nằm TRÊN ô (grid). Không dùng `space-y-1` — span + ô inline sẽ đứng cạnh nhau khi ô không `w-full`. */
 export const fieldLabelClass = "grid content-start gap-1 text-sm";

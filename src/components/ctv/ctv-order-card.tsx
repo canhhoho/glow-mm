@@ -4,12 +4,14 @@ import { fmtDate, fmtInt } from "@/lib/format";
 import type { AffiliateOrder } from "@/server/affiliates/affiliates";
 import { CommissionBadge } from "@/components/admin/affiliate-parts";
 import { OrderStatusBadge } from "@/components/admin/order-badges";
+import { storeCard } from "@/components/store/ui";
+import { cn } from "@/lib/utils";
 
 /** Thẻ một đơn trong cổng CTV (tổng quan + đơn của tôi): mã, trạng thái, khách, tiền, hoa hồng. */
 export async function CtvOrderCard({ order: o }: { order: AffiliateOrder }) {
   const ta = await getTranslations("Affiliates");
   return (
-    <Link href={`/ctv/orders/${o.id}`} className="block rounded-2xl border bg-card p-3 shadow-sm hover:bg-muted">
+    <Link href={`/ctv/orders/${o.id}`} className={cn(storeCard, "block hover:bg-muted")}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-mono text-sm">{o.code}</span>
         <OrderStatusBadge status={o.status} />

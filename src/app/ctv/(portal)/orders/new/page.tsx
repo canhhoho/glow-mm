@@ -3,6 +3,8 @@ import { requireAffiliate } from "@/server/auth/session";
 import { createAffiliateOrderAction } from "@/server/affiliates/portal-actions";
 import { orderFormOptions } from "@/server/orders/admin-queries";
 import { OrderForm } from "@/components/admin/order-form";
+import { storeCard } from "@/components/store/ui";
+import { PageHeader } from "@/components/admin/ui";
 
 /**
  * CTV tự lên đơn cho khách. Không có tra cứu khách theo SĐT (tránh lộ thông tin khách của người khác);
@@ -13,13 +15,13 @@ export default async function CtvNewOrderPage() {
   const [t, options] = await Promise.all([getTranslations("Ctv"), getLocale().then(orderFormOptions)]);
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">{t("newTitle")}</h1>
-      <p className="text-sm text-muted-foreground">{t("newHint")}</p>
-      <div className="rounded-2xl border bg-card p-4">
+      <PageHeader title={t("newTitle")} description={t("newHint")} />
+      <div className={storeCard}>
         <OrderForm
           options={options}
           initial={{ phone: "", phone2: "", name: "", townshipId: "", addressLine: "" }}
           action={createAffiliateOrderAction}
+          density="touch"
         />
       </div>
     </div>

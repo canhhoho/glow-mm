@@ -1,11 +1,11 @@
 import { ChevronRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { FIELD } from "@/components/ui/field";
 
 /** Lớp giao diện storefront (mobile-first, vùng bấm ≥ 44px, màu theo design token). */
 
-export const storeField =
-  "h-11 w-full rounded-lg border border-input bg-card px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+export const storeField = FIELD.touch;
 
 export const primaryButton =
   "inline-flex h-11 shrink-0 items-center justify-center rounded-lg bg-brand px-5 whitespace-nowrap font-medium text-brand-foreground hover:bg-brand/90 disabled:opacity-50";
@@ -15,6 +15,9 @@ export const outlineButton =
 
 /** Khối nội dung dạng card (nền trắng, bo góc) — mobile sát lề, từ sm có viền + padding. */
 export const storeCard = "rounded-xl bg-card p-3 ring-1 ring-border sm:p-4";
+
+/** Danh sách dạng card (mỗi dòng tự đặt padding, ngăn bằng đường kẻ). */
+export const storeListCard = "divide-y rounded-xl bg-card ring-1 ring-border";
 
 export function PageTitle({ children }: { children: React.ReactNode }) {
   return <h1 className="mb-3 text-lg font-medium">{children}</h1>;
