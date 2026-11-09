@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { fieldClass } from "@/components/admin/ui";
 import { transitionOrderAction } from "@/server/orders/actions";
 import { cn } from "@/lib/utils";
+import { confirmOrPrevent } from "@/lib/confirm";
 
 export type TransitionField = {
   name: "reason" | "carrier" | "trackingNo" | "fromLocationId" | "note";
@@ -36,9 +37,7 @@ export function TransitionForm({
   return (
     <form
       action={action}
-      onSubmit={(e) => {
-        if (confirm && !window.confirm(confirm)) e.preventDefault();
-      }}
+      onSubmit={confirmOrPrevent(confirm)}
       className="flex flex-wrap items-end gap-2 rounded-lg border p-3"
     >
       <input type="hidden" name="id" value={orderId} />

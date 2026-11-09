@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { fieldClass } from "@/components/admin/ui";
 import { manageBrandAction } from "@/server/catalog/actions";
+import { askConfirm } from "@/lib/confirm";
 
 export function BrandActions({ id, name, products }: { id: string; name: string; products: number }) {
   const t = useTranslations("Products");
@@ -19,7 +20,7 @@ export function BrandActions({ id, name, products }: { id: string; name: string;
   return <div className="space-y-2">
     <form action={action} onSubmit={e => {
       const submitter = (e.nativeEvent as SubmitEvent).submitter;
-      if (submitter instanceof HTMLButtonElement && submitter.value === "delete" && !window.confirm(t("brandDeleteConfirm", { name }))) e.preventDefault();
+      if (submitter instanceof HTMLButtonElement && submitter.value === "delete" && !askConfirm(t("brandDeleteConfirm", { name }))) e.preventDefault();
     }} className="flex flex-wrap items-center gap-2">
       <input type="hidden" name="brandId" value={id} />
       {editing ? <>

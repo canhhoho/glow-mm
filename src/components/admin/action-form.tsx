@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Save } from "lucide-react";
 import type { ActionState } from "@/server/inventory/actions";
+import { askConfirm } from "@/lib/confirm";
 
 /**
  * Form gửi server action với các ô nhập render sẵn (children, có thể là Server Component).
@@ -42,7 +43,7 @@ export function ActionForm({
       ref={formRef}
       onSubmit={(e) => {
         e.preventDefault();
-        if (confirm && !window.confirm(confirm)) return;
+        if (!askConfirm(confirm)) return;
         const fd = new FormData(e.currentTarget, (e.nativeEvent as SubmitEvent).submitter);
         startTransition(() => formAction(fd));
       }}

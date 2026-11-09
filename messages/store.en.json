@@ -341,6 +341,7 @@
     "setDefault": "Set as default",
     "edit": "Edit",
     "delete": "Delete",
+    "deleteAddressConfirm": "Delete this address?",
     "save": "Save",
     "cancel": "Cancel",
     "saved": "Saved.",

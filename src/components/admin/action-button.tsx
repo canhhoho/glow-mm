@@ -4,6 +4,7 @@ import { useActionState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import type { ActionState } from "@/server/inventory/actions";
+import { confirmOrPrevent } from "@/lib/confirm";
 
 /** Nút gửi một server action đơn giản (kèm hidden fields), hiện lỗi nếu có. */
 export function ActionButton({
@@ -30,9 +31,7 @@ export function ActionButton({
   return (
     <form
       action={formAction}
-      onSubmit={(e) => {
-        if (confirm && !window.confirm(confirm)) e.preventDefault();
-      }}
+      onSubmit={confirmOrPrevent(confirm)}
       className="inline-flex flex-col items-start gap-1"
     >
       {Object.entries(fields).map(([k, v]) => (

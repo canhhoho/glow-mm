@@ -82,6 +82,8 @@ test("sổ địa chỉ: thêm (Zawgyi → Unicode), sửa, đặt mặc định
   await page.getByTestId("address-form").getByRole("button", { name: "Save" }).click();
   await expect(page.getByTestId("address").filter({ hasText: "Ma Aye Aye" })).toHaveCount(1);
 
+  // Xoá địa chỉ hỏi xác nhận (hộp thoại gốc) — bấm OK.
+  page.once("dialog", (d) => d.accept());
   await page.getByTestId("address").filter({ hasText: "Ma Aye Aye" }).getByRole("button", { name: "Delete" }).click();
   await expect(page.getByTestId("address")).toHaveCount(1);
 });

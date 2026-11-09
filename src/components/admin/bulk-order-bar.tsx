@@ -4,6 +4,7 @@ import { ListChecks, Printer, ClipboardList, Check, Truck, CheckCheck } from "lu
 import { startTransition, useActionState, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { askConfirm } from "@/lib/confirm";
 import { bulkTransitionAction } from "@/server/orders/actions";
 import type { BulkState, BulkTransition } from "@/server/orders/bulk";
 import { fieldClass } from "./ui";
@@ -48,7 +49,7 @@ export function BulkOrderBar({ transitions }: { transitions: BulkTransition[] })
   const run = (transition: BulkTransition) => {
     const ids = checkedIds();
     if (ids.length === 0) return;
-    if (!window.confirm(t(`bulk.confirm.${transition}`, { count: ids.length }))) return;
+    if (!askConfirm(t(`bulk.confirm.${transition}`, { count: ids.length }))) return;
     const fd = new FormData();
     fd.set("transition", transition);
     if (transition === "ship") fd.set("carrier", carrier);
