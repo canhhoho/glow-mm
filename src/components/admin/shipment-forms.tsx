@@ -98,7 +98,7 @@ export function AllocateForm({ shipmentId, method }: { shipmentId: string; metho
       </Button>
       <div className="w-full">
         <ErrorText error={state?.error} />
-        {state?.ok && <p className="text-sm text-emerald-700 dark:text-emerald-400">{t("allocated")}</p>}
+        {state?.ok && <p className="text-sm text-emerald-700">{t("allocated")}</p>}
       </div>
     </form>
   );

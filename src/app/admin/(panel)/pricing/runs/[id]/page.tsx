@@ -65,7 +65,7 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
         const costMmk = l.costMmk ?? (l.costVnd != null && run.rate ? convertVndToMmk(l.costVnd, run.rate) : null);
         const risks = priceRisks({ oldPriceMmk: l.oldPriceMmk, priceMmk: l.newPriceMmk, costMmk, shipMmk: l.shipMmk ?? 0, commissionBp, fixedCommissionMmk: l.fixedCommissionMmk, uplineBp });
         return (
-          <tr key={l.variantId} className={cn(stale && "bg-amber-50 dark:bg-amber-950/30")} data-testid="run-line">
+          <tr key={l.variantId} className={cn(stale && "bg-amber-50")} data-testid="run-line">
             <Td>
               {editable && pendingLine && (
                 <input type="checkbox" name="variantId" value={l.variantId} defaultChecked={!stale} aria-label={l.sku} />
@@ -74,15 +74,15 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
             <Td className="font-mono text-xs">{l.sku}</Td>
             <Td>
               {l.name}
-              {stale && <div className="text-xs text-amber-700 dark:text-amber-400">{t("changedSince")}</div>}
+              {stale && <div className="text-xs text-amber-700">{t("changedSince")}</div>}
               {risks.lowMargin && (
-                <p className="text-xs text-amber-700 dark:text-amber-400">
+                <p className="text-xs text-amber-700">
                   {l.fixedCommissionMmk != null
                     ? t("lowMarginWarningFixed", { profit: fmtInt(risks.profit), fixed: fmtInt(l.fixedCommissionMmk), rate: uplineBp / 100 })
                     : t("lowMarginWarning", { profit: fmtInt(risks.profit), rate: commissionBp / 100 })}
                 </p>
               )}
-              {risks.largeChange && <p className="text-xs text-amber-700 dark:text-amber-400">{t("largeChangeWarning")}</p>}
+              {risks.largeChange && <p className="text-xs text-amber-700">{t("largeChangeWarning")}</p>}
             </Td>
             <Td className="text-right tabular-nums">{fmtInt(mmk ? l.costMmk : l.costVnd)}</Td>
             {extra && <Td className="text-right tabular-nums">{fmtInt(mmk ? l.profitMmk : l.shipMmk)}</Td>}

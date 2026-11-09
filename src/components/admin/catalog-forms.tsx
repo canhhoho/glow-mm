@@ -16,7 +16,7 @@ function Feedback({ error, ok }: { error?: string; ok?: string }) {
         {td("error")}: {error}
       </p>
     );
-  return ok ? <p className="text-sm text-emerald-700 dark:text-emerald-400">{t("added")}</p> : null;
+  return ok ? <p className="text-sm text-emerald-700">{t("added")}</p> : null;
 }
 
 export function BrandForm() {

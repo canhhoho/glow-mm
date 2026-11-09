@@ -52,8 +52,8 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
   return (
     <Page>
       <PageHeader title={a.user.name} back={{ href: "/admin/affiliates", label: t("back") }} />
-      {sp.created && <p className="text-sm text-emerald-700 dark:text-emerald-400">{t("created")}</p>}
-      {sp.approved && <p className="text-sm text-emerald-700 dark:text-emerald-400">{t("apps.approvedNote")}</p>}
+      {sp.created && <p className="text-sm text-emerald-700">{t("created")}</p>}
+      {sp.approved && <p className="text-sm text-emerald-700">{t("apps.approvedNote")}</p>}
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <span className="font-mono">{a.user.email}</span>
         <Badge tone={a.active ? "success" : "danger"}>{a.active ? t("active") : t("locked")}</Badge>

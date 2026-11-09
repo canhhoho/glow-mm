@@ -190,7 +190,7 @@ export function Notice({ tone = "success", children }: { tone?: "success" | "dan
       className={cn(
         "rounded-md px-3 py-2 text-sm",
         tone === "success"
-          ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+          ? "bg-emerald-50 text-emerald-800"
           : "bg-destructive/10 text-destructive",
       )}
     >
@@ -266,9 +266,9 @@ export function Td({ children, className, label }: { children?: React.ReactNode;
 
 export const TONES = {
   neutral: "bg-muted text-muted-foreground",
-  success: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
-  warning: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
-  danger: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
+  success: "bg-emerald-100 text-emerald-800",
+  warning: "bg-amber-100 text-amber-800",
+  danger: "bg-red-100 text-red-800",
   brand: "bg-primary/10 text-primary",
 } as const;
 
@@ -303,7 +303,7 @@ export function Stat({
       <div
         className={cn(
           "text-xl font-medium tabular-nums",
-          tone === "warning" && "text-amber-700 dark:text-amber-400",
+          tone === "warning" && "text-amber-700",
           tone === "danger" && "text-destructive",
         )}
       >

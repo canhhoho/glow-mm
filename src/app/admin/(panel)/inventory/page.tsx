@@ -199,8 +199,8 @@ function Tile({
 }) {
   const cls = cn(
     "block w-40 flex-none rounded-xl border p-3 lg:w-auto lg:p-4",
-    tone === "warning" && "border-amber-200 bg-amber-50/60 text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300",
-    tone === "danger" && "border-red-200 bg-red-50/60 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300",
+    tone === "warning" && "border-amber-200 bg-amber-50/60 text-amber-800",
+    tone === "danger" && "border-red-200 bg-red-50/60 text-red-800",
     href && "hover:brightness-95",
   );
   const body = (
@@ -402,7 +402,7 @@ function ProductView({
                 <div
                   className={cn(
                     "mt-2 flex items-center gap-1 text-xs",
-                    level === "near" ? "text-amber-800 dark:text-amber-300" : "text-destructive",
+                    level === "near" ? "text-amber-800" : "text-destructive",
                   )}
                 >
                   <Clock className="size-3.5 flex-none" aria-hidden />

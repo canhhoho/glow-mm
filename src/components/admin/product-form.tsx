@@ -343,7 +343,7 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
                   </option>
                 ))}
               </select>
-              {initialWarehouse && p.stockLocationId !== initialWarehouse && <span className="text-xs text-amber-700 dark:text-amber-400">{t("warehouseChangeHint")}</span>}
+              {initialWarehouse && p.stockLocationId !== initialWarehouse && <span className="text-xs text-amber-700">{t("warehouseChangeHint")}</span>}
             </Field>
           )}
 

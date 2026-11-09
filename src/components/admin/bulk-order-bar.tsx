@@ -115,7 +115,7 @@ export function BulkOrderBar({ transitions }: { transitions: BulkTransition[] })
       )}
       {state && !state.error && (
         <div role="status" className="space-y-1 text-sm" data-testid="bulk-result">
-          <p className={state.failed?.length ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400"}>
+          <p className={state.failed?.length ? "text-amber-700" : "text-emerald-700"}>
             {t("bulk.result", { done: state.done ?? 0, total: state.total ?? 0 })}
           </p>
           {state.failed && state.failed.length > 0 && (
