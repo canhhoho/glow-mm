@@ -11,6 +11,8 @@ import {
   type ImageUpload,
 } from "@/server/files/public-images";
 import { CatalogError } from "./products";
+import { salesBlockDays } from "@/server/inventory/documents";
+import { availableToSell } from "@/server/orders/availability";
 
 /**
  * Quản lý danh mục (P6): sửa slug/tên/cha/thứ tự, icon "nhóm hàng" trên trang chủ.
@@ -66,15 +68,40 @@ export async function getCategoryAdmin(id: string) {
 }
 
 /** Danh sách cho trang quản lý; `q` lọc theo slug/tên (giữ cả danh mục cha của mục khớp để thấy ngữ cảnh). */
-export async function listCategoriesAdmin(q?: string) {
+export async function listCategoriesAdmin(q?: string, now = new Date()) {
   const rows = await prisma.category.findMany({
     orderBy: [{ sortOrder: "asc" }, { slug: "asc" }],
-    include: adminInclude,
+    include: {
+      ...adminInclude,
+      products: {
+        where: { archivedAt: null },
+        select: {
+          stockLocation: { select: { active: true, sellable: true } },
+          variants: { where: { active: true }, select: { id: true } },
+        },
+      },
+    },
   });
-  const toRow = toAdminRow;
+  const ids = rows.flatMap((r) => r.products.filter((p) => p.stockLocation.active && p.stockLocation.sellable).flatMap((p) => p.variants.map((v) => v.id)));
+  const available = ids.length
+    ? await availableToSell(prisma, ids, { now, blockDays: await salesBlockDays() })
+    : new Map<string, number>();
+  const counts = new Map(rows.map((r) => [r.id, {
+    managedProducts: r.products.length,
+    inStockProducts: r.products.filter((p) => p.stockLocation.active && p.stockLocation.sellable && p.variants.some((v) => (available.get(v.id) ?? 0) > 0)).length,
+  }]));
   // Gốc trước, con nằm ngay dưới cha.
   const children = new Map<string, typeof rows>();
   for (const r of rows) if (r.parentId) children.set(r.parentId, [...(children.get(r.parentId) ?? []), r]);
+  // Cộng trước khi lọc tìm kiếm: số của cha luôn gồm tất cả con, kể cả con không khớp từ khoá.
+  const toRow = (r: (typeof rows)[number]) => {
+    const scope = [r, ...(children.get(r.id) ?? [])];
+    return {
+      ...toAdminRow(r), // products/children vẫn là toàn bộ liên kết trực tiếp để kiểm tra xoá.
+      managedProducts: scope.reduce((sum, c) => sum + counts.get(c.id)!.managedProducts, 0),
+      inStockProducts: scope.reduce((sum, c) => sum + counts.get(c.id)!.inStockProducts, 0),
+    };
+  };
   const tree = rows.filter((r) => !r.parentId).flatMap((root) => [toRow(root), ...(children.get(root.id) ?? []).map(toRow)]);
 
   const query = q?.trim().toLowerCase();

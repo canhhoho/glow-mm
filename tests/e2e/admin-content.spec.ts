@@ -7,6 +7,9 @@ test("danh mục: mở trang sửa từ bảng, lưu, tải icon (hiện ảnh),
   test.setTimeout(90_000);
   await login(page, "admin@glow.local");
   await page.goto("/admin/categories?q=skincare"); // lọc → trang nhẹ dù DB test có hàng nghìn danh mục fixture
+  await expect(page.getByRole("columnheader", { name: "Sản phẩm đang quản lý", exact: true, includeHidden: true })).toHaveCount(1);
+  await expect(page.getByRole("columnheader", { name: "Sản phẩm còn hàng", exact: true, includeHidden: true })).toHaveCount(1);
+  await expect(page.getByText(/Danh mục cha tính cả sản phẩm trong các danh mục con/)).toBeVisible();
   const row = page.getByTestId("category-row").filter({ has: page.getByText("skincare", { exact: true }) });
   await expect(row.getByRole("button", { name: "Xoá danh mục" })).toHaveCount(0); // còn SP → không xoá được
   await row.getByRole("link", { name: "Sửa", exact: true }).click();

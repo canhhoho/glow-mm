@@ -20,6 +20,8 @@ Tài khoản mẫu: `admin@glow.local`, `kho@glow.local`, `donhang@glow.local` �
 Trang **Thương hiệu** tách số **Sản phẩm đang quản lý** (không gồm ngừng kinh doanh) và
 **Sản phẩm còn hàng** (ít nhất một biến thể đang dùng còn tồn khả dụng tại kho bán, mỗi sản phẩm đếm một lần,
 kể cả sản phẩm đang ẩn). Thương hiệu còn liên kết với sản phẩm ngừng kinh doanh vẫn không được xoá.
+Trang **Danh mục** dùng hai số đếm tương tự; danh mục cha tính cả các danh mục con.
+Chỉ được xoá danh mục không còn sản phẩm liên quan (kể cả ngừng kinh doanh) và không còn danh mục con.
 
 Trong Admin → Sản phẩm, bấm biểu tượng **Sửa** trên từng dòng để chỉnh sản phẩm. Form chỉ cần
 một tên (Myanmar hoặc tiếng Anh — tên còn lại tự lấy theo), thương hiệu (chọn hoặc gõ tên mới), danh mục

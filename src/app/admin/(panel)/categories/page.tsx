@@ -39,11 +39,12 @@ export default async function CategoriesPage({ searchParams }: PageProps<"/admin
           <p className="text-xs text-muted-foreground">{tp("catSlug")}: a-z, 0-9, -</p>
         </Section>
       </div>
+      <p className="text-sm text-muted-foreground">{t("countsHelp")}</p>
       <DataTable
         stack
         empty={t("empty")}
-        head={[t("colIcon"), t("colName"), t("slug"), t("parent"), t("sortOrder"), t("colProducts"), tp("colActions")]}
-        numeric={[4, 5]}
+        head={[t("colIcon"), t("colName"), t("slug"), t("parent"), t("sortOrder"), t("colManagedProducts"), t("colInStockProducts"), tp("colActions")]}
+        numeric={[4, 5, 6]}
       >
         {categories.map((c) => (
           <tr key={c.id} data-testid="category-row">
@@ -74,8 +75,11 @@ export default async function CategoriesPage({ searchParams }: PageProps<"/admin
             <Td label={t("sortOrder")} className="text-right tabular-nums">
               {c.sortOrder}
             </Td>
-            <Td label={t("colProducts")} className="text-right tabular-nums">
-              {c.products}
+            <Td label={t("colManagedProducts")} className="text-right tabular-nums">
+              {c.managedProducts}
+            </Td>
+            <Td label={t("colInStockProducts")} className="text-right tabular-nums">
+              {c.inStockProducts}
             </Td>
             <Td>
               <div className="flex flex-wrap items-start gap-2">
