@@ -41,6 +41,8 @@ export const stockFilterSchema = z.object({
     .catch(undefined),
   expiry: z.enum(EXPIRY_FILTERS).optional().catch(undefined),
   stockType: z.enum(["SELLABLE", "TESTER"]).optional().catch(undefined),
+  /** "no" = chỉ biến thể đang dùng chưa từng nhập hàng (SP mới tạo / làm thử). */
+  received: z.enum(["no"]).optional().catch(undefined),
   page: z.coerce.number().int().min(1).catch(1),
 });
 export type StockFilter = z.infer<typeof stockFilterSchema>;
@@ -52,6 +54,7 @@ export function parseStockFilter(sp: Record<string, string | string[] | undefine
     q: one("q"),
     expiry: one("expiry"),
     stockType: one("stockType"),
+    received: one("received"),
     page: one("page") ?? 1,
   });
 }
@@ -183,22 +186,42 @@ export type VariantStockRow = {
   available: number;
 };
 
+/** Đã từng nhập hàng: có dòng phiếu NHẬP / CHUYỂN đã ghi sổ (như bước 2 của `loadReadiness`); combo = mọi thành phần đã nhập. */
+const RECEIVED_LINE: Prisma.StockDocumentLineListRelationFilter = { some: { document: { status: "POSTED", type: { in: ["RECEIVE", "TRANSFER"] } } } };
+export const RECEIVED_VARIANT: Prisma.VariantWhereInput = {
+  OR: [
+    { isBundle: false, documentLines: RECEIVED_LINE },
+    { isBundle: true, bundleItems: { some: {}, every: { component: { documentLines: RECEIVED_LINE } } } },
+  ],
+};
+/** Biến thể đang dùng (SP chưa ngừng kinh doanh) chưa từng nhập hàng — bộ lọc "Chưa nhập hàng". */
+export const NOT_RECEIVED_VARIANT: Prisma.VariantWhereInput = { active: true, product: { archivedAt: null }, NOT: RECEIVED_VARIANT };
+
 /**
  * Bảng "Theo sản phẩm": phân trang biến thể ở DB rồi nạp tồn của trang.
- * Tab "Tất cả" không lọc → mọi biến thể đang bán + biến thể ngừng bán còn tồn (gồm hết hàng, combo).
+ * Tab "Tất cả" không lọc → biến thể đang bán ĐÃ TỪNG NHẬP HÀNG + biến thể ngừng bán còn tồn (gồm hết hàng, combo);
+ * SP chưa từng nhập (mới tạo / làm thử) chỉ hiện ở bộ lọc "Chưa nhập hàng" (`received=no`).
  * Có lọc (tab / hạn dùng / loại tồn) → chỉ biến thể có dòng tồn khớp.
  */
+/** Số biến thể đang dùng chưa từng nhập hàng (link "Chưa nhập hàng (N)" ở trang Tồn kho). */
+export function countNotReceived() {
+  return prisma.variant.count({ where: NOT_RECEIVED_VARIANT });
+}
+
 export async function stockByVariant(f: StockFilter, now = new Date()): Promise<Page<VariantStockRow>> {
   const t = await loadThresholds();
   const filtered = f.tab !== "all" || !!f.expiry || !!f.stockType;
-  const where: Prisma.VariantWhereInput = filtered
+  const search: Prisma.VariantWhereInput = f.q
+    ? { OR: [{ sku: contains(f.q) }, { product: productSearch(f.q) }, { batches: { some: { lotNo: contains(f.q) } } }] }
+    : {};
+  const where: Prisma.VariantWhereInput = f.received === "no"
+    ? { AND: [NOT_RECEIVED_VARIANT, search] }
+    : filtered
     ? { batches: { some: { balances: { some: balanceWhere(f, now, t) } } } }
     : {
         AND: [
-          { OR: [{ active: true }, { batches: { some: { balances: { some: { qty: { not: 0 } } } } } }] },
-          f.q
-            ? { OR: [{ sku: contains(f.q) }, { product: productSearch(f.q) }, { batches: { some: { lotNo: contains(f.q) } } }] }
-            : {},
+          { OR: [{ active: true, ...RECEIVED_VARIANT }, { batches: { some: { balances: { some: { qty: { not: 0 } } } } } }] },
+          search,
         ],
       };
 

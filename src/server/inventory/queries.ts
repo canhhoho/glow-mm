@@ -38,14 +38,15 @@ export async function listVariantsForReceive() {
       orderBy: { sku: "asc" },
       include: { product: { include: { translations: true, brand: true, stockLocation: { select: { pricingMode: true } } } } },
     }),
+    // Giá mua gợi ý: lô của phiếu chưa huỷ (lô nháp đã huỷ không còn là giá thật).
     prisma.batch.findMany({
-      where: { unitCostVnd: { not: null } },
+      where: { unitCostVnd: { not: null }, documentLines: { some: { document: { status: { not: "CANCELLED" } } } } },
       distinct: ["variantId"],
       orderBy: [{ variantId: "asc" }, { createdAt: "desc" }],
       select: { variantId: true, unitCostVnd: true },
     }),
     prisma.batch.findMany({
-      where: { unitCostMmk: { not: null } },
+      where: { unitCostMmk: { not: null }, documentLines: { some: { document: { status: { not: "CANCELLED" } } } } },
       distinct: ["variantId"],
       orderBy: [{ variantId: "asc" }, { createdAt: "desc" }],
       select: { variantId: true, unitCostMmk: true },
