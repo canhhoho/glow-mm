@@ -20,21 +20,8 @@ export function PageTitle({ children }: { children: React.ReactNode }) {
   return <h1 className="mb-3 text-lg font-medium">{children}</h1>;
 }
 
-export function Notice({ tone = "info", children }: { tone?: "info" | "error" | "success"; children: React.ReactNode }) {
-  return (
-    <p
-      role={tone === "error" ? "alert" : "status"}
-      className={cn(
-        "rounded-lg px-3 py-2 text-sm",
-        tone === "error" && "bg-destructive/10 text-destructive",
-        tone === "success" && "bg-secondary text-secondary-foreground",
-        tone === "info" && "bg-accent text-accent-foreground",
-      )}
-    >
-      {children}
-    </p>
-  );
-}
+/** Hộp thông báo — bản dùng chung (`components/ui/notice`), tone `info | success | warning | danger`. */
+export { Notice } from "@/components/ui/notice";
 
 /** Dải nội dung có tiêu đề dạng nhãn màu thương hiệu + link "Xem thêm" (trang chủ, trang sản phẩm). */
 export function StoreSection({

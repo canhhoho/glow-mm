@@ -100,7 +100,7 @@ async function CartContent({ params }: PageProps<"/[locale]/cart">) {
             {t("checkout")}
           </Link>
         ) : (
-          <Notice tone="error">{t("fix")}</Notice>
+          <Notice tone="danger">{t("fix")}</Notice>
         )}
       </aside>
     </div>

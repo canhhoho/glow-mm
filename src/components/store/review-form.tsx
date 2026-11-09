@@ -29,7 +29,7 @@ export function ReviewForm({ locale, code, productId, name }: { locale: string; 
         <span className="text-muted-foreground">{t("body")}</span>
         <textarea name="body" rows={2} maxLength={1000} className={`${storeField} h-auto py-2`} />
       </label>
-      {state?.error && <Notice tone="error">{state.error}</Notice>}
+      {state?.error && <Notice tone="danger">{state.error}</Notice>}
       <button type="submit" disabled={pending} className={outlineButton}>
         {t("submit")}
       </button>

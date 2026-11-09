@@ -183,7 +183,7 @@ export function CheckoutForm({
       </fieldset>
 
       {errorFor("paymentMethod")}
-      {state?.error && !Object.keys(state.fieldErrors ?? {}).length && <Notice tone="error">{state.error}{state.sku && <span> · {state.sku}</span>}</Notice>}
+      {state?.error && !Object.keys(state.fieldErrors ?? {}).length && <Notice tone="danger">{state.error}{state.sku && <span> · {state.sku}</span>}</Notice>}
       {state?.cartError && <Link href="/cart" className="underline">{t("reviewCart")}</Link>}
       {summary}
       <button type="submit" disabled={pending || !hydrated} className={`${primaryButton} w-full`}>

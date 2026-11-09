@@ -41,7 +41,7 @@ async function LoginContent({ params, searchParams }: PageProps<"/[locale]/login
 
   return (
     <AuthCard title={t("loginTitle")} intro={t("loginIntro")}>
-      {error && <Notice tone="error">{t(`err.${error}`, { min: 8 })}</Notice>}
+      {error && <Notice tone="danger">{t(`err.${error}`, { min: 8 })}</Notice>}
       {sp.verified && !error && <Notice tone="success">{t("verified")}</Notice>}
       {googleOn && <GoogleButton prefix={prefix} next={next} />}
       {googleOn && <OrDivider label={t("or")} />}

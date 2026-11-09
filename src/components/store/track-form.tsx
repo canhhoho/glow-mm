@@ -19,7 +19,7 @@ export function TrackForm({ locale, code }: { locale: string; code?: string }) {
         <span>{t("phone")}</span>
         <input name="phone" required type="tel" inputMode="tel" autoComplete="tel" className={storeField} />
       </label>
-      {state?.error && <Notice tone="error">{state.error}</Notice>}
+      {state?.error && <Notice tone="danger">{state.error}</Notice>}
       <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
         {t("submit")}
       </button>

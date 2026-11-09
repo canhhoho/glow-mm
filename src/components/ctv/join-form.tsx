@@ -7,6 +7,7 @@ import { submitApplicationAction } from "@/server/affiliates/portal-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Notice } from "@/components/ui/notice";
 
 /** Form đăng ký làm CTV qua link mời. Gửi xong chỉ hiện thông báo chờ duyệt (chưa đăng nhập được). */
 export function JoinForm({ invite, minPassword }: { invite: string; minPassword: number }) {
@@ -60,9 +61,7 @@ export function JoinForm({ invite, minPassword }: { invite: string; minPassword:
       ))}
       <p className="text-xs text-muted-foreground">{t("passwordHint", { min: minPassword })}</p>
       {state?.error && (
-        <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {state.error}
-        </p>
+        <Notice tone="danger">{state.error}</Notice>
       )}
       <Button type="submit" className="h-11 w-full text-base" disabled={pending}>
         {pending && <Loader2 className="animate-spin" aria-hidden />}

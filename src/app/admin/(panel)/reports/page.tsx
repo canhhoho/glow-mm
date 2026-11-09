@@ -8,7 +8,7 @@ import {
   stockByLocation,
   type Range,
 } from "@/server/reports/queries";
-import { DataTable, fieldClass, FilterButton, Page, PageHeader, Stat, Td } from "@/components/admin/ui";
+import { DataTable, fieldClass, FilterButton, Notice, Page, PageHeader, Stat, Td } from "@/components/admin/ui";
 import { ReportsTabs } from "@/components/admin/reports-tabs";
 import { fmtDay, fmtInt } from "@/lib/format";
 import { addDays } from "@/lib/time";
@@ -73,10 +73,10 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
       <p className="text-sm text-muted-foreground">{t("recordedCostBasis", { pending: totals.unsettledCodOrders, sender: totals.senderPaysOrders })}</p>
 
       {report.missingCostOrders.length > 0 && (
-        <p role="alert" className="rounded-md bg-warning-subtle px-3 py-2 text-sm text-warning-foreground">
+        <Notice tone="warning">
           {t("missingCost")} <span className="font-mono">{report.missingCostOrders.slice(0, 10).join(", ")}</span>
           {report.missingCostOrders.length > 10 && ` ${t("andMore", { count: report.missingCostOrders.length - 10 })}`}
-        </p>
+        </Notice>
       )}
 
       {report.estimatedCostOrders.length > 0 && (

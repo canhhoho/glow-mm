@@ -30,7 +30,7 @@ async function ResetContent({ params, searchParams }: PageProps<"/[locale]/reset
         <ResetPasswordForm token={token} loginHref={getPathname({ href: "/login", locale })} />
       ) : (
         <>
-          <Notice tone="error">{t("err.invalidLink")}</Notice>
+          <Notice tone="danger">{t("err.invalidLink")}</Notice>
           <Link href="/forgot-password" className="inline-flex min-h-11 items-center text-sm text-accent-foreground hover:underline">
             {t("forgot")}
           </Link>

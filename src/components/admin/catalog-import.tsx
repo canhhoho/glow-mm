@@ -7,7 +7,7 @@ import Link from "next/link";
 import { catalogImportAction } from "@/server/catalog/actions";
 import { Button } from "@/components/ui/button";
 import { FileField } from "@/components/admin/file-field";
-import { Badge } from "@/components/admin/ui";
+import { Badge, Notice } from "@/components/admin/ui";
 import { fmtInt } from "@/lib/format";
 
 const ACTION_TONE = { create: "brand", update: "warning", same: "neutral" } as const;
@@ -46,10 +46,10 @@ export function CatalogImport() {
           </p>
           {preview.rate && <p className="text-sm text-muted-foreground">{t("rateQuote", { rate: preview.rate })}</p>}
           {preview.errors.length > 0 && (
-            <div role="alert" className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive">
+            <Notice tone="danger" className="p-4">
               <p className="font-medium">{t("errorsTitle")}</p>
               <ul className="mt-1 list-disc space-y-1 pl-5">{preview.errors.map((e, i) => <li key={i} className="whitespace-pre-line">{e}</li>)}</ul>
-            </div>
+            </Notice>
           )}
           {preview.warnings.length > 0 && (
             <div className="rounded-lg bg-muted p-4 text-sm">

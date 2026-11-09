@@ -5,6 +5,7 @@ import { MIN_STAFF_PASSWORD } from "@/server/auth/roles";
 import { inviterByCode } from "@/server/affiliates/applications";
 import { LoginScreen } from "@/components/admin/login-screen";
 import { JoinForm } from "@/components/ctv/join-form";
+import { Notice } from "@/components/ui/notice";
 
 /** Đăng ký làm CTV qua link mời `/ctv/join?inv=CODE` (P11b) — trang công khai, admin duyệt mới hoạt động. */
 export default async function CtvJoinPage({ searchParams }: PageProps<"/ctv/join">) {
@@ -28,9 +29,9 @@ export default async function CtvJoinPage({ searchParams }: PageProps<"/ctv/join
       {inviter ? (
         <JoinForm invite={inviter.code} minPassword={MIN_STAFF_PASSWORD} />
       ) : (
-        <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive" data-testid="join-invalid">
+        <Notice tone="danger" data-testid="join-invalid">
           {t("join.invalidLink")}
-        </p>
+        </Notice>
       )}
       <p className="mt-4 text-center text-sm text-muted-foreground">
         {t("join.haveAccount")}{" "}

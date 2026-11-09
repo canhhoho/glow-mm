@@ -9,6 +9,7 @@ import { NOT_STAFF, portalAllowsRole, USER_INACTIVE } from "@/server/auth/roles"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Notice } from "@/components/ui/notice";
 
 const field = "h-11 bg-card pl-9";
 const fieldIcon = "pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground";
@@ -80,9 +81,7 @@ export function LoginForm({ portal }: { portal: "admin" | "ctv" }) {
         </div>
       </div>
       {error && (
-        <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {t(error)}
-        </p>
+        <Notice tone="danger">{t(error)}</Notice>
       )}
       <Button type="submit" className="h-11 w-full text-base" disabled={pending}>
         {pending && <Loader2 className="animate-spin" aria-hidden />}

@@ -156,7 +156,7 @@ export function LoginForm({ prefix, next, emailEnabled }: { prefix: string; next
         />
       </label>
       <PasswordInput name="password" autoComplete="current-password" label={t("password")} />
-      {error && <Notice tone="error">{t(`err.${error}`, { min: 8 })}</Notice>}
+      {error && <Notice tone="danger">{t(`err.${error}`, { min: 8 })}</Notice>}
       <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
         {t("submitLogin")}
       </button>
@@ -192,7 +192,7 @@ export function PhoneRegisterForm({ locale, next }: { locale: string; next: stri
       <PasswordInput name="password" autoComplete="new-password" label={t("password")} />
       <p className="-mt-2 text-xs text-muted-foreground">{t("passwordHint")}</p>
       <PasswordInput name="confirmPassword" autoComplete="new-password" label={t("confirmPassword")} />
-      {state?.error && <Notice tone="error">{t(`err.${state.error}`, { min: 8 })}</Notice>}
+      {state?.error && <Notice tone="danger">{t(`err.${state.error}`, { min: 8 })}</Notice>}
       <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
         {t("submitRegister")}
       </button>
@@ -236,7 +236,7 @@ export function RegisterForm({ prefix, next }: { prefix: string; next: string })
       <PasswordInput name="password" autoComplete="new-password" label={t("password")} />
       <p className="-mt-2 text-xs text-muted-foreground">{t("passwordHint")}</p>
       <PasswordInput name="confirmPassword" autoComplete="new-password" label={t("confirmPassword")} />
-      {error && <Notice tone="error">{t(`err.${error}`, { min: 8 })}</Notice>}
+      {error && <Notice tone="danger">{t(`err.${error}`, { min: 8 })}</Notice>}
       <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
         {t("submitRegister")}
       </button>
@@ -265,7 +265,7 @@ export function ForgotPasswordForm({ prefix }: { prefix: string }) {
   return (
     <form onSubmit={onSubmit} className="space-y-3">
       <EmailInput />
-      {error && <Notice tone="error">{t(`err.${error}`, { min: 8 })}</Notice>}
+      {error && <Notice tone="danger">{t(`err.${error}`, { min: 8 })}</Notice>}
       <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
         {t("sendLink")}
       </button>
@@ -307,7 +307,7 @@ export function ResetPasswordForm({ token, loginHref }: { token: string; loginHr
       <PasswordInput name="password" autoComplete="new-password" label={t("newPassword")} />
       <p className="-mt-2 text-xs text-muted-foreground">{t("passwordHint")}</p>
       <PasswordInput name="confirmPassword" autoComplete="new-password" label={t("confirmPassword")} />
-      {error && <Notice tone="error">{t(`err.${error}`, { min: 8 })}</Notice>}
+      {error && <Notice tone="danger">{t(`err.${error}`, { min: 8 })}</Notice>}
       <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
         {t("savePassword")}
       </button>
