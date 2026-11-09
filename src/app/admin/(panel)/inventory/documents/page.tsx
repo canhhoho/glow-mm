@@ -3,20 +3,26 @@ import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { listDocuments } from "@/server/inventory/queries";
 import { NewDocMenu } from "@/components/admin/stock-parts";
-import { Badge, DataTable, Page, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, Page, PageHeader, TabNav, Td } from "@/components/admin/ui";
 import { fmtDate } from "@/lib/format";
 
 const STATUS_TONE = { DRAFT: "warning", POSTED: "success", CANCELLED: "neutral" } as const;
 
-export default async function DocumentsPage() {
+export default async function DocumentsPage({ searchParams }: PageProps<"/admin/inventory/documents">) {
   const user = await requirePagePermission("stock:view");
-  const [t, docs] = await Promise.all([getTranslations("Docs"), listDocuments({})]);
+  const sp = await searchParams;
+  // Danh sách chỉ có hai nhóm. Phiếu đã huỷ vẫn giữ để tra cứu lịch sử qua trang chi tiết.
+  const status = sp.status === "DRAFT" ? "DRAFT" : "POSTED";
+  const [t, docs] = await Promise.all([getTranslations("Docs"), listDocuments({ status })]);
   return (
     <Page>
       <PageHeader
         title={t("title")}
         actions={<NewDocMenu role={user.role} label={t("new")} td={t} />}
       />
+      <TabNav label={t("status")} tabs={(["POSTED", "DRAFT"] as const).map((s) => ({
+        href: `/admin/inventory/documents?status=${s}`, active: status === s, label: t(s),
+      }))} />
       <DataTable
         stack
         empty={t("empty")}

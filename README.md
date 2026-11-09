@@ -57,6 +57,9 @@ Giá vốn = giá mua + phí đưa về kho (VND/đv), quy đổi theo tỷ giá
 
 ## Xử lý đơn và xuất VTP
 
+Danh sách **Phiếu kho** chỉ gồm hai nhóm **Đã ghi sổ** (mặc định) và **Nháp**.
+Phiếu đã huỷ không hiện trong danh sách; dữ liệu lịch sử và trang chi tiết vẫn được giữ.
+
 Quy trình: **Chờ xác nhận → Chuẩn bị giao → Đang giao → Hoàn tất**. Nhân viên gọi
 xác nhận đơn COD hoặc đối chiếu tiền chuyển khoản rồi bấm **Đã nhận tiền**; khách
 không cần tải biên lai. Hệ thống xuất kho FEFO khi bấm **Đã bàn giao vận chuyển**.
