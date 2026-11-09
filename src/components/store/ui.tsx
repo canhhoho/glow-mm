@@ -2,16 +2,19 @@ import { ChevronRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { FIELD } from "@/components/ui/field";
+import { buttonVariants } from "@/components/ui/button-variants";
 
 /** Lớp giao diện storefront (mobile-first, vùng bấm ≥ 44px, màu theo design token). */
 
 export const storeField = FIELD.touch;
 
-export const primaryButton =
-  "inline-flex h-11 shrink-0 items-center justify-center rounded-lg bg-brand px-5 whitespace-nowrap font-medium text-brand-foreground hover:bg-brand/90 disabled:opacity-50";
+/**
+ * Nút storefront = `buttonVariants` dùng chung, cỡ `touch` (h-11), dạng chuỗi class (không thêm JS client).
+ * Giữ nét riêng của store: nút chính rộng hơn (px-5), hover nhạt hơn; nút viền nền trắng (bg-card), chữ thường.
+ */
+export const primaryButton = cn(buttonVariants({ size: "touch" }), "px-5 hover:bg-primary/90");
 
-export const outlineButton =
-  "inline-flex h-11 shrink-0 items-center justify-center rounded-lg border border-border bg-card px-4 whitespace-nowrap hover:bg-muted disabled:opacity-50";
+export const outlineButton = cn(buttonVariants({ variant: "outline", size: "touch" }), "bg-card font-normal");
 
 /** Khối nội dung dạng card (nền trắng, bo góc) — mobile sát lề, từ sm có viền + padding. */
 export const storeCard = "rounded-xl bg-card p-3 ring-1 ring-border sm:p-4";

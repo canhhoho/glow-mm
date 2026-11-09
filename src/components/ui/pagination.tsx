@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import type { Density } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +31,8 @@ export function Pagination({
   density?: Density;
   className?: string;
 }) {
-  const button = buttonVariants({ variant: "outline", size: density === "touch" ? "touch" : "lg" });
+  // touch = nút viền của storefront (nền trắng, chữ thường) — khớp `outlineButton` trong store/ui.
+  const button = cn(buttonVariants({ variant: "outline", size: density === "touch" ? "touch" : "lg" }), density === "touch" && "bg-card font-normal");
   return (
     <nav aria-label={label} className={cn("flex flex-wrap items-center justify-center gap-3", className)}>
       {page > 1 && (

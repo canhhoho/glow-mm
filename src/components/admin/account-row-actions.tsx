@@ -3,7 +3,6 @@ import { LockKeyhole, LockKeyholeOpen, Pencil, Trash2 } from "lucide-react";
 import { ActionButton } from "@/components/admin/action-button";
 import { buttonVariants } from "@/components/ui/button";
 import type { ActionState } from "@/server/inventory/actions";
-import { cn } from "@/lib/utils";
 
 type Action = (prev: ActionState, fd: FormData) => Promise<ActionState>;
 
@@ -30,7 +29,7 @@ export function AccountRowActions({
         href={editHref}
         aria-label={editLabel}
         title={editLabel}
-        className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "size-11 md:size-9")}
+        className={buttonVariants({ variant: "outline", size: "icon-lg" })}
       >
         <Pencil aria-hidden="true" />
       </Link>

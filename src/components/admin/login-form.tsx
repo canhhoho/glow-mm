@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
+import { Loader2, Lock, Mail } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { NOT_STAFF, portalAllowsRole, USER_INACTIVE } from "@/server/auth/roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Notice } from "@/components/ui/notice";
+import { PasswordToggle } from "@/components/ui/password-toggle";
 
 const field = "h-11 bg-card pl-9";
 const fieldIcon = "pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground";
@@ -69,21 +70,13 @@ export function LoginForm({ portal }: { portal: "admin" | "ctv" }) {
             required
             className={`${field} pr-11`}
           />
-          <button
-            type="button"
-            onClick={() => setShowPassword((v) => !v)}
-            aria-label={t(showPassword ? "hidePassword" : "showPassword")}
-            aria-pressed={showPassword}
-            className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-r-lg text-muted-foreground hover:text-foreground"
-          >
-            {showPassword ? <EyeOff className="size-4" aria-hidden /> : <Eye className="size-4" aria-hidden />}
-          </button>
+          <PasswordToggle shown={showPassword} onToggle={() => setShowPassword((v) => !v)} showLabel={t("showPassword")} hideLabel={t("hidePassword")} />
         </div>
       </div>
       {error && (
         <Notice tone="danger">{t(error)}</Notice>
       )}
-      <Button type="submit" className="h-11 w-full text-base" disabled={pending}>
+      <Button type="submit" size="touch" className="w-full" disabled={pending}>
         {pending && <Loader2 className="animate-spin" aria-hidden />}
         {t("submit")}
       </Button>

@@ -44,7 +44,7 @@ export default async function CtvAccountPage() {
         <h2 className="font-medium">{tNav("language")}</h2>
         <CtvLocaleSwitch />
       </div>
-      <CtvSignOut buttonClassName="h-11 w-full" />
+      <CtvSignOut block />
     </div>
   );
 }

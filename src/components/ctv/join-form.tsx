@@ -63,7 +63,7 @@ export function JoinForm({ invite, minPassword }: { invite: string; minPassword:
       {state?.error && (
         <Notice tone="danger">{state.error}</Notice>
       )}
-      <Button type="submit" className="h-11 w-full text-base" disabled={pending}>
+      <Button type="submit" size="touch" className="w-full" disabled={pending}>
         {pending && <Loader2 className="animate-spin" aria-hidden />}
         {t("submit")}
       </Button>

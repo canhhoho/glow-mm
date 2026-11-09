@@ -44,7 +44,6 @@ export function ActionButton({
         disabled={pending}
         aria-label={label}
         title={icon ? label : undefined}
-        className={icon && iconOnly ? "size-11 md:size-9" : undefined}
       >
         {icon}
         {icon && iconOnly ? <span className="sr-only">{label}</span> : label}
