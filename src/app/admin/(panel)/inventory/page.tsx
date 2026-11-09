@@ -198,7 +198,7 @@ function Tile({
   testId?: string;
 }) {
   const cls = cn(
-    "block w-40 flex-none rounded-xl border p-3 lg:w-auto lg:p-4",
+    "block w-40 flex-none rounded-lg border p-3 lg:w-auto lg:p-4",
     tone === "warning" && "border-warning-border bg-warning-subtle/60 text-warning-foreground",
     tone === "danger" && "border-danger-border bg-danger-subtle/60 text-danger-foreground",
     href && "hover:brightness-95",
@@ -378,7 +378,7 @@ function ProductView({
           const e = c?.earliest;
           const level = e ? classifyExpiry(e.expiryDate, now, th) : null;
           return (
-            <div key={r.variantId} data-testid="stock-card" className={cn("rounded-xl border p-3", level && level !== "near" && "border-danger-border")}>
+            <div key={r.variantId} data-testid="stock-card" className={cn("rounded-lg border p-3", level && level !== "near" && "border-danger-border")}>
               <div className="flex gap-3">
                 <Thumb url={r.imageUrl} alt={r.name} size="md" />
                 <div className="min-w-0 flex-1">

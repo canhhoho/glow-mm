@@ -156,12 +156,15 @@ export function TabNav({
 
 /** Khối nội dung có khung + tiêu đề (form tạo mới, nhóm thông tin). */
 export function Section({
+  id,
   title,
   actions,
   className,
   children,
   testId,
 }: {
+  /** Neo `#id` để link nhảy tới khối (thêm `scroll-mt-*` qua `className` nếu có header dính). */
+  id?: string;
   title?: React.ReactNode;
   actions?: React.ReactNode;
   className?: string;
@@ -170,7 +173,7 @@ export function Section({
 }) {
   return (
     // Tiêu đề chữ → section có tên (role region) để trình đọc màn hình/E2E tìm theo tên khối.
-    <section className={cn("space-y-3 rounded-lg border p-4", className)} data-testid={testId} aria-label={typeof title === "string" ? title : undefined}>
+    <section id={id} className={cn("space-y-3 rounded-lg border p-4", className)} data-testid={testId} aria-label={typeof title === "string" ? title : undefined}>
       {(title || actions) && (
         <div className="flex flex-wrap items-center justify-between gap-2">
           {title && <h2 className="font-medium">{title}</h2>}

@@ -16,7 +16,7 @@ import { availableTransitions, TRANSITIONS } from "@/server/orders/state-machine
 import { ActionForm } from "@/components/admin/action-form";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/admin/order-badges";
 import { TransitionForm, type TransitionField } from "@/components/admin/transition-form";
-import { Badge, DataTable, fieldClass, LinkButton, Page, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, fieldClass, LinkButton, Page, PageHeader, Section, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { vtpPreview } from "@/server/orders/vtp-data";
@@ -91,15 +91,14 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
       </div>
       {order.pick && <section className="space-y-2" data-testid="order-pick"><h2 className="font-medium">{t("bulk.pickTitle")}</h2><p className="text-sm">{t("bulk.pickPrintedAt", { time: fmtDateTime(order.pick.printedAt) })}</p>{!order.pick.consumedAt && <LinkButton href={`/admin/orders/pick-list?ids=${order.id}`}>{t("bulk.pickTitle")}</LinkButton>}<DataTable head={["SKU", t("bulk.pickLot"), t("warehouse"), t("bulk.pickQty")]}>{order.pick.lines.map(l => <tr key={l.id}><Td>{l.batch.variant.sku}</Td><Td>{l.batch.lotNo} · {fmtDay(l.batch.expiryDate)}</Td><Td>{l.location.code}</Td><Td>{l.qty}</Td></tr>)}</DataTable></section>}
 
-      {order.paymentMethod === "COD" && <section className="space-y-3 rounded-xl border p-4">
-        <h2 className="font-medium">{tc("title")}</h2>
+      {order.paymentMethod === "COD" && <Section title={tc("title")}>
         <p className="text-sm text-muted-foreground">{tc("help")}</p>
         <p className="text-sm">{tc("collectedAt")}: {fmtDateTime(order.codCollectedAt)} · {order.codRemittedAt ? tc("remitted") : order.codCollectedAt ? tc("waiting") : tc("notCollected")}</p>
         {order.codRemittedAt && <p className="text-sm">{tc("received")}: {fmtInt(order.codRemittedMmk)} MMK · {tc("fee")}: {fmtInt(order.codCarrierFeeMmk)} MMK · {order.codRemittanceRef} · {fmtDateTime(order.codRemittedAt)}</p>}
         {order.codAdjustmentMmk != null && <p className="text-sm">{tc("adjustment")}: {fmtInt(order.codAdjustmentMmk)} MMK · {order.codSettlementNote}</p>}
         {order.codRemittedAt && (order.status === "RETURNED" || order.paymentStatus === "REFUNDED" || order.items.some((i) => i.returnedQty > 0)) && <p className="text-sm text-muted-foreground">{tc("exception")}</p>}
         {can(user.role, "orders:reconcile-cod") && order.codCollectedAt && !order.codRemittedAt && ((order.status === "COMPLETED" || order.status === "RETURNED") ? <CodSettlement orderId={order.id} total={order.totalMmk} exception={order.status !== "COMPLETED" || order.paymentStatus !== "PAID" || order.items.some((i) => i.returnedQty > 0)} /> : <p className="text-sm text-muted-foreground">{tc("exception")}</p>)}
-      </section>}
+      </Section>}
 
       <section className="grid gap-6 md:grid-cols-2 [&>*]:min-w-0">
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
@@ -169,8 +168,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
         </ActionForm>
       )}
 
-      <section className="space-y-2 rounded-lg border p-4" data-testid="order-affiliate">
-        <h2 className="font-medium">{ta("orderSection")}</h2>
+      <Section title={ta("orderSection")} className="space-y-2" testId="order-affiliate">
         {order.affiliate ? (
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
             <dt className="text-muted-foreground">{t("colAffiliate")}</dt>
@@ -273,7 +271,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
             </div>
           </ActionForm>
         )}
-      </section>
+      </Section>
 
       <section className="space-y-2">
         <h2 className="font-medium">{t("items")}</h2>

@@ -73,7 +73,7 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
         {detail.name} ({batch.variant.label}) · <span className="font-mono">{batch.variant.sku}</span>
       </p>
 
-      <dl className="grid grid-cols-2 gap-3 rounded-xl border p-4 text-sm sm:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-3 rounded-lg border p-4 text-sm sm:grid-cols-4">
         {info.map(([label, value]) => (
           <div key={label}>
             <dt className="text-xs text-muted-foreground">{label}</dt>

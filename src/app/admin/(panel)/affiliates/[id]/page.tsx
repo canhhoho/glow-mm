@@ -22,7 +22,7 @@ import { ActionForm } from "@/components/admin/action-form";
 import { FileField } from "@/components/admin/file-field";
 import { AffiliateFields, CommissionBadge } from "@/components/admin/affiliate-parts";
 import { OrderStatusBadge } from "@/components/admin/order-badges";
-import { Badge, DataTable, fieldClass, Page, PageHeader, Stat, Td } from "@/components/admin/ui";
+import { Badge, DataTable, fieldClass, Page, PageHeader, Section, Stat, Td } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ctv/copy-button";
 import { cn } from "@/lib/utils";
@@ -140,8 +140,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
         </div>
       </section>
 
-      <section id="affiliate-payouts" className="scroll-mt-20 space-y-2 rounded-lg border p-4">
-        <h2 className="font-medium">{t("due")}</h2>
+      <Section id="affiliate-payouts" title={t("due")} className="scroll-mt-20 space-y-2">
         {a.due.entries.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("dueEmpty")}</p>
         ) : (
@@ -184,7 +183,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
             )}
           </>
         )}
-      </section>
+      </Section>
 
       <section className="space-y-2">
         <h2 className="font-medium">{t("orders")}</h2>

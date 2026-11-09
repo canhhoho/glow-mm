@@ -18,9 +18,9 @@ export function CatalogImport() {
   const [state, action, pending] = useActionState(catalogImportAction, undefined);
   const preview = state?.preview;
   return (
-    <section className="space-y-4 rounded-xl border p-4 sm:p-6">
+    <section className="space-y-4 rounded-lg border p-4">
       <div>
-        <h2 className="text-lg font-semibold">{t("title")}</h2>
+        <h2 className="font-medium">{t("title")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{t("help")}</p>
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">

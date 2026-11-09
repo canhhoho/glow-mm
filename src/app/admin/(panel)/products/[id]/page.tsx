@@ -10,7 +10,7 @@ import { ActionForm } from "@/components/admin/action-form";
 import { ProductForm } from "@/components/admin/product-form";
 import { ProductImageUpload } from "@/components/admin/product-images";
 import Link from "next/link";
-import { Badge, fieldClass, Page, PageHeader } from "@/components/admin/ui";
+import { Badge, fieldClass, Page, PageHeader, Section } from "@/components/admin/ui";
 import { loadReadiness } from "@/server/catalog/readiness";
 import { localizedPath } from "@/lib/site";
 import { prisma } from "@/lib/db";
@@ -104,8 +104,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           </ul>
         )}
       </section>
-      <section className="space-y-3 rounded-xl border p-4" data-testid="launch-check">
-        <h2 className="font-medium">{t("launchCheck")}</h2>
+      <Section title={t("launchCheck")} testId="launch-check">
         <p className="text-sm">
           {readiness.errors.length > 0
             ? t(product.published ? "readiness.publishedWithErrors" : "readiness.blockedHint", { count: readiness.errors.length })
@@ -133,7 +132,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           <span aria-hidden>→</span>
           <span>{t("readiness.stepPublish")}</span>
         </nav>
-      </section>
+      </Section>
       {/* key: nạp lại state form sau khi lưu */}
       <ProductForm key={JSON.stringify(product)} initial={product} options={options} />
     </Page>

@@ -97,7 +97,7 @@ export default async function CustomerAccountsPage({ searchParams }: PageProps<"
           })}
         </DataTable>
       </section>
-      <details className="group/help rounded-xl border bg-muted/30 p-4">
+      <details className="group/help rounded-lg border bg-muted/30 p-4">
         <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium [&::-webkit-details-marker]:hidden">
           <Info className="size-4 text-muted-foreground" aria-hidden />{t("helpTitle")}
           <ChevronDown className="ml-auto size-4 text-muted-foreground transition-transform group-open/help:rotate-180" aria-hidden />
