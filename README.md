@@ -24,19 +24,24 @@ cũ làm mẫu, mở **Sao chép từ sản phẩm cũ** trên trang Thêm sản
 Bản sao giữ nội dung, giá, biến thể và ảnh; không sao chép tồn kho. Sản phẩm mới mặc định ẩn trên cửa hàng.
 
 **Nhập / cập nhật bằng Excel** (Sản phẩm → Nhập từ Excel): một sheet `Nhap hang`, mỗi dòng một SKU.
-- **Tải file mẫu trống** để tạo mới, hoặc **Tải danh sách sản phẩm hiện có** để sửa giá/tên rồi tải lên lại.
+- **Tải file mẫu trống** để tạo mới, hoặc **Tải danh sách sản phẩm hiện có** để sửa thông tin rồi tải lên lại.
   File sinh lúc tải, có danh sách thả xuống (thương hiệu, danh mục, kho bán, Có/Không) theo dữ liệu thật.
+- Mẫu mở sẵn 5 cột thông tin chính: Tên Myanmar, Tên tiếng Anh, Thương hiệu, Danh mục, Biến thể;
+  chỉ cần một tên + thương hiệu + danh mục. Cột Kho bán chỉ hiện khi có nhiều kho.
+  Cột phụ thu gọn, bấm dấu **+** phía trên cột để mở (mô tả, khối lượng, hạn dùng, SKU, phí, số lô).
+  File cập nhật luôn hiện SKU. Mẫu không có cột giá bán/hoa hồng; đặt tại **bước 3 — Giá bán** trên website.
 - Tạo mới: để trống SKU; các dòng cùng tên + thương hiệu là các màu/dung tích của một sản phẩm; mã tự sinh,
   sản phẩm mới luôn ẩn. Cập nhật: điền SKU đã có, ô trống = giữ nguyên. Không đổi kho bán/combo qua Excel.
 - Nhập tồn (tuỳ chọn): Số lượng + Giá mua (VND hay MMK theo kho bán) [+ phí đưa về kho, số lô, hạn dùng].
+  Giá mua dùng tính vốn, khác giá bán. Không nhập tồn thì để trống toàn bộ cột xanh, kể cả hạn và số lô.
   Hệ thống tạo **phiếu nhập nháp** theo kho bán, chốt tỷ giá đã xem trước; mở phiếu kiểm tra rồi **Ghi sổ**.
   File đã nhập tồn không nhập lại được; file chỉ sửa giá thì chạy lại được.
 - Luôn **Xem trước**: từng dòng ghi Tạo mới / Cập nhật (giá cũ → mới) / Không đổi; còn lỗi thì không xác nhận.
   File cũ có cột phụ (cách dùng, thành phần, bảo quản, PAO, ngày sản xuất, loại hàng) vẫn đọc được;
   mẫu hai sheet cũ (`San pham` + `Ton dau ky`) không dùng nữa.
 
-**Hoa hồng CTV theo sản phẩm:** ô **Hoa hồng CTV (MMK/cái)** trên từng biến thể (form sản phẩm hoặc cột cùng tên
-trong file Excel). Có mức thì CTV nhận số tiền đó cho mỗi cái bán ra; để trống thì tính theo % của CTV như trước.
+**Hoa hồng CTV theo sản phẩm:** ô **Hoa hồng CTV (MMK/cái)** trên từng biến thể tại **bước 3 — Giá bán**.
+Có mức thì CTV nhận số tiền đó cho mỗi cái bán ra; để trống thì tính theo % của CTV như trước.
 Mức được chốt vào đơn lúc gắn CTV — đổi mức sau không ảnh hưởng đơn cũ. Hoa hồng cấp trên vẫn là % trên tiền hàng.
 
 Hạn dùng quản lý theo sản phẩm/lô: lô có ngày (`DATED`), không áp dụng hạn (`NONE`, chỉ với sản phẩm

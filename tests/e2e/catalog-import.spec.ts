@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { readSheet } from "read-excel-file/node";
 import { CATALOG_HEADER_ROW, CATALOG_SHEET, sheetHeaderKey } from "../../src/lib/catalog-sheet";
+import { toCsv } from "../../src/lib/csv";
 import { login, openProductEdit, openProductSettings, priceInputs, setPrices } from "./helpers";
 
 const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -41,6 +42,25 @@ async function upload(page: Page, name: string, buffer: Buffer) {
   await expect(page.getByTestId("catalog-import-preview")).toBeVisible({ timeout: 30_000 });
 }
 
+test("file lỗi vẫn hiện Xác nhận nhập; sửa file và xem trước lại thì mở nút", async ({ page }) => {
+  await login(page, "admin@glow.local");
+  await page.goto("/admin/products/import");
+  const template = await download(page, "Tải file mẫu trống");
+  const product = { name_en: `Preview only ${Date.now()}`, brand: "Sen Việt", category: "skincare" };
+  await upload(page, "loi.xlsx", fillCatalogTemplate(template.bytes, [{ ...product, category: `missing-${Date.now()}` }]));
+  const preview = page.getByTestId("catalog-import-preview");
+  const confirm = preview.getByRole("button", { name: "Xác nhận nhập", exact: true });
+  await expect(confirm).toBeVisible();
+  await expect(confirm).toBeDisabled();
+  await expect(preview).toContainText("Chưa thể xác nhận vì file còn lỗi");
+
+  await upload(page, "da-sua.xlsx", fillCatalogTemplate(template.bytes, [product]));
+  await expect(confirm).toBeVisible();
+  await expect(confirm).toBeEnabled();
+  await expect(preview).not.toContainText("Chưa thể xác nhận vì file còn lỗi");
+  // Chỉ kiểm tra xem trước, không ghi sản phẩm/tồn vào DB.
+});
+
 test("mẫu một sheet: tạo SP hai biến thể kèm tồn → xem trước → xác nhận → ghi sổ phiếu nháp", async ({ page }) => {
   test.setTimeout(150_000);
   const suffix = Date.now();
@@ -50,8 +70,8 @@ test("mẫu một sheet: tạo SP hai biến thể kèm tồn → xem trước �
   const template = await download(page, "Tải file mẫu trống");
   expect(template.name).toBe("mau-nhap-san-pham.xlsx");
   const filled = fillCatalogTemplate(template.bytes, [
-    { name_my: `နေကာခရင်မ် ${suffix}`, name_en: name, brand: "Sen Việt", category: "skincare", variant_label: "50 ml", price_mmk: 27000, weight_g: 90, description_en: "Imported through the Excel browser flow.", warehouse_code: "THAM", qty: 3, expiry_date: "31/03/2028", unit_cost: 100000, inbound_unit_vnd: 5000 },
-    { name_my: `နေကာခရင်မ် ${suffix}`, name_en: name, brand: "Sen Việt", category: "skincare", variant_label: "100 ml", price_mmk: 42000, weight_g: 140, warehouse_code: "THAM" },
+    { name_my: `နေကာခရင်မ် ${suffix}`, name_en: name, brand: "Sen Việt", category: "skincare", variant_label: "50 ml", weight_g: 90, description_en: "Imported through the Excel browser flow.", warehouse_code: "THAM", qty: 3, expiry_date: "31/03/2028", unit_cost: 100000, inbound_unit_vnd: 5000 },
+    { name_my: `နေကာခရင်မ် ${suffix}`, name_en: name, brand: "Sen Việt", category: "skincare", variant_label: "100 ml", weight_g: 140, warehouse_code: "THAM" },
   ]);
   await upload(page, "nhap.xlsx", filled);
   const preview = page.getByTestId("catalog-import-preview");
@@ -126,11 +146,12 @@ test("cập nhật giá: danh sách SP hiện có chứa SKU; tải lên dòng S
   const keys = rows[CATALOG_HEADER_ROW - 1].map(sheetHeaderKey);
   const mine = rows.find((r) => r[keys.indexOf("sku")] === sku)!;
   expect(mine[keys.indexOf("name_en")]).toBe(nameEn);
-  expect(Number(mine[keys.indexOf("price_mmk")])).toBe(original);
+  expect(keys).not.toContain("price_mmk");
+  expect(keys).not.toContain("affiliate_commission_mmk");
 
-  const blank = await download(page, "Tải file mẫu trống");
   try {
-    await upload(page, "cap-nhat.xlsx", fillCatalogTemplate(blank.bytes, [{ sku, price_mmk: next }]));
+    // File mẫu mới tập trung thông tin SP; file CSV cũ vẫn hỗ trợ sửa giá SKU đã có.
+    await upload(page, "cap-nhat.csv", Buffer.from(toCsv([["sku", "brand", "category", "price_mmk"], [sku, "", "", String(next)]])));
     const preview = page.getByTestId("catalog-import-preview");
     await expect(preview).toContainText("0 SP mới · 1 SP cập nhật");
     await expect(preview.getByRole("row").filter({ hasText: sku })).toContainText("Cập nhật");

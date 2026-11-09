@@ -2011,6 +2011,7 @@
     "expiryNone": "no expiry",
     "confirmHelp": "New products are created hidden. Stock creates DRAFT receipts per sales warehouse — open them, check, then Post.",
     "confirm": "Confirm import",
+    "confirmBlocked": "You cannot confirm while the file has errors. Fix the errors above, select the corrected file and click Preview again.",
     "success": "Imported: {created} new, {updated} updated products.",
     "reviewDraft": "review and post",
     "finishProducts": "Back to products to add images and publish"

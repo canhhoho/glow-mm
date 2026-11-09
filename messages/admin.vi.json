@@ -2011,6 +2011,7 @@
     "expiryNone": "không hạn dùng",
     "confirmHelp": "Sản phẩm mới được tạo ở trạng thái ẩn. Tồn tạo phiếu nhập NHÁP theo kho bán — mở phiếu kiểm tra rồi Ghi sổ.",
     "confirm": "Xác nhận nhập",
+    "confirmBlocked": "Chưa thể xác nhận vì file còn lỗi. Sửa các lỗi phía trên, chọn lại file rồi bấm Xem trước.",
     "success": "Đã nhập: {created} SP mới, {updated} SP cập nhật.",
     "reviewDraft": "kiểm tra và ghi sổ",
     "finishProducts": "Về danh sách sản phẩm để thêm ảnh và bật hiển thị"
