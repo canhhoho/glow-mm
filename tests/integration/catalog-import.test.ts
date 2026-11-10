@@ -90,6 +90,22 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     expect(await prisma.priceHistory.count({ where: { variantId: f.variantId } })).toBe(1);
   });
 
+  it("thương hiệu khác cách viết nhưng cùng slug với thương hiệu có sẵn → dùng lại, có cảnh báo", async () => {
+    const { f, cat } = await setup();
+    const existing = await prisma.brand.create({ data: { name: `Kerastase ${f.tag}`, slug: `kerastase-${f.tag.toLowerCase()}` } });
+    const preview = await previewCatalogImport(sheet([
+      { name_en: `Comb ${f.tag}`, brand: `Kérastase ${f.tag}`, category: cat, warehouse_code: f.mm.code, has_expiry: "Không" },
+      { name_en: `Serum ${f.tag}`, brand: `Kérastase ${f.tag}`, category: cat, warehouse_code: f.mm.code },
+    ]));
+    expect(preview.errors).toEqual([]);
+    expect(preview.counts).toMatchObject({ createdProducts: 2 });
+    expect(preview.warnings.filter((w) => w.includes("dùng chung với"))).toHaveLength(1);
+    await commitCatalogImport(preview.input, f.userId);
+    const products = await prisma.product.findMany({ where: { translations: { some: { name: { in: [`Comb ${f.tag}`, `Serum ${f.tag}`] } } } } });
+    expect(products.map((p) => p.brandId)).toEqual([existing.id, existing.id]);
+    expect(await prisma.brand.count({ where: { slug: `kerastase-${f.tag.toLowerCase()}` } })).toBe(1);
+  });
+
   it("dòng không SKU cùng tên + thương hiệu với SKU có sẵn → thêm biến thể vào sản phẩm đó", async () => {
     const { f, cat } = await setup();
     const input = sheet([
