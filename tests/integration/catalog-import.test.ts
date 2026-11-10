@@ -178,7 +178,7 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     expect((await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).priceMmk).toBe(11000);
 
     // Payload cũ không có priceBase nhưng file có đổi giá → cũng bị huỷ (phải xem trước lại).
-    const { priceBase: _drop, ...noBase } = (await previewCatalogImport(input)).input;
+    const noBase = { ...(await previewCatalogImport(input)).input, priceBase: undefined };
     await expect(commitCatalogImport(noBase, f.userId, { allowPricing: true })).rejects.toThrow("vừa thay đổi");
 
     // Xem trước lại → xác nhận được.
