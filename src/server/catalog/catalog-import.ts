@@ -13,6 +13,7 @@ import { defaultStockLocationId } from "@/server/inventory/warehouses";
 import { productName } from "@/server/inventory/queries";
 import { PRODUCT_EDIT_INCLUDE, toProductEditData, type ProductEditData } from "./admin-queries";
 import { saveProduct } from "./products";
+import { brandSlug } from "./brands";
 import { MAX_SHEET_ROWS } from "./catalog-sheet-read";
 
 /**
@@ -101,7 +102,7 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
   const slugs = [...new Set(rows.map((r) => r.product_slug?.trim()).filter(Boolean))];
   const [categories, brands, locations, rate, owners] = await Promise.all([
     db.category.findMany({ select: { id: true, slug: true, translations: { select: { locale: true, name: true } } } }),
-    db.brand.findMany({ select: { id: true, name: true } }),
+    db.brand.findMany({ select: { id: true, name: true, slug: true } }),
     db.location.findMany({ where: { active: true }, select: { id: true, code: true, sellable: true, pricingMode: true } }),
     db.exchangeRate.findFirst({ where: { effectiveAt: { lte: new Date() } }, orderBy: [{ effectiveAt: "desc" }, { id: "desc" }] }),
     db.product.findMany({
@@ -123,7 +124,14 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
     if (hits.length > 1) throw new Error(`Có nhiều danh mục tên "${value}" — điền mã danh mục`);
     return hits[0].id;
   };
-  const brandOf = (value: string) => brands.find((b) => fold(b.name) === fold(value));
+  // Theo tên, rồi theo slug: "Estée Lauder" dùng lại "Estee Lauder" đã có (slug thương hiệu là unique).
+  const brandOf = (value: string) => {
+    const byName = brands.find((b) => fold(b.name) === fold(value));
+    if (byName) return byName;
+    const slug = brandSlug(value);
+    return slug ? brands.find((b) => b.slug === slug) : undefined;
+  };
+  const brandAliasWarned = new Set<string>();
 
   // ── Gom dòng thành sản phẩm ──
   const groups = new Map<string, Group>();
@@ -211,6 +219,10 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
         if (!categoryText) throw new Error("Chưa điền danh mục");
       }
       const brand = brandText ? brandOf(brandText) : undefined;
+      if (brand && fold(brand.name) !== fold(brandText) && !brandAliasWarned.has(fold(brandText))) {
+        brandAliasWarned.add(fold(brandText));
+        warnings.push(`Dòng ${rowsOf.map((r) => r.__line).join(", ")}: thương hiệu "${brandText}" dùng chung với "${brand.name}" đã có.`);
+      }
       const categoryId = categoryText ? categoryOf(categoryText) : base!.categoryId;
 
       // Kho bán.

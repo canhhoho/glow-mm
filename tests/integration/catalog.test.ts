@@ -156,6 +156,17 @@ describe("Sản phẩm", () => {
     await expect(saveProduct({ ...noBrand, slug: `b4-${f.tag.toLowerCase()}`, variants: [{ sku: `B4-${f.tag}`, label: "x", priceMmk: 1 }] }, f.userId)).rejects.toThrow(/thương hiệu/);
   });
 
+  it("gõ tên thương hiệu khác dấu/nháy nhưng cùng slug → dùng lại thương hiệu có sẵn (không lỗi Brand_slug_key)", async () => {
+    const f = await makeFixture();
+    const tag = f.tag.toLowerCase();
+    const existing = await prisma.brand.create({ data: { name: `L'Oreal Estee ${f.tag}`, slug: `l-oreal-estee-${tag}` } });
+    const { brandId: _ignored, ...noBrand } = base(f, `bs1-${tag}`);
+    void _ignored;
+    const saved = await saveProduct({ ...noBrand, brandName: `L’Oréal  Estée ${f.tag}`, variants: [{ sku: `BS1-${f.tag}`, label: "x", priceMmk: 1 }] }, f.userId);
+    expect(saved.brandId).toBe(existing.id);
+    expect(await prisma.brand.count({ where: { slug: `l-oreal-estee-${tag}` } })).toBe(1);
+  });
+
   it("hoa hồng CTV cố định: lưu theo biến thể, giữ khi không gửi, chặn khi lớn hơn giá", async () => {
     const f = await makeFixture();
     const slug = `hh-${f.tag.toLowerCase()}`;

@@ -3,7 +3,6 @@ import { z } from "zod";
 import { rawId, slugSchema } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { normalizeForSearch, toUnicode } from "@/lib/myanmar";
-import { slugify } from "@/lib/slug";
 import { resolveProductIdentifiers } from "@/lib/product-identifiers";
 import { assertStockLocation, defaultStockLocationId } from "@/server/inventory/warehouses";
 import type { Tx } from "@/server/inventory/ledger";
@@ -11,7 +10,7 @@ import { productName } from "@/server/inventory/queries";
 import { loadReadiness, ReadinessError } from "./readiness";
 import { blockingErrors, type Issue } from "./readiness-rules";
 import { guardApproval } from "./approval";
-import { pruneEmptyBrands } from "./brands";
+import { findOrCreateBrand, pruneEmptyBrands } from "./brands";
 
 /** Quản lý sản phẩm (admin). Giá đổi → ghi PriceHistory. Chữ Myanmar → Unicode trước khi lưu. */
 
@@ -120,12 +119,11 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
         throw new CatalogError(e instanceof Error ? e.message : String(e));
       }
     }
-    // Thương hiệu: chọn sẵn (brandId) hoặc gõ tên — tìm không phân biệt hoa thường, chưa có thì tạo
+    // Thương hiệu: chọn sẵn (brandId) hoặc gõ tên — tìm theo tên rồi theo slug, chưa có thì tạo
     // trong cùng transaction (lưu lỗi → không để lại thương hiệu thừa).
     const brand = parsed.brandId
       ? await tx.brand.findUnique({ where: { id: parsed.brandId } })
-      : (await tx.brand.findFirst({ where: { name: { equals: parsed.brandName!, mode: "insensitive" } } })) ??
-        (await tx.brand.create({ data: { name: parsed.brandName!, slug: slugify(parsed.brandName!, `brand-${Date.now()}`) } }));
+      : await findOrCreateBrand(tx, parsed.brandName!);
     if (!brand) throw new CatalogError("Không tìm thấy thương hiệu");
     const brandId = brand.id;
     const brandName = brand.name;
