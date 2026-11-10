@@ -23,6 +23,7 @@
     "vercel-build": "prisma migrate deploy && next build",
     "test:int": "vitest run -c vitest.integration.config.mts",
     "perf": "node scripts/lighthouse.mjs",
+    "data:check": "tsx scripts/data-checks.ts",
     "i18n:export": "tsx scripts/i18n-export.ts",
     "i18n:import": "tsx scripts/i18n-import.ts"
   },
