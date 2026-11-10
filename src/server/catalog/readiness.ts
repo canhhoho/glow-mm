@@ -20,7 +20,6 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
     select: {
       id: true,
       stockLocationId: true,
-      approvedAt: true,
       preorderEnabled: true,
       stockLocation: { select: { active: true, sellable: true, pricingMode: true } },
       images: { orderBy: { sortOrder: "asc" }, select: { alt: true } },
@@ -110,7 +109,6 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
         // Tồn ở kho bán khác kho của SP → không bán được cho đến khi chuyển kho.
         otherWarehouseSkus: skusWhere(mine, (b) => b.locationId !== p.stockLocationId),
         staleSkus,
-        approved: p.approvedAt != null,
         preorderEnabled: p.preorderEnabled,
       }),
     });

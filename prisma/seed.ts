@@ -130,6 +130,8 @@ async function seedCatalog() {
         storageNote: p.storageNote,
         published: true,
         approvedAt: new Date(), // QT2: dữ liệu mẫu đang hiển thị = đã duyệt (người duyệt = hệ thống)
+        approvalStatus: "APPROVED",
+        firstPublishedAt: new Date(),
         translations: {
           create: (["my", "en"] as const).map((locale) => ({
             locale,

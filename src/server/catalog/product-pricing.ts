@@ -3,7 +3,8 @@ import { z } from "zod";
 import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { variantCosts, type CostSource } from "@/server/pricing/cost";
-import { CatalogError } from "./products";
+import { CatalogError, lockCatalog } from "./products";
+import { effectivePrices, stagePrices } from "./change-request";
 import { guardApproval } from "./approval";
 
 /**
@@ -43,13 +44,17 @@ export const IMPORT_PRICE_PREFIX = "import:";
 export async function saveProductPricing(raw: unknown, userId: string) {
   const input = productPricingSchema.parse(raw);
   return prisma.$transaction(async (tx) => guardApproval(tx, [input.productId], userId, async () => {
+    await lockCatalog(tx);
     await tx.$queryRaw`SELECT "id" FROM "Product" WHERE "id" = ${input.productId} FOR UPDATE`;
     const product = await tx.product.findUnique({
       where: { id: input.productId },
-      select: { id: true, fixedProfitMmk: true, variants: { select: { id: true, sku: true, priceMmk: true, affiliateCommissionMmk: true } } },
+      select: { id: true, fixedProfitMmk: true, approvedAt: true, variants: { select: { id: true, sku: true, priceMmk: true, affiliateCommissionMmk: true } } },
     });
     if (!product) throw new CatalogError("Không tìm thấy sản phẩm");
-    const current = new Map(product.variants.map((v) => [v.id, v]));
+    // P1-A: SP đã duyệt → giá vào bản đang sửa (khách vẫn thấy giá đã duyệt); so xung đột theo giá hiệu lực.
+    const staged = product.approvedAt != null;
+    const effective = staged ? await effectivePrices(tx, product.id) : new Map(product.variants.map((v) => [v.id, v.priceMmk]));
+    const current = new Map(product.variants.map((v) => [v.id, { ...v, priceMmk: effective.get(v.id) ?? v.priceMmk, livePriceMmk: v.priceMmk }]));
     const priceChanges = input.variants.filter((v) => {
       const cur = current.get(v.id);
       if (!cur) throw new CatalogError("Biến thể không thuộc sản phẩm này");
@@ -57,6 +62,9 @@ export async function saveProductPricing(raw: unknown, userId: string) {
       return cur.priceMmk !== v.priceMmk;
     });
     if (priceChanges.length && !input.reason) throw new CatalogError("Nhập lý do sửa giá");
+    if (staged) {
+      await stagePrices(tx, product.id, priceChanges.map((v) => ({ variantId: v.id, priceMmk: v.priceMmk, reason: `${MANUAL_PRICE_PREFIX}${input.reason}` })), userId);
+    }
 
     const changes: { sku: string; price?: [number, number]; commission?: [number | null, number | null] }[] = [];
     for (const entry of input.variants) {
@@ -66,13 +74,14 @@ export async function saveProductPricing(raw: unknown, userId: string) {
       const priceChanged = cur.priceMmk !== v.priceMmk;
       const commissionChanged = cur.affiliateCommissionMmk !== v.affiliateCommissionMmk;
       if (!priceChanged && !commissionChanged) continue;
-      // Khoá theo giá đang đọc: bảng tính giá áp xen giữa → báo lỗi thay vì ghi đè.
+      // Khoá theo giá đang đọc: bảng tính giá áp xen giữa → báo lỗi thay vì ghi đè. SP đã duyệt: giá đã vào bản
+      // đang sửa ở trên, ở đây chỉ ghi hoa hồng CTV (không cần duyệt).
       const res = await tx.variant.updateMany({
-        where: { id: v.id, priceMmk: cur.priceMmk },
-        data: { priceMmk: v.priceMmk, affiliateCommissionMmk: v.affiliateCommissionMmk },
+        where: { id: v.id, priceMmk: cur.livePriceMmk },
+        data: { ...(!staged && { priceMmk: v.priceMmk }), affiliateCommissionMmk: v.affiliateCommissionMmk },
       });
       if (res.count !== 1) throw new CatalogError(`Giá của ${cur.sku} vừa được đổi ở nơi khác — tải lại trang`);
-      if (priceChanged) {
+      if (priceChanged && !staged) {
         await tx.priceHistory.create({
           data: { variantId: v.id, oldPriceMmk: cur.priceMmk, newPriceMmk: v.priceMmk, reason: `${MANUAL_PRICE_PREFIX}${input.reason}`, userId },
         });

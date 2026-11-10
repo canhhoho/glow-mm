@@ -93,6 +93,16 @@ const CHECKS: Check[] = [
   { group: "D11", key: "lot_with_shipment", title: "Lô gắn chuyến hàng", sql: `SELECT id AS ref FROM "Batch" WHERE "shipmentId" IS NOT NULL` },
 ];
 
+/** Chỉ chạy khi DB đã có migration P1-A (bảng ProductChangeRequest). */
+const AFTER_P1A: Check[] = [
+  {
+    group: "Sau P1-A", key: "change_request_without_approval", title: "Bản đang sửa của SP chưa có bản đã duyệt / trạng thái APPROVED (sai bất biến)",
+    sql: `SELECT p.slug AS ref FROM "ProductChangeRequest" c JOIN "Product" p ON p.id = c."productId" WHERE p."approvedAt" IS NULL OR p."approvalStatus" = 'APPROVED'`,
+  },
+  { group: "Sau P1-A", key: "open_change_requests", title: "Bản đang sửa đang mở (phải duyệt / huỷ hết trước khi rollback P1-A)", sql: `SELECT p.slug AS ref FROM "ProductChangeRequest" c JOIN "Product" p ON p.id = c."productId"` },
+  { group: "Sau P1-A", key: "published_without_first_publish", title: "SP đang đăng thiếu firstPublishedAt", sql: `SELECT slug AS ref FROM "Product" WHERE published AND "firstPublishedAt" IS NULL` },
+];
+
 async function main() {
   const args = new Set(process.argv.slice(2));
   const url = process.env.DATA_CHECKS_DATABASE_URL;
@@ -108,7 +118,8 @@ async function main() {
   try {
     await client.query("BEGIN TRANSACTION READ ONLY");
     version = (await client.query<{ version: string }>("SELECT version()")).rows[0].version;
-    for (const c of CHECKS) {
+    const hasP1a = (await client.query<{ ok: boolean }>(`SELECT to_regclass('"ProductChangeRequest"') IS NOT NULL AS ok`)).rows[0].ok;
+    for (const c of [...CHECKS, ...(hasP1a ? AFTER_P1A : [])]) {
       const rows = (await client.query<{ ref: string }>(`SELECT ref FROM (${c.sql}) q ORDER BY ref`)).rows;
       results.push({ group: c.group, key: c.key, title: c.title, count: rows.length, sample: rows.slice(0, SAMPLE).map((r) => r.ref) });
     }

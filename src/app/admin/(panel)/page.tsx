@@ -9,7 +9,7 @@ import { LinkButton, Notice, Page, PageHeader, Stat } from "@/components/admin/u
 import { fmtInt } from "@/lib/format";
 import { yangonDayKey } from "@/lib/time";
 import { prisma } from "@/lib/db";
-import { approvalCounts } from "@/server/catalog/approval";
+import { reviewCounts } from "@/server/catalog/review";
 
 export default async function DashboardPage({ searchParams }: PageProps<"/admin">) {
   const user = await requirePagePermission("dashboard:view");
@@ -64,16 +64,16 @@ async function OrderQueue({ canReconcile }: { canReconcile: boolean }) {
   );
 }
 
-/** QT2: SP chờ duyệt / cần duyệt lại (bước 4). */
+/** P1-A: SP chờ duyệt (gồm thay đổi của SP đang bán đã gửi duyệt) / bị từ chối. */
 async function CatalogQueue() {
   await connection();
-  const [t, counts] = await Promise.all([getTranslations("Dashboard"), approvalCounts()]);
+  const [t, counts] = await Promise.all([getTranslations("Dashboard"), reviewCounts()]);
   return (
     <section className="space-y-2">
       <h2 className="font-medium">{t("catalog")}</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Stat label={t("toApprove")} value={counts.toApprove} href="/admin/products?status=toApprove" tone={tone(counts.toApprove)} testId="todo-approve" />
-        <Stat label={t("reapprove")} value={counts.reapprove} href="/admin/products?status=reapprove" tone={tone(counts.reapprove)} testId="todo-reapprove" />
+        <Stat label={t("toApprove")} value={counts.pending} href="/admin/products?status=review" tone={tone(counts.pending)} testId="todo-approve" />
+        <Stat label={t("rejected")} value={counts.rejected} href="/admin/products?status=rejected" tone={tone(counts.rejected)} testId="todo-rejected" />
       </div>
     </section>
   );

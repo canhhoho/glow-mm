@@ -109,11 +109,13 @@ test("mẫu một sheet: tạo SP hai biến thể kèm tồn → xem trước �
   // Bước 3: đặt giá tay có lý do → đủ điều kiện; thiếu ảnh chỉ là lưu ý; nguồn giá = sửa tay.
   await expect(await priceInputs(page)).toHaveCount(2);
   await setPrices(page, [27000, 42000], "Giá mở bán");
-  // QT2: bước 1–3 xong → bước 4 chỉ còn "chưa duyệt"; bấm Duyệt (có xác nhận) → đủ điều kiện.
-  await expect(check.getByTestId("issue-NOT_APPROVED")).toBeVisible();
+  // P1-A: đủ điều kiện không tự vào hàng đợi → bấm Gửi duyệt; người duyệt "Chỉ duyệt" (có xác nhận) → vẫn ẩn.
   await expect(page.getByTestId("product-steps").getByTestId("step-review")).toHaveAttribute("data-state", "todo");
+  await expect(check.getByTestId("approval-status")).toHaveAttribute("data-label", "DRAFT");
+  await check.getByRole("button", { name: "Gửi duyệt", exact: true }).click();
+  await expect(check.getByTestId("approval-status")).toHaveAttribute("data-label", "PENDING", { timeout: 15_000 });
   page.once("dialog", (d) => d.accept());
-  await check.getByRole("button", { name: "Duyệt", exact: true }).click();
+  await check.getByRole("button", { name: "Chỉ duyệt (chưa đăng)" }).click();
   await expect(check.getByTestId("approval-status")).toContainText("Đã duyệt bởi", { timeout: 15_000 });
   await expect(check).toContainText("Đủ điều kiện");
   await expect(page.getByTestId("step-publish-block")).toContainText("Đang ẩn khỏi web");

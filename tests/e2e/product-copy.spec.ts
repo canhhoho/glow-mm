@@ -170,11 +170,13 @@ test("QT1b/QT2: tạo SP → nhập hàng từ bước 2 (điền sẵn, khối 
   await page.goto(productUrl);
   await expect(page.getByTestId("step-price-row").first()).toContainText("Bảng tính giá");
   await expect(steps.getByTestId("step-price")).toHaveAttribute("data-state", "done");
-  // QT2: bước 4 cần bấm Duyệt; bước 5 chờ đến khi duyệt.
+  // P1-A: bước 4 cần Gửi duyệt rồi Duyệt; bước 5 chờ đến khi duyệt.
   await expect(steps.getByTestId("step-review")).toHaveAttribute("data-state", "todo");
   await expect(steps.getByTestId("step-publish")).toHaveAttribute("data-state", "waiting");
+  await page.getByTestId("launch-check").getByRole("button", { name: "Gửi duyệt", exact: true }).click();
+  await expect(page.getByTestId("approval-status")).toHaveAttribute("data-label", "PENDING", { timeout: 15_000 });
   page.once("dialog", (d) => d.accept());
-  await page.getByTestId("launch-check").getByRole("button", { name: "Duyệt", exact: true }).click();
+  await page.getByTestId("launch-check").getByRole("button", { name: "Chỉ duyệt (chưa đăng)" }).click();
   await expect(page.getByTestId("approval-status")).toContainText("Đã duyệt bởi", { timeout: 15_000 });
   await expect(steps.getByTestId("step-review")).toHaveAttribute("data-state", "done");
   await expect(steps.getByTestId("step-publish")).toHaveAttribute("data-state", "todo");

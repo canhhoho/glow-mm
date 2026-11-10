@@ -1,3 +1,4 @@
+import { reviewProducts, submitProducts } from "@/server/catalog/review";
 import { describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { saveProduct } from "@/server/catalog/products";
@@ -84,10 +85,15 @@ describe("Bước 3: sửa giá tay trên trang SP", () => {
   it("form sửa (bước 1) không gửi giá: giữ giá đang có; loại mới thêm vào SP đang bán = giá 0, tạo ở trạng thái tắt", async () => {
     const f = await makeFixture();
     const slug = `it-${f.tag.toLowerCase()}`;
-    await prisma.product.update({ where: { id: f.productId }, data: { slug, published: true } });
+    await prisma.product.update({ where: { id: f.productId }, data: { slug, published: true, approvedAt: new Date() } });
     await prisma.variant.update({ where: { id: f.variantId }, data: { weightGrams: 100 } });
     const base = { id: f.productId, slug, brandId: f.brandId, categoryId: f.categoryId, published: true, my: { name: "x" }, en: { name: "x" } };
     await saveProduct({ ...base, variants: [{ id: f.variantId, sku: `IT-${f.tag}`, label: "50ml", weightGrams: 100 }, { sku: `IT-${f.tag}-NEW`, label: "100ml" }] }, f.userId);
+    // P1-A: SP đã duyệt → thêm loại là thay đổi cần duyệt (bản đang sửa); khách chưa thấy loại mới.
+    expect(await prisma.variant.count({ where: { productId: f.productId } })).toBe(1);
+    expect(await submitProducts({ ids: [f.productId] }, f.userId)).toMatchObject([{ ok: true }]);
+    const { approvalVersion } = await prisma.product.findUniqueOrThrow({ where: { id: f.productId } });
+    expect(await reviewProducts({ decision: "approve", items: [{ id: f.productId, version: approvalVersion }] }, f.userId)).toMatchObject([{ ok: true }]);
     const variants = await prisma.variant.findMany({ where: { productId: f.productId }, orderBy: { sku: "asc" } });
     expect(variants.map((v) => [v.label, v.priceMmk, v.active])).toEqual([["50ml", 10_000, true], ["100ml", 0, false]]);
     expect(await prisma.priceHistory.count({ where: { variantId: f.variantId } })).toBe(0);

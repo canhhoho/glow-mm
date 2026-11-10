@@ -16,6 +16,8 @@ export const PERMISSIONS = {
   "catalog:manage": ["ADMIN"],
   /** QT2: bước 4 — duyệt SP trước khi đăng bán (có lưu vết). */
   "catalog:approve": ["ADMIN"],
+  /** Đăng / ẩn SP trên web (tách khỏi duyệt để sau này phân vai trò không cần sửa code). */
+  "catalog:publish": ["ADMIN"],
   /** Nội dung trang chủ: banner, bộ sưu tập (P6). */
   "content:manage": ["ADMIN"],
   "pricing:manage": ["ADMIN"],

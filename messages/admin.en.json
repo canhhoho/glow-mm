@@ -152,7 +152,8 @@
     "catalog": "Products",
     "toApprove": "Awaiting approval",
     "reapprove": "Needs re-approval",
-    "awaitingStock": "Waiting for stock (pre-orders)"
+    "awaitingStock": "Waiting for stock (pre-orders)",
+    "rejected": "Rejected products"
   },
   "Role": {
     "ADMIN": "Administrator",
@@ -467,7 +468,10 @@
       "ready": "Ready to publish (hidden)",
       "incomplete": "Needs work (hidden)",
       "toApprove": "Awaiting approval",
-      "reapprove": "Needs re-approval"
+      "reapprove": "Needs re-approval",
+      "review": "Awaiting approval",
+      "rejected": "Rejected",
+      "draft": "Draft (not submitted)"
     },
     "clearFilters": "Clear filters",
     "count": "{count} products",
@@ -665,7 +669,7 @@
       "approvedSystem": "Approved (system, at migration)",
       "stale": "Edited after approval — needs re-approval",
       "pending": "Not approved",
-      "help": "Approve once steps 1–3 have no errors. Editing the name, description, category, brand, variants, prices, weight or images after approval requires approval again."
+      "help": "Submit when there are no launch errors. For approved products, changes to name, description, category, brand, variants, price or images go into a pending version — customers keep seeing the approved version until it is approved."
     },
     "preorder": {
       "title": "Pre-order when out of stock",
@@ -677,6 +681,51 @@
       "waiting": "Waiting for stock: {n} units",
       "save": "Save pre-order",
       "saved": "Pre-order settings saved"
+    },
+    "lifecycle": {
+      "DRAFT": "Draft",
+      "PENDING": "Awaiting approval",
+      "REJECTED": "Rejected",
+      "PUBLISHED": "On sale",
+      "HIDDEN": "Hidden",
+      "ARCHIVED": "Discontinued"
+    },
+    "change": {
+      "DRAFT": "Has changes (draft)",
+      "PENDING": "Changes awaiting approval",
+      "REJECTED": "Changes rejected"
+    },
+    "review": {
+      "submit": "Submit for approval",
+      "saveSubmit": "Save & submit",
+      "saveApprove": "Save & approve",
+      "approvePublish": "Approve & publish",
+      "approveOnly": "Approve only (keep hidden)",
+      "approveChanges": "Approve changes",
+      "approveConfirm": "Approve exactly what you see? Customers will see this version.",
+      "reject": "Reject",
+      "rejectReason": "Reason for rejection",
+      "rejected": "Rejected: {reason}",
+      "changesTitle": "Changes compared with the live version",
+      "liveNote": "Customers keep seeing the approved version until the changes are approved.",
+      "discard": "Discard changes",
+      "discardConfirm": "Discard all pending changes and return to the live version?",
+      "savedNotSubmitted": "Saved but not submitted:",
+      "pendingPrice": "awaiting approval: {price}",
+      "imagesStaged": "Images awaiting approval: {add} added, {remove} removed (not visible to customers yet).",
+      "item": {
+        "name": "Name ({locale})",
+        "description": "Description ({locale})",
+        "category": "Category",
+        "brand": "Brand",
+        "variantNew": "New variant {sku}",
+        "variantLabel": "Rename variant {sku} → {to}",
+        "variantActive": "{sku}: {active, select, true {enable} other {disable}}",
+        "combo": "Combo components {sku}",
+        "price": "Price {sku}: {from} → {to}",
+        "imagesAdded": "{count} images added",
+        "imagesRemoved": "{count} images removed"
+      }
     }
   },
   "Orders": {

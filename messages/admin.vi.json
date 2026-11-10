@@ -152,7 +152,8 @@
     "catalog": "Sản phẩm",
     "toApprove": "SP chờ duyệt",
     "reapprove": "SP cần duyệt lại",
-    "awaitingStock": "Chờ hàng về (đặt trước)"
+    "awaitingStock": "Chờ hàng về (đặt trước)",
+    "rejected": "SP bị từ chối"
   },
   "Role": {
     "ADMIN": "Quản trị viên",
@@ -467,7 +468,10 @@
       "ready": "Có thể mở bán (đang ẩn)",
       "incomplete": "Cần hoàn thiện (đang ẩn)",
       "toApprove": "Chờ duyệt",
-      "reapprove": "Cần duyệt lại"
+      "reapprove": "Cần duyệt lại",
+      "review": "Chờ duyệt",
+      "rejected": "Bị từ chối",
+      "draft": "Nháp (chưa gửi duyệt)"
     },
     "clearFilters": "Bỏ lọc",
     "count": "{count} sản phẩm",
@@ -665,7 +669,7 @@
       "approvedSystem": "Đã duyệt (hệ thống, khi chuyển đổi)",
       "stale": "Đã sửa sau khi duyệt — cần duyệt lại",
       "pending": "Chưa duyệt",
-      "help": "Duyệt khi các bước 1–3 không còn lỗi. Sửa tên, mô tả, danh mục, thương hiệu, loại, giá, khối lượng hoặc ảnh sau khi duyệt sẽ phải duyệt lại."
+      "help": "Gửi duyệt khi không còn lỗi mở bán. SP đã duyệt: sửa tên, mô tả, danh mục, thương hiệu, loại, giá hoặc thêm/xoá ảnh sẽ vào bản đang sửa — khách vẫn thấy bản đã duyệt cho đến khi được duyệt."
     },
     "preorder": {
       "title": "Đặt trước khi hết hàng",
@@ -677,6 +681,51 @@
       "waiting": "Đang chờ hàng: {n} cái",
       "save": "Lưu đặt trước",
       "saved": "Đã lưu cài đặt đặt trước"
+    },
+    "lifecycle": {
+      "DRAFT": "Nháp",
+      "PENDING": "Chờ duyệt",
+      "REJECTED": "Bị từ chối",
+      "PUBLISHED": "Đang bán",
+      "HIDDEN": "Đã ẩn",
+      "ARCHIVED": "Ngừng kinh doanh"
+    },
+    "change": {
+      "DRAFT": "Có thay đổi (nháp)",
+      "PENDING": "Thay đổi chờ duyệt",
+      "REJECTED": "Thay đổi bị từ chối"
+    },
+    "review": {
+      "submit": "Gửi duyệt",
+      "saveSubmit": "Lưu & Gửi duyệt",
+      "saveApprove": "Lưu & Duyệt",
+      "approvePublish": "Duyệt & Đăng",
+      "approveOnly": "Chỉ duyệt (chưa đăng)",
+      "approveChanges": "Duyệt thay đổi",
+      "approveConfirm": "Duyệt đúng nội dung đang xem? Khách sẽ thấy bản này.",
+      "reject": "Từ chối",
+      "rejectReason": "Lý do từ chối",
+      "rejected": "Bị từ chối: {reason}",
+      "changesTitle": "Thay đổi so với bản đang bán",
+      "liveNote": "Khách vẫn thấy bản đã duyệt cho đến khi thay đổi được duyệt.",
+      "discard": "Huỷ thay đổi",
+      "discardConfirm": "Huỷ mọi thay đổi đang chờ và quay về bản đang bán?",
+      "savedNotSubmitted": "Đã lưu nhưng chưa gửi duyệt:",
+      "pendingPrice": "chờ duyệt: {price}",
+      "imagesStaged": "Ảnh chờ duyệt: thêm {add}, xoá {remove} (khách chưa thấy).",
+      "item": {
+        "name": "Tên ({locale})",
+        "description": "Mô tả ({locale})",
+        "category": "Danh mục",
+        "brand": "Thương hiệu",
+        "variantNew": "Thêm loại {sku}",
+        "variantLabel": "Đổi tên loại {sku} → {to}",
+        "variantActive": "{sku}: {active, select, true {bật bán} other {tắt bán}}",
+        "combo": "Thành phần combo {sku}",
+        "price": "Giá {sku}: {from} → {to}",
+        "imagesAdded": "Thêm {count} ảnh",
+        "imagesRemoved": "Xoá {count} ảnh"
+      }
     }
   },
   "Orders": {

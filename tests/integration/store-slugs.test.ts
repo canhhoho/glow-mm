@@ -12,7 +12,7 @@ describe("storeSlugExists (proxy 404)", () => {
 
     expect(await storeSlugExists("p", slug)).toBe(false); // chưa đăng
     await prisma.variant.update({ where: { id: f.variantId }, data: { active: false } });
-    await prisma.product.update({ where: { id: f.productId }, data: { published: true } });
+    await prisma.product.update({ where: { id: f.productId }, data: { published: true, approvedAt: new Date() } });
     expect(await storeSlugExists("p", slug)).toBe(false); // không còn biến thể bán
     await prisma.variant.update({ where: { id: f.variantId }, data: { active: true } });
     expect(await storeSlugExists("p", slug)).toBe(true);

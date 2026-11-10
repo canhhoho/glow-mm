@@ -18,7 +18,7 @@ import { deleteProducts, moveProductsToWarehouse, restoreProducts } from "./prod
 import { ReadinessError } from "./readiness";
 import { createProduct } from "./product-create";
 import { saveProductPricing } from "./product-pricing";
-import { approveProduct } from "./approval";
+import { discardChanges, reviewProducts, saveAndApprove, submitProducts, type ReviewResult } from "./review";
 import { saveProductPreorder } from "./product-preorder";
 import type { Issue } from "./readiness-rules";
 
@@ -54,11 +54,30 @@ function withoutPricing(payload: unknown): unknown {
   return out;
 }
 
+/**
+ * Form sửa SP. `intent`: "save" (mặc định) · "submit" = Lưu & Gửi duyệt · "approve" = Lưu & Duyệt (người có quyền
+ * duyệt; SP chưa đăng thì đăng luôn khi có quyền đăng). SP đã duyệt: thay đổi cần duyệt vào bản đang sửa.
+ */
 export async function saveProductAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   let id: string;
   try {
     const user = await requirePermission("catalog:manage");
-    id = (await saveProduct(withoutPricing(JSON.parse(String(formData.get("payload") ?? "{}"))), user.id)).id;
+    const intent = z.enum(["save", "submit", "approve"]).catch("save").parse(formData.get("intent"));
+    const payload = withoutPricing(JSON.parse(String(formData.get("payload") ?? "{}")));
+    if (intent === "approve") {
+      await requirePermission("catalog:approve");
+      id = (await saveAndApprove(payload, user.id, { publish: can(user.role, "catalog:publish") })).id;
+    } else {
+      id = (await saveProduct(payload, user.id)).id;
+      if (intent === "submit") {
+        const [res] = await submitProducts({ ids: [id] }, user.id);
+        if (!res.ok) {
+          revalidatePath(`/admin/products/${id}`);
+          const t = await getTranslations("Products");
+          return { error: `${t("review.savedNotSubmitted")} ${res.issues ? await issuesText(res.issues) : res.error}` };
+        }
+      }
+    }
   } catch (e) {
     if (e instanceof ReadinessError) {
       return { error: `${(await getTranslations("Products"))("readiness.blockedSave")} ${await issuesText(e.issues)}` };
@@ -383,18 +402,73 @@ export async function saveProductPricingAction(_prev: ActionState, formData: For
   return { ok: "1" };
 }
 
-/** Bước 4 (QT2): duyệt SP — chỉ khi checklist mở bán không còn lỗi nào khác; lưu người + thời điểm + dấu vân tay. */
-export async function approveProductAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  let id = "";
+function reviewDone(ids: string[]) {
+  updateTag(CATALOG_TAG); // duyệt thay đổi / đăng → khách thấy bản mới
+  for (const id of ids) revalidatePath(`/admin/products/${id}`);
+  revalidatePath("/admin/products");
+  revalidatePath("/admin");
+}
+
+async function resultText(results: ReviewResult[]) {
+  const failed = results.filter((r) => !r.ok);
+  if (failed.length === 0) return null;
+  const lines = await Promise.all(failed.map(async (r) => `${r.name}: ${r.issues ? await issuesText(r.issues) : r.error}`));
+  return lines.join(" · ");
+}
+
+/** Gửi duyệt (một SP từ trang SP, hoặc nhiều SP `ids[]` từ danh sách). */
+export async function submitProductsAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  let ids: string[] = [];
   try {
-    const user = await requirePermission("catalog:approve");
-    id = (await approveProduct({ id: formData.get("id") }, user.id)).id;
+    const user = await requirePermission("catalog:manage");
+    ids = formData.getAll("ids").map(String);
+    const error = await resultText(await submitProducts({ ids }, user.id));
+    if (error) {
+      reviewDone(ids);
+      return { error };
+    }
   } catch (e) {
     return { error: message(e) };
   }
-  revalidatePath(`/admin/products/${id}`);
-  revalidatePath("/admin/products");
-  revalidatePath("/admin");
+  reviewDone(ids);
+  return { ok: "1" };
+}
+
+/**
+ * Duyệt / Duyệt & Đăng / Từ chối. Mỗi SP gửi kèm phiên bản đã xem (`items` = JSON `[{id, version}]`) — đổi sau
+ * lúc xem thì bỏ qua SP đó. Duyệt & Đăng cần thêm quyền đăng.
+ */
+export async function reviewProductsAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  let ids: string[] = [];
+  try {
+    const user = await requirePermission("catalog:approve");
+    const decision = z.enum(["approve", "approvePublish", "reject"]).parse(formData.get("decision"));
+    if (decision === "approvePublish") await requirePermission("catalog:publish");
+    const items = z.array(z.object({ id: z.string(), version: z.coerce.number() })).parse(JSON.parse(String(formData.get("items") ?? "[]")));
+    ids = items.map((i) => i.id);
+    const error = await resultText(await reviewProducts({ decision, items, reason: formData.get("reason") ?? undefined }, user.id));
+    if (error) {
+      reviewDone(ids);
+      return { error };
+    }
+  } catch (e) {
+    return { error: message(e) };
+  }
+  reviewDone(ids);
+  return { ok: "1" };
+}
+
+/** Huỷ bản đang sửa của SP đã duyệt (về bản đang bán). */
+export async function discardChangesAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  let id = "";
+  try {
+    const user = await requirePermission("catalog:manage");
+    id = String(formData.get("id") ?? "");
+    await discardChanges({ id }, user.id);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  reviewDone([id]);
   return { ok: "1" };
 }
 

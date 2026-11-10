@@ -105,7 +105,7 @@ describe("Bộ sưu tập", () => {
     const a = await makeFixture();
     const b = await makeFixture();
     const hidden = await makeFixture(); // chưa đăng
-    await prisma.product.updateMany({ where: { id: { in: [a.productId, b.productId] } }, data: { published: true } });
+    await prisma.product.updateMany({ where: { id: { in: [a.productId, b.productId] } }, data: { published: true, approvedAt: new Date() } });
     const userId = a.userId;
     const slug = `it-${a.tag.toLowerCase()}`;
     const now = new Date();
@@ -150,7 +150,7 @@ describe("Danh mục: sửa + icon", () => {
   it("tối đa 2 cấp; đổi tên; icon thay/xoá dọn file; trang chủ thấy iconUrl", async () => {
     const f = await makeFixture();
     const parent = await makeFixture();
-    await prisma.product.update({ where: { id: f.productId }, data: { published: true } });
+    await prisma.product.update({ where: { id: f.productId }, data: { published: true, approvedAt: new Date() } });
     const input = { nameMy: "အမျိုးအစား", nameEn: `Cat ${f.tag}`, parentId: null, sortOrder: 5 };
 
     await expect(updateCategory(f.categoryId, { ...input, parentId: f.categoryId }, f.userId)).rejects.toThrow(/chính nó/);

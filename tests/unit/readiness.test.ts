@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { blockingErrors, evaluateReadiness, listStatus, productSteps, type ReadinessInput } from "@/server/catalog/readiness-rules";
+import { blockingErrors, evaluateReadiness, listStatus, productSteps, publishBlockers, type ReadinessInput } from "@/server/catalog/readiness-rules";
 
 const base = (over: Partial<ReadinessInput> = {}): ReadinessInput => ({
   location: { active: true, sellable: true, pricingMode: "VN_IMPORT" },
@@ -117,16 +117,18 @@ describe("productSteps (quy trình 5 bước)", () => {
     expect(states(steps)).toMatchObject({ price: "warn", review: "done", publish: "todo" });
   });
 
-  it("QT2: đủ dữ liệu nhưng chưa duyệt → bước 4 cần làm, bước 5 chờ; còn lỗi bước trước → bước 4 chờ", () => {
-    const r = evaluateReadiness({ ...base(), approved: false });
-    expect(r.errors).toEqual([{ code: "NOT_APPROVED" }]);
-    const steps = productSteps({ published: false, notReceivedSkus: [] }, r);
+  it("P1-A: readiness không còn NOT_APPROVED; chưa duyệt → bước 4 cần làm, bước 5 chờ; cổng đăng bán thêm NOT_APPROVED", () => {
+    const r = evaluateReadiness(base());
+    expect(r.errors).toEqual([]);
+    const steps = productSteps({ published: false, notReceivedSkus: [], approved: false }, r);
     expect(states(steps)).toMatchObject({ price: "done", review: "todo", publish: "waiting" });
     expect(steps.current).toBe("review");
-    const zero = evaluateReadiness({ ...base(), approved: false, variants: base().variants.map((v) => ({ ...v, priceMmk: 0 })) });
-    expect(states(productSteps({ published: false, notReceivedSkus: [] }, zero))).toMatchObject({ price: "todo", review: "waiting" });
-    // SP đang hiển thị sửa sau khi duyệt: chưa duyệt không chặn lưu (không tự ẩn).
+    const zero = evaluateReadiness({ ...base(), variants: base().variants.map((v) => ({ ...v, priceMmk: 0 })) });
+    expect(states(productSteps({ published: false, notReceivedSkus: [], approved: false }, zero))).toMatchObject({ price: "todo", review: "waiting" });
+    expect(publishBlockers(r, { approved: false })).toEqual([{ code: "NOT_APPROVED" }]);
+    expect(publishBlockers(zero, { approved: true }).map((i) => i.code)).toEqual(["PRICE_ZERO"]);
+    // SP đang hiển thị có bản đang sửa chưa duyệt: không chặn lưu (không tự ẩn).
     expect(blockingErrors(r, true)).toEqual([]);
-    expect(states(productSteps({ published: true, notReceivedSkus: [] }, r))).toMatchObject({ review: "todo", publish: "done" });
+    expect(states(productSteps({ published: true, notReceivedSkus: [], approved: false }, r))).toMatchObject({ review: "todo", publish: "done" });
   });
 });

@@ -7,7 +7,7 @@ test("D7 tìm kiếm phân trang giữ sort và lịch sử quay lại", async (
   const prefix = `e2epages${randomUUID().replaceAll("-", "")}`;
   await client.connect();
   try {
-    await client.query('INSERT INTO "Product" (id,slug,"brandId","categoryId","stockLocationId",published,"createdAt","updatedAt") SELECT $1 || n, $1 || n, p."brandId", p."categoryId", p."stockLocationId", true, now() - n * interval \'1 day\', now() FROM "Product" p CROSS JOIN generate_series(1,65) n WHERE p.slug = $2', [prefix, "sen-viet-sunscreen-spf50"]);
+    await client.query('INSERT INTO "Product" (id,slug,"brandId","categoryId","stockLocationId",published,"approvedAt","createdAt","updatedAt") SELECT $1 || n, $1 || n, p."brandId", p."categoryId", p."stockLocationId", true, now(), now() - n * interval \'1 day\', now() FROM "Product" p CROSS JOIN generate_series(1,65) n WHERE p.slug = $2', [prefix, "sen-viet-sunscreen-spf50"]);
     await client.query('INSERT INTO "Variant" (id,"productId",sku,label,"priceMmk",active,"isBundle") SELECT $1 || n, $1 || n, $1 || n, \'Test\', n, true, false FROM generate_series(1,65) n', [prefix]);
     await client.query('INSERT INTO "ProductTranslation" ("productId",locale,name,"searchText") SELECT $1 || n, \'en\', $1 || n, $1 FROM generate_series(1,65) n', [prefix]);
     await page.goto(`/en/search?q=${prefix}&sort=price_asc`);

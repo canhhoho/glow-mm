@@ -3,9 +3,10 @@ import { Pencil } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
-import { listProductsAdmin, PRODUCT_STATUSES, productFilterOptions, type ProductStatusFilter } from "@/server/catalog/admin-queries";
+import { listProductsAdmin, PRODUCT_STATUSES, parseProductStatus, productFilterOptions, type ProductStatusFilter } from "@/server/catalog/admin-queries";
+import { deriveLabel } from "@/server/catalog/approval-rules";
 import { loadReadiness } from "@/server/catalog/readiness";
-import { listStatus, PRODUCT_STEPS, productSteps, type ProductStep } from "@/server/catalog/readiness-rules";
+import { PRODUCT_STEPS, productSteps, type ProductStep } from "@/server/catalog/readiness-rules";
 import { prisma } from "@/lib/db";
 import { BulkCheckbox, BulkPublishBar, RowProductAction } from "@/components/admin/product-bulk-publish";
 import { Badge, DataTable, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Td, fieldClass } from "@/components/admin/ui";
@@ -21,7 +22,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
   const brandId = str(sp.brand);
   const categoryId = str(sp.category);
   const warehouseId = str(sp.warehouse);
-  const status: ProductStatusFilter = PRODUCT_STATUSES.find((s) => s === sp.status) ?? "active";
+  const status: ProductStatusFilter = parseProductStatus(sp.status);
   // Quy trình 5 bước: lọc theo bước đang cần làm; "done" = đã đăng bán, không còn bước nào.
   const stepFilter: ProductStep | "done" | undefined = [...PRODUCT_STEPS, "done" as const].find((s) => s === sp.step);
   const [t, tc, listed, options] = await Promise.all([
@@ -35,14 +36,12 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
   const currentStep = new Map(
     listed.map((p) => {
       const r = readiness.get(p.id) ?? { errors: [], warnings: [], notReceivedSkus: [] };
-      return [p.id, p.archived ? null : (productSteps({ published: p.published, notReceivedSkus: r.notReceivedSkus }, r).current ?? "done")] as const;
+      return [p.id, p.archived ? null : (productSteps({ published: p.published, notReceivedSkus: r.notReceivedSkus, approved: !!p.approvedAt && !p.hasChanges }, r).current ?? "done")] as const;
     }),
   );
   const products = listed.filter((p) => {
     const errors = readiness.get(p.id)?.errors.length ?? 0;
     if (stepFilter && currentStep.get(p.id) !== stepFilter) return false;
-    // QT2 "Chờ duyệt": chỉ SP đã xong các bước trước (lỗi duy nhất còn lại là chưa duyệt).
-    if (status === "toApprove") return readiness.get(p.id)?.errors.every((e) => e.code === "NOT_APPROVED") ?? false;
     return status === "ready" ? errors === 0 : status === "incomplete" ? errors > 0 : true;
   });
   const archivedView = status === "archived";
@@ -173,11 +172,12 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
             <Td label={t("colStatus")}>
               {(() => {
                 const r = readiness.get(p.id) ?? { errors: [], warnings: [] };
-                const st = listStatus(p, r);
-                const tone = { ARCHIVED: "neutral", PUBLISHED: "success", READY: "brand", INCOMPLETE: "warning" } as const;
+                const lab = deriveLabel(p);
+                const tone = { ARCHIVED: "neutral", PUBLISHED: "success", HIDDEN: "neutral", PENDING: "brand", REJECTED: "danger", DRAFT: "warning" } as const;
                 return (
-                  <div className="flex flex-col items-start gap-1" data-testid="product-readiness">
-                    <Badge tone={tone[st]}>{t(`readiness.status.${st}`)}</Badge>
+                  <div className="flex flex-col items-start gap-1" data-testid="product-readiness" data-label={lab.label}>
+                    <Badge tone={tone[lab.label]}>{t(`lifecycle.${lab.label}`)}</Badge>
+                    {lab.change && <Badge tone={lab.change === "REJECTED" ? "danger" : "warning"}>{t(`change.${lab.change}`)}</Badge>}
                     {!p.archived && r.errors.length > 0 && (
                       <span className="text-xs text-destructive">{r.errors.map((e) => t(`readiness.issue.${e.code}`)).join(", ")}</span>
                     )}

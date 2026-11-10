@@ -9,7 +9,7 @@ describe("D7 sắp toàn tập rồi phân trang", () => {
   it("hơn 60 SP, giá active nhỏ nhất, lọc trước count và không trùng/mất trang", async () => {
     const f = await makeFixture();
     const ids = Array.from({ length: 65 }, (_, i) => `it-page-${f.tag}-${i}`);
-    await prisma.product.createMany({ data: ids.map((id, i) => ({ id, slug: id, brandId: f.brandId, categoryId: f.categoryId, stockLocationId: f.mm.id, published: true, createdAt: new Date(2020, 0, i + 1) })) });
+    await prisma.product.createMany({ data: ids.map((id, i) => ({ id, slug: id, brandId: f.brandId, categoryId: f.categoryId, stockLocationId: f.mm.id, published: true, approvedAt: new Date(), createdAt: new Date(2020, 0, i + 1) })) });
     await prisma.variant.createMany({ data: ids.map((productId, i) => ({ sku: `${productId}-A`, productId, label: "A", priceMmk: i + 100 })) });
     await prisma.variant.createMany({ data: [{ sku: `${ids[0]}-B`, productId: ids[0], label: "B", priceMmk: 1 }, { sku: `${ids[64]}-HIDDEN`, productId: ids[64], label: "Hidden", priceMmk: 0, active: false }] });
     // Slug fixture giữ chữ hoa trong tag.

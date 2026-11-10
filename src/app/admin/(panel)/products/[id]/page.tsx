@@ -4,9 +4,11 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
-import { approvalState } from "@/server/catalog/approval-rules";
+import { deriveLabel } from "@/server/catalog/approval-rules";
+import type { ChangeItem } from "@/server/catalog/change-summary";
+import { productEditView, productReadinessView } from "@/server/catalog/review";
 import { getProductForEdit, getProductImages, productFormOptions } from "@/server/catalog/admin-queries";
-import { approveProductAction, saveProductPreorderAction, deleteProductImageAction, reorderProductImageAction, saveProductPricingAction, setProductPublishedAction, updateProductImageAltAction } from "@/server/catalog/actions";
+import { discardChangesAction, reviewProductsAction, submitProductsAction, saveProductPreorderAction, deleteProductImageAction, reorderProductImageAction, saveProductPricingAction, setProductPublishedAction, updateProductImageAltAction } from "@/server/catalog/actions";
 import { loadProductPricing, type PriceSource } from "@/server/catalog/product-pricing";
 import { loadReadiness } from "@/server/catalog/readiness";
 import { productSteps, type Issue, type ProductStep } from "@/server/catalog/readiness-rules";
@@ -25,6 +27,8 @@ import { getNumberSetting } from "@/server/settings";
  * Trang SP theo quy trình 5 bước (docs/ke-hoach-quy-trinh-san-pham.md): thanh bước ở đầu, mỗi bước một khối.
  * 1 Thông tin & nội dung (ảnh + form sửa) · 2 Nhập kho + giá vốn · 3 Giá bán · 4 Duyệt (hiện = kiểm tra mở bán D2) · 5 Đăng bán.
  */
+const LABEL_TONE = { PUBLISHED: "success", HIDDEN: "neutral", PENDING: "brand", REJECTED: "danger", DRAFT: "warning", ARCHIVED: "neutral" } as const;
+
 export default async function EditProductPage({ params, searchParams }: PageProps<"/admin/products/[id]">) {
   const user = await requirePagePermission("catalog:manage");
   const [{ id }, { saved, created }] = await Promise.all([params, searchParams]);
@@ -40,7 +44,17 @@ export default async function EditProductPage({ params, searchParams }: PageProp
   // QT2: trạng thái duyệt (bước 4) + người duyệt.
   const approval = await prisma.product.findUniqueOrThrow({
     where: { id: product.id },
-    select: { approvedAt: true, approvedById: true, approvedHash: true, preorderEnabled: true, variants: { select: { id: true, preorderLimit: true } } },
+    select: {
+      approvedAt: true,
+      approvedById: true,
+      archivedAt: true,
+      published: true,
+      approvalStatus: true,
+      approvalVersion: true,
+      rejectionReason: true,
+      preorderEnabled: true,
+      variants: { select: { id: true, preorderLimit: true } },
+    },
   });
   // QT3: đặt trước — hạn mức riêng / mặc định + số đang chờ hàng theo biến thể.
   const [preorderDefault, preorderWaiting] = await Promise.all([
@@ -50,9 +64,41 @@ export default async function EditProductPage({ params, searchParams }: PageProp
   const preorderLimit = new Map(approval.variants.map((v) => [v.id, v.preorderLimit]));
   const waitingQty = new Map(preorderWaiting.map((w) => [w.variantId, w._sum.qty ?? 0]));
   const approver = approval.approvedById ? await prisma.user.findUnique({ where: { id: approval.approvedById }, select: { name: true } }) : null;
-  const approvalNow = approvalState(approval);
-  // D2: cùng bộ kiểm tra với lúc lưu / bật hàng loạt / danh sách.
-  const readiness = (await loadReadiness(prisma, [product.id])).get(product.id) ?? { errors: [], warnings: [], notReceivedSkus: [] };
+  // P1-A: SP có bản đang sửa → form + kiểm tra mở bán theo bản sẽ được duyệt; khách vẫn thấy bản live.
+  const view = (await productEditView(product.id))!;
+  const cr = view.changeRequest;
+  const lab = deriveLabel({ ...approval, hasChanges: !!cr });
+  const readiness = cr
+    ? await productReadinessView(product.id)
+    : (await loadReadiness(prisma, [product.id])).get(product.id) ?? { errors: [], warnings: [], notReceivedSkus: [] };
+  const canManage = can(user.role, "catalog:manage");
+  const canApprove = can(user.role, "catalog:approve");
+  const canPublish = can(user.role, "catalog:publish");
+  const pendingReview = approval.approvalStatus === "PENDING";
+  const canSubmit = canManage && !approval.archivedAt && !pendingReview && (!approval.approvedAt || !!cr) && readiness.errors.length === 0;
+  const versionItems = JSON.stringify([{ id: product.id, version: approval.approvalVersion }]);
+  const changeText = (c: ChangeItem) => {
+    switch (c.kind) {
+      case "name":
+      case "description":
+        return t(`review.item.${c.kind}`, { locale: c.locale });
+      case "category":
+      case "brand":
+        return t(`review.item.${c.kind}`);
+      case "variantNew":
+      case "combo":
+        return t(`review.item.${c.kind}`, { sku: c.sku });
+      case "variantLabel":
+        return t("review.item.variantLabel", { sku: c.sku, to: c.to });
+      case "variantActive":
+        return t("review.item.variantActive", { sku: c.sku, active: String(c.active) });
+      case "price":
+        return t("review.item.price", { sku: c.sku, from: fmtInt(c.from), to: fmtInt(c.to) });
+      case "imagesAdded":
+      case "imagesRemoved":
+        return t(`review.item.${c.kind}`, { count: c.count });
+    }
+  };
   const pricingMode = options.warehouses.find((w) => w.id === product.stockLocationId)?.pricingMode ?? null;
   const pricing = await loadProductPricing(product.variants.map((v) => v.id), pricingMode);
   const sourceText = (s: PriceSource | undefined) =>
@@ -63,7 +109,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
         : s.kind === "import"
           ? `${t("priceBlock.sourceImport")} · ${fmtDay(s.at)}`
           : `${t("priceBlock.sourceManual")} · ${fmtDay(s.at)}${s.note ? ` — ${s.note}` : ""}`;
-  const flow = productSteps({ published: product.published, notReceivedSkus: readiness.notReceivedSkus }, readiness);
+  const flow = productSteps({ published: product.published, notReceivedSkus: readiness.notReceivedSkus, approved: !!approval.approvedAt && !cr }, readiness);
   const step = (key: ProductStep) => flow.steps.find((s) => s.key === key)!;
 
   type Row = Issue & { tone: "danger" | "warning"; kind: string };
@@ -110,6 +156,11 @@ export default async function EditProductPage({ params, searchParams }: PageProp
             {t("images")}
           </h3>
           <ProductImageUpload productId={product.id} />
+          {cr && (cr.images.add.length > 0 || cr.images.remove.length > 0) && (
+            <p className="mt-3 rounded-md bg-muted p-2 text-sm" data-testid="images-staged">
+              {t("review.imagesStaged", { add: cr.images.add.length, remove: cr.images.remove.length })}
+            </p>
+          )}
           {images.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">{t("imagesEmpty")}</p>
           ) : (
@@ -161,7 +212,13 @@ export default async function EditProductPage({ params, searchParams }: PageProp
         <details open={!product.published} className="rounded-lg border p-4" data-testid="product-edit">
           <summary className="cursor-pointer font-medium">{t("block.editInfo")}</summary>
           <div className="mt-4">
-            <ProductForm key={JSON.stringify(product)} initial={product} options={options} />
+            <ProductForm
+              key={JSON.stringify(view.edit)}
+              initial={view.edit}
+              draftBrandName={view.draftBrandName}
+              options={options}
+              review={{ submit: canManage && !approval.archivedAt, approve: canApprove && !approval.archivedAt }}
+            />
           </div>
         </details>
       </Section>
@@ -203,7 +260,14 @@ export default async function EditProductPage({ params, searchParams }: PageProp
                   {!v.active && <span className="ml-1 text-muted-foreground">({t("priceBlock.inactive")})</span>}
                 </Td>
                 <Td label={t("label")}>{v.label}</Td>
-                <Td label={t("price")} className={v.priceMmk > 0 ? "text-right tabular-nums" : "text-right text-destructive tabular-nums"}>{fmtInt(v.priceMmk)}</Td>
+                <Td label={t("price")} className={v.priceMmk > 0 ? "text-right tabular-nums" : "text-right text-destructive tabular-nums"}>
+                  {fmtInt(v.priceMmk)}
+                  {cr?.prices[v.id] && (
+                    <div className="text-xs text-muted-foreground" data-testid="pending-price">
+                      {t("review.pendingPrice", { price: fmtInt(cr.prices[v.id].priceMmk) })}
+                    </div>
+                  )}
+                </Td>
                 <Td label={t("priceBlock.source")} className="text-xs">{sourceText(row?.source)}</Td>
                 <Td label={t("priceBlock.lastCost")} className="text-xs tabular-nums">
                   {row?.cost ? (
@@ -235,10 +299,10 @@ export default async function EditProductPage({ params, searchParams }: PageProp
                   </legend>
                   <input type="hidden" name="variantId" value={v.id} />
                   {/* P0-H2: giá lúc mở trang — đã đổi ở nơi khác (bảng tính giá, Giá bán) thì báo lỗi, không ghi đè. */}
-                  <input type="hidden" name="expectedPriceMmk" value={v.priceMmk} />
+                  <input type="hidden" name="expectedPriceMmk" value={cr?.prices[v.id]?.priceMmk ?? v.priceMmk} />
                   <label className={fieldLabelClass}>
                     <span className="text-muted-foreground">{t("price")}</span>
-                    <input name="priceMmk" aria-label={`${t("price")} ${v.sku}`} type="number" required min={1} step={1} inputMode="numeric" defaultValue={v.priceMmk || ""} className={fieldClass} />
+                    <input name="priceMmk" aria-label={`${t("price")} ${v.sku}`} type="number" required min={1} step={1} inputMode="numeric" defaultValue={(cr?.prices[v.id]?.priceMmk ?? v.priceMmk) || ""} className={fieldClass} />
                   </label>
                   <label className={fieldLabelClass}>
                     <span className="text-muted-foreground">{t("affiliateCommission")}</span>
@@ -265,18 +329,55 @@ export default async function EditProductPage({ params, searchParams }: PageProp
 
       {/* ── Bước 4: duyệt (QT2) — checklist mở bán + nút Duyệt có lưu vết; sửa nội dung/giá/ảnh sau khi duyệt → cần duyệt lại ── */}
       <Section id="step-review" className="scroll-mt-20" title={<StepTitle index={4} step={step("review")} t={t} />} testId="launch-check">
-        <div className="flex flex-wrap items-center gap-2 text-sm" data-testid="approval-status">
-          {approvalNow === "APPROVED" ? (
-            <Badge tone="success">
+        <div className="flex flex-wrap items-center gap-2 text-sm" data-testid="approval-status" data-label={lab.label} data-change={lab.change ?? ""}>
+          <Badge tone={LABEL_TONE[lab.label]}>{t(`lifecycle.${lab.label}`)}</Badge>
+          {lab.change && <Badge tone={lab.change === "REJECTED" ? "danger" : lab.change === "PENDING" ? "brand" : "warning"}>{t(`change.${lab.change}`)}</Badge>}
+          {approval.approvedAt && (
+            <span className="text-xs text-muted-foreground">
               ✓ {approver ? t("approval.approvedBy", { name: approver.name, at: fmtDateTime(approval.approvedAt) }) : t("approval.approvedSystem")}
-            </Badge>
-          ) : approvalNow === "STALE" ? (
-            <Badge tone="warning">{t("approval.stale")}</Badge>
-          ) : (
-            <Badge tone="neutral">{t("approval.pending")}</Badge>
+            </span>
           )}
-          {approvalNow !== "APPROVED" && step("review").state === "todo" && can(user.role, "catalog:approve") && (
-            <ActionButton action={approveProductAction} fields={{ id: product.id }} label={t("approval.approve")} confirm={t("approval.confirm")} iconOnly={false} />
+        </div>
+        {approval.approvalStatus === "REJECTED" && approval.rejectionReason && (
+          <Notice tone="danger" data-testid="rejection-reason">{t("review.rejected", { reason: approval.rejectionReason })}</Notice>
+        )}
+        {view.changes && view.changes.length > 0 && (
+          <div className="space-y-1 rounded-md border p-3 text-sm" data-testid="change-summary">
+            <p className="font-medium">{t("review.changesTitle")}</p>
+            <ul className="list-disc pl-5">
+              {view.changes.map((c, i) => (
+                <li key={i}>{changeText(c)}</li>
+              ))}
+            </ul>
+            <p className="text-xs text-muted-foreground">{t("review.liveNote")}</p>
+          </div>
+        )}
+        <div className="flex flex-wrap items-start gap-2" data-testid="review-actions">
+          {canSubmit && <ActionButton action={submitProductsAction} fields={{ ids: product.id }} label={t("review.submit")} iconOnly={false} />}
+          {pendingReview && canApprove && (
+            <>
+              {approval.approvedAt ? (
+                <ActionButton action={reviewProductsAction} fields={{ decision: "approve", items: versionItems }} label={t("review.approveChanges")} confirm={t("review.approveConfirm")} iconOnly={false} />
+              ) : (
+                <>
+                  {canPublish && (
+                    <ActionButton action={reviewProductsAction} fields={{ decision: "approvePublish", items: versionItems }} label={t("review.approvePublish")} confirm={t("review.approveConfirm")} iconOnly={false} />
+                  )}
+                  <ActionButton action={reviewProductsAction} fields={{ decision: "approve", items: versionItems }} label={t("review.approveOnly")} confirm={t("review.approveConfirm")} variant="outline" iconOnly={false} />
+                </>
+              )}
+              <ActionForm action={reviewProductsAction} submitLabel={t("review.reject")} variant="outline" className="flex flex-wrap items-end gap-2">
+                <input type="hidden" name="decision" value="reject" />
+                <input type="hidden" name="items" value={versionItems} />
+                <label className={fieldLabelClass}>
+                  <span className="text-muted-foreground">{t("review.rejectReason")}</span>
+                  <input name="reason" required minLength={5} maxLength={500} className={fieldClass} />
+                </label>
+              </ActionForm>
+            </>
+          )}
+          {cr && canManage && (
+            <ActionButton action={discardChangesAction} fields={{ id: product.id }} label={t("review.discard")} confirm={t("review.discardConfirm")} variant="outline" iconOnly={false} />
           )}
         </div>
         <p className="text-sm">
