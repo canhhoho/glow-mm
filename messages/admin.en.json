@@ -2010,6 +2010,8 @@
     "confirmHelp": "New products are created hidden. Stock creates DRAFT receipts per sales warehouse — open them, check, then Post.",
     "confirm": "Confirm import",
     "confirmBlocked": "You cannot confirm while the file has errors. Fix the errors above, select the corrected file and click Preview again.",
+    "priceChanges": "{count} SKUs change selling price / CTV commission — price history will be recorded.",
+    "pricingForbidden": "The file changes selling prices / CTV commissions — this needs the pricing permission. Leave the price columns empty or ask someone with that permission.",
     "success": "Imported: {created} new, {updated} updated products.",
     "reviewDraft": "review and post",
     "finishProducts": "Back to products to add images and publish"

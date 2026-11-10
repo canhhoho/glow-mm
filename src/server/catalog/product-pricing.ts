@@ -37,6 +37,8 @@ export const productPricingSchema = z.object({
 });
 
 export const MANUAL_PRICE_PREFIX = "manual: ";
+/** Giá đổi qua Excel: `"import:<8 ký tự đầu sha256 của file>"` (P0-C2); bản cũ ghi `"import"`. */
+export const IMPORT_PRICE_PREFIX = "import:";
 
 export async function saveProductPricing(raw: unknown, userId: string) {
   const input = productPricingSchema.parse(raw);
@@ -132,7 +134,7 @@ export async function loadProductPricing(variantIds: string[], pricingMode: "VN_
         ? { kind: "none" }
         : h.runId
           ? { kind: "run", runId: h.runId, at: h.createdAt }
-          : h.reason === "import"
+          : h.reason === "import" || h.reason?.startsWith(IMPORT_PRICE_PREFIX)
             ? { kind: "import", at: h.createdAt }
             : { kind: "manual", note: h.reason?.startsWith(MANUAL_PRICE_PREFIX) ? h.reason.slice(MANUAL_PRICE_PREFIX.length) : "", at: h.createdAt };
       const c = costs.get(id);

@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 import { z, ZodError } from "zod";
 import { directionSchema, formId } from "@/lib/schemas";
 import { requirePermission } from "@/server/auth/session";
+import { can } from "@/server/auth/roles";
 import type { ActionState } from "@/server/inventory/actions";
 import { deleteCategory, removeCategoryIcon, setCategoryIcon, updateCategory } from "./categories";
 import { CATALOG_TAG } from "./category-tree";
@@ -302,7 +303,8 @@ export async function catalogImportAction(_prev: CatalogImportState, formData: F
       const input = catalogImportInputSchema.parse(JSON.parse(z.string().max(6_000_000).parse(formData.get("payload"))));
       const check = await previewCatalogImport(input);
       if (check.counts.stockLines > 0) await requirePermission("stock:receive");
-      const result = await commitCatalogImport(input, user.id);
+      // P0-C2: đổi giá bán / hoa hồng CTV qua Excel cần quyền giá — kiểm lại trong transaction xác nhận.
+      const result = await commitCatalogImport(input, user.id, { allowPricing: can(user.role, "pricing:manage") });
       updateTag(CATALOG_TAG);
       revalidatePath("/admin/products");
       revalidatePath("/admin/inventory/documents");
@@ -312,6 +314,7 @@ export async function catalogImportAction(_prev: CatalogImportState, formData: F
     const standardLabel = (await getTranslations("Products"))("standardVariant");
     const preview = await previewCatalogImport({ csv: file.csv, lines: file.lines, standardLabel });
     if (preview.counts.stockLines > 0) await requirePermission("stock:receive");
+    if (preview.counts.priceChanges > 0 && !can(user.role, "pricing:manage")) return { error: (await getTranslations("CatalogImport"))("pricingForbidden") };
     return { preview };
   } catch (e) {
     return { error: message(e) };
@@ -355,12 +358,19 @@ export async function saveProductPricingAction(_prev: ActionState, formData: For
     productId = String(formData.get("productId") ?? "");
     const prices = formData.getAll("priceMmk");
     const commissions = formData.getAll("affiliateCommissionMmk");
+    const expected = formData.getAll("expectedPriceMmk");
     await saveProductPricing(
       {
         productId,
         reason: formData.get("reason") ?? "",
         ...(formData.has("fixedProfitMmk") && { fixedProfitMmk: formData.get("fixedProfitMmk") }),
-        variants: formData.getAll("variantId").map((id, i) => ({ id, priceMmk: prices[i], affiliateCommissionMmk: commissions[i] ?? "" })),
+        variants: formData.getAll("variantId").map((id, i) => ({
+          id,
+          priceMmk: prices[i],
+          affiliateCommissionMmk: commissions[i] ?? "",
+          // P0-H2: chặn ghi đè giá vừa đổi ở nơi khác (form cũ đang mở).
+          ...(expected[i] !== undefined && expected[i] !== "" && { expectedPriceMmk: expected[i] }),
+        })),
       },
       user.id,
     );

@@ -13,6 +13,7 @@ import { defaultStockLocationId } from "@/server/inventory/warehouses";
 import { productName } from "@/server/inventory/queries";
 import { PRODUCT_EDIT_INCLUDE, toProductEditData, type ProductEditData } from "./admin-queries";
 import { saveProduct } from "./products";
+import { IMPORT_PRICE_PREFIX } from "./product-pricing";
 import { brandSlug } from "./brands";
 import { MAX_SHEET_ROWS } from "./catalog-sheet-read";
 
@@ -29,6 +30,11 @@ export const catalogImportInputSchema = z.object({
   lines: z.array(z.number().int().positive()).max(MAX_SHEET_ROWS).optional(),
   rateId: z.string().max(40).optional(),
   standardLabel: z.string().trim().min(1).max(60).default("Tiêu chuẩn"),
+  /**
+   * P0-C2: giá bán + hoa hồng CTV đang có (lúc xem trước) của các SKU sẽ bị đổi giá — `"<giá>|<hoa hồng>"`.
+   * Xác nhận so lại với dữ liệu hiện tại; khác → huỷ cả lượt (không ghi đè giá vừa đổi ở nơi khác).
+   */
+  priceBase: z.record(z.string().max(40), z.string().max(40)).optional(),
 });
 export type CatalogImportInput = z.infer<typeof catalogImportInputSchema>;
 
@@ -55,7 +61,8 @@ export type CatalogImportPreview = {
   errors: string[];
   warnings: string[];
   rows: ImportRowView[];
-  counts: { createdProducts: number; updatedProducts: number; unchangedProducts: number; stockLines: number };
+  /** `priceChanges`: số SKU có sẵn bị đổi giá bán / hoa hồng CTV (cần quyền `pricing:manage`). */
+  counts: { createdProducts: number; updatedProducts: number; unchangedProducts: number; stockLines: number; priceChanges: number };
   rate: string | null;
 };
 
@@ -192,7 +199,8 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
   const views: ImportRowView[] = [];
   const saves: Record<string, unknown>[] = [];
   const stock: StockPlan[] = [];
-  const counts = { createdProducts: 0, updatedProducts: 0, unchangedProducts: 0, stockLines: 0 };
+  const counts = { createdProducts: 0, updatedProducts: 0, unchangedProducts: 0, stockLines: 0, priceChanges: 0 };
+  const priceBase: Record<string, string> = {};
   let needsRate = false;
   const newSkuOwner = new Map<string, string>(); // SKU mới (chưa có trong hệ thống) → nhóm SP
 
@@ -270,11 +278,16 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
         // QT1b: SKU mới vào giá 0 (đặt giá ở bước 3); cột giá chỉ cập nhật SKU đã có (ghi lịch sử giá "import").
         if (!current && priceText) warnings.push(`Dòng ${vRows.map((r) => r.__line).join(", ")}: bỏ qua giá bán của SKU mới — đặt giá ở bước 3 (Giá bán) trên trang sản phẩm.`);
         const price = current ? (priceText ? money.parse(priceText.replace(/[,\s]/g, "")) : current.priceMmk) : 0;
+        // P0-C2: giá bán qua Excel phải > 0 (để trống nếu không đổi giá).
+        if (current && priceText && price < 1) throw new Error(`Giá bán của SKU ${current.sku} phải lớn hơn 0 (để trống nếu không đổi giá)`);
         const weight = weightText ? money.parse(weightText.replace(/[,\s]/g, "")) : current?.weightGrams ?? null;
         // Hoa hồng CTV cố định MMK/cái: trống = SP mới theo % CTV, SP có sẵn giữ mức cũ.
         const commissionText = shared(vRows, "affiliate_commission_mmk", "Hoa hồng CTV");
         const commission = commissionText ? money.parse(commissionText.replace(/[,\s]/g, "")) : current?.affiliateCommissionMmk ?? null;
         if (commission != null && price > 0 && commission > price) throw new Error(`Hoa hồng CTV${sku ? ` của SKU ${sku}` : ""} lớn hơn giá bán`);
+        if (current && (current.priceMmk !== price || (current.affiliateCommissionMmk ?? null) !== commission)) {
+          priceBase[current.sku] = `${current.priceMmk}|${current.affiliateCommissionMmk ?? ""}`;
+        }
         const next = {
           id: current?.id ?? "",
           sku: current?.sku ?? sku,
@@ -308,7 +321,6 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
         ...(brand ? { brandId: brand.id } : brandText ? { brandName: brandText } : { brandId: base!.brandId }),
         categoryId,
         stockLocationId: locationId,
-        published: base?.published ?? false,
         requiresExpiry,
         paoMonths: legacy.pao_months || base?.paoMonths || null,
         storageNote: legacy.storage_note || base?.storageNote || "",
@@ -410,7 +422,14 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
   if (needsRate && !rate) errors.push("Cần thiết lập tỷ giá đang có hiệu lực (Giá & tỷ giá) trước khi nhập tồn hàng VND.");
   views.sort((a, b) => a.line - b.line);
   return {
-    preview: { input: { ...input, rateId: needsRate ? rate?.id : undefined }, errors, warnings, rows: views, counts, rate: needsRate ? rate?.mmkPerVnd.toString() ?? null : null },
+    preview: {
+      input: { ...input, rateId: needsRate ? rate?.id : undefined, priceBase: Object.keys(priceBase).length ? priceBase : undefined },
+      errors,
+      warnings,
+      rows: views,
+      counts: { ...counts, priceChanges: Object.keys(priceBase).length },
+      rate: needsRate ? rate?.mmkPerVnd.toString() ?? null : null,
+    },
     saves,
     stock,
   };
@@ -423,7 +442,18 @@ export async function previewCatalogImport(raw: unknown, db: Tx = prisma): Promi
 
 const LOCK = "catalog.product-identifiers";
 
-export async function commitCatalogImport(raw: unknown, userId: string) {
+/** SKU có giá bán / hoa hồng lúc xem trước khác lúc xác nhận (thêm, bớt hoặc khác giá trị). */
+function priceBaseConflicts(seen: Record<string, string> | undefined, now: Record<string, string> | undefined): string[] {
+  const a = seen ?? {};
+  const b = now ?? {};
+  return [...new Set([...Object.keys(a), ...Object.keys(b)])].filter((sku) => a[sku] !== b[sku]).sort();
+}
+
+/**
+ * `allowPricing`: người xác nhận có quyền `pricing:manage` (action truyền vào). File có đổi giá bán / hoa hồng CTV
+ * mà không có quyền → chặn (P0-C2). Giá đã đổi ở nơi khác sau khi xem trước → huỷ cả lượt, liệt kê SKU.
+ */
+export async function commitCatalogImport(raw: unknown, userId: string, opts: { allowPricing?: boolean } = {}) {
   const input = catalogImportInputSchema.parse(raw);
   return prisma.$transaction(async (tx) => {
     // Cùng khoá với saveProduct → mã tự sinh đã xem trước không bị lần lưu khác chiếm mất.
@@ -435,8 +465,16 @@ export async function commitCatalogImport(raw: unknown, userId: string) {
       throw new Error("File này đã được nhập tồn. Mở danh sách phiếu kho để kiểm tra; không nhập lại.");
     }
     if (preview.input.rateId !== input.rateId) throw new Error("Tỷ giá vừa thay đổi. Tải file lên xem trước lại trước khi xác nhận.");
+    if (preview.counts.priceChanges > 0 && !opts.allowPricing) {
+      throw new Error("File có đổi giá bán / hoa hồng CTV — cần quyền quản lý giá. Để trống các cột giá hoặc nhờ người có quyền nhập.");
+    }
+    const conflicts = priceBaseConflicts(input.priceBase, preview.input.priceBase);
+    if (conflicts.length) {
+      throw new Error(`Giá bán của ${conflicts.join(", ")} vừa thay đổi ở nơi khác. Tải file lên xem trước lại trước khi xác nhận.`);
+    }
 
-    for (const payload of saves) await saveProduct(payload, userId, tx, { priceReason: "import" });
+    const fileTag = receiptId.slice(0, 8);
+    for (const payload of saves) await saveProduct(payload, userId, tx, { priceReason: `${IMPORT_PRICE_PREFIX}${fileTag}` });
 
     const ids = new Map((await tx.variant.findMany({ where: { sku: { in: stock.map((s) => s.sku) } }, select: { id: true, sku: true } })).map((v) => [v.sku, v.id]));
     const byLocation = new Map<string, StockPlan[]>();
@@ -453,6 +491,7 @@ export async function commitCatalogImport(raw: unknown, userId: string) {
     }
     const result = { ...preview.counts, documents };
     if (stock.length) await tx.catalogOpeningImport.create({ data: { id: receiptId, userId, result } });
+    await tx.auditLog.create({ data: { userId, action: "catalog.import", entity: "CatalogImport", entityId: receiptId, data: { ...result, fileTag } } });
     return result;
   }, { maxWait: 10_000, timeout: 120_000 });
 }

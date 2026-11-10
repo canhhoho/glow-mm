@@ -234,6 +234,8 @@ export default async function EditProductPage({ params, searchParams }: PageProp
                     {v.label} <span className="font-mono text-xs text-muted-foreground">{v.sku}</span>
                   </legend>
                   <input type="hidden" name="variantId" value={v.id} />
+                  {/* P0-H2: giá lúc mở trang — đã đổi ở nơi khác (bảng tính giá, Giá bán) thì báo lỗi, không ghi đè. */}
+                  <input type="hidden" name="expectedPriceMmk" value={v.priceMmk} />
                   <label className={fieldLabelClass}>
                     <span className="text-muted-foreground">{t("price")}</span>
                     <input name="priceMmk" aria-label={`${t("price")} ${v.sku}`} type="number" required min={1} step={1} inputMode="numeric" defaultValue={v.priceMmk || ""} className={fieldClass} />

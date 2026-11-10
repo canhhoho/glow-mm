@@ -84,7 +84,6 @@ export async function createProduct(raw: unknown, userId: string) {
       categoryId: input.categoryId,
       stockLocationId: input.stockLocationId,
       fixedProfitMmk: null,
-      published: false,
       copyFromId: input.copyFromId,
       variants,
     },

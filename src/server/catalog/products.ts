@@ -51,7 +51,6 @@ export const productSchema = z.object({
   categoryId: rawId,
   /** Kho bán (P24). Bỏ trống: SP mới → kho mặc định; SP đang có → giữ kho cũ. */
   stockLocationId: z.preprocess((v) => (v === "" || v == null ? undefined : v), rawId.optional()),
-  published: z.boolean().default(false),
   requiresExpiry: z.boolean().default(true),
   paoMonths: z.preprocess((v) => v === "" || v == null ? null : v, z.coerce.number().int().min(1).max(120).nullable()).optional(),
   /** Lãi cố định MMK/đơn vị — kho mua tại Myanmar (P24). Bỏ qua (undefined) = giữ giá trị cũ. */
@@ -109,7 +108,6 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
       ? await tx.product.findUnique({ where: { id: input.id }, select: { archivedAt: true, stockLocationId: true, published: true, brandId: true } })
       : null;
     if (input.id && !current) throw new CatalogError("Không tìm thấy sản phẩm");
-    if (current?.archivedAt && input.published) throw new CatalogError("Sản phẩm đã ngừng kinh doanh — khôi phục trước khi hiển thị trên web");
     // Đổi kho được cả khi còn tồn: hàng ở kho cũ chỉ bán lại sau khi tạo phiếu chuyển sang kho mới.
     const stockLocationId = input.stockLocationId ?? current?.stockLocationId ?? (await defaultStockLocationId(tx));
     if (stockLocationId !== current?.stockLocationId) {
@@ -133,7 +131,7 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
       categoryId: input.categoryId,
       stockLocationId,
       ...(input.fixedProfitMmk !== undefined && { fixedProfitMmk: input.fixedProfitMmk }),
-      published: input.published,
+      // P0-H1: `published` không ghi ở đây — bật/tắt hiển thị chỉ qua `setProductsPublished` (cổng mở bán + audit).
       requiresExpiry: input.requiresExpiry,
       paoMonths: input.paoMonths,
       storageNote: input.storageNote || null,
@@ -226,10 +224,10 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
       await tx.productImage.createMany({ data: source.images.map((image) => ({ ...image, productId: product.id })) });
     }
 
-    // D2: bật hiển thị phải hết lỗi mở bán; SP đang hiển thị chỉ bị chặn giá ≤ 0 / không còn biến thể.
-    if (input.published) {
+    // D2: SP đang hiển thị không được lưu thành trạng thái không bán được (giá ≤ 0 / không còn biến thể).
+    if (current?.published) {
       const readiness = (await loadReadiness(tx, [product.id])).get(product.id)!;
-      const blocking = blockingErrors(readiness, !!current?.published);
+      const blocking = blockingErrors(readiness, true);
       if (blocking.length) throw new ReadinessError(blocking);
     }
 

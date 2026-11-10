@@ -428,6 +428,8 @@
     "CatalogImport.finishProducts",
     "CatalogImport.help",
     "CatalogImport.preview",
+    "CatalogImport.priceChanges",
+    "CatalogImport.pricingForbidden",
     "CatalogImport.rateQuote",
     "CatalogImport.rates",
     "CatalogImport.reviewDraft",
