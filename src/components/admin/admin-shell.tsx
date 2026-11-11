@@ -62,7 +62,7 @@ export type ShellItem = {
   label: string;
   icon: NavIcon;
   section?: string;
-  badge?: { n: number; tone: "brand" | "neutral" | "warning" };
+  badge?: { n: number; tone: "brand" | "neutral" | "warning" | "success" };
   /** Nội dung server stream riêng, không để số đếm chặn cả khung điều hướng. */
   badgeContent?: React.ReactNode;
 };

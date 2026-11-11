@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db";
 import { sellableCutoff } from "@/server/inventory/fefo";
 import { getNumberSetting } from "@/server/settings";
 import type { NavCountKey } from "./nav";
+import { AWAITING_REVIEW_WHERE, labelWhere } from "@/server/catalog/approval-rules";
+import { loadReadiness } from "@/server/catalog/readiness";
 
 /**
  * Số đếm cho badge menu admin — chỉ tính những số được yêu cầu (theo quyền của người xem).
@@ -36,6 +38,19 @@ export async function navCounts(keys: Set<NavCountKey>, now = new Date()): Promi
   }
   if (keys.has("pendingApplications")) {
     jobs.push(prisma.affiliateApplication.count({ where: { status: "PENDING" } }).then((n) => ["pendingApplications", n]));
+  }
+  if (keys.has("catalogReview")) jobs.push(prisma.product.count({ where: AWAITING_REVIEW_WHERE }).then((n) => ["catalogReview", n]));
+  if (keys.has("catalogPublished")) jobs.push(prisma.product.count({ where: labelWhere("PUBLISHED") }).then((n) => ["catalogPublished", n]));
+  if (keys.has("catalogIncomplete")) {
+    // Nháp còn lỗi mở bán (cùng quy tắc tab "Chờ hoàn thiện").
+    jobs.push(
+      prisma.product
+        .findMany({ where: labelWhere("DRAFT"), select: { id: true } })
+        .then(async (drafts) => {
+          const r = await loadReadiness(prisma, drafts.map((d) => d.id), now);
+          return ["catalogIncomplete", drafts.filter((d) => (r.get(d.id)?.errors.length ?? 0) > 0).length] as [NavCountKey, number];
+        }),
+    );
   }
   return Object.fromEntries(await Promise.all(jobs));
 }

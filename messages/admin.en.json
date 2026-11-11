@@ -70,7 +70,11 @@
     "locations": "Delivery areas",
     "customers": "Customer accounts",
     "warehouses": "Warehouses",
-    "preorders": "Pre-orders"
+    "preorders": "Pre-orders",
+    "groupPublishing": "Publishing",
+    "publishIncomplete": "Incomplete",
+    "publishReview": "Awaiting approval",
+    "publishLive": "On sale"
   },
   "Warehouses": {
     "title": "Warehouses",
@@ -651,7 +655,27 @@
     "list": {
       "step": "Step",
       "stepAll": "All steps",
-      "stepDone": "Published"
+      "stepDone": "Published",
+      "subtitle": "Manage products, their details, variants (SKU) and selling status",
+      "statTotal": "Products",
+      "statSkus": "SKUs",
+      "colProduct": "Product",
+      "colSku": "SKU / Variant",
+      "colPrice": "Retail price (MMK)",
+      "colStock": "Stock",
+      "colSell": "Selling mode",
+      "colUpdated": "Updated",
+      "moreVariants": "+{n} more variants",
+      "missing": "{n} items missing",
+      "importExcel": "Import Excel",
+      "exportExcel": "Export Excel",
+      "moreCreate": "More",
+      "rowMenu": "More actions for {name}",
+      "duplicate": "Duplicate",
+      "showing": "Showing {from}–{to} of {total} products",
+      "pageSize": "Show:",
+      "prev": "Previous page",
+      "next": "Next page"
     },
     "priceBlock": {
       "calcThis": "Calculate this product",
@@ -694,7 +718,8 @@
       "REJECTED": "Rejected",
       "PUBLISHED": "On sale",
       "HIDDEN": "Hidden",
-      "ARCHIVED": "Discontinued"
+      "ARCHIVED": "Discontinued",
+      "INCOMPLETE": "Incomplete"
     },
     "change": {
       "DRAFT": "Has changes (draft)",
@@ -746,6 +771,80 @@
         "approvePublish": "Approved {count} products (new ones are now on sale).",
         "reject": "Rejected {count} products."
       }
+    },
+    "tab": {
+      "active": "All",
+      "published": "On sale",
+      "review": "Awaiting approval",
+      "incomplete": "Incomplete",
+      "draft": "Draft",
+      "hidden": "Hidden",
+      "outOfStock": "Out of stock",
+      "rejected": "Rejected",
+      "archived": "Discontinued"
+    },
+    "sell": {
+      "all": "Any selling mode",
+      "instock": "In stock",
+      "preorder": "Pre-order",
+      "out": "Out of stock"
+    },
+    "hero": {
+      "edit": "Edit product",
+      "progress": "Publishing progress",
+      "sections": "Page sections",
+      "tabOverview": "Overview",
+      "tabVariants": "Variants ({n})",
+      "tabStock": "Stock",
+      "tabPrice": "Price",
+      "tabPriceHistory": "Price history",
+      "tabActivity": "Activity",
+      "noteCreateOk": "Basic details complete",
+      "noteCreateMissing": "Details missing",
+      "noteStock": "Stock: {n}",
+      "notePrice": "Price: {price}",
+      "notePriceMissing": "No price yet",
+      "notePending": "Awaiting approval",
+      "noteRejected": "Rejected",
+      "noteApproved": "Approved",
+      "noteNotSubmitted": "Not submitted",
+      "notePublished": "On sale on the website",
+      "noteNotPublished": "Not published",
+      "checklist": "Publishing checklist",
+      "check": {
+        "create": "Product details",
+        "createHint": "Name, category, images",
+        "price": "Selling price",
+        "priceHint": "Retail price for every active variant",
+        "stock": "Stock / sellability"
+      },
+      "checkStockHint": "{n} units available to sell",
+      "pass": "OK",
+      "fail": "Missing",
+      "noPriceHistory": "No price changes yet.",
+      "priceChange": "Price (MMK)",
+      "priceReason": "Source / reason",
+      "by": "By",
+      "noActivity": "No activity yet.",
+      "system": "System"
+    },
+    "activity": {
+      "product_create": "Product created",
+      "product_update": "Details updated",
+      "product_change_stage": "Pending change saved",
+      "product_submit": "Submitted for approval",
+      "product_approve": "Approved",
+      "product_reject": "Rejected",
+      "product_change_discard": "Changes discarded",
+      "product_publish": "Published",
+      "product_unpublish": "Hidden",
+      "product_pricing": "Price / commission edited",
+      "product_archive": "Discontinued",
+      "product_restore": "Restored",
+      "product_image_add": "Image added",
+      "product_image_delete": "Image deleted",
+      "product_preorder": "Pre-order settings",
+      "product_approve_backfill": "Approved by system on migration"
     }
   },
   "Orders": {

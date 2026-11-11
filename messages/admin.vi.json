@@ -70,7 +70,11 @@
     "locations": "Địa bàn giao hàng",
     "customers": "Khách hàng",
     "warehouses": "Kho hàng",
-    "preorders": "Đơn đặt trước"
+    "preorders": "Đơn đặt trước",
+    "groupPublishing": "Đăng bán",
+    "publishIncomplete": "Chờ hoàn thiện",
+    "publishReview": "Chờ duyệt",
+    "publishLive": "Đang bán"
   },
   "Warehouses": {
     "title": "Kho hàng",
@@ -651,7 +655,27 @@
     "list": {
       "step": "Bước",
       "stepAll": "Mọi bước",
-      "stepDone": "Đã đăng bán"
+      "stepDone": "Đã đăng bán",
+      "subtitle": "Quản lý danh sách sản phẩm, thông tin, biến thể (SKU) và trạng thái bán hàng",
+      "statTotal": "Tổng sản phẩm",
+      "statSkus": "Tổng SKU",
+      "colProduct": "Sản phẩm",
+      "colSku": "SKU / Biến thể",
+      "colPrice": "Giá bán lẻ (MMK)",
+      "colStock": "Tồn kho",
+      "colSell": "Điều kiện bán",
+      "colUpdated": "Cập nhật",
+      "moreVariants": "+{n} loại khác",
+      "missing": "Thiếu {n} mục",
+      "importExcel": "Nhập Excel",
+      "exportExcel": "Xuất Excel",
+      "moreCreate": "Tạo khác",
+      "rowMenu": "Thao tác khác cho {name}",
+      "duplicate": "Nhân bản",
+      "showing": "Hiển thị {from}–{to} trên {total} sản phẩm",
+      "pageSize": "Hiển thị:",
+      "prev": "Trang trước",
+      "next": "Trang sau"
     },
     "priceBlock": {
       "calcThis": "Tính giá SP này",
@@ -693,8 +717,9 @@
       "PENDING": "Chờ duyệt",
       "REJECTED": "Bị từ chối",
       "PUBLISHED": "Đang bán",
-      "HIDDEN": "Đã ẩn",
-      "ARCHIVED": "Ngừng kinh doanh"
+      "HIDDEN": "Tạm ẩn",
+      "ARCHIVED": "Ngừng kinh doanh",
+      "INCOMPLETE": "Chờ hoàn thiện"
     },
     "change": {
       "DRAFT": "Có thay đổi (nháp)",
@@ -746,6 +771,80 @@
         "approvePublish": "Đã duyệt {count} SP (SP mới được đăng bán).",
         "reject": "Đã từ chối {count} SP."
       }
+    },
+    "tab": {
+      "active": "Tất cả",
+      "published": "Đang bán",
+      "review": "Chờ duyệt",
+      "incomplete": "Chờ hoàn thiện",
+      "draft": "Nháp",
+      "hidden": "Tạm ẩn",
+      "outOfStock": "Hết hàng",
+      "rejected": "Bị từ chối",
+      "archived": "Ngừng kinh doanh"
+    },
+    "sell": {
+      "all": "Mọi điều kiện bán",
+      "instock": "Còn hàng",
+      "preorder": "Đặt trước",
+      "out": "Hết hàng"
+    },
+    "hero": {
+      "edit": "Sửa sản phẩm",
+      "progress": "Tiến độ đăng bán",
+      "sections": "Các phần của trang",
+      "tabOverview": "Tổng quan",
+      "tabVariants": "Biến thể ({n})",
+      "tabStock": "Tồn kho",
+      "tabPrice": "Giá bán",
+      "tabPriceHistory": "Lịch sử giá",
+      "tabActivity": "Nhật ký",
+      "noteCreateOk": "Đã có thông tin cơ bản",
+      "noteCreateMissing": "Còn thiếu thông tin",
+      "noteStock": "Tồn: {n}",
+      "notePrice": "Giá bán: {price}",
+      "notePriceMissing": "Chưa có giá bán",
+      "notePending": "Chờ quản lý duyệt",
+      "noteRejected": "Bị từ chối",
+      "noteApproved": "Đã duyệt",
+      "noteNotSubmitted": "Chưa gửi duyệt",
+      "notePublished": "Đang bán trên web",
+      "noteNotPublished": "Chưa xuất bản",
+      "checklist": "Kiểm tra điều kiện đăng bán",
+      "check": {
+        "create": "Thông tin sản phẩm",
+        "createHint": "Tên, danh mục, hình ảnh",
+        "price": "Giá bán",
+        "priceHint": "Giá bán lẻ cho mọi loại đang bán",
+        "stock": "Tồn kho / Khả năng bán"
+      },
+      "checkStockHint": "Có {n} sản phẩm bán được trong kho",
+      "pass": "Đạt",
+      "fail": "Thiếu",
+      "noPriceHistory": "Chưa có lần đổi giá nào.",
+      "priceChange": "Giá (MMK)",
+      "priceReason": "Nguồn / lý do",
+      "by": "Người thực hiện",
+      "noActivity": "Chưa có nhật ký.",
+      "system": "Hệ thống"
+    },
+    "activity": {
+      "product_create": "Tạo sản phẩm",
+      "product_update": "Cập nhật thông tin",
+      "product_change_stage": "Lưu thay đổi chờ duyệt",
+      "product_submit": "Gửi duyệt",
+      "product_approve": "Duyệt",
+      "product_reject": "Từ chối",
+      "product_change_discard": "Huỷ thay đổi",
+      "product_publish": "Đăng bán",
+      "product_unpublish": "Ẩn khỏi web",
+      "product_pricing": "Sửa giá / hoa hồng",
+      "product_archive": "Ngừng kinh doanh",
+      "product_restore": "Khôi phục",
+      "product_image_add": "Thêm ảnh",
+      "product_image_delete": "Xoá ảnh",
+      "product_preorder": "Cài đặt đặt trước",
+      "product_approve_backfill": "Hệ thống duyệt khi chuyển đổi"
     }
   },
   "Orders": {

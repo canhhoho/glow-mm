@@ -275,7 +275,7 @@ export const TONES = {
 } as const;
 
 export function Badge({ tone = "neutral", children }: { tone?: keyof typeof TONES; children: React.ReactNode }) {
-  return <span className={cn("inline-flex rounded px-1.5 py-0.5 text-xs whitespace-nowrap", TONES[tone])}>{children}</span>;
+  return <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap", TONES[tone])}>{children}</span>;
 }
 
 /** Ô nhập admin cao 36px (h-9) — nút cạnh ô dùng `size="lg"` (cũng h-9) để thẳng hàng. */
@@ -334,6 +334,125 @@ export function Stat({
   ) : (
     <div className={cls} data-testid={testId}>
       {body}
+    </div>
+  );
+}
+
+export const ICON_TONES = {
+  brand: "bg-primary/10 text-primary",
+  green: "bg-secondary text-brand-2",
+  success: "bg-success-muted text-success",
+  warning: "bg-warning-muted text-warning",
+  danger: "bg-danger-muted text-destructive",
+  neutral: "bg-muted text-muted-foreground",
+} as const;
+
+/**
+ * Ô chỉ số có icon (P3, thiết kế mới): icon tròn màu nhạt + số lớn + nhãn. `href` → bấm được; `active` → viền màu chính
+ * (đang lọc theo ô này).
+ */
+export function StatCard({
+  icon,
+  label,
+  value,
+  tone = "neutral",
+  href,
+  active = false,
+  testId,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+  tone?: keyof typeof ICON_TONES;
+  href?: string;
+  active?: boolean;
+  testId?: string;
+}) {
+  const body = (
+    <>
+      <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-xl [&_svg]:size-5", ICON_TONES[tone])} aria-hidden>
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-xl leading-tight font-semibold tabular-nums">{value}</span>
+        <span className="block truncate text-sm text-muted-foreground">{label}</span>
+      </span>
+    </>
+  );
+  const cls = cn("flex items-center gap-3 rounded-xl border bg-card p-3 shadow-xs", active && "border-primary/50 bg-primary/5");
+  return href ? (
+    <Link href={href} className={cn(cls, "transition-colors hover:border-primary/40")} data-testid={testId} aria-current={active ? "page" : undefined}>
+      {body}
+    </Link>
+  ) : (
+    <div className={cls} data-testid={testId}>
+      {body}
+    </div>
+  );
+}
+
+/**
+ * Phân trang số trang (P3): « 1 2 3 … n » + trạng thái "Hiển thị a–b trên n" + cỡ trang (link). Không cần JS.
+ */
+export function PageNumbers({
+  page,
+  pageCount,
+  pageSize,
+  pageSizes,
+  status,
+  sizeLabel,
+  prevLabel,
+  nextLabel,
+  href,
+}: {
+  page: number;
+  pageCount: number;
+  pageSize: number;
+  pageSizes: readonly number[];
+  status: React.ReactNode;
+  sizeLabel: string;
+  prevLabel: string;
+  nextLabel: string;
+  href: (page: number, size?: number) => string;
+}) {
+  const near = new Set([1, pageCount, page - 1, page, page + 1].filter((p) => p >= 1 && p <= pageCount));
+  const pages = [...near].sort((a, b) => a - b);
+  const btn = "inline-flex size-9 items-center justify-center rounded-md border text-sm tabular-nums";
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 text-sm" data-testid="pager">
+      <span className="text-muted-foreground" data-testid="page-info">{status}</span>
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="flex items-center gap-1 text-muted-foreground">
+          {sizeLabel}
+          {pageSizes.map((s) => (
+            <Link key={s} href={href(1, s)} aria-current={s === pageSize ? "true" : undefined} className={cn("rounded px-1.5 py-0.5 tabular-nums", s === pageSize ? "bg-muted font-medium text-foreground" : "hover:text-foreground")}>
+              {s}
+            </Link>
+          ))}
+        </span>
+        {pageCount > 1 && (
+          <nav aria-label={status ? String(status) : undefined} className="flex items-center gap-1">
+            {page > 1 ? (
+              <Link href={href(page - 1)} className={btn} aria-label={prevLabel}>‹</Link>
+            ) : (
+              <span className={cn(btn, "opacity-40")} aria-hidden>‹</span>
+            )}
+            {pages.map((p, i) => (
+              <span key={p} className="flex items-center gap-1">
+                {i > 0 && p - pages[i - 1] > 1 && <span className="px-1 text-muted-foreground">…</span>}
+                <Link href={href(p)} aria-current={p === page ? "page" : undefined} className={cn(btn, p === page ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted")}>
+                  {p}
+                </Link>
+              </span>
+            ))}
+            {page < pageCount ? (
+              <Link href={href(page + 1)} className={btn} aria-label={nextLabel}>›</Link>
+            ) : (
+              <span className={cn(btn, "opacity-40")} aria-hidden>›</span>
+            )}
+          </nav>
+        )}
+      </div>
     </div>
   );
 }

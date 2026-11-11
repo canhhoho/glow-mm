@@ -70,7 +70,11 @@
     "locations": "ပို့ဆောင်ရေး နယ်မြေ",
     "customers": "ဖောက်သည် အကောင့်များ",
     "warehouses": "ဂိုဒေါင်များ",
-    "preorders": "ကြိုတင်မှာယူမှုများ"
+    "preorders": "ကြိုတင်မှာယူမှုများ",
+    "groupPublishing": "ရောင်းချရန် တင်ခြင်း",
+    "publishIncomplete": "ပြည့်စုံရန် စောင့်",
+    "publishReview": "အတည်ပြုရန် စောင့်",
+    "publishLive": "ရောင်းနေသည်"
   },
   "Warehouses": {
     "title": "ဂိုဒေါင်များ",
@@ -651,7 +655,27 @@
     "list": {
       "step": "အဆင့်",
       "stepAll": "အဆင့်အားလုံး",
-      "stepDone": "ရောင်းရန် တင်ပြီး"
+      "stepDone": "ရောင်းရန် တင်ပြီး",
+      "subtitle": "ပစ္စည်းများ၊ အချက်အလက်၊ အမျိုးအစား (SKU) နှင့် ရောင်းချမှု အခြေအနေ စီမံရန်",
+      "statTotal": "ပစ္စည်း စုစုပေါင်း",
+      "statSkus": "SKU စုစုပေါင်း",
+      "colProduct": "ပစ္စည်း",
+      "colSku": "SKU / အမျိုးအစား",
+      "colPrice": "လက်လီဈေး (MMK)",
+      "colStock": "လက်ကျန်",
+      "colSell": "ရောင်းချမှု အခြေအနေ",
+      "colUpdated": "ပြင်ဆင်ချိန်",
+      "moreVariants": "+အခြား {n} မျိုး",
+      "missing": "{n} ခု လိုအပ်",
+      "importExcel": "Excel တင်သွင်း",
+      "exportExcel": "Excel ထုတ်ယူ",
+      "moreCreate": "အခြား",
+      "rowMenu": "{name} အတွက် အခြားလုပ်ဆောင်ချက်",
+      "duplicate": "ပုံတူကူး",
+      "showing": "ပစ္စည်း {total} ခုအနက် {from}–{to}",
+      "pageSize": "ပြသရန်:",
+      "prev": "ယခင်စာမျက်နှာ",
+      "next": "နောက်စာမျက်နှာ"
     },
     "priceBlock": {
       "calcThis": "ဤပစ္စည်း ဈေးတွက်ရန်",
@@ -693,8 +717,9 @@
       "PENDING": "အတည်ပြုရန် စောင့်ဆိုင်း",
       "REJECTED": "ငြင်းပယ်ခံရ",
       "PUBLISHED": "ရောင်းနေသည်",
-      "HIDDEN": "ဝှက်ထားသည်",
-      "ARCHIVED": "ရပ်ဆိုင်းထားသည်"
+      "HIDDEN": "ယာယီဝှက်",
+      "ARCHIVED": "ရပ်ဆိုင်းထားသည်",
+      "INCOMPLETE": "ပြည့်စုံရန် စောင့်"
     },
     "change": {
       "DRAFT": "ပြင်ဆင်မှု ရှိ (မူကြမ်း)",
@@ -746,6 +771,80 @@
         "approvePublish": "ပစ္စည်း {count} ခု အတည်ပြုပြီး (အသစ်များ ရောင်းချနေပြီ)။",
         "reject": "ပစ္စည်း {count} ခု ငြင်းပယ်ပြီး။"
       }
+    },
+    "tab": {
+      "active": "အားလုံး",
+      "published": "ရောင်းနေသည်",
+      "review": "အတည်ပြုရန် စောင့်",
+      "incomplete": "ပြည့်စုံရန် စောင့်",
+      "draft": "မူကြမ်း",
+      "hidden": "ယာယီဝှက်",
+      "outOfStock": "ကုန်သွားပြီ",
+      "rejected": "ငြင်းပယ်ခံရ",
+      "archived": "ရပ်ဆိုင်းထားသည်"
+    },
+    "sell": {
+      "all": "ရောင်းချမှု အားလုံး",
+      "instock": "လက်ကျန်ရှိ",
+      "preorder": "ကြိုတင်မှာ",
+      "out": "ကုန်သွားပြီ"
+    },
+    "hero": {
+      "edit": "ပစ္စည်း ပြင်ရန်",
+      "progress": "ရောင်းချရန် တိုးတက်မှု",
+      "sections": "စာမျက်နှာ အပိုင်းများ",
+      "tabOverview": "အကျဉ်းချုပ်",
+      "tabVariants": "အမျိုးအစား ({n})",
+      "tabStock": "လက်ကျန်",
+      "tabPrice": "ရောင်းဈေး",
+      "tabPriceHistory": "ဈေးနှုန်း မှတ်တမ်း",
+      "tabActivity": "လုပ်ဆောင်ချက် မှတ်တမ်း",
+      "noteCreateOk": "အခြေခံ အချက်အလက် ပြည့်စုံ",
+      "noteCreateMissing": "အချက်အလက် လိုအပ်",
+      "noteStock": "လက်ကျန်: {n}",
+      "notePrice": "ဈေး: {price}",
+      "notePriceMissing": "ဈေး မသတ်မှတ်ရသေး",
+      "notePending": "အတည်ပြုရန် စောင့်",
+      "noteRejected": "ငြင်းပယ်ခံရ",
+      "noteApproved": "အတည်ပြုပြီး",
+      "noteNotSubmitted": "မပေးပို့ရသေး",
+      "notePublished": "ဝဘ်ဆိုက်တွင် ရောင်းနေသည်",
+      "noteNotPublished": "မထုတ်ဝေရသေး",
+      "checklist": "ရောင်းချရန် စစ်ဆေးချက်",
+      "check": {
+        "create": "ပစ္စည်း အချက်အလက်",
+        "createHint": "အမည်၊ အမျိုးအစား၊ ပုံ",
+        "price": "ရောင်းဈေး",
+        "priceHint": "ရောင်းနေသော အမျိုးအစားတိုင်း၏ လက်လီဈေး",
+        "stock": "လက်ကျန် / ရောင်းနိုင်မှု"
+      },
+      "checkStockHint": "ရောင်းနိုင်သော {n} ခု ရှိ",
+      "pass": "ပြည့်မီ",
+      "fail": "လိုအပ်",
+      "noPriceHistory": "ဈေးပြောင်းမှု မရှိသေးပါ။",
+      "priceChange": "ဈေး (MMK)",
+      "priceReason": "ရင်းမြစ် / အကြောင်းရင်း",
+      "by": "ပြုလုပ်သူ",
+      "noActivity": "မှတ်တမ်း မရှိသေးပါ။",
+      "system": "စနစ်"
+    },
+    "activity": {
+      "product_create": "ပစ္စည်း ဖန်တီး",
+      "product_update": "အချက်အလက် ပြင်ဆင်",
+      "product_change_stage": "အတည်ပြုရန် ပြင်ဆင်မှု သိမ်း",
+      "product_submit": "အတည်ပြုရန် ပေးပို့",
+      "product_approve": "အတည်ပြု",
+      "product_reject": "ငြင်းပယ်",
+      "product_change_discard": "ပြင်ဆင်မှု ပယ်ဖျက်",
+      "product_publish": "ရောင်းချရန် တင်",
+      "product_unpublish": "ဝှက်ထား",
+      "product_pricing": "ဈေး / ကော်မရှင် ပြင်",
+      "product_archive": "ရပ်ဆိုင်း",
+      "product_restore": "ပြန်ယူ",
+      "product_image_add": "ပုံ ထည့်",
+      "product_image_delete": "ပုံ ဖျက်",
+      "product_preorder": "ကြိုတင်မှာ ဆက်တင်",
+      "product_approve_backfill": "စနစ်က အတည်ပြု"
     }
   },
   "Orders": {

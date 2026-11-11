@@ -11,30 +11,38 @@ const STATE_CLASS: Record<StepView["state"], string> = {
   waiting: "border-border text-muted-foreground",
 };
 
+const DOT_CLASS: Record<StepView["state"], string> = {
+  done: "border-success bg-success text-white",
+  warn: "border-warning bg-warning text-white",
+  todo: "border-primary bg-background text-primary",
+  waiting: "border-border bg-background text-muted-foreground",
+};
+
 /**
- * Thanh 5 bước ở đầu trang SP: mỗi bước một ô (số, tên, trạng thái), bấm cuộn tới khối của bước đó (`#step-<key>`).
- * `current` (bước đầu tiên còn cần làm) được viền đậm + `aria-current`.
+ * "Tiến độ đăng bán" (P3): 5 mốc nối nhau — tròn xanh có dấu ✓ khi xong, viền màu chính ở mốc đang cần làm,
+ * dòng mô tả ngắn dưới mỗi mốc (`notes`). Chỉ để xem tiến độ, không bắt làm theo thứ tự; bấm mốc → cuộn tới khối.
  */
-export function ProductStepsBar({ steps, current, t }: { steps: StepView[]; current: ProductStep | null; t: T }) {
+export function ProductStepsBar({ steps, current, t, notes = {} }: { steps: StepView[]; current: ProductStep | null; t: T; notes?: Partial<Record<ProductStep, string>> }) {
   return (
     <nav aria-label={t("stepsLabel")} data-testid="product-steps">
-      <ol className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+      <ol className="grid grid-cols-5">
         {steps.map((s, i) => (
-          <li key={s.key} data-testid={`step-${s.key}`} data-state={s.state}>
-            <a
-              href={`#step-${s.key}`}
-              aria-current={s.key === current ? "step" : undefined}
-              className={cn("flex h-full flex-col gap-1 rounded-lg border p-2.5 text-sm hover:bg-muted/50", STATE_CLASS[s.state], s.key === current && "ring-2 ring-primary/40")}
-            >
-              <span className="flex items-center gap-1.5 font-medium">
-                <span className="tabular-nums">{i + 1}.</span>
-                {t(`step.${s.key}`)}
+          <li key={s.key} data-testid={`step-${s.key}`} data-state={s.state} className="relative flex flex-col items-center text-center">
+            {i > 0 && (
+              <span aria-hidden className={cn("absolute top-4 right-1/2 h-0.5 w-full -translate-y-1/2", steps[i - 1].state === "done" ? "bg-success" : "bg-border")} />
+            )}
+            <a href={`#step-${s.key}`} aria-current={s.key === current ? "step" : undefined} className="group relative z-10 flex flex-col items-center gap-1 px-1">
+              <span className={cn("flex size-8 items-center justify-center rounded-full border-2 text-sm font-semibold", DOT_CLASS[s.state], s.key === current && "ring-4 ring-primary/15")}>
+                {s.state === "done" ? <Check className="size-4" aria-hidden /> : s.state === "warn" ? <CircleAlert className="size-4" aria-hidden /> : i + 1}
               </span>
-              <span className="flex items-center gap-1 text-xs">
-                {s.state === "done" && <Check className="size-3.5" aria-hidden />}
-                {s.state === "warn" && <CircleAlert className="size-3.5" aria-hidden />}
-                {s.state === "waiting" && <Clock className="size-3.5" aria-hidden />}
-                {t(`stepState.${s.state}`)}
+              <span className={cn("text-xs font-medium sm:text-sm", s.key === current ? "text-primary" : "text-foreground", "group-hover:underline")}>{t(`step.${s.key}`)}</span>
+              <span className="hidden text-xs text-muted-foreground sm:block">
+                {notes[s.key] ?? (
+                  <span className="inline-flex items-center gap-1">
+                    {s.state === "waiting" && <Clock className="size-3" aria-hidden />}
+                    {t(`stepState.${s.state}`)}
+                  </span>
+                )}
               </span>
             </a>
           </li>

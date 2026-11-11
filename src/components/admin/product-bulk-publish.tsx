@@ -31,8 +31,24 @@ function boxes() {
 }
 
 /** Nút Xoá / Khôi phục ở từng dòng — gửi form chung với `intent = "delete:<id>"`. */
-export function RowProductAction({ id, name, kind }: { id: string; name: string; kind: "delete" | "restore" }) {
+export function RowProductAction({ id, name, kind, menu = false }: { id: string; name: string; kind: "delete" | "restore"; menu?: boolean }) {
   const t = useTranslations("Products");
+  if (menu) {
+    // Dòng trong menu ⋯ của danh sách (P3): chữ thay cho nút icon.
+    return (
+      <button
+        type="submit"
+        form={BULK_FORM_ID}
+        name="intent"
+        value={`${kind}:${id}`}
+        aria-label={`${t(kind === "delete" ? "delete" : "restore")} ${name}`}
+        className={cn("w-full rounded px-3 py-2 text-left hover:bg-muted", kind === "delete" && "text-destructive")}
+        onClick={kind === "delete" ? confirmOrPrevent(t("deleteOneConfirm", { name })) : undefined}
+      >
+        {t(kind === "delete" ? "delete" : "restore")}
+      </button>
+    );
+  }
   return (
     <Button
       type="submit"
