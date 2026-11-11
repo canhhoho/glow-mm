@@ -65,12 +65,15 @@ export function ProductForm({
   copySourceId,
   review,
   draftBrandName,
+  slugLocked = false,
 }: {
   initial: ProductEditData | null;
   options: Options;
   copySourceId?: string;
   review?: { submit: boolean; approve: boolean };
   draftBrandName?: string;
+  /** Slug khoá sau lần đăng bán đầu tiên (đường dẫn khách đã dùng). */
+  slugLocked?: boolean;
 }) {
   const t = useTranslations("Products");
   const td = useTranslations("Docs");
@@ -271,7 +274,8 @@ export function ProductForm({
         <summary className="cursor-pointer font-medium">{t("otherSettings")}</summary>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <Field label={t("slug")}>
-            <input aria-label={t("slug")} value={slug} onChange={(e) => set("slug", e.target.value)} pattern="[a-z0-9\-]+" maxLength={80} className={fieldClass} />
+            <input aria-label={t("slug")} value={slug} onChange={(e) => set("slug", e.target.value)} pattern="[a-z0-9\-]+" maxLength={80} readOnly={slugLocked} className={fieldClass} />
+            {slugLocked && <span className="text-xs text-muted-foreground">{t("slugLocked")}</span>}
             {!p.id && !p.slug && <span className="text-xs text-muted-foreground">{t("autoIdentifierHint")}</span>}
           </Field>
 

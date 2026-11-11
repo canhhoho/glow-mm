@@ -65,7 +65,7 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     expect((await prisma.batch.findFirstOrThrow({ where: { variant: { productId: toner.id }, expiryStatus: "DATED", landedCostVnd: 105000 } })).landedCostMmk).toBe(21000);
 
     // Nhập lại đúng file có tồn → chặn, không tạo thêm phiếu.
-    await expect(commitCatalogImport(preview.input, f.userId)).rejects.toThrow(/đã được nhập tồn|đã có|SKU/);
+    await expect(commitCatalogImport(preview.input, f.userId)).rejects.toThrow(/đã được nhập lúc|đã có|SKU/);
   });
 
   it("cập nhật theo SKU: ô trống giữ nguyên, ghi lịch sử giá; chạy lại file chỉ sửa giá thì 'không đổi'", async () => {
@@ -89,7 +89,8 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     expect(again.counts).toMatchObject({ updatedProducts: 0, unchangedProducts: 1 });
     expect(again.rows[0].action).toBe("same");
     expect(again.counts.priceChanges).toBe(0);
-    await commitCatalogImport(again.input, f.userId); // không có tồn → không bị chặn nhập lặp; không đổi giá → không cần quyền giá
+    // P1-D (H6): nhập lại đúng file đã xác nhận → bị chặn (kể cả file không có tồn).
+    await expect(commitCatalogImport(again.input, f.userId)).rejects.toThrow("đã được nhập lúc");
     expect(await prisma.priceHistory.count({ where: { variantId: f.variantId } })).toBe(1);
   });
 

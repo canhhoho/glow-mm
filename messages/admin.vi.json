@@ -567,7 +567,8 @@
         "OUT_OF_STOCK": "Hết hàng và không nhận đặt trước (trang SP hiện \"Hết hàng\")",
         "STOCK_OTHER_WAREHOUSE": "Có tồn ở kho bán khác — chuyển kho để bán",
         "PRICE_STALE": "Có phiếu nhập mới sau lần đặt giá gần nhất — nên tính lại giá",
-        "NOT_APPROVED": "Chưa duyệt (bước 4)"
+        "NOT_APPROVED": "Chưa duyệt (bước 4)",
+        "RATE_NEWER": "Có tỷ giá mới hơn lần đổi giá gần nhất — nên tính lại giá"
       },
       "blockedSave": "Chưa bật hiển thị / lưu được:",
       "blockedBulk": "{count} sản phẩm chưa bật được vì còn lỗi:",
@@ -726,7 +727,8 @@
         "imagesAdded": "Thêm {count} ảnh",
         "imagesRemoved": "Xoá {count} ảnh"
       }
-    }
+    },
+    "slugLocked": "Đã khoá sau lần đăng bán đầu tiên (đường dẫn khách đã dùng)."
   },
   "Orders": {
     "exportVtp": "Xuất Excel VTP",

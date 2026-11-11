@@ -1,6 +1,7 @@
 import "server-only";
 import { inventoryCost } from "@/server/inventory/cost";
 import { salesBlockDays } from "@/server/inventory/documents";
+import { latestRate } from "@/server/pricing/latest-rate";
 import type { Tx } from "@/server/inventory/ledger";
 import { availableToSell } from "@/server/orders/availability";
 import { evaluateReadiness, type Issue, type Readiness } from "./readiness-rules";
@@ -69,6 +70,8 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
     ? await db.priceHistory.groupBy({ by: ["variantId"], where: { variantId: { in: allVariantIds } }, _max: { createdAt: true } })
     : [];
   const lastPriceChange = new Map(priceChanges.map((c) => [c.variantId, c._max.createdAt?.getTime() ?? 0]));
+  // P1-D (M5): tỷ giá đang hiệu lực mới hơn lần đổi giá gần nhất (chỉ kho nhập VN; chưa có lịch sử giá → không đoán).
+  const rateAt = (await latestRate(db, now))?.effectiveAt.getTime() ?? 0;
 
   const out = new Map<string, LoadedReadiness>();
   for (const p of products) {
@@ -109,6 +112,13 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
         // Tồn ở kho bán khác kho của SP → không bán được cho đến khi chuyển kho.
         otherWarehouseSkus: skusWhere(mine, (b) => b.locationId !== p.stockLocationId),
         staleSkus,
+        rateNewerSkus:
+          p.stockLocation.pricingMode === "VN_IMPORT"
+            ? p.variants
+                .filter((v) => v.active && v.priceMmk > 0 && (lastPriceChange.get(v.id) ?? 0) > 0 && lastPriceChange.get(v.id)! < rateAt)
+                .map((v) => v.sku)
+                .sort()
+            : [],
         preorderEnabled: p.preorderEnabled,
       }),
     });

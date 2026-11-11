@@ -462,8 +462,10 @@ export async function commitCatalogImport(raw: unknown, userId: string, opts: { 
     const { preview, saves, stock } = await buildPlan(input, tx);
     if (preview.errors.length) throw new Error(preview.errors.join("\n"));
     const receiptId = createHash("sha256").update(input.csv).digest("hex");
-    if (stock.length && (await tx.catalogOpeningImport.findUnique({ where: { id: receiptId } }))) {
-      throw new Error("File này đã được nhập tồn. Mở danh sách phiếu kho để kiểm tra; không nhập lại.");
+    // P1-D (H6): mọi file đã xác nhận đều ghi dấu — nhập lại đúng file đó bị chặn (dòng không SKU sẽ tạo SP trùng).
+    const previous = await tx.catalogOpeningImport.findUnique({ where: { id: receiptId }, select: { createdAt: true } });
+    if (previous) {
+      throw new Error(`File này đã được nhập lúc ${previous.createdAt.toISOString().slice(0, 16).replace("T", " ")} (UTC). Không nhập lại — sửa file nếu cần cập nhật tiếp.`);
     }
     if (preview.input.rateId !== input.rateId) throw new Error("Tỷ giá vừa thay đổi. Tải file lên xem trước lại trước khi xác nhận.");
     if (preview.counts.priceChanges > 0 && !opts.allowPricing) {
@@ -491,7 +493,7 @@ export async function commitCatalogImport(raw: unknown, userId: string, opts: { 
       await tx.batch.updateMany({ where: { id: { in: lines.flatMap((l) => (l.batchId && l.batch?.unitCostVnd != null ? [l.batchId] : [])) } }, data: { rateId: input.rateId } });
     }
     const result = { ...preview.counts, documents };
-    if (stock.length) await tx.catalogOpeningImport.create({ data: { id: receiptId, userId, result } });
+    await tx.catalogOpeningImport.create({ data: { id: receiptId, userId, result } });
     await tx.auditLog.create({ data: { userId, action: "catalog.import", entity: "CatalogImport", entityId: receiptId, data: { ...result, fileTag } } });
     return result;
   }, { maxWait: 10_000, timeout: 120_000 });

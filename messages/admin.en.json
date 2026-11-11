@@ -567,7 +567,8 @@
         "OUT_OF_STOCK": "Out of stock and pre-orders off (product page shows \"Out of stock\")",
         "STOCK_OTHER_WAREHOUSE": "Stock sits in another sales warehouse — transfer it to sell",
         "PRICE_STALE": "Stock was received after the last price change — recalculate the price",
-        "NOT_APPROVED": "Not approved (step 4)"
+        "NOT_APPROVED": "Not approved (step 4)",
+        "RATE_NEWER": "A newer exchange rate exists than the last price change — consider recalculating"
       },
       "blockedSave": "Cannot publish / save:",
       "blockedBulk": "{count} products were not published because of errors:",
@@ -726,7 +727,8 @@
         "imagesAdded": "{count} images added",
         "imagesRemoved": "{count} images removed"
       }
-    }
+    },
+    "slugLocked": "Locked after the first publication (customers already use this link)."
   },
   "Orders": {
     "exportVtp": "Export VTP Excel",

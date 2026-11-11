@@ -52,6 +52,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
       approvalStatus: true,
       approvalVersion: true,
       rejectionReason: true,
+      firstPublishedAt: true,
       preorderEnabled: true,
       variants: { select: { id: true, preorderLimit: true } },
     },
@@ -216,6 +217,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
               key={JSON.stringify(view.edit)}
               initial={view.edit}
               draftBrandName={view.draftBrandName}
+              slugLocked={!!approval.firstPublishedAt}
               options={options}
               review={{ submit: canManage && !approval.archivedAt, approve: canApprove && !approval.archivedAt }}
             />

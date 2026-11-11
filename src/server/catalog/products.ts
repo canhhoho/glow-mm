@@ -137,9 +137,31 @@ export async function writeProduct(tx: Tx, parsed: ProductInput, userId: string,
       : null;
     if (input.copyFromId && !source) throw new CatalogError("Sản phẩm nguồn không còn tồn tại");
     const current = input.id
-      ? await tx.product.findUnique({ where: { id: input.id }, select: { archivedAt: true, stockLocationId: true, published: true, brandId: true } })
+      ? await tx.product.findUnique({ where: { id: input.id }, select: { archivedAt: true, stockLocationId: true, published: true, brandId: true, slug: true, firstPublishedAt: true } })
       : null;
     if (input.id && !current) throw new CatalogError("Không tìm thấy sản phẩm");
+    // P1-D (Q-D): slug là đường dẫn khách đã dùng — khoá sau lần đăng bán đầu tiên (không có bảng chuyển hướng).
+    if (current && current.firstPublishedAt && input.slug !== current.slug) {
+      throw new CatalogError(`Đường dẫn (slug) đã khoá sau lần đăng bán đầu tiên — giữ "${current.slug}"`);
+    }
+    // P1-D (M2): trùng slug / SKU → báo rõ thay vì lỗi ràng buộc DB.
+    const slugOwner = await tx.product.findUnique({ where: { slug: input.slug }, select: { id: true } });
+    if (slugOwner && slugOwner.id !== input.id) throw new CatalogError(`Đường dẫn (slug) "${input.slug}" đã được sản phẩm khác dùng`);
+    // P1-D (M1): nhãn loại không trùng trong cùng SP (không phân biệt hoa thường / khoảng trắng).
+    const labels = new Map<string, string>();
+    for (const v of input.variants) {
+      const key = v.label.trim().toLowerCase().replace(/\s+/g, " ");
+      if (labels.has(key)) throw new CatalogError(`Tên loại "${v.label}" bị trùng (SKU ${labels.get(key)} và ${v.sku})`);
+      labels.set(key, v.sku);
+    }
+    const skus = new Set<string>();
+    for (const v of input.variants) {
+      if (skus.has(v.sku)) throw new CatalogError(`SKU ${v.sku} bị lặp trong sản phẩm`);
+      skus.add(v.sku);
+      const owner = await tx.variant.findUnique({ where: { sku: v.sku }, select: { id: true, productId: true } });
+      if (owner && owner.id !== v.id && (owner.productId !== input.id || v.id)) throw new CatalogError(`SKU ${v.sku} đã được dùng`);
+      if (!owner && (await skuPendingElsewhere(tx, v.sku, input.id))) throw new CatalogError(`SKU ${v.sku} đang chờ duyệt ở sản phẩm khác`);
+    }
     // Đổi kho được cả khi còn tồn: hàng ở kho cũ chỉ bán lại sau khi tạo phiếu chuyển sang kho mới.
     const stockLocationId = input.stockLocationId ?? current?.stockLocationId ?? (await defaultStockLocationId(tx));
     if (stockLocationId !== current?.stockLocationId) {
