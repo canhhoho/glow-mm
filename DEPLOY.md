@@ -325,6 +325,20 @@ sudo timedatectl set-timezone UTC && timedatectl status
 
 ---
 
+## 4b. Trước khi deploy bản có migration ràng buộc DB (P4, `20261111120000_db_integrity_constraints`)
+
+Migration thêm CHECK tồn ≥ 0, trigger sổ kho chỉ ghi thêm và chặn trùng tên loại trong cùng SP. Nếu dữ liệu production vi phạm, migration dừng và container app không khởi động được. Vì vậy, **trước khi deploy**, chạy kiểm tra chỉ đọc trên server. Cả 3 số phải bằng 0:
+
+```bash
+docker exec tandc-db-1 psql -U glow -d glow -tAc "
+SELECT 'ton_am', count(*) FROM \"StockBalance\" WHERE qty < 0
+UNION ALL SELECT 'so_kho_lech', count(*) FROM (SELECT \"batchId\",\"locationId\",\"stockType\",SUM(\"qtyDelta\") q FROM \"StockLedger\" GROUP BY 1,2,3) l FULL JOIN \"StockBalance\" s USING (\"batchId\",\"locationId\",\"stockType\") WHERE COALESCE(l.q,0) <> COALESCE(s.qty,0)
+UNION ALL SELECT 'ten_loai_trung', count(*) FROM (SELECT 1 FROM \"Variant\" GROUP BY \"productId\", lower(regexp_replace(btrim(label), '\s+', ' ', 'g')) HAVING count(*) > 1) t;"
+```
+
+- Khác 0 thì **không deploy**. Chạy bản đầy đủ `scripts/data-checks.ts` trên bản sao (§3.3) để lấy danh sách cần xử lý.
+- Rollback mà không mất dữ liệu: các lệnh `DROP …` ghi ở đầu file migration, rồi deploy lại tag trước.
+
 ## 5. Dọn sau khi tắt hẳn Vercel (P19 ghi lại, chưa làm)
 Chỉ làm khi đã chuyển xong dữ liệu (§2.4) và không còn dùng Vercel Preview:
 - Storage: `src/server/adapters/storage/vercel-blob.ts`, nhánh `vercel-blob` trong `storage/index.ts` + `env.ts`, gói `@vercel/blob`, `images.remotePatterns` trong `next.config.ts`.
