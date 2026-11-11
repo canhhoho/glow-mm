@@ -96,6 +96,8 @@ test("tạo combo bằng nút riêng: chọn thành phần cùng kho", async ({ 
   const tag = Date.now();
   await login(page, "admin@glow.local");
   await page.goto("/admin/products");
+  // P3: tạo combo nằm trong menu "Tạo khác" (⋯) cạnh nút Thêm sản phẩm.
+  await page.getByLabel("Tạo khác", { exact: true }).click();
   await page.getByRole("link", { name: "Tạo combo", exact: true }).click();
   // Danh sách SP trên DB test tích luỹ nặng → chuyển trang có thể > 5s.
   await expect(page).toHaveURL(/\/admin\/products\/new\?type=combo$/, { timeout: 30_000 });
