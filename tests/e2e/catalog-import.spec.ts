@@ -4,7 +4,7 @@ import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { readSheet } from "read-excel-file/node";
 import { CATALOG_HEADER_ROW, CATALOG_SHEET, sheetHeaderKey } from "../../src/lib/catalog-sheet";
 import { toCsv } from "../../src/lib/csv";
-import { login, openProductEdit, openProductSettings, priceInputs, setPrices } from "./helpers";
+import { approveChanges, login, openProductEdit, openProductSettings, priceInputs, setPrices } from "./helpers";
 
 const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
@@ -139,7 +139,8 @@ test("cập nhật giá: danh sách SP hiện có chứa SKU; tải lên dòng S
   await openProductSettings(page);
   const sku = await page.getByRole("textbox", { name: "SKU", exact: true }).first().inputValue();
   const original = Number(await (await priceInputs(page)).first().inputValue());
-  const next = original + 100;
+  // Giá khác nhau mỗi lần chạy → nội dung file khác (P1-D: nhập lại đúng file đã xác nhận bị chặn).
+  const next = original + 100 * (1 + (Date.now() % 9));
 
   await page.goto("/admin/products/import");
   const current = await download(page, "Tải danh sách sản phẩm hiện có (để cập nhật)");
@@ -166,10 +167,14 @@ test("cập nhật giá: danh sách SP hiện có chứa SKU; tải lên dòng S
     const variant = page.getByRole("textbox", { name: "SKU", exact: true }).first();
     await expect(variant).toHaveValue(sku);
     await expect((await priceInputs(page)).first()).toHaveValue(String(next));
+    // P1-A: SP đang bán → giá từ Excel chờ duyệt; duyệt xong nguồn giá là Excel.
+    await expect(page.getByTestId("pending-price").first()).toBeVisible();
+    await approveChanges(page);
     await expect(page.getByTestId("step-price-row").first()).toContainText("Excel");
   } finally {
     // Trả giá cũ cho dữ liệu seed dùng chung.
     await page.goto(productUrl);
     await setPrices(page, [original], "E2E trả giá cũ");
+    await approveChanges(page);
   }
 });

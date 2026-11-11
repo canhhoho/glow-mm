@@ -92,6 +92,22 @@ export async function setPrices(page: Page, prices: (number | string | undefined
   await expect(box.getByRole("status")).toContainText("Đã lưu giá", { timeout: 15_000 });
 }
 
+/**
+ * P1-A: SP đã duyệt → thay đổi nội dung / giá / ảnh nằm ở bản đang sửa. Trên trang SP: Gửi duyệt → Duyệt thay đổi
+ * (có xác nhận), chờ đến khi không còn bản đang sửa.
+ */
+export async function approveChanges(page: Page) {
+  const check = page.getByTestId("launch-check").filter({ visible: true });
+  const status = check.getByTestId("approval-status");
+  // Không có bản đang sửa (thay đổi trùng giá trị đang bán) → không có gì để duyệt.
+  if ((await status.getAttribute("data-change")) === "") return;
+  await check.getByRole("button", { name: "Gửi duyệt", exact: true }).click();
+  await expect(status).toHaveAttribute("data-change", "PENDING", { timeout: 15_000 });
+  page.once("dialog", (d) => d.accept());
+  await check.getByRole("button", { name: "Duyệt thay đổi", exact: true }).click();
+  await expect(status).toHaveAttribute("data-change", "", { timeout: 15_000 });
+}
+
 /** Open a top-level accordion without changing the state of other menu groups. */
 export async function openAdminGroup(page: Page, label: string) {
   const nav = await openAdminNav(page);

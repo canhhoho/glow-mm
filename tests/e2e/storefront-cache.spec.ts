@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import pg from "pg";
-import { login, priceInputs, setPrices } from "./helpers";
+import { approveChanges, login, priceInputs, setPrices } from "./helpers";
 
 // P20: nội dung SP được cache ("use cache"), tồn kho thì không. Kiểm tra admin sửa → storefront đổi ngay,
 // và tồn đổi (giữ hàng) → trang SP phản ánh ngay dù nội dung đang nằm trong cache.
@@ -37,6 +37,11 @@ test("admin đổi giá biến thể → trang SP và thẻ ở trang danh mục
 
   try {
     await setPrices(page, [price], "E2E cache");
+    // P1-A: SP đang bán → giá mới chờ duyệt; khách chỉ thấy sau khi duyệt.
+    await page.goto(`/en/p/${SLUG}`);
+    await expect(page.getByText(shown)).toHaveCount(0);
+    await page.goto(adminUrl);
+    await approveChanges(page);
 
     await page.goto(`/en/p/${SLUG}`);
     await expect(page.getByText(shown).first()).toBeVisible();
@@ -45,6 +50,7 @@ test("admin đổi giá biến thể → trang SP và thẻ ở trang danh mục
   } finally {
     await page.goto(adminUrl);
     await setPrices(page, [original], "E2E trả giá cũ");
+    await approveChanges(page);
   }
   await page.goto(`/en/p/${SLUG}`);
   await expect(page.getByText(shown)).toHaveCount(0);

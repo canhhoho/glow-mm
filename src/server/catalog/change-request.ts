@@ -134,7 +134,7 @@ async function hashIfWritten(tx: Tx, productId: string, payload: ProductInput, u
  * Định tuyến lần lưu SP ĐÃ DUYỆT (gọi từ `saveProduct`, đã giữ khoá catalog + dòng Product):
  * phần không cần duyệt ghi thẳng; phần cần duyệt vào bản đang sửa; giá (từ Excel) vào bản đang sửa.
  */
-export async function stageProductEdit(tx: Tx, parsed: ProductInput, userId: string) {
+export async function stageProductEdit(tx: Tx, parsed: ProductInput, userId: string, opts: { priceReason?: string } = {}) {
   const productId = parsed.id!;
   const { payload: live } = await livePayload(tx, productId);
   const existing = await readChanges(tx, productId);
@@ -161,7 +161,7 @@ export async function stageProductEdit(tx: Tx, parsed: ProductInput, userId: str
     if (v.priceMmk < 1) throw new CatalogError(`Giá bán của ${v.sku} phải lớn hơn 0`);
     pricesChanged = true;
     if (v.priceMmk === livePrice.get(v.id)) delete prices[v.id];
-    else prices[v.id] = { priceMmk: v.priceMmk, baseLivePrice: livePrice.get(v.id)!, reason: "manual", userId };
+    else prices[v.id] = { priceMmk: v.priceMmk, baseLivePrice: livePrice.get(v.id)!, reason: opts.priceReason ?? "manual", userId };
   }
 
   const next: ChangeRow = {

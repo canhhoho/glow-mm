@@ -103,7 +103,7 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
     if (parsed.id && opts.mode !== "apply") {
       await tx.$queryRaw`SELECT "id" FROM "Product" WHERE "id" = ${parsed.id} FOR UPDATE`;
       const cur = await tx.product.findUnique({ where: { id: parsed.id }, select: { approvedAt: true } });
-      if (cur?.approvedAt) return stageProductEdit(tx, parsed, userId);
+      if (cur?.approvedAt) return stageProductEdit(tx, parsed, userId, { priceReason: opts.priceReason });
     }
     return guardApproval(tx, parsed.id ? [parsed.id] : [], userId, () => writeProduct(tx, parsed, userId, opts), { applying: opts.mode === "apply" });
   };
