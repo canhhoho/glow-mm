@@ -3,11 +3,14 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
-import type { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { getNumberSetting } from "@/server/settings";
 import type { Tx } from "@/server/inventory/ledger";
 import { variantCosts } from "./cost";
 import { guardApproval } from "@/server/catalog/approval";
+import { effectivePrices, stagePrices } from "@/server/catalog/change-request";
+import { lockCatalog } from "@/server/catalog/products";
+import { writeAudit } from "@/server/audit";
 import { mmkPerVndFromUsd, parseScaled, priceLocalMmk, priceVnImport, shippingMmk, suggestPrice } from "./formula";
 
 /**
@@ -65,14 +68,18 @@ export const rateSchema = z
 
 export async function createRate(raw: unknown, userId: string) {
   const input = rateSchema.parse(raw);
-  return prisma.exchangeRate.create({
-    data: {
-      mmkPerUsd: input.mmkPerUsd,
-      vndPerUsd: input.vndPerUsd,
-      mmkPerVnd: mmkPerVndFromUsd(input.mmkPerUsd, input.vndPerUsd),
-      note: input.note || null,
-      createdById: userId,
-    },
+  return prisma.$transaction(async (tx) => {
+    const rate = await tx.exchangeRate.create({
+      data: {
+        mmkPerUsd: input.mmkPerUsd,
+        vndPerUsd: input.vndPerUsd,
+        mmkPerVnd: mmkPerVndFromUsd(input.mmkPerUsd, input.vndPerUsd),
+        note: input.note || null,
+        createdById: userId,
+      },
+    });
+    await writeAudit(tx, { userId, action: "pricing.rate.create", entity: "ExchangeRate", entityId: rate.id, data: { mmkPerUsd: input.mmkPerUsd, vndPerUsd: input.vndPerUsd } });
+    return rate;
   });
 }
 
@@ -321,11 +328,17 @@ export async function applyRun(runId: string, variantIds: string[], userId: stri
         roundTo: run.roundTo,
       };
       const fresh = new Map((await computeLines(tx, lines.map((l) => l.variantId), ctx)).lines.map((l) => [l.variantId, l]));
-      // QT2: đổi giá SP đã duyệt → huỷ duyệt (cần duyệt lại).
-      const productIds = (await tx.variant.findMany({ where: { id: { in: lines.map((l) => l.variantId) } }, select: { productId: true } })).map((v) => v.productId);
+      // P1-A: SP đã duyệt → giá mới vào bản đang sửa (chờ duyệt, khách vẫn thấy giá cũ); SP chưa duyệt → ghi thẳng.
+      await lockCatalog(tx);
+      const owners = await tx.variant.findMany({ where: { id: { in: lines.map((l) => l.variantId) } }, select: { id: true, productId: true, product: { select: { approvedAt: true } } } });
+      const productIds = [...new Set(owners.map((v) => v.productId))].sort();
+      if (productIds.length) await tx.$queryRaw`SELECT "id" FROM "Product" WHERE "id" IN (${Prisma.join(productIds)}) ORDER BY "id" FOR UPDATE`;
+      const owner = new Map(owners.map((v) => [v.id, v]));
+      const effective = new Map<string, Map<string, number>>();
       return guardApproval(tx, productIds, userId, async () => {
 
       let applied = 0;
+      const stagedProducts = new Set<string>();
       const skipped: ApplySkip[] = [];
       const skip = async (l: (typeof lines)[number], reason: ApplySkip["reason"]) => {
         skipped.push({ sku: l.variant.sku, reason });
@@ -335,6 +348,21 @@ export async function applyRun(runId: string, variantIds: string[], userId: stri
         const f = fresh.get(l.variantId);
         if (!l.fingerprint || !f || f.fingerprint !== l.fingerprint || f.newPriceMmk !== l.newPriceMmk || l.newPriceMmk <= 0) {
           await skip(l, "INPUT_CHANGED");
+          continue;
+        }
+        const o = owner.get(l.variantId)!;
+        if (o.product.approvedAt) {
+          // Giá hiệu lực (bản đang sửa nếu có) phải đúng như lúc xem trước.
+          if (!effective.has(o.productId)) effective.set(o.productId, await effectivePrices(tx, o.productId));
+          if (effective.get(o.productId)!.get(l.variantId) !== l.oldPriceMmk) {
+            await skip(l, "PRICE_CHANGED");
+            continue;
+          }
+          await stagePrices(tx, o.productId, [{ variantId: l.variantId, priceMmk: l.newPriceMmk, reason: "bulk", runId }], userId);
+          effective.get(o.productId)!.set(l.variantId, l.newPriceMmk);
+          stagedProducts.add(o.productId);
+          await tx.priceRunLine.update({ where: { id: l.id }, data: { status: "APPLIED", appliedAt: now } });
+          applied++;
           continue;
         }
         // Chỉ đổi nếu giá vẫn đúng như lúc xem trước (không ghi đè chỉnh sửa tay xen giữa).
@@ -352,9 +380,10 @@ export async function applyRun(runId: string, variantIds: string[], userId: stri
       const remaining = await tx.priceRunLine.count({ where: { runId, status: "PENDING" } });
       await tx.priceUpdateRun.update({ where: { id: runId }, data: { appliedAt: now, ...(remaining === 0 && { status: "APPLIED" }) } });
       await tx.auditLog.create({
-        data: { userId, action: "pricing.apply", entity: "PriceUpdateRun", entityId: runId, data: { applied, skipped, remaining } },
+        data: { userId, action: "pricing.apply", entity: "PriceUpdateRun", entityId: runId, data: { applied, skipped, remaining, awaitingApproval: stagedProducts.size } },
       });
-      return { applied, skipped, remaining };
+      /** `awaitingApproval`: số SP đã duyệt có giá mới đang chờ duyệt (chưa hiện cho khách). */
+      return { applied, skipped, remaining, awaitingApproval: stagedProducts.size, stagedProductIds: [...stagedProducts] };
       });
     },
     { maxWait: 10_000, timeout: 30_000 },

@@ -32,7 +32,7 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     ]);
     const preview = await previewCatalogImport(input);
     expect(preview.errors).toEqual([]);
-    expect(preview.counts).toEqual({ createdProducts: 2, updatedProducts: 0, unchangedProducts: 0, stockLines: 4 });
+    expect(preview.counts).toEqual({ createdProducts: 2, updatedProducts: 0, unchangedProducts: 0, stockLines: 4, priceChanges: 0 });
     expect(preview.input.rateId).toBe(rate.id);
     expect(preview.rows.map((r) => r.action)).toEqual(["create", "create", "create", "create"]);
     expect(preview.rows[0].stock).toMatchObject({ qty: 5, expiryStatus: "DATED", costMmk: 21000, location: f.mm.code });
@@ -65,7 +65,7 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     expect((await prisma.batch.findFirstOrThrow({ where: { variant: { productId: toner.id }, expiryStatus: "DATED", landedCostVnd: 105000 } })).landedCostMmk).toBe(21000);
 
     // Nhập lại đúng file có tồn → chặn, không tạo thêm phiếu.
-    await expect(commitCatalogImport(preview.input, f.userId)).rejects.toThrow(/đã được nhập tồn|đã có|SKU/);
+    await expect(commitCatalogImport(preview.input, f.userId)).rejects.toThrow(/đã được nhập lúc|đã có|SKU/);
   });
 
   it("cập nhật theo SKU: ô trống giữ nguyên, ghi lịch sử giá; chạy lại file chỉ sửa giá thì 'không đổi'", async () => {
@@ -76,17 +76,21 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     const preview = await previewCatalogImport(input);
     expect(preview.errors).toEqual([]);
     expect(preview.rows[0]).toMatchObject({ action: "update", oldPrice: 10000, price: 12000 });
-    await commitCatalogImport(preview.input, f.userId);
+    expect(preview.counts.priceChanges).toBe(1);
+    await commitCatalogImport(preview.input, f.userId, { allowPricing: true });
     const after = await prisma.product.findUniqueOrThrow({ where: { id: f.productId }, include: { translations: true, variants: true } });
     expect(after.variants[0].priceMmk).toBe(12000);
     expect(after).toMatchObject({ brandId: before.brandId, categoryId: before.categoryId, stockLocationId: before.stockLocationId, published: before.published });
     expect(after.translations.find((t) => t.locale === "en")?.name).toBe(`IT product ${f.tag}`);
-    expect(await prisma.priceHistory.findMany({ where: { variantId: f.variantId, newPriceMmk: 12000 }, select: { reason: true } })).toEqual([{ reason: "import" }]);
+    expect(await prisma.priceHistory.findMany({ where: { variantId: f.variantId, newPriceMmk: 12000 }, select: { reason: true } })).toEqual([{ reason: expect.stringMatching(/^import:[0-9a-f]{8}$/) }]);
+    expect(await prisma.auditLog.count({ where: { action: "catalog.import", userId: f.userId, data: { path: ["priceChanges"], equals: 1 } } })).toBeGreaterThan(0);
 
     const again = await previewCatalogImport(input);
     expect(again.counts).toMatchObject({ updatedProducts: 0, unchangedProducts: 1 });
     expect(again.rows[0].action).toBe("same");
-    await commitCatalogImport(again.input, f.userId); // không có tồn → không bị chặn nhập lặp
+    expect(again.counts.priceChanges).toBe(0);
+    // P1-D (H6): nhập lại đúng file đã xác nhận → bị chặn (kể cả file không có tồn).
+    await expect(commitCatalogImport(again.input, f.userId)).rejects.toThrow("đã được nhập lúc");
     expect(await prisma.priceHistory.count({ where: { variantId: f.variantId } })).toBe(1);
   });
 
@@ -147,11 +151,41 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     const sku = `IT-${f.tag}`;
     const first = await previewCatalogImport(sheet([{ sku, affiliate_commission_mmk: 1200, brand: "", category: "" }]));
     expect(first.rows[0].action).toBe("update");
-    await commitCatalogImport(first.input, f.userId);
+    expect(first.counts.priceChanges).toBe(1);
+    await commitCatalogImport(first.input, f.userId, { allowPricing: true });
     expect((await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).affiliateCommissionMmk).toBe(1200);
     const keep = await previewCatalogImport(sheet([{ sku, affiliate_commission_mmk: "", price_mmk: "", brand: "", category: "" }]));
     expect(keep.rows[0].action).toBe("same");
     const tooHigh = await previewCatalogImport(sheet([{ sku, affiliate_commission_mmk: 50_000, brand: "", category: "" }]));
     expect(tooHigh.errors.join("\n")).toContain("lớn hơn giá bán");
+  });
+
+  it("P0-C2: đổi giá qua Excel cần quyền giá, giá phải > 0, giá đổi ở nơi khác sau xem trước → huỷ cả lượt", async () => {
+    const { f } = await setup();
+    const sku = `IT-${f.tag}`;
+    const input = sheet([{ sku, price_mmk: 15000, name_my: "", brand: "", category: "" }]);
+
+    // Không có quyền giá → chặn, không ghi gì.
+    const preview = await previewCatalogImport(input);
+    await expect(commitCatalogImport(preview.input, f.userId)).rejects.toThrow("quyền quản lý giá");
+    expect((await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).priceMmk).toBe(10000);
+
+    // Giá 0 → lỗi xem trước (để trống nếu không đổi giá).
+    expect((await previewCatalogImport(sheet([{ sku, price_mmk: 0, brand: "", category: "" }]))).errors.join(" | ")).toContain("phải lớn hơn 0");
+
+    // Giá đổi ở nơi khác giữa xem trước và xác nhận → huỷ cả lượt, liệt kê SKU.
+    await prisma.variant.update({ where: { id: f.variantId }, data: { priceMmk: 11000 } });
+    await expect(commitCatalogImport(preview.input, f.userId, { allowPricing: true })).rejects.toThrow(`Giá bán của ${sku} vừa thay đổi`);
+    expect((await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).priceMmk).toBe(11000);
+
+    // Payload cũ không có priceBase nhưng file có đổi giá → cũng bị huỷ (phải xem trước lại).
+    const noBase = { ...(await previewCatalogImport(input)).input, priceBase: undefined };
+    await expect(commitCatalogImport(noBase, f.userId, { allowPricing: true })).rejects.toThrow("vừa thay đổi");
+
+    // Xem trước lại → xác nhận được.
+    const fresh = await previewCatalogImport(input);
+    expect(fresh.rows[0]).toMatchObject({ oldPrice: 11000, price: 15000 });
+    await commitCatalogImport(fresh.input, f.userId, { allowPricing: true });
+    expect((await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).priceMmk).toBe(15000);
   });
 });

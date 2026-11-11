@@ -4,7 +4,7 @@ import { z } from "zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { normalizeForSearch, toUnicode } from "@/lib/myanmar";
-import { availableToSell } from "@/server/orders/availability";
+import { availableToSell, baseAvailability } from "@/server/orders/availability";
 import { getNumberSetting } from "@/server/settings";
 import { sellableCutoff } from "./fefo";
 import { productName } from "./queries";
@@ -133,8 +133,14 @@ export async function stockSummary(opts: { q?: string; now?: Date } = {}) {
     },
     _sum: { qty: true },
   });
+  // P1-B (H4): ô "Bán được" = Σ khả dụng theo đúng công thức storefront (`baseAvailability`: chỉ tồn ở kho bán của
+  // SP, lô đủ hạn bán, trừ giữ hàng) — không cộng tồn nằm ở kho bán khác, không trừ giữ hàng hai lần.
+  const variantIds = [...new Set(positive.map((r) => r.variantId))];
+  const available = variantIds.length ? await baseAvailability(prisma, variantIds, { now, blockDays: t.blockDays }) : new Map<string, number>();
+  const availableUnits = [...available.values()].reduce((sum, q) => sum + Math.max(0, q), 0);
   return {
     ...summarizeStock(rows, now, t),
+    availableUnits,
     heldUnits: held._sum.qty ?? 0,
     variants: new Set(positive.map((r) => r.variantId)).size,
     lots: new Set(positive.map((r) => r.batchId)).size,

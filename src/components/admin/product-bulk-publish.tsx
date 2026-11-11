@@ -11,10 +11,19 @@ import { confirmOrPrevent } from "@/lib/confirm";
 import { productBulkAction, type ProductBulkState } from "@/server/catalog/actions";
 
 export const BULK_FORM_ID = "product-bulk-publish";
+const REVIEW_KINDS = new Set(["submit", "approve", "approvePublish", "reject"]);
 
-/** Ô chọn SP trong danh sách (nằm ngoài form, gắn bằng thuộc tính `form`). */
-export function BulkCheckbox({ id, label }: { id: string; label: string }) {
-  return <input type="checkbox" name="ids" value={id} form={BULK_FORM_ID} aria-label={label} className="size-4 accent-primary" />;
+/**
+ * Ô chọn SP trong danh sách (nằm ngoài form, gắn bằng thuộc tính `form`). `version`: phiên bản duyệt đang hiển thị —
+ * duyệt hàng loạt gửi kèm để SP đã đổi sau khi tải danh sách bị bỏ qua (không duyệt bản chưa xem).
+ */
+export function BulkCheckbox({ id, label, version }: { id: string; label: string; version?: number }) {
+  return (
+    <>
+      <input type="checkbox" name="ids" value={id} form={BULK_FORM_ID} aria-label={label} className="size-4 accent-primary" />
+      {version !== undefined && <input type="hidden" name={`v:${id}`} value={version} form={BULK_FORM_ID} />}
+    </>
+  );
 }
 
 function boxes() {
@@ -22,8 +31,24 @@ function boxes() {
 }
 
 /** Nút Xoá / Khôi phục ở từng dòng — gửi form chung với `intent = "delete:<id>"`. */
-export function RowProductAction({ id, name, kind }: { id: string; name: string; kind: "delete" | "restore" }) {
+export function RowProductAction({ id, name, kind, menu = false }: { id: string; name: string; kind: "delete" | "restore"; menu?: boolean }) {
   const t = useTranslations("Products");
+  if (menu) {
+    // Dòng trong menu ⋯ của danh sách (P3): chữ thay cho nút icon.
+    return (
+      <button
+        type="submit"
+        form={BULK_FORM_ID}
+        name="intent"
+        value={`${kind}:${id}`}
+        aria-label={`${t(kind === "delete" ? "delete" : "restore")} ${name}`}
+        className={cn("w-full rounded px-3 py-2 text-left hover:bg-muted", kind === "delete" && "text-destructive")}
+        onClick={kind === "delete" ? confirmOrPrevent(t("deleteOneConfirm", { name })) : undefined}
+      >
+        {t(kind === "delete" ? "delete" : "restore")}
+      </button>
+    );
+  }
   return (
     <Button
       type="submit"
@@ -46,10 +71,16 @@ export function BulkPublishBar({
   total,
   archivedView = false,
   warehouses = [],
+  can = { publish: true, approve: false },
+  reviewQueue = false,
 }: {
   total: number;
   archivedView?: boolean;
   warehouses?: { id: string; name: string }[];
+  /** Quyền của người xem: đăng/ẩn, duyệt (nút ẩn hẳn khi không có quyền; server vẫn kiểm). */
+  can?: { publish: boolean; approve: boolean };
+  /** Đang lọc "Chờ duyệt": hiện Duyệt & Đăng / Duyệt / Từ chối. */
+  reviewQueue?: boolean;
 }) {
   const t = useTranslations("Products");
   const [selected, setSelected] = useState(0);
@@ -116,8 +147,30 @@ export function BulkPublishBar({
             </Button>
           ) : (
             <>
-              <Button type="submit" name="intent" value="publish" size="lg" disabled={none}><Eye aria-hidden className="size-4 shrink-0" /> {t("bulkPublish")}</Button>
-              <Button type="submit" name="intent" value="hide" size="lg" variant="outline" disabled={none}><EyeOff aria-hidden className="size-4 shrink-0" /> {t("bulkHide")}</Button>
+              {reviewQueue && can.approve ? (
+                <span className="flex flex-wrap items-center gap-2" data-testid="bulk-review">
+                  {can.publish && (
+                    <Button type="submit" name="intent" value="approvePublish" size="lg" disabled={none} onClick={confirmOrPrevent(t("bulkReview.approveConfirm", { count: selected }))}>
+                      {t("bulkReview.approvePublish")}
+                    </Button>
+                  )}
+                  <Button type="submit" name="intent" value="approve" size="lg" variant="outline" disabled={none} onClick={confirmOrPrevent(t("bulkReview.approveConfirm", { count: selected }))}>
+                    {t("bulkReview.approve")}
+                  </Button>
+                  <input name="reason" aria-label={t("review.rejectReason")} placeholder={t("review.rejectReason")} maxLength={500} className={cn(fieldClass, "w-48")} />
+                  <Button type="submit" name="intent" value="reject" size="lg" variant="outline" disabled={none}>
+                    {t("review.reject")}
+                  </Button>
+                </span>
+              ) : (
+                <Button type="submit" name="intent" value="submit" size="lg" disabled={none}>{t("review.submit")}</Button>
+              )}
+              {can.publish && (
+                <>
+                  <Button type="submit" name="intent" value="publish" size="lg" variant="outline" disabled={none}><Eye aria-hidden className="size-4 shrink-0" /> {t("bulkPublish")}</Button>
+                  <Button type="submit" name="intent" value="hide" size="lg" variant="outline" disabled={none}><EyeOff aria-hidden className="size-4 shrink-0" /> {t("bulkHide")}</Button>
+                </>
+              )}
               <Button type="submit" name="intent" value="delete" size="lg" variant="destructive" disabled={none} onClick={confirmOrPrevent(t("deleteConfirm", { count: selected }))} title={t("bulkDelete")} aria-label={t("bulkDelete")}><Trash2 aria-hidden className="size-4 shrink-0" /> {t("bulkDelete")}</Button>
               {warehouses.length > 1 && (
                 <span className="flex items-center gap-1">
@@ -141,11 +194,17 @@ export function BulkPublishBar({
       {state?.error && <Notice tone="danger">{state.error}</Notice>}
       {done?.kind === "delete" && <Notice tone="success">{t("deleteDone", { deleted: done.deleted, archived: done.archived })}</Notice>}
       {done && done.kind !== "delete" && (
-        <Notice tone="success">{t(done.kind === "restore" ? "restoreDone" : done.kind === "move" ? "moveDone" : "bulkDone", { count: done.count })}</Notice>
+        <Notice tone="success" data-testid="bulk-done">
+          {REVIEW_KINDS.has(done.kind)
+            ? t(`bulkReview.done.${done.kind}`, { count: done.count })
+            : t(done.kind === "restore" ? "restoreDone" : done.kind === "move" ? "moveDone" : "bulkDone", { count: done.count })}
+        </Notice>
       )}
       {state?.blocked && state.blocked.length > 0 && (
         <Notice tone="danger" data-testid="publish-blocked">
-          <p className="font-medium">{t("readiness.blockedBulk", { count: state.blocked.length })}</p>
+          <p className="font-medium">
+            {done && REVIEW_KINDS.has(done.kind) ? t("bulkReview.failed", { count: state.blocked.length }) : t("readiness.blockedBulk", { count: state.blocked.length })}
+          </p>
           <ul className="mt-1 list-inside list-disc text-xs">
             {state.blocked.map((b) => (
               <li key={b.id}>

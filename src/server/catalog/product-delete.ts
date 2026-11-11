@@ -82,7 +82,7 @@ export async function deleteProducts(rawIds: unknown, userId: string): Promise<D
       await tx.variant.deleteMany({ where: { id: { in: delVariants } } });
       // Bản dịch, tag, ảnh, đánh giá, mục bộ sưu tập xoá theo cascade.
       await tx.product.deleteMany({ where: { id: { in: toDelete } } });
-      await pruneEmptyBrands(tx, brandIds); // thương hiệu không còn SP nào → xoá theo
+      await pruneEmptyBrands(tx, brandIds, userId); // thương hiệu không còn SP nào → xoá theo
       for (const fileId of new Set(images.map((i) => i.fileId))) keys.push(await deleteFileIfUnused(tx, fileId));
     }
 

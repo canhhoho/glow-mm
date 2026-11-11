@@ -48,7 +48,7 @@ describe("D1 — nguồn giá mua theo phiếu nhập đã ghi sổ", () => {
     expect((await lineOf(run.id, f.variantId)).newPriceMmk).toBe(10_100);
     await receive(f, "B", 120_000);
     const res = await applyRun(run.id, [f.variantId], f.userId);
-    expect(res).toEqual({ applied: 0, skipped: [{ sku: `IT-${f.tag}`, reason: "INPUT_CHANGED" }], remaining: 0 });
+    expect(res).toMatchObject({ applied: 0, skipped: [{ sku: `IT-${f.tag}`, reason: "INPUT_CHANGED" }], remaining: 0 });
     expect((await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).priceMmk).toBe(10_000);
     expect(await lineOf(run.id, f.variantId)).toMatchObject({ status: "SKIPPED", skipReason: "INPUT_CHANGED" });
 

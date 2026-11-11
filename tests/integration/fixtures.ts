@@ -66,7 +66,7 @@ export const isoDay = (offsetDays: number) => new Date(Date.now() + offsetDays *
 /** Fixture bán hàng: sản phẩm đã đăng, hàng nằm ở kho MM (bán được), vùng giao hàng riêng. */
 export async function saleFixture(lots: { lot: string; expiryInDays: number; qty: number; unitCostVnd?: number }[]) {
   const f = await makeFixture();
-  await prisma.product.update({ where: { id: f.productId }, data: { published: true } });
+  await prisma.product.update({ where: { id: f.productId }, data: { published: true, approvedAt: new Date() } });
   const doc = await createDocument(
     {
       type: "RECEIVE",
@@ -106,7 +106,7 @@ export const avail = async (variantId: string, now = new Date()) =>
 
 /** QT2: coi SP như đã được duyệt ở bước 4 (test cần SP đang bán / bật hiển thị mà không đi qua checklist). */
 export const markApproved = (productId: string, extra: { published?: boolean } = {}) =>
-  prisma.product.update({ where: { id: productId }, data: { approvedAt: new Date(), ...extra } });
+  prisma.product.update({ where: { id: productId }, data: { approvedAt: new Date(), approvalStatus: "APPROVED", ...extra } });
 
 /** Gỡ đăng sản phẩm test khi xong file (storefront của E2E dùng chung DB glow_test). */
 export async function unpublishTestProducts() {

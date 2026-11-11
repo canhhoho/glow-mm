@@ -8,7 +8,7 @@ describe("sitemapEntries", () => {
   it("chỉ gồm SP đang bán, danh mục có SP đang bán, bộ sưu tập đang hiện; có trang chủ + info", async () => {
     const shown = await makeFixture();
     const hidden = await makeFixture();
-    await prisma.product.update({ where: { id: shown.productId }, data: { published: true } });
+    await prisma.product.update({ where: { id: shown.productId }, data: { published: true, approvedAt: new Date() } });
     const now = new Date();
     const open = await createCollection(
       { slug: `it-${shown.tag.toLowerCase()}-on`, nameMy: "x", nameEn: "x", active: true, showOnHome: false, startAt: null, endAt: null },

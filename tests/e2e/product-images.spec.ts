@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { login, solidPng } from "./helpers";
+import { approveChanges, login, solidPng } from "./helpers";
 
 const SLUG = "sen-viet-sunscreen-spf50";
 const PNG = solidPng(64);
@@ -19,6 +19,10 @@ test("admin tải ảnh sản phẩm → hiện trên trang sản phẩm → xo�
   await section.getByLabel("Chọn ảnh sản phẩm").setInputFiles({ name: "e2e.png", mimeType: "image/png", buffer: PNG });
   await section.getByRole("button", { name: "Tải lên" }).click();
   await expect(section.getByRole("status").filter({ hasText: "Đã tải ảnh lên" })).toBeVisible();
+  // P1-A: SP đang bán → ảnh mới chờ duyệt (khách chưa thấy) → duyệt thay đổi.
+  await expect(page.getByTestId("images-staged")).toBeVisible();
+  await expect(rows).toHaveCount(before);
+  await approveChanges(page);
   await expect(rows).toHaveCount(before + 1);
 
   const mine = rows.last();
@@ -49,6 +53,8 @@ test("admin tải ảnh sản phẩm → hiện trên trang sản phẩm → xo�
     const row = page.getByRole("region", { name: "Ảnh", exact: true }).getByTestId("product-image").filter({ has: page.getByRole("img", { name: alt }) });
     page.once("dialog", (d) => d.accept());
     await row.getByRole("button", { name: "Xoá ảnh" }).click();
+    await expect(page.getByTestId("images-staged")).toBeVisible();
+    await approveChanges(page);
     await expect(row).toHaveCount(0);
   }
 

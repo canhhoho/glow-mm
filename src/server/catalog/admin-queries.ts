@@ -4,9 +4,16 @@ import type { Prisma } from "@/generated/prisma/client";
 import { productName } from "@/server/inventory/queries";
 
 /** `ready` / `incomplete` (D2): SP đang ẩn, lọc thêm theo kiểm tra mở bán ở trang danh sách. */
-/** toApprove / reapprove (QT2): chưa từng duyệt (trang danh sách lọc thêm: chỉ còn thiếu duyệt) / sửa sau khi duyệt. */
-export const PRODUCT_STATUSES = ["active", "published", "hidden", "toApprove", "reapprove", "ready", "incomplete", "archived"] as const;
+/**
+ * P1-A: review = hàng đợi Chờ duyệt (SP mới gửi duyệt + thay đổi của SP đã duyệt đã gửi) · rejected = bị từ chối ·
+ * draft = SP chưa từng duyệt, chưa gửi. Tham số cũ `toApprove` / `reapprove` (link cũ) → review.
+ */
+export const PRODUCT_STATUSES = ["active", "published", "hidden", "review", "rejected", "draft", "ready", "incomplete", "archived"] as const;
 export type ProductStatusFilter = (typeof PRODUCT_STATUSES)[number];
+export function parseProductStatus(v: unknown): ProductStatusFilter {
+  if (v === "toApprove" || v === "reapprove") return "review";
+  return PRODUCT_STATUSES.find((s) => s === v) ?? "active";
+}
 
 /**
  * Danh sách SP admin. `status`: active (mặc định — mọi SP trừ ngừng kinh doanh) · published · hidden · archived.
@@ -32,8 +39,9 @@ export async function listProductsAdmin(
       archivedAt: status === "archived" ? { not: null } : null,
       ...(status === "published" && { published: true }),
       ...((status === "hidden" || status === "ready" || status === "incomplete") && { published: false }),
-      ...(status === "toApprove" && { approvedAt: null, approvedHash: null }),
-      ...(status === "reapprove" && { approvedAt: null, approvedHash: { not: null } }),
+      ...(status === "review" && { approvalStatus: "PENDING" }),
+      ...(status === "rejected" && { approvalStatus: "REJECTED" }),
+      ...(status === "draft" && { approvedAt: null, approvalStatus: "DRAFT" }),
     },
     orderBy: { updatedAt: "desc" },
     include: {
@@ -42,6 +50,7 @@ export async function listProductsAdmin(
       stockLocation: { select: { name: true } },
       translations: true,
       variants: true,
+      changeRequest: { select: { productId: true } },
     },
     take: 300,
   });
@@ -54,6 +63,11 @@ export async function listProductsAdmin(
     category: productName(p.category.translations, p.category.slug),
     published: p.published,
     archived: p.archivedAt !== null,
+    archivedAt: p.archivedAt,
+    approvedAt: p.approvedAt,
+    approvalStatus: p.approvalStatus,
+    approvalVersion: p.approvalVersion,
+    hasChanges: p.changeRequest !== null,
     requiresExpiry: p.requiresExpiry,
     paoMonths: p.paoMonths,
     variants: p.variants.map((v) => ({ sku: v.sku, label: v.label, priceMmk: v.priceMmk, isBundle: v.isBundle })),

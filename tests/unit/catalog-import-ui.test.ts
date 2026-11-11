@@ -29,7 +29,7 @@ beforeEach(() => {
   actionState.state = { preview: {
     input: { csv: "name_en,brand,category\nCream,Brand,skincare", standardLabel: "Tiêu chuẩn" },
     errors: [], warnings: [], rows: [], rate: null,
-    counts: { createdProducts: 1, updatedProducts: 0, unchangedProducts: 0, stockLines: 0 },
+    counts: { createdProducts: 1, updatedProducts: 0, unchangedProducts: 0, stockLines: 0, priceChanges: 0 },
   } };
 });
 

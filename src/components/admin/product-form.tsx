@@ -55,7 +55,26 @@ const EMPTY: ProductEditData = {
   variants: [],
 };
 
-export function ProductForm({ initial, options, copySourceId }: { initial: ProductEditData | null; options: Options; copySourceId?: string }) {
+/**
+ * `review` (trang SP): thêm nút "Lưu & Gửi duyệt" (người soạn) và "Lưu & Duyệt" (người có quyền duyệt).
+ * `draftBrandName`: thương hiệu gõ mới trong bản đang sửa (chưa có trong danh sách).
+ */
+export function ProductForm({
+  initial,
+  options,
+  copySourceId,
+  review,
+  draftBrandName,
+  slugLocked = false,
+}: {
+  initial: ProductEditData | null;
+  options: Options;
+  copySourceId?: string;
+  review?: { submit: boolean; approve: boolean };
+  draftBrandName?: string;
+  /** Slug khoá sau lần đăng bán đầu tiên (đường dẫn khách đã dùng). */
+  slugLocked?: boolean;
+}) {
   const t = useTranslations("Products");
   const td = useTranslations("Docs");
   const [state, action, pending] = useActionState(saveProductAction, undefined);
@@ -68,7 +87,7 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
 
   // Thương hiệu: dùng brandId nếu chọn từ danh sách, brandName nếu gõ tay
   const [brandInput, setBrandInput] = useState(
-    initial?.brandId ? options.brands.find((b) => b.id === initial.brandId)?.name ?? "" : "",
+    initial?.brandId ? options.brands.find((b) => b.id === initial.brandId)?.name ?? "" : draftBrandName ?? "",
   );
   const matchedBrand = options.brands.find((b) => b.name.toLowerCase() === brandInput.trim().toLowerCase());
 
@@ -255,7 +274,8 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
         <summary className="cursor-pointer font-medium">{t("otherSettings")}</summary>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <Field label={t("slug")}>
-            <input aria-label={t("slug")} value={slug} onChange={(e) => set("slug", e.target.value)} pattern="[a-z0-9\-]+" maxLength={80} className={fieldClass} />
+            <input aria-label={t("slug")} value={slug} onChange={(e) => set("slug", e.target.value)} pattern="[a-z0-9\-]+" maxLength={80} readOnly={slugLocked} className={fieldClass} />
+            {slugLocked && <span className="text-xs text-muted-foreground">{t("slugLocked")}</span>}
             {!p.id && !p.slug && <span className="text-xs text-muted-foreground">{t("autoIdentifierHint")}</span>}
           </Field>
 
@@ -319,7 +339,22 @@ export function ProductForm({ initial, options, copySourceId }: { initial: Produ
       </details>
 
       {/* Hiển thị trên web: bật/ẩn ở bước 5 "Đăng bán" của trang SP; lưu ở đây giữ nguyên trạng thái hiện tại. */}
-      <Button size="lg" type="submit" disabled={pending}><Save aria-hidden className="size-4 shrink-0" /> {t("save")}</Button>
+      {/* Nút "Lưu" đứng đầu: Enter trong ô nhập chỉ lưu, không gửi / duyệt. */}
+      <div className="flex flex-wrap gap-2">
+        <Button size="lg" type="submit" name="intent" value="save" disabled={pending} variant={review ? "outline" : "default"}>
+          <Save aria-hidden className="size-4 shrink-0" /> {t("save")}
+        </Button>
+        {review?.submit && (
+          <Button size="lg" type="submit" name="intent" value="submit" disabled={pending} data-testid="save-submit">
+            {t("review.saveSubmit")}
+          </Button>
+        )}
+        {review?.approve && (
+          <Button size="lg" type="submit" name="intent" value="approve" disabled={pending} variant="outline" data-testid="save-approve">
+            {t("review.saveApprove")}
+          </Button>
+        )}
+      </div>
 
       {state?.error && (
         <p role="alert" className="text-sm text-destructive">

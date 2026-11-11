@@ -8,9 +8,11 @@ import { assertStockLocation, defaultStockLocationId } from "@/server/inventory/
 import type { Tx } from "@/server/inventory/ledger";
 import { productName } from "@/server/inventory/queries";
 import { loadReadiness, ReadinessError } from "./readiness";
-import { blockingErrors, type Issue } from "./readiness-rules";
+import { blockingErrors, publishBlockers, type Issue } from "./readiness-rules";
 import { guardApproval } from "./approval";
+import { skuPendingElsewhere, stageProductEdit } from "./change-request";
 import { findOrCreateBrand, pruneEmptyBrands } from "./brands";
+import { writeAudit } from "@/server/audit";
 
 /** Quản lý sản phẩm (admin). Giá đổi → ghi PriceHistory. Chữ Myanmar → Unicode trước khi lưu. */
 
@@ -51,7 +53,6 @@ export const productSchema = z.object({
   categoryId: rawId,
   /** Kho bán (P24). Bỏ trống: SP mới → kho mặc định; SP đang có → giữ kho cũ. */
   stockLocationId: z.preprocess((v) => (v === "" || v == null ? undefined : v), rawId.optional()),
-  published: z.boolean().default(false),
   requiresExpiry: z.boolean().default(true),
   paoMonths: z.preprocess((v) => v === "" || v == null ? null : v, z.coerce.number().int().min(1).max(120).nullable()).optional(),
   /** Lãi cố định MMK/đơn vị — kho mua tại Myanmar (P24). Bỏ qua (undefined) = giữ giá trị cũ. */
@@ -78,10 +79,40 @@ export class CatalogError extends Error {
   }
 }
 
-/** `priceReason`: lý do ghi vào PriceHistory khi payload có đổi giá (mặc định "manual"; Excel = "import"). */
-export async function saveProduct(raw: unknown, userId: string, transaction?: Tx, opts: { priceReason?: string } = {}) {
+export type ProductInput = z.output<typeof productSchema>;
+export type SaveProductOpts = {
+  /** Lý do ghi vào PriceHistory khi payload có đổi giá (mặc định "manual"; Excel = "import:<mã file>"). */
+  priceReason?: string;
+  /** "apply": áp bản đang sửa đã được duyệt vào live (không định tuyến lại vào bản đang sửa). */
+  mode?: "apply";
+};
+
+/** Khoá chung cho mọi lần lưu / nhập / duyệt SP (mã tự sinh + thứ tự khoá: advisory trước, dòng Product sau). */
+export async function lockCatalog(tx: Tx) {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('catalog.product-identifiers'))`;
+}
+
+/**
+ * Lưu SP. SP chưa từng duyệt → ghi thẳng (đổi phần cần duyệt thì tự rời hàng đợi). SP đã duyệt → phần cần duyệt
+ * vào bản đang sửa (`ProductChangeRequest`), phần không cần duyệt ghi thẳng; khách vẫn thấy bản đã duyệt (P1-A).
+ */
+export async function saveProduct(raw: unknown, userId: string, transaction?: Tx, opts: SaveProductOpts = {}) {
   const parsed = productSchema.parse(raw);
   if (parsed.copyFromId && parsed.id) throw new CatalogError("Chỉ sao chép khi tạo sản phẩm mới");
+  const run = async (tx: Tx) => {
+    await lockCatalog(tx);
+    if (parsed.id && opts.mode !== "apply") {
+      await tx.$queryRaw`SELECT "id" FROM "Product" WHERE "id" = ${parsed.id} FOR UPDATE`;
+      const cur = await tx.product.findUnique({ where: { id: parsed.id }, select: { approvedAt: true } });
+      if (cur?.approvedAt) return stageProductEdit(tx, parsed, userId, { priceReason: opts.priceReason });
+    }
+    return guardApproval(tx, parsed.id ? [parsed.id] : [], userId, () => writeProduct(tx, parsed, userId, opts), { applying: opts.mode === "apply" });
+  };
+  return transaction ? run(transaction) : prisma.$transaction(run);
+}
+
+/** Ghi payload đã parse vào dữ liệu live (không định tuyến). Gọi trong transaction đã giữ `lockCatalog`. */
+export async function writeProduct(tx: Tx, parsed: ProductInput, userId: string, opts: SaveProductOpts = {}) {
   // Tên nào trống → chép tên còn lại (luôn có hai bản dịch).
   const myName = toUnicode(parsed.my.name) || parsed.en.name;
   const enName = parsed.en.name || toUnicode(parsed.my.name);
@@ -90,14 +121,15 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
     description: toUnicode(parsed.my.description),
     usage: toUnicode(parsed.my.usage),
   };
-  const body = async (tx: Tx) => {
+  {
     // Serialize catalog code allocation, including manual saves/imports, until commit.
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('catalog.product-identifiers'))`;
+    await lockCatalog(tx);
     const input = await resolveProductIdentifiers(parsed, async (kind, value) => {
       const row = kind === "slug"
         ? await tx.product.findUnique({ where: { slug: value }, select: { id: true } })
         : await tx.variant.findUnique({ where: { sku: value }, select: { id: true } });
-      return !!row;
+      // SKU mới đang nằm trong bản đang sửa của SP khác cũng coi như đã dùng (áp khi duyệt không bị trùng).
+      return !!row || (kind === "sku" && (await skuPendingElsewhere(tx, value, parsed.id)));
     });
     // Coordinate with image deletion/reordering so shared image files remain referenced.
     if (input.copyFromId) await tx.$queryRaw`SELECT "id" FROM "Product" WHERE "id" = ${input.copyFromId} FOR UPDATE`;
@@ -106,10 +138,31 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
       : null;
     if (input.copyFromId && !source) throw new CatalogError("Sản phẩm nguồn không còn tồn tại");
     const current = input.id
-      ? await tx.product.findUnique({ where: { id: input.id }, select: { archivedAt: true, stockLocationId: true, published: true, brandId: true } })
+      ? await tx.product.findUnique({ where: { id: input.id }, select: { archivedAt: true, stockLocationId: true, published: true, brandId: true, slug: true, firstPublishedAt: true } })
       : null;
     if (input.id && !current) throw new CatalogError("Không tìm thấy sản phẩm");
-    if (current?.archivedAt && input.published) throw new CatalogError("Sản phẩm đã ngừng kinh doanh — khôi phục trước khi hiển thị trên web");
+    // P1-D (Q-D): slug là đường dẫn khách đã dùng — khoá sau lần đăng bán đầu tiên (không có bảng chuyển hướng).
+    if (current && current.firstPublishedAt && input.slug !== current.slug) {
+      throw new CatalogError(`Đường dẫn (slug) đã khoá sau lần đăng bán đầu tiên — giữ "${current.slug}"`);
+    }
+    // P1-D (M2): trùng slug / SKU → báo rõ thay vì lỗi ràng buộc DB.
+    const slugOwner = await tx.product.findUnique({ where: { slug: input.slug }, select: { id: true } });
+    if (slugOwner && slugOwner.id !== input.id) throw new CatalogError(`Đường dẫn (slug) "${input.slug}" đã được sản phẩm khác dùng`);
+    // P1-D (M1): nhãn loại không trùng trong cùng SP (không phân biệt hoa thường / khoảng trắng).
+    const labels = new Map<string, string>();
+    for (const v of input.variants) {
+      const key = v.label.trim().toLowerCase().replace(/\s+/g, " ");
+      if (labels.has(key)) throw new CatalogError(`Tên loại "${v.label}" bị trùng (SKU ${labels.get(key)} và ${v.sku})`);
+      labels.set(key, v.sku);
+    }
+    const skus = new Set<string>();
+    for (const v of input.variants) {
+      if (skus.has(v.sku)) throw new CatalogError(`SKU ${v.sku} bị lặp trong sản phẩm`);
+      skus.add(v.sku);
+      const owner = await tx.variant.findUnique({ where: { sku: v.sku }, select: { id: true, productId: true } });
+      if (owner && owner.id !== v.id && (owner.productId !== input.id || v.id)) throw new CatalogError(`SKU ${v.sku} đã được dùng`);
+      if (!owner && (await skuPendingElsewhere(tx, v.sku, input.id))) throw new CatalogError(`SKU ${v.sku} đang chờ duyệt ở sản phẩm khác`);
+    }
     // Đổi kho được cả khi còn tồn: hàng ở kho cũ chỉ bán lại sau khi tạo phiếu chuyển sang kho mới.
     const stockLocationId = input.stockLocationId ?? current?.stockLocationId ?? (await defaultStockLocationId(tx));
     if (stockLocationId !== current?.stockLocationId) {
@@ -123,7 +176,7 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
     // trong cùng transaction (lưu lỗi → không để lại thương hiệu thừa).
     const brand = parsed.brandId
       ? await tx.brand.findUnique({ where: { id: parsed.brandId } })
-      : await findOrCreateBrand(tx, parsed.brandName!);
+      : await findOrCreateBrand(tx, parsed.brandName!, userId);
     if (!brand) throw new CatalogError("Không tìm thấy thương hiệu");
     const brandId = brand.id;
     const brandName = brand.name;
@@ -133,7 +186,7 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
       categoryId: input.categoryId,
       stockLocationId,
       ...(input.fixedProfitMmk !== undefined && { fixedProfitMmk: input.fixedProfitMmk }),
-      published: input.published,
+      // P0-H1: `published` không ghi ở đây — bật/tắt hiển thị chỉ qua `setProductsPublished` (cổng mở bán + audit).
       requiresExpiry: input.requiresExpiry,
       paoMonths: input.paoMonths,
       storageNote: input.storageNote || null,
@@ -226,10 +279,10 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
       await tx.productImage.createMany({ data: source.images.map((image) => ({ ...image, productId: product.id })) });
     }
 
-    // D2: bật hiển thị phải hết lỗi mở bán; SP đang hiển thị chỉ bị chặn giá ≤ 0 / không còn biến thể.
-    if (input.published) {
+    // D2: SP đang hiển thị không được lưu thành trạng thái không bán được (giá ≤ 0 / không còn biến thể).
+    if (current?.published) {
       const readiness = (await loadReadiness(tx, [product.id])).get(product.id)!;
-      const blocking = blockingErrors(readiness, !!current?.published);
+      const blocking = blockingErrors(readiness, true);
       if (blocking.length) throw new ReadinessError(blocking);
     }
 
@@ -240,12 +293,9 @@ export async function saveProduct(raw: unknown, userId: string, transaction?: Tx
       },
     });
     // Đổi sang thương hiệu khác → thương hiệu cũ không còn SP nào thì tự xoá.
-    if (current && current.brandId !== brandId) await pruneEmptyBrands(tx, [current.brandId]);
+    if (current && current.brandId !== brandId) await pruneEmptyBrands(tx, [current.brandId], userId);
     return product;
-  };
-  // QT2: SP đã duyệt mà nội dung/giá/ảnh đổi → huỷ duyệt.
-  const run = (tx: Tx) => guardApproval(tx, parsed.id ? [parsed.id] : [], userId, () => body(tx));
-  return transaction ? run(transaction) : prisma.$transaction(run);
+  }
 }
 
 const bulkPublishSchema = z.object({
@@ -265,21 +315,23 @@ export async function setProductsPublished(raw: unknown, userId: string): Promis
     const candidates = await tx.product.findMany({
       // SP ngừng kinh doanh không bật hiển thị được (khôi phục trước).
       where: { id: { in: [...new Set(ids)] }, published: !published, ...(published && { archivedAt: null }) },
-      select: { id: true, slug: true, translations: { select: { locale: true, name: true } } },
+      select: { id: true, slug: true, approvedAt: true, translations: { select: { locale: true, name: true } } },
     });
     const blocked: BlockedProduct[] = [];
     let changed = candidates;
     if (published) {
+      // Cổng đăng bán (P1-A): bản live đủ điều kiện mở bán + đã được duyệt (bản đang sửa không liên quan).
       const readiness = await loadReadiness(tx, candidates.map((p) => p.id));
       changed = candidates.filter((p) => {
-        const errors = readiness.get(p.id)?.errors ?? [];
-        if (errors.length) blocked.push({ id: p.id, name: productName(p.translations, p.slug), issues: errors });
-        return errors.length === 0;
+        const issues = publishBlockers(readiness.get(p.id) ?? { errors: [], warnings: [] }, { approved: p.approvedAt != null });
+        if (issues.length) blocked.push({ id: p.id, name: productName(p.translations, p.slug), issues });
+        return issues.length === 0;
       });
     }
     const changedIds = changed.map((p) => p.id);
     if (changedIds.length === 0) return { changed: 0, blocked };
     await tx.product.updateMany({ where: { id: { in: changedIds } }, data: { published } });
+    if (published) await tx.product.updateMany({ where: { id: { in: changedIds }, firstPublishedAt: null }, data: { firstPublishedAt: new Date() } });
     await tx.auditLog.createMany({
       data: changedIds.map((entityId) => ({
         userId, action: published ? "product.publish" : "product.unpublish", entity: "Product", entityId, data: { bulk: true },
@@ -289,7 +341,7 @@ export async function setProductsPublished(raw: unknown, userId: string): Promis
   });
 }
 
-export async function createCategory(raw: unknown) {
+export async function createCategory(raw: unknown, userId: string | null = null) {
   const input = z
     .object({
       slug: slugSchema(60),
@@ -301,16 +353,20 @@ export async function createCategory(raw: unknown) {
   if (input.parentId && !(await prisma.category.findUnique({ where: { id: input.parentId } }))) {
     throw new CatalogError("Danh mục cha không tồn tại");
   }
-  return prisma.category.create({
-    data: {
-      slug: input.slug,
-      parentId: input.parentId,
-      translations: {
-        create: [
-          { locale: "my", name: toUnicode(input.nameMy) },
-          { locale: "en", name: input.nameEn },
-        ],
+  return prisma.$transaction(async (tx) => {
+    const category = await tx.category.create({
+      data: {
+        slug: input.slug,
+        parentId: input.parentId,
+        translations: {
+          create: [
+            { locale: "my", name: toUnicode(input.nameMy) },
+            { locale: "en", name: input.nameEn },
+          ],
+        },
       },
-    },
+    });
+    await writeAudit(tx, { userId, action: "category.create", entity: "Category", entityId: category.id, data: { slug: input.slug } });
+    return category;
   });
 }

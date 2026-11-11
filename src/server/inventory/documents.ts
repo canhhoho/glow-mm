@@ -5,11 +5,14 @@ import { prisma } from "@/lib/db";
 import { Prisma, type DocType, type StockType } from "@/generated/prisma/client";
 import { newCode } from "@/server/codes";
 import { getNumberSetting } from "@/server/settings";
-import { pickFefo } from "./fefo";
+import { pickFefo, sellableBatchWhere } from "./fefo";
+import { baseAvailability } from "@/server/orders/availability";
+import { lockVariants } from "@/server/orders/reservations";
 import { applyMoves, type StockMove, type Tx } from "./ledger";
 import { vndToMmk } from "./landed-cost";
 import { guardApproval } from "@/server/catalog/approval";
 import { shippingMmk } from "@/server/pricing/formula";
+import { latestRate } from "@/server/pricing/latest-rate";
 
 /**
  * Phiếu kho: tạo NHÁP → GHI SỔ (POSTED, sinh ledger) hoặc HUỶ (chỉ khi còn nháp).
@@ -375,6 +378,52 @@ export async function candidatesAt(tx: Tx, variantId: string, locationId: string
   }));
 }
 
+/**
+ * P0-C1 (D2): phiếu làm giảm tồn **bán được** (SELLABLE, lô đủ hạn bán, tại kho bán của SP) chỉ được lấy phần
+ * chưa giữ cho đơn: khả dụng sau phiếu (= tồn bán được − giữ hàng ACTIVE) không được âm. Không có vượt chặn —
+ * muốn xuất phần đang giữ (vd. hàng hỏng) thì xử lý đơn trước. Lô hết hạn / chưa biết hạn không nằm trong
+ * khả dụng nên vẫn xuất được. Khoá Variant trước (cùng thứ tự `assertAvailable`), `applyMoves` khoá tồn sau.
+ */
+async function assertKeepsReservations(tx: Tx, moves: StockMove[], now: Date) {
+  const sellable = moves.filter((m) => m.stockType === "SELLABLE");
+  if (!sellable.some((m) => m.qtyDelta < 0)) return;
+  const blockDays = await salesBlockDays();
+  const batchIds = [...new Set(sellable.map((m) => m.batchId))];
+  // Tuần tự (không Promise.all) — cùng một kết nối của interactive transaction.
+  const batches = await tx.batch.findMany({ where: { id: { in: batchIds } }, select: { id: true, variantId: true, variant: { select: { sku: true, product: { select: { stockLocationId: true } } } } } });
+  const eligible = await tx.batch.findMany({ where: { id: { in: batchIds }, ...sellableBatchWhere(now, blockDays) }, select: { id: true } });
+  const saleLocations = await tx.location.findMany({ where: { id: { in: [...new Set(sellable.map((m) => m.locationId))] }, sellable: true }, select: { id: true } });
+  const batchById = new Map(batches.map((b) => [b.id, b]));
+  const eligibleIds = new Set(eligible.map((b) => b.id));
+  const sellableLoc = new Set(saleLocations.map((l) => l.id));
+  // Thay đổi ròng của tồn bán được theo biến thể (phiếu điều chỉnh có thể vừa cộng vừa trừ).
+  const net = new Map<string, number>();
+  const sku = new Map<string, string>();
+  for (const m of sellable) {
+    const b = batchById.get(m.batchId);
+    if (!b || !eligibleIds.has(m.batchId) || !sellableLoc.has(m.locationId) || m.locationId !== b.variant.product.stockLocationId) continue;
+    net.set(b.variantId, (net.get(b.variantId) ?? 0) + m.qtyDelta);
+    sku.set(b.variantId, b.variant.sku);
+  }
+  const reducing = [...net].filter(([, d]) => d < 0).map(([id]) => id);
+  if (reducing.length === 0) return;
+  await lockVariants(tx, reducing);
+  const before = await baseAvailability(tx, reducing, { now, blockDays });
+  const short = reducing.filter((id) => (before.get(id) ?? 0) + net.get(id)! < 0);
+  if (short.length === 0) return;
+  const holds = await tx.reservation.findMany({
+    where: { variantId: { in: short }, status: "ACTIVE", OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] },
+    select: { variantId: true, order: { select: { code: true } } },
+    orderBy: { createdAt: "asc" },
+  });
+  const parts = short.map((id) => {
+    const codes = [...new Set(holds.filter((h) => h.variantId === id).map((h) => h.order.code))];
+    const shown = codes.slice(0, 5).join(", ") + (codes.length > 5 ? ` (+${codes.length - 5})` : "");
+    return `${sku.get(id)}: chỉ xuất được ${Math.max(0, before.get(id) ?? 0)}, còn lại đang giữ cho đơn ${shown}`;
+  });
+  throw new DocumentError(`Không thể lấy hàng đang giữ cho đơn — ${parts.join("; ")}. Xử lý các đơn này trước (huỷ hoặc chờ hàng) rồi lập lại phiếu.`);
+}
+
 /** GHI SỔ: chọn lô FEFO cho dòng chưa có lô, sinh ledger, khoá phiếu. */
 export async function postDocument(documentId: string, userId: string) {
   return prisma.$transaction((tx) => postDocumentTx(tx, documentId, userId), { maxWait: 10_000, timeout: 30_000 });
@@ -394,6 +443,15 @@ export async function postDocumentTx(tx: Tx, documentId: string, userId: string,
 
   const doc = await tx.stockDocument.findUniqueOrThrow({ where: { id: documentId }, include: { lines: true } });
   if (doc.type === "RECEIVE" && doc.shipmentId) await tx.$queryRaw`SELECT id FROM "InboundShipment" WHERE id = ${doc.shipmentId} FOR UPDATE`;
+  // P1-B (M3): phiếu thủ công có thể nằm nháp lâu — kiểm lại kho (đã ngừng dùng?) và kho của SP lúc ghi sổ.
+  if (!doc.orderId) {
+    await checkLocations(tx, {
+      type: doc.type,
+      ...(doc.fromId && { fromId: doc.fromId }),
+      ...(doc.toId && { toId: doc.toId }),
+      lines: doc.lines.map((l) => ({ variantId: l.variantId })),
+    } as unknown as DocumentInput);
+  }
   const today = new Date();
 
   // Dòng chưa chọn lô (chuyển/xuất) → FEFO tại vị trí đi. Xuất nội bộ mặc định dùng cả lô cận hạn (blockDays = 0).
@@ -437,11 +495,26 @@ export async function postDocumentTx(tx: Tx, documentId: string, userId: string,
         break;
     }
   }
+  // P1-B (M3): không chuyển lô hết hạn / chưa biết hạn VÀO kho bán (chọn lô tay bỏ qua FEFO). Xuất huỷ hoặc chuyển
+  // sang khu chờ kiểm tra vẫn được.
+  if (doc.type === "TRANSFER" && doc.toId) {
+    const to = await tx.location.findUnique({ where: { id: doc.toId }, select: { sellable: true, name: true } });
+    if (to?.sellable) {
+      const bad = await tx.batch.findFirst({
+        where: { id: { in: resolved.map((r) => r.batchId) }, OR: [{ expiryStatus: "UNKNOWN" }, { expiryStatus: "DATED", expiryDate: { lt: today } }] },
+        select: { lotNo: true, variant: { select: { sku: true } } },
+      });
+      if (bad) throw new DocumentError(`Lô ${bad.lotNo} (${bad.variant.sku}) hết hạn hoặc chưa biết hạn — không chuyển vào kho bán ${to.name}`);
+    }
+  }
+  // P0-C1: phiếu thủ công (không gắn đơn) không được lấy phần hàng đang giữ cho đơn. Phiếu xuất của đơn
+  // (`orderId`) tiêu thụ chính phần giữ của đơn đó nên không kiểm ở đây.
+  if (!doc.orderId) await assertKeepsReservations(tx, moves, today);
   await applyMoves(tx, documentId, userId, moves);
 
   // Nhận hàng: gắn tỷ giá hiện hành vào lô (dùng tính giá vốn MMK).
   if (doc.type === "RECEIVE") {
-    const rate = await tx.exchangeRate.findFirst({ orderBy: { effectiveAt: "desc" } });
+    const rate = await latestRate(tx);
     if (rate) {
       await tx.batch.updateMany({
         // Chỉ lô giá VND cần tỷ giá; lô MMK đã có giá vốn MMK từ lúc tạo (P24).

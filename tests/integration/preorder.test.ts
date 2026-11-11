@@ -16,7 +16,7 @@ async function preorderFixture(stock: number, limit: number | null = 5): Promise
   const f: SaleFixture = stock > 0
     ? await saleFixture([{ lot: "A", expiryInDays: 400, qty: stock }])
     : { ...(await makeFixture()), townshipId: "tw-YGN-WYG-KMY" };
-  await prisma.product.update({ where: { id: f.productId }, data: { published: true } });
+  await prisma.product.update({ where: { id: f.productId }, data: { published: true, approvedAt: new Date() } });
   await prisma.product.update({ where: { id: f.productId }, data: { preorderEnabled: true } });
   await prisma.variant.update({ where: { id: f.variantId }, data: { preorderLimit: limit } });
   return f;

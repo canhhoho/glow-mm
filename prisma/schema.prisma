@@ -246,43 +246,78 @@ model TagTranslation {
 }
 
 model Product {
-  requiresExpiry Boolean              @default(true)
+  requiresExpiry   Boolean               @default(true)
   /// Period after opening; separate from batch expiry.
-  paoMonths      Int?
-  id             String               @id @default(cuid())
-  slug           String               @unique
-  brandId        String
-  brand          Brand                @relation(fields: [brandId], references: [id])
-  categoryId     String
-  category       Category             @relation(fields: [categoryId], references: [id])
+  paoMonths        Int?
+  id               String                @id @default(cuid())
+  slug             String                @unique
+  brandId          String
+  brand            Brand                 @relation(fields: [brandId], references: [id])
+  categoryId       String
+  category         Category              @relation(fields: [categoryId], references: [id])
   /// Kho bán của SP (P24): nhận hàng, tồn bán, xuất đơn và cách tính giá đều theo kho này.
-  stockLocationId String
-  stockLocation  Location             @relation(fields: [stockLocationId], references: [id])
+  stockLocationId  String
+  stockLocation    Location              @relation(fields: [stockLocationId], references: [id])
   /// Lãi cố định MMK/đơn vị — kho LOCAL_MMK: giá = vốn MMK + lãi này (P24).
-  fixedProfitMmk Int?
-  storageNote    String?
-  published      Boolean              @default(false)
+  fixedProfitMmk   Int?
+  storageNote      String?
+  published        Boolean               @default(false)
   /// Ngừng kinh doanh: SP đã có lịch sử kho/đơn nên không xoá hẳn được — ẩn khỏi web, danh sách mặc định và form nhập kho.
-  archivedAt     DateTime?
-  /// QT2 — bước 4 Duyệt: thời điểm + người duyệt (null = hệ thống, lúc chuyển đổi) + dấu vân tay nội dung/giá đã duyệt.
-  /// Đổi nội dung/giá/ảnh sau khi duyệt → approvedAt = null, giữ approvedHash ("cần duyệt lại").
-  approvedAt     DateTime?
-  approvedById   String?
-  approvedHash   String?
+  archivedAt       DateTime?
+  /// Duyệt (P1-A): `approvedAt` khác null = bản đang hiển thị (dữ liệu live) đã được duyệt; người duyệt (null = hệ thống)
+  /// + dấu vân tay lúc duyệt. SP đã duyệt thì thay đổi cần duyệt đi vào `ProductChangeRequest`, live giữ nguyên.
+  approvedAt       DateTime?
+  approvedById     String?
+  approvedHash     String?
+  /// Trạng thái của thứ đang chờ duyệt: SP chưa từng duyệt → chính SP; SP đã duyệt → bản đang sửa (nếu có).
+  approvalStatus   ApprovalStatus        @default(DRAFT)
+  /// Tăng mỗi lần thay đổi cần duyệt — người duyệt gửi kèm phiên bản đã xem (CAS), lệch → xem lại.
+  approvalVersion  Int                   @default(0)
+  submittedAt      DateTime?
+  submittedById    String?
+  /// Lý do từ chối gần nhất (bắt buộc khi từ chối); lịch sử ở AuditLog.
+  rejectionReason  String?
+  /// Lần đầu đăng bán — phân biệt "đã ẩn" với "chưa từng bán"; khoá slug sau lần đăng đầu.
+  firstPublishedAt DateTime?
+  changeRequest    ProductChangeRequest?
   /// QT3: hết hàng thì nhận đặt trước (mặc định bật; tắt riêng SP không muốn nhận).
-  preorderEnabled Boolean             @default(true)
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
-  translations   ProductTranslation[]
-  tags           ProductTag[]
-  images         ProductImage[]
-  variants       Variant[]
-  reviews        Review[]
-  collections    CollectionItem[]
+  preorderEnabled  Boolean               @default(true)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  translations     ProductTranslation[]
+  tags             ProductTag[]
+  images           ProductImage[]
+  variants         Variant[]
+  reviews          Review[]
+  collections      CollectionItem[]
 
   @@index([categoryId])
   @@index([brandId])
   @@index([stockLocationId])
+  @@index([approvalStatus, archivedAt])
+}
+
+enum ApprovalStatus {
+  DRAFT
+  PENDING
+  REJECTED
+  APPROVED
+}
+
+/// Bản đang sửa của SP đã duyệt (P1-A): thay đổi cần duyệt chờ ở đây, khách vẫn thấy bản live đã duyệt.
+/// Duyệt → áp vào live qua đúng các hàm ghi hiện có rồi xoá dòng này.
+model ProductChangeRequest {
+  productId   String   @id
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// Payload `saveProduct` đầy đủ (đã parse, không gồm giá) — chỉ phần cần duyệt được áp; null = không đổi nội dung.
+  content     Json?
+  /// `{ [variantId]: { priceMmk, baseLivePrice, reason, runId?, userId } }`.
+  prices      Json?
+  /// `{ add: [{ fileId }], remove: [imageId] }`.
+  images      Json?
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model ProductTranslation {
@@ -321,32 +356,32 @@ model ProductImage {
 }
 
 model Variant {
-  id            String              @id @default(cuid())
-  productId     String
-  product       Product             @relation(fields: [productId], references: [id])
-  sku           String              @unique
+  id                     String              @id @default(cuid())
+  productId              String
+  product                Product             @relation(fields: [productId], references: [id])
+  sku                    String              @unique
   /// Tên biến thể (dung tích / màu), ví dụ "50ml", "#21 Light".
-  label         String
-  priceMmk      Int
-  weightGrams   Int?
-  isBundle      Boolean             @default(false)
-  active        Boolean             @default(true)
+  label                  String
+  priceMmk               Int
+  weightGrams            Int?
+  isBundle               Boolean             @default(false)
+  active                 Boolean             @default(true)
   /// Thời gian VN→MM (ngày) cho gợi ý đặt hàng.
-  leadTimeDays  Int                 @default(21)
-  safetyStock   Int                 @default(0)
-  lowStockAt    Int                 @default(5)
+  leadTimeDays           Int                 @default(21)
+  safetyStock            Int                 @default(0)
+  lowStockAt             Int                 @default(5)
   /// Hoa hồng CTV cố định (MMK/cái) cho biến thể này; null = tính theo % của CTV, 0 = không hoa hồng.
   affiliateCommissionMmk Int?
   /// QT3: tối đa số cái nhận đặt trước (cộng dồn các đơn đang chờ hàng); null = theo cài đặt `preorder.defaultLimit`.
-  preorderLimit Int?
-  bundleItems   BundleItem[]        @relation("BundleParent")
-  componentOf   BundleItem[]        @relation("BundleComponent")
-  batches       Batch[]
-  reservations  Reservation[]
-  orderItems    OrderItem[]
-  priceHistory  PriceHistory[]
-  priceRunLines PriceRunLine[]
-  documentLines StockDocumentLine[]
+  preorderLimit          Int?
+  bundleItems            BundleItem[]        @relation("BundleParent")
+  componentOf            BundleItem[]        @relation("BundleComponent")
+  batches                Batch[]
+  reservations           Reservation[]
+  orderItems             OrderItem[]
+  priceHistory           PriceHistory[]
+  priceRunLines          PriceRunLine[]
+  documentLines          StockDocumentLine[]
 
   @@index([productId])
 }
@@ -395,61 +430,61 @@ enum PriceLineStatus {
 }
 
 model PriceUpdateRun {
-  id           String         @id @default(cuid())
+  id             String         @id @default(cuid())
   /// Kho được tính giá (P24); null = bản tính giá cũ trước khi có 2 kho.
-  locationId   String?
-  location     Location?      @relation(fields: [locationId], references: [id])
+  locationId     String?
+  location       Location?      @relation(fields: [locationId], references: [id])
   /// Chỉ kho VN_IMPORT: tỷ giá + % lãi + đơn giá ship MMK/kg.
-  rateId       String?
-  rate         ExchangeRate?  @relation(fields: [rateId], references: [id])
-  marginPct    Decimal?       @db.Decimal(6, 2)
-  shipMmkPerKg Int?
-  roundTo      Int            @default(100)
-  status      PriceRunStatus @default(PREVIEW)
-  createdById String
-  createdAt   DateTime       @default(now())
+  rateId         String?
+  rate           ExchangeRate?  @relation(fields: [rateId], references: [id])
+  marginPct      Decimal?       @db.Decimal(6, 2)
+  shipMmkPerKg   Int?
+  roundTo        Int            @default(100)
+  status         PriceRunStatus @default(PREVIEW)
+  createdById    String
+  createdAt      DateTime       @default(now())
   /// Lần áp dụng gần nhất (bản áp một phần vẫn PREVIEW đến khi hết dòng chờ).
-  appliedAt   DateTime?
+  appliedAt      DateTime?
   /// D1: 1 = bản cũ (lô theo ngày tạo, không fingerprint); 2 = nguồn từ phiếu nhập đã ghi sổ + fingerprint.
-  formulaVersion Int        @default(1)
+  formulaVersion Int            @default(1)
   /// Hết hạn áp dụng; null = bản tạo trước D1 → coi như hết hạn, phải tạo lại.
-  expiresAt   DateTime?
+  expiresAt      DateTime?
   /// Biến thể bị bỏ qua khi tạo bản xem trước: [{ variantId, sku, reason }].
-  skipped     Json?
-  history     PriceHistory[]
-  lines       PriceRunLine[]
+  skipped        Json?
+  history        PriceHistory[]
+  lines          PriceRunLine[]
 }
 
 /// Dòng xem trước của một lần cập nhật giá — áp dụng đúng số đã xem (không tính lại).
 model PriceRunLine {
-  id          String         @id @default(cuid())
-  runId       String
-  run         PriceUpdateRun @relation(fields: [runId], references: [id], onDelete: Cascade)
-  variantId   String
-  variant     Variant        @relation(fields: [variantId], references: [id])
+  id                   String          @id @default(cuid())
+  runId                String
+  run                  PriceUpdateRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  variantId            String
+  variant              Variant         @relation(fields: [variantId], references: [id])
   /// Vốn dùng để tính (lô nhập gần nhất; combo = tổng thành phần): VND (Kho VN_IMPORT) hoặc MMK (LOCAL_MMK).
-  costVnd     Int?
-  costMmk     Int?
+  costVnd              Int?
+  costMmk              Int?
   /// VN_IMPORT: phí ship = đơn giá × khối lượng; LOCAL_MMK: lãi cố định của SP.
-  shipMmk     Int?
-  profitMmk   Int?
-  oldPriceMmk Int
-  newPriceMmk Int
+  shipMmk              Int?
+  profitMmk            Int?
+  oldPriceMmk          Int
+  newPriceMmk          Int
   /// D1: Chờ / Đã áp / Bỏ qua (`skipReason`: UNCHANGED, PRICE_CHANGED, INPUT_CHANGED, CANCELLED, LEGACY).
-  status      PriceLineStatus @default(PENDING)
-  skipReason  String?
-  appliedAt   DateTime?
+  status               PriceLineStatus @default(PENDING)
+  skipReason           String?
+  appliedAt            DateTime?
   /// Nguồn giá mua (biến thể thường): lô + phiếu nhập đã ghi sổ được chọn. Combo: null (xem thành phần).
-  sourceBatchId    String?
-  sourceBatch      Batch?         @relation(fields: [sourceBatchId], references: [id])
-  sourceDocumentId String?
-  sourceDocument   StockDocument? @relation(fields: [sourceDocumentId], references: [id])
-  sourcePostedAt   DateTime?
+  sourceBatchId        String?
+  sourceBatch          Batch?          @relation(fields: [sourceBatchId], references: [id])
+  sourceDocumentId     String?
+  sourceDocument       StockDocument?  @relation(fields: [sourceDocumentId], references: [id])
+  sourcePostedAt       DateTime?
   /// Khối lượng dùng tính cước/kg (VN_IMPORT); `weightFromComponents` = combo chưa khai báo → cộng thành phần.
   weightGrams          Int?
-  weightFromComponents Boolean @default(false)
+  weightFromComponents Boolean         @default(false)
   /// Băm đầu vào của dòng (nguồn giá, khối lượng, combo, lãi cố định…) — áp dụng tính lại, khác thì bỏ qua.
-  fingerprint String?
+  fingerprint          String?
 
   @@unique([runId, variantId])
 }
@@ -496,21 +531,21 @@ enum PricingMode {
 }
 
 model Location {
-  id          String          @id @default(cuid())
-  code        String          @unique
+  id          String           @id @default(cuid())
+  code        String           @unique
   name        String
   type        LocationType
   warehouseId String?
-  warehouse   Warehouse?      @relation(fields: [warehouseId], references: [id])
+  warehouse   Warehouse?       @relation(fields: [warehouseId], references: [id])
   /// Kho bán (MM_STOCK): tồn ở đây bán cho các SP thuộc kho này (`Product.stockLocationId`).
-  sellable    Boolean         @default(false)
+  sellable    Boolean          @default(false)
   /// Tắt = ẩn khỏi mọi ô chọn kho, không nhận phiếu mới (không xoá được vì sổ kho tham chiếu).
-  active      Boolean         @default(true)
+  active      Boolean          @default(true)
   pricingMode PricingMode?
   ledger      StockLedger[]
   balances    StockBalance[]
-  docsFrom    StockDocument[] @relation("DocFrom")
-  docsTo      StockDocument[] @relation("DocTo")
+  docsFrom    StockDocument[]  @relation("DocFrom")
+  docsTo      StockDocument[]  @relation("DocTo")
   products    Product[]
   priceRuns   PriceUpdateRun[]
   pickLines   OrderPickLine[]
@@ -524,13 +559,13 @@ enum AllocationMethod {
 
 /// Chuyến hàng VN→MM, gom chi phí để phân bổ landed cost.
 model InboundShipment {
-  id               String           @id @default(cuid())
-  code             String           @unique
-  allocationMethod AllocationMethod @default(BY_VALUE)
+  id               String               @id @default(cuid())
+  code             String               @unique
+  allocationMethod AllocationMethod     @default(BY_VALUE)
   departedAt       DateTime?
   arrivedAt        DateTime?
   note             String?
-  createdAt        DateTime         @default(now())
+  createdAt        DateTime             @default(now())
   costs            ShipmentCost[]
   batches          Batch[]
   documents        StockDocument[]
@@ -538,15 +573,15 @@ model InboundShipment {
 }
 
 model ShipmentAllocation {
-  id           String @id @default(cuid())
-  shipmentId   String
-  shipment     InboundShipment @relation(fields: [shipmentId], references: [id])
-  createdAt    DateTime @default(now())
-  createdById  String
-  method       AllocationMethod
-  fingerprint  String
-  input        Json
-  result       Json
+  id          String           @id @default(cuid())
+  shipmentId  String
+  shipment    InboundShipment  @relation(fields: [shipmentId], references: [id])
+  createdAt   DateTime         @default(now())
+  createdById String
+  method      AllocationMethod
+  fingerprint String
+  input       Json
+  result      Json
 
   @@index([shipmentId, createdAt])
 }
@@ -580,35 +615,35 @@ model CatalogOpeningImport {
 }
 
 model Batch {
-  id            String              @id @default(cuid())
-  variantId     String
-  variant       Variant             @relation(fields: [variantId], references: [id])
-  lotNo         String
-  mfgDate       DateTime?           @db.Date
-  expiryDate    DateTime?           @db.Date
-  expiryStatus  ExpiryStatus        @default(DATED)
+  id                    String              @id @default(cuid())
+  variantId             String
+  variant               Variant             @relation(fields: [variantId], references: [id])
+  lotNo                 String
+  mfgDate               DateTime?           @db.Date
+  expiryDate            DateTime?           @db.Date
+  expiryStatus          ExpiryStatus        @default(DATED)
   /// Giá mua/đơn vị — đúng một trong hai (CHECK ở DB, P24): VND (hàng nhập VN) hoặc MMK (hàng mua tại Myanmar).
   /// Lô MMK: `landedCostMmk = unitCostMmk` ngay khi tạo (không cần tỷ giá, không phân bổ chuyến hàng).
-  unitCostVnd   Int?
-  unitCostMmk   Int?
+  unitCostVnd           Int?
+  unitCostMmk           Int?
   /// Giá vốn đã cộng chi phí phân bổ (VND/đơn vị).
-  landedCostVnd Int?
-  rateId        String?
-  rate          ExchangeRate?       @relation(fields: [rateId], references: [id])
-  landedCostMmk Int?
+  landedCostVnd         Int?
+  rateId                String?
+  rate                  ExchangeRate?       @relation(fields: [rateId], references: [id])
+  landedCostMmk         Int?
   /// Giá vốn tạm tính MMK, chụp khi ghi sổ; không ghi đè giá vốn thực tế.
-  estimatedCostMmk Int?
+  estimatedCostMmk      Int?
   estimatedShipMmkPerKg Int?
-  estimatedWeightGrams Int?
-  shipmentId    String?
-  shipment      InboundShipment?    @relation(fields: [shipmentId], references: [id])
-  createdAt     DateTime            @default(now())
-  ledger        StockLedger[]
-  balances      StockBalance[]
-  allocations   OrderAllocation[]
-  documentLines StockDocumentLine[]
-  priceRunLines PriceRunLine[]
-  pickLines     OrderPickLine[]
+  estimatedWeightGrams  Int?
+  shipmentId            String?
+  shipment              InboundShipment?    @relation(fields: [shipmentId], references: [id])
+  createdAt             DateTime            @default(now())
+  ledger                StockLedger[]
+  balances              StockBalance[]
+  allocations           OrderAllocation[]
+  documentLines         StockDocumentLine[]
+  priceRunLines         PriceRunLine[]
+  pickLines             OrderPickLine[]
 
   @@unique([variantId, lotNo])
   @@index([variantId, expiryDate])
@@ -634,29 +669,29 @@ enum DocStatus {
 }
 
 model StockDocument {
-  id          String              @id @default(cuid())
-  code        String              @unique
-  type        DocType
-  status      DocStatus           @default(DRAFT)
-  fromId      String?
-  from        Location?           @relation("DocFrom", fields: [fromId], references: [id])
-  toId        String?
-  to          Location?           @relation("DocTo", fields: [toId], references: [id])
-  shipmentId  String?
-  shipment    InboundShipment?    @relation(fields: [shipmentId], references: [id])
-  orderId     String?
-  order       Order?              @relation(fields: [orderId], references: [id])
-  reason      String?
+  id                    String              @id @default(cuid())
+  code                  String              @unique
+  type                  DocType
+  status                DocStatus           @default(DRAFT)
+  fromId                String?
+  from                  Location?           @relation("DocFrom", fields: [fromId], references: [id])
+  toId                  String?
+  to                    Location?           @relation("DocTo", fields: [toId], references: [id])
+  shipmentId            String?
+  shipment              InboundShipment?    @relation(fields: [shipmentId], references: [id])
+  orderId               String?
+  order                 Order?              @relation(fields: [orderId], references: [id])
+  reason                String?
   estimatedShipMmkPerKg Int?
   /// Chống tạo trùng khi gửi lại cùng một form (mỗi lần mở form một khoá).
-  idempotencyKey String?            @unique
-  createdById String
-  postedById  String?
-  createdAt   DateTime            @default(now())
-  postedAt    DateTime?
-  lines       StockDocumentLine[]
-  priceRunLines PriceRunLine[]
-  ledger      StockLedger[]
+  idempotencyKey        String?             @unique
+  createdById           String
+  postedById            String?
+  createdAt             DateTime            @default(now())
+  postedAt              DateTime?
+  lines                 StockDocumentLine[]
+  priceRunLines         PriceRunLine[]
+  ledger                StockLedger[]
 
   @@index([type, status])
   @@index([orderId])
@@ -856,7 +891,7 @@ model AnalyticsEvent {
   device     String?
   path       String?
   orderId    String?
-  dedupeKey  String? @unique
+  dedupeKey  String?  @unique
   props      Json?
 
   @@index([name, occurredAt])
@@ -905,7 +940,7 @@ model Order {
   /// QT3: đơn tạo ở chế độ đặt trước (giữ nguyên sau khi hàng về để tra cứu).
   preorder          Boolean               @default(false)
   paymentMethod     PaymentMethod
-  shippingPayer     ShippingPayer @default(RECEIVER)
+  shippingPayer     ShippingPayer         @default(RECEIVER)
   paymentStatus     PaymentStatus         @default(UNPAID)
   subtotalMmk       Int
   /// Từ P15 luôn 0: phí ship do đơn vị vận chuyển (VTP) thu trực tiếp khi giao. Đơn cũ giữ phí đã chốt.
@@ -1065,22 +1100,22 @@ model AffiliateApplication {
 }
 
 model OrderItem {
-  id           String            @id @default(cuid())
-  orderId      String
-  order        Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  variantId    String
-  variant      Variant           @relation(fields: [variantId], references: [id])
+  id                   String            @id @default(cuid())
+  orderId              String
+  order                Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId            String
+  variant              Variant           @relation(fields: [variantId], references: [id])
   /// Snapshot lúc đặt.
-  sku          String
-  name         String
-  qty          Int
-  unitPriceMmk Int
+  sku                  String
+  name                 String
+  qty                  Int
+  unitPriceMmk         Int
   /// Số lượng khách đã trả lại (≤ qty). Doanh thu/giá vốn trừ phần này.
-  returnedQty  Int               @default(0)
+  returnedQty          Int               @default(0)
   /// Hoa hồng CTV cố định (MMK/cái) chốt lúc gắn CTV cho đơn; null = dòng tính theo % hoa hồng của đơn.
   commissionPerUnitMmk Int?
-  allocations  OrderAllocation[]
-  pickLines    OrderPickLine[]
+  allocations          OrderAllocation[]
+  pickLines            OrderPickLine[]
 
   @@index([orderId])
   @@index([variantId])
@@ -1118,11 +1153,11 @@ model OrderPickLine {
 
 /// Phân lô khi bàn giao vận chuyển; giữ giá vốn để tính lợi nhuận.
 model OrderAllocation {
-  id                String    @id @default(cuid())
+  id                String     @id @default(cuid())
   orderItemId       String
-  orderItem         OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  orderItem         OrderItem  @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
   batchId           String
-  batch             Batch     @relation(fields: [batchId], references: [id])
+  batch             Batch      @relation(fields: [batchId], references: [id])
   qty               Int
   unitLandedCostMmk Int
   costStatus        CostStatus @default(MISSING)

@@ -24,9 +24,9 @@ function renderMenu(pathname: string, role: "ADMIN" | "ORDER_STAFF" = "ADMIN") {
 }
 
 describe("admin shell accordion", () => {
-  it("shows the dashboard with seven collapsed menu groups", () => {
+  it("shows the dashboard with eight collapsed menu groups", () => {
     const html = renderMenu("/admin");
-    expect(html.match(/class="group\/nav"/g)).toHaveLength(7);
+    expect(html.match(/class="group\/nav"/g)).toHaveLength(8); // + nhóm Đăng bán (P3)
     expect(html).not.toContain('<details open=""');
     expect(html).toContain('href="/admin" aria-current="page"');
     expect(html.match(/aria-current="page"/g)).toHaveLength(1);

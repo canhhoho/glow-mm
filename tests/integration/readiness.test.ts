@@ -19,30 +19,40 @@ const product = (f: Fixture, slug: string, variant: Record<string, unknown>, ext
 });
 
 describe("Sẵn sàng mở bán (D2)", () => {
-  it("bật hiển thị khi lưu: thiếu khối lượng / giá 0 bị chặn, không ghi gì; đủ thì bật được dù thiếu ảnh (chỉ cảnh báo)", async () => {
+  it("P0-H1: lưu form không bao giờ bật hiển thị; bật qua cổng mở bán — thiếu khối lượng / giá 0 bị chặn, đủ thì bật được dù thiếu ảnh", async () => {
     const f = await makeFixture();
     const slug = `rd-${f.tag.toLowerCase()}`;
-    await expect(saveProduct(product(f, slug, { sku: `RD-${f.tag}`, priceMmk: 10_000 }, { published: true }), f.userId)).rejects.toMatchObject({
-      name: "ReadinessError",
-      issues: [{ code: "NO_WEIGHT", skus: [`RD-${f.tag}`] }, { code: "NOT_APPROVED" }],
+    // Payload cũ còn `published: true` (form gửi kèm) → bị bỏ qua, SP vẫn ẩn, không có audit publish.
+    const draft = await saveProduct(product(f, slug, { sku: `RD-${f.tag}`, priceMmk: 0 }, { published: true }), f.userId);
+    expect(draft.published).toBe(false);
+    expect(await prisma.auditLog.count({ where: { entityId: draft.id, action: "product.publish" } })).toBe(0);
+    expect(await setProductsPublished({ ids: [draft.id], published: true }, f.userId)).toMatchObject({
+      changed: 0,
+      blocked: [{ issues: [{ code: "PRICE_ZERO" }, { code: "NO_WEIGHT", skus: [`RD-${f.tag}`] }, { code: "NOT_APPROVED" }] }],
     });
-    expect(await prisma.product.findUnique({ where: { slug } })).toBeNull(); // rollback cả SP
 
-    await expect(
-      saveProduct(product(f, slug, { sku: `RD-${f.tag}`, priceMmk: 0, weightGrams: 100 }, { published: true }), f.userId),
-    ).rejects.toMatchObject({ issues: [{ code: "PRICE_ZERO" }, { code: "NOT_APPROVED" }] });
-
-    // QT2: SP mới phải được duyệt (bước 4) trước khi bật hiển thị.
-    const draft = await saveProduct(product(f, slug, { sku: `RD-${f.tag}`, priceMmk: 10_000, weightGrams: 100 }), f.userId);
-    await markApproved(draft.id);
     const v = await prisma.variant.findUniqueOrThrow({ where: { sku: `RD-${f.tag}` } });
-    const ok = await saveProduct(product(f, slug, { id: v.id, sku: `RD-${f.tag}`, priceMmk: 10_000, weightGrams: 100 }, { id: draft.id, published: true }), f.userId);
-    expect(ok.published).toBe(true);
-    const r = (await loadReadiness(prisma, [ok.id])).get(ok.id)!;
+    await saveProduct(product(f, slug, { id: v.id, sku: `RD-${f.tag}`, priceMmk: 10_000, weightGrams: 100 }, { id: draft.id }), f.userId);
+    // QT2: SP mới phải được duyệt trước khi bật hiển thị.
+    await markApproved(draft.id);
+    expect(await setProductsPublished({ ids: [draft.id], published: true }, f.userId)).toMatchObject({ changed: 1, blocked: [] });
+    expect(await prisma.auditLog.count({ where: { entityId: draft.id, action: "product.publish" } })).toBe(1);
+    const r = (await loadReadiness(prisma, [draft.id])).get(draft.id)!;
     expect(r.errors).toEqual([]);
     // QT3: SP mới mặc định nhận đặt trước → hết hàng không còn là cảnh báo.
     expect(r.warnings.map((w) => w.code)).toEqual(expect.arrayContaining(["NO_IMAGE"]));
     expect(r.warnings.map((w) => w.code)).not.toContain("OUT_OF_STOCK");
+  });
+
+  it("P0-H1: form cũ (published=true) không bật lại SP đã bị ẩn ở nơi khác", async () => {
+    const f = await makeFixture();
+    const slug = `rh-${f.tag.toLowerCase()}`;
+    const p = await saveProduct(product(f, slug, { sku: `RH-${f.tag}`, priceMmk: 10_000, weightGrams: 100 }), f.userId);
+    await markApproved(p.id, { published: true });
+    await setProductsPublished({ ids: [p.id], published: false }, f.userId);
+    const v = await prisma.variant.findUniqueOrThrow({ where: { sku: `RH-${f.tag}` } });
+    const saved = await saveProduct(product(f, slug, { id: v.id, sku: `RH-${f.tag}`, priceMmk: 10_000, weightGrams: 100 }, { id: p.id, published: true }), f.userId);
+    expect(saved.published).toBe(false);
   });
 
   it("SP đang hiển thị: lưu được dù còn lỗi khác (không tự ẩn), nhưng không cho đặt giá 0", async () => {
@@ -51,12 +61,13 @@ describe("Sẵn sàng mở bán (D2)", () => {
     const p = await saveProduct(product(f, slug, { sku: `RP-${f.tag}`, priceMmk: 10_000, weightGrams: 100 }), f.userId);
     await markApproved(p.id, { published: true });
     const variant = await prisma.variant.findUniqueOrThrow({ where: { sku: `RP-${f.tag}` } });
-    // Bỏ khối lượng: vẫn lưu được (SP cũ đang bán), danh sách báo lỗi; nội dung đổi → cần duyệt lại (QT2).
+    // Bỏ khối lượng (không cần duyệt): vẫn lưu được (SP đang bán, không tự ẩn), danh sách báo lỗi.
     await saveProduct(product(f, slug, { id: variant.id, sku: `RP-${f.tag}`, priceMmk: 10_000, weightGrams: null }, { id: p.id, published: true }), f.userId);
-    expect((await loadReadiness(prisma, [p.id])).get(p.id)!.errors).toEqual([{ code: "NO_WEIGHT", skus: [`RP-${f.tag}`] }, { code: "NOT_APPROVED" }]);
+    expect((await loadReadiness(prisma, [p.id])).get(p.id)!.errors).toEqual([{ code: "NO_WEIGHT", skus: [`RP-${f.tag}`] }]);
+    // Giá 0 cho SP đang bán bị chặn (P1-A: giá của SP đã duyệt vào bản đang sửa, phải > 0).
     await expect(
       saveProduct(product(f, slug, { id: variant.id, sku: `RP-${f.tag}`, priceMmk: 0, weightGrams: null }, { id: p.id, published: true }), f.userId),
-    ).rejects.toMatchObject({ issues: [{ code: "PRICE_ZERO" }] });
+    ).rejects.toThrow(/lớn hơn 0/);
     expect((await prisma.variant.findUniqueOrThrow({ where: { id: variant.id } })).priceMmk).toBe(10_000);
   });
 

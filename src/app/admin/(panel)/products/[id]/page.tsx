@@ -1,12 +1,16 @@
-import { Trash2 } from "lucide-react";
+import { Copy, Pencil, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
-import { approvalState } from "@/server/catalog/approval-rules";
+import { deriveLabel } from "@/server/catalog/approval-rules";
+import type { ChangeItem } from "@/server/catalog/change-summary";
+import { changeItemText } from "@/components/admin/change-text";
+import { productEditView, productReadinessView } from "@/server/catalog/review";
 import { getProductForEdit, getProductImages, productFormOptions } from "@/server/catalog/admin-queries";
-import { approveProductAction, saveProductPreorderAction, deleteProductImageAction, reorderProductImageAction, saveProductPricingAction, setProductPublishedAction, updateProductImageAltAction } from "@/server/catalog/actions";
+import { discardChangesAction, reviewProductsAction, submitProductsAction, saveProductPreorderAction, deleteProductImageAction, reorderProductImageAction, saveProductPricingAction, setProductPublishedAction, updateProductImageAltAction } from "@/server/catalog/actions";
 import { loadProductPricing, type PriceSource } from "@/server/catalog/product-pricing";
 import { loadReadiness } from "@/server/catalog/readiness";
 import { productSteps, type Issue, type ProductStep } from "@/server/catalog/readiness-rules";
@@ -15,16 +19,22 @@ import { ActionForm } from "@/components/admin/action-form";
 import { ProductForm } from "@/components/admin/product-form";
 import { ProductImageUpload } from "@/components/admin/product-images";
 import { ProductStepsBar, StepTitle } from "@/components/admin/product-steps";
-import { Badge, DataTable, fieldClass, fieldLabelClass, LinkButton, Notice, Page, PageHeader, Section, Td } from "@/components/admin/ui";
+import { Badge, DataTable, fieldClass, fieldLabelClass, LinkButton, Notice, Page, Section, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
 import { localizedPath } from "@/lib/site";
 import { prisma } from "@/lib/db";
 import { getNumberSetting } from "@/server/settings";
+import { salesBlockDays } from "@/server/inventory/documents";
+import { availableToSell } from "@/server/orders/availability";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /**
  * Trang SP theo quy trình 5 bước (docs/ke-hoach-quy-trinh-san-pham.md): thanh bước ở đầu, mỗi bước một khối.
  * 1 Thông tin & nội dung (ảnh + form sửa) · 2 Nhập kho + giá vốn · 3 Giá bán · 4 Duyệt (hiện = kiểm tra mở bán D2) · 5 Đăng bán.
  */
+const LABEL_TONE = { PUBLISHED: "success", HIDDEN: "neutral", PENDING: "brand", REJECTED: "danger", DRAFT: "warning", ARCHIVED: "neutral" } as const;
+
 export default async function EditProductPage({ params, searchParams }: PageProps<"/admin/products/[id]">) {
   const user = await requirePagePermission("catalog:manage");
   const [{ id }, { saved, created }] = await Promise.all([params, searchParams]);
@@ -40,7 +50,19 @@ export default async function EditProductPage({ params, searchParams }: PageProp
   // QT2: trạng thái duyệt (bước 4) + người duyệt.
   const approval = await prisma.product.findUniqueOrThrow({
     where: { id: product.id },
-    select: { approvedAt: true, approvedById: true, approvedHash: true, preorderEnabled: true, variants: { select: { id: true, preorderLimit: true } } },
+    select: {
+      approvedAt: true,
+      approvedById: true,
+      archivedAt: true,
+      published: true,
+      approvalStatus: true,
+      approvalVersion: true,
+      rejectionReason: true,
+      firstPublishedAt: true,
+      updatedAt: true,
+      preorderEnabled: true,
+      variants: { select: { id: true, preorderLimit: true } },
+    },
   });
   // QT3: đặt trước — hạn mức riêng / mặc định + số đang chờ hàng theo biến thể.
   const [preorderDefault, preorderWaiting] = await Promise.all([
@@ -50,9 +72,20 @@ export default async function EditProductPage({ params, searchParams }: PageProp
   const preorderLimit = new Map(approval.variants.map((v) => [v.id, v.preorderLimit]));
   const waitingQty = new Map(preorderWaiting.map((w) => [w.variantId, w._sum.qty ?? 0]));
   const approver = approval.approvedById ? await prisma.user.findUnique({ where: { id: approval.approvedById }, select: { name: true } }) : null;
-  const approvalNow = approvalState(approval);
-  // D2: cùng bộ kiểm tra với lúc lưu / bật hàng loạt / danh sách.
-  const readiness = (await loadReadiness(prisma, [product.id])).get(product.id) ?? { errors: [], warnings: [], notReceivedSkus: [] };
+  // P1-A: SP có bản đang sửa → form + kiểm tra mở bán theo bản sẽ được duyệt; khách vẫn thấy bản live.
+  const view = (await productEditView(product.id))!;
+  const cr = view.changeRequest;
+  const lab = deriveLabel({ ...approval, hasChanges: !!cr });
+  const readiness = cr
+    ? await productReadinessView(product.id)
+    : (await loadReadiness(prisma, [product.id])).get(product.id) ?? { errors: [], warnings: [], notReceivedSkus: [] };
+  const canManage = can(user.role, "catalog:manage");
+  const canApprove = can(user.role, "catalog:approve");
+  const canPublish = can(user.role, "catalog:publish");
+  const pendingReview = approval.approvalStatus === "PENDING";
+  const canSubmit = canManage && !approval.archivedAt && !pendingReview && (!approval.approvedAt || !!cr) && readiness.errors.length === 0;
+  const versionItems = JSON.stringify([{ id: product.id, version: approval.approvalVersion }]);
+  const changeText = (c: ChangeItem) => changeItemText(t as Parameters<typeof changeItemText>[0], c);
   const pricingMode = options.warehouses.find((w) => w.id === product.stockLocationId)?.pricingMode ?? null;
   const pricing = await loadProductPricing(product.variants.map((v) => v.id), pricingMode);
   const sourceText = (s: PriceSource | undefined) =>
@@ -63,7 +96,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
         : s.kind === "import"
           ? `${t("priceBlock.sourceImport")} · ${fmtDay(s.at)}`
           : `${t("priceBlock.sourceManual")} · ${fmtDay(s.at)}${s.note ? ` — ${s.note}` : ""}`;
-  const flow = productSteps({ published: product.published, notReceivedSkus: readiness.notReceivedSkus }, readiness);
+  const flow = productSteps({ published: product.published, notReceivedSkus: readiness.notReceivedSkus, approved: !!approval.approvedAt && !cr }, readiness);
   const step = (key: ProductStep) => flow.steps.find((s) => s.key === key)!;
 
   type Row = Issue & { tone: "danger" | "warning"; kind: string };
@@ -87,20 +120,116 @@ export default async function EditProductPage({ params, searchParams }: PageProp
   );
   const publishState = step("publish").state;
 
+  // P3 (thiết kế "Chi tiết sản phẩm"): số liệu phần đầu, ghi chú tiến độ, lịch sử giá + nhật ký.
+  const active = product.variants.filter((v) => v.active);
+  const avail = active.length ? await availableToSell(prisma, active.map((v) => v.id), { now: new Date(), blockDays: await salesBlockDays() }) : new Map<string, number>();
+  const plain = active.filter((v) => !v.isBundle);
+  const stockTotal = (plain.length ? plain : active).reduce((sum, v) => sum + Math.max(0, avail.get(v.id) ?? 0), 0);
+  const prices = active.map((v) => v.priceMmk).filter((x) => x > 0);
+  const priceText = prices.length ? (Math.min(...prices) === Math.max(...prices) ? fmtInt(prices[0]) : `${fmtInt(Math.min(...prices))} – ${fmtInt(Math.max(...prices))}`) : null;
+  const brandName = options.brands.find((b) => b.id === product.brandId)?.name ?? view.draftBrandName ?? "—";
+  const categoryName = options.categories.find((c) => c.id === product.categoryId)?.name ?? "—";
+  const warehouseName = options.warehouses.find((w) => w.id === product.stockLocationId)?.name ?? "—";
+  const reviewNote = lab.label === "PENDING" || lab.change === "PENDING" ? t("hero.notePending") : lab.label === "REJECTED" || lab.change === "REJECTED" ? t("hero.noteRejected") : approval.approvedAt && !cr ? t("hero.noteApproved") : t("hero.noteNotSubmitted");
+  const notes: Partial<Record<ProductStep, string>> = {
+    create: step("create").state === "todo" ? t("hero.noteCreateMissing") : t("hero.noteCreateOk"),
+    stock: t("hero.noteStock", { n: fmtInt(stockTotal) }),
+    price: priceText ? t("hero.notePrice", { price: priceText }) : t("hero.notePriceMissing"),
+    review: reviewNote,
+    publish: product.published ? t("hero.notePublished") : t("hero.noteNotPublished"),
+  };
+  const checks = (["create", "price", "stock"] as const).map((k) => ({ key: k, ok: step(k).state === "done" || step(k).state === "warn" }));
+  const variantIds = product.variants.map((v) => v.id);
+  const [priceHistory, activity] = await Promise.all([
+    prisma.priceHistory.findMany({ where: { variantId: { in: variantIds } }, orderBy: { createdAt: "desc" }, take: 20, include: { variant: { select: { sku: true } } } }),
+    prisma.auditLog.findMany({ where: { entityId: product.id }, orderBy: { createdAt: "desc" }, take: 20 }),
+  ]);
+  const actorIds = [...new Set([...priceHistory.map((h) => h.userId), ...activity.map((a) => a.userId)].filter((x): x is string => !!x))];
+  const actors = new Map((await prisma.user.findMany({ where: { id: { in: actorIds } }, select: { id: true, name: true } })).map((u) => [u.id, u.name]));
+  const actionText = (a: string) => (t.has(`activity.${a.replaceAll(".", "_")}`) ? t(`activity.${a.replaceAll(".", "_")}`) : a);
+
   return (
     <Page>
-      <PageHeader
-        title={product.en.name || product.slug}
-        back={{ href: "/admin/products", label: td("back") }}
-        actions={
-          <a href={localizedPath("my", `/p/${product.slug}`)} target="_blank" rel="noreferrer" className="text-sm text-primary underline">
-            {t("block.viewAsCustomer")}
-          </a>
-        }
-      />
       {created && <Notice tone="success">{t("created")}</Notice>}
       {saved && <Notice tone="success">{t("saved")}</Notice>}
-      <ProductStepsBar steps={flow.steps} current={flow.current} t={t} />
+      <div className="flex flex-col gap-5 rounded-xl border bg-card p-4 md:flex-row" data-testid="product-hero">
+        <div className="w-full max-w-60 shrink-0 space-y-2 md:w-52 xl:w-60">
+          <div className="relative aspect-square overflow-hidden rounded-xl border bg-muted">
+            {images[0] && <Image src={images[0].url} alt={images[0].alt || product.en.name} fill sizes="240px" className="object-cover" priority />}
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {images.slice(1, 4).map((img) => (
+              <span key={img.id} className="relative aspect-square overflow-hidden rounded-lg border bg-muted">
+                <Image src={img.url} alt={img.alt || product.en.name} fill sizes="56px" className="object-cover" />
+              </span>
+            ))}
+            <a href="#product-images" className="flex aspect-square items-center justify-center rounded-lg border border-dashed text-muted-foreground hover:bg-muted" aria-label={t("images")} title={t("images")}>
+              <Plus className="size-4" aria-hidden />
+            </a>
+          </div>
+        </div>
+        <div className="min-w-0 flex-1 space-y-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 space-y-2">
+              <h1 className="text-xl font-semibold break-words sm:text-2xl">{product.en.name || product.my.name || product.slug}</h1>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs">
+                  SKU: {product.variants[0]?.sku ?? "—"}
+                  {product.variants.length > 1 && ` · ${t("list.moreVariants", { n: product.variants.length - 1 })}`}
+                </span>
+                <Badge tone={LABEL_TONE[lab.label]}>{t(`lifecycle.${lab.label}`)}</Badge>
+                {lab.change && <Badge tone={lab.change === "REJECTED" ? "danger" : lab.change === "PENDING" ? "brand" : "warning"}>{t(`change.${lab.change}`)}</Badge>}
+              </div>
+              <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                <span>{t("colBrand")}: <span className="text-foreground">{brandName}</span></span>
+                <span aria-hidden>|</span>
+                <span>{t("colCategory")}: <span className="text-foreground">{categoryName}</span></span>
+                <span aria-hidden>|</span>
+                <span>{t("warehouse")}: <span className="text-foreground">{warehouseName}</span></span>
+                <span aria-hidden>|</span>
+                <span>{t("list.colUpdated")}: <span className="text-foreground">{fmtDateTime(approval.updatedAt)}</span></span>
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <LinkButton href="/admin/products" icon="back" iconOnly>
+                {td("back")}
+              </LinkButton>
+              {product.published && (
+                <a href={localizedPath("my", `/p/${product.slug}`)} target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline", size: "lg" })}>
+                  {t("block.viewAsCustomer")}
+                </a>
+              )}
+              <Link href={`/admin/products/new?copyFrom=${product.id}`} className={buttonVariants({ variant: "outline", size: "lg" })}>
+                <Copy aria-hidden /> {t("list.duplicate")}
+              </Link>
+              <a href="#product-edit" className={buttonVariants({ size: "lg" })}>
+                <Pencil aria-hidden /> {t("hero.edit")}
+              </a>
+            </div>
+          </div>
+          <div className="rounded-xl border p-4">
+            <h2 className="mb-4 font-medium">{t("hero.progress")}</h2>
+            <ProductStepsBar steps={flow.steps} current={flow.current} t={t} notes={notes} />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid items-start gap-5 xl:grid-cols-3">
+        <div className="min-w-0 space-y-5 xl:col-span-2">
+          <nav aria-label={t("hero.sections")} className="sticky top-14 z-10 -mx-1 flex gap-1 overflow-x-auto bg-background/95 px-1 text-sm shadow-[inset_0_-1px_0_var(--color-border)] backdrop-blur">
+            {[
+              ["#step-create", t("hero.tabOverview")],
+              ["#product-edit", t("hero.tabVariants", { n: product.variants.length })],
+              ["#step-stock", t("hero.tabStock")],
+              ["#step-price", t("hero.tabPrice")],
+              ["#price-history", t("hero.tabPriceHistory")],
+              ["#activity", t("hero.tabActivity")],
+            ].map(([href, label]) => (
+              <a key={href} href={href} className="border-b-2 border-transparent px-3 py-2 whitespace-nowrap text-muted-foreground hover:border-primary/40 hover:text-foreground">
+                {label}
+              </a>
+            ))}
+          </nav>
 
       {/* ── Bước 1: thông tin & nội dung ── */}
       <Section id="step-create" className="scroll-mt-20" title={<StepTitle index={1} step={step("create")} t={t} />}>
@@ -110,6 +239,11 @@ export default async function EditProductPage({ params, searchParams }: PageProp
             {t("images")}
           </h3>
           <ProductImageUpload productId={product.id} />
+          {cr && (cr.images.add.length > 0 || cr.images.remove.length > 0) && (
+            <p className="mt-3 rounded-md bg-muted p-2 text-sm" data-testid="images-staged">
+              {t("review.imagesStaged", { add: cr.images.add.length, remove: cr.images.remove.length })}
+            </p>
+          )}
           {images.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">{t("imagesEmpty")}</p>
           ) : (
@@ -158,10 +292,17 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           )}
         </section>
         {/* Form sửa đầy đủ: mở sẵn khi SP chưa đăng bán (đang thiết lập), đóng khi đã bán. key: nạp lại state sau khi lưu. */}
-        <details open={!product.published} className="rounded-lg border p-4" data-testid="product-edit">
+        <details id="product-edit" open={!product.published} className="scroll-mt-28 rounded-lg border p-4" data-testid="product-edit">
           <summary className="cursor-pointer font-medium">{t("block.editInfo")}</summary>
           <div className="mt-4">
-            <ProductForm key={JSON.stringify(product)} initial={product} options={options} />
+            <ProductForm
+              key={JSON.stringify(view.edit)}
+              initial={view.edit}
+              draftBrandName={view.draftBrandName}
+              slugLocked={!!approval.firstPublishedAt}
+              options={options}
+              review={{ submit: canManage && !approval.archivedAt, approve: canApprove && !approval.archivedAt }}
+            />
           </div>
         </details>
       </Section>
@@ -203,7 +344,14 @@ export default async function EditProductPage({ params, searchParams }: PageProp
                   {!v.active && <span className="ml-1 text-muted-foreground">({t("priceBlock.inactive")})</span>}
                 </Td>
                 <Td label={t("label")}>{v.label}</Td>
-                <Td label={t("price")} className={v.priceMmk > 0 ? "text-right tabular-nums" : "text-right text-destructive tabular-nums"}>{fmtInt(v.priceMmk)}</Td>
+                <Td label={t("price")} className={v.priceMmk > 0 ? "text-right tabular-nums" : "text-right text-destructive tabular-nums"}>
+                  {fmtInt(v.priceMmk)}
+                  {cr?.prices[v.id] && (
+                    <div className="text-xs text-muted-foreground" data-testid="pending-price">
+                      {t("review.pendingPrice", { price: fmtInt(cr.prices[v.id].priceMmk) })}
+                    </div>
+                  )}
+                </Td>
                 <Td label={t("priceBlock.source")} className="text-xs">{sourceText(row?.source)}</Td>
                 <Td label={t("priceBlock.lastCost")} className="text-xs tabular-nums">
                   {row?.cost ? (
@@ -221,6 +369,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           })}
         </DataTable>
         {stepIssues("price").length > 0 && issueList(stepIssues("price"))}
+        {can(user.role, "pricing:manage") && (
         <details className="rounded-lg border p-4" data-testid="price-manual">
           <summary className="cursor-pointer font-medium">{t("priceBlock.manual")}</summary>
           {/* ActionForm reset sau khi lưu → ô về giá trị mới (defaultValue của lần render sau revalidate). */}
@@ -234,9 +383,11 @@ export default async function EditProductPage({ params, searchParams }: PageProp
                     {v.label} <span className="font-mono text-xs text-muted-foreground">{v.sku}</span>
                   </legend>
                   <input type="hidden" name="variantId" value={v.id} />
+                  {/* P0-H2: giá lúc mở trang — đã đổi ở nơi khác (bảng tính giá, Giá bán) thì báo lỗi, không ghi đè. */}
+                  <input type="hidden" name="expectedPriceMmk" value={cr?.prices[v.id]?.priceMmk ?? v.priceMmk} />
                   <label className={fieldLabelClass}>
                     <span className="text-muted-foreground">{t("price")}</span>
-                    <input name="priceMmk" aria-label={`${t("price")} ${v.sku}`} type="number" required min={1} step={1} inputMode="numeric" defaultValue={v.priceMmk || ""} className={fieldClass} />
+                    <input name="priceMmk" aria-label={`${t("price")} ${v.sku}`} type="number" required min={1} step={1} inputMode="numeric" defaultValue={(cr?.prices[v.id]?.priceMmk ?? v.priceMmk) || ""} className={fieldClass} />
                   </label>
                   <label className={fieldLabelClass}>
                     <span className="text-muted-foreground">{t("affiliateCommission")}</span>
@@ -259,22 +410,112 @@ export default async function EditProductPage({ params, searchParams }: PageProp
             </ActionForm>
           </div>
         </details>
+        )}
       </Section>
+
+          <Section id="price-history" className="scroll-mt-28" title={t("hero.tabPriceHistory")}>
+            <DataTable stack dense empty={t("hero.noPriceHistory")} head={[t("list.colUpdated"), t("sku"), t("hero.priceChange"), t("hero.priceReason"), t("hero.by")]} numeric={[2]}>
+              {priceHistory.map((h) => (
+                <tr key={h.id}>
+                  <Td className="whitespace-nowrap tabular-nums">{fmtDateTime(h.createdAt)}</Td>
+                  <Td label={t("sku")} className="font-mono">{h.variant.sku}</Td>
+                  <Td label={t("hero.priceChange")} className="text-right whitespace-nowrap tabular-nums">{fmtInt(h.oldPriceMmk)} → {fmtInt(h.newPriceMmk)}</Td>
+                  <Td label={t("hero.priceReason")}>{h.runId ? t("priceBlock.sourceRun") : (h.reason ?? "—")}</Td>
+                  <Td label={t("hero.by")}>{actors.get(h.userId) ?? "—"}</Td>
+                </tr>
+              ))}
+            </DataTable>
+          </Section>
+
+          <Section id="activity" className="scroll-mt-28" title={t("hero.tabActivity")}>
+            {activity.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("hero.noActivity")}</p>
+            ) : (
+              <ol className="space-y-2 text-sm" data-testid="product-activity">
+                {activity.map((a) => (
+                  <li key={a.id} className="flex flex-wrap items-baseline gap-x-3 border-b pb-2 last:border-0">
+                    <span className="text-xs text-muted-foreground tabular-nums">{fmtDateTime(a.createdAt)}</span>
+                    <span className="font-medium">{actionText(a.action)}</span>
+                    <span className="text-xs text-muted-foreground">{a.userId ? (actors.get(a.userId) ?? "—") : t("hero.system")}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </Section>
+        </div>
+
+        <aside className="space-y-5 xl:sticky xl:top-16">
+          <section className="space-y-3 rounded-xl border bg-card p-4" data-testid="publish-checklist">
+            <h2 className="font-medium">{t("hero.checklist")}</h2>
+            <ul className="divide-y text-sm">
+              {checks.map((c) => (
+                <li key={c.key} className="flex items-center gap-3 py-2.5">
+                  <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-full text-white", c.ok ? "bg-success" : "bg-destructive")} aria-hidden>
+                    {c.ok ? "✓" : "!"}
+                  </span>
+                  <a href={`#step-${c.key}`} className="min-w-0 flex-1 hover:underline">
+                    <span className="block font-medium">{t(`hero.check.${c.key}`)}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {c.key === "stock" ? t("hero.checkStockHint", { n: fmtInt(stockTotal) }) : t(`hero.check.${c.key}Hint`)}
+                    </span>
+                  </a>
+                  <Badge tone={c.ok ? "success" : "danger"}>{t(c.ok ? "hero.pass" : "hero.fail")}</Badge>
+                </li>
+              ))}
+            </ul>
+          </section>
 
       {/* ── Bước 4: duyệt (QT2) — checklist mở bán + nút Duyệt có lưu vết; sửa nội dung/giá/ảnh sau khi duyệt → cần duyệt lại ── */}
       <Section id="step-review" className="scroll-mt-20" title={<StepTitle index={4} step={step("review")} t={t} />} testId="launch-check">
-        <div className="flex flex-wrap items-center gap-2 text-sm" data-testid="approval-status">
-          {approvalNow === "APPROVED" ? (
-            <Badge tone="success">
+        <div className="flex flex-wrap items-center gap-2 text-sm" data-testid="approval-status" data-label={lab.label} data-change={lab.change ?? ""}>
+          <Badge tone={LABEL_TONE[lab.label]}>{t(`lifecycle.${lab.label}`)}</Badge>
+          {lab.change && <Badge tone={lab.change === "REJECTED" ? "danger" : lab.change === "PENDING" ? "brand" : "warning"}>{t(`change.${lab.change}`)}</Badge>}
+          {approval.approvedAt && (
+            <span className="text-xs text-muted-foreground">
               ✓ {approver ? t("approval.approvedBy", { name: approver.name, at: fmtDateTime(approval.approvedAt) }) : t("approval.approvedSystem")}
-            </Badge>
-          ) : approvalNow === "STALE" ? (
-            <Badge tone="warning">{t("approval.stale")}</Badge>
-          ) : (
-            <Badge tone="neutral">{t("approval.pending")}</Badge>
+            </span>
           )}
-          {approvalNow !== "APPROVED" && step("review").state === "todo" && can(user.role, "catalog:approve") && (
-            <ActionButton action={approveProductAction} fields={{ id: product.id }} label={t("approval.approve")} confirm={t("approval.confirm")} iconOnly={false} />
+        </div>
+        {approval.approvalStatus === "REJECTED" && approval.rejectionReason && (
+          <Notice tone="danger" data-testid="rejection-reason">{t("review.rejected", { reason: approval.rejectionReason })}</Notice>
+        )}
+        {view.changes && view.changes.length > 0 && (
+          <div className="space-y-1 rounded-md border p-3 text-sm" data-testid="change-summary">
+            <p className="font-medium">{t("review.changesTitle")}</p>
+            <ul className="list-disc pl-5">
+              {view.changes.map((c, i) => (
+                <li key={i}>{changeText(c)}</li>
+              ))}
+            </ul>
+            <p className="text-xs text-muted-foreground">{t("review.liveNote")}</p>
+          </div>
+        )}
+        <div className="flex flex-wrap items-start gap-2" data-testid="review-actions">
+          {canSubmit && <ActionButton action={submitProductsAction} fields={{ ids: product.id }} label={t("review.submit")} iconOnly={false} />}
+          {pendingReview && canApprove && (
+            <>
+              {approval.approvedAt ? (
+                <ActionButton action={reviewProductsAction} fields={{ decision: "approve", items: versionItems }} label={t("review.approveChanges")} confirm={t("review.approveConfirm")} iconOnly={false} />
+              ) : (
+                <>
+                  {canPublish && (
+                    <ActionButton action={reviewProductsAction} fields={{ decision: "approvePublish", items: versionItems }} label={t("review.approvePublish")} confirm={t("review.approveConfirm")} iconOnly={false} />
+                  )}
+                  <ActionButton action={reviewProductsAction} fields={{ decision: "approve", items: versionItems }} label={t("review.approveOnly")} confirm={t("review.approveConfirm")} variant="outline" iconOnly={false} />
+                </>
+              )}
+              <ActionForm action={reviewProductsAction} submitLabel={t("review.reject")} variant="outline" className="flex flex-wrap items-end gap-2">
+                <input type="hidden" name="decision" value="reject" />
+                <input type="hidden" name="items" value={versionItems} />
+                <label className={fieldLabelClass}>
+                  <span className="text-muted-foreground">{t("review.rejectReason")}</span>
+                  <input name="reason" required minLength={5} maxLength={500} className={fieldClass} />
+                </label>
+              </ActionForm>
+            </>
+          )}
+          {cr && canManage && (
+            <ActionButton action={discardChangesAction} fields={{ id: product.id }} label={t("review.discard")} confirm={t("review.discardConfirm")} variant="outline" iconOnly={false} />
           )}
         </div>
         <p className="text-sm">
@@ -297,7 +538,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
       {/* ── Bước 5: đăng bán ── */}
       <Section id="step-publish" className="scroll-mt-20" title={<StepTitle index={5} step={step("publish")} t={t} />} testId="step-publish-block">
         <p className="text-sm">{product.published ? t("block.published") : publishState === "waiting" ? t("block.publishWaiting") : t("block.hidden")}</p>
-        {(product.published || publishState === "todo") && (
+        {canPublish && (product.published || publishState === "todo") && (
           <ActionButton
             action={setProductPublishedAction}
             fields={{ id: product.id, published: product.published ? "0" : "1" }}
@@ -348,6 +589,8 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           </div>
         </details>
       </Section>
+        </aside>
+      </div>
     </Page>
   );
 }

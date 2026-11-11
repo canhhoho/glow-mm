@@ -4,7 +4,10 @@
  * Quyết định của chủ shop: thiếu ảnh chỉ cảnh báo; SP đang hiển thị vẫn lưu được, chỉ chặn giá ≤ 0 / không còn biến thể.
  */
 
-/** NOT_APPROVED (QT2): chưa duyệt / sửa sau khi duyệt — chặn bật hiển thị; SP đang hiển thị không bị tự ẩn. */
+/**
+ * NOT_APPROVED: không còn do `evaluateReadiness` sinh ra (P1-A: readiness = điều kiện, duyệt là thao tác riêng) —
+ * chỉ `publishBlockers` thêm vào khi bản live chưa được duyệt (chặn bật hiển thị).
+ */
 export const ERROR_CODES = ["NO_ACTIVE_VARIANT", "BAD_LOCATION", "PRICE_ZERO", "NO_WEIGHT", "NOT_APPROVED"] as const;
 export const WARNING_CODES = [
   "NO_IMAGE",
@@ -15,6 +18,7 @@ export const WARNING_CODES = [
   "OUT_OF_STOCK",
   "STOCK_OTHER_WAREHOUSE",
   "PRICE_STALE",
+  "RATE_NEWER",
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 export type WarningCode = (typeof WARNING_CODES)[number];
@@ -48,8 +52,8 @@ export type ReadinessInput = {
   otherWarehouseSkus: string[];
   /** QT1b: có phiếu nhập ghi sổ sau lần đổi giá gần nhất (combo: của thành phần) → nên tính lại giá. */
   staleSkus?: string[];
-  /** QT2: đã duyệt (bước 4) và chưa sửa nội dung/giá/ảnh sau đó. Bỏ trống = coi như đã duyệt (dữ liệu thuần trong test). */
-  approved?: boolean;
+  /** P1-D (M5): kho nhập VN — có tỷ giá mới hơn lần đổi giá gần nhất → nên tính lại giá (bảng tính giá). */
+  rateNewerSkus?: string[];
   /** QT3: hết hàng vẫn nhận đặt trước → không cảnh báo hết hàng. Bỏ trống = không nhận (như trước QT3). */
   preorderEnabled?: boolean;
 };
@@ -72,7 +76,6 @@ export function evaluateReadiness(p: ReadinessInput): Readiness {
     ...withSkus("PRICE_ZERO", active.filter((v) => v.priceMmk <= 0).map((v) => v.sku)),
     // Kho hàng nhập VN: công thức giá cần khối lượng (combo chưa khai báo → cộng thành phần).
     ...(localMode ? [] : withSkus("NO_WEIGHT", noWeight)),
-    ...(p.approved === false ? [{ code: "NOT_APPROVED" as const }] : []),
   ];
   const warnings: Issue[] = [
     ...(p.imageCount === 0 ? [{ code: "NO_IMAGE" as const }] : []),
@@ -83,6 +86,7 @@ export function evaluateReadiness(p: ReadinessInput): Readiness {
     ...(!p.preorderEnabled && active.length > 0 && active.every((v) => (p.available.get(v.id) ?? 0) <= 0) ? [{ code: "OUT_OF_STOCK" as const }] : []),
     ...withSkus("STOCK_OTHER_WAREHOUSE", p.otherWarehouseSkus),
     ...withSkus("PRICE_STALE", p.staleSkus ?? []),
+    ...withSkus("RATE_NEWER", p.rateNewerSkus ?? []),
   ];
   return { errors, warnings };
 }
@@ -93,6 +97,11 @@ export function evaluateReadiness(p: ReadinessInput): Readiness {
  */
 export function blockingErrors(r: Readiness, wasPublished: boolean): Issue[] {
   return wasPublished ? r.errors.filter((e) => (ALWAYS_BLOCKING as readonly string[]).includes(e.code)) : r.errors;
+}
+
+/** Cổng đăng bán (P1-A): đủ điều kiện mở bán + bản live đã được duyệt. Dùng chung cho mọi đường bật hiển thị. */
+export function publishBlockers(r: Readiness, p: { approved: boolean }): Issue[] {
+  return [...r.errors, ...(p.approved ? [] : [{ code: "NOT_APPROVED" as const }])];
 }
 
 export type ListStatus = "ARCHIVED" | "PUBLISHED" | "READY" | "INCOMPLETE";
@@ -126,11 +135,13 @@ const STEP_OF: Record<IssueCode, ProductStep> = {
   STOCK_OTHER_WAREHOUSE: "stock",
   PRICE_ZERO: "price",
   PRICE_STALE: "price",
+  RATE_NEWER: "price",
   NOT_APPROVED: "review",
 };
 
 export function productSteps(
-  p: { published: boolean; notReceivedSkus: string[] },
+  /** `approved`: bản live đã duyệt và không có bản đang sửa chờ xử lý (bỏ trống = đã duyệt). */
+  p: { published: boolean; notReceivedSkus: string[]; approved?: boolean },
   r: Readiness,
 ): { steps: StepView[]; current: ProductStep | null } {
   const of = (step: ProductStep, list: Issue[]) => list.filter((i) => STEP_OF[i.code] === step);
@@ -147,9 +158,9 @@ export function productSteps(
       issues: [...errors, ...warnings],
     };
   });
-  const earlier = r.errors.filter((e) => STEP_OF[e.code] !== "review");
-  const review = of("review", r.errors);
-  steps.push({ key: "review", state: earlier.length ? "waiting" : review.length ? "todo" : "done", issues: review });
-  steps.push({ key: "publish", state: p.published ? "done" : ready ? "todo" : "waiting", issues: [] });
+  const approved = p.approved ?? true;
+  const review: Issue[] = approved ? [] : [{ code: "NOT_APPROVED" }];
+  steps.push({ key: "review", state: !ready ? "waiting" : approved ? "done" : "todo", issues: review });
+  steps.push({ key: "publish", state: p.published ? "done" : ready && approved ? "todo" : "waiting", issues: [] });
   return { steps, current: steps.find((s) => s.state === "todo")?.key ?? null };
 }

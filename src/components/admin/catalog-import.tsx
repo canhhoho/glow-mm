@@ -44,6 +44,7 @@ export function CatalogImport() {
           <p className="text-sm font-medium">
             {t("summary", { created: preview.counts.createdProducts, updated: preview.counts.updatedProducts, unchanged: preview.counts.unchangedProducts, stock: preview.counts.stockLines })}
           </p>
+          {preview.counts.priceChanges > 0 && <p className="text-sm text-muted-foreground" data-testid="catalog-import-price-changes">{t("priceChanges", { count: preview.counts.priceChanges })}</p>}
           {preview.rate && <p className="text-sm text-muted-foreground">{t("rateQuote", { rate: preview.rate })}</p>}
           {preview.errors.length > 0 && (
             <Notice tone="danger" className="p-4">

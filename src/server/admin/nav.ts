@@ -28,7 +28,15 @@ export type NavIcon =
   | "gear";
 
 /** Số đếm hiện ở badge (xem `navCounts`). */
-export type NavCountKey = "pendingOrders" | "awaitingStock" | "quarantineLots" | "blockedLots" | "pendingApplications";
+export type NavCountKey =
+  | "pendingOrders"
+  | "awaitingStock"
+  | "quarantineLots"
+  | "blockedLots"
+  | "pendingApplications"
+  | "catalogIncomplete"
+  | "catalogReview"
+  | "catalogPublished";
 
 export type NavItem = { href: string; key: string; permission: Permission; icon: NavIcon; count?: NavCountKey; section?: string };
 /** `key` null = nhóm không có tiêu đề (Tổng quan). */
@@ -71,6 +79,16 @@ export const NAV: NavGroup[] = [
       },
       { href: "/admin/alerts", key: "alerts", permission: "stock:view", icon: "bell", count: "blockedLots" },
       { href: "/admin/shipments", key: "shipments", permission: "shipment:manage", icon: "truck" },
+    ],
+  },
+  {
+    // P3: lối tắt tới danh sách SP đã lọc theo trạng thái đăng bán (không có trang riêng).
+    key: "groupPublishing",
+    icon: "shield",
+    items: [
+      { href: "/admin/products?status=incomplete", key: "publishIncomplete", permission: "catalog:manage", icon: "file", count: "catalogIncomplete" },
+      { href: "/admin/products?status=review", key: "publishReview", permission: "catalog:manage", icon: "shield", count: "catalogReview" },
+      { href: "/admin/products?status=published", key: "publishLive", permission: "catalog:manage", icon: "tag", count: "catalogPublished" },
     ],
   },
   {

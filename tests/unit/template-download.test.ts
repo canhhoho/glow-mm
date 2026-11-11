@@ -22,7 +22,10 @@ describe("Tải file Excel nhập/cập nhật sản phẩm", () => {
     expect([...new Uint8Array(await blank.arrayBuffer())]).toEqual([1]);
     const current = await download("catalog-current.xlsx");
     expect(current.headers.get("Content-Disposition")).toMatch(/san-pham-hien-co-\d{8}\.xlsx/);
-    expect(template.catalogTemplateFile).toHaveBeenLastCalledWith(true);
+    // P2: ADMIN có quyền giá → file SP hiện có kèm cột giá.
+    expect(template.catalogTemplateFile).toHaveBeenLastCalledWith(true, { withPricing: true });
+    await download("catalog.xlsx");
+    expect(template.catalogTemplateFile).toHaveBeenLastCalledWith(false);
   });
 
   it("cần đăng nhập + quyền sản phẩm; tên file lạ / mẫu cũ → 404", async () => {

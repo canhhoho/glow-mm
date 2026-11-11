@@ -11,7 +11,7 @@ const hrefs = NAV.flatMap((g) => g.items.map((i) => i.href));
 describe("menu admin", () => {
   it("admin thấy mọi nhóm; mỗi href chỉ xuất hiện một lần", () => {
     const groups = visibleNav("ADMIN");
-    expect(groups.map((g) => g.key)).toEqual([null, "orders", "products", "groupStock", "groupAccounts", "affiliates", "reports", "settings"]);
+    expect(groups.map((g) => g.key)).toEqual([null, "orders", "products", "groupStock", "groupPublishing", "groupAccounts", "affiliates", "reports", "settings"]);
     expect(new Set(hrefs).size).toBe(hrefs.length);
   });
 
@@ -46,7 +46,7 @@ describe("menu admin", () => {
   it("mọi đường dẫn menu có trang thật và nhãn đủ ba ngôn ngữ", () => {
     const root = path.resolve(import.meta.dirname, "../..");
     for (const href of hrefs) {
-      const route = href.replace(/^\/admin\/?/, "");
+      const route = href.replace(/\?.*$/, "").replace(/^\/admin\/?/, ""); // mục lọc sẵn (?status=…) dùng trang gốc
       expect(existsSync(path.join(root, "src/app/admin/(panel)", route, "page.tsx")), href).toBe(true);
     }
     for (const locale of ["vi", "en", "my"]) {
@@ -62,7 +62,7 @@ describe("menu admin", () => {
   });
 
   it("chỉ tính badge của mục được thấy", () => {
-    expect([...neededCounts(visibleNav("ADMIN"))].sort()).toEqual(["awaitingStock", "blockedLots", "pendingApplications", "pendingOrders", "quarantineLots"]);
+    expect([...neededCounts(visibleNav("ADMIN"))].sort()).toEqual(["awaitingStock", "blockedLots", "catalogIncomplete", "catalogPublished", "catalogReview", "pendingApplications", "pendingOrders", "quarantineLots"]);
     const onlyOrders = visibleNav("ORDER_STAFF").filter((g) => g.key !== "groupStock");
     expect([...neededCounts(onlyOrders)].sort()).toEqual(["awaitingStock", "pendingOrders"]);
   });

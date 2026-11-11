@@ -4,7 +4,7 @@ import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { readSheet } from "read-excel-file/node";
 import { CATALOG_HEADER_ROW, CATALOG_SHEET, sheetHeaderKey } from "../../src/lib/catalog-sheet";
 import { toCsv } from "../../src/lib/csv";
-import { login, openProductEdit, openProductSettings, priceInputs, setPrices } from "./helpers";
+import { approveChanges, login, openProductEdit, openProductSettings, priceInputs, setPrices } from "./helpers";
 
 const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
@@ -109,11 +109,13 @@ test("mẫu một sheet: tạo SP hai biến thể kèm tồn → xem trước �
   // Bước 3: đặt giá tay có lý do → đủ điều kiện; thiếu ảnh chỉ là lưu ý; nguồn giá = sửa tay.
   await expect(await priceInputs(page)).toHaveCount(2);
   await setPrices(page, [27000, 42000], "Giá mở bán");
-  // QT2: bước 1–3 xong → bước 4 chỉ còn "chưa duyệt"; bấm Duyệt (có xác nhận) → đủ điều kiện.
-  await expect(check.getByTestId("issue-NOT_APPROVED")).toBeVisible();
+  // P1-A: đủ điều kiện không tự vào hàng đợi → bấm Gửi duyệt; người duyệt "Chỉ duyệt" (có xác nhận) → vẫn ẩn.
   await expect(page.getByTestId("product-steps").getByTestId("step-review")).toHaveAttribute("data-state", "todo");
+  await expect(check.getByTestId("approval-status")).toHaveAttribute("data-label", "DRAFT");
+  await check.getByRole("button", { name: "Gửi duyệt", exact: true }).click();
+  await expect(check.getByTestId("approval-status")).toHaveAttribute("data-label", "PENDING", { timeout: 15_000 });
   page.once("dialog", (d) => d.accept());
-  await check.getByRole("button", { name: "Duyệt", exact: true }).click();
+  await check.getByRole("button", { name: "Chỉ duyệt (chưa đăng)" }).click();
   await expect(check.getByTestId("approval-status")).toContainText("Đã duyệt bởi", { timeout: 15_000 });
   await expect(check).toContainText("Đủ điều kiện");
   await expect(page.getByTestId("step-publish-block")).toContainText("Đang ẩn khỏi web");
@@ -137,7 +139,8 @@ test("cập nhật giá: danh sách SP hiện có chứa SKU; tải lên dòng S
   await openProductSettings(page);
   const sku = await page.getByRole("textbox", { name: "SKU", exact: true }).first().inputValue();
   const original = Number(await (await priceInputs(page)).first().inputValue());
-  const next = original + 100;
+  // Giá khác nhau mỗi lần chạy → nội dung file khác (P1-D: nhập lại đúng file đã xác nhận bị chặn).
+  const next = original + 100 * (1 + (Date.now() % 9));
 
   await page.goto("/admin/products/import");
   const current = await download(page, "Tải danh sách sản phẩm hiện có (để cập nhật)");
@@ -146,8 +149,10 @@ test("cập nhật giá: danh sách SP hiện có chứa SKU; tải lên dòng S
   const keys = rows[CATALOG_HEADER_ROW - 1].map(sheetHeaderKey);
   const mine = rows.find((r) => r[keys.indexOf("sku")] === sku)!;
   expect(mine[keys.indexOf("name_en")]).toBe(nameEn);
-  expect(keys).not.toContain("price_mmk");
-  expect(keys).not.toContain("affiliate_commission_mmk");
+  // P2: admin có quyền giá → file SP hiện có kèm cột giá (giá đang bán).
+  expect(keys).toContain("price_mmk");
+  expect(keys).toContain("affiliate_commission_mmk");
+  expect(Number(mine[keys.indexOf("price_mmk")])).toBe(original);
 
   try {
     // File mẫu mới tập trung thông tin SP; file CSV cũ vẫn hỗ trợ sửa giá SKU đã có.
@@ -164,10 +169,14 @@ test("cập nhật giá: danh sách SP hiện có chứa SKU; tải lên dòng S
     const variant = page.getByRole("textbox", { name: "SKU", exact: true }).first();
     await expect(variant).toHaveValue(sku);
     await expect((await priceInputs(page)).first()).toHaveValue(String(next));
+    // P1-A: SP đang bán → giá từ Excel chờ duyệt; duyệt xong nguồn giá là Excel.
+    await expect(page.getByTestId("pending-price").first()).toBeVisible();
+    await approveChanges(page);
     await expect(page.getByTestId("step-price-row").first()).toContainText("Excel");
   } finally {
     // Trả giá cũ cho dữ liệu seed dùng chung.
     await page.goto(productUrl);
     await setPrices(page, [original], "E2E trả giá cũ");
+    await approveChanges(page);
   }
 });

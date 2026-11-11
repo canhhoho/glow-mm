@@ -160,11 +160,14 @@ const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>`;
 
-/** Ghép workbook. `rows` trống = file mẫu; có dữ liệu = danh sách SP hiện có để sửa. */
-export function buildCatalogWorkbook(lists: TemplateLists, rows: TemplateRow[] = []): Uint8Array {
+/**
+ * Ghép workbook. `rows` trống = file mẫu; có dữ liệu = danh sách SP hiện có để sửa. `pricing` (P2): file SP hiện có
+ * cho người có quyền giá kèm cột Giá bán + Hoa hồng CTV (sửa giá hàng loạt rồi tải lên lại; vẫn qua duyệt).
+ */
+export function buildCatalogWorkbook(lists: TemplateLists, rows: TemplateRow[] = [], opts: { pricing?: boolean } = {}): Uint8Array {
   // Chỉ một kho bán → bỏ cột Kho bán (luôn dùng kho đó).
   const columns = CATALOG_COLUMNS
-    .filter((c) => !PRICING_COLUMNS.has(c.key) && (c.key !== "warehouse_code" || lists.warehouses.length > 1))
+    .filter((c) => (opts.pricing || !PRICING_COLUMNS.has(c.key)) && (c.key !== "warehouse_code" || lists.warehouses.length > 1))
     .sort((a, b) => {
       const order = (c: SheetColumn) => c.group === "product" ? EXTRA_COLUMNS.has(c.key) ? 1 : 0 : EXTRA_COLUMNS.has(c.key) ? 3 : 2;
       return order(a) - order(b);

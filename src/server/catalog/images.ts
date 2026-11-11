@@ -12,6 +12,7 @@ import {
 } from "@/server/files/public-images";
 import type { Tx } from "@/server/inventory/ledger";
 import { guardApproval } from "./approval";
+import { stageImages } from "./change-request";
 import { CatalogError } from "./products";
 
 /**
@@ -33,13 +34,21 @@ async function lockProduct(tx: Tx, productId: string) {
 export async function addProductImages(productId: string, files: ImageUpload[], userId: string) {
   if (files.length === 0) throw new CatalogError("Chưa chọn ảnh");
   if (files.length > IMAGE_MAX_PER_UPLOAD) throw new CatalogError(`Tối đa ${IMAGE_MAX_PER_UPLOAD} ảnh mỗi lần`);
-  const product = await prisma.product.findUnique({ where: { id: productId }, select: { id: true, slug: true } });
+  const product = await prisma.product.findUnique({ where: { id: productId }, select: { id: true, slug: true, approvedAt: true } });
   if (!product) throw new CatalogError("Không tìm thấy sản phẩm");
 
   const stored = await putPublicImages(`products/${product.slug}`, files, CatalogError);
   try {
     return await prisma.$transaction(async (tx) => guardApproval(tx, [product.id], userId, async () => {
       await lockProduct(tx, product.id);
+      // P1-A: SP đã duyệt → ảnh mới vào bản đang sửa (file đã lưu, chưa gắn; khách chưa thấy).
+      if ((await tx.product.findUniqueOrThrow({ where: { id: product.id }, select: { approvedAt: true } })).approvedAt) {
+        const files = [];
+        for (const f of stored) files.push(await tx.fileObject.create({ data: { ...f, visibility: "PUBLIC" } }));
+        await stageImages(tx, product.id, { addFileIds: files.map((f) => f.id) }, userId);
+        await tx.auditLog.create({ data: { userId, action: "product.image.stage_add", entity: "Product", entityId: product.id, data: { fileIds: files.map((f) => f.id) } } });
+        return [];
+      }
       const last = await tx.productImage.aggregate({ where: { productId: product.id }, _max: { sortOrder: true } });
       let sortOrder = (last._max.sortOrder ?? -1) + 1;
       const images = [];
@@ -102,6 +111,12 @@ export async function deleteProductImage(imageId: string, userId: string) {
   const image = await findImage(imageId);
   const orphanKey = await prisma.$transaction(async (tx) => guardApproval(tx, [image.productId], userId, async () => {
     await lockProduct(tx, image.productId);
+    // P1-A: SP đã duyệt → ghi nhận "xoá ảnh" vào bản đang sửa; ảnh vẫn hiện cho khách đến khi duyệt.
+    if ((await tx.product.findUniqueOrThrow({ where: { id: image.productId }, select: { approvedAt: true } })).approvedAt) {
+      await stageImages(tx, image.productId, { removeImageId: image.id }, userId);
+      await tx.auditLog.create({ data: { userId, action: "product.image.stage_remove", entity: "Product", entityId: image.productId, data: { imageId } } });
+      return null;
+    }
     await tx.productImage.delete({ where: { id: image.id } });
     const key = await deleteFileIfUnused(tx, image.fileId);
     await tx.auditLog.create({

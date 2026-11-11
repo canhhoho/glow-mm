@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { createDocument, postDocument } from "@/server/inventory/documents";
-import { createWarehouse, setWarehouseActive } from "@/server/inventory/warehouses";
+import { createWarehouse, setWarehouseActive, updateWarehouse } from "@/server/inventory/warehouses";
 import { moveProductsToWarehouse } from "@/server/catalog/product-delete";
 import { saveProduct } from "@/server/catalog/products";
 import { createOrder } from "@/server/orders/orders";
@@ -112,6 +112,10 @@ describe("Quản lý kho", () => {
     const loc = await createWarehouse({ kind: "sell", code, name: "Kho thử", pricingMode: "LOCAL_MMK" }, f.userId);
     expect(loc).toMatchObject({ sellable: true, type: "MM_STOCK", pricingMode: "LOCAL_MMK", active: true });
     await expect(createWarehouse({ kind: "sell", code, name: "Trùng", pricingMode: "VN_IMPORT" }, f.userId)).rejects.toThrow(/đã có/);
+    // P1-B (H5): kho trống đổi được cách tính giá; kho đã có SP / đã có hàng thì không.
+    expect(await updateWarehouse({ id: loc.id, name: "Kho thử", pricingMode: "VN_IMPORT" }, f.userId)).toMatchObject({ pricingMode: "VN_IMPORT" });
+    await expect(updateWarehouse({ id: f.mm.id, name: f.mm.name, pricingMode: "LOCAL_MMK" }, f.userId)).rejects.toThrow(/không đổi được cách tính giá/);
+    expect(await updateWarehouse({ id: f.mm.id, name: "Đổi tên vẫn được", pricingMode: "VN_IMPORT" }, f.userId)).toMatchObject({ name: "Đổi tên vẫn được" });
     const off = await setWarehouseActive({ id: loc.id, active: false }, f.userId);
     expect(off.active).toBe(false);
     await expect(moveProductsToWarehouse([f.productId], loc.id, f.userId)).rejects.toThrow(/ngừng dùng/);
