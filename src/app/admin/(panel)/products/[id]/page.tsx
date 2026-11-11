@@ -6,6 +6,7 @@ import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { deriveLabel } from "@/server/catalog/approval-rules";
 import type { ChangeItem } from "@/server/catalog/change-summary";
+import { changeItemText } from "@/components/admin/change-text";
 import { productEditView, productReadinessView } from "@/server/catalog/review";
 import { getProductForEdit, getProductImages, productFormOptions } from "@/server/catalog/admin-queries";
 import { discardChangesAction, reviewProductsAction, submitProductsAction, saveProductPreorderAction, deleteProductImageAction, reorderProductImageAction, saveProductPricingAction, setProductPublishedAction, updateProductImageAltAction } from "@/server/catalog/actions";
@@ -78,28 +79,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
   const pendingReview = approval.approvalStatus === "PENDING";
   const canSubmit = canManage && !approval.archivedAt && !pendingReview && (!approval.approvedAt || !!cr) && readiness.errors.length === 0;
   const versionItems = JSON.stringify([{ id: product.id, version: approval.approvalVersion }]);
-  const changeText = (c: ChangeItem) => {
-    switch (c.kind) {
-      case "name":
-      case "description":
-        return t(`review.item.${c.kind}`, { locale: c.locale });
-      case "category":
-      case "brand":
-        return t(`review.item.${c.kind}`);
-      case "variantNew":
-      case "combo":
-        return t(`review.item.${c.kind}`, { sku: c.sku });
-      case "variantLabel":
-        return t("review.item.variantLabel", { sku: c.sku, to: c.to });
-      case "variantActive":
-        return t("review.item.variantActive", { sku: c.sku, active: String(c.active) });
-      case "price":
-        return t("review.item.price", { sku: c.sku, from: fmtInt(c.from), to: fmtInt(c.to) });
-      case "imagesAdded":
-      case "imagesRemoved":
-        return t(`review.item.${c.kind}`, { count: c.count });
-    }
-  };
+  const changeText = (c: ChangeItem) => changeItemText(t as Parameters<typeof changeItemText>[0], c);
   const pricingMode = options.warehouses.find((w) => w.id === product.stockLocationId)?.pricingMode ?? null;
   const pricing = await loadProductPricing(product.variants.map((v) => v.id), pricingMode);
   const sourceText = (s: PriceSource | undefined) =>
@@ -287,6 +267,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           })}
         </DataTable>
         {stepIssues("price").length > 0 && issueList(stepIssues("price"))}
+        {can(user.role, "pricing:manage") && (
         <details className="rounded-lg border p-4" data-testid="price-manual">
           <summary className="cursor-pointer font-medium">{t("priceBlock.manual")}</summary>
           {/* ActionForm reset sau khi lưu → ô về giá trị mới (defaultValue của lần render sau revalidate). */}
@@ -327,6 +308,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
             </ActionForm>
           </div>
         </details>
+        )}
       </Section>
 
       {/* ── Bước 4: duyệt (QT2) — checklist mở bán + nút Duyệt có lưu vết; sửa nội dung/giá/ảnh sau khi duyệt → cần duyệt lại ── */}
@@ -402,7 +384,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
       {/* ── Bước 5: đăng bán ── */}
       <Section id="step-publish" className="scroll-mt-20" title={<StepTitle index={5} step={step("publish")} t={t} />} testId="step-publish-block">
         <p className="text-sm">{product.published ? t("block.published") : publishState === "waiting" ? t("block.publishWaiting") : t("block.hidden")}</p>
-        {(product.published || publishState === "todo") && (
+        {canPublish && (product.published || publishState === "todo") && (
           <ActionButton
             action={setProductPublishedAction}
             fields={{ id: product.id, published: product.published ? "0" : "1" }}

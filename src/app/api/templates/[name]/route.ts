@@ -13,7 +13,8 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/templates/[name
   if (name !== "catalog.xlsx" && name !== "catalog-current.xlsx") return new Response("Not found", { status: 404 });
   if (!can(user.role, "catalog:manage")) return new Response("Forbidden", { status: 403 });
   const current = name === "catalog-current.xlsx";
-  const bytes = await catalogTemplateFile(current);
+  // P2: file SP hiện có kèm cột giá cho người có quyền giá (nhập lại vẫn kiểm quyền + xung đột + duyệt).
+  const bytes = current && can(user.role, "pricing:manage") ? await catalogTemplateFile(true, { withPricing: true }) : await catalogTemplateFile(current);
   const day = new Date().toISOString().slice(0, 10).replaceAll("-", "");
   return new Response(new Uint8Array(bytes), {
     headers: {

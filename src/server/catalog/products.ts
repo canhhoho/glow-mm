@@ -12,6 +12,7 @@ import { blockingErrors, publishBlockers, type Issue } from "./readiness-rules";
 import { guardApproval } from "./approval";
 import { skuPendingElsewhere, stageProductEdit } from "./change-request";
 import { findOrCreateBrand, pruneEmptyBrands } from "./brands";
+import { writeAudit } from "@/server/audit";
 
 /** Quản lý sản phẩm (admin). Giá đổi → ghi PriceHistory. Chữ Myanmar → Unicode trước khi lưu. */
 
@@ -175,7 +176,7 @@ export async function writeProduct(tx: Tx, parsed: ProductInput, userId: string,
     // trong cùng transaction (lưu lỗi → không để lại thương hiệu thừa).
     const brand = parsed.brandId
       ? await tx.brand.findUnique({ where: { id: parsed.brandId } })
-      : await findOrCreateBrand(tx, parsed.brandName!);
+      : await findOrCreateBrand(tx, parsed.brandName!, userId);
     if (!brand) throw new CatalogError("Không tìm thấy thương hiệu");
     const brandId = brand.id;
     const brandName = brand.name;
@@ -292,7 +293,7 @@ export async function writeProduct(tx: Tx, parsed: ProductInput, userId: string,
       },
     });
     // Đổi sang thương hiệu khác → thương hiệu cũ không còn SP nào thì tự xoá.
-    if (current && current.brandId !== brandId) await pruneEmptyBrands(tx, [current.brandId]);
+    if (current && current.brandId !== brandId) await pruneEmptyBrands(tx, [current.brandId], userId);
     return product;
   }
 }
@@ -340,7 +341,7 @@ export async function setProductsPublished(raw: unknown, userId: string): Promis
   });
 }
 
-export async function createCategory(raw: unknown) {
+export async function createCategory(raw: unknown, userId: string | null = null) {
   const input = z
     .object({
       slug: slugSchema(60),
@@ -352,16 +353,20 @@ export async function createCategory(raw: unknown) {
   if (input.parentId && !(await prisma.category.findUnique({ where: { id: input.parentId } }))) {
     throw new CatalogError("Danh mục cha không tồn tại");
   }
-  return prisma.category.create({
-    data: {
-      slug: input.slug,
-      parentId: input.parentId,
-      translations: {
-        create: [
-          { locale: "my", name: toUnicode(input.nameMy) },
-          { locale: "en", name: input.nameEn },
-        ],
+  return prisma.$transaction(async (tx) => {
+    const category = await tx.category.create({
+      data: {
+        slug: input.slug,
+        parentId: input.parentId,
+        translations: {
+          create: [
+            { locale: "my", name: toUnicode(input.nameMy) },
+            { locale: "en", name: input.nameEn },
+          ],
+        },
       },
-    },
+    });
+    await writeAudit(tx, { userId, action: "category.create", entity: "Category", entityId: category.id, data: { slug: input.slug } });
+    return category;
   });
 }

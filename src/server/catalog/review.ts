@@ -124,10 +124,10 @@ export async function submitProducts(raw: unknown, userId: string) {
 // ── Duyệt / Từ chối ──
 
 const reviewSchema = z.discriminatedUnion("decision", [
-  z.object({ decision: z.enum(["approve", "approvePublish"]), items: z.array(z.object({ id: rawId, version: z.coerce.number().int().min(0) })).min(1).max(500) }),
+  z.object({ decision: z.enum(["approve", "approvePublish"]), items: z.array(z.object({ id: rawId, version: z.coerce.number().int() })).min(1).max(500) }),
   z.object({
     decision: z.literal("reject"),
-    items: z.array(z.object({ id: rawId, version: z.coerce.number().int().min(0) })).min(1).max(500),
+    items: z.array(z.object({ id: rawId, version: z.coerce.number().int() })).min(1).max(500),
     reason: z.string().trim().min(5, "Lý do từ chối cần ít nhất 5 ký tự").max(500),
   }),
 ]);
@@ -142,7 +142,8 @@ async function approveOne(tx: Tx, id: string, version: number, userId: string, o
   if (readiness.errors.length) throw new ReadinessError(readiness.errors);
   const now = new Date();
   const hash = (await approvalHashes(tx, [id])).get(id)!;
-  const publish = opts.publish && !p.published;
+  // "Duyệt & Đăng" chỉ đăng SP mới (chưa từng duyệt); duyệt thay đổi của SP đã duyệt giữ nguyên trạng thái hiển thị.
+  const publish = opts.publish && !p.published && !p.approvedAt;
   await tx.product.update({
     where: { id },
     data: {

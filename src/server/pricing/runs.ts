@@ -10,6 +10,7 @@ import { variantCosts } from "./cost";
 import { guardApproval } from "@/server/catalog/approval";
 import { effectivePrices, stagePrices } from "@/server/catalog/change-request";
 import { lockCatalog } from "@/server/catalog/products";
+import { writeAudit } from "@/server/audit";
 import { mmkPerVndFromUsd, parseScaled, priceLocalMmk, priceVnImport, shippingMmk, suggestPrice } from "./formula";
 
 /**
@@ -67,14 +68,18 @@ export const rateSchema = z
 
 export async function createRate(raw: unknown, userId: string) {
   const input = rateSchema.parse(raw);
-  return prisma.exchangeRate.create({
-    data: {
-      mmkPerUsd: input.mmkPerUsd,
-      vndPerUsd: input.vndPerUsd,
-      mmkPerVnd: mmkPerVndFromUsd(input.mmkPerUsd, input.vndPerUsd),
-      note: input.note || null,
-      createdById: userId,
-    },
+  return prisma.$transaction(async (tx) => {
+    const rate = await tx.exchangeRate.create({
+      data: {
+        mmkPerUsd: input.mmkPerUsd,
+        vndPerUsd: input.vndPerUsd,
+        mmkPerVnd: mmkPerVndFromUsd(input.mmkPerUsd, input.vndPerUsd),
+        note: input.note || null,
+        createdById: userId,
+      },
+    });
+    await writeAudit(tx, { userId, action: "pricing.rate.create", entity: "ExchangeRate", entityId: rate.id, data: { mmkPerUsd: input.mmkPerUsd, vndPerUsd: input.vndPerUsd } });
+    return rate;
   });
 }
 

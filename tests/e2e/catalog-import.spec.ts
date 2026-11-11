@@ -149,8 +149,10 @@ test("cập nhật giá: danh sách SP hiện có chứa SKU; tải lên dòng S
   const keys = rows[CATALOG_HEADER_ROW - 1].map(sheetHeaderKey);
   const mine = rows.find((r) => r[keys.indexOf("sku")] === sku)!;
   expect(mine[keys.indexOf("name_en")]).toBe(nameEn);
-  expect(keys).not.toContain("price_mmk");
-  expect(keys).not.toContain("affiliate_commission_mmk");
+  // P2: admin có quyền giá → file SP hiện có kèm cột giá (giá đang bán).
+  expect(keys).toContain("price_mmk");
+  expect(keys).toContain("affiliate_commission_mmk");
+  expect(Number(mine[keys.indexOf("price_mmk")])).toBe(original);
 
   try {
     // File mẫu mới tập trung thông tin SP; file CSV cũ vẫn hỗ trợ sửa giá SKU đã có.

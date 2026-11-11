@@ -19,7 +19,8 @@ async function loadLists() {
   };
 }
 
-export async function catalogTemplateFile(withProducts: boolean): Promise<Uint8Array> {
+/** `withPricing`: thêm cột giá bán / hoa hồng CTV (chỉ file SP hiện có, người có quyền giá). Giá = giá đang bán. */
+export async function catalogTemplateFile(withProducts: boolean, opts: { withPricing?: boolean } = {}): Promise<Uint8Array> {
   const { lists, categoryLabel, warehouseCode } = await loadLists();
   if (!withProducts) return buildCatalogWorkbook(lists);
   const products = await prisma.product.findMany({
@@ -31,7 +32,7 @@ export async function catalogTemplateFile(withProducts: boolean): Promise<Uint8A
       requiresExpiry: true,
       brand: { select: { name: true } },
       translations: { select: { locale: true, name: true, description: true } },
-      variants: { where: { isBundle: false }, orderBy: { sku: "asc" }, select: { sku: true, label: true, weightGrams: true } },
+      variants: { where: { isBundle: false }, orderBy: { sku: "asc" }, select: { sku: true, label: true, weightGrams: true, priceMmk: true, affiliateCommissionMmk: true } },
     },
   });
   const rows: TemplateRow[] = products.flatMap((p) => {
@@ -48,7 +49,8 @@ export async function catalogTemplateFile(withProducts: boolean): Promise<Uint8A
       warehouse_code: warehouseCode.get(p.stockLocationId),
       has_expiry: p.requiresExpiry ? "Có" : "Không",
       sku: v.sku,
+      ...(opts.withPricing && { price_mmk: v.priceMmk || null, affiliate_commission_mmk: v.affiliateCommissionMmk }),
     }));
   });
-  return buildCatalogWorkbook(lists, rows);
+  return buildCatalogWorkbook(lists, rows, { pricing: opts.withPricing });
 }

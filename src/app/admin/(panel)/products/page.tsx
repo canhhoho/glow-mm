@@ -5,6 +5,10 @@ import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { listProductsAdmin, PRODUCT_STATUSES, parseProductStatus, productFilterOptions, type ProductStatusFilter } from "@/server/catalog/admin-queries";
 import { deriveLabel } from "@/server/catalog/approval-rules";
+import { can } from "@/server/auth/roles";
+import { changeSummaries } from "@/server/catalog/review";
+import type { ChangeItem } from "@/server/catalog/change-summary";
+import { changeItemText } from "@/components/admin/change-text";
 import { loadReadiness } from "@/server/catalog/readiness";
 import { PRODUCT_STEPS, productSteps, type ProductStep } from "@/server/catalog/readiness-rules";
 import { prisma } from "@/lib/db";
@@ -16,7 +20,7 @@ import { cn } from "@/lib/utils";
 const str = (v: string | string[] | undefined) => (typeof v === "string" && v ? v : undefined);
 
 export default async function ProductsPage({ searchParams }: PageProps<"/admin/products">) {
-  await requirePagePermission("catalog:manage");
+  const user = await requirePagePermission("catalog:manage");
   const sp = await searchParams;
   const query = str(sp.q);
   const brandId = str(sp.brand);
@@ -45,6 +49,10 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
     return status === "ready" ? errors === 0 : status === "incomplete" ? errors > 0 : true;
   });
   const archivedView = status === "archived";
+  // P2: hàng đợi "Chờ duyệt" — cột Thay đổi (SP đã duyệt có bản đang sửa) để duyệt hàng loạt đúng nội dung đang xem.
+  const reviewQueue = status === "review";
+  const changes = reviewQueue ? await changeSummaries(prisma, products.filter((p) => p.hasChanges).map((p) => p.id)) : new Map();
+  const changeText = (c: ChangeItem) => changeItemText(t as Parameters<typeof changeItemText>[0], c);
 
   return (
     <Page>
@@ -116,7 +124,13 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
         )}
       </FilterBar>
       <p className="text-sm text-muted-foreground">{t("count", { count: products.length })}</p>
-      <BulkPublishBar total={products.length} archivedView={archivedView} warehouses={options.warehouses} />
+      <BulkPublishBar
+        total={products.length}
+        archivedView={archivedView}
+        warehouses={options.warehouses}
+        can={{ publish: can(user.role, "catalog:publish"), approve: can(user.role, "catalog:approve") }}
+        reviewQueue={reviewQueue}
+      />
       <DataTable
         stack
         empty={t("empty")}
@@ -135,13 +149,18 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
         {products.map((p) => (
           <tr key={p.id}>
             <Td className="w-8">
-              <BulkCheckbox id={p.id} label={t("selectProduct", { name: p.name })} />
+              <BulkCheckbox id={p.id} label={t("selectProduct", { name: p.name })} version={p.approvalVersion} />
             </Td>
             <Td>
               <Link href={`/admin/products/${p.id}`} className="text-primary underline">
                 {p.name}
               </Link>
               <div className="font-mono text-xs text-muted-foreground">{p.slug}</div>
+              {reviewQueue && (
+                <div className="mt-1 text-xs" data-testid="queue-changes">
+                  {p.approvedAt ? (changes.get(p.id) ?? []).map(changeText).join(" · ") || "—" : t("bulkReview.newProduct")}
+                </div>
+              )}
             </Td>
             <Td label={t("colBrand")}>{p.brand}</Td>
             <Td label={t("colCategory")}>{p.category}</Td>

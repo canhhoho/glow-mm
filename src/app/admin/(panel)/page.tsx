@@ -9,7 +9,7 @@ import { LinkButton, Notice, Page, PageHeader, Stat } from "@/components/admin/u
 import { fmtInt } from "@/lib/format";
 import { yangonDayKey } from "@/lib/time";
 import { prisma } from "@/lib/db";
-import { reviewCounts } from "@/server/catalog/review";
+import { catalogStats } from "@/server/catalog/stats";
 
 export default async function DashboardPage({ searchParams }: PageProps<"/admin">) {
   const user = await requirePagePermission("dashboard:view");
@@ -67,13 +67,18 @@ async function OrderQueue({ canReconcile }: { canReconcile: boolean }) {
 /** P1-A: SP chờ duyệt (gồm thay đổi của SP đang bán đã gửi duyệt) / bị từ chối. */
 async function CatalogQueue() {
   await connection();
-  const [t, counts] = await Promise.all([getTranslations("Dashboard"), reviewCounts()]);
+  const [t, s] = await Promise.all([getTranslations("Dashboard"), catalogStats()]);
   return (
     <section className="space-y-2">
       <h2 className="font-medium">{t("catalog")}</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Stat label={t("toApprove")} value={counts.pending} href="/admin/products?status=review" tone={tone(counts.pending)} testId="todo-approve" />
-        <Stat label={t("rejected")} value={counts.rejected} href="/admin/products?status=rejected" tone={tone(counts.rejected)} testId="todo-rejected" />
+        <Stat label={t("toApprove")} value={s.awaitingReview} href="/admin/products?status=review" tone={tone(s.awaitingReview)} testId="todo-approve" />
+        <Stat label={t("rejected")} value={s.rejected} href="/admin/products?status=rejected" tone={tone(s.rejected)} testId="todo-rejected" />
+        <Stat label={t("catalogDraft")} value={s.draftIncomplete} href="/admin/products?status=draft" tone={tone(s.draftIncomplete)} testId="catalog-draft" />
+        <Stat label={t("catalogPublished")} value={s.published.total} href="/admin/products?status=published" testId="catalog-published" />
+        <Stat label={t("catalogOutOfStock")} value={`${s.published.outOfStock} / ${s.published.preorder}`} href="/admin/products?status=published" tone={tone(s.published.outOfStock - s.published.preorder)} testId="catalog-oos" />
+        <Stat label={t("catalogHidden")} value={s.byLabel.HIDDEN} href="/admin/products?status=hidden" testId="catalog-hidden" />
+        <Stat label={t("catalogTotal")} value={`${s.totalProducts} / ${s.skus}`} href="/admin/products" testId="catalog-total" />
       </div>
     </section>
   );

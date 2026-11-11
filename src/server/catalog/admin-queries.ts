@@ -66,6 +66,7 @@ export async function listProductsAdmin(
     archivedAt: p.archivedAt,
     approvedAt: p.approvedAt,
     approvalStatus: p.approvalStatus,
+    approvalVersion: p.approvalVersion,
     hasChanges: p.changeRequest !== null,
     requiresExpiry: p.requiresExpiry,
     paoMonths: p.paoMonths,

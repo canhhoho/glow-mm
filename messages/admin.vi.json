@@ -153,7 +153,12 @@
     "toApprove": "SP chờ duyệt",
     "reapprove": "SP cần duyệt lại",
     "awaitingStock": "Chờ hàng về (đặt trước)",
-    "rejected": "SP bị từ chối"
+    "rejected": "SP bị từ chối",
+    "catalogDraft": "Nháp còn thiếu",
+    "catalogPublished": "Đang bán",
+    "catalogOutOfStock": "Đang bán · hết hàng / đặt trước",
+    "catalogHidden": "Đã ẩn",
+    "catalogTotal": "Tổng SP / SKU"
   },
   "Role": {
     "ADMIN": "Quản trị viên",
@@ -728,7 +733,20 @@
         "imagesRemoved": "Xoá {count} ảnh"
       }
     },
-    "slugLocked": "Đã khoá sau lần đăng bán đầu tiên (đường dẫn khách đã dùng)."
+    "slugLocked": "Đã khoá sau lần đăng bán đầu tiên (đường dẫn khách đã dùng).",
+    "bulkReview": {
+      "approvePublish": "Duyệt & Đăng",
+      "approve": "Duyệt",
+      "approveConfirm": "Duyệt {count} SP đã chọn theo đúng nội dung đang hiển thị trên danh sách?",
+      "failed": "{count} SP chưa xử lý được:",
+      "newProduct": "SP mới",
+      "done": {
+        "submit": "Đã gửi duyệt {count} SP.",
+        "approve": "Đã duyệt {count} SP.",
+        "approvePublish": "Đã duyệt {count} SP (SP mới được đăng bán).",
+        "reject": "Đã từ chối {count} SP."
+      }
+    }
   },
   "Orders": {
     "exportVtp": "Xuất Excel VTP",
