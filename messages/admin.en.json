@@ -359,7 +359,8 @@
     "estimateExistingHelp": "Uses purchase cost, the batch exchange rate (or the current rate if absent), and current weight. Existing order cost snapshots remain unchanged.",
     "estimateSaved": "Estimated cost saved.",
     "notReceived": "Not received yet ({count}) — new products without a posted receipt",
-    "showReceived": "← Show received products"
+    "showReceived": "← Show received products",
+    "colPhysical": "On hand"
   },
   "Docs": {
     "receiveSelectStep": "Step 1 — Select products to receive",

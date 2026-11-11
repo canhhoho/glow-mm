@@ -919,6 +919,7 @@
     "Inventory.colInbound",
     "Inventory.colMm",
     "Inventory.colOther",
+    "Inventory.colPhysical",
     "Inventory.colReserved",
     "Inventory.colTester",
     "Inventory.colUnitCost",
