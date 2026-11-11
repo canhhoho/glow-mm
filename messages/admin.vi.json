@@ -22,7 +22,25 @@
     "previous": "Trang trước",
     "next": "Trang sau",
     "page": "Trang {page} / {pages}",
-    "rates": "Thiết lập tỷ giá"
+    "rates": "Thiết lập tỷ giá",
+    "subtitle": "Giá bán, giá chờ duyệt và giá mua gần nhất của mọi SKU",
+    "runs": "Bảng tính giá",
+    "statTotal": "SKU đang quản lý",
+    "state": {
+      "zero": "Chưa có giá",
+      "pending": "Giá chờ duyệt",
+      "stale": "Giá cũ hơn phiếu nhập"
+    },
+    "stateLabel": "Tình trạng giá",
+    "stateAll": "Mọi tình trạng",
+    "allWarehouses": "Mọi kho",
+    "clearFilters": "Xoá lọc",
+    "colCost": "Giá mua gần nhất",
+    "colSource": "Nguồn giá",
+    "pendingPrice": "Chờ duyệt: {price}",
+    "staleBadge": "Cũ hơn phiếu nhập",
+    "showing": "Hiển thị {from}–{to} trên {total} SKU",
+    "pageSize": "Hiển thị:"
   },
   "Nav": {
     "sellingPrices": "Giá bán",

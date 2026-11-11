@@ -22,7 +22,25 @@
     "previous": "Previous",
     "next": "Next",
     "page": "Page {page} / {pages}",
-    "rates": "Exchange rate settings"
+    "rates": "Exchange rate settings",
+    "subtitle": "Selling price, pending price and latest cost for every SKU",
+    "runs": "Price calculator",
+    "statTotal": "Managed SKUs",
+    "state": {
+      "zero": "No price",
+      "pending": "Price awaiting approval",
+      "stale": "Price older than last receipt"
+    },
+    "stateLabel": "Price status",
+    "stateAll": "All statuses",
+    "allWarehouses": "All warehouses",
+    "clearFilters": "Clear filters",
+    "colCost": "Latest cost",
+    "colSource": "Price source",
+    "pendingPrice": "Pending: {price}",
+    "staleBadge": "Older than receipt",
+    "showing": "Showing {from}–{to} of {total} SKUs",
+    "pageSize": "Show:"
   },
   "Nav": {
     "sellingPrices": "Selling prices",
