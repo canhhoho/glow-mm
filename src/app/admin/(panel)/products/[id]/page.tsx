@@ -1,4 +1,4 @@
-import { Copy, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -26,6 +26,9 @@ import { prisma } from "@/lib/db";
 import { getNumberSetting } from "@/server/settings";
 import { salesBlockDays } from "@/server/inventory/documents";
 import { availableToSell } from "@/server/orders/availability";
+import { productStockRows } from "@/server/inventory/overview";
+import { adjacentProducts } from "@/server/catalog/product-list";
+import { ExpiryTag } from "@/components/admin/stock-parts";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -87,7 +90,13 @@ export default async function EditProductPage({ params, searchParams }: PageProp
   const versionItems = JSON.stringify([{ id: product.id, version: approval.approvalVersion }]);
   const changeText = (c: ChangeItem) => changeItemText(t as Parameters<typeof changeItemText>[0], c);
   const pricingMode = options.warehouses.find((w) => w.id === product.stockLocationId)?.pricingMode ?? null;
-  const pricing = await loadProductPricing(product.variants.map((v) => v.id), pricingMode);
+  const stockNow = new Date();
+  const [pricing, stock, ti, adjacent] = await Promise.all([
+    loadProductPricing(product.variants.map((v) => v.id), pricingMode),
+    productStockRows(product.id, stockNow),
+    getTranslations("Inventory"),
+    adjacentProducts(product.id),
+  ]);
   const sourceText = (s: PriceSource | undefined) =>
     !s || s.kind === "none"
       ? t("priceBlock.sourceNone")
@@ -194,6 +203,24 @@ export default async function EditProductPage({ params, searchParams }: PageProp
               <LinkButton href="/admin/products" icon="back" iconOnly>
                 {td("back")}
               </LinkButton>
+              <nav aria-label={t("hero.adjacent")} className="flex items-center gap-1">
+                {(
+                  [
+                    ["prev", adjacent.prev, ChevronLeft],
+                    ["next", adjacent.next, ChevronRight],
+                  ] as const
+                ).map(([k, target, Icon]) =>
+                  target ? (
+                    <Link key={k} href={`/admin/products/${target}`} className={buttonVariants({ variant: "outline", size: "icon-lg" })} aria-label={t(`hero.${k}`)} title={t(`hero.${k}`)}>
+                      <Icon aria-hidden />
+                    </Link>
+                  ) : (
+                    <span key={k} className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "pointer-events-none opacity-40")} aria-hidden>
+                      <Icon />
+                    </span>
+                  ),
+                )}
+              </nav>
               {product.published && (
                 <a href={localizedPath("my", `/p/${product.slug}`)} target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline", size: "lg" })}>
                   {t("block.viewAsCustomer")}
@@ -325,6 +352,24 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           {readiness.notReceivedSkus.length > 0 ? t("block.notReceived", { skus: readiness.notReceivedSkus.join(", ") }) : t("block.receivedAll")}
         </p>
         {stepIssues("stock").length > 0 && issueList(stepIssues("stock"))}
+        {/* P3b: tồn chỉ để xem — cùng số liệu trang Tồn kho; nhập / điều chỉnh qua phiếu kho. */}
+        {stock.rows.some((r) => r.cols || r.reserved > 0) && (
+          <DataTable dense numeric={[1, 2, 3]} head={[ti("colSku"), ti("colPhysical"), ti("colReserved"), ti("colAvailable"), ti("colEarliest")]}>
+            {stock.rows.map((r) => (
+              <tr key={r.variantId} data-testid="product-stock-row">
+                <Td>
+                  <span className="font-mono text-xs">{r.sku}</span> <span className="text-xs text-muted-foreground">{r.label}</span>
+                </Td>
+                <Td className="text-right tabular-nums">{r.cols ? fmtInt(r.cols.vn + r.cols.inbound + r.cols.mm + r.cols.tester) : "—"}</Td>
+                <Td className="text-right tabular-nums text-muted-foreground">{fmtInt(r.reserved)}</Td>
+                <Td className={cn("text-right font-medium tabular-nums", r.available === 0 && "text-destructive")}>{fmtInt(r.available)}</Td>
+                <Td>
+                  {r.cols?.earliest ? <ExpiryTag date={r.cols.earliest.expiryDate} now={stockNow} t={ti} th={stock.thresholds} /> : <span className="text-muted-foreground">—</span>}
+                </Td>
+              </tr>
+            ))}
+          </DataTable>
+        )}
       </Section>
 
       {/* ── Bước 3: giá bán — nơi duy nhất đặt giá ngoài bảng tính giá (QT1b) ── */}

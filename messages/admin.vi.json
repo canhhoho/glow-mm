@@ -908,7 +908,10 @@
       "priceReason": "Nguồn / lý do",
       "by": "Người thực hiện",
       "noActivity": "Chưa có nhật ký.",
-      "system": "Hệ thống"
+      "system": "Hệ thống",
+      "adjacent": "Chuyển sản phẩm",
+      "prev": "Sản phẩm trước",
+      "next": "Sản phẩm sau"
     },
     "activity": {
       "product_create": "Tạo sản phẩm",

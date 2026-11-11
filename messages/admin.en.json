@@ -908,7 +908,10 @@
       "priceReason": "Source / reason",
       "by": "By",
       "noActivity": "No activity yet.",
-      "system": "System"
+      "system": "System",
+      "adjacent": "Browse products",
+      "prev": "Previous product",
+      "next": "Next product"
     },
     "activity": {
       "product_create": "Product created",
