@@ -12,6 +12,7 @@ import { applyMoves, type StockMove, type Tx } from "./ledger";
 import { vndToMmk } from "./landed-cost";
 import { guardApproval } from "@/server/catalog/approval";
 import { shippingMmk } from "@/server/pricing/formula";
+import { latestRate } from "@/server/pricing/latest-rate";
 
 /**
  * Phiếu kho: tạo NHÁP → GHI SỔ (POSTED, sinh ledger) hoặc HUỶ (chỉ khi còn nháp).
@@ -442,6 +443,15 @@ export async function postDocumentTx(tx: Tx, documentId: string, userId: string,
 
   const doc = await tx.stockDocument.findUniqueOrThrow({ where: { id: documentId }, include: { lines: true } });
   if (doc.type === "RECEIVE" && doc.shipmentId) await tx.$queryRaw`SELECT id FROM "InboundShipment" WHERE id = ${doc.shipmentId} FOR UPDATE`;
+  // P1-B (M3): phiếu thủ công có thể nằm nháp lâu — kiểm lại kho (đã ngừng dùng?) và kho của SP lúc ghi sổ.
+  if (!doc.orderId) {
+    await checkLocations(tx, {
+      type: doc.type,
+      ...(doc.fromId && { fromId: doc.fromId }),
+      ...(doc.toId && { toId: doc.toId }),
+      lines: doc.lines.map((l) => ({ variantId: l.variantId })),
+    } as unknown as DocumentInput);
+  }
   const today = new Date();
 
   // Dòng chưa chọn lô (chuyển/xuất) → FEFO tại vị trí đi. Xuất nội bộ mặc định dùng cả lô cận hạn (blockDays = 0).
@@ -485,6 +495,18 @@ export async function postDocumentTx(tx: Tx, documentId: string, userId: string,
         break;
     }
   }
+  // P1-B (M3): không chuyển lô hết hạn / chưa biết hạn VÀO kho bán (chọn lô tay bỏ qua FEFO). Xuất huỷ hoặc chuyển
+  // sang khu chờ kiểm tra vẫn được.
+  if (doc.type === "TRANSFER" && doc.toId) {
+    const to = await tx.location.findUnique({ where: { id: doc.toId }, select: { sellable: true, name: true } });
+    if (to?.sellable) {
+      const bad = await tx.batch.findFirst({
+        where: { id: { in: resolved.map((r) => r.batchId) }, OR: [{ expiryStatus: "UNKNOWN" }, { expiryStatus: "DATED", expiryDate: { lt: today } }] },
+        select: { lotNo: true, variant: { select: { sku: true } } },
+      });
+      if (bad) throw new DocumentError(`Lô ${bad.lotNo} (${bad.variant.sku}) hết hạn hoặc chưa biết hạn — không chuyển vào kho bán ${to.name}`);
+    }
+  }
   // P0-C1: phiếu thủ công (không gắn đơn) không được lấy phần hàng đang giữ cho đơn. Phiếu xuất của đơn
   // (`orderId`) tiêu thụ chính phần giữ của đơn đó nên không kiểm ở đây.
   if (!doc.orderId) await assertKeepsReservations(tx, moves, today);
@@ -492,7 +514,7 @@ export async function postDocumentTx(tx: Tx, documentId: string, userId: string,
 
   // Nhận hàng: gắn tỷ giá hiện hành vào lô (dùng tính giá vốn MMK).
   if (doc.type === "RECEIVE") {
-    const rate = await tx.exchangeRate.findFirst({ orderBy: { effectiveAt: "desc" } });
+    const rate = await latestRate(tx);
     if (rate) {
       await tx.batch.updateMany({
         // Chỉ lô giá VND cần tỷ giá; lô MMK đã có giá vốn MMK từ lúc tạo (P24).

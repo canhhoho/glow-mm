@@ -80,7 +80,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:-mx-6 md:px-6 lg:mx-0 lg:grid lg:grid-cols-5 lg:gap-3 lg:overflow-visible lg:px-0">
         <Tile
           label={t("statSellable")}
-          value={fmtInt(Math.max(0, summary.sellableUnits - summary.heldUnits))}
+          value={fmtInt(summary.availableUnits)}
           hint={
             summary.heldUnits > 0
               ? t("statSellableHintHeld", { variants: summary.sellableVariants, held: summary.heldUnits })

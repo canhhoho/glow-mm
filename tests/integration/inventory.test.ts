@@ -187,7 +187,8 @@ describe("Landed cost theo chuyến hàng", () => {
   it("phân bổ chi phí vào lô và quy đổi MMK theo tỷ giá lúc nhập", async () => {
     const f = await makeFixture();
     await prisma.exchangeRate.create({
-      data: { mmkPerVnd: "0.200000", createdById: f.userId, effectiveAt: new Date(Date.now() + 1000) },
+      // Tỷ giá có hiệu lực ngay (latestRate bỏ qua tỷ giá ở tương lai); tạo sau cùng → là tỷ giá mới nhất.
+      data: { mmkPerVnd: "0.200000", createdById: f.userId },
     });
     const sh = await createShipment({ code: `SH-${f.tag}` });
     await receive(

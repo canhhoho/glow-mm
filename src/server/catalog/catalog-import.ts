@@ -9,6 +9,7 @@ import { resolveProductIdentifiers, suggestProductSlug, suggestVariantSku } from
 import type { Tx } from "@/server/inventory/ledger";
 import { createDocument } from "@/server/inventory/documents";
 import { vndToMmk } from "@/server/inventory/landed-cost";
+import { latestRate } from "@/server/pricing/latest-rate";
 import { defaultStockLocationId } from "@/server/inventory/warehouses";
 import { productName } from "@/server/inventory/queries";
 import { PRODUCT_EDIT_INCLUDE, toProductEditData, type ProductEditData } from "./admin-queries";
@@ -111,7 +112,7 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
     db.category.findMany({ select: { id: true, slug: true, translations: { select: { locale: true, name: true } } } }),
     db.brand.findMany({ select: { id: true, name: true, slug: true } }),
     db.location.findMany({ where: { active: true }, select: { id: true, code: true, sellable: true, pricingMode: true } }),
-    db.exchangeRate.findFirst({ where: { effectiveAt: { lte: new Date() } }, orderBy: [{ effectiveAt: "desc" }, { id: "desc" }] }),
+    latestRate(db),
     db.product.findMany({
       where: { OR: [{ variants: { some: { sku: { in: skus } } } }, { slug: { in: slugs } }] },
       include: { ...PRODUCT_EDIT_INCLUDE, brand: { select: { name: true } } },

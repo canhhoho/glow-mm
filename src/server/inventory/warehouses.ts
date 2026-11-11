@@ -122,9 +122,17 @@ const updateSchema = z.object({ id: formId(40), name: nameSchema, pricingMode: p
 export async function updateWarehouse(raw: unknown, userId: string) {
   const input = updateSchema.parse(raw);
   return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT "id" FROM "Location" WHERE "id" = ${input.id} FOR UPDATE`;
     const loc = await tx.location.findUnique({ where: { id: input.id } });
     if (!loc) throw new WarehouseError("Không tìm thấy kho");
     const pricingMode: PricingMode | null = loc.sellable ? (input.pricingMode ?? loc.pricingMode) : null;
+    // P1-B (H5): đổi cách tính giá khi kho đã có SP / đã từng có hàng làm lô cũ (giá vốn VND hoặc MMK) rơi khỏi cách tính.
+    if (pricingMode !== loc.pricingMode) {
+      const [products, moves] = [await tx.product.count({ where: { stockLocationId: loc.id } }), await tx.stockLedger.count({ where: { locationId: loc.id } })];
+      if (products || moves) {
+        throw new WarehouseError(`Kho ${loc.name} đã có sản phẩm hoặc đã có hàng — không đổi được cách tính giá. Tạo kho mới với cách tính giá khác.`);
+      }
+    }
     const updated = await tx.location.update({ where: { id: loc.id }, data: { name: input.name, pricingMode } });
     await audit(tx, userId, "location.update", loc.id, { name: input.name, pricingMode });
     return updated;
