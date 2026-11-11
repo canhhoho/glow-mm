@@ -1321,7 +1321,19 @@
     "largeChangeWarning": "Giá thay đổi từ 20% — kiểm tra trước khi áp dụng.",
     "lowMarginWarningFixed": "Lãi minh họa sau cước, hoa hồng CTV {fixed} MMK/cái và tầng trên {rate}%: {profit} MMK (≤ 5% giá bán). Chưa trừ phí bán khác.",
     "productScope": "Chỉ tính các biến thể đang bán của sản phẩm {name}.",
-    "productInvalid": "Sản phẩm không tồn tại hoặc không còn biến thể đang bán."
+    "productInvalid": "Sản phẩm không tồn tại hoặc không còn biến thể đang bán.",
+    "subtitle": "Tỷ giá, bảng tính giá theo lô nhập và lịch sử đổi giá",
+    "statRate": "Tỷ giá hiện tại · từ {at}",
+    "statPreviews": "Bản xem trước chờ áp",
+    "statChanges": "Lần đổi giá ({days} ngày)",
+    "historySource": "Nguồn",
+    "srcRun": "Bảng tính giá",
+    "srcImport": "Excel",
+    "srcManual": "Sửa tay",
+    "statLines": "Dòng trong bản tính",
+    "statPending": "Dòng chờ áp",
+    "statBig": "Đổi giá ≥ {pct}%",
+    "statApplied": "Dòng đã áp"
   },
   "Quarantine": {
     "title": "Hàng chờ kiểm tra (hàng trả)",

@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check, CircleCheck, Clock, ListOrdered, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -9,7 +9,7 @@ import { getRun } from "@/server/pricing/queries";
 import { FORMULA_VERSION } from "@/server/pricing/runs";
 import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
-import { Badge, DataTable, Notice, Page, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, Notice, Page, PageHeader, StatCard, Td } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import { fmtDate, fmtDateTime, fmtInt } from "@/lib/format";
 import { convertVndToMmk, rateDisplay } from "@/server/pricing/formula";
@@ -36,6 +36,7 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
   const editable = open && !expired;
   const pending = run.lines.filter((l) => l.status === "PENDING").length;
   const appliedCount = run.lines.filter((l) => l.status === "APPLIED").length;
+  const bigChanges = run.lines.filter((l) => Math.abs(changePct(l.oldPriceMmk, l.newPriceMmk) ?? 0) >= BIG_CHANGE).length;
   // P24: cột theo cách tính giá của kho — MMK: vốn MMK + lãi cố định; VN: vốn VND + phí ship (MMK).
   const mmk = run.location?.pricingMode === "LOCAL_MMK";
   const vn = run.shipMmkPerKg != null;
@@ -153,6 +154,12 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
         <span>
           {t("roundTo")}: {fmtInt(run.roundTo)}
         </span>
+      </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard icon={<ListOrdered />} tone="brand" value={fmtInt(run.lines.length)} label={t("statLines")} />
+        <StatCard icon={<Clock />} tone="warning" value={fmtInt(pending)} label={t("statPending")} />
+        <StatCard icon={<TriangleAlert />} tone="danger" value={fmtInt(bigChanges)} label={t("statBig", { pct: BIG_CHANGE })} />
+        <StatCard icon={<CircleCheck />} tone="success" value={fmtInt(appliedCount)} label={t("statApplied")} />
       </div>
       {expired && <Notice tone="danger">{t("expired")}</Notice>}
       {run.skippedVariants.length > 0 && (

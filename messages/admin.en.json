@@ -1321,7 +1321,19 @@
     "largeChangeWarning": "Price changes by at least 20% — review before applying.",
     "lowMarginWarningFixed": "Illustrative profit after shipping, affiliate commission {fixed} MMK/unit and upline {rate}%: {profit} MMK (≤ 5% of price). Other selling fees not deducted.",
     "productScope": "Only the active variants of {name}.",
-    "productInvalid": "The product does not exist or has no active variants."
+    "productInvalid": "The product does not exist or has no active variants.",
+    "subtitle": "Exchange rates, price calculation and price history",
+    "statRate": "Current rate · since {at}",
+    "statPreviews": "Previews awaiting apply",
+    "statChanges": "Price changes ({days} days)",
+    "historySource": "Source",
+    "srcRun": "Calculator",
+    "srcImport": "Excel",
+    "srcManual": "Manual",
+    "statLines": "Lines",
+    "statPending": "Lines to apply",
+    "statBig": "Change ≥ {pct}%",
+    "statApplied": "Applied lines"
   },
   "Quarantine": {
     "title": "Quarantine (returned goods)",

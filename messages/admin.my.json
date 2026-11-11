@@ -1321,7 +1321,19 @@
     "largeChangeWarning": "Price changes by at least 20% — review before applying.",
     "lowMarginWarningFixed": "ပို့ခ၊ CTV ကော်မရှင် {fixed} MMK/ခု နှင့် အထက်အဆင့် {rate}% နုတ်ပြီး ဥပမာအမြတ်: {profit} MMK (ဈေး၏ ≤ 5%)။ အခြားရောင်းချခ မနုတ်ရသေး။",
     "productScope": "{name} ၏ ရောင်းနေသော အမျိုးအစားများကိုသာ တွက်မည်။",
-    "productInvalid": "ပစ္စည်း မရှိပါ သို့မဟုတ် ရောင်းနေသော အမျိုးအစား မရှိပါ။"
+    "productInvalid": "ပစ္စည်း မရှိပါ သို့မဟုတ် ရောင်းနေသော အမျိုးအစား မရှိပါ။",
+    "subtitle": "ငွေလဲနှုန်း၊ ဈေးတွက်ချက်မှုနှင့် ဈေးပြောင်းမှတ်တမ်း",
+    "statRate": "လက်ရှိနှုန်း · {at} မှ",
+    "statPreviews": "အသုံးချရန် စောင့်နေသော အစမ်းကြည့်",
+    "statChanges": "ဈေးပြောင်းမှု ({days} ရက်)",
+    "historySource": "ရင်းမြစ်",
+    "srcRun": "ဈေးတွက်ဇယား",
+    "srcImport": "Excel",
+    "srcManual": "လက်ဖြင့်",
+    "statLines": "စာကြောင်း",
+    "statPending": "အသုံးချရန် စာကြောင်း",
+    "statBig": "ပြောင်းလဲမှု ≥ {pct}%",
+    "statApplied": "အသုံးချပြီး စာကြောင်း"
   },
   "Quarantine": {
     "title": "စစ်ဆေးရန်စောင့်နေသော ပစ္စည်း (ပြန်ပို့)",

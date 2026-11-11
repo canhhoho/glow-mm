@@ -124,8 +124,13 @@ export async function listPriceHistory(take = 50) {
   return prisma.priceHistory.findMany({
     orderBy: { createdAt: "desc" },
     take,
-    include: { variant: { select: { sku: true, label: true } } },
+    include: { variant: { select: { sku: true, label: true, productId: true, product: { select: { slug: true, translations: { select: { locale: true, name: true } } } } } } },
   });
+}
+
+/** Số lần đổi giá trong `days` ngày gần nhất (ô số trang Giá & tỷ giá). */
+export async function priceChangesSince(days: number, now = new Date()) {
+  return prisma.priceHistory.count({ where: { createdAt: { gte: new Date(now.getTime() - days * 86_400_000) } } });
 }
 
 export async function pricingFilterOptions() {
