@@ -1,15 +1,19 @@
-import { Check } from "lucide-react";
+import { Check, CircleCheck, Clock, ListOrdered, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
+import { can } from "@/server/auth/roles";
+import { BatchReviewOptions, BatchReviewSummary } from "@/components/admin/batch-review";
+import type { BatchReviewView } from "@/server/catalog/batch-review-text";
+import { prisma } from "@/lib/db";
 import { applyRunAction, cancelRunAction } from "@/server/pricing/actions";
 import { changePct } from "@/server/pricing/formula";
 import { getRun } from "@/server/pricing/queries";
 import { FORMULA_VERSION } from "@/server/pricing/runs";
 import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
-import { Badge, DataTable, Notice, Page, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, Notice, Page, PageHeader, StatCard, Td } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import { fmtDate, fmtDateTime, fmtInt } from "@/lib/format";
 import { convertVndToMmk, rateDisplay } from "@/server/pricing/formula";
@@ -23,11 +27,15 @@ const BIG_CHANGE = 20;
 const SKIP_REASONS = ["UNCHANGED", "PRICE_CHANGED", "INPUT_CHANGED", "CANCELLED", "LEGACY"] as const;
 
 export default async function PriceRunPage({ params }: PageProps<"/admin/pricing/runs/[id]">) {
-  await requirePagePermission("pricing:manage");
+  const user = await requirePagePermission("pricing:manage");
   const uplineBp = await getNumberSetting("affiliate.uplineRateBp");
   const commissionBp = (await getNumberSetting("affiliate.defaultRateBp")) + uplineBp;
   const { id } = await params;
-  const [t, run] = await Promise.all([getTranslations("Pricing"), getRun(id)]);
+  const [t, run, lastReview] = await Promise.all([
+    getTranslations("Pricing"),
+    getRun(id),
+    prisma.auditLog.findFirst({ where: { entity: "PriceUpdateRun", entityId: id, action: "pricing.apply.review" }, orderBy: { createdAt: "desc" }, select: { data: true } }),
+  ]);
   if (!run) notFound();
   const now = new Date();
   const open = run.status === "PREVIEW";
@@ -36,6 +44,7 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
   const editable = open && !expired;
   const pending = run.lines.filter((l) => l.status === "PENDING").length;
   const appliedCount = run.lines.filter((l) => l.status === "APPLIED").length;
+  const bigChanges = run.lines.filter((l) => Math.abs(changePct(l.oldPriceMmk, l.newPriceMmk) ?? 0) >= BIG_CHANGE).length;
   // P24: cột theo cách tính giá của kho — MMK: vốn MMK + lãi cố định; VN: vốn VND + phí ship (MMK).
   const mmk = run.location?.pricingMode === "LOCAL_MMK";
   const vn = run.shipMmkPerKg != null;
@@ -154,7 +163,18 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
           {t("roundTo")}: {fmtInt(run.roundTo)}
         </span>
       </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard icon={<ListOrdered />} tone="brand" value={fmtInt(run.lines.length)} label={t("statLines")} />
+        <StatCard icon={<Clock />} tone="warning" value={fmtInt(pending)} label={t("statPending")} />
+        <StatCard icon={<TriangleAlert />} tone="danger" value={fmtInt(bigChanges)} label={t("statBig", { pct: BIG_CHANGE })} />
+        <StatCard icon={<CircleCheck />} tone="success" value={fmtInt(appliedCount)} label={t("statApplied")} />
+      </div>
       {expired && <Notice tone="danger">{t("expired")}</Notice>}
+      {lastReview?.data && (
+        <div className="rounded-lg bg-muted p-4 text-sm">
+          <BatchReviewSummary review={lastReview.data as unknown as BatchReviewView} />
+        </div>
+      )}
       {run.skippedVariants.length > 0 && (
         <details className="rounded-md border px-3 py-2 text-sm" data-testid="run-skipped">
           <summary className="cursor-pointer font-medium">{t("skippedTitle", { count: run.skippedVariants.length })}</summary>
@@ -175,6 +195,7 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
           <ActionForm action={applyRunAction} submitLabel={t("apply")} confirm={t("applyConfirm")} icon={<Check aria-hidden className="size-4 shrink-0" />}>
             <input type="hidden" name="runId" value={run.id} />
             {table}
+            {can(user.role, "catalog:manage") && <BatchReviewOptions canApprove={can(user.role, "catalog:approve")} />}
           </ActionForm>
           <ActionButton action={cancelRunAction} fields={{ runId: run.id }} label={t("cancelRun")} variant="outline" />
         </>

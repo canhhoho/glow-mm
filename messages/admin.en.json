@@ -22,7 +22,25 @@
     "previous": "Previous",
     "next": "Next",
     "page": "Page {page} / {pages}",
-    "rates": "Exchange rate settings"
+    "rates": "Exchange rate settings",
+    "subtitle": "Selling price, pending price and latest cost for every SKU",
+    "runs": "Price calculator",
+    "statTotal": "Managed SKUs",
+    "state": {
+      "zero": "No price",
+      "pending": "Price awaiting approval",
+      "stale": "Price older than last receipt"
+    },
+    "stateLabel": "Price status",
+    "stateAll": "All statuses",
+    "allWarehouses": "All warehouses",
+    "clearFilters": "Clear filters",
+    "colCost": "Latest cost",
+    "colSource": "Price source",
+    "pendingPrice": "Pending: {price}",
+    "staleBadge": "Older than receipt",
+    "showing": "Showing {from}–{to} of {total} SKUs",
+    "pageSize": "Show:"
   },
   "Nav": {
     "sellingPrices": "Selling prices",
@@ -341,7 +359,8 @@
     "estimateExistingHelp": "Uses purchase cost, the batch exchange rate (or the current rate if absent), and current weight. Existing order cost snapshots remain unchanged.",
     "estimateSaved": "Estimated cost saved.",
     "notReceived": "Not received yet ({count}) — new products without a posted receipt",
-    "showReceived": "← Show received products"
+    "showReceived": "← Show received products",
+    "colPhysical": "On hand"
   },
   "Docs": {
     "receiveSelectStep": "Step 1 — Select products to receive",
@@ -889,7 +908,10 @@
       "priceReason": "Source / reason",
       "by": "By",
       "noActivity": "No activity yet.",
-      "system": "System"
+      "system": "System",
+      "adjacent": "Browse products",
+      "prev": "Previous product",
+      "next": "Next product"
     },
     "activity": {
       "product_create": "Product created",
@@ -1303,7 +1325,19 @@
     "largeChangeWarning": "Price changes by at least 20% — review before applying.",
     "lowMarginWarningFixed": "Illustrative profit after shipping, affiliate commission {fixed} MMK/unit and upline {rate}%: {profit} MMK (≤ 5% of price). Other selling fees not deducted.",
     "productScope": "Only the active variants of {name}.",
-    "productInvalid": "The product does not exist or has no active variants."
+    "productInvalid": "The product does not exist or has no active variants.",
+    "subtitle": "Exchange rates, price calculation and price history",
+    "statRate": "Current rate · since {at}",
+    "statPreviews": "Previews awaiting apply",
+    "statChanges": "Price changes ({days} days)",
+    "historySource": "Source",
+    "srcRun": "Calculator",
+    "srcImport": "Excel",
+    "srcManual": "Manual",
+    "statLines": "Lines",
+    "statPending": "Lines to apply",
+    "statBig": "Change ≥ {pct}%",
+    "statApplied": "Applied lines"
   },
   "Quarantine": {
     "title": "Quarantine (returned goods)",
@@ -2257,5 +2291,16 @@
     "status": "Status",
     "missing": "Short {n}",
     "ok": "Ready"
+  },
+  "BatchReview": {
+    "legend": "Review after this batch",
+    "submitNow": "Submit for approval now",
+    "submitNowHint": "Only products created or changed in this batch that are ready; the rest are listed.",
+    "approveNow": "Approve right away",
+    "approveNowHint": "Self-approval is logged. New products are never published automatically; products on sale only get the changes applied.",
+    "submitted": "{n} products submitted",
+    "approved": "{n} approved",
+    "notReady": "{n} products not submitted (not ready):",
+    "approveFailed": "{n} products not approved (still pending):"
   }
 }

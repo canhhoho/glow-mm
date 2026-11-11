@@ -9,11 +9,12 @@ import { Button } from "@/components/ui/button";
 import { FileField } from "@/components/admin/file-field";
 import { Badge, DataTable, Notice, Td } from "@/components/admin/ui";
 import { fmtInt } from "@/lib/format";
+import { BatchReviewOptions, BatchReviewSummary } from "@/components/admin/batch-review";
 
 const ACTION_TONE = { create: "brand", update: "warning", same: "neutral" } as const;
 
 /** Một luồng cho tạo mới + cập nhật + nhập tồn: tải mẫu → chọn file → xem trước → xác nhận. */
-export function CatalogImport() {
+export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) {
   const t = useTranslations("CatalogImport");
   const [state, action, pending] = useActionState(catalogImportAction, undefined);
   const preview = state?.preview;
@@ -61,6 +62,7 @@ export function CatalogImport() {
           <form action={action} className="space-y-2">
             <input type="hidden" name="step" value="confirm" />
             <input type="hidden" name="payload" value={JSON.stringify(preview.input)} />
+            <BatchReviewOptions canApprove={canApprove} />
             <Button type="submit" size="lg" disabled={pending || preview.errors.length > 0} aria-describedby="catalog-import-confirm-help"><Check aria-hidden />{t("confirm")}</Button>
             <p id="catalog-import-confirm-help" className="text-sm text-muted-foreground">
               {t(preview.errors.length > 0 ? "confirmBlocked" : "confirmHelp")}
@@ -105,6 +107,7 @@ export function CatalogImport() {
               ))}
             </ul>
           )}
+          {state.review && <BatchReviewSummary review={state.review} />}
           <Link href="/admin/products" className="text-primary underline">{t("finishProducts")}</Link>
         </div>
       )}

@@ -19,6 +19,7 @@ import { ReadinessError } from "./readiness";
 import { createProduct } from "./product-create";
 import { saveProductPricing } from "./product-pricing";
 import { discardChanges, reviewProducts, saveAndApprove, submitProducts, type ReviewResult } from "./review";
+import { finishBatchReview, type BatchReviewView } from "./batch-review-text";
 import { saveProductPreorder } from "./product-preorder";
 import type { Issue } from "./readiness-rules";
 
@@ -334,7 +335,7 @@ export async function deleteProductImageAction(_prev: ActionState, formData: For
 }
 
 export type CatalogImportState =
-  | { preview?: CatalogImportPreview; result?: Awaited<ReturnType<typeof commitCatalogImport>>; error?: string }
+  | { preview?: CatalogImportPreview; result?: Omit<Awaited<ReturnType<typeof commitCatalogImport>>, "review">; review?: BatchReviewView; error?: string }
   | undefined;
 
 /** Nhập/cập nhật SP từ một sheet: bước "preview" (chỉ đọc) rồi "confirm" (ghi trong một transaction). */
@@ -346,11 +347,16 @@ export async function catalogImportAction(_prev: CatalogImportState, formData: F
       const check = await previewCatalogImport(input);
       if (check.counts.stockLines > 0) await requirePermission("stock:receive");
       // P0-C2: đổi giá bán / hoa hồng CTV qua Excel cần quyền giá — kiểm lại trong transaction xác nhận.
-      const result = await commitCatalogImport(input, user.id, { allowPricing: can(user.role, "pricing:manage") });
+      // §6.4: "Gửi duyệt ngay" (form bật sẵn) chạy cùng transaction; "Duyệt luôn" chỉ người có quyền duyệt, chạy sau commit.
+      const submit = formData.get("submitNow") === "on";
+      const approve = submit && formData.get("approveNow") === "on";
+      if (approve) await requirePermission("catalog:approve");
+      const { review, ...result } = await commitCatalogImport(input, user.id, { allowPricing: can(user.role, "pricing:manage"), submit });
+      const reviewView = review ? await finishBatchReview(review, user.id, approve) : undefined;
       updateTag(CATALOG_TAG);
       revalidatePath("/admin/products");
       revalidatePath("/admin/inventory/documents");
-      return { result };
+      return { result, review: reviewView };
     }
     const file = await readCatalogFile(formData.get("file"));
     const standardLabel = (await getTranslations("Products"))("standardVariant");

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
-import { Clock, FileText } from "lucide-react";
+import { Ban, Clock, FileText, Package, ShieldAlert, Wallet } from "lucide-react";
 import { requirePagePermission } from "@/server/auth/session";
 import { classifyExpiry, daysLeft } from "@/server/alerts/compute";
 import {
@@ -20,7 +20,7 @@ import {
 import type { BalanceRow, Thresholds } from "@/server/inventory/stock-summary";
 import { ExpandableRow } from "@/components/admin/expandable-row";
 import { ExpiryTag, NewDocMenu, Pager, stockHref, type StockView } from "@/components/admin/stock-parts";
-import { Badge, DataTable, fieldClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, TabNav, Td } from "@/components/admin/ui";
+import { Badge, DataTable, fieldClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, StatCard, TabNav, Td } from "@/components/admin/ui";
 import { fmtDay, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -76,44 +76,50 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
         }
       />
 
-      {/* Ô số tổng (mobile: cuộn ngang) */}
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:-mx-6 md:px-6 lg:mx-0 lg:grid lg:grid-cols-5 lg:gap-3 lg:overflow-visible lg:px-0">
-        <Tile
-          label={t("statSellable")}
-          value={fmtInt(summary.availableUnits)}
-          hint={
-            summary.heldUnits > 0
+      {/* Ô số tổng (P3b: cùng kiểu ô số của danh sách SP / dashboard; dòng gợi ý dưới ô) */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+        <div>
+          <StatCard icon={<Package />} tone="brand" value={fmtInt(summary.availableUnits)} label={t("statSellable")} />
+          <Hint>
+            {summary.heldUnits > 0
               ? t("statSellableHintHeld", { variants: summary.sellableVariants, held: summary.heldUnits })
-              : t("statSellableHint", { variants: summary.sellableVariants })
-          }
-        />
-        <Tile
-          label={t("statValue")}
-          value={compact(summary.valueMmk, locale)}
-          hint={[summary.unvaluedUnits > 0 ? t("statValueUnvalued", { units: summary.unvaluedUnits }) : t("statValueHint"), summary.estimatedUnits > 0 ? t("estimatedUnits", { units: summary.estimatedUnits }) : ""].filter(Boolean).join(" · ")}
-        />
-        <Tile
-          label={t("statQuarantine")}
-          value={fmtInt(summary.byLocationType.QUARANTINE)}
-          hint={t("statQuarantineHint")}
-          href="/admin/inventory/quarantine"
-        />
-        <Tile
-          tone="warning"
-          label={t("statNear", { days: th.warnDays })}
-          value={t("lotsN", { n: summary.near.lots })}
-          hint={t("unitsN", { n: summary.near.units })}
-          href={href({ tab: "all", expiry: "near", stockType: undefined, q: undefined })}
-          testId="tile-near"
-        />
-        <Tile
-          tone="danger"
-          label={t("statBlocked", { days: th.blockDays })}
-          value={t("lotsN", { n: summary.blocked.lots })}
-          hint={t("unitsN", { n: summary.blocked.units })}
-          href={href({ tab: "all", expiry: "blocked", stockType: undefined, q: undefined })}
-          testId="tile-blocked"
-        />
+              : t("statSellableHint", { variants: summary.sellableVariants })}
+          </Hint>
+        </div>
+        <div>
+          <StatCard icon={<Wallet />} tone="green" value={compact(summary.valueMmk, locale)} label={t("statValue")} />
+          <Hint>
+            {[summary.unvaluedUnits > 0 ? t("statValueUnvalued", { units: summary.unvaluedUnits }) : t("statValueHint"), summary.estimatedUnits > 0 ? t("estimatedUnits", { units: summary.estimatedUnits }) : ""].filter(Boolean).join(" · ")}
+          </Hint>
+        </div>
+        <div>
+          <StatCard icon={<ShieldAlert />} tone="neutral" value={fmtInt(summary.byLocationType.QUARANTINE)} label={t("statQuarantine")} href="/admin/inventory/quarantine" />
+          <Hint>{t("statQuarantineHint")}</Hint>
+        </div>
+        <div>
+          <StatCard
+            icon={<Clock />}
+            tone="warning"
+            value={t("lotsN", { n: summary.near.lots })}
+            label={t("statNear", { days: th.warnDays })}
+            href={href({ tab: "all", expiry: "near", stockType: undefined, q: undefined })}
+            active={f.expiry === "near"}
+            testId="tile-near"
+          />
+          <Hint>{t("unitsN", { n: summary.near.units })}</Hint>
+        </div>
+        <div>
+          <StatCard
+            icon={<Ban />}
+            tone="danger"
+            value={t("lotsN", { n: summary.blocked.lots })}
+            label={t("statBlocked", { days: th.blockDays })}
+            href={href({ tab: "all", expiry: "blocked", stockType: undefined, q: undefined })}
+            active={f.expiry === "blocked"}
+            testId="tile-blocked"
+          />
+          <Hint>{t("unitsN", { n: summary.blocked.units })}</Hint>
+        </div>
       </div>
 
       <TabNav
@@ -163,7 +169,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
               key={v}
               href={href({ view: v })}
               aria-current={view === v ? "page" : undefined}
-              className={cn("rounded-md px-3 py-1", view === v ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground")}
+              className={cn("rounded-md px-3 py-1.5", view === v ? "bg-primary/10 font-medium text-primary" : "text-muted-foreground hover:text-foreground")}
             >
               {v === "products" ? t("viewProducts") : t("viewLots")}
             </Link>
@@ -199,43 +205,8 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
   );
 }
 
-function Tile({
-  label,
-  value,
-  hint,
-  href,
-  tone,
-  testId,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  href?: string;
-  tone?: "warning" | "danger";
-  testId?: string;
-}) {
-  const cls = cn(
-    "block w-40 flex-none rounded-lg border p-3 lg:w-auto lg:p-4",
-    tone === "warning" && "border-warning-border bg-warning-subtle/60 text-warning-foreground",
-    tone === "danger" && "border-danger-border bg-danger-subtle/60 text-danger-foreground",
-    href && "hover:brightness-95",
-  );
-  const body = (
-    <>
-      <div className={cn("text-xs", !tone && "text-muted-foreground")}>{label}</div>
-      <div className="mt-1 text-xl font-semibold tabular-nums lg:text-2xl">{value}</div>
-      <div className={cn("text-xs", !tone && "text-muted-foreground")}>{hint}</div>
-    </>
-  );
-  return href ? (
-    <Link href={href} className={cls} data-testid={testId}>
-      {body}
-    </Link>
-  ) : (
-    <div className={cls} data-testid={testId}>
-      {body}
-    </div>
-  );
+function Hint({ children }: { children: React.ReactNode }) {
+  return <span className="mt-1 block truncate px-1 text-xs text-muted-foreground">{children}</span>;
 }
 
 function Thumb({ url, alt, size }: { url: string | null; alt: string; size: "sm" | "md" }) {
@@ -316,6 +287,7 @@ function ProductView({
     ...warehouses.map((w) => w.name),
     ...(showOther ? [t("colOther")] : []),
     t("colTester"),
+    t("colPhysical"),
     t("colReserved"),
     t("colAvailable"),
     t("colEarliest"),
@@ -356,6 +328,7 @@ function ProductView({
                     </Td>
                     {stockCols(c).map(([label, v]) => (v == null ? <Td key={label} className="text-right text-muted-foreground">—</Td> : <Td key={label} className="text-right tabular-nums">{fmtInt(v)}</Td>))}
                     {c ? num(c.tester, true) : dash}
+                    {c ? <Td className="text-right font-medium tabular-nums">{fmtInt(c.vn + c.inbound + c.mm + c.tester)}</Td> : dash}
                     {num(r.reserved, true)}
                     <Td className={cn("text-right font-medium tabular-nums", r.available === 0 && "text-destructive")}>
                       {fmtInt(r.available)}

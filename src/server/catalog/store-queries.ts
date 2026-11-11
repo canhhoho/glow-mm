@@ -1,11 +1,12 @@
 import "server-only";
+import { STORE_PRODUCT } from "@/server/catalog/store-visibility";
 import { cache } from "react";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { normalizeForSearch, searchVariants } from "@/lib/myanmar";
 import type { CartLine } from "@/server/cart/cart";
 import { salesBlockDays } from "@/server/inventory/documents";
-import { sellableCutoff } from "@/server/inventory/fefo";
+import { nextLotForCustomer, sellableBatchWhere, type FefoCandidate } from "@/server/inventory/fefo";
 import { availableToSell } from "@/server/orders/availability";
 import { preorderCapacity } from "@/server/orders/preorder";
 import { pick } from "./queries";
@@ -35,7 +36,7 @@ async function availability(variantIds: string[]) {
 }
 
 /** Điều kiện "SP hiển thị trên storefront" — dùng chung cho danh sách, bộ sưu tập, proxy 404. */
-export const STORE_VISIBLE: Prisma.ProductWhereInput[] = [{ published: true }, { variants: { some: { active: true } } }];
+export const STORE_VISIBLE: Prisma.ProductWhereInput[] = [STORE_PRODUCT, { variants: { some: { active: true } } }];
 
 const CARD_INCLUDE = {
   brand: true,
@@ -156,9 +157,9 @@ export async function listStoreProducts(query: ProductListQuery) {
 /** Bộ lọc: thương hiệu + loại da + vấn đề da có trên sản phẩm đang bán. */
 export async function storeFilterOptions(locale: string) {
   const [brands, tags] = await Promise.all([
-    prisma.brand.findMany({ where: { products: { some: { published: true } } }, orderBy: { name: "asc" } }),
+    prisma.brand.findMany({ where: { products: { some: STORE_PRODUCT } }, orderBy: { name: "asc" } }),
     prisma.tag.findMany({
-      where: { kind: { in: ["SKIN_TYPE", "CONCERN"] }, products: { some: { product: { published: true } } } },
+      where: { kind: { in: ["SKIN_TYPE", "CONCERN"] }, products: { some: { product: STORE_PRODUCT } } },
       include: { translations: true },
       orderBy: { slug: "asc" },
     }),
@@ -190,7 +191,7 @@ export async function getStoreCategory(slug: string, locale: string) {
 /** Phần nội dung trang SP (cache được, P20) — chưa có tồn/hạn dùng lô. */
 export async function loadProductContent(slug: string, locale: string) {
   const p = await prisma.product.findFirst({
-    where: { slug, published: true },
+    where: { slug, ...STORE_PRODUCT },
     include: {
       brand: true,
       translations: true,
@@ -221,35 +222,59 @@ export async function loadProductContent(slug: string, locale: string) {
 export type ProductContent = NonNullable<Awaited<ReturnType<typeof loadProductContent>>>;
 
 /** Gắn tồn khả dụng + hạn dùng lô sẽ xuất tiếp theo (FEFO) — luôn tính lúc request. */
+/** Hạn dùng hiển thị theo lô khách sẽ nhận: có ngày, không áp dụng hạn, hoặc không có (hết hàng / combo). */
+export type StoreExpiry = { kind: "DATED"; date: Date } | { kind: "NONE" } | null;
+
 export async function withProductStock(content: ProductContent, now = new Date()) {
   const ids = content.variants.map((v) => v.id);
   const blockDays = await storeBlockDays();
-  const [avail, capacity, lots] = await Promise.all([
+  const [avail, capacity, lots, held] = await Promise.all([
     availableToSell(prisma, ids, { now, blockDays }),
     preorderCapacity(prisma, ids),
-    // Chỉ lô còn bán được ở kho bán của SP (các biến thể cùng một SP → cùng một kho, P24).
+    // D9: cùng điều kiện lô bán được với khả dụng (`sellableBatchWhere`, gồm lô không hạn), ở kho bán của SP (P24).
     prisma.stockBalance.findMany({
       where: {
         stockType: "SELLABLE",
         qty: { gt: 0 },
         location: { sellable: true, products: { some: { variants: { some: { id: { in: ids } } } } } },
-        batch: { variantId: { in: ids }, expiryDate: { gte: sellableCutoff(now, blockDays) } },
+        batch: { variantId: { in: ids }, ...sellableBatchWhere(now, blockDays) },
       },
-      select: { batch: { select: { variantId: true, expiryDate: true } } },
-      orderBy: { batch: { expiryDate: "asc" } },
+      select: { qty: true, batch: { select: { id: true, variantId: true, expiryDate: true, expiryStatus: true, createdAt: true } } },
+    }),
+    prisma.reservation.groupBy({
+      by: ["variantId"],
+      where: { variantId: { in: ids }, status: "ACTIVE", OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] },
+      _sum: { qty: true },
     }),
   ]);
-  const nextExpiry = new Map<string, Date>();
-  for (const l of lots) if (l.batch.expiryDate && !nextExpiry.has(l.batch.variantId)) nextExpiry.set(l.batch.variantId, l.batch.expiryDate);
+  const reserved = new Map(held.map((h) => [h.variantId, h._sum.qty ?? 0]));
+  const byVariant = new Map<string, FefoCandidate[]>();
+  for (const l of lots) {
+    const list = byVariant.get(l.batch.variantId) ?? [];
+    const same = list.find((c) => c.batchId === l.batch.id);
+    if (same) same.available += l.qty;
+    else list.push({ batchId: l.batch.id, available: l.qty, expiryDate: l.batch.expiryDate, expiryStatus: l.batch.expiryStatus, receivedAt: l.batch.createdAt });
+    byVariant.set(l.batch.variantId, list);
+  }
+  // Lô của cái tiếp theo khách đặt — bỏ qua phần đã giữ cho đơn khác (D9).
+  const expiryOf = (variantId: string): StoreExpiry => {
+    const next = nextLotForCustomer(byVariant.get(variantId) ?? [], reserved.get(variantId) ?? 0, { today: now, blockDays });
+    if (!next) return null;
+    return next.expiryStatus === "NONE" ? { kind: "NONE" } : next.expiryDate ? { kind: "DATED", date: next.expiryDate } : null;
+  };
   return {
     ...content,
     // `preorder` (QT3): số cái còn nhận đặt trước — chỉ ý nghĩa khi hết hàng (`available` ≤ 0).
-    variants: content.variants.map((v) => ({
-      ...v,
-      available: avail.get(v.id) ?? 0,
-      preorder: (avail.get(v.id) ?? 0) > 0 ? 0 : (capacity.get(v.id) ?? 0),
-      expiryDate: nextExpiry.get(v.id) ?? null,
-    })),
+    variants: content.variants.map((v) => {
+      const expiry = expiryOf(v.id);
+      return {
+        ...v,
+        available: avail.get(v.id) ?? 0,
+        preorder: (avail.get(v.id) ?? 0) > 0 ? 0 : (capacity.get(v.id) ?? 0),
+        expiry,
+        expiryDate: expiry?.kind === "DATED" ? expiry.date : null,
+      };
+    }),
   };
 }
 
@@ -273,7 +298,7 @@ export async function getCartDetails(lines: CartLine[], locale: string) {
   const rows = lines.flatMap((l) => {
     const v = byId.get(l.variantId);
     if (!v) return [];
-    const sellable = v.active && v.product.published;
+    const sellable = v.active && v.product.published && !v.product.archivedAt;
     const available = sellable ? (avail.get(v.id) ?? 0) : 0;
     const preorder = sellable && l.qty > available && l.qty <= (capacity.get(v.id) ?? 0);
     return [

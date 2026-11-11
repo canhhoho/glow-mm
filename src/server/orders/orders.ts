@@ -1,4 +1,5 @@
 import "server-only";
+import { STORE_PRODUCT } from "@/server/catalog/store-visibility";
 import { z } from "zod";
 import { localeSchema, mmText, phone2Schema, phoneSchema, rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
@@ -201,7 +202,7 @@ async function resolveAffiliate(tx: Tx, ref: CreateOrderContext["affiliate"]) {
  */
 async function priceLines(tx: Tx, items: { variantId: string; qty: number }[], locale: string) {
   const variants = await tx.variant.findMany({
-    where: { id: { in: items.map((i) => i.variantId) }, active: true, product: { published: true } },
+    where: { id: { in: items.map((i) => i.variantId) }, active: true, product: STORE_PRODUCT },
     include: { product: { include: { translations: true } } },
   });
   const byId = new Map(variants.map((v) => [v.id, v]));

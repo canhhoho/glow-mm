@@ -51,7 +51,8 @@
     "image": "Ảnh",
     "preorder": "Đặt trước",
     "preorderAvailable": "Hết hàng · nhận đặt trước",
-    "preorderNote": "Hàng đặt trước sẽ giao khi về kho. Đơn có hàng đặt trước được giao cùng lúc khi đủ hàng."
+    "preorderNote": "Hàng đặt trước sẽ giao khi về kho. Đơn có hàng đặt trước được giao cùng lúc khi đủ hàng.",
+    "expiryNone": "Không áp dụng hạn dùng"
   },
   "Footer": {
     "contact": "Liên hệ",

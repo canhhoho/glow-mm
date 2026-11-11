@@ -37,7 +37,7 @@ export async function PricingRunsTab({ receiptId, productId }: { receiptId?: str
     );
   return (
     <>
-      <Section title={t("newRun")} className="max-w-3xl">
+      <Section title={t("newRun")} className="max-w-3xl rounded-xl bg-card">
         {receipt && <p className="text-sm">{t("receiptScope", { code: receipt.code })}</p>}
         {product && (
           <p className="text-sm" data-testid="pricing-product-scope">
@@ -69,7 +69,7 @@ export async function PricingRunsTab({ receiptId, productId }: { receiptId?: str
         ))}
       </Section>
 
-      <section className="space-y-3">
+      <section className="space-y-3 rounded-xl border bg-card p-4">
         <h2 className="font-medium">{t("runs")}</h2>
         <DataTable
           stack

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { STORE_PRODUCT } from "@/server/catalog/store-visibility";
 import { routing } from "@/i18n/routing";
 import { isInfoPage } from "@/lib/info-pages";
 import { collectionVisible } from "@/server/content/collections";
@@ -81,7 +82,7 @@ export async function storeSlugExists(kind: StoreSlugKind, slug: string): Promis
   }
   const found =
     kind === "p"
-      ? await prisma.product.findFirst({ where: { slug, published: true, variants: { some: { active: true } } }, select: { id: true } })
+      ? await prisma.product.findFirst({ where: { slug, ...STORE_PRODUCT, variants: { some: { active: true } } }, select: { id: true } })
       : await prisma.category.findUnique({ where: { slug }, select: { id: true } });
   if (found) known.add(key);
   return !!found;

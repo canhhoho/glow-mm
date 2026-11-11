@@ -1,0 +1,153 @@
+import "server-only";
+import type { Prisma } from "@/generated/prisma/client";
+import { prisma } from "@/lib/db";
+import { productName } from "@/server/inventory/queries";
+import { changeRequestsFor, type StagedPrice } from "@/server/catalog/change-request";
+import { loadProductPricing, type VariantPricingRow } from "@/server/catalog/product-pricing";
+
+/**
+ * Trang Giá bán (P3b): bảng tổng hợp mọi SKU của SP chưa ngừng KD — giá đang bán, giá chờ duyệt
+ * (bản đang sửa), giá mua gần nhất, nguồn giá. Chỉ đọc; ghi giá vẫn qua `saveSellingPrice`.
+ */
+export const SELLING_STATES = ["zero", "pending", "stale"] as const;
+export type SellingState = (typeof SELLING_STATES)[number];
+export const SELLING_PAGE_SIZES = [20, 50, 100] as const;
+
+const BASE: Prisma.VariantWhereInput = { product: { archivedAt: null } };
+
+/** Biến thể có giá chờ duyệt (khoá trong `ProductChangeRequest.prices`). Số bản đang sửa nhỏ → đọc hết. */
+async function pendingPrices() {
+  const rows = await prisma.productChangeRequest.findMany({ where: { product: { archivedAt: null } }, select: { prices: true } });
+  const out = new Map<string, StagedPrice>();
+  for (const r of rows) for (const [id, p] of Object.entries((r.prices as Record<string, StagedPrice> | null) ?? {})) out.set(id, p);
+  return out;
+}
+
+/**
+ * Cùng quy tắc cảnh báo `PRICE_STALE` (readiness): SKU đang bật, giá > 0, đã có lịch sử giá, và có phiếu NHẬP ghi sổ
+ * (combo: của bất kỳ thành phần nào) sau lần đổi giá gần nhất.
+ */
+async function staleVariantIds(): Promise<string[]> {
+  const rows = await prisma.$queryRaw<{ id: string }[]>`
+    WITH rcv AS (
+      SELECT l."variantId", MAX(d."postedAt") AS at
+      FROM "StockDocumentLine" l JOIN "StockDocument" d ON d.id = l."documentId"
+      WHERE d.type = 'RECEIVE' AND d.status = 'POSTED' AND l.qty > 0
+      GROUP BY 1),
+    chg AS (SELECT "variantId", MAX("createdAt") AS at FROM "PriceHistory" GROUP BY 1)
+    SELECT v.id FROM "Variant" v
+    JOIN "Product" p ON p.id = v."productId"
+    JOIN chg ON chg."variantId" = v.id
+    WHERE p."archivedAt" IS NULL AND v.active AND v."priceMmk" > 0
+      AND (CASE WHEN v."isBundle"
+            THEN (SELECT MAX(rcv.at) FROM "BundleItem" b JOIN rcv ON rcv."variantId" = b."componentId" WHERE b."bundleId" = v.id)
+            ELSE (SELECT rcv.at FROM rcv WHERE rcv."variantId" = v.id) END) > chg.at`;
+  return rows.map((r) => r.id);
+}
+
+export async function sellingPriceStats() {
+  const [total, zero, pending, stale] = await Promise.all([
+    prisma.variant.count({ where: BASE }),
+    prisma.variant.count({ where: { ...BASE, priceMmk: { lte: 0 } } }),
+    pendingPrices(),
+    staleVariantIds(),
+  ]);
+  return { total, zero, pending: pending.size, stale: stale.length };
+}
+
+export async function sellingPriceWarehouses() {
+  return prisma.location.findMany({ where: { sellable: true, products: { some: { archivedAt: null } } }, orderBy: { name: "asc" }, select: { id: true, name: true } });
+}
+
+export type SellingPriceRow = {
+  id: string;
+  sku: string;
+  label: string;
+  active: boolean;
+  isBundle: boolean;
+  priceMmk: number;
+  /** Giá chờ duyệt (bản đang sửa) — null nếu không có. */
+  pendingMmk: number | null;
+  /** Giá hiệu lực để so xung đột khi lưu: giá chờ duyệt nếu có, không thì giá đang bán (§6.4). */
+  effectiveMmk: number;
+  productId: string;
+  productName: string;
+  image: string | null;
+  warehouse: string;
+  pricing: VariantPricingRow | undefined;
+  stale: boolean;
+};
+
+export async function listSellingPrices(f: { q: string; warehouseId?: string; state?: SellingState; page: number; size: number }) {
+  const [pending, stale] = await Promise.all([pendingPrices(), staleVariantIds()]);
+  const where: Prisma.VariantWhereInput = {
+    product: { archivedAt: null, ...(f.warehouseId && { stockLocationId: f.warehouseId }) },
+    ...(f.q && {
+      OR: [
+        { sku: { contains: f.q, mode: "insensitive" } },
+        { label: { contains: f.q, mode: "insensitive" } },
+        { product: { translations: { some: { name: { contains: f.q, mode: "insensitive" } } } } },
+      ],
+    }),
+    ...(f.state === "zero" && { priceMmk: { lte: 0 } }),
+    ...(f.state === "pending" && { id: { in: [...pending.keys()] } }),
+    ...(f.state === "stale" && { id: { in: stale } }),
+  };
+  const total = await prisma.variant.count({ where });
+  const pageCount = Math.max(1, Math.ceil(total / f.size));
+  const page = Math.min(Math.max(1, f.page), pageCount);
+  const variants = await prisma.variant.findMany({
+    where,
+    orderBy: [{ sku: "asc" }, { id: "asc" }],
+    skip: (page - 1) * f.size,
+    take: f.size,
+    select: {
+      id: true,
+      sku: true,
+      label: true,
+      active: true,
+      isBundle: true,
+      priceMmk: true,
+      productId: true,
+      product: {
+        select: {
+          slug: true,
+          translations: { select: { locale: true, name: true } },
+          stockLocation: { select: { name: true, pricingMode: true } },
+          images: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }], take: 1, select: { file: { select: { url: true } } } },
+        },
+      },
+    },
+  });
+  // Nguồn giá + giá mua gần nhất theo loại tiền của kho bán (VND với kho nhập VN, MMK với kho mua tại chỗ).
+  const byMode = (mode: "VN_IMPORT" | "LOCAL_MMK") => variants.filter((v) => (v.product.stockLocation.pricingMode ?? "VN_IMPORT") === mode).map((v) => v.id);
+  const [vn, mmk] = await Promise.all([loadProductPricing(byMode("VN_IMPORT"), "VN_IMPORT"), loadProductPricing(byMode("LOCAL_MMK"), "LOCAL_MMK")]);
+  const staleSet = new Set(stale);
+  const rows: SellingPriceRow[] = variants.map((v) => {
+    const p = pending.get(v.id)?.priceMmk ?? null;
+    return {
+      id: v.id,
+      sku: v.sku,
+      label: v.label,
+      active: v.active,
+      isBundle: v.isBundle,
+      priceMmk: v.priceMmk,
+      pendingMmk: p,
+      effectiveMmk: p ?? v.priceMmk,
+      productId: v.productId,
+      productName: productName(v.product.translations, v.product.slug),
+      image: v.product.images[0]?.file.url ?? null,
+      warehouse: v.product.stockLocation.name,
+      pricing: vn.get(v.id) ?? mmk.get(v.id),
+      stale: staleSet.has(v.id),
+    };
+  });
+  return { rows, total, page, pageCount };
+}
+
+/** Dùng cho test: giá hiệu lực của một biến thể (để kiểm form gửi đúng `expectedPriceMmk`). */
+export async function effectiveSellingPrice(variantId: string) {
+  const v = await prisma.variant.findUniqueOrThrow({ where: { id: variantId }, select: { priceMmk: true, productId: true } });
+  const cr = (await changeRequestsFor(prisma, [v.productId])).get(v.productId);
+  return cr?.prices[variantId]?.priceMmk ?? v.priceMmk;
+}

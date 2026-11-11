@@ -163,20 +163,21 @@ test("QT1b/QT2: tạo SP → nhập hàng từ bước 2 (điền sẵn, khối 
   await page.getByLabel("Phí ship VN → MM (MMK/kg)").fill("8000");
   await page.getByRole("button", { name: "Xem trước" }).click();
   await expect(page).toHaveURL(/\/admin\/pricing\/runs\//, { timeout: 30_000 });
-  await expect(page.getByRole("checkbox")).toHaveCount(1);
+  await expect(page.getByRole("table").getByRole("checkbox")).toHaveCount(1);
   page.once("dialog", (d) => d.accept());
+  await expect(page.getByRole("checkbox", { name: "Gửi duyệt ngay" })).toBeChecked();
   await page.getByRole("button", { name: "Áp dụng giá đã chọn" }).click();
   // Hết dòng chờ → bản chuyển "Đã áp dụng", form áp dụng biến mất.
   await expect(page.getByRole("row").filter({ hasText: sku })).toContainText("Đã áp", { timeout: 30_000 });
+  // Kết quả gửi duyệt vẫn hiện trên trang bản tính giá sau khi form áp giá biến mất.
+  await expect(page.getByTestId("batch-review")).toContainText("Đã gửi duyệt 1 sản phẩm");
 
   await page.goto(productUrl);
   await expect(page.getByTestId("step-price-row").first()).toContainText("Bảng tính giá");
   await expect(steps.getByTestId("step-price")).toHaveAttribute("data-state", "done");
-  // P1-A: bước 4 cần Gửi duyệt rồi Duyệt; bước 5 chờ đến khi duyệt.
-  await expect(steps.getByTestId("step-review")).toHaveAttribute("data-state", "todo");
+  // §6.4: ô "Gửi duyệt ngay" bật sẵn khi áp giá → SP đủ điều kiện đã vào hàng chờ duyệt; bước 5 chờ đến khi duyệt.
+  await expect(page.getByTestId("approval-status")).toHaveAttribute("data-label", "PENDING");
   await expect(steps.getByTestId("step-publish")).toHaveAttribute("data-state", "waiting");
-  await page.getByTestId("launch-check").getByRole("button", { name: "Gửi duyệt", exact: true }).click();
-  await expect(page.getByTestId("approval-status")).toHaveAttribute("data-label", "PENDING", { timeout: 15_000 });
   page.once("dialog", (d) => d.accept());
   await page.getByTestId("launch-check").getByRole("button", { name: "Chỉ duyệt (chưa đăng)" }).click();
   await expect(page.getByTestId("approval-status")).toContainText("Đã duyệt bởi", { timeout: 15_000 });

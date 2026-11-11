@@ -45,6 +45,24 @@ export function sellableBatchWhere(today: Date, blockDays: number) {
   return { OR: [{ expiryStatus: "NONE" as const }, { expiryStatus: "DATED" as const, expiryDate: { gte: sellableCutoff(today, blockDays) } }] };
 }
 
+/**
+ * D9 — lô của cái tiếp theo khách đặt (trang SP: "Hạn dùng của lô bạn sẽ nhận"): cùng thứ tự `pickFefo`
+ * (lô có ngày trước, rồi lô không hạn theo ngày nhận), bỏ qua `reserved` cái đầu đã giữ cho đơn khác.
+ * Không còn hàng → null. Gần đúng: giữ hàng ở cấp biến thể, lô thật chỉ chốt khi bàn giao.
+ */
+export function nextLotForCustomer(candidates: FefoCandidate[], reserved: number, opts: { today: Date; blockDays: number }): FefoCandidate | null {
+  const qty = Math.max(0, Math.floor(reserved)) + 1;
+  let picked: FefoAllocation[];
+  try {
+    picked = pickFefo(candidates, qty, opts);
+  } catch (e) {
+    if (e instanceof InsufficientStockError) return null;
+    throw e;
+  }
+  const last = picked[picked.length - 1];
+  return candidates.find((c) => c.batchId === last.batchId) ?? null;
+}
+
 export function pickFefo(
   candidates: FefoCandidate[],
   qty: number,

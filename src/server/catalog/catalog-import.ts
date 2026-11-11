@@ -1,4 +1,5 @@
 import "server-only";
+import { submitTouched } from "./review";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
@@ -454,7 +455,11 @@ function priceBaseConflicts(seen: Record<string, string> | undefined, now: Recor
  * `allowPricing`: người xác nhận có quyền `pricing:manage` (action truyền vào). File có đổi giá bán / hoa hồng CTV
  * mà không có quyền → chặn (P0-C2). Giá đã đổi ở nơi khác sau khi xem trước → huỷ cả lượt, liệt kê SKU.
  */
-export async function commitCatalogImport(raw: unknown, userId: string, opts: { allowPricing?: boolean } = {}) {
+/**
+ * `submit` (§6.4 "Gửi duyệt ngay"): gửi duyệt luôn các SP lượt này tạo / sửa (chỉ SP đủ điều kiện), cùng transaction.
+ * Mặc định tắt — form nhập bật sẵn ô này.
+ */
+export async function commitCatalogImport(raw: unknown, userId: string, opts: { allowPricing?: boolean; submit?: boolean } = {}) {
   const input = catalogImportInputSchema.parse(raw);
   return prisma.$transaction(async (tx) => {
     // Cùng khoá với saveProduct → mã tự sinh đã xem trước không bị lần lưu khác chiếm mất.
@@ -477,7 +482,8 @@ export async function commitCatalogImport(raw: unknown, userId: string, opts: { 
     }
 
     const fileTag = receiptId.slice(0, 8);
-    for (const payload of saves) await saveProduct(payload, userId, tx, { priceReason: `${IMPORT_PRICE_PREFIX}${fileTag}` });
+    const touched: string[] = [];
+    for (const payload of saves) touched.push((await saveProduct(payload, userId, tx, { priceReason: `${IMPORT_PRICE_PREFIX}${fileTag}` })).id);
 
     const ids = new Map((await tx.variant.findMany({ where: { sku: { in: stock.map((s) => s.sku) } }, select: { id: true, sku: true } })).map((v) => [v.sku, v.id]));
     const byLocation = new Map<string, StockPlan[]>();
@@ -492,9 +498,18 @@ export async function commitCatalogImport(raw: unknown, userId: string, opts: { 
       const lines = await tx.stockDocumentLine.findMany({ where: { documentId: { in: documents.map((d) => d.id) } }, select: { batchId: true, batch: { select: { unitCostVnd: true } } } });
       await tx.batch.updateMany({ where: { id: { in: lines.flatMap((l) => (l.batchId && l.batch?.unitCostVnd != null ? [l.batchId] : [])) } }, data: { rateId: input.rateId } });
     }
+    const review = opts.submit ? await submitTouched(tx, touched, userId) : null;
     const result = { ...preview.counts, documents };
     await tx.catalogOpeningImport.create({ data: { id: receiptId, userId, result } });
-    await tx.auditLog.create({ data: { userId, action: "catalog.import", entity: "CatalogImport", entityId: receiptId, data: { ...result, fileTag } } });
-    return result;
+    await tx.auditLog.create({
+      data: {
+        userId,
+        action: "catalog.import",
+        entity: "CatalogImport",
+        entityId: receiptId,
+        data: { ...result, fileTag, ...(review && { submitted: review.submitted.length, notSubmitted: review.skipped.length }) },
+      },
+    });
+    return { ...result, review };
   }, { maxWait: 10_000, timeout: 120_000 });
 }

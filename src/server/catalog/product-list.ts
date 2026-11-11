@@ -180,3 +180,26 @@ export async function listProductsPage(f: ListFilter, now = new Date()) {
   };
 }
 export type ProductListRow = Awaited<ReturnType<typeof listProductsPage>>["rows"][number];
+
+/**
+ * P3b — SP trước / sau theo thứ tự mặc định của danh sách (mới cập nhật trước, chưa ngừng KD).
+ * Thứ tự đổi khi SP được lưu (updatedAt) — chấp nhận được cho nút duyệt nhanh.
+ */
+export async function adjacentProducts(id: string) {
+  const cur = await prisma.product.findUnique({ where: { id }, select: { updatedAt: true } });
+  if (!cur) return { prev: null, next: null };
+  const at = cur.updatedAt;
+  const [prev, next] = await Promise.all([
+    prisma.product.findFirst({
+      where: { archivedAt: null, id: { not: id }, OR: [{ updatedAt: { gt: at } }, { updatedAt: at, id: { lt: id } }] },
+      orderBy: [{ updatedAt: "asc" }, { id: "desc" }],
+      select: { id: true },
+    }),
+    prisma.product.findFirst({
+      where: { archivedAt: null, id: { not: id }, OR: [{ updatedAt: { lt: at } }, { updatedAt: at, id: { gt: id } }] },
+      orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+      select: { id: true },
+    }),
+  ]);
+  return { prev: prev?.id ?? null, next: next?.id ?? null };
+}

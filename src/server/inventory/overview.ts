@@ -249,12 +249,20 @@ export async function stockByVariant(f: StockFilter, now = new Date()): Promise<
       },
     }),
   ]);
-  const ids = variants.map((v) => v.id);
-  if (ids.length === 0) return pageOf([], total, f.page);
+  if (variants.length === 0) return pageOf([], total, f.page);
+  return pageOf(await variantStockRows(variants, now, t.blockDays), total, f.page);
+}
 
+type StockVariant = Prisma.VariantGetPayload<{
+  include: { product: { select: { slug: true; translations: { select: { locale: true; name: true } }; images: { select: { file: { select: { url: true } } } } } } };
+}>;
+
+/** Tồn từng biến thể (cột theo kho, đang giữ, còn bán = `availableToSell`) — dùng chung cho trang Tồn kho và trang SP. */
+async function variantStockRows(variants: StockVariant[], now: Date, blockDays: number): Promise<VariantStockRow[]> {
+  const ids = variants.map((v) => v.id);
   const [rows, available, held] = await Promise.all([
     loadRows({ batch: { variantId: { in: ids } } }),
-    prisma.$transaction((tx) => availableToSell(tx, ids, { now, blockDays: t.blockDays })),
+    prisma.$transaction((tx) => availableToSell(tx, ids, { now, blockDays })),
     prisma.reservation.groupBy({
       by: ["variantId"],
       where: { variantId: { in: ids }, status: "ACTIVE", OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] },
@@ -264,8 +272,7 @@ export async function stockByVariant(f: StockFilter, now = new Date()): Promise<
   const cols = stockByVariantCols(rows);
   const reserved = new Map(held.map((h) => [h.variantId, h._sum.qty ?? 0]));
 
-  return pageOf(
-    variants.map((v) => {
+  return variants.map((v) => {
       const c = cols.get(v.id) ?? null;
       return {
         variantId: v.id,
@@ -281,10 +288,28 @@ export async function stockByVariant(f: StockFilter, now = new Date()): Promise<
         reserved: reserved.get(v.id) ?? 0,
         available: available.get(v.id) ?? 0,
       };
+    });
+}
+
+/** P3b — khối tồn (chỉ xem) ở bước 2 trang SP: mọi biến thể của SP, cùng số liệu trang Tồn kho. */
+export async function productStockRows(productId: string, now = new Date()) {
+  const [t, variants] = await Promise.all([
+    loadThresholds(),
+    prisma.variant.findMany({
+      where: { productId },
+      orderBy: { sku: "asc" },
+      include: {
+        product: {
+          select: {
+            slug: true,
+            translations: { select: { locale: true, name: true } },
+            images: { orderBy: { sortOrder: "asc" }, take: 1, select: { file: { select: { url: true } } } },
+          },
+        },
+      },
     }),
-    total,
-    f.page,
-  );
+  ]);
+  return { rows: variants.length ? await variantStockRows(variants, now, t.blockDays) : [], thresholds: t };
 }
 
 /** Bảng "Theo lô" (lô × vị trí × loại tồn) theo bộ lọc, phân trang. */
