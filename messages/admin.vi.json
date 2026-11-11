@@ -2291,5 +2291,16 @@
     "status": "Tình trạng",
     "missing": "Thiếu {n}",
     "ok": "Đủ"
+  },
+  "BatchReview": {
+    "legend": "Gửi duyệt sau lượt này",
+    "submitNow": "Gửi duyệt ngay",
+    "submitNowHint": "Chỉ các sản phẩm lượt này tạo hoặc sửa và đã đủ điều kiện; sản phẩm còn thiếu sẽ được liệt kê.",
+    "approveNow": "Duyệt luôn",
+    "approveNowHint": "Bạn tự duyệt (có ghi vết). Không tự đăng sản phẩm mới; sản phẩm đang bán chỉ được áp thay đổi.",
+    "submitted": "Đã gửi duyệt {n} sản phẩm",
+    "approved": "đã duyệt {n}",
+    "notReady": "Chưa gửi được {n} sản phẩm (chưa đủ điều kiện):",
+    "approveFailed": "Duyệt chưa được {n} sản phẩm (vẫn chờ duyệt):"
   }
 }

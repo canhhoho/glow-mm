@@ -1,4 +1,5 @@
 import "server-only";
+import { submitTouched } from "@/server/catalog/review";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { rawId } from "@/lib/schemas";
@@ -306,7 +307,8 @@ export type ApplySkip = { sku: string; reason: "PRICE_CHANGED" | "INPUT_CHANGED"
  * lãi/kho đã đổi) → bỏ qua INPUT_CHANGED; giá đã bị sửa sau xem trước → bỏ qua PRICE_CHANGED (không ghi đè).
  * Còn dòng chờ thì bản vẫn mở (áp tiếp / huỷ được); hết dòng chờ → APPLIED. Bản quá hạn / tạo trước D1 → phải tạo lại.
  */
-export async function applyRun(runId: string, variantIds: string[], userId: string, now = new Date()) {
+/** `submit` (§6.4 "Gửi duyệt ngay"): gửi duyệt các SP có dòng vừa áp, cùng transaction. Mặc định tắt. */
+export async function applyRun(runId: string, variantIds: string[], userId: string, now = new Date(), opts: { submit?: boolean } = {}) {
   if (variantIds.length === 0) throw new PricingError("Chưa chọn biến thể nào");
   return prisma.$transaction(
     async (tx) => {
@@ -335,7 +337,7 @@ export async function applyRun(runId: string, variantIds: string[], userId: stri
       if (productIds.length) await tx.$queryRaw`SELECT "id" FROM "Product" WHERE "id" IN (${Prisma.join(productIds)}) ORDER BY "id" FOR UPDATE`;
       const owner = new Map(owners.map((v) => [v.id, v]));
       const effective = new Map<string, Map<string, number>>();
-      return guardApproval(tx, productIds, userId, async () => {
+      const outcome = await guardApproval(tx, productIds, userId, async () => {
 
       let applied = 0;
       const stagedProducts = new Set<string>();
@@ -383,10 +385,15 @@ export async function applyRun(runId: string, variantIds: string[], userId: stri
         data: { userId, action: "pricing.apply", entity: "PriceUpdateRun", entityId: runId, data: { applied, skipped, remaining, awaitingApproval: stagedProducts.size } },
       });
       /** `awaitingApproval`: số SP đã duyệt có giá mới đang chờ duyệt (chưa hiện cho khách). */
-      return { applied, skipped, remaining, awaitingApproval: stagedProducts.size, stagedProductIds: [...stagedProducts] };
+      const appliedVariants = await tx.priceRunLine.findMany({ where: { runId, variantId: { in: lines.map((l) => l.variantId) }, status: "APPLIED", appliedAt: now }, select: { variantId: true } });
+      const touched = [...new Set(appliedVariants.map((l) => owner.get(l.variantId)!.productId))];
+      return { applied, skipped, remaining, awaitingApproval: stagedProducts.size, stagedProductIds: [...stagedProducts], touched };
       });
+      // Sau khi so dấu vân tay (guardApproval) — gửi duyệt không đổi nội dung SP.
+      const review = opts.submit ? await submitTouched(tx, outcome.touched, userId) : null;
+      return { ...outcome, review };
     },
-    { maxWait: 10_000, timeout: 30_000 },
+    { maxWait: 10_000, timeout: 120_000 },
   );
 }
 

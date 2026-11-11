@@ -4,7 +4,10 @@ import { redirect } from "next/navigation";
 import { revalidatePath, updateTag } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { ZodError } from "zod";
+import { prisma } from "@/lib/db";
 import { requirePermission } from "@/server/auth/session";
+import { can } from "@/server/auth/roles";
+import { finishBatchReview } from "@/server/catalog/batch-review-text";
 import { CATALOG_TAG } from "@/server/catalog/category-tree";
 import type { ActionState } from "@/server/inventory/actions";
 import { applyRun, cancelRun, createRate, previewRun } from "./runs";
@@ -66,10 +69,24 @@ export async function applyRunAction(_prev: ActionState, formData: FormData): Pr
   try {
     const user = await requirePermission("pricing:manage");
     const ids = formData.getAll("variantId").map(String);
-    const res = await applyRun(runId, ids, user.id);
+    // §6.4: gửi duyệt = thao tác của người quản lý SP; "Duyệt luôn" chỉ người có quyền duyệt (server kiểm lại).
+    const submit = formData.get("submitNow") === "on" && can(user.role, "catalog:manage");
+    const approve = submit && formData.get("approveNow") === "on";
+    if (approve) await requirePermission("catalog:approve");
+    const res = await applyRun(runId, ids, user.id, new Date(), { submit });
     const t = await getTranslations("Pricing");
     ok = t("appliedResult", { applied: res.applied, skipped: res.skipped.length, remaining: res.remaining });
     if (res.skipped.length) ok += ` (${res.skipped.map((s) => `${s.sku}: ${t(`skipShort.${s.reason}`)}`).join(", ")})`;
+    if (res.review) {
+      const view = await finishBatchReview(res.review, user.id, approve);
+      // Form áp giá biến mất khi hết dòng chờ → lưu kết quả để trang bản tính giá hiện lại (BatchReviewSummary).
+      await prisma.auditLog.create({ data: { userId: user.id, action: "pricing.apply.review", entity: "PriceUpdateRun", entityId: runId, data: view } });
+      const tb = await getTranslations("BatchReview");
+      ok += ` · ${tb("submitted", { n: view.submitted + view.already })}`;
+      if (view.approved) ok += ` · ${tb("approved", { n: view.approved })}`;
+      if (view.notReady.length) ok += ` · ${tb("notReady", { n: view.notReady.length })} ${view.notReady.map((r) => `${r.name} — ${r.reason}`).join("; ")}`;
+      if (view.approveFailed.length) ok += ` · ${tb("approveFailed", { n: view.approveFailed.length })} ${view.approveFailed.map((r) => `${r.name} — ${r.reason}`).join("; ")}`;
+    }
   } catch (e) {
     return { error: message(e) };
   }

@@ -2291,5 +2291,16 @@
     "status": "Status",
     "missing": "Short {n}",
     "ok": "Ready"
+  },
+  "BatchReview": {
+    "legend": "Review after this batch",
+    "submitNow": "Submit for approval now",
+    "submitNowHint": "Only products created or changed in this batch that are ready; the rest are listed.",
+    "approveNow": "Approve right away",
+    "approveNowHint": "Self-approval is logged. New products are never published automatically; products on sale only get the changes applied.",
+    "submitted": "{n} products submitted",
+    "approved": "{n} approved",
+    "notReady": "{n} products not submitted (not ready):",
+    "approveFailed": "{n} products not approved (still pending):"
   }
 }

@@ -121,6 +121,40 @@ export async function submitProducts(raw: unknown, userId: string) {
   return perProduct(ids, (tx, id) => submitOne(tx, id, userId));
 }
 
+/** Kết quả gửi duyệt cho các SP của một lượt (nhập Excel / áp bảng tính giá). */
+export type BatchSubmitResult = {
+  submitted: string[];
+  already: string[];
+  /** SP chưa gửi được: chưa đủ điều kiện (issues) hoặc lý do khác (error). */
+  skipped: { id: string; name: string; error?: string; issues?: Issue[] }[];
+};
+
+/**
+ * §6.4 "Gửi duyệt ngay": gửi duyệt các SP do lượt này tạo / sửa, trong CHÍNH transaction của lượt đó.
+ * SP chưa đủ điều kiện → bỏ qua kèm lý do (lỗi kiểm tra là lỗi JS trước khi ghi → transaction vẫn dùng tiếp được).
+ * SP đã duyệt mà không có bản đang sửa (vd. chỉ đổi khối lượng / hoa hồng) → không có gì để gửi, bỏ qua im lặng.
+ */
+export async function submitTouched(tx: Tx, productIds: string[], userId: string): Promise<BatchSubmitResult> {
+  const out: BatchSubmitResult = { submitted: [], already: [], skipped: [] };
+  for (const id of [...new Set(productIds)].sort()) {
+    const p = await tx.product.findUnique({ where: { id }, select: { slug: true, archivedAt: true, approvedAt: true, translations: { select: { locale: true, name: true } } } });
+    if (!p || p.archivedAt) continue;
+    if (p.approvedAt && !(await tx.productChangeRequest.findUnique({ where: { productId: id }, select: { productId: true } }))) continue;
+    try {
+      const r = await submitOne(tx, id, userId);
+      (r.already ? out.already : out.submitted).push(id);
+    } catch (e) {
+      if (!(e instanceof CatalogError) && !(e instanceof ReadinessError)) throw e;
+      out.skipped.push({
+        id,
+        name: productName(p.translations, p.slug),
+        ...(e instanceof ReadinessError ? { issues: e.issues } : { error: e.message }),
+      });
+    }
+  }
+  return out;
+}
+
 // ── Duyệt / Từ chối ──
 
 const reviewSchema = z.discriminatedUnion("decision", [
@@ -185,6 +219,19 @@ export async function reviewProducts(raw: unknown, userId: string) {
       ? rejectOne(tx, id, version.get(id)!, input.reason, userId)
       : approveOne(tx, id, version.get(id)!, userId, { publish: input.decision === "approvePublish" }),
   );
+}
+
+/**
+ * §6.4 "Duyệt luôn" (người có quyền duyệt): chạy SAU khi lượt nhập / áp giá đã commit, mỗi SP một transaction
+ * (một SP lỗi không ảnh hưởng lượt và SP khác — SP lỗi giữ Chờ duyệt). Không bao giờ tự đăng SP mới;
+ * SP đang bán chỉ được áp thay đổi. Ghi vết tự duyệt (`selfApproved`).
+ */
+export async function approveSubmitted(ids: string[], userId: string): Promise<ReviewResult[]> {
+  if (ids.length === 0) return [];
+  const versions = new Map(
+    (await prisma.product.findMany({ where: { id: { in: ids }, approvalStatus: "PENDING" }, select: { id: true, approvalVersion: true } })).map((p) => [p.id, p.approvalVersion]),
+  );
+  return perProduct([...versions.keys()], (tx, id) => approveOne(tx, id, versions.get(id)!, userId, { publish: false, selfApproved: true }));
 }
 
 // ── Huỷ thay đổi / Lưu & Duyệt ──

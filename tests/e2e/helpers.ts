@@ -101,8 +101,11 @@ export async function approveChanges(page: Page) {
   const status = check.getByTestId("approval-status");
   // Không có bản đang sửa (thay đổi trùng giá trị đang bán) → không có gì để duyệt.
   if ((await status.getAttribute("data-change")) === "") return;
-  await check.getByRole("button", { name: "Gửi duyệt", exact: true }).click();
-  await expect(status).toHaveAttribute("data-change", "PENDING", { timeout: 15_000 });
+  // §6.4: lượt nhập Excel / áp bảng tính giá có thể đã "Gửi duyệt ngay" → bỏ bước gửi.
+  if ((await status.getAttribute("data-change")) !== "PENDING") {
+    await check.getByRole("button", { name: "Gửi duyệt", exact: true }).click();
+    await expect(status).toHaveAttribute("data-change", "PENDING", { timeout: 15_000 });
+  }
   page.once("dialog", (d) => d.accept());
   await check.getByRole("button", { name: "Duyệt thay đổi", exact: true }).click();
   await expect(status).toHaveAttribute("data-change", "", { timeout: 15_000 });
