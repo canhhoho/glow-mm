@@ -55,6 +55,7 @@ const CHECKS: Check[] = [
   },
 
   // ── Duyệt (P1-A: backfill reviewStatus / firstPublishedAt) ──
+  { group: "Duyệt", key: "archived_published", title: "SP ngừng KD mà vẫn đang đăng (phải bằng 0 — D9)", sql: `SELECT slug AS ref FROM "Product" WHERE published AND "archivedAt" IS NOT NULL` },
   { group: "Duyệt", key: "published_unapproved", title: "SP đang đăng mà chưa có dấu duyệt (danh sách cho Q-A)", sql: `SELECT slug AS ref FROM "Product" WHERE published AND "approvedAt" IS NULL` },
   {
     group: "Duyệt", key: "published_without_publish_audit", title: "SP đang đăng không có nhật ký product.publish (firstPublishedAt sẽ là gần đúng)",

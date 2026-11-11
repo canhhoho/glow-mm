@@ -176,6 +176,7 @@
     "Order.st.PACKING",
     "Order.st.PAYMENT_CONFIRMED",
     "Product.buyNow",
+    "Product.expiryNone",
     "Product.image",
     "Product.paoMonths",
     "Product.paoTitle",

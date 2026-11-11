@@ -51,7 +51,8 @@
     "image": "Image",
     "preorder": "Pre-order",
     "preorderAvailable": "Out of stock · pre-order available",
-    "preorderNote": "Pre-ordered items ship when they arrive. An order with pre-ordered items ships once everything is in stock."
+    "preorderNote": "Pre-ordered items ship when they arrive. An order with pre-ordered items ships once everything is in stock.",
+    "expiryNone": "No expiry date"
   },
   "Footer": {
     "contact": "Contact",

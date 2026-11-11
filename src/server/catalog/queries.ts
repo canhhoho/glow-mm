@@ -1,4 +1,5 @@
 import "server-only";
+import { STORE_PRODUCT } from "@/server/catalog/store-visibility";
 import { prisma } from "@/lib/db";
 import { buildCategoryTree } from "./category-tree";
 
@@ -17,8 +18,8 @@ export async function listRootCategories(locale: string) {
     where: {
       parentId: null,
       OR: [
-        { products: { some: { published: true } } },
-        { children: { some: { products: { some: { published: true } } } } },
+        { products: { some: STORE_PRODUCT } },
+        { children: { some: { products: { some: STORE_PRODUCT } } } },
       ],
     },
     orderBy: { sortOrder: "asc" },
@@ -34,7 +35,7 @@ export async function listRootCategories(locale: string) {
 /** Cây danh mục 2 cấp cho menu header (chỉ nhánh có SP đã đăng). */
 export async function listCategoryTree(locale: string) {
   const categories = await prisma.category.findMany({
-    include: { translations: true, _count: { select: { products: { where: { published: true } } } } },
+    include: { translations: true, _count: { select: { products: { where: STORE_PRODUCT } } } },
   });
   return buildCategoryTree(
     categories.map((c) => ({

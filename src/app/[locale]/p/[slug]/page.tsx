@@ -182,14 +182,15 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
                         : v.available <= LOW_STOCK
                           ? t("lowStock", { count: v.available })
                           : t("inStock")}
-                      {v.expiryDate && ` · ${t("expiry")}: ${fmtDay(v.expiryDate)}`}
+                      {v.expiry?.kind === "DATED" && ` · ${t("expiry")}: ${fmtDay(v.expiry.date)}`}
+                      {v.expiry?.kind === "NONE" && ` · ${t("expiryNone")}`}
                     </span>
                   </span>
                   <span className="font-medium text-brand">{formatMmk(v.priceMmk, locale)}</span>
                 </label>
               ))}
             </fieldset>
-            {p.variants.some((v) => v.expiryDate) && <p className="text-xs text-muted-foreground">{t("expiryNote")}</p>}
+            {p.variants.some((v) => v.expiry) && <p className="text-xs text-muted-foreground">{t("expiryNote")}</p>}
             {p.variants.some((v) => v.available <= 0 && v.preorder > 0) && (
               <p className="rounded-lg bg-secondary px-3 py-2 text-xs text-secondary-foreground" data-testid="preorder-note">
                 {t("preorderNote")}
