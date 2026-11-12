@@ -3,7 +3,8 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
-import { allocateLandedCost, vndToMmk, type AllocationMethod } from "./landed-cost";
+import { allocateLandedCost, type AllocationMethod } from "./landed-cost";
+import { lotCostMmk, type ReceiptCostLine } from "./lot-cost";
 import type { Tx } from "./ledger";
 
 /** Chuyến hàng VN→MM: gom chi phí (ship/thuế/phí) và phân bổ vào giá vốn từng lô. */
@@ -69,8 +70,14 @@ async function allocationInput(tx: Tx, shipmentId: string) {
   const received = await tx.stockLedger.groupBy({ by: ["batchId"], where: { batchId: { in: shipment.batches.map(b => b.id) }, document: { type: "RECEIVE", status: "POSTED" } }, _sum: { qtyDelta: true } });
   const qtyByBatch = new Map(received.map(r => [r.batchId, r._sum.qtyDelta ?? 0]));
   const batches = shipment.batches.flatMap(b => b.unitCostVnd != null && (qtyByBatch.get(b.id) ?? 0) > 0 ? [{ ...b, unitCostVnd: b.unitCostVnd, qty: qtyByBatch.get(b.id)! }] : []);
+  const lines = await tx.stockDocumentLine.findMany({
+    where: { batchId: { in: batches.map(b => b.id) }, qty: { gt: 0 }, document: { type: "RECEIVE", status: "POSTED" } },
+    include: { rate: true },
+  });
+  const linesByBatch = new Map<string, ReceiptCostLine[]>();
+  for (const l of lines) linesByBatch.set(l.batchId!, [...(linesByBatch.get(l.batchId!) ?? []), { qty: l.qty, unitCostVnd: l.unitCostVnd, unitCostMmk: l.unitCostMmk, landedCostVnd: l.landedCostVnd, rateId: l.rateId, rate: l.rate }]);
   const input = { method: shipment.allocationMethod, costs: shipment.costs.map(c => ({ id: c.id, type: c.type, amountVnd: c.amountVnd })), batches: batches.map(b => ({ id: b.id, qty: b.qty, unitCostVnd: b.unitCostVnd, weightGrams: b.variant.weightGrams, rateId: b.rateId, rate: b.rate?.mmkPerVnd.toString() ?? null })) };
-  return { shipment, batches, input, fingerprint: createHash("sha256").update(JSON.stringify(input)).digest("hex"), totalCosts: shipment.costs.reduce((sum,c) => sum + c.amountVnd, 0) };
+  return { shipment, batches, linesByBatch, input, fingerprint: createHash("sha256").update(JSON.stringify(input)).digest("hex"), totalCosts: shipment.costs.reduce((sum,c) => sum + c.amountVnd, 0) };
 }
 
 export async function shipmentAllocationStatus(shipmentId: string) {
@@ -107,7 +114,7 @@ export async function allocateShipment(shipmentId: string, userId: string, selec
   return prisma.$transaction(async (tx) => {
     await lockShipment(tx, shipmentId);
     if (selectedMethod) await tx.inboundShipment.update({ where: { id: shipmentId }, data: { allocationMethod: shipmentSchema.shape.allocationMethod.parse(selectedMethod) } });
-    const { shipment, batches, totalCosts, input, fingerprint } = await allocationInput(tx, shipmentId);
+    const { shipment, batches, linesByBatch, totalCosts, input, fingerprint } = await allocationInput(tx, shipmentId);
     if (batches.length === 0) throw new Error("Chuyến hàng chưa có lô nào đã nhập kho");
     const missing = shipment.allocationMethod === "BY_WEIGHT" ? batches.filter(b => !b.variant.weightGrams).map(b => b.variant.sku) : [];
     if (missing.length) throw new Error(`Thiếu khối lượng SKU: ${[...new Set(missing)].join(", ")}`);
@@ -124,7 +131,8 @@ export async function allocateShipment(shipmentId: string, userId: string, selec
         where: { id: b.id },
         data: {
           landedCostVnd: r.landedUnitVnd,
-          landedCostMmk: b.rate ? vndToMmk(r.landedUnitVnd, b.rate) : null,
+          // Các lần nhập của lô cùng tỷ giá → đổi một lần như trước; khác tỷ giá → đổi từng lần nhập (lot-cost.ts).
+          landedCostMmk: lotCostMmk(linesByBatch.get(b.id) ?? [], r.landedUnitVnd, b.rate, r.landedUnitVnd - b.unitCostVnd),
         },
       });
     }

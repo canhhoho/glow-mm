@@ -9,7 +9,7 @@ import { pickFefo, sellableBatchWhere } from "./fefo";
 import { baseAvailability } from "@/server/orders/availability";
 import { lockVariants } from "@/server/orders/reservations";
 import { applyMoves, type StockMove, type Tx } from "./ledger";
-import { vndToMmk } from "./landed-cost";
+import { lotCost, lotCostMmk, type ReceiptCostLine } from "./lot-cost";
 import { guardApproval } from "@/server/catalog/approval";
 import { shippingMmk } from "@/server/pricing/formula";
 import { latestRate } from "@/server/pricing/latest-rate";
@@ -146,7 +146,16 @@ async function fillWeights(tx: Tx, weights: { variantId: string; weightGrams: nu
 
 type DocumentInput = z.infer<typeof documentSchema>;
 type ReceiveInput = z.infer<typeof receiveSchema>;
-type DraftLine = { variantId: string; batchId: string | null; stockType: StockType; qty: number };
+type DraftLine = {
+  variantId: string;
+  batchId: string | null;
+  stockType: StockType;
+  qty: number;
+  /** P1-C: giá mua / giá vốn về kho của chính lần nhập này (dòng NHẬP). */
+  unitCostVnd?: number | null;
+  unitCostMmk?: number | null;
+  landedCostVnd?: number | null;
+};
 
 /** Kiểm vị trí đi/đến của phiếu (kho đang dùng, đúng kho của SP với hàng vào kho bán…). */
 async function checkLocations(tx: Tx, input: DocumentInput) {
@@ -212,15 +221,11 @@ async function buildReceiveLines(tx: Tx, input: ReceiveInput): Promise<DraftLine
     if (existing && (existing.shipmentId ?? null) !== (input.shipmentId ?? null)) fail(`Lô ${l.lotNo} có chuyến hàng khác. Chọn đúng chuyến hoặc dùng thao tác gắn lô trước khi lập phiếu.`);
     const unitCostVnd = l.unitCostVnd ?? null;
     const unitCostMmk = l.unitCostMmk ?? null;
-    if (
-      existing &&
-      (existing.expiryDate?.getTime() !== l.expiryDate?.getTime() ||
-        existing.expiryStatus !== expiryStatus ||
-        existing.unitCostVnd !== unitCostVnd ||
-        existing.unitCostMmk !== unitCostMmk ||
-        (l.landedCostVnd !== undefined && existing.landedCostVnd !== l.landedCostVnd))
-    ) {
-      fail(`Lô ${l.lotNo} đã có với hạn dùng khác hoặc giá vốn khác`);
+    // P1-C (D11): nhập lại cùng lô được phép với GIÁ khác (giá vốn lô = bình quân theo SL đã nhập, tính lại khi ghi sổ);
+    // hạn dùng phải giữ nguyên (FEFO theo lô) và một lô chỉ có một loại tiền.
+    if (existing && (existing.unitCostVnd == null) !== (unitCostVnd == null)) fail(`Lô ${l.lotNo} đã có giá mua bằng loại tiền khác (VND / MMK)`);
+    if (existing && (existing.expiryDate?.getTime() !== l.expiryDate?.getTime() || existing.expiryStatus !== expiryStatus)) {
+      fail(`Lô ${l.lotNo} đã có với hạn dùng khác`);
     }
     const batch =
       existing ??
@@ -240,7 +245,15 @@ async function buildReceiveLines(tx: Tx, input: ReceiveInput): Promise<DraftLine
         },
       }));
     batches.set(lotKey(l.variantId, l.lotNo), batch); // dòng sau cùng (SKU, lô) dùng lại lô này
-    lines.push({ variantId: l.variantId, batchId: batch.id, stockType: l.stockType, qty: l.qty });
+    lines.push({
+      variantId: l.variantId,
+      batchId: batch.id,
+      stockType: l.stockType,
+      qty: l.qty,
+      unitCostVnd,
+      unitCostMmk,
+      landedCostVnd: input.shipmentId ? null : (l.landedCostVnd ?? null),
+    });
   }
   return lines;
 }
@@ -433,6 +446,73 @@ export async function postDocument(documentId: string, userId: string) {
  * Ghi sổ trong transaction có sẵn (đóng gói đơn: đổi trạng thái đơn + trừ kho cùng một transaction).
  * `blockDays`: ngưỡng hạn dùng khi tự chọn lô — xuất nội bộ 0, bán hàng dùng `salesBlockDays()`.
  */
+/**
+ * P1-C (D11) — sau khi ghi sổ phiếu NHẬP: giá vốn mỗi lô chạm tới = bình quân theo SL đã nhập của MỌI dòng NHẬP đã ghi sổ
+ * của lô (`lot-cost.ts`). Một lần nhập → giữ đúng giá dòng như trước. Lô thuộc chuyến hàng: giá vốn về kho do phân bổ chuyến
+ * quyết định (phân bổ báo "cũ" khi SL đổi) nên không đụng ở đây. Giá vốn tạm tính được tính lại theo giá bình quân mới.
+ */
+async function refreshReceivedLots(tx: Tx, doc: { id: string; estimatedShipMmkPerKg: number | null }, batchIds: string[]) {
+  const ids = [...new Set(batchIds)].sort();
+  if (ids.length === 0) return;
+  const rate = await latestRate(tx);
+  // Tỷ giá riêng của lần nhập này (Excel đã ghim tỷ giá người dùng xem thì giữ nguyên).
+  if (rate) await tx.stockDocumentLine.updateMany({ where: { documentId: doc.id, rateId: null, unitCostVnd: { not: null } }, data: { rateId: rate.id } });
+  await tx.$queryRaw`SELECT "id" FROM "Batch" WHERE "id" IN (${Prisma.join(ids)}) ORDER BY "id" FOR UPDATE`;
+  const batches = await tx.batch.findMany({ where: { id: { in: ids } }, include: { rate: true, variant: { select: { weightGrams: true } } } });
+  const posted = await tx.stockDocumentLine.findMany({
+    where: { batchId: { in: ids }, qty: { gt: 0 }, document: { type: "RECEIVE", status: "POSTED" } },
+    include: { rate: true },
+    orderBy: [{ document: { postedAt: "asc" } }, { id: "asc" }],
+  });
+  for (const b of batches) {
+    const lines: ReceiptCostLine[] = posted
+      .filter((l) => l.batchId === b.id && (l.unitCostVnd != null || l.unitCostMmk != null))
+      .map((l) => ({ qty: l.qty, unitCostVnd: l.unitCostVnd, unitCostMmk: l.unitCostMmk, landedCostVnd: l.landedCostVnd, rateId: l.rateId, rate: l.rate }));
+    if (lines.length === 0) continue;
+    const cost = lotCost(lines);
+    const data: Prisma.BatchUncheckedUpdateInput = {};
+    if (cost.unitCostVnd != null) data.unitCostVnd = cost.unitCostVnd;
+    if (cost.unitCostMmk != null) {
+      data.unitCostMmk = cost.unitCostMmk;
+      data.landedCostMmk = cost.unitCostMmk; // lô mua tại Myanmar: giá vốn MMK = giá mua
+    }
+    const batchRateId = b.rateId ?? lines.find((l) => l.rateId)?.rateId ?? null;
+    if (batchRateId && b.rateId == null && cost.unitCostVnd != null) data.rateId = batchRateId;
+    const fallbackRate = b.rate ?? rate;
+    let landedVnd = b.landedCostVnd;
+    let landedMmk = b.landedCostMmk;
+    if (cost.unitCostVnd != null && b.shipmentId == null) {
+      if (cost.landedCostVnd != null) {
+        // Giá vốn về kho nhập tay (Excel `inbound_unit_vnd`): bình quân theo SL, đổi sang MMK theo tỷ giá từng lần nhập.
+        landedVnd = cost.landedCostVnd;
+        landedMmk = lotCostMmk(lines.map((l) => ({ ...l, unitCostVnd: l.landedCostVnd })), cost.landedCostVnd, fallbackRate);
+        data.landedCostVnd = landedVnd;
+        if (landedMmk != null) data.landedCostMmk = landedMmk;
+      } else if (b.landedCostVnd != null) {
+        // Có lần nhập sau không kèm giá vốn về kho → chưa đủ dữ liệu, bỏ giá vốn cũ (sẽ dùng giá tạm tính).
+        landedVnd = null;
+        landedMmk = null;
+        data.landedCostVnd = null;
+        data.landedCostMmk = null;
+      }
+    }
+    // Giá vốn tạm tính (chỉ khi chưa có giá vốn thực tế): tính lại theo giá bình quân mới.
+    const shipPerKg = doc.estimatedShipMmkPerKg ?? b.estimatedShipMmkPerKg;
+    const weight = b.variant.weightGrams ?? b.estimatedWeightGrams;
+    if (cost.unitCostVnd != null && landedVnd == null && landedMmk == null && shipPerKg != null && weight != null && weight > 0 && (doc.estimatedShipMmkPerKg != null || b.estimatedCostMmk != null)) {
+      const mmk = lotCostMmk(lines, cost.unitCostVnd, fallbackRate);
+      if (mmk != null) {
+        const estimate = mmk + shippingMmk(shipPerKg, weight);
+        if (!Number.isSafeInteger(estimate) || estimate > 2_147_483_647) throw new DocumentError(`Lô ${b.lotNo}: giá vốn tạm tính vượt giới hạn`);
+        data.estimatedCostMmk = estimate;
+        data.estimatedShipMmkPerKg = shipPerKg;
+        data.estimatedWeightGrams = weight;
+      }
+    }
+    if (Object.keys(data).length) await tx.batch.update({ where: { id: b.id }, data });
+  }
+}
+
 export async function postDocumentTx(tx: Tx, documentId: string, userId: string, opts: { blockDays?: number } = {}) {
   // Chuyển trạng thái nguyên tử: chỉ một request ghi sổ được.
   const claimed = await tx.stockDocument.updateMany({
@@ -512,39 +592,8 @@ export async function postDocumentTx(tx: Tx, documentId: string, userId: string,
   if (!doc.orderId) await assertKeepsReservations(tx, moves, today);
   await applyMoves(tx, documentId, userId, moves);
 
-  // Nhận hàng: gắn tỷ giá hiện hành vào lô (dùng tính giá vốn MMK).
-  if (doc.type === "RECEIVE") {
-    const rate = await latestRate(tx);
-    if (rate) {
-      await tx.batch.updateMany({
-        // Chỉ lô giá VND cần tỷ giá; lô MMK đã có giá vốn MMK từ lúc tạo (P24).
-        where: { id: { in: resolved.map((r) => r.batchId) }, rateId: null, unitCostVnd: { not: null } },
-        data: { rateId: rate.id },
-      });
-      // Opening stock with explicit landed cost can be valued without an inbound shipment.
-      const batches = await tx.batch.findMany({ where: { id: { in: resolved.map((r) => r.batchId) }, shipmentId: null, landedCostVnd: { not: null } }, include: { rate: true } });
-      for (const b of batches) {
-        await tx.batch.update({ where: { id: b.id }, data: { landedCostMmk: vndToMmk(b.landedCostVnd!, b.rate ?? rate) } });
-      }
-      if (doc.estimatedShipMmkPerKg != null) {
-        const unvalued = await tx.batch.findMany({
-          where: { id: { in: resolved.map((r) => r.batchId) }, unitCostVnd: { not: null }, landedCostVnd: null, landedCostMmk: null, estimatedCostMmk: null },
-          include: { rate: true, variant: { select: { weightGrams: true } } },
-        });
-        for (const b of unvalued) {
-          const weight = b.variant.weightGrams;
-          if (weight == null || weight <= 0) continue;
-          const estimate = vndToMmk(b.unitCostVnd!, b.rate ?? rate) + shippingMmk(doc.estimatedShipMmkPerKg, weight);
-          if (!Number.isSafeInteger(estimate) || estimate > 2_147_483_647) throw new DocumentError(`Lô ${b.lotNo}: giá vốn tạm tính vượt giới hạn`);
-          await tx.batch.update({ where: { id: b.id }, data: {
-            estimatedCostMmk: estimate,
-            estimatedShipMmkPerKg: doc.estimatedShipMmkPerKg,
-            estimatedWeightGrams: weight,
-          } });
-        }
-      }
-    }
-  }
+  // Nhận hàng: ghim tỷ giá vào dòng và tính lại giá vốn lô = bình quân theo SL đã nhập (P1-C, D11).
+  if (doc.type === "RECEIVE") await refreshReceivedLots(tx, doc, resolved.map((r) => r.batchId));
 
   await tx.auditLog.create({
     data: { userId, action: "stock.post", entity: "StockDocument", entityId: documentId, data: { code: doc.code } },

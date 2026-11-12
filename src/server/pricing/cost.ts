@@ -50,6 +50,9 @@ export async function variantCosts(tx: Tx, variantIds: string[], currency: CostC
     select: {
       id: true,
       variantId: true,
+      // P1-C: giá mua của CHÍNH lần nhập mới nhất (lô nhập nhiều lần có giá bình quân riêng ở Batch).
+      unitCostVnd: true,
+      unitCostMmk: true,
       document: { select: { id: true, code: true, postedAt: true } },
       batch: { select: { id: true, lotNo: true, unitCostVnd: true, landedCostVnd: true, unitCostMmk: true } },
     },
@@ -62,8 +65,8 @@ export async function variantCosts(tx: Tx, variantIds: string[], currency: CostC
     base.set(
       l.variantId,
       currency === "VND"
-        ? { costVnd: basis === "PURCHASE" ? b.unitCostVnd! : (b.landedCostVnd ?? b.unitCostVnd!), landed: basis === "LANDED" && b.landedCostVnd != null, source }
-        : { costVnd: b.unitCostMmk!, landed: true, source },
+        ? { costVnd: basis === "PURCHASE" ? (l.unitCostVnd ?? b.unitCostVnd!) : (b.landedCostVnd ?? l.unitCostVnd ?? b.unitCostVnd!), landed: basis === "LANDED" && b.landedCostVnd != null, source }
+        : { costVnd: l.unitCostMmk ?? b.unitCostMmk!, landed: true, source },
     );
   }
 

@@ -412,6 +412,7 @@ model ExchangeRate {
   createdAt   DateTime         @default(now())
   priceRuns   PriceUpdateRun[]
   batches     Batch[]
+  documentLines StockDocumentLine[]
 
   @@index([effectiveAt])
 }
@@ -709,8 +710,17 @@ model StockDocumentLine {
   stockType  StockType     @default(SELLABLE)
   /// Với ADJUST có thể âm.
   qty        Int
+  /// P1-C (D11): giá mua + tỷ giá của CHÍNH lần nhập này (chỉ dòng NHẬP) — giá vốn lô = bình quân theo SL đã nhập
+  /// của các dòng đã ghi sổ (`inventory/lot-cost.ts`). Đúng một loại tiền (CHECK ở DB).
+  unitCostVnd   Int?
+  unitCostMmk   Int?
+  /// Giá vốn về kho nhập tay (cột `inbound_unit_vnd` của Excel) — chỉ lô không thuộc chuyến hàng.
+  landedCostVnd Int?
+  rateId        String?
+  rate          ExchangeRate? @relation(fields: [rateId], references: [id])
 
   @@index([documentId])
+  @@index([batchId])
 }
 
 /// Sổ cái — chỉ INSERT, không UPDATE/DELETE.
