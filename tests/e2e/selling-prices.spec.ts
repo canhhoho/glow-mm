@@ -8,7 +8,7 @@ test("giá bán: tìm SKU, sửa giá tại bảng và mở tính tự động",
   const row = page.getByTestId("selling-price-row").first();
   const sku = await row.locator("td").nth(1).locator("span").innerText();
   await page.getByRole("searchbox").fill(sku);
-  await page.getByRole("button", { name: "Tìm kiếm", exact: true }).click();
+  await page.getByRole("button", { name: "Lọc", exact: true }).click();
   await expect(row).toContainText(sku);
   await row.locator("summary").click();
   const price = row.getByRole("spinbutton");

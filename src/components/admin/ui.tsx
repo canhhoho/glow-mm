@@ -288,11 +288,14 @@ export function Badge({ tone = "neutral", children }: { tone?: keyof typeof TONE
 /** Ô nhập admin cao 36px (h-9) — nút cạnh ô dùng `size="lg"` (cũng h-9) để thẳng hàng. */
 export const fieldClass = FIELD.compact;
 
-/** Nhãn trường: chữ nằm TRÊN ô (grid). Không dùng `space-y-1` — span + ô inline sẽ đứng cạnh nhau khi ô không `w-full`. */
-export const fieldLabelClass = "grid content-start gap-1 text-sm";
+/**
+ * Nhãn trường: chữ nằm TRÊN ô (grid). Không dùng `space-y-1` — span + ô inline sẽ đứng cạnh nhau khi ô không `w-full`.
+ * Chữ nhãn (span đầu tiên) luôn màu phụ — mọi form cùng một kiểu, kể cả nơi quên đặt màu cho span.
+ */
+export const fieldLabelClass = "grid content-start gap-1 text-sm [&>span:first-child]:text-muted-foreground";
 
 /** Nhãn nhỏ (text-xs) cho form dày đặc: dòng nhập lô, bảng nhập nhiều cột. */
-export const fieldLabelSmClass = "grid content-start gap-1 text-xs";
+export const fieldLabelSmClass = "grid content-start gap-1 text-xs [&>span:first-child]:text-muted-foreground";
 
 /** Ô form có nhãn phía trên (chữ nhãn màu phụ). `hint` = dòng gợi ý nhỏ dưới ô. */
 export function Field({ label, hint, className, children }: { label: React.ReactNode; hint?: React.ReactNode; className?: string; children: React.ReactNode }) {

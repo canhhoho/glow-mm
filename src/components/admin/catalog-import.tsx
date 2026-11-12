@@ -1,11 +1,11 @@
 "use client";
 
 import { useActionState } from "react";
-import { Check, Eye } from "lucide-react";
+import { Check, Download, Eye } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { catalogImportAction } from "@/server/catalog/actions";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { FileField } from "@/components/admin/file-field";
 import { Badge, DataTable, Notice, Td } from "@/components/admin/ui";
 import { fmtInt } from "@/lib/format";
@@ -19,14 +19,14 @@ export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) 
   const [state, action, pending] = useActionState(catalogImportAction, undefined);
   const preview = state?.preview;
   return (
-    <section className="space-y-4 rounded-lg border p-4">
+    <section className="space-y-4 rounded-xl border bg-card p-4">
       <div>
         <h2 className="font-medium">{t("title")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{t("help")}</p>
       </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
-        <a className="text-primary underline" href="/api/templates/catalog.xlsx">{t("templateBlank")}</a>
-        <a className="text-primary underline" href="/api/templates/catalog-current.xlsx">{t("templateCurrent")}</a>
+      <div className="flex flex-wrap gap-2">
+        <a className={buttonVariants({ variant: "outline", size: "lg" })} href="/api/templates/catalog.xlsx"><Download aria-hidden />{t("templateBlank")}</a>
+        <a className={buttonVariants({ variant: "outline", size: "lg" })} href="/api/templates/catalog-current.xlsx"><Download aria-hidden />{t("templateCurrent")}</a>
       </div>
       <p className="text-sm text-muted-foreground">
         {t("setupHint")} <Link className="text-primary underline" href="/admin/categories">{t("categories")}</Link> ·{" "}
@@ -38,7 +38,7 @@ export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) 
         <FileField name="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required aria-label={t("file")} className="max-w-72" />
         <Button type="submit" size="lg" disabled={pending}><Eye aria-hidden />{t("preview")}</Button>
       </form>
-      {state?.error && <p role="alert" className="text-sm whitespace-pre-line text-destructive">{state.error}</p>}
+      {state?.error && <Notice tone="danger" className="whitespace-pre-line">{state.error}</Notice>}
 
       {preview && (
         <div className="space-y-3" data-testid="catalog-import-preview">
@@ -54,10 +54,10 @@ export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) 
             </Notice>
           )}
           {preview.warnings.length > 0 && (
-            <div className="rounded-lg bg-muted p-4 text-sm">
+            <Notice tone="warning" className="p-4">
               <p className="font-medium">{t("warningsTitle")}</p>
               <ul className="mt-1 list-disc space-y-1 pl-5">{preview.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
-            </div>
+            </Notice>
           )}
           <form action={action} className="space-y-2">
             <input type="hidden" name="step" value="confirm" />
@@ -68,14 +68,14 @@ export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) 
               {t(preview.errors.length > 0 ? "confirmBlocked" : "confirmHelp")}
             </p>
           </form>
-          <DataTable head={["colLine", "colAction", "colProduct", "colSku", "colPrice", "colStock", "colCost"].map((k) => t(k))}>
+          <DataTable numeric={[0, 4, 6]} head={["colLine", "colAction", "colProduct", "colSku", "colPrice", "colStock", "colCost"].map((k) => t(k))}>
             {preview.rows.map((r, i) => (
               <tr key={i}>
-                <Td className="tabular-nums">{r.line}</Td>
+                <Td numeric>{r.line}</Td>
                 <Td><Badge tone={ACTION_TONE[r.action]}>{t(`action.${r.action}`)}</Badge></Td>
                 <Td>{r.name}<div className="text-xs text-muted-foreground">{r.label}</div></Td>
                 <Td className="font-mono text-xs">{r.sku}</Td>
-                <Td className="whitespace-nowrap tabular-nums">
+                <Td numeric className="whitespace-nowrap">
                   {r.oldPrice != null && r.oldPrice !== r.price && <span className="text-muted-foreground line-through">{fmtInt(r.oldPrice)}</span>} {r.price == null ? <span className="text-muted-foreground">—</span> : fmtInt(r.price)}
                 </Td>
                 <Td>
@@ -88,7 +88,7 @@ export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) 
                     </>
                   )}
                 </Td>
-                <Td className="tabular-nums">{r.stock ? fmtInt(r.stock.costMmk) : ""}</Td>
+                <Td numeric>{r.stock ? fmtInt(r.stock.costMmk) : ""}</Td>
               </tr>
             ))}
           </DataTable>
@@ -96,7 +96,7 @@ export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) 
       )}
 
       {state?.result && (
-        <div role="status" className="space-y-2 rounded-lg bg-muted p-4 text-sm">
+        <Notice tone="success" className="space-y-2 p-4">
           <p>{t("success", { created: state.result.createdProducts, updated: state.result.updatedProducts })}</p>
           {state.result.documents.length > 0 && (
             <ul className="space-y-1">
@@ -109,7 +109,7 @@ export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) 
           )}
           {state.review && <BatchReviewSummary review={state.review} />}
           <Link href="/admin/products" className="text-primary underline">{t("finishProducts")}</Link>
-        </div>
+        </Notice>
       )}
     </section>
   );

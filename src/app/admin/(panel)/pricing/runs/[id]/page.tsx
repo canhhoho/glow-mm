@@ -1,4 +1,4 @@
-import { Check, CircleCheck, Clock, ListOrdered, TriangleAlert } from "lucide-react";
+import { Check, CircleCheck, Clock, ListOrdered, TriangleAlert, X } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -54,7 +54,7 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
   const table = (
     <DataTable
       head={[
-        editable ? t("select") : "",
+        editable ? t("select") : <span key="sel" className="sr-only">{t("select")}</span>,
         t("sku"),
         t("product"),
         mmk ? t("costMmk") : vn ? t("purchaseCost") : t("cost"),
@@ -171,12 +171,12 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
       </div>
       {expired && <Notice tone="danger">{t("expired")}</Notice>}
       {lastReview?.data && (
-        <div className="rounded-lg bg-muted p-4 text-sm">
+        <Notice className="p-4">
           <BatchReviewSummary review={lastReview.data as unknown as BatchReviewView} />
-        </div>
+        </Notice>
       )}
       {run.skippedVariants.length > 0 && (
-        <details className="rounded-md border px-3 py-2 text-sm" data-testid="run-skipped">
+        <details className="rounded-xl border bg-card px-4 py-3 text-sm" data-testid="run-skipped">
           <summary className="cursor-pointer font-medium">{t("skippedTitle", { count: run.skippedVariants.length })}</summary>
           <ul className="mt-2 space-y-1 text-xs">
             {(["NO_COST", "NO_WEIGHT", "NO_PROFIT", "PRICE_ZERO"] as const).map((reason) => {
@@ -192,17 +192,17 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
       )}
       {editable && pending > 0 ? (
         <>
-          <ActionForm action={applyRunAction} submitLabel={t("apply")} confirm={t("applyConfirm")} icon={<Check aria-hidden className="size-4 shrink-0" />}>
+          <ActionForm action={applyRunAction} submitLabel={t("apply")} confirm={t("applyConfirm")} icon={<Check aria-hidden />}>
             <input type="hidden" name="runId" value={run.id} />
             {table}
             {can(user.role, "catalog:manage") && <BatchReviewOptions canApprove={can(user.role, "catalog:approve")} />}
           </ActionForm>
-          <ActionButton action={cancelRunAction} fields={{ runId: run.id }} label={t("cancelRun")} variant="outline" />
+          <ActionButton action={cancelRunAction} fields={{ runId: run.id }} label={t("cancelRun")} icon={<X aria-hidden />} iconOnly={false} variant="outline" />
         </>
       ) : (
         <>
           {table}
-          {open && <ActionButton action={cancelRunAction} fields={{ runId: run.id }} label={t("cancelRun")} variant="outline" />}
+          {open && <ActionButton action={cancelRunAction} fields={{ runId: run.id }} label={t("cancelRun")} icon={<X aria-hidden />} iconOnly={false} variant="outline" />}
         </>
       )}
     </Page>

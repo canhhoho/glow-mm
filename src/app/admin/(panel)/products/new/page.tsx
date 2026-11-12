@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requirePagePermission } from "@/server/auth/session";
 import { getProductForEdit, productCopyOptions, productFormOptions } from "@/server/catalog/admin-queries";
 import { ProductCreateForm, type CreatePrefill } from "@/components/admin/product-create-form";
+import { Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fieldClass, fieldLabelClass, LinkButton, Page, PageHeader } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
@@ -38,13 +39,13 @@ export default async function NewProductPage({ searchParams }: PageProps<"/admin
     : undefined;
 
   return (
-    <Page>
+    <Page width="narrow">
       <PageHeader
         title={kind === "combo" ? t("create.comboTitle") : t("new")}
         back={{ href: "/admin/products", label: td("back") }}
         actions={!source && <LinkButton href={kind === "combo" ? "/admin/products/new" : "/admin/products/new?type=combo"} icon="new">{kind === "combo" ? t("new") : t("newCombo")}</LinkButton>}
       />
-      <details open={!!source} className="max-w-2xl rounded-lg border p-4">
+      <details open={!!source} className="rounded-xl border bg-card p-4">
         <summary className="cursor-pointer font-medium">{t("copyFrom")}</summary>
         <form action="/admin/products/new" method="get" className="mt-3 flex flex-wrap items-end gap-2">
           <label className={cn(fieldLabelClass, "min-w-0 flex-1")}>
@@ -54,10 +55,10 @@ export default async function NewProductPage({ searchParams }: PageProps<"/admin
               {sources.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
             </select>
           </label>
-          <Button type="submit" size="lg" variant="outline" disabled={sources.length === 0}>{t("copyLoad")}</Button>
+          <Button type="submit" size="lg" variant="outline" disabled={sources.length === 0}><Copy aria-hidden />{t("copyLoad")}</Button>
         </form>
         <p className="mt-2 text-sm text-muted-foreground">{t("create.copyHelp")}</p>
-        {source && <p role="status" className="mt-2 text-sm">{t("copyLoaded", { name: source.en.name || source.my.name || source.slug })}</p>}
+        {source && <p role="status" className="mt-2 text-sm text-success">{t("copyLoaded", { name: source.en.name || source.my.name || source.slug })}</p>}
       </details>
       <ProductCreateForm key={`${kind}-${sourceId}`} kind={kind} options={options} prefill={prefill} />
     </Page>

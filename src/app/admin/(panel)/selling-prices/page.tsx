@@ -1,12 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { Calculator, CircleDollarSign, Clock, Layers, TriangleAlert } from "lucide-react";
+import { Calculator, CircleDollarSign, Clock, Layers, Pencil, TriangleAlert } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { fmtDateTime, fmtInt } from "@/lib/format";
 import { requirePagePermission } from "@/server/auth/session";
 import { PricingRunsTab } from "@/components/admin/pricing-runs-tab";
 import { ActionForm } from "@/components/admin/action-form";
-import { Badge, DataTable, FilterBar, FilterButton, LinkButton, Page, PageHeader, PageNumbers, SearchInput, StatCard, TabNav, Td, fieldClass, fieldLabelClass } from "@/components/admin/ui";
+import { Badge, ClearFilters, DataTable, FilterBar, FilterButton, LinkButton, Page, PageHeader, PageNumbers, SearchInput, StatCard, TabNav, Td, fieldClass, fieldLabelClass } from "@/components/admin/ui";
 import { saveSellingPriceAction } from "@/server/catalog/actions";
 import {
   listSellingPrices,
@@ -94,8 +96,9 @@ async function ManualPrices({
   size: number;
   href: (o: { state?: SellingState | null; page?: number; size?: number; q?: string | null; warehouse?: string | null }) => string;
 }) {
-  const [t, tb, warehouses, { rows, total, page, pageCount }] = await Promise.all([
+  const [t, tc, tb, warehouses, { rows, total, page, pageCount }] = await Promise.all([
     getTranslations("SellingPrices"),
+    getTranslations("Common"),
     getTranslations("Products.priceBlock"),
     sellingPriceWarehouses(),
     listSellingPrices({ q, warehouseId, state, page: rawPage, size }),
@@ -132,16 +135,14 @@ async function ManualPrices({
             <option key={s} value={s}>{t(`state.${s}`)}</option>
           ))}
         </select>
-        <FilterButton>{t("filter")}</FilterButton>
+        <FilterButton>{tc("filter")}</FilterButton>
         {filtered && (
-          <Link href={href({ q: null, state: null, warehouse: null, page: 1 })} className="self-center text-sm text-primary underline">
-            {t("clearFilters")}
-          </Link>
+          <ClearFilters href={href({ q: null, state: null, warehouse: null, page: 1 })}>{t("clearFilters")}</ClearFilters>
         )}
       </FilterBar>
       <DataTable stack empty={t("empty")} numeric={[3, 4]} head={[t("product"), t("sku"), t("warehouse"), t("price"), t("colCost"), t("colSource"), t("actions")]}>
         {rows.map((v) => (
-          <tr key={v.id} data-testid="selling-price-row" className="hover:bg-muted/30">
+          <tr key={v.id} data-testid="selling-price-row">
             <Td className="align-middle">
               <div className="flex min-w-52 items-center gap-3">
                 <span className="relative size-10 shrink-0 overflow-hidden rounded-lg border bg-muted">
@@ -183,8 +184,11 @@ async function ManualPrices({
             </Td>
             <Td label={t("colSource")} className="align-middle text-sm">{source(v)}</Td>
             <Td label={t("actions")} className="align-middle">
-              <details>
-                <summary className="cursor-pointer text-primary underline">{t("edit")}</summary>
+              <details className="group">
+                <summary className={cn(buttonVariants({ variant: "outline", size: "lg" }), "cursor-pointer list-none [&::-webkit-details-marker]:hidden")}>
+                  <Pencil aria-hidden />
+                  {t("edit")}
+                </summary>
                 <ActionForm action={saveSellingPriceAction} submitLabel={t("save")} okText={t("saved")} className="mt-3 min-w-48 space-y-3">
                   <input type="hidden" name="productId" value={v.productId} />
                   <input type="hidden" name="variantId" value={v.id} />

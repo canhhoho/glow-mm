@@ -49,7 +49,7 @@ export default async function CategoriesPage({ searchParams }: PageProps<"/admin
         {categories.map((c) => (
           <tr key={c.id} data-testid="category-row">
             <Td>
-              <div className="relative grid size-10 place-items-center overflow-hidden rounded-full bg-muted text-[10px] text-muted-foreground">
+              <div className="relative grid size-10 place-items-center overflow-hidden rounded-full bg-muted text-2xs text-muted-foreground">
                 {c.iconUrl ? (
                   <Image src={c.iconUrl} alt={`${t("colIcon")} ${c.nameEn}`} fill sizes="40px" className="object-cover" />
                 ) : (
