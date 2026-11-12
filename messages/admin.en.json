@@ -258,7 +258,13 @@
     "chooseFile": "Choose file",
     "noFile": "No file chosen",
     "filesChosen": "{n} files chosen",
-    "filter": "Filter"
+    "filter": "Filter",
+    "back": "Back",
+    "clearFilters": "Clear filters",
+    "errorTitle": "Something went wrong",
+    "errorHint": "Try again. If it keeps failing, tell an administrator.",
+    "retry": "Try again",
+    "loading": "Loading…"
   },
   "Inventory": {
     "title": "Stock",

@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Copy, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronLeft, ChevronRight, Copy, Pencil, Plus, Trash2, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -19,7 +19,7 @@ import { ActionForm } from "@/components/admin/action-form";
 import { ProductForm } from "@/components/admin/product-form";
 import { ProductImageUpload } from "@/components/admin/product-images";
 import { ProductStepsBar, StepTitle } from "@/components/admin/product-steps";
-import { Badge, DataTable, fieldClass, fieldLabelClass, LinkButton, Notice, Page, Section, Td } from "@/components/admin/ui";
+import { Badge, DataTable, EmptyState, fieldClass, fieldLabelClass, focusRing, LinkButton, Notice, Page, Section, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
 import { localizedPath } from "@/lib/site";
 import { prisma } from "@/lib/db";
@@ -31,12 +31,12 @@ import { adjacentProducts } from "@/server/catalog/product-list";
 import { ExpiryTag } from "@/components/admin/stock-parts";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { PRODUCT_LABEL_TONE, changeTone } from "@/components/admin/status-tones";
 
 /**
  * Trang SP theo quy trình 5 bước (docs/ke-hoach-quy-trinh-san-pham.md): thanh bước ở đầu, mỗi bước một khối.
  * 1 Thông tin & nội dung (ảnh + form sửa) · 2 Nhập kho + giá vốn · 3 Giá bán · 4 Duyệt (hiện = kiểm tra mở bán D2) · 5 Đăng bán.
  */
-const LABEL_TONE = { PUBLISHED: "success", HIDDEN: "neutral", PENDING: "brand", REJECTED: "danger", DRAFT: "warning", ARCHIVED: "neutral" } as const;
 
 export default async function EditProductPage({ params, searchParams }: PageProps<"/admin/products/[id]">) {
   const user = await requirePagePermission("catalog:manage");
@@ -186,8 +186,8 @@ export default async function EditProductPage({ params, searchParams }: PageProp
                   SKU: {product.variants[0]?.sku ?? "—"}
                   {product.variants.length > 1 && ` · ${t("list.moreVariants", { n: product.variants.length - 1 })}`}
                 </span>
-                <Badge tone={LABEL_TONE[lab.label]}>{t(`lifecycle.${lab.label}`)}</Badge>
-                {lab.change && <Badge tone={lab.change === "REJECTED" ? "danger" : lab.change === "PENDING" ? "brand" : "warning"}>{t(`change.${lab.change}`)}</Badge>}
+                <Badge tone={PRODUCT_LABEL_TONE[lab.label]}>{t(`lifecycle.${lab.label}`)}</Badge>
+                {lab.change && <Badge tone={changeTone(lab.change)}>{t(`change.${lab.change}`)}</Badge>}
               </div>
               <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
                 <span>{t("colBrand")}: <span className="text-foreground">{brandName}</span></span>
@@ -234,7 +234,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
               </a>
             </div>
           </div>
-          <div className="rounded-xl border p-4">
+          <div className="rounded-xl border bg-card p-4">
             <h2 className="mb-4 font-medium">{t("hero.progress")}</h2>
             <ProductStepsBar steps={flow.steps} current={flow.current} t={t} notes={notes} />
           </div>
@@ -252,7 +252,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
               ["#price-history", t("hero.tabPriceHistory")],
               ["#activity", t("hero.tabActivity")],
             ].map(([href, label]) => (
-              <a key={href} href={href} className="border-b-2 border-transparent px-3 py-2 whitespace-nowrap text-muted-foreground hover:border-primary/40 hover:text-foreground">
+              <a key={href} href={href} className={cn(focusRing, "border-b-2 border-transparent px-3 py-2 whitespace-nowrap text-muted-foreground hover:border-primary/40 hover:text-foreground")}>
                 {label}
               </a>
             ))}
@@ -276,7 +276,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           ) : (
             <ul className="mt-4 space-y-3">
               {images.map((img, i) => (
-                <li key={img.id} data-testid="product-image" className="flex flex-wrap items-start gap-3 rounded-md border p-2">
+                <li key={img.id} data-testid="product-image" className="flex flex-wrap items-start gap-3 rounded-lg border p-2">
                   <div className="relative size-24 shrink-0 overflow-hidden rounded-md bg-muted">
                     <Image src={img.url} alt={img.alt || product.en.name} fill sizes="96px" className="object-cover" />
                   </div>
@@ -298,10 +298,10 @@ export default async function EditProductPage({ params, searchParams }: PageProp
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {i > 0 && (
-                      <ActionButton action={reorderProductImageAction} fields={{ imageId: img.id, direction: "up" }} label={`↑ ${t("imagesUp")}`} variant="outline" />
+                      <ActionButton action={reorderProductImageAction} fields={{ imageId: img.id, direction: "up" }} label={t("imagesUp")} icon={<ArrowUp aria-hidden />} iconOnly={false} variant="outline" />
                     )}
                     {i < images.length - 1 && (
-                      <ActionButton action={reorderProductImageAction} fields={{ imageId: img.id, direction: "down" }} label={`↓ ${t("imagesDown")}`} variant="outline" />
+                      <ActionButton action={reorderProductImageAction} fields={{ imageId: img.id, direction: "down" }} label={t("imagesDown")} icon={<ArrowDown aria-hidden />} iconOnly={false} variant="outline" />
                     )}
                     <ActionButton
                       action={deleteProductImageAction}
@@ -353,7 +353,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
         </p>
         {stepIssues("stock").length > 0 && issueList(stepIssues("stock"))}
         {/* P3b: tồn chỉ để xem — cùng số liệu trang Tồn kho; nhập / điều chỉnh qua phiếu kho. */}
-        {stock.rows.some((r) => r.cols || r.reserved > 0) && (
+        {stock.rows.some((r) => r.cols || r.reserved > 0) ? (
           <DataTable dense numeric={[1, 2, 3]} head={[ti("colSku"), ti("colPhysical"), ti("colReserved"), ti("colAvailable"), ti("colEarliest")]}>
             {stock.rows.map((r) => (
               <tr key={r.variantId} data-testid="product-stock-row">
@@ -369,6 +369,8 @@ export default async function EditProductPage({ params, searchParams }: PageProp
               </tr>
             ))}
           </DataTable>
+        ) : (
+          <EmptyState>{ti("empty")}</EmptyState>
         )}
       </Section>
 
@@ -423,7 +425,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
               <p className="text-xs text-muted-foreground">{t("priceBlock.manualHelp")}</p>
               <input type="hidden" name="productId" value={product.id} />
               {product.variants.map((v) => (
-                <fieldset key={v.id} className="grid gap-2 rounded-md border p-3 sm:grid-cols-2">
+                <fieldset key={v.id} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-2">
                   <legend className="px-1 text-sm">
                     {v.label} <span className="font-mono text-xs text-muted-foreground">{v.sku}</span>
                   </legend>
@@ -495,8 +497,8 @@ export default async function EditProductPage({ params, searchParams }: PageProp
             <ul className="divide-y text-sm">
               {checks.map((c) => (
                 <li key={c.key} className="flex items-center gap-3 py-2.5">
-                  <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-full text-white", c.ok ? "bg-success" : "bg-destructive")} aria-hidden>
-                    {c.ok ? "✓" : "!"}
+                  <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-full text-primary-foreground [&_svg]:size-3.5", c.ok ? "bg-success" : "bg-destructive")} aria-hidden>
+                    {c.ok ? <Check /> : <TriangleAlert />}
                   </span>
                   <a href={`#step-${c.key}`} className="min-w-0 flex-1 hover:underline">
                     <span className="block font-medium">{t(`hero.check.${c.key}`)}</span>
@@ -513,11 +515,11 @@ export default async function EditProductPage({ params, searchParams }: PageProp
       {/* ── Bước 4: duyệt (QT2) — checklist mở bán + nút Duyệt có lưu vết; sửa nội dung/giá/ảnh sau khi duyệt → cần duyệt lại ── */}
       <Section id="step-review" className="scroll-mt-20" title={<StepTitle index={4} step={step("review")} t={t} />} testId="launch-check">
         <div className="flex flex-wrap items-center gap-2 text-sm" data-testid="approval-status" data-label={lab.label} data-change={lab.change ?? ""}>
-          <Badge tone={LABEL_TONE[lab.label]}>{t(`lifecycle.${lab.label}`)}</Badge>
-          {lab.change && <Badge tone={lab.change === "REJECTED" ? "danger" : lab.change === "PENDING" ? "brand" : "warning"}>{t(`change.${lab.change}`)}</Badge>}
+          <Badge tone={PRODUCT_LABEL_TONE[lab.label]}>{t(`lifecycle.${lab.label}`)}</Badge>
+          {lab.change && <Badge tone={changeTone(lab.change)}>{t(`change.${lab.change}`)}</Badge>}
           {approval.approvedAt && (
             <span className="text-xs text-muted-foreground">
-              ✓ {approver ? t("approval.approvedBy", { name: approver.name, at: fmtDateTime(approval.approvedAt) }) : t("approval.approvedSystem")}
+              <Check className="mr-1 inline size-3.5 text-success" aria-hidden />{approver ? t("approval.approvedBy", { name: approver.name, at: fmtDateTime(approval.approvedAt) }) : t("approval.approvedSystem")}
             </span>
           )}
         </div>
@@ -525,7 +527,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           <Notice tone="danger" data-testid="rejection-reason">{t("review.rejected", { reason: approval.rejectionReason })}</Notice>
         )}
         {view.changes && view.changes.length > 0 && (
-          <div className="space-y-1 rounded-md border p-3 text-sm" data-testid="change-summary">
+          <div className="space-y-1 rounded-lg border p-3 text-sm" data-testid="change-summary">
             <p className="font-medium">{t("review.changesTitle")}</p>
             <ul className="list-disc pl-5">
               {view.changes.map((c, i) => (
@@ -576,7 +578,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
             <div className="mt-2">{issueList(warnings)}</div>
           </details>
         )}
-        {errors.length + warnings.length === 0 && <Badge tone="success">✓ {t("readiness.allGood")}</Badge>}
+        {errors.length + warnings.length === 0 && <Badge tone="success"><Check className="mr-1 size-3" aria-hidden />{t("readiness.allGood")}</Badge>}
         <p className="text-xs text-muted-foreground">{t("approval.help")}</p>
       </Section>
 

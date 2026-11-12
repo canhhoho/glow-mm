@@ -258,7 +258,13 @@
     "chooseFile": "Chọn tệp",
     "noFile": "Chưa chọn tệp",
     "filesChosen": "Đã chọn {n} tệp",
-    "filter": "Lọc"
+    "filter": "Lọc",
+    "back": "Quay lại",
+    "clearFilters": "Xoá lọc",
+    "errorTitle": "Trang gặp lỗi",
+    "errorHint": "Hãy thử lại. Nếu vẫn lỗi, báo cho quản trị viên.",
+    "retry": "Thử lại",
+    "loading": "Đang tải…"
   },
   "Inventory": {
     "title": "Tồn kho",
