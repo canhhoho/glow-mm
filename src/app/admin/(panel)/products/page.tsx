@@ -6,7 +6,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { productFilterOptions } from "@/server/catalog/admin-queries";
-import { listProductsPage, LIST_TABS, PAGE_SIZES, parseListTab, SELL_MODES, type ListLabel, type ListTab, type SellMode } from "@/server/catalog/product-list";
+import { listProductsPage, LIST_TABS, PAGE_SIZES, parseListTab, SELL_MODES, type ListTab, type SellMode } from "@/server/catalog/product-list";
 import { changeSummaries } from "@/server/catalog/review";
 import { catalogStats } from "@/server/catalog/stats";
 import type { ChangeItem } from "@/server/catalog/change-summary";

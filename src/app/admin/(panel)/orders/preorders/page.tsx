@@ -7,7 +7,7 @@ import { prisma } from "@/lib/db";
 import { salesBlockDays } from "@/server/inventory/documents";
 import { preorderQueue } from "@/server/orders/preorder";
 import { TransitionForm } from "@/components/admin/transition-form";
-import { Badge, DataTable, Page, PageHeader, Section, Td } from "@/components/admin/ui";
+import { Badge, DataTable, EmptyState, Page, PageHeader, Section, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtInt } from "@/lib/format";
 
 /**
@@ -28,7 +28,7 @@ export default async function PreordersPage() {
       <p className="text-sm" data-testid="preorder-summary">
         {tp("summary", { count: queue.length, ready })}
       </p>
-      {queue.length === 0 && <p className="text-sm text-muted-foreground">{tp("empty")}</p>}
+      {queue.length === 0 && <EmptyState>{tp("empty")}</EmptyState>}
       {queue.map((o, index) => (
         <Section
           key={o.id}
@@ -51,10 +51,10 @@ export default async function PreordersPage() {
               <tr key={i.id}>
                 <Td className="font-mono text-xs">{i.sku}</Td>
                 <Td label={t("product")}>{i.name}</Td>
-                <Td label={t("qty")} className="tabular-nums md:text-right">
-                  {i.qty}
+                <Td label={t("qty")} numeric>
+                  {fmtInt(i.qty)}
                 </Td>
-                <Td label={tp("status")}>{i.short > 0 ? <span className="text-destructive">{tp("missing", { n: i.short })}</span> : tp("ok")}</Td>
+                <Td label={tp("status")}>{i.short > 0 ? <Badge tone="danger">{tp("missing", { n: i.short })}</Badge> : <Badge tone="success">{tp("ok")}</Badge>}</Td>
               </tr>
             ))}
           </DataTable>

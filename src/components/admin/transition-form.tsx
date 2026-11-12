@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
+import { ArrowRight, Check, CheckCheck, PackageCheck, Truck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fieldClass, fieldLabelSmClass } from "@/components/admin/ui";
 import { transitionOrderAction } from "@/server/orders/actions";
@@ -14,6 +15,15 @@ export type TransitionField = {
   required?: boolean;
   defaultValue?: string;
   options?: { value: string; label: string }[];
+};
+
+const ICONS: Record<string, React.ReactNode> = {
+  stockArrived: <PackageCheck aria-hidden />,
+  confirmPayment: <Check aria-hidden />,
+  confirmCod: <Check aria-hidden />,
+  ship: <Truck aria-hidden />,
+  complete: <CheckCheck aria-hidden />,
+  cancel: <X aria-hidden />,
 };
 
 /** Một thao tác chuyển trạng thái đơn, có thể kèm ô nhập (lý do huỷ, mã vận đơn, kho xuất…). */
@@ -38,7 +48,7 @@ export function TransitionForm({
     <form
       action={action}
       onSubmit={confirmOrPrevent(confirm)}
-      className="flex flex-wrap items-end gap-2 rounded-lg border p-3"
+      className="flex flex-wrap items-end gap-2"
     >
       <input type="hidden" name="id" value={orderId} />
       <input type="hidden" name="transition" value={transition} />
@@ -59,6 +69,7 @@ export function TransitionForm({
         </label>
       ))}
       <Button size="lg" type="submit" variant={variant} disabled={pending}>
+        {ICONS[transition] ?? <ArrowRight aria-hidden />}
         {label}
       </Button>
       {state?.error && (

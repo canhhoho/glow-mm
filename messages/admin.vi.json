@@ -264,7 +264,11 @@
     "errorTitle": "Trang gặp lỗi",
     "errorHint": "Hãy thử lại. Nếu vẫn lỗi, báo cho quản trị viên.",
     "retry": "Thử lại",
-    "loading": "Đang tải…"
+    "loading": "Đang tải…",
+    "actions": "Thao tác",
+    "select": "Chọn",
+    "expiryShort": "HSD",
+    "ratingOf": "{n}/5 sao"
   },
   "Inventory": {
     "title": "Tồn kho",

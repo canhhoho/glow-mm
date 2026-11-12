@@ -19,7 +19,7 @@ export default async function PrintLabelsPage({ searchParams }: PageProps<"/admi
       <style>{"@page { size: A6; margin: 6mm; }"}</style>
       <div className="mb-4 flex flex-wrap items-center gap-2 print:hidden">
         <PrintButton label={t("print")} />
-        <LinkButton href="/admin/orders">← {t("title")}</LinkButton>
+        <LinkButton href="/admin/orders" icon="back">{t("title")}</LinkButton>
         <span className="text-sm text-muted-foreground">{t("bulk.labelCount", { count: orders.length })}</span>
       </div>
       <div className="space-y-4 print:space-y-0">

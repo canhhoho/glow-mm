@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { askConfirm } from "@/lib/confirm";
 import { bulkTransitionAction } from "@/server/orders/actions";
 import type { BulkState, BulkTransition } from "@/server/orders/bulk";
-import { fieldClass } from "./ui";
+import { fieldClass, Notice } from "./ui";
 import { cn } from "@/lib/utils";
 
 const SELECTOR = "input[data-bulk-id]";
@@ -63,7 +63,7 @@ export function BulkOrderBar({ transitions }: { transitions: BulkTransition[] })
   const none = count === 0 || pending;
 
   return (
-    <div className="space-y-2 rounded-lg border bg-muted/30 p-3" data-testid="bulk-bar">
+    <div className="space-y-2 rounded-lg border bg-muted/30 px-3 py-2" data-testid="bulk-bar">
       <div className="flex flex-wrap items-center gap-2">
         <Button type="button" variant="outline" size="lg" onClick={toggleAll}>
           <ListChecks aria-hidden className="size-4 shrink-0" />
@@ -72,7 +72,7 @@ export function BulkOrderBar({ transitions }: { transitions: BulkTransition[] })
         <span className="text-sm tabular-nums" role="status" data-testid="bulk-count">
           {t("bulk.selected", { count })}
         </span>
-        <span className="mx-1 hidden h-6 border-l sm:inline-block" />
+        <span aria-hidden className="mx-1 hidden h-6 border-l sm:inline-block" />
         <Button type="button" variant="outline" size="lg" disabled={count === 0} onClick={() => print("print-labels")}>
           <Printer aria-hidden className="size-4 shrink-0" />
           {t("bulk.printLabels")}
@@ -110,9 +110,7 @@ export function BulkOrderBar({ transitions }: { transitions: BulkTransition[] })
         )}
       </div>
       {state?.error && (
-        <p role="alert" className="text-sm text-destructive">
-          {state.error}
-        </p>
+        <Notice tone="danger">{state.error}</Notice>
       )}
       {state && !state.error && (
         <div role="status" className="space-y-1 text-sm" data-testid="bulk-result">

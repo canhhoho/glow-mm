@@ -10,7 +10,6 @@ import { Badge, MENU_ITEM } from "@/components/admin/ui";
 import { buttonVariants } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { fmtDay } from "@/lib/format";
-import { cn } from "@/lib/utils";
 
 /** Khối dùng chung cho trang Tồn kho + lịch sử lô (P9c). Server components. */
 

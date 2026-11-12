@@ -264,7 +264,11 @@
     "errorTitle": "Something went wrong",
     "errorHint": "Try again. If it keeps failing, tell an administrator.",
     "retry": "Try again",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "actions": "Actions",
+    "select": "Select",
+    "expiryShort": "EXP",
+    "ratingOf": "{n} of 5 stars"
   },
   "Inventory": {
     "title": "Stock",

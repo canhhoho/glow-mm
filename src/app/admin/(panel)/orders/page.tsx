@@ -9,8 +9,7 @@ import { ORDER_FILTER_STATUSES, PREPARING_STATUSES, TRANSITIONS } from "@/server
 import { BULK_TRANSITIONS } from "@/server/orders/bulk";
 import { BulkOrderBar } from "@/components/admin/bulk-order-bar";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/admin/order-badges";
-import { Badge, DataTable, fieldClass, fieldLabelClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Td } from "@/components/admin/ui";
-import { Pagination } from "@/components/ui/pagination";
+import { Badge, checkboxClass, ClearFilters, DataTable, fieldClass, fieldLabelClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, PageNumbers, SearchInput, Td } from "@/components/admin/ui";
 import { fmtDate, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +28,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
     affiliateId: str(sp.affiliate),
     from: validDay(sp.from), to: validDay(sp.to), locationId: str(sp.locationId), page: pageNumber(sp.page), shippingDays: Number(sp.shippingDays) || undefined,
   };
-  const [t, result, affiliates, locations] = await Promise.all([getTranslations("Orders"), listOrdersPageAdmin(filter), affiliateOptions(), sellableLocations()]);
+  const [t, tc, tcod, result, affiliates, locations] = await Promise.all([getTranslations("Orders"), getTranslations("Common"), getTranslations("Cod"), listOrdersPageAdmin(filter), affiliateOptions(), sellableLocations()]);
   const orders = result.orders;
   const pageHref = (page: number) => { const params = new URLSearchParams(); for (const [key,value] of Object.entries(sp)) { if (key !== "page") for (const v of Array.isArray(value) ? value : value ? [value] : []) params.append(key,v); } params.set("page",String(page)); return `/admin/orders?${params}`; };
   const filtered = !!(filter.status || filter.paymentMethod || filter.channel || filter.q || filter.overdue || filter.affiliateId || filter.from || filter.to || filter.locationId || filter.shippingDays);
@@ -40,10 +39,10 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
         title={t("title")}
         actions={
           <>
-          {can(user.role, "orders:reconcile-cod") && <LinkButton href="/admin/orders/cod">{(await getTranslations("Cod"))("title")}</LinkButton>}
+          {can(user.role, "orders:reconcile-cod") && <LinkButton href="/admin/orders/cod">{tcod("title")}</LinkButton>}
           {can(user.role, "orders:ship") && <LinkButton href="/admin/orders/export">{t("exportVtp")}</LinkButton>}
           {can(user.role, "orders:create") && (
-            <LinkButton href="/admin/orders/new" variant="primary" icon="new" iconOnly={false}>
+            <LinkButton href="/admin/orders/new" variant="primary" icon="new">
               {t("new")}
             </LinkButton>
           )}
@@ -88,10 +87,11 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
           </select>
         )}
         <label className="flex h-9 items-center gap-1.5 text-sm">
-          <input type="checkbox" name="overdue" value="1" defaultChecked={filter.overdue} />
+          <input type="checkbox" name="overdue" value="1" defaultChecked={filter.overdue} className={checkboxClass} />
           {t("overdueOnly")}
         </label>
-        <FilterButton>{t("filter")}</FilterButton>
+        <FilterButton>{tc("filter")}</FilterButton>
+        {filtered && <ClearFilters href="/admin/orders">{t("clearFilters")}</ClearFilters>}
       </FilterBar>
 
       {orders.length > 0 && (
@@ -99,19 +99,19 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
       )}
       <DataTable
         empty={filtered ? t("emptyFiltered") : t("empty")}
-        head={[t("colCode"), t("colCreated"), t("colCustomer"), t("colChannel"), t("colPayment"), t("colTotal"), t("colStatus")]}
-        numeric={[5]}
+        head={[<span key="sel" className="sr-only">{tc("select")}</span>, t("colCode"), t("colCreated"), t("colCustomer"), t("colChannel"), t("colPayment"), t("colTotal"), t("colStatus")]}
+        numeric={[6]}
         stack
       >
         {orders.map((o) => (
           <tr key={o.id}>
+            <Td className="w-8">
+              <input type="checkbox" data-bulk-id={o.id} aria-label={t("bulk.select", { code: o.code })} className={checkboxClass} />
+            </Td>
             <Td>
-              <span className="flex items-center gap-2">
-                <input type="checkbox" data-bulk-id={o.id} aria-label={t("bulk.select", { code: o.code })} className="size-4 accent-primary" />
-                <Link href={`/admin/orders/${o.id}`} className="font-mono text-xs whitespace-nowrap text-primary underline">
-                  {o.code}
-                </Link>
-              </span>
+              <Link href={`/admin/orders/${o.id}`} className="font-mono text-xs whitespace-nowrap text-primary underline">
+                {o.code}
+              </Link>
               <div className="text-xs text-muted-foreground">
                 {o._count.items} {t("colItems")}
               </div>
@@ -149,17 +149,16 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
           </tr>
         ))}
       </DataTable>
-      <Pagination
-        label={t("pagination")}
-        page={result.page}
-        pages={result.pages}
-        hrefFor={pageHref}
-        prevLabel={t("previousPage")}
-        nextLabel={t("nextPage")}
-        status={t("pageCount", { page: result.page, pages: result.pages, total: result.total })}
-      />
-      {filtered && orders.length === 0 && (
-        <LinkButton href="/admin/orders">{t("clearFilters")}</LinkButton>
+      {result.total > 0 && (
+        <PageNumbers
+          page={result.page}
+          pageCount={result.pages}
+          pageSize={orders.length}
+          status={t("pageCount", { page: result.page, pages: result.pages, total: result.total })}
+          prevLabel={t("previousPage")}
+          nextLabel={t("nextPage")}
+          href={(pg) => pageHref(pg)}
+        />
       )}
     </Page>
   );

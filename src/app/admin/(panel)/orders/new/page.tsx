@@ -4,8 +4,7 @@ import { can } from "@/server/auth/roles";
 import { affiliateOptions } from "@/server/affiliates/affiliates";
 import { findCustomerByPhone, orderFormOptions } from "@/server/orders/admin-queries";
 import { OrderForm, type OrderFormInitial } from "@/components/admin/order-form";
-import { fieldClass, fieldLabelClass, Page, PageHeader } from "@/components/admin/ui";
-import { Button } from "@/components/ui/button";
+import { fieldClass, fieldLabelClass, FilterBar, FilterButton, Page, PageHeader } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 
 export default async function NewOrderPage({ searchParams }: PageProps<"/admin/orders/new">) {
@@ -30,20 +29,18 @@ export default async function NewOrderPage({ searchParams }: PageProps<"/admin/o
   return (
     <Page>
       <PageHeader title={t("new")} back={{ href: "/admin/orders", label: t("back") }} />
-      <form role="search" className="flex flex-wrap items-end gap-2">
+      <FilterBar>
         <label className={fieldLabelClass}>
           <span className="text-muted-foreground">{t("lookupPhone")}</span>
           <input name="phone" type="tel" inputMode="tel" defaultValue={lookup} className={cn(fieldClass, "w-56")} />
         </label>
-        <Button size="lg" type="submit" variant="outline">
-          {t("lookup")}
-        </Button>
+        <FilterButton>{t("lookup")}</FilterButton>
         {lookup && (
           <p className="pb-2 text-sm text-muted-foreground" data-testid="customer-lookup">
             {customer ? t("customerFound", { name: customer.name, count: customer._count.orders }) : t("customerNew")}
           </p>
         )}
-      </form>
+      </FilterBar>
       <OrderForm key={lookup ?? ""} options={options} initial={initial} affiliates={affiliates} />
     </Page>
   );
