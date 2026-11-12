@@ -268,7 +268,10 @@
     "actions": "လုပ်ဆောင်ချက်",
     "select": "ရွေးရန်",
     "expiryShort": "သက်တမ်း",
-    "ratingOf": "ကြယ် ၅ ပွင့်တွင် {n} ပွင့်"
+    "ratingOf": "ကြယ် ၅ ပွင့်တွင် {n} ပွင့်",
+    "noData": "ဒေတာ မရှိသေးပါ။",
+    "details": "အသေးစိတ်",
+    "sku": "SKU"
   },
   "Inventory": {
     "title": "လက်ကျန်ပစ္စည်း",
@@ -522,7 +525,8 @@
       "STALE": "Reallocation needed — inputs changed"
     },
     "allocationDetails": "အသုတ်အလိုက် ရလဒ်ကြည့်ရန်",
-    "allocatedVnd": "ခွဲဝေထားသော ကုန်ကျစရိတ် (VND)"
+    "allocatedVnd": "ခွဲဝေထားသော ကုန်ကျစရိတ် (VND)",
+    "removeCostConfirm": "ဤကုန်ကျစရိတ်ကို ဖျက်မလား။"
   },
   "Products": {
     "copyFrom": "ရှိပြီးသား ကုန်ပစ္စည်းမှ ကူးယူရန်",

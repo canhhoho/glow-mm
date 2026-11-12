@@ -8,7 +8,6 @@ import type { Thresholds } from "@/server/inventory/stock-summary";
 import { ActionMenu } from "@/components/admin/action-menu";
 import { Badge, MENU_ITEM } from "@/components/admin/ui";
 import { buttonVariants } from "@/components/ui/button";
-import { Pagination } from "@/components/ui/pagination";
 import { fmtDay } from "@/lib/format";
 
 /** Khối dùng chung cho trang Tồn kho + lịch sử lô (P9c). Server components. */
@@ -75,35 +74,3 @@ export function ExpiryTag({ date, status, now, t, th }: { date: Date | null; sta
   );
 }
 
-/** Phân trang trang Kho — dùng `Pagination` chung; trạng thái = "từ–đến / tổng". */
-export function Pager({
-  page,
-  pageCount,
-  total,
-  pageSize,
-  href,
-  t,
-}: {
-  page: number;
-  pageCount: number;
-  total: number;
-  pageSize: number;
-  href: (page: number) => string;
-  t: T;
-}) {
-  if (total === 0) return null;
-  const from = Math.min(total, (page - 1) * pageSize + 1);
-  const to = Math.min(total, page * pageSize);
-  return (
-    <Pagination
-      label={t("pagination")}
-      page={page}
-      pages={pageCount}
-      hrefFor={href}
-      prevLabel={t("prev")}
-      nextLabel={t("next")}
-      status={t("pageInfo", { from, to, total })}
-      statusTestId="page-info"
-    />
-  );
-}

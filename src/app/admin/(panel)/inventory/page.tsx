@@ -19,8 +19,8 @@ import {
 } from "@/server/inventory/overview";
 import type { BalanceRow, Thresholds } from "@/server/inventory/stock-summary";
 import { ExpandableRow } from "@/components/admin/expandable-row";
-import { ExpiryTag, NewDocMenu, Pager, stockHref, type StockView } from "@/components/admin/stock-parts";
-import { Badge, DataTable, fieldClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, StatCard, TabNav, Td } from "@/components/admin/ui";
+import { ExpiryTag, NewDocMenu, stockHref, type StockView } from "@/components/admin/stock-parts";
+import { Badge, ClearFilters, DataTable, EmptyState, fieldClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, PageNumbers, SearchInput, Segmented, StatCard, TabNav, Td } from "@/components/admin/ui";
 import { fmtDay, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -37,8 +37,9 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
   const f = parseStockFilter(sp);
   const view: StockView = sp.view === "lots" ? "lots" : "products";
   const now = new Date();
-  const [t, td, locale, summary, products, lots, tabs, notReceived] = await Promise.all([
+  const [t, tc, td, locale, summary, products, lots, tabs, notReceived] = await Promise.all([
     getTranslations("Inventory"),
+    getTranslations("Common"),
     getTranslations("Docs"),
     getLocale(),
     stockSummary({ now }),
@@ -156,25 +157,15 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
             <option value="SELLABLE">{t("SELLABLE")}</option>
             <option value="TESTER">{t("TESTER")}</option>
           </select>
-          <FilterButton>{t("filter")}</FilterButton>
+          <FilterButton>{tc("filter")}</FilterButton>
           {filtered && (
-            <Link href={view === "lots" ? "/admin/inventory?view=lots" : "/admin/inventory"} className="text-sm text-muted-foreground underline">
-              {t("clear")}
-            </Link>
+            <ClearFilters href={view === "lots" ? "/admin/inventory?view=lots" : "/admin/inventory"}>{t("clear")}</ClearFilters>
           )}
         </FilterBar>
-        <div role="group" aria-label={t("view")} className="inline-flex rounded-lg border p-0.5 text-sm">
-          {(["products", "lots"] as const).map((v) => (
-            <Link
-              key={v}
-              href={href({ view: v })}
-              aria-current={view === v ? "page" : undefined}
-              className={cn("rounded-md px-3 py-1.5", view === v ? "bg-primary/10 font-medium text-primary" : "text-muted-foreground hover:text-foreground")}
-            >
-              {v === "products" ? t("viewProducts") : t("viewLots")}
-            </Link>
-          ))}
-        </div>
+        <Segmented
+          label={t("view")}
+          items={(["products", "lots"] as const).map((v) => ({ href: href({ view: v }), label: v === "products" ? t("viewProducts") : t("viewLots"), active: view === v }))}
+        />
       </div>
 
       {/* SP chưa từng nhập hàng không nằm trong "Tất cả" — xem riêng ở đây. */}
@@ -193,14 +184,23 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
       )}
       {products && <ProductView page={products} t={t} th={th} now={now} warehouses={sellableTabs} />}
       {lots && <LotView page={lots} t={t} th={th} now={now} />}
-      <Pager
-        page={(products ?? lots)!.page}
-        pageCount={(products ?? lots)!.pageCount}
-        total={(products ?? lots)!.total}
-        pageSize={PAGE_SIZE}
-        href={(page) => href({ page })}
-        t={t}
-      />
+      {(() => {
+        const pg = (products ?? lots)!;
+        if (pg.total === 0) return null;
+        const from = Math.min(pg.total, (pg.page - 1) * PAGE_SIZE + 1);
+        const to = Math.min(pg.total, pg.page * PAGE_SIZE);
+        return (
+          <PageNumbers
+            page={pg.page}
+            pageCount={pg.pageCount}
+            pageSize={PAGE_SIZE}
+            status={t("pageInfo", { from, to, total: pg.total })}
+            prevLabel={t("prev")}
+            nextLabel={t("next")}
+            href={(page) => href({ page })}
+          />
+        );
+      })()}
     </Page>
   );
 }
@@ -227,7 +227,7 @@ function LotsTable({ lots, t, th, now }: { lots: BalanceRow[]; t: T; th: Thresho
       dense
       className="bg-background"
       numeric={[4, 5]}
-      head={[t("colLot"), t("colExpiry"), t("colLocation"), t("colType"), t("colQty"), t("colUnitCost"), ""]}
+      head={[t("colLot"), t("colExpiry"), t("colLocation"), t("colType"), t("colQty"), t("colUnitCost"), <span key="h" className="sr-only">{t("history")}</span>]}
     >
       {lots.map((l) => (
         <tr key={`${l.batchId}|${l.locationId}|${l.stockType}`} data-testid="lot-row">
@@ -242,7 +242,7 @@ function LotsTable({ lots, t, th, now }: { lots: BalanceRow[]; t: T; th: Thresho
           <Td className="text-right tabular-nums">{fmtInt(l.qty)}</Td>
           <Td className={cn("text-right tabular-nums", l.landedCostMmk == null && "text-muted-foreground")}>
             {l.landedCostMmk == null ? t("unallocated") : fmtInt(l.landedCostMmk)}
-            <div className="text-[11px] text-muted-foreground">{t(`cost${l.costStatus ?? (l.landedCostMmk == null ? "MISSING" : "ACTUAL")}`)}</div>
+            <div className="text-2xs text-muted-foreground">{t(`cost${l.costStatus ?? (l.landedCostMmk == null ? "MISSING" : "ACTUAL")}`)}</div>
           </Td>
           <Td className="text-right">
             <Link href={`/admin/inventory/batches/${l.batchId}`} className="text-primary underline">
@@ -282,7 +282,7 @@ function ProductView({
     ...(showOther ? [[t("colOther"), c ? other(c) : null] as const] : []),
   ];
   const head = [
-    "",
+    <span key="x" className="sr-only">{t("showLots")}</span>,
     t("colProduct"),
     ...warehouses.map((w) => w.name),
     ...(showOther ? [t("colOther")] : []),
@@ -305,7 +305,7 @@ function ProductView({
     <>
       {/* Desktop: bảng */}
       <div className="hidden lg:block">
-        <DataTable head={head} empty={t("emptyFiltered")}>
+        <DataTable head={head} empty={t("emptyFiltered")} numeric={head.map((_, i) => i).filter((i) => (i >= 2 && i < head.length - 2) || i === head.length - 1)}>
           {page.rows.map((r) => {
             const c = r.cols;
             return (
@@ -322,7 +322,7 @@ function ProductView({
                         <Thumb url={r.imageUrl} alt={r.name} size="sm" />
                         <div>
                           <div className="font-medium">{title(r)}</div>
-                          <div className="font-mono text-[11px] text-muted-foreground">{sub(r)}</div>
+                          <div className="font-mono text-2xs text-muted-foreground">{sub(r)}</div>
                         </div>
                       </div>
                     </Td>
@@ -354,30 +354,30 @@ function ProductView({
 
       {/* Điện thoại + máy tính bảng dọc: thẻ */}
       <div className="grid gap-2 md:grid-cols-2 lg:hidden [&>*]:min-w-0">
-        {page.rows.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground md:col-span-2">{t("emptyFiltered")}</p>}
+        {page.rows.length === 0 && <EmptyState className="md:col-span-2">{t("emptyFiltered")}</EmptyState>}
         {page.rows.map((r) => {
           const c = r.cols;
           const e = c?.earliest;
           const level = e ? classifyExpiry(e.expiryDate, now, th) : null;
           return (
-            <div key={r.variantId} data-testid="stock-card" className={cn("rounded-lg border p-3", level && level !== "near" && "border-danger-border")}>
+            <div key={r.variantId} data-testid="stock-card" className={cn("rounded-xl border bg-card p-3", level && level !== "near" && "border-danger-border")}>
               <div className="flex gap-3">
                 <Thumb url={r.imageUrl} alt={r.name} size="md" />
                 <div className="min-w-0 flex-1">
                   <div className="line-clamp-2 leading-snug font-medium">{title(r)}</div>
-                  <div className="font-mono text-[11px] text-muted-foreground">{sub(r)}</div>
+                  <div className="font-mono text-2xs text-muted-foreground">{sub(r)}</div>
                 </div>
               </div>
-              <div className="mt-2 grid grid-cols-3 gap-1 text-center text-[11px]">
+              <div className="mt-2 grid grid-cols-3 gap-1 text-center text-2xs">
                 {stockCols(c).map(([label, v]) => (
                   <div key={label} className="rounded bg-muted/60 py-1">
                     <div className="text-muted-foreground">{label}</div>
-                    <div className="text-[13px] font-medium tabular-nums">{v == null ? "—" : fmtInt(v)}</div>
+                    <div className="text-sm font-medium tabular-nums">{v == null ? "—" : fmtInt(v)}</div>
                   </div>
                 ))}
                 <div className="rounded bg-primary/10 py-1 text-primary">
                   <div>{t("colAvailable")}</div>
-                  <div className="text-[13px] font-semibold tabular-nums">{fmtInt(r.available)}</div>
+                  <div className="text-sm font-semibold tabular-nums">{fmtInt(r.available)}</div>
                 </div>
               </div>
               {e && level && (
@@ -412,6 +412,7 @@ function LotView({ page, t, th, now }: { page: Awaited<ReturnType<typeof stockLo
   return (
     <DataTable
       empty={t("emptyFiltered")}
+      numeric={[6, 7]}
       head={[t("colSku"), t("colProduct"), t("colLot"), t("colExpiry"), t("colLocation"), t("colType"), t("colQty"), t("colCost")]}
     >
       {page.rows.map((r) => (
@@ -435,7 +436,7 @@ function LotView({ page, t, th, now }: { page: Awaited<ReturnType<typeof stockLo
           <Td className="text-right tabular-nums">{fmtInt(r.qty)}</Td>
           <Td className={cn("text-right tabular-nums", r.landedCostMmk == null && "text-muted-foreground")}>
             {r.landedCostMmk == null ? t("unallocated") : fmtInt(r.landedCostMmk)}
-            <div className="text-[11px] text-muted-foreground">{t(`cost${r.costStatus}`)}</div>
+            <div className="text-2xs text-muted-foreground">{t(`cost${r.costStatus}`)}</div>
           </Td>
         </tr>
       ))}

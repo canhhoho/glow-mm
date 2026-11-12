@@ -268,7 +268,10 @@
     "actions": "Actions",
     "select": "Select",
     "expiryShort": "EXP",
-    "ratingOf": "{n} of 5 stars"
+    "ratingOf": "{n} of 5 stars",
+    "noData": "No data yet.",
+    "details": "Details",
+    "sku": "SKU"
   },
   "Inventory": {
     "title": "Stock",
@@ -522,7 +525,8 @@
       "STALE": "Reallocation needed — inputs changed"
     },
     "allocationDetails": "View batch allocation",
-    "allocatedVnd": "Allocated costs (VND)"
+    "allocatedVnd": "Allocated costs (VND)",
+    "removeCostConfirm": "Remove this cost?"
   },
   "Products": {
     "copyFrom": "Copy from an existing product",

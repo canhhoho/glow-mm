@@ -15,7 +15,7 @@ export default async function ShipmentsPage() {
       <Section title={t("new")}>
         <ShipmentCreateForm />
       </Section>
-      <DataTable stack empty={t("empty")} head={[t("code"), t("method"), t("departedAt"), t("batches"), t("totalCosts")]}>
+      <DataTable stack empty={t("empty")} numeric={[3, 4]} head={[t("code"), t("method"), t("departedAt"), t("batches"), t("totalCosts")]}>
         {shipments.map((s) => (
           <tr key={s.id}>
             <Td>
@@ -25,8 +25,8 @@ export default async function ShipmentsPage() {
             </Td>
             <Td label={t("method")}>{t(s.allocationMethod)}</Td>
             <Td label={t("departedAt")}>{fmtDay(s.departedAt)}</Td>
-            <Td label={t("batches")} className="text-right">{s._count.batches}</Td>
-            <Td label={t("totalCosts")} className="text-right tabular-nums">{fmtInt(s.costs.reduce((a, c) => a + c.amountVnd, 0))}</Td>
+            <Td label={t("batches")} numeric>{s._count.batches}</Td>
+            <Td label={t("totalCosts")} numeric>{fmtInt(s.costs.reduce((a, c) => a + c.amountVnd, 0))}</Td>
           </tr>
         ))}
       </DataTable>

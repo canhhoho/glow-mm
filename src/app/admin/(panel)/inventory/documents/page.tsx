@@ -26,6 +26,7 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/admin/
       <DataTable
         stack
         empty={t("empty")}
+        numeric={[5]}
         head={[t("code"), t("type"), t("status"), t("from"), t("to"), t("lines"), t("createdAt")]}
       >
         {docs.map((d) => (
@@ -41,7 +42,7 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/admin/
             </Td>
             <Td label={t("from")} className="font-mono text-xs">{d.from?.code ?? "—"}</Td>
             <Td label={t("to")} className="font-mono text-xs">{d.to?.code ?? "—"}</Td>
-            <Td label={t("lines")} className="text-right">{d._count.lines}</Td>
+            <Td label={t("lines")} numeric>{d._count.lines}</Td>
             <Td label={t("createdAt")} className="whitespace-nowrap">{fmtDate(d.createdAt)}</Td>
           </tr>
         ))}

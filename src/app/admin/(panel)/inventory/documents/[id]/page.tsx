@@ -7,7 +7,7 @@ import { prisma } from "@/lib/db";
 import { getDocument, productName } from "@/server/inventory/queries";
 import { cancelDocumentAction, postDocumentAction } from "@/server/inventory/actions";
 import { ActionButton } from "@/components/admin/action-button";
-import { Badge, DataTable, LinkButton, Notice, Page, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, LinkButton, Notice, Page, PageHeader, Section, Td } from "@/components/admin/ui";
 import { fmtDate, fmtDay, fmtInt } from "@/lib/format";
 
 const STATUS_TONE = { DRAFT: "warning", POSTED: "success", CANCELLED: "neutral" } as const;
@@ -15,7 +15,7 @@ const STATUS_TONE = { DRAFT: "warning", POSTED: "success", CANCELLED: "neutral" 
 export default async function DocumentPage({ params, searchParams }: PageProps<"/admin/inventory/documents/[id]">) {
   const user = await requirePagePermission("stock:view");
   const [{ id }, { updated }] = await Promise.all([params, searchParams]);
-  const [t, ti, doc] = await Promise.all([getTranslations("Docs"), getTranslations("Inventory"), getDocument(id)]);
+  const [t, ti, tc, doc] = await Promise.all([getTranslations("Docs"), getTranslations("Inventory"), getTranslations("Common"), getDocument(id)]);
   if (!doc) notFound();
   // QT3: phiếu nhập đã ghi sổ có hàng mà đơn đặt trước đang chờ → nhắc mở danh sách chờ.
   const waitingPreorders =
@@ -29,9 +29,9 @@ export default async function DocumentPage({ params, searchParams }: PageProps<"
       <PageHeader
         title={`${t(doc.type)} · ${doc.code}`}
         back={{ href: "/admin/inventory/documents", label: t("back") }}
+        actions={doc.type === "RECEIVE" && doc.status === "POSTED" && can(user.role, "pricing:manage") && <LinkButton href={`/admin/pricing?tab=runs&receiptId=${doc.id}`}>{t("priceReceived")}</LinkButton>}
       />
       {updated && <Notice tone="success">{t("updated")}</Notice>}
-      {doc.type === "RECEIVE" && doc.status === "POSTED" && can(user.role, "pricing:manage") && <LinkButton href={`/admin/pricing?tab=runs&receiptId=${doc.id}`}>{t("priceReceived")}</LinkButton>}
       {waitingPreorders > 0 && (
         <Notice tone="warning" data-testid="receipt-preorders">
           {t("preorderWaiting", { count: waitingPreorders })}{" "}
@@ -41,6 +41,7 @@ export default async function DocumentPage({ params, searchParams }: PageProps<"
         </Notice>
       )}
       {picked.length > 0 && <Notice tone="warning">{t("pickedWarning", { codes: [...new Set(picked.map(p=>p.pick.order.code))].join(", ") })}</Notice>}
+      <Section>
       <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-[auto_1fr]">
         <dt className="text-muted-foreground">{t("status")}</dt>
         <dd>
@@ -83,18 +84,19 @@ export default async function DocumentPage({ params, searchParams }: PageProps<"
         <dt className="text-muted-foreground">{t("createdAt")}</dt>
         <dd>{fmtDate(doc.createdAt)}</dd>
       </dl>
+      </Section>
 
-      <DataTable head={[t("variant"), t("lotNo"), t("expiry"), t("stockType"), t("qty")]}>
+      <DataTable stack numeric={[4]} empty={tc("noData")} head={[t("variant"), t("lotNo"), t("expiry"), t("stockType"), t("qty")]}>
         {doc.lines.map((l) => (
           <tr key={l.id}>
             <Td>
               <span className="font-mono text-xs">{l.variant.sku}</span>{" "}
               {productName(l.variant.product.translations, l.variant.product.slug)} ({l.variant.label})
             </Td>
-            <Td className="font-mono text-xs">{l.batch?.lotNo ?? t("autoFefo")}</Td>
-            <Td>{l.batch?.expiryStatus === "NONE" ? ti("expiryNone") : l.batch?.expiryStatus === "UNKNOWN" ? ti("expiryUnknown") : fmtDay(l.batch?.expiryDate)}</Td>
-            <Td>{ti(l.stockType)}</Td>
-            <Td className="text-right tabular-nums">{fmtInt(l.qty)}</Td>
+            <Td label={t("lotNo")} className="font-mono text-xs">{l.batch?.lotNo ?? t("autoFefo")}</Td>
+            <Td label={t("expiry")}>{l.batch?.expiryStatus === "NONE" ? ti("expiryNone") : l.batch?.expiryStatus === "UNKNOWN" ? ti("expiryUnknown") : fmtDay(l.batch?.expiryDate)}</Td>
+            <Td label={t("stockType")}>{ti(l.stockType)}</Td>
+            <Td label={t("qty")} numeric>{fmtInt(l.qty)}</Td>
           </tr>
         ))}
       </DataTable>

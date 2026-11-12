@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Save, Trash2 } from "lucide-react";
 import { memo, startTransition, useActionState, useCallback, useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -339,14 +339,14 @@ export function ReceiveBulkForm({
         <Button type="button" variant="outline" size="lg" disabled={!choices.length} onClick={() => setSelected((s) => new Set([...s, ...choices.map((v) => v.id)]))}>{t("receiveSelectAll")}</Button>
         <Button type="button" variant="outline" size="lg" disabled={!selected.size} onClick={() => setSelected(new Set())}>{t("receiveClearSelection")}</Button>
       </div>
-      <div className="overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-xl border bg-card">
         <table className="w-full text-left text-sm">
-          <thead className="bg-muted/50"><tr><th className="p-3">{t("receiveChoose")}</th><th className="p-3">{t("variant")}</th><th className="p-3">{t("filterBrand")}</th></tr></thead>
+          <thead className="bg-muted/50 text-left text-xs text-muted-foreground"><tr><th className="px-3 py-2 font-medium">{t("receiveChoose")}</th><th className="px-3 py-2 font-medium">{t("variant")}</th><th className="px-3 py-2 font-medium">{t("filterBrand")}</th></tr></thead>
           <tbody className="divide-y">
             {choices.map((v) => <tr key={v.id} className={cn(selected.has(v.id) && "bg-primary/5")}>
-              <td className="p-3"><input id={`receive-pick-${v.id}`} type="checkbox" aria-label={`${t("receiveChoose")} ${v.sku}`} checked={selected.has(v.id)} onChange={(e) => toggle(v.id, e.target.checked)} className="size-4 accent-primary" /></td>
-              <td className="p-3"><label htmlFor={`receive-pick-${v.id}`} className="block cursor-pointer"><span className="font-mono text-xs">{v.sku}</span><span className="block">{v.name} <span className="text-muted-foreground">({v.label})</span></span></label></td>
-              <td className="p-3">{v.brand}</td>
+              <td className="px-3 py-2"><input id={`receive-pick-${v.id}`} type="checkbox" aria-label={`${t("receiveChoose")} ${v.sku}`} checked={selected.has(v.id)} onChange={(e) => toggle(v.id, e.target.checked)} className="size-4 accent-primary" /></td>
+              <td className="px-3 py-2"><label htmlFor={`receive-pick-${v.id}`} className="block cursor-pointer"><span className="font-mono text-xs">{v.sku}</span><span className="block">{v.name} <span className="text-muted-foreground">({v.label})</span></span></label></td>
+              <td className="px-3 py-2">{v.brand}</td>
             </tr>)}
             {!choices.length && <tr><td colSpan={3} className="p-6 text-center text-muted-foreground">{t("noMatch")}</td></tr>}
           </tbody>
@@ -486,7 +486,7 @@ export function ReceiveBulkForm({
         )}
       </div>
 
-      <div className="overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-xl border bg-card">
         <table className="w-full text-sm max-md:block max-md:[&_tbody]:block max-md:[&_tr]:grid max-md:[&_tr]:grid-cols-2 max-md:[&_tr]:gap-2 max-md:[&_tr]:p-3 max-md:[&_td]:p-0">
           <thead className="bg-muted/50 text-left text-xs text-muted-foreground max-md:hidden">
             <tr>
@@ -529,7 +529,7 @@ export function ReceiveBulkForm({
       </div>
 
       <div className="sticky bottom-0 flex flex-wrap items-center gap-3 border-t bg-background py-3">
-        <Button size="lg" type="submit" disabled={pending}><Plus aria-hidden className="size-4 shrink-0" /> {t("saveDraft")}</Button>
+        <Button size="lg" type="submit" disabled={pending}><Save aria-hidden /> {t("saveDraft")}</Button>
         <span className="text-sm text-muted-foreground" aria-live="polite">
           {t("summary", { lines: filled.length, qty: fmtInt(totalQty), money })}
         </span>
@@ -544,7 +544,7 @@ export function ReceiveBulkForm({
 }
 
 const cell = "px-2 py-1.5 align-top";
-const small = cn(fieldClass, "h-8 text-xs");
+const small = cn(fieldClass, "text-xs");
 
 /** Nhãn ô chỉ hiện trên điện thoại (bảng xếp thành thẻ, không có hàng tiêu đề). Ẩn với trình đọc màn hình vì ô đã có aria-label. */
 function Cap({ children }: { children: React.ReactNode }) {

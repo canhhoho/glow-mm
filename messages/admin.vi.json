@@ -268,7 +268,10 @@
     "actions": "Thao tác",
     "select": "Chọn",
     "expiryShort": "HSD",
-    "ratingOf": "{n}/5 sao"
+    "ratingOf": "{n}/5 sao",
+    "noData": "Chưa có dữ liệu.",
+    "details": "Chi tiết",
+    "sku": "SKU"
   },
   "Inventory": {
     "title": "Tồn kho",
@@ -522,7 +525,8 @@
       "STALE": "Cần phân bổ lại — đầu vào đã thay đổi"
     },
     "allocationDetails": "Xem kết quả từng lô",
-    "allocatedVnd": "Chi phí được phân bổ (VND)"
+    "allocatedVnd": "Chi phí được phân bổ (VND)",
+    "removeCostConfirm": "Xoá chi phí này?"
   },
   "Products": {
     "title": "Sản phẩm",
