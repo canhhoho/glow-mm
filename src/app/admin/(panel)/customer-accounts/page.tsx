@@ -1,13 +1,12 @@
 import { getTranslations } from "next-intl/server";
-import Link from "next/link";
-import { ChevronDown, Info, Mail, Phone } from "lucide-react";
-import { fmtDateTime } from "@/lib/format";
+import { ChevronDown, Info, Mail, Phone, UserCheck, Users, UserX } from "lucide-react";
+import { fmtDateTime, fmtInt } from "@/lib/format";
 import { requirePagePermission } from "@/server/auth/session";
 import { isPhoneEmail } from "@/server/auth/customer-policy";
 import { listCustomerAccounts } from "@/server/accounts/admin";
 import { deleteCustomerAccountAction, setCustomerActiveAction } from "@/server/accounts/actions";
 import { AccountRowActions } from "@/components/admin/account-row-actions";
-import { Badge, DataTable, FilterBar, FilterButton, Page, PageHeader, SearchInput, Stat, Td } from "@/components/admin/ui";
+import { Badge, ClearFilters, DataTable, FilterBar, FilterButton, Page, PageHeader, SearchInput, StatCard, Td } from "@/components/admin/ui";
 
 /**
  * Tài khoản khách storefront (P17): tìm theo SĐT / email / tên; mỗi dòng Sửa (tên, SĐT, mật khẩu tạm ở trang
@@ -23,17 +22,17 @@ export default async function CustomerAccountsPage({ searchParams }: PageProps<"
   return (
     <Page>
       <PageHeader title={(await getTranslations("Nav"))("customers")} description={t("description")} />
-      <div className="grid grid-cols-3 gap-3" data-testid="customer-summary">
-        <Stat label={t("listCount")} value={accounts.length} />
-        <Stat label={t("active")} value={activeCount} />
-        <Stat label={t("locked")} value={accounts.length - activeCount} />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" data-testid="customer-summary">
+        <StatCard icon={<Users />} tone="brand" label={t("listCount")} value={fmtInt(accounts.length)} />
+        <StatCard icon={<UserCheck />} tone="success" label={t("active")} value={fmtInt(activeCount)} />
+        <StatCard icon={<UserX />} tone="neutral" label={t("locked")} value={fmtInt(accounts.length - activeCount)} />
       </div>
       <section aria-labelledby="customer-list-title" className="space-y-3 [&_td]:align-middle">
         <h2 id="customer-list-title" className="sr-only">{t("listTitle")}</h2>
         <FilterBar>
           <SearchInput label={t("search")} defaultValue={q} />
           <FilterButton>{(await getTranslations("Common"))("filter")}</FilterButton>
-          {q && <Link href="/admin/customer-accounts" className="flex h-9 items-center px-2 text-sm text-muted-foreground underline underline-offset-4">{t("clearSearch")}</Link>}
+          {q && <ClearFilters href="/admin/customer-accounts">{t("clearSearch")}</ClearFilters>}
         </FilterBar>
         <p className="text-xs text-muted-foreground">{t("resultCount", { count: accounts.length })}</p>
         <DataTable
@@ -97,7 +96,7 @@ export default async function CustomerAccountsPage({ searchParams }: PageProps<"
           })}
         </DataTable>
       </section>
-      <details className="group/help rounded-lg border bg-muted/30 p-4">
+      <details className="group/help rounded-xl border bg-card p-4">
         <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium [&::-webkit-details-marker]:hidden">
           <Info className="size-4 text-muted-foreground" aria-hidden />{t("helpTitle")}
           <ChevronDown className="ml-auto size-4 text-muted-foreground transition-transform group-open/help:rotate-180" aria-hidden />

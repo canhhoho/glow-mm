@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Pencil, Plus, Search } from "lucide-react";
+import { ArrowLeft, Eye, Pencil, Plus, Search } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { FIELD } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
@@ -60,7 +60,7 @@ export function PageHeader({
   );
 }
 
-const LINK_ICONS = { new: Plus, back: ArrowLeft, edit: Pencil } as const;
+const LINK_ICONS = { new: Plus, back: ArrowLeft, edit: Pencil, view: Eye } as const;
 
 export function LinkButton({
   href,

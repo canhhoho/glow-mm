@@ -22,8 +22,7 @@ import { ActionForm } from "@/components/admin/action-form";
 import { FileField } from "@/components/admin/file-field";
 import { AffiliateFields, CommissionBadge } from "@/components/admin/affiliate-parts";
 import { OrderStatusBadge } from "@/components/admin/order-badges";
-import { Badge, DataTable, fieldClass, fieldLabelClass, Page, PageHeader, Section, Stat, Td } from "@/components/admin/ui";
-import { Button } from "@/components/ui/button";
+import { Badge, DataTable, fieldClass, fieldLabelClass, FilterBar, FilterButton, Notice, Page, PageHeader, Section, Stat, Td } from "@/components/admin/ui";
 import { CopyButton } from "@/components/ctv/copy-button";
 import { cn } from "@/lib/utils";
 
@@ -51,13 +50,18 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
 
   return (
     <Page>
-      <PageHeader title={a.user.name} back={{ href: "/admin/affiliates", label: t("back") }} />
-      {sp.created && <p className="text-sm text-success">{t("created")}</p>}
-      {sp.approved && <p className="text-sm text-success">{t("apps.approvedNote")}</p>}
-      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        <span className="font-mono">{a.user.email}</span>
-        <Badge tone={a.active ? "success" : "danger"}>{a.active ? t("active") : t("locked")}</Badge>
-      </div>
+      <PageHeader
+        title={a.user.name}
+        back={{ href: "/admin/affiliates", label: t("back") }}
+        description={
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="font-mono">{a.user.email}</span>
+            <Badge tone={a.active ? "success" : "danger"}>{a.active ? t("active") : t("locked")}</Badge>
+          </span>
+        }
+      />
+      {sp.created && <Notice tone="success">{t("created")}</Notice>}
+      {sp.approved && <Notice tone="success">{t("apps.approvedNote")}</Notice>}
       <dl className="grid gap-2 text-sm sm:grid-cols-2">
         {(
           [
@@ -77,7 +81,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
         ))}
       </dl>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <Stat label={t("statOrders")} value={fmtInt(a.summary.monthOrders)} />
         <Stat label={t("statSales")} value={fmtInt(a.summary.monthSalesMmk)} />
         <Stat label={t("statPending")} value={fmtInt(a.summary.pendingMmk)} />
@@ -86,7 +90,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
       </div>
       <p className="text-xs text-muted-foreground">{t("holdHint", { days: holdDays })}</p>
 
-      <section className="grid gap-4 rounded-lg border p-4 md:grid-cols-2" data-testid="affiliate-tree">
+      <Section className="grid gap-4 space-y-0 md:grid-cols-2" testId="affiliate-tree">
         <div className="space-y-2">
           <h2 className="font-medium">{t("tree.parent")}</h2>
           <p className="text-sm" data-testid="affiliate-parent">
@@ -97,7 +101,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
             ) : (
               <span className="text-muted-foreground">{t("tree.noParent")}</span>
             )}
-            {a.parent && !a.parent.active && <span className="ml-2 text-xs text-destructive">({t("locked")})</span>}
+            {a.parent && !a.parent.active && <span className="ml-2"><Badge tone="danger">{t("locked")}</Badge></span>}
           </p>
           <ActionForm action={setAffiliateParentAction} submitLabel={t("tree.save")} okText={t("saved")} variant="outline">
             <input type="hidden" name="id" value={a.id} />
@@ -128,7 +132,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
                     {c.code} — {c.user.name}
                   </Link>
                   <span className="ml-2 text-xs text-muted-foreground">{fmtDate(c.createdAt)}</span>
-                  {!c.active && <span className="ml-2 text-xs text-destructive">({t("locked")})</span>}
+                  {!c.active && <span className="ml-2"><Badge tone="danger">{t("locked")}</Badge></span>}
                 </li>
               ))}
             </ul>
@@ -138,7 +142,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
             {fmtInt(a.summary.upline.paidMmk)}
           </p>
         </div>
-      </section>
+      </Section>
 
       <Section id="affiliate-payouts" title={t("due")} className="scroll-mt-20 space-y-2">
         {a.due.entries.length === 0 ? (
@@ -150,7 +154,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
             </p>
             <ul className="flex flex-wrap gap-1.5 text-xs">
               {a.due.entries.map((e) => (
-                <li key={`${e.orderId}-${e.kind}`} className="rounded border px-1.5 py-0.5">
+                <li key={`${e.orderId}-${e.kind}`} className="rounded-md border bg-card px-1.5 py-0.5">
                   {/* Chỉ mã + số dùng font-mono: chữ thường giữ font Myanmar tự host (class font-sans trỏ sai tên font). */}
                   <span className="font-mono">{e.code}</span>
                   {e.kind === "UPLINE" && <span className="ml-1 text-muted-foreground">({t("lineKind.UPLINE")})</span>}
@@ -167,7 +171,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
                 submitLabel={t("pay")}
                 okText={t("paid")}
                 confirm={t("payConfirm", { amount: fmtInt(a.due.totalMmk), name: a.user.name })}
-                className="space-y-3" icon={<Wallet aria-hidden className="size-4 shrink-0" />}
+                className="space-y-3" icon={<Wallet aria-hidden />}
               >
                 <input type="hidden" name="id" value={a.id} />
                 {a.payoutInfo && <p className="text-sm whitespace-pre-line">{a.payoutInfo}</p>}
@@ -185,9 +189,8 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
         )}
       </Section>
 
-      <section className="space-y-2">
-        <h2 className="font-medium">{t("orders")}</h2>
-        <form className="flex flex-wrap items-end gap-2" role="search">
+      <Section title={t("orders")}>
+        <FilterBar>
           <label className={fieldLabelClass}>
             <span className="text-muted-foreground">{t("month")}</span>
             <input name="month" type="month" defaultValue={month === "all" ? "" : month} className={cn(fieldClass, "w-44")} />
@@ -203,11 +206,10 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
               ))}
             </select>
           </label>
-          <Button size="lg" type="submit" variant="outline">
-            {t("filter")}
-          </Button>
-        </form>
+          <FilterButton>{(await getTranslations("Common"))("filter")}</FilterButton>
+        </FilterBar>
         <DataTable
+          stack
           empty={t("ordersEmpty")}
           head={[t("colOrder"), t("colDate"), t("colCustomer"), t("colSource"), t("colGoods"), t("colCommission"), t("colOrderStatus")]}
           numeric={[4, 5]}
@@ -219,15 +221,15 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
                   {o.code}
                 </Link>
               </Td>
-              <Td className="whitespace-nowrap">{fmtDate(o.createdAt)}</Td>
-              <Td>
+              <Td label={t("colDate")} className="whitespace-nowrap">{fmtDate(o.createdAt)}</Td>
+              <Td label={t("colCustomer")}>
                 {o.recipientName}
                 <div className="font-mono text-xs text-muted-foreground">{o.recipientPhone}</div>
               </Td>
-              <Td className="text-xs">{o.affiliateSource && t(`source.${o.affiliateSource}`)}</Td>
-              <Td className="text-right tabular-nums">{fmtInt(o.commission.baseMmk)}</Td>
-              <Td className="text-right tabular-nums">
-                <div className="flex flex-col items-end gap-1">
+              <Td label={t("colSource")} className="text-xs">{o.affiliateSource && t(`source.${o.affiliateSource}`)}</Td>
+              <Td label={t("colGoods")} numeric>{fmtInt(o.commission.baseMmk)}</Td>
+              <Td label={t("colCommission")} numeric>
+                <div className="flex flex-col items-end gap-1 max-md:items-start">
                   <span>
                     {fmtInt(o.commission.commissionMmk)}
                     <span className="ml-1 text-xs text-muted-foreground">({bpToPercent(o.commissionRateBp ?? 0)}%)</span>
@@ -235,20 +237,17 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
                   <CommissionBadge state={o.commission.state} />
                 </div>
               </Td>
-              <Td>
+              <Td label={t("colOrderStatus")}>
                 <OrderStatusBadge status={o.status} />
               </Td>
             </tr>
           ))}
         </DataTable>
-      </section>
+      </Section>
 
       {team.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="font-medium">
-            {t("teamOrders")} ({team.length})
-          </h2>
-          <DataTable head={[t("colOrder"), t("colDate"), t("colCtv"), t("colGoods"), t("colUpline"), t("colOrderStatus")]} numeric={[3, 4]}>
+        <Section title={<>{t("teamOrders")} ({team.length})</>}>
+          <DataTable stack head={[t("colOrder"), t("colDate"), t("colCtv"), t("colGoods"), t("colUpline"), t("colOrderStatus")]} numeric={[3, 4]}>
             {team.map((o) => (
               <tr key={o.id} data-testid="team-order">
                 <Td>
@@ -256,8 +255,8 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
                     {o.code}
                   </Link>
                 </Td>
-                <Td className="whitespace-nowrap">{fmtDate(o.createdAt)}</Td>
-                <Td className="text-xs">
+                <Td label={t("colDate")} className="whitespace-nowrap">{fmtDate(o.createdAt)}</Td>
+                <Td label={t("colCtv")} className="text-xs">
                   {o.seller ? (
                     <>
                       <span className="font-mono">{o.seller.code}</span> — {o.seller.user.name}
@@ -266,10 +265,10 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
                     "—"
                   )}
                 </Td>
-                <Td className="text-right tabular-nums">{fmtInt(o.uplineCommission?.baseMmk ?? 0)}</Td>
-                <Td className="text-right tabular-nums">
+                <Td label={t("colGoods")} numeric>{fmtInt(o.uplineCommission?.baseMmk ?? 0)}</Td>
+                <Td label={t("colUpline")} numeric>
                   {o.uplineCommission && (
-                    <div className="flex flex-col items-end gap-1">
+                    <div className="flex flex-col items-end gap-1 max-md:items-start">
                       <span>
                         {fmtInt(o.uplineCommission.commissionMmk)}
                         <span className="ml-1 text-xs text-muted-foreground">({bpToPercent(o.uplineRateBp ?? 0)}%)</span>
@@ -278,25 +277,24 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
                     </div>
                   )}
                 </Td>
-                <Td>
+                <Td label={t("colOrderStatus")}>
                   <OrderStatusBadge status={o.status} />
                 </Td>
               </tr>
             ))}
           </DataTable>
-        </section>
+        </Section>
       )}
 
-      <section className="space-y-2">
-        <h2 className="font-medium">{t("payouts")}</h2>
-        <DataTable empty={t("payoutsEmpty")} head={[t("colPaidAt"), t("colAmount"), t("colOrders"), t("colNote"), ""]} numeric={[1]}>
+      <Section title={t("payouts")}>
+        <DataTable stack empty={t("payoutsEmpty")} head={[t("colPaidAt"), t("colAmount"), t("colOrders"), t("colNote"), <span key="p" className="sr-only">{t("proof")}</span>]} numeric={[1, 2]}>
           {a.payouts.map((p) => (
             <tr key={p.id} data-testid="payout-row">
               <Td className="whitespace-nowrap">{fmtDateTime(p.paidAt)}</Td>
-              <Td className="text-right font-medium tabular-nums">{fmtInt(p.amountMmk)} MMK</Td>
-              <Td className="tabular-nums">{p._count.lines}</Td>
-              <Td className="text-xs">{p.note}</Td>
-              <Td>
+              <Td label={t("colAmount")} numeric className="font-medium">{fmtInt(p.amountMmk)} MMK</Td>
+              <Td label={t("colOrders")} numeric>{p._count.lines}</Td>
+              <Td label={t("colNote")} className="text-xs">{p.note}</Td>
+              <Td label={t("proof")}>
                 {p.proofFile && (
                   <a href={p.proofFile.url} target="_blank" rel="noreferrer" className="text-sm text-primary underline">
                     {t("proof")}
@@ -306,11 +304,10 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
             </tr>
           ))}
         </DataTable>
-      </section>
+      </Section>
 
       <div className="grid gap-6 md:grid-cols-2 [&>*]:min-w-0">
-        <section id="profile" className="scroll-mt-4 space-y-2">
-          <h2 className="font-medium">{t("profile")}</h2>
+        <Section id="profile" className="scroll-mt-20" title={t("profile")}>
           <ActionForm action={updateAffiliateAction} submitLabel={t("save")} okText={t("saved")} className="space-y-3">
             <input type="hidden" name="id" value={a.id} />
             <AffiliateFields
@@ -326,11 +323,10 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
               globalUplinePercent={bpToPercent(uplineBp)}
             />
           </ActionForm>
-        </section>
+        </Section>
         <div className="space-y-6">
-          <section className="space-y-2">
-            <h2 className="font-medium">{t("resetTitle")}</h2>
-            <ActionForm action={resetAffiliatePasswordAction} submitLabel={t("reset")} okText={t("resetDone")} className="space-y-3" icon={<KeyRound aria-hidden className="size-4 shrink-0" />}>
+          <Section title={t("resetTitle")}>
+            <ActionForm action={resetAffiliatePasswordAction} submitLabel={t("reset")} okText={t("resetDone")} className="space-y-3" icon={<KeyRound aria-hidden />}>
               <input type="hidden" name="id" value={a.id} />
               <label className={fieldLabelClass}>
                 <span>{t("tempPassword")}</span>
@@ -345,20 +341,19 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
                 />
               </label>
             </ActionForm>
-          </section>
-          <section className="space-y-2">
-            <h2 className="font-medium">{t("access")}</h2>
+          </Section>
+          <Section title={t("access")}>
             <p className="text-xs text-muted-foreground">{a.active ? t("lockHint") : t("unlockHint")}</p>
             <ActionButton
               action={setAffiliateActiveAction}
               fields={{ id: a.id, active: String(!a.active) }}
               label={a.active ? t("lock") : t("unlock")}
               variant={a.active ? "destructive" : "outline"}
-              confirm={a.active ? t("lockConfirm", { name: a.user.name }) : undefined} iconOnly={false} icon={a.active ? <LockKeyhole aria-hidden className="size-4 shrink-0" /> : <LockKeyholeOpen aria-hidden className="size-4 shrink-0" />}
+              confirm={a.active ? t("lockConfirm", { name: a.user.name }) : undefined} iconOnly={false} icon={a.active ? <LockKeyhole aria-hidden /> : <LockKeyholeOpen aria-hidden />}
             />
             <p className="text-xs text-muted-foreground">{t("deleteHint")}</p>
-            <ActionButton action={deleteAffiliateAction} fields={{ id: a.id }} label={t("delete")} variant="destructive" confirm={t("deleteConfirm", { name: a.user.name })} iconOnly={false} icon={<Trash2 aria-hidden className="size-4 shrink-0" />} />
-          </section>
+            <ActionButton action={deleteAffiliateAction} fields={{ id: a.id }} label={t("delete")} variant="destructive" confirm={t("deleteConfirm", { name: a.user.name })} iconOnly={false} icon={<Trash2 aria-hidden />} />
+          </Section>
         </div>
       </div>
     </Page>

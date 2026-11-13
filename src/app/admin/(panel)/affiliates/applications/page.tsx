@@ -9,7 +9,7 @@ import { suggestAffiliateCode } from "@/server/affiliates/affiliates";
 import { listApplications, pendingApplicationsCount } from "@/server/affiliates/applications";
 import { getNumberSetting } from "@/server/settings";
 import { ActionForm } from "@/components/admin/action-form";
-import { Badge, DataTable, fieldClass, fieldLabelClass, Page, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, EmptyState, fieldClass, fieldLabelClass, Page, PageHeader, Section, Td } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 
 /** Duyệt đơn đăng ký CTV qua link mời (P11b). */
@@ -25,8 +25,7 @@ export default async function AffiliateApplicationsPage() {
 
   return (
     <Page>
-      <PageHeader title={t("apps.title")} />
-      <p className="text-sm text-muted-foreground">{t("apps.hint")}</p>
+      <PageHeader title={t("apps.title")} description={t("apps.hint")} />
       {pendingTotal > 0 && (
         <p className="text-sm font-medium" data-testid="apps-pending-total">
           {t("apps.pendingTotal", { count: pendingTotal, shown: pending.length })}
@@ -34,11 +33,11 @@ export default async function AffiliateApplicationsPage() {
       )}
 
       {pending.length === 0 ? (
-        <p className="rounded-lg border p-6 text-center text-sm text-muted-foreground">{t("apps.empty")}</p>
+        <EmptyState>{t("apps.empty")}</EmptyState>
       ) : (
         <ul className="space-y-3">
           {pending.map((a) => (
-            <li key={a.id} className="rounded-lg border p-4" data-testid="application">
+            <li key={a.id} className="rounded-xl border bg-card p-4" data-testid="application">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <div>
                   <div className="font-medium">{a.name}</div>
@@ -109,9 +108,8 @@ export default async function AffiliateApplicationsPage() {
         </ul>
       )}
 
-      <section className="space-y-2">
-        <h2 className="font-medium">{t("apps.decided")}</h2>
-        <DataTable stack empty={t("apps.decidedEmpty")} head={[t("name"), t("apps.invitedBy"), t("status"), t("apps.reviewedAt"), ""]}>
+      <Section title={t("apps.decided")}>
+        <DataTable stack empty={t("apps.decidedEmpty")} head={[t("name"), t("apps.invitedBy"), t("status"), t("apps.reviewedAt"), <span key="a" className="sr-only">{t("view")}</span>]}>
           {decided.map((a) => (
             <tr key={a.id}>
               <Td>
@@ -134,7 +132,7 @@ export default async function AffiliateApplicationsPage() {
             </tr>
           ))}
         </DataTable>
-      </section>
+      </Section>
     </Page>
   );
 }

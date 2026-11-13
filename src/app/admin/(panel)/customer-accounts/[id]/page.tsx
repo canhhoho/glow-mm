@@ -63,11 +63,11 @@ export default async function CustomerAccountPage({ params }: PageProps<"/admin/
       {hasPassword && (
         <Section title={t("resetPassword")}>
           <p className="text-xs text-muted-foreground">{t("passwordHint")}</p>
-          <ActionForm action={resetCustomerPasswordAction} submitLabel={t("resetPassword")} variant="outline" className="space-y-3" icon={<KeyRound aria-hidden className="size-4 shrink-0" />}>
+          <ActionForm action={resetCustomerPasswordAction} submitLabel={t("resetPassword")} className="space-y-3" icon={<KeyRound aria-hidden />}>
             <input type="hidden" name="id" value={a.id} />
             <label className={fieldLabelClass}>
               <span>{t("tempPassword", { min: MIN_CUSTOMER_PASSWORD })}</span>
-              <input name="password" type="text" required minLength={MIN_CUSTOMER_PASSWORD} maxLength={128} autoComplete="off" className={fieldClass} />
+              <input name="password" type="password" required minLength={MIN_CUSTOMER_PASSWORD} maxLength={128} autoComplete="new-password" className={fieldClass} />
             </label>
           </ActionForm>
         </Section>
@@ -80,10 +80,10 @@ export default async function CustomerAccountPage({ params }: PageProps<"/admin/
           fields={{ id: a.id, active: String(!a.active) }}
           label={a.active ? t("lock") : t("unlock")}
           variant={a.active ? "destructive" : "outline"}
-          confirm={a.active ? t("lockConfirm", { name: a.name }) : undefined} iconOnly={false} icon={a.active ? <LockKeyhole aria-hidden className="size-4 shrink-0" /> : <LockKeyholeOpen aria-hidden className="size-4 shrink-0" />}
+          confirm={a.active ? t("lockConfirm", { name: a.name }) : undefined} iconOnly={false} icon={a.active ? <LockKeyhole aria-hidden /> : <LockKeyholeOpen aria-hidden />}
         />
         <p className="text-xs text-muted-foreground">{t("deleteHint")}</p>
-        <ActionButton action={deleteCustomerAccountAction} fields={{ id: a.id }} label={t("delete")} variant="destructive" confirm={t("deleteConfirm", { name: a.name })} iconOnly={false} icon={<Trash2 aria-hidden className="size-4 shrink-0" />} />
+        <ActionButton action={deleteCustomerAccountAction} fields={{ id: a.id }} label={t("delete")} variant="destructive" confirm={t("deleteConfirm", { name: a.name })} iconOnly={false} icon={<Trash2 aria-hidden />} />
       </Section>
     </Page>
   );
