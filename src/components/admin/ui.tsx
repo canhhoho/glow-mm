@@ -225,7 +225,7 @@ export function DataTable({
 }) {
   const hasRows = Array.isArray(children) ? children.length > 0 : !!children;
   return (
-    <div className={cn("overflow-x-auto rounded-xl border bg-card", className)}>
+    <div className={cn("relative overflow-x-auto rounded-xl border bg-card", className)}>
       <table className={cn("w-full text-sm", stack && STACK, dense && DENSE, tableClassName)}>
         <thead className={cn("bg-muted/50 text-left text-xs text-muted-foreground", stack && "max-md:hidden")}>
           <tr>

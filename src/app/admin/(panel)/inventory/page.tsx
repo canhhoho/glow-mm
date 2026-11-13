@@ -395,7 +395,7 @@ function ProductView({
               {c && c.lots.length > 0 && (
                 <details className="mt-2 text-xs">
                   <summary className="cursor-pointer text-primary">{t("showLots")}</summary>
-                  <div className="mt-2 overflow-x-auto">
+                  <div className="mt-2">
                     <LotsTable lots={c.lots} t={t} th={th} now={now} />
                   </div>
                 </details>
