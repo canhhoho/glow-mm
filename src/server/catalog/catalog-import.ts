@@ -495,8 +495,10 @@ export async function commitCatalogImport(raw: unknown, userId: string, opts: { 
     }
     if (input.rateId && documents.length) {
       // Chốt tỷ giá người dùng đã xem cho các lô VND; ghi sổ sau không tự thay tỷ giá mới hơn.
-      const lines = await tx.stockDocumentLine.findMany({ where: { documentId: { in: documents.map((d) => d.id) } }, select: { batchId: true, batch: { select: { unitCostVnd: true } } } });
-      await tx.batch.updateMany({ where: { id: { in: lines.flatMap((l) => (l.batchId && l.batch?.unitCostVnd != null ? [l.batchId] : [])) } }, data: { rateId: input.rateId } });
+      const docIds = documents.map((d) => d.id);
+      await tx.stockDocumentLine.updateMany({ where: { documentId: { in: docIds }, unitCostVnd: { not: null } }, data: { rateId: input.rateId } });
+      const lines = await tx.stockDocumentLine.findMany({ where: { documentId: { in: docIds } }, select: { batchId: true, batch: { select: { unitCostVnd: true } } } });
+      await tx.batch.updateMany({ where: { rateId: null, id: { in: lines.flatMap((l) => (l.batchId && l.batch?.unitCostVnd != null ? [l.batchId] : [])) } }, data: { rateId: input.rateId } });
     }
     const review = opts.submit ? await submitTouched(tx, touched, userId) : null;
     const result = { ...preview.counts, documents };

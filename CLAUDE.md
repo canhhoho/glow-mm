@@ -28,6 +28,7 @@ Next.js 16 có API mới (proxy thay middleware, Cache Components bật) → đ�
 - Nhập/cập nhật SP bằng Excel (`catalog/catalog-import.ts`, một sheet, cột ở `lib/catalog-sheet.ts`, file sinh lúc tải ở `catalog-template.ts`/`catalog-workbook.ts`): SKU có sẵn → cập nhật (ô trống giữ nguyên, không đổi kho/combo), không SKU → SP mới ẩn (gộp biến thể theo tên + thương hiệu); có số lượng → phiếu NHẬP NHÁP theo kho bán. Xem trước chỉ đọc; xác nhận chạy lại kiểm tra trong một transaction (khoá chung với `saveProduct`), chốt tỷ giá đã xem, chặn nhập lặp file có tồn (`CatalogOpeningImport`). COD hoàn tất chỉ ghi nhận thu khách; `orders/cod.ts` đối soát tiền về riêng, quyền ADMIN, có số thực nhận/phí/mã tham chiếu và audit.
 - Giữ hàng ở cấp biến thể; phân lô và xuất kho khi bàn giao vận chuyển. Combo trừ kho từng thành phần. Tester/quà là `stockType=TESTER`, không bán được.
 - Landed cost tính theo lô, lưu tỷ giá VND/MMK tại thời điểm nhập.
+- **Nhập lại cùng lô khác giá (P1-C, D11):** được phép (cùng hạn dùng, cùng loại tiền, cùng chuyến hàng hoặc cùng không chuyến — khác thì vẫn chặn, không thêm bước chọn chuyến). Giá mua + tỷ giá lưu trên **từng dòng phiếu NHẬP** (`StockDocumentLine.unitCost*`/`rateId`); giá vốn lô (`Batch.unitCost*`) = bình quân theo **SL đã nhập** của mọi dòng NHẬP đã ghi sổ (`inventory/lot-cost.ts`, tính lại ở `refreshReceivedLots` khi ghi sổ — cùng mẫu số với phân bổ chuyến hàng; tỷ giá khác nhau → đổi MMK từng lần nhập). Lô thuộc chuyến: giá vốn về kho vẫn do phân bổ chuyến quyết định (SL đổi → chuyến báo "cũ", phân bổ lại). Giá để tính giá bán (`pricing/cost.ts`) và gợi ý ở form nhập = giá của lần nhập gần nhất, không phải bình quân.
 - **Hai kho bán (P24):** mỗi SP thuộc đúng một kho bán (`Product.stockLocationId`); nhập/chuyển vào kho bán, tồn bán (`baseAvailability`), xuất đơn (`issueOrderStock`, mỗi kho một phiếu ISSUE) đều theo kho của SP. Combo + thành phần cùng kho. `Location.active=false` = ngừng dùng (không xoá vì ledger). `Location.pricingMode`: `VN_IMPORT` (Kho Thắm — lô giá `unitCostVnd`, giá = VND × tỷ giá × (1+%) + ship MMK/kg × khối lượng) hoặc `LOCAL_MMK` (Kho Chi — lô giá `unitCostMmk`, `landedCostMmk = unitCostMmk` lúc tạo; giá = vốn MMK + `Product.fixedProfitMmk`). Lô có đúng một loại tiền (CHECK ở DB). Quản lý kho: `/admin/settings/warehouses` (`server/inventory/warehouses.ts`).
 
 **Code**
@@ -79,6 +80,7 @@ npx vitest run tests/unit/money.test.ts
 npx vitest run -c vitest.integration.config.mts tests/integration/orders.test.ts
 npx playwright test tests/e2e/smoke.spec.ts --project=mobile   # file *.desktop.spec.ts → --project=desktop
 npm run perf             # Lighthouse mobile (cần server production ở cổng 3100, xem scripts/lighthouse.mjs)
+npm run perf:bulk-review -- --yes   # đo duyệt hàng loạt 1.000 SP (DB tạm tên *_perf, xem đầu scripts/perf-bulk-review.ts)
 docker compose -p glow-prod -f docker-compose.prod.yml up --build   # thử bản giống production (cần .env.prod)
 ```
 - `prisma migrate reset` bị Prisma chặn khi AI chạy → không tự chạy; E2E chỉ dùng `migrate deploy` + seed (không xoá dữ liệu).

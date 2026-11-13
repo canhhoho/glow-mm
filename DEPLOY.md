@@ -336,6 +336,12 @@ UNION ALL SELECT 'so_kho_lech', count(*) FROM (SELECT \"batchId\",\"locationId\"
 UNION ALL SELECT 'ten_loai_trung', count(*) FROM (SELECT 1 FROM \"Variant\" GROUP BY \"productId\", lower(regexp_replace(btrim(label), '\s+', ' ', 'g')) HAVING count(*) > 1) t;"
 ```
 
+- Số liệu về lô / chuyến hàng (chỉ đọc) để đối chiếu quy tắc "nhập lại cùng lô khác giá" (P1-C), chạy trước deploy hoặc bất cứ lúc nào:
+
+  ```bash
+  docker exec -i tandc-db-1 psql -U glow -d glow -q -P pager=off < scripts/d11-stats.sql
+  ```
+
 - Khác 0 thì **không deploy**. Chạy bản đầy đủ `scripts/data-checks.ts` trên bản sao (§3.3) để lấy danh sách cần xử lý.
 - Rollback mà không mất dữ liệu: các lệnh `DROP …` ghi ở đầu file migration, rồi deploy lại tag trước.
 

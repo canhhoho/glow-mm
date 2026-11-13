@@ -92,6 +92,10 @@ const CHECKS: Check[] = [
   },
   { group: "D11", key: "lot_multiple_locations", title: "Lô còn tồn ở nhiều kho", sql: `SELECT "batchId" AS ref FROM "StockBalance" WHERE qty > 0 GROUP BY 1 HAVING COUNT(DISTINCT "locationId") > 1` },
   { group: "D11", key: "lot_with_shipment", title: "Lô gắn chuyến hàng", sql: `SELECT id AS ref FROM "Batch" WHERE "shipmentId" IS NOT NULL` },
+  {
+    group: "D11", key: "receipt_line_without_cost", title: "Dòng nhập đã ghi sổ thiếu giá mua (sau migration P1-C phải bằng 0)",
+    sql: `SELECT l.id AS ref FROM "StockDocumentLine" l JOIN "StockDocument" d ON d.id = l."documentId" WHERE d.type = 'RECEIVE' AND d.status = 'POSTED' AND l."batchId" IS NOT NULL AND l."unitCostVnd" IS NULL AND l."unitCostMmk" IS NULL`,
+  },
 ];
 
 /** Chỉ chạy khi DB đã có migration P1-A (bảng ProductChangeRequest). */

@@ -30,7 +30,7 @@ export async function listVariantsForPicker() {
   }));
 }
 
-/** Biến thể nhập kho được (đang dùng, không phải combo) cho bảng nhập nhanh; `lastCostVnd` = giá mua của lô mới nhất. */
+/** Biến thể nhập kho được (đang dùng, không phải combo) cho bảng nhập nhanh; `lastCost` = giá mua của lần nhập gần nhất. */
 export async function listVariantsForReceive() {
   const [variants, lastVnd, lastMmk] = await Promise.all([
     prisma.variant.findMany({
@@ -38,17 +38,17 @@ export async function listVariantsForReceive() {
       orderBy: { sku: "asc" },
       include: { product: { include: { translations: true, brand: true, stockLocation: { select: { pricingMode: true } } } } },
     }),
-    // Giá mua gợi ý: lô của phiếu chưa huỷ (lô nháp đã huỷ không còn là giá thật).
-    prisma.batch.findMany({
-      where: { unitCostVnd: { not: null }, documentLines: { some: { document: { status: { not: "CANCELLED" } } } } },
+    // Giá mua gợi ý: giá của lần nhập gần nhất (dòng phiếu NHẬP chưa huỷ) — không phải giá bình quân của lô (P1-C).
+    prisma.stockDocumentLine.findMany({
+      where: { unitCostVnd: { not: null }, document: { type: "RECEIVE", status: { not: "CANCELLED" } } },
       distinct: ["variantId"],
-      orderBy: [{ variantId: "asc" }, { createdAt: "desc" }],
+      orderBy: [{ variantId: "asc" }, { document: { createdAt: "desc" } }, { id: "desc" }],
       select: { variantId: true, unitCostVnd: true },
     }),
-    prisma.batch.findMany({
-      where: { unitCostMmk: { not: null }, documentLines: { some: { document: { status: { not: "CANCELLED" } } } } },
+    prisma.stockDocumentLine.findMany({
+      where: { unitCostMmk: { not: null }, document: { type: "RECEIVE", status: { not: "CANCELLED" } } },
       distinct: ["variantId"],
-      orderBy: [{ variantId: "asc" }, { createdAt: "desc" }],
+      orderBy: [{ variantId: "asc" }, { document: { createdAt: "desc" } }, { id: "desc" }],
       select: { variantId: true, unitCostMmk: true },
     }),
   ]);
