@@ -139,10 +139,10 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
 
       <div className="grid gap-5 lg:grid-cols-2 [&>*]:min-w-0">
         <Section title={t("stock")}>
-          <DataTable empty={t("empty")} numeric={[1, 2, 3, 4, 5]} head={[t("locType"), t("qty"), t("tester"), t("value"), t("estimatedQty"), t("noCost")]}>
+          <DataTable empty={t("empty")} tableClassName="min-w-[40rem]" numeric={[1, 2, 3, 4, 5]} head={[t("locType"), t("qty"), t("tester"), t("value"), t("estimatedQty"), t("noCost")]}>
             {stock.map((s) => (
               <tr key={s.code ?? "inactive"} data-testid={`stock-${s.code ?? "inactive"}`}>
-                <Td>{s.name ?? t("inactiveLocations")}</Td>
+                <Td className="whitespace-nowrap">{s.name ?? t("inactiveLocations")}</Td>
                 <Td numeric>{fmtInt(s.qty)}</Td>
                 <Td numeric>{fmtInt(s.testerQty)}</Td>
                 <Td numeric>{fmtInt(s.valueMmk)}</Td>

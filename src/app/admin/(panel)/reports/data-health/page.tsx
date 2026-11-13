@@ -67,7 +67,7 @@ export default async function DataHealthPage({ searchParams }: PageProps<"/admin
                 <div className="space-y-2 border-t px-3 py-2">
                   <p className="text-xs text-muted-foreground">{t(`checks.${c.key}.help`)}</p>
                   {c.count > 0 && (
-                    <DataTable head={[t("colRef"), t("colName"), t(`checks.${c.key}.value`)]} stack>
+                    <DataTable head={[t("colRef"), t("colName"), ...(t(`checks.${c.key}.value`) ? [t(`checks.${c.key}.value`)] : [])]} stack>
                       {c.rows.map((r) => (
                         <tr key={r.id}>
                           <Td>
@@ -76,9 +76,11 @@ export default async function DataHealthPage({ searchParams }: PageProps<"/admin
                             </Link>
                           </Td>
                           <Td label={t("colName")}>{r.name ?? "—"}</Td>
-                          <Td label={t(`checks.${c.key}.value`)} className="tabular-nums">
-                            {c.key === "noImage" && r.value ? t(`state.${r.value as "published" | "hidden"}`) : (r.value ?? "")}
-                          </Td>
+                          {t(`checks.${c.key}.value`) && (
+                            <Td label={t(`checks.${c.key}.value`)} className="tabular-nums">
+                              {c.key === "noImage" && r.value ? t(`state.${r.value as "published" | "hidden"}`) : (r.value ?? "")}
+                            </Td>
+                          )}
                         </tr>
                       ))}
                     </DataTable>
@@ -103,9 +105,9 @@ export default async function DataHealthPage({ searchParams }: PageProps<"/admin
           {flowRows.map(([label, p]) => (
             <tr key={label}>
               <Td>{label}</Td>
-              <Td className="text-right tabular-nums">{fmtInt(p.n)}</Td>
-              <Td className="text-right tabular-nums">{fmtHours(p.p50)}</Td>
-              <Td className="text-right tabular-nums">{fmtHours(p.p90)}</Td>
+              <Td numeric>{fmtInt(p.n)}</Td>
+              <Td numeric>{fmtHours(p.p50)}</Td>
+              <Td numeric>{fmtHours(p.p90)}</Td>
             </tr>
           ))}
         </DataTable>
@@ -120,7 +122,7 @@ export default async function DataHealthPage({ searchParams }: PageProps<"/admin
               {b.ordersByStatus.map((r) => (
                 <tr key={r.status}>
                   <Td>{to(`status.${r.status}`)}</Td>
-                  <Td className="text-right tabular-nums">{fmtInt(r.count)}</Td>
+                  <Td numeric>{fmtInt(r.count)}</Td>
                 </tr>
               ))}
             </DataTable>
@@ -134,8 +136,8 @@ export default async function DataHealthPage({ searchParams }: PageProps<"/admin
               {b.cod.buckets.map((r) => (
                 <tr key={r.label}>
                   <Td>{r.label}</Td>
-                  <Td className="text-right tabular-nums">{fmtInt(r.orders)}</Td>
-                  <Td className="text-right tabular-nums">{fmtInt(r.mmk)}</Td>
+                  <Td numeric>{fmtInt(r.orders)}</Td>
+                  <Td numeric>{fmtInt(r.mmk)}</Td>
                 </tr>
               ))}
             </DataTable>

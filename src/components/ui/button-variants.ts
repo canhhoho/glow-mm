@@ -1,10 +1,11 @@
 import { cva } from "class-variance-authority"
+import { cn } from "cn"
 
 /**
  * Lớp nút dùng chung (tách khỏi button.tsx để storefront dùng chuỗi class mà không kéo @base-ui vào bundle client).
  * Size `lg`/`icon-lg` = admin (h-9 trên desktop); `touch`/`icon-touch` = storefront + cổng CTV (h-11).
  */
-export const buttonVariants = cva(
+const buttonBase = cva(
   "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
@@ -43,3 +44,9 @@ export const buttonVariants = cva(
     },
   }
 )
+
+/**
+ * Chuỗi lớp đã gộp (tailwind-merge): lớp gốc có `border-transparent`, biến thể outline có `border-border` — dùng thẳng chuỗi
+ * cva cho `<Link>`/`<a>` (không qua `cn`) thì `border-transparent` thắng và nút liên kết mất viền. Gộp ở đây cho mọi nơi gọi.
+ */
+export const buttonVariants = (...args: Parameters<typeof buttonBase>) => cn(buttonBase(...args))
