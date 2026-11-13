@@ -51,6 +51,8 @@ Cột "Test": xem kết quả E2E dưới đây (không đánh dấu từng dòn
 - E2E thành phần dùng chung sau bản cuối: 19 đạt / 2 lỗi (đăng nhập chậm; xoá tài khoản rồi chờ chuyển trang) — cùng dạng lỗi có ở baseline.
 - Không chạy: integration (không đụng DB/transaction), Lighthouse.
 
+- **CI full trên DB sạch (GitHub Actions, run 43410178359, nhánh `dev`): check + e2e đều xanh.** Lần chạy trước (43407124496) lỗi 1 test: liên kết "Lịch sử" trong thẻ lô mobile bị khung cuộn lồng nhau cắt mất → đã sửa (một khung cuộn, khung bảng `relative`).
+
 **Chưa làm (ngoài phạm vi / cố ý giữ)**
 - Phân trang cho danh sách đang cắt 200/100 dòng (nhân viên, khách, CTV, đánh giá, phiếu kho, lịch sử giá).
 - Nhãn nút quay lại giữ như cũ (đổi sẽ vỡ nhiều E2E tìm theo tên); `order-form` không bọc Section (dùng chung cổng CTV).
