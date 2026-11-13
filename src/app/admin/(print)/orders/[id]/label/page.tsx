@@ -18,7 +18,7 @@ export default async function OrderLabelPage({ params }: PageProps<"/admin/order
       <style>{"@page { size: A6; margin: 6mm; }"}</style>
       <div className="mb-4 flex gap-2 print:hidden">
         <PrintButton label={t("print")} />
-        <LinkButton href={`/admin/orders/${order.id}`}>← {order.code}</LinkButton>
+        <LinkButton href={`/admin/orders/${order.id}`} icon="back">{order.code}</LinkButton>
       </div>
       <OrderLabel order={order} />
     </div>

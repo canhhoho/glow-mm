@@ -5,18 +5,18 @@ import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { computeAlerts } from "@/server/alerts/queries";
 import { defaultRange, salesReport, workQueue } from "@/server/reports/queries";
-import { LinkButton, Notice, Page, PageHeader, Stat } from "@/components/admin/ui";
-import { fmtInt } from "@/lib/format";
+
 import { yangonDayKey } from "@/lib/time";
 import { prisma } from "@/lib/db";
 import { catalogStats } from "@/server/catalog/stats";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowDown, ArrowRight, ArrowUp, Box, ClipboardList, FileText, ImageOff, Package, ShieldCheck, ShoppingCart, Store, Tag, TriangleAlert } from "lucide-react";
-import { Badge, StatCard } from "@/components/admin/ui";
+import { Badge, BlockSkeleton, DataTable, LinkButton, Notice, Page, PageHeader, Segmented, Stat, StatCard, Td } from "@/components/admin/ui";
 import { Donut, LineChart } from "@/components/admin/charts";
 import { cn } from "@/lib/utils";
-import { fmtDateTime } from "@/lib/format";
+import { PRODUCT_LABEL_TONE } from "@/components/admin/status-tones";
+import { fmtDateTime, fmtInt } from "@/lib/format";
 import { catalogTasks, DASHBOARD_RANGES, dashboardKpis, productActivity, recentProducts, recentReceipts } from "@/server/reports/catalog-dashboard";
 
 export default async function DashboardPage({ searchParams }: PageProps<"/admin">) {
@@ -39,20 +39,17 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
         description={<span data-testid="role">{t("role", { role: tr(user.role) })} · {t("overviewSubtitle")}</span>}
         actions={
           showCatalog ? (
-            <nav aria-label={t("rangeLabel")} className="flex rounded-lg border p-0.5 text-sm">
-              {DASHBOARD_RANGES.map((d) => (
-                <Link key={d} href={d === DASHBOARD_RANGES[0] ? "/admin" : `/admin?range=${d}`} aria-current={d === days ? "true" : undefined} className={cn("rounded-md px-3 py-1.5", d === days ? "bg-primary/10 font-medium text-primary" : "text-muted-foreground hover:text-foreground")}>
-                  {t("rangeDays", { n: d })}
-                </Link>
-              ))}
-            </nav>
+            <Segmented
+              label={t("rangeLabel")}
+              items={DASHBOARD_RANGES.map((d) => ({ href: d === DASHBOARD_RANGES[0] ? "/admin" : `/admin?range=${d}`, label: t("rangeDays", { n: d }), active: d === days }))}
+            />
           ) : undefined
         }
       />
-      {showCatalog && <Suspense fallback={<DashboardLoading label={t("catalog")} />}><CatalogOverview days={days} showOrders={showOrders} showStock={showStock} /></Suspense>}
-      {showOrders && <Suspense fallback={<DashboardLoading label={t("todo")} />}><OrderQueue canReconcile={can(user.role, "orders:reconcile-cod")} /></Suspense>}
-      {showStock && <Suspense fallback={<DashboardLoading label={t("alerts")} />}><StockAlerts /></Suspense>}
-      {showSales && <Suspense fallback={<DashboardLoading label={t("sales")} />}><SalesOverview /></Suspense>}
+      {showCatalog && <Suspense fallback={<BlockSkeleton label={t("catalog")} />}><CatalogOverview days={days} showOrders={showOrders} showStock={showStock} /></Suspense>}
+      {showOrders && <Suspense fallback={<BlockSkeleton label={t("todo")} />}><OrderQueue canReconcile={can(user.role, "orders:reconcile-cod")} /></Suspense>}
+      {showStock && <Suspense fallback={<BlockSkeleton label={t("alerts")} />}><StockAlerts /></Suspense>}
+      {showSales && <Suspense fallback={<BlockSkeleton label={t("sales")} />}><SalesOverview /></Suspense>}
       {showCatalog && <PublishingFlow />}
     </Page>
   );
@@ -60,9 +57,6 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
 
 const tone = (n: number, level: "warning" | "danger" = "warning") => n > 0 ? level : "neutral";
 
-function DashboardLoading({ label }: { label: string }) {
-  return <section aria-label={label} aria-busy="true" className="space-y-2"><h2 className="font-medium">{label}</h2><div aria-hidden className="h-28 animate-pulse rounded-lg bg-muted" /></section>;
-}
 
 /** Header và điều hướng không phải chờ các truy vấn tổng hợp. Mỗi nhóm dữ liệu stream riêng. */
 async function OrderQueue({ canReconcile }: { canReconcile: boolean }) {
@@ -131,8 +125,6 @@ async function SalesOverview() {
         </section>
   );
 }
-
-const LABEL_TONE = { PUBLISHED: "success", HIDDEN: "neutral", PENDING: "warning", REJECTED: "danger", DRAFT: "neutral", ARCHIVED: "neutral" } as const;
 
 function Trend({ n, text }: { n: number; text: string }) {
   const Icon = n > 0 ? ArrowUp : n < 0 ? ArrowDown : null;
@@ -256,32 +248,23 @@ async function CatalogOverview({ days, showOrders, showStock }: { days: number; 
             {receipts.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t("receiptsEmpty")}</p>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-left text-xs text-muted-foreground">
-                    <tr>
-                      <th className="py-1.5 font-medium">{t("receiptCode")}</th>
-                      <th className="py-1.5 font-medium">{t("receiptDate")}</th>
-                      <th className="py-1.5 font-medium">{t("receiptLocation")}</th>
-                      <th className="py-1.5 text-right font-medium">{t("receiptSkus")}</th>
-                      <th className="py-1.5 text-right font-medium">{t("receiptQty")}</th>
-                      <th className="py-1.5 pl-3 font-medium">{t("receiptStatus")}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {receipts.map((r) => (
-                      <tr key={r.id}>
-                        <td className="py-2"><Link href={`/admin/inventory/documents/${r.id}`} className="font-mono text-xs hover:text-primary">{r.code}</Link></td>
-                        <td className="py-2 text-xs whitespace-nowrap text-muted-foreground tabular-nums">{fmtDateTime(r.at)}</td>
-                        <td className="py-2">{r.location}</td>
-                        <td className="py-2 text-right tabular-nums">{fmtInt(r.skus)}</td>
-                        <td className="py-2 text-right tabular-nums">{fmtInt(r.qty)}</td>
-                        <td className="py-2 pl-3"><Badge tone={r.status === "POSTED" ? "success" : "warning"}>{t(r.status === "POSTED" ? "receiptPosted" : "receiptDraft")}</Badge></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                dense
+                className="rounded-none border-0 bg-transparent"
+                numeric={[3, 4]}
+                head={[t("receiptCode"), t("receiptDate"), t("receiptLocation"), t("receiptSkus"), t("receiptQty"), t("receiptStatus")]}
+              >
+                {receipts.map((r) => (
+                  <tr key={r.id}>
+                    <Td><Link href={`/admin/inventory/documents/${r.id}`} className="font-mono text-xs hover:text-primary">{r.code}</Link></Td>
+                    <Td className="whitespace-nowrap text-muted-foreground tabular-nums">{fmtDateTime(r.at)}</Td>
+                    <Td>{r.location}</Td>
+                    <Td numeric>{fmtInt(r.skus)}</Td>
+                    <Td numeric>{fmtInt(r.qty)}</Td>
+                    <Td><Badge tone={r.status === "POSTED" ? "success" : "warning"}>{t(r.status === "POSTED" ? "receiptPosted" : "receiptDraft")}</Badge></Td>
+                  </tr>
+                ))}
+              </DataTable>
             )}
           </Card>
         )}
@@ -296,7 +279,7 @@ async function CatalogOverview({ days, showOrders, showStock }: { days: number; 
                   <span className="block truncate text-sm font-medium">{p.name}</span>
                   <span className="block font-mono text-xs text-muted-foreground">{p.sku}</span>
                 </Link>
-                <Badge tone={LABEL_TONE[p.label]}>{tp(`lifecycle.${p.label}`)}</Badge>
+                <Badge tone={PRODUCT_LABEL_TONE[p.label]}>{tp(`lifecycle.${p.label}`)}</Badge>
                 <span className="hidden text-xs text-muted-foreground tabular-nums sm:block">{fmtDateTime(p.updatedAt)}</span>
               </li>
             ))}

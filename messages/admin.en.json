@@ -258,7 +258,20 @@
     "chooseFile": "Choose file",
     "noFile": "No file chosen",
     "filesChosen": "{n} files chosen",
-    "filter": "Filter"
+    "filter": "Filter",
+    "back": "Back",
+    "clearFilters": "Clear filters",
+    "errorTitle": "Something went wrong",
+    "errorHint": "Try again. If it keeps failing, tell an administrator.",
+    "retry": "Try again",
+    "loading": "Loading…",
+    "actions": "Actions",
+    "select": "Select",
+    "expiryShort": "EXP",
+    "ratingOf": "{n} of 5 stars",
+    "noData": "No data yet.",
+    "details": "Details",
+    "sku": "SKU"
   },
   "Inventory": {
     "title": "Stock",
@@ -512,7 +525,8 @@
       "STALE": "Reallocation needed — inputs changed"
     },
     "allocationDetails": "View batch allocation",
-    "allocatedVnd": "Allocated costs (VND)"
+    "allocatedVnd": "Allocated costs (VND)",
+    "removeCostConfirm": "Remove this cost?"
   },
   "Products": {
     "copyFrom": "Copy from an existing product",

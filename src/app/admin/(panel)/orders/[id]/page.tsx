@@ -16,7 +16,7 @@ import { availableTransitions, TRANSITIONS } from "@/server/orders/state-machine
 import { ActionForm } from "@/components/admin/action-form";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/admin/order-badges";
 import { TransitionForm, type TransitionField } from "@/components/admin/transition-form";
-import { Badge, DataTable, fieldClass, fieldLabelClass, fieldLabelSmClass, LinkButton, Page, PageHeader, Section, Td } from "@/components/admin/ui";
+import { Badge, checkboxClass, DataTable, fieldClass, fieldLabelClass, fieldLabelSmClass, LinkButton, Page, PageHeader, Section, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { vtpPreview } from "@/server/orders/vtp-data";
@@ -90,7 +90,21 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
         <PaymentStatusBadge status={order.paymentStatus} />
         {order.overdue && <Badge tone="danger">{t("overdue")}</Badge>}
       </div>
-      {order.pick && <section className="space-y-2" data-testid="order-pick"><h2 className="font-medium">{t("bulk.pickTitle")}</h2><p className="text-sm">{t("bulk.pickPrintedAt", { time: fmtDateTime(order.pick.printedAt) })}</p>{!order.pick.consumedAt && <LinkButton href={`/admin/orders/pick-list?ids=${order.id}`}>{t("bulk.pickTitle")}</LinkButton>}<DataTable head={["SKU", t("bulk.pickLot"), t("warehouse"), t("bulk.pickQty")]}>{order.pick.lines.map(l => <tr key={l.id}><Td>{l.batch.variant.sku}</Td><Td>{l.batch.lotNo} · {fmtDay(l.batch.expiryDate)}</Td><Td>{l.location.code}</Td><Td>{l.qty}</Td></tr>)}</DataTable></section>}
+      {order.pick && (
+        <Section title={t("bulk.pickTitle")} testId="order-pick" actions={!order.pick.consumedAt && <LinkButton href={`/admin/orders/pick-list?ids=${order.id}`}>{t("bulk.pickTitle")}</LinkButton>}>
+          <p className="text-sm text-muted-foreground">{t("bulk.pickPrintedAt", { time: fmtDateTime(order.pick.printedAt) })}</p>
+          <DataTable stack numeric={[3]} head={[t("sku"), t("bulk.pickLot"), t("warehouse"), t("bulk.pickQty")]}>
+            {order.pick.lines.map((l) => (
+              <tr key={l.id}>
+                <Td className="font-mono text-xs">{l.batch.variant.sku}</Td>
+                <Td label={t("bulk.pickLot")}>{l.batch.lotNo} · {fmtDay(l.batch.expiryDate)}</Td>
+                <Td label={t("warehouse")}>{l.location.code}</Td>
+                <Td label={t("bulk.pickQty")} numeric>{fmtInt(l.qty)}</Td>
+              </tr>
+            ))}
+          </DataTable>
+        </Section>
+      )}
 
       {order.paymentMethod === "COD" && <Section title={tc("title")}>
         <p className="text-sm text-muted-foreground">{tc("help")}</p>
@@ -101,7 +115,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
         {can(user.role, "orders:reconcile-cod") && order.codCollectedAt && !order.codRemittedAt && ((order.status === "COMPLETED" || order.status === "RETURNED") ? <CodSettlement orderId={order.id} total={order.totalMmk} exception={order.status !== "COMPLETED" || order.paymentStatus !== "PAID" || order.items.some((i) => i.returnedQty > 0)} /> : <p className="text-sm text-muted-foreground">{tc("exception")}</p>)}
       </Section>}
 
-      <section className="grid gap-6 md:grid-cols-2 [&>*]:min-w-0">
+      <Section className="grid gap-6 space-y-0 md:grid-cols-2 [&>*]:min-w-0">
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
           <dt className="text-muted-foreground">{t("recipient")}</dt>
           <dd>{order.recipientName}</dd>
@@ -157,16 +171,18 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
             </>
           )}
         </dl>
-      </section>
+      </Section>
 
       <VtpSingleInfo order={vtpPreview(order)} />
       {can(user.role, "orders:ship") && ["PAYMENT_CONFIRMED", "COD_CONFIRMED", "PACKING"].includes(order.status) && (
-        <ActionForm action={setShippingPayerAction} submitLabel={t("saveShippingPayer")} okText={t("shippingPayerSaved")} className="flex flex-wrap items-end gap-3 rounded-lg border p-4">
-          <input type="hidden" name="orderId" value={order.id} />
-          <label className={fieldLabelClass}><span>{t("shippingPayer")}</span><select name="shippingPayer" defaultValue={order.shippingPayer} className={fieldClass}>
-            <option value="RECEIVER">{t("receiverPays")}</option><option value="SENDER">{t("senderPays")}</option>
-          </select></label>
-        </ActionForm>
+        <Section>
+          <ActionForm action={setShippingPayerAction} submitLabel={t("saveShippingPayer")} okText={t("shippingPayerSaved")} className="flex flex-wrap items-end gap-3">
+            <input type="hidden" name="orderId" value={order.id} />
+            <label className={fieldLabelClass}><span className="text-muted-foreground">{t("shippingPayer")}</span><select name="shippingPayer" defaultValue={order.shippingPayer} className={fieldClass}>
+              <option value="RECEIVER">{t("receiverPays")}</option><option value="SENDER">{t("senderPays")}</option>
+            </select></label>
+          </ActionForm>
+        </Section>
       )}
 
       <Section title={ta("orderSection")} className="space-y-2" testId="order-affiliate">
@@ -240,7 +256,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
             <p className="text-xs text-muted-foreground">{ta("orderRates.hint")}</p>
             <div className="flex flex-wrap gap-3" data-testid="order-rates">
               <label className={fieldLabelClass}>
-                <span>{ta("orderRates.sale")}</span>
+                <span className="text-muted-foreground">{ta("orderRates.sale")}</span>
                 <input
                   name="commissionPercent"
                   type="number"
@@ -255,7 +271,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
               </label>
               {order.uplineAffiliate && (
                 <label className={fieldLabelClass}>
-                  <span>{ta("orderRates.upline")}</span>
+                  <span className="text-muted-foreground">{ta("orderRates.upline")}</span>
                   <input
                     name="uplinePercent"
                     type="number"
@@ -274,8 +290,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
         )}
       </Section>
 
-      <section className="space-y-2">
-        <h2 className="font-medium">{t("items")}</h2>
+      <Section title={t("items")}>
         <DataTable
           stack
           numeric={[2, 3, 4, 5]}
@@ -287,16 +302,16 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
                 {i.sku}
               </Td>
               <Td className="max-md:font-medium">{i.name}</Td>
-              <Td label={t("qty")} className="text-right tabular-nums">
+              <Td label={t("qty")} numeric>
                 {fmtInt(i.qty)}
               </Td>
-              <Td label={t("ret.returned")} className="text-right tabular-nums">
+              <Td label={t("ret.returned")} numeric>
                 {i.returnedQty > 0 ? fmtInt(i.returnedQty) : "—"}
               </Td>
-              <Td label={t("unitPrice")} className="text-right tabular-nums">
+              <Td label={t("unitPrice")} numeric>
                 {fmtInt(i.unitPriceMmk)}
               </Td>
-              <Td label={t("lineTotal")} className="text-right tabular-nums">
+              <Td label={t("lineTotal")} numeric>
                 {fmtInt(i.qty * i.unitPriceMmk)}
               </Td>
               <Td label={t("lots")} className="text-xs">
@@ -326,19 +341,18 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
           </dd>
           {order.shippingFeeMmk === 0 && <dd className="col-span-2 text-xs text-muted-foreground">{t("shippingNote")}</dd>}
         </dl>
-      </section>
+      </Section>
 
       {/* Đơn hoàn tất chỉ còn trả hàng → không hiện "Không còn thao tác nào" ngay trên form Trả hàng. */}
       {(transitions.length > 0 || !canReturn) && (
-        <section className="space-y-2">
-          <h2 className="font-medium">{t("actions")}</h2>
+        <Section title={t("actions")}>
           {order.status === "AWAITING_STOCK" && <p className="text-sm text-muted-foreground" data-testid="preorder-hint">{t("preorderHint")}</p>}
           {order.status === "PENDING" && <p className="text-sm text-muted-foreground">{t(`confirmHint.${order.paymentMethod}`)}</p>}
           {order.status === "SHIPPING" && order.paymentMethod === "COD" && <p className="text-sm text-muted-foreground">{t("codCompleteHint")}</p>}
           {transitions.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("noActions")}</p>
           ) : (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
               {transitions.map((n) => (
                 <TransitionForm
                   key={n}
@@ -352,19 +366,18 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
               ))}
             </div>
           )}
-        </section>
+        </Section>
       )}
 
       {canReturn && (
-        <section className="space-y-2">
-          <h2 className="font-medium">{t("ret.title")}</h2>
+        <Section title={t("ret.title")}>
           <p className="text-xs text-muted-foreground">{t("ret.hint")}</p>
           <ActionForm
             action={returnItemsAction}
             submitLabel={t("ret.submit")}
             okText={t("ret.done")}
             confirm={t("ret.confirm")}
-            className="space-y-3 rounded-lg border p-3" icon={<RotateCcw aria-hidden className="size-4 shrink-0" />}
+            className="space-y-3" icon={<RotateCcw aria-hidden />}
           >
             <input type="hidden" name="orderId" value={order.id} />
             <ul className="space-y-2">
@@ -406,31 +419,29 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
                 </label>
               )}
               <label className="flex min-h-9 items-center gap-2 text-sm">
-                <input type="checkbox" name="refunded" />
+                <input type="checkbox" name="refunded" className={checkboxClass} />
                 {t("ret.refunded")}
               </label>
             </div>
           </ActionForm>
-        </section>
+        </Section>
       )}
 
       {order.deliveries.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="font-medium">{t("deliveries")}</h2>
+        <Section title={t("deliveries")}>
           <ul className="space-y-1 text-sm">
             {order.deliveries.map((d) => (
               <li key={d.id}>
                 {d.carrier} · <span className="font-mono">{d.trackingNo ?? "—"}</span> · {fmtDateTime(d.shippedAt)}
-                {can(user.role, "orders:ship") && <ActionForm action={updateTrackingAction} submitLabel={t("saveTracking")} okText={t("trackingSaved")} className="mt-2 flex flex-wrap items-end gap-2"><input type="hidden" name="orderId" value={order.id} /><input type="hidden" name="deliveryId" value={d.id} /><label className="grid gap-1"><span>{t("carrier")}</span><input name="carrier" required maxLength={80} defaultValue={d.carrier} className={fieldClass} /></label><label className="grid gap-1"><span>{t("trackingNo")}</span><input name="trackingNo" maxLength={100} defaultValue={d.trackingNo ?? ""} className={fieldClass} /></label></ActionForm>}
+                {can(user.role, "orders:ship") && <ActionForm action={updateTrackingAction} submitLabel={t("saveTracking")} okText={t("trackingSaved")} className="mt-2 flex flex-wrap items-end gap-2"><input type="hidden" name="orderId" value={order.id} /><input type="hidden" name="deliveryId" value={d.id} /><label className={fieldLabelClass}><span className="text-muted-foreground">{t("carrier")}</span><input name="carrier" required maxLength={80} defaultValue={d.carrier} className={fieldClass} /></label><label className={fieldLabelClass}><span className="text-muted-foreground">{t("trackingNo")}</span><input name="trackingNo" maxLength={100} defaultValue={d.trackingNo ?? ""} className={fieldClass} /></label></ActionForm>}
               </li>
             ))}
           </ul>
-        </section>
+        </Section>
       )}
 
       {order.documents.length > 0 && can(user.role, "stock:view") && (
-        <section className="space-y-2">
-          <h2 className="font-medium">{t("documents")}</h2>
+        <Section title={t("documents")}>
           <ul className="space-y-1 text-sm">
             {order.documents.map((d) => (
               <li key={d.id}>
@@ -440,11 +451,10 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
               </li>
             ))}
           </ul>
-        </section>
+        </Section>
       )}
 
-      <section className="space-y-2">
-        <h2 className="font-medium">{t("history")}</h2>
+      <Section title={t("history")}>
         <ol className="space-y-1 text-sm">
           {order.history.map((h) => (
             <li key={h.id} className="flex flex-wrap gap-2">
@@ -457,7 +467,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
             </li>
           ))}
         </ol>
-      </section>
+      </Section>
     </Page>
   );
 }

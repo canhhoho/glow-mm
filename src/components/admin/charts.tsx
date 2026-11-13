@@ -42,14 +42,14 @@ export function LineChart({ labels, series, height = 220, ariaLabel }: { labels:
         {ticks.map((tk) => (
           <g key={tk}>
             <line x1={pad.l} x2={W - pad.r} y1={y(tk)} y2={y(tk)} className="stroke-border" strokeWidth={1} />
-            <text x={pad.l - 6} y={y(tk)} dy="0.32em" textAnchor="end" className="fill-muted-foreground text-[10px] tabular-nums">
+            <text x={pad.l - 6} y={y(tk)} dy="0.32em" textAnchor="end" className="fill-muted-foreground text-2xs tabular-nums">
               {Number.isInteger(tk) ? tk : tk.toFixed(1)}
             </text>
           </g>
         ))}
         {labels.map((l, i) =>
           i % step === 0 || i === labels.length - 1 ? (
-            <text key={l} x={x(i)} y={H - 6} textAnchor="middle" className="fill-muted-foreground text-[10px] tabular-nums">
+            <text key={l} x={x(i)} y={H - 6} textAnchor="middle" className="fill-muted-foreground text-2xs tabular-nums">
               {l}
             </text>
           ) : null,
@@ -63,7 +63,7 @@ export function LineChart({ labels, series, height = 220, ariaLabel }: { labels:
           </g>
         ))}
         {ends.map(({ s, y: ly }) => (
-          <text key={s.key} x={W - pad.r + 8} y={ly} dy="0.32em" className="fill-foreground text-[11px]">
+          <text key={s.key} x={W - pad.r + 8} y={ly} dy="0.32em" className="fill-foreground text-2xs">
             {s.label} · {s.values[s.values.length - 1] ?? 0}
           </text>
         ))}

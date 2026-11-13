@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { lastShipRate, listRates, listRuns, pricingFilterOptions, pricingGaps } from "@/server/pricing/queries";
 import { PricingRunForm } from "@/components/admin/pricing-run-form";
 import { getNumberSetting } from "@/server/settings";
-import { Badge, DataTable, Section, Td } from "@/components/admin/ui";
+import { Badge, DataTable, Notice, Section, Td } from "@/components/admin/ui";
 import { rateDisplay } from "@/server/pricing/formula";
 import { fmtDate, fmtDateTime, fmtInt } from "@/lib/format";
 import { prisma } from "@/lib/db";
@@ -20,7 +20,7 @@ export async function PricingRunsTab({ receiptId, productId }: { receiptId?: str
     lastShipRate(),
   ]);
   const receipt = receiptId ? await prisma.stockDocument.findFirst({ where: { id: receiptId, type: "RECEIVE", status: "POSTED" }, select: { code: true, lines: { select: { variant: { select: { product: { select: { stockLocationId: true } } } } } } } }) : null;
-  if (receiptId && !receipt) return <p role="alert">{t("receiptInvalid")}</p>;
+  if (receiptId && !receipt) return <Notice tone="danger">{t("receiptInvalid")}</Notice>;
   // QT1b "Tính giá SP này" (bước 3 trang SP): chỉ các biến thể đang bán của một SP, kho = kho của SP.
   const product = productId
     ? await prisma.product.findUnique({
@@ -28,7 +28,7 @@ export async function PricingRunsTab({ receiptId, productId }: { receiptId?: str
         select: { stockLocationId: true, slug: true, translations: { select: { locale: true, name: true } }, variants: { where: { active: true }, select: { id: true } } },
       })
     : null;
-  if (productId && !product?.variants.length) return <p role="alert">{t("productInvalid")}</p>;
+  if (productId && !product?.variants.length) return <Notice tone="danger">{t("productInvalid")}</Notice>;
   const gapLine = (label: string, skus: string[]) =>
     skus.length > 0 && (
       <p className="text-xs break-words text-muted-foreground">
@@ -37,7 +37,7 @@ export async function PricingRunsTab({ receiptId, productId }: { receiptId?: str
     );
   return (
     <>
-      <Section title={t("newRun")} className="max-w-3xl rounded-xl bg-card">
+      <Section title={t("newRun")} className="max-w-3xl">
         {receipt && <p className="text-sm">{t("receiptScope", { code: receipt.code })}</p>}
         {product && (
           <p className="text-sm" data-testid="pricing-product-scope">

@@ -10,7 +10,7 @@ import { getStaff } from "@/server/users/users";
 import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
 import { RoleSelect } from "@/components/admin/role-select";
-import { Badge, fieldClass, fieldLabelClass, Page, PageHeader } from "@/components/admin/ui";
+import { Badge, fieldClass, fieldLabelClass, Notice, Page, PageHeader, Section } from "@/components/admin/ui";
 
 export default async function EditUserPage({ params }: PageProps<"/admin/users/[id]">) {
   const me = await requirePagePermission("users:manage");
@@ -21,25 +21,29 @@ export default async function EditUserPage({ params }: PageProps<"/admin/users/[
 
   return (
     <Page width="narrow">
-      <PageHeader title={user.name} back={{ href: "/admin/users", label: td("back") }} />
-      <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        <span className="font-mono">{user.email}</span>
-        <Badge tone={user.active ? "success" : "danger"}>{user.active ? t("active") : t("locked")}</Badge>
-        <span>
-          {t("createdAt")}: {fmtDateTime(user.createdAt)}
-        </span>
-      </p>
+      <PageHeader
+        title={user.name}
+        back={{ href: "/admin/users", label: td("back") }}
+        description={
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="font-mono">{user.email}</span>
+            <Badge tone={user.active ? "success" : "danger"}>{user.active ? t("active") : t("locked")}</Badge>
+            <span>
+              {t("createdAt")}: {fmtDateTime(user.createdAt)}
+            </span>
+          </span>
+        }
+      />
       {self && (
-        <p className="rounded-lg border p-3 text-sm">
+        <Notice>
           {t("selfNote")}{" "}
-          <Link href="/admin/account" className="text-primary underline">
+          <Link href="/admin/account" className="underline">
             {t("myAccount")}
           </Link>
-        </p>
+        </Notice>
       )}
 
-      <section className="space-y-2">
-        <h2 className="font-medium">{t("profile")}</h2>
+      <Section title={t("profile")}>
         <ActionForm action={updateStaffAction} submitLabel={t("save")} okText={t("saved")} className="space-y-3">
           <input type="hidden" name="id" value={user.id} />
           <label className={fieldLabelClass}>
@@ -55,13 +59,12 @@ export default async function EditUserPage({ params }: PageProps<"/admin/users/[
           )}
           <RoleSelect defaultValue={user.role} disabled={self} />
         </ActionForm>
-      </section>
+      </Section>
 
       {!self && (
         <>
-          <section className="space-y-2">
-            <h2 className="font-medium">{t("resetTitle")}</h2>
-            <ActionForm action={resetStaffPasswordAction} submitLabel={t("reset")} okText={t("resetDone")} className="space-y-3" icon={<KeyRound aria-hidden className="size-4 shrink-0" />}>
+          <Section title={t("resetTitle")}>
+            <ActionForm action={resetStaffPasswordAction} submitLabel={t("reset")} okText={t("resetDone")} className="space-y-3" icon={<KeyRound aria-hidden />}>
               <input type="hidden" name="id" value={user.id} />
               <label className={fieldLabelClass}>
                 <span>{t("tempPassword")}</span>
@@ -77,21 +80,20 @@ export default async function EditUserPage({ params }: PageProps<"/admin/users/[
               </label>
               <p className="text-xs text-muted-foreground">{t("resetHint", { min: MIN_STAFF_PASSWORD })}</p>
             </ActionForm>
-          </section>
+          </Section>
 
-          <section className="space-y-2">
-            <h2 className="font-medium">{t("access")}</h2>
+          <Section title={t("access")}>
             <p className="text-xs text-muted-foreground">{user.active ? t("lockHint") : t("unlockHint")}</p>
             <ActionButton
               action={setStaffActiveAction}
               fields={{ id: user.id, active: String(!user.active) }}
               label={user.active ? t("lock") : t("unlock")}
               variant={user.active ? "destructive" : "outline"}
-              confirm={user.active ? t("lockConfirm", { name: user.name }) : undefined} iconOnly={false} icon={user.active ? <LockKeyhole aria-hidden className="size-4 shrink-0" /> : <LockKeyholeOpen aria-hidden className="size-4 shrink-0" />}
+              confirm={user.active ? t("lockConfirm", { name: user.name }) : undefined} iconOnly={false} icon={user.active ? <LockKeyhole aria-hidden /> : <LockKeyholeOpen aria-hidden />}
             />
             <p className="text-xs text-muted-foreground">{t("deleteHint")}</p>
-            <ActionButton action={deleteStaffAction} fields={{ id: user.id }} label={t("delete")} variant="destructive" confirm={t("deleteConfirm", { name: user.name })} iconOnly={false} icon={<Trash2 aria-hidden className="size-4 shrink-0" />} />
-          </section>
+            <ActionButton action={deleteStaffAction} fields={{ id: user.id }} label={t("delete")} variant="destructive" confirm={t("deleteConfirm", { name: user.name })} iconOnly={false} icon={<Trash2 aria-hidden />} />
+          </Section>
         </>
       )}
     </Page>

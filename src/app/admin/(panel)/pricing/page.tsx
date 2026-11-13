@@ -62,7 +62,7 @@ async function RatesTab() {
   const [t, rates] = await Promise.all([getTranslations("Pricing"), listRates()]);
   return (
     <div className="grid items-start gap-5 lg:grid-cols-5">
-      <Section title={t("addRate")} className="rounded-xl bg-card lg:col-span-2">
+      <Section title={t("addRate")} className="lg:col-span-2">
         <ActionForm
           action={createRateAction}
           submitLabel={t("addRate")}
@@ -78,8 +78,7 @@ async function RatesTab() {
         </ActionForm>
       </Section>
 
-      <section className="space-y-3 rounded-xl border bg-card p-4 lg:col-span-3">
-        <h2 className="font-medium">{t("rates")}</h2>
+      <Section title={t("rates")} className="lg:col-span-3">
         <DataTable empty={t("noRate")} head={[t("rate"), t("effectiveAt")]}>
           {rates.map((r, i) => {
             const d = rateDisplay(r);
@@ -105,7 +104,7 @@ async function RatesTab() {
             );
           })}
         </DataTable>
-      </section>
+      </Section>
     </div>
   );
 }
@@ -125,8 +124,7 @@ async function HistoryTab() {
   const reason = (r: string | null) =>
     !r ? "—" : r === "bulk" ? t("reasonBulk") : r === "manual" ? t("reasonManual") : r.startsWith(MANUAL_PRICE_PREFIX) ? r.slice(MANUAL_PRICE_PREFIX.length) : r.startsWith(IMPORT_PRICE_PREFIX) ? "—" : r;
   return (
-    <section className="space-y-3 rounded-xl border bg-card p-4">
-      <DataTable
+    <DataTable
         stack
         empty={t("empty")}
         numeric={[3, 4]}
@@ -135,7 +133,7 @@ async function HistoryTab() {
         {history.map((h) => {
           const delta = h.oldPriceMmk > 0 ? ((h.newPriceMmk - h.oldPriceMmk) / h.oldPriceMmk) * 100 : null;
           return (
-            <tr key={h.id} className="hover:bg-muted/30">
+            <tr key={h.id}>
               <Td className="whitespace-nowrap tabular-nums max-md:font-medium">{fmtDateTime(h.createdAt)}</Td>
               <Td label={t("product")}>
                 <Link href={`/admin/products/${h.variant.productId}`} className="hover:text-primary">
@@ -163,6 +161,5 @@ async function HistoryTab() {
           );
         })}
       </DataTable>
-    </section>
   );
 }

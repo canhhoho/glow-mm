@@ -1,9 +1,11 @@
+import { Download } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { dataHealth, LONG_SHIPPING_DAYS, STALE_DRAFT_DAYS, type HealthCheck, type Percentiles } from "@/server/reports/data-health";
 import { ReportsTabs } from "@/components/admin/reports-tabs";
-import { Badge, DataTable, Page, PageHeader, Section, Td } from "@/components/admin/ui";
+import { buttonVariants } from "@/components/ui/button";
+import { Badge, DataTable, Page, PageHeader, Section, Segmented, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -38,8 +40,9 @@ export default async function DataHealthPage({ searchParams }: PageProps<"/admin
           <a
             href={`/api/admin/reports/data-health?days=${days}`}
             download
-            className="inline-flex h-9 items-center rounded-lg border px-3 text-sm hover:bg-muted"
+            className={buttonVariants({ variant: "outline", size: "lg" })}
           >
+            <Download aria-hidden />
             {t("download")}
           </a>
         }
@@ -51,7 +54,7 @@ export default async function DataHealthPage({ searchParams }: PageProps<"/admin
         <Section key={g.key} title={t(`groups.${g.key}`)} testId={`health-${g.key}`}>
           <div className="space-y-2">
             {g.checks.map((c) => (
-              <details key={c.key} open={c.count > 0 && c.severity === "error"} className="rounded-md border" data-testid={`check-${c.key}`}>
+              <details key={c.key} open={c.count > 0 && c.severity === "error"} className="rounded-lg border" data-testid={`check-${c.key}`}>
                 <summary className="flex cursor-pointer flex-wrap items-center gap-2 px-3 py-2 text-sm">
                   <Badge tone={c.count === 0 ? "success" : SEVERITY_TONE[c.severity]}>
                     {c.count === 0 ? t("none") : t(`sev.${c.severity}`)}
@@ -64,7 +67,7 @@ export default async function DataHealthPage({ searchParams }: PageProps<"/admin
                 <div className="space-y-2 border-t px-3 py-2">
                   <p className="text-xs text-muted-foreground">{t(`checks.${c.key}.help`)}</p>
                   {c.count > 0 && (
-                    <DataTable head={[t("colRef"), t("colName"), t(`checks.${c.key}.value`)]} stack>
+                    <DataTable head={[t("colRef"), t("colName"), ...(t(`checks.${c.key}.value`) ? [t(`checks.${c.key}.value`)] : [])]} stack>
                       {c.rows.map((r) => (
                         <tr key={r.id}>
                           <Td>
@@ -73,9 +76,11 @@ export default async function DataHealthPage({ searchParams }: PageProps<"/admin
                             </Link>
                           </Td>
                           <Td label={t("colName")}>{r.name ?? "—"}</Td>
-                          <Td label={t(`checks.${c.key}.value`)} className="tabular-nums">
-                            {c.key === "noImage" && r.value ? t(`state.${r.value as "published" | "hidden"}`) : (r.value ?? "")}
-                          </Td>
+                          {t(`checks.${c.key}.value`) && (
+                            <Td label={t(`checks.${c.key}.value`)} className="tabular-nums">
+                              {c.key === "noImage" && r.value ? t(`state.${r.value as "published" | "hidden"}`) : (r.value ?? "")}
+                            </Td>
+                          )}
                         </tr>
                       ))}
                     </DataTable>
@@ -92,18 +97,7 @@ export default async function DataHealthPage({ searchParams }: PageProps<"/admin
         title={t("baseline.title")}
         testId="health-baseline"
         actions={
-          <nav aria-label={t("period")} className="flex gap-1 text-sm">
-            {PERIODS.map((p) => (
-              <Link
-                key={p}
-                href={`/admin/reports/data-health?days=${p}`}
-                aria-current={p === days ? "page" : undefined}
-                className={cn("rounded-md px-2 py-1", p === days ? "bg-primary/10 font-medium text-primary" : "text-muted-foreground hover:text-foreground")}
-              >
-                {t("days", { days: p })}
-              </Link>
-            ))}
-          </nav>
+          <Segmented label={t("period")} items={PERIODS.map((p) => ({ href: `/admin/reports/data-health?days=${p}`, label: t("days", { days: p }), active: p === days }))} />
         }
       >
         <p className="text-xs text-muted-foreground">{t("baseline.help")}</p>
@@ -111,9 +105,9 @@ export default async function DataHealthPage({ searchParams }: PageProps<"/admin
           {flowRows.map(([label, p]) => (
             <tr key={label}>
               <Td>{label}</Td>
-              <Td className="text-right tabular-nums">{fmtInt(p.n)}</Td>
-              <Td className="text-right tabular-nums">{fmtHours(p.p50)}</Td>
-              <Td className="text-right tabular-nums">{fmtHours(p.p90)}</Td>
+              <Td numeric>{fmtInt(p.n)}</Td>
+              <Td numeric>{fmtHours(p.p50)}</Td>
+              <Td numeric>{fmtHours(p.p90)}</Td>
             </tr>
           ))}
         </DataTable>
@@ -128,7 +122,7 @@ export default async function DataHealthPage({ searchParams }: PageProps<"/admin
               {b.ordersByStatus.map((r) => (
                 <tr key={r.status}>
                   <Td>{to(`status.${r.status}`)}</Td>
-                  <Td className="text-right tabular-nums">{fmtInt(r.count)}</Td>
+                  <Td numeric>{fmtInt(r.count)}</Td>
                 </tr>
               ))}
             </DataTable>
@@ -142,8 +136,8 @@ export default async function DataHealthPage({ searchParams }: PageProps<"/admin
               {b.cod.buckets.map((r) => (
                 <tr key={r.label}>
                   <Td>{r.label}</Td>
-                  <Td className="text-right tabular-nums">{fmtInt(r.orders)}</Td>
-                  <Td className="text-right tabular-nums">{fmtInt(r.mmk)}</Td>
+                  <Td numeric>{fmtInt(r.orders)}</Td>
+                  <Td numeric>{fmtInt(r.mmk)}</Td>
                 </tr>
               ))}
             </DataTable>

@@ -12,8 +12,8 @@ const STATE_CLASS: Record<StepView["state"], string> = {
 };
 
 const DOT_CLASS: Record<StepView["state"], string> = {
-  done: "border-success bg-success text-white",
-  warn: "border-warning bg-warning text-white",
+  done: "border-success bg-success text-primary-foreground",
+  warn: "border-warning bg-warning text-primary-foreground",
   todo: "border-primary bg-background text-primary",
   waiting: "border-border bg-background text-muted-foreground",
 };

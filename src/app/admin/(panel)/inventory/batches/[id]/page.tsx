@@ -5,14 +5,13 @@ import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { batchDetail, loadThresholds } from "@/server/inventory/overview";
 import { ExpiryTag } from "@/components/admin/stock-parts";
-import { Badge, DataTable, fieldLabelClass, Page, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, fieldClass, fieldLabelClass, Page, PageHeader, Section, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
 import { rateDisplay } from "@/server/pricing/formula";
 import { cn } from "@/lib/utils";
 import { ActionForm } from "@/components/admin/action-form";
 import { resolveBatchExpiryAction, estimateBatchCostAction } from "@/server/inventory/actions";
 import { lastShipRate } from "@/server/pricing/queries";
-import { fieldClass } from "@/components/admin/ui";
 import { can } from "@/server/auth/roles";
 import { inventoryCost } from "@/server/inventory/cost";
 
@@ -20,12 +19,13 @@ import { inventoryCost } from "@/server/inventory/cost";
 export default async function BatchPage({ params }: PageProps<"/admin/inventory/batches/[id]">) {
   const user = await requirePagePermission("stock:view");
   const { id } = await params;
-  const [detail, th, t, ti, td, lastShip] = await Promise.all([
+  const [detail, th, t, ti, td, tc, lastShip] = await Promise.all([
     batchDetail(id),
     loadThresholds(),
     getTranslations("Batch"),
     getTranslations("Inventory"),
     getTranslations("Docs"),
+    getTranslations("Common"),
     lastShipRate(),
   ]);
   if (!detail) notFound();
@@ -68,12 +68,14 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
       <PageHeader
         title={t("title", { lotNo: batch.lotNo })}
         back={{ href: `/admin/inventory?q=${encodeURIComponent(batch.lotNo)}&view=lots`, label: ti("title") }}
+        description={
+          <>
+            {detail.name} ({batch.variant.label}) · <span className="font-mono">{batch.variant.sku}</span>
+          </>
+        }
       />
-      <p className="-mt-3 text-sm text-muted-foreground">
-        {detail.name} ({batch.variant.label}) · <span className="font-mono">{batch.variant.sku}</span>
-      </p>
 
-      <dl className="grid grid-cols-2 gap-3 rounded-lg border p-4 text-sm sm:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-3 rounded-xl border bg-card p-4 text-sm sm:grid-cols-4">
         {info.map(([label, value]) => (
           <div key={label}>
             <dt className="text-xs text-muted-foreground">{label}</dt>
@@ -82,7 +84,7 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
         ))}
       </dl>
       {batch.unitCostVnd != null && batch.landedCostVnd == null && batch.landedCostMmk == null && can(user.role, "stock:receive") && (
-        <ActionForm action={estimateBatchCostAction} submitLabel={ti("estimateAction")} okText={ti("estimateSaved")} className="space-y-3 rounded-lg border p-4" icon={<Calculator aria-hidden className="size-4 shrink-0" />}>
+        <ActionForm action={estimateBatchCostAction} submitLabel={ti("estimateAction")} okText={ti("estimateSaved")} className="space-y-3 rounded-xl border bg-card p-4" icon={<Calculator aria-hidden />}>
           <input type="hidden" name="batchId" value={batch.id} />
           <p className="text-sm text-muted-foreground">{ti("estimateExistingHelp")}</p>
           <label className={cn(fieldLabelClass, "max-w-sm")}>
@@ -91,17 +93,20 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
           </label>
         </ActionForm>
       )}
-      {batch.expiryStatus === "UNKNOWN" && can(user.role, "stock:receive") && <ActionForm action={resolveBatchExpiryAction} submitLabel={ti("resolveExpiry")} okText={ti("expiryDated")} className="space-y-2 rounded-lg border p-4">
+      {batch.expiryStatus === "UNKNOWN" && can(user.role, "stock:receive") && <ActionForm action={resolveBatchExpiryAction} submitLabel={ti("resolveExpiry")} okText={ti("expiryDated")} className="space-y-3 rounded-xl border bg-card p-4">
         <input type="hidden" name="batchId" value={batch.id} />
         <p className="text-sm text-muted-foreground">{ti("resolveHelp")}</p>
-        <label className={cn(fieldLabelClass, "max-w-xs")}><span>{t("expiry")}</span><input type="date" name="expiryDate" required className="rounded-md border px-3 py-2" /></label>
+        <label className={cn(fieldLabelClass, "max-w-xs")}><span>{t("expiry")}</span><input type="date" name="expiryDate" required className={fieldClass} /></label>
       </ActionForm>}
 
-      <section className="space-y-2">
-        <h2 className="font-medium">
-          {t("balances")} <span className="text-muted-foreground tabular-nums">· {fmtInt(detail.total)}</span>
-        </h2>
-        <DataTable empty={t("noBalance")} head={[t("colLocation"), t("colType"), t("qty")]}>
+      <Section
+        title={
+          <>
+            {t("balances")} <span className="text-muted-foreground tabular-nums">· {fmtInt(detail.total)}</span>
+          </>
+        }
+      >
+        <DataTable empty={t("noBalance")} numeric={[2]} head={[t("colLocation"), t("colType"), t("qty")]}>
           {batch.balances.map((b) => (
             <tr key={`${b.locationId}|${b.stockType}`} data-testid="balance-row">
               <Td>
@@ -110,16 +115,17 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
               <Td>
                 <Badge tone={b.stockType === "TESTER" ? "brand" : "neutral"}>{ti(b.stockType)}</Badge>
               </Td>
-              <Td className="text-right tabular-nums">{fmtInt(b.qty)}</Td>
+              <Td numeric>{fmtInt(b.qty)}</Td>
             </tr>
           ))}
         </DataTable>
-      </section>
+      </Section>
 
-      <section className="space-y-2">
-        <h2 className="font-medium">{t("ledger")}</h2>
+      <Section title={t("ledger")}>
         <DataTable
-          empty="—"
+          stack
+          numeric={[4, 5]}
+          empty={tc("noData")}
           head={[t("colTime"), t("colDoc"), t("colLocation"), t("colType"), t("colDelta"), t("colAfter"), t("colOrder")]}
         >
           {entries.map((e) => (
@@ -150,7 +156,7 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
             </tr>
           ))}
         </DataTable>
-      </section>
+      </Section>
     </Page>
   );
 }

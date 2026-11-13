@@ -4,7 +4,7 @@ import { requireStaff } from "@/server/auth/session";
 import { changePasswordAction } from "@/server/auth/actions";
 import { MIN_STAFF_PASSWORD } from "@/server/auth/roles";
 import { ActionForm } from "@/components/admin/action-form";
-import { fieldClass, fieldLabelClass, Page, PageHeader } from "@/components/admin/ui";
+import { fieldClass, fieldLabelClass, Page, PageHeader, Section } from "@/components/admin/ui";
 
 export default async function AccountPage() {
   const user = await requireStaff();
@@ -12,11 +12,9 @@ export default async function AccountPage() {
 
   return (
     <Page width="narrow">
-      <PageHeader title={t("title")} />
-      <p className="mb-4 text-sm text-muted-foreground">
-        {user.name} · {user.email}
-      </p>
-      <ActionForm action={changePasswordAction} submitLabel={t("submit")} okText={t("changed")} className="space-y-3" icon={<KeyRound aria-hidden className="size-4 shrink-0" />}>
+      <PageHeader title={t("title")} description={`${user.name} · ${user.email}`} />
+      <Section>
+      <ActionForm action={changePasswordAction} submitLabel={t("submit")} okText={t("changed")} className="space-y-3" icon={<KeyRound aria-hidden />}>
         {(["currentPassword", "newPassword", "confirmPassword"] as const).map((name) => (
           <label key={name} className={fieldLabelClass}>
             <span>{t(name)}</span>
@@ -33,6 +31,7 @@ export default async function AccountPage() {
         ))}
         <p className="text-xs text-muted-foreground">{t("hint", { min: MIN_STAFF_PASSWORD })}</p>
       </ActionForm>
+      </Section>
     </Page>
   );
 }

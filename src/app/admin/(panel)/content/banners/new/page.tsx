@@ -7,7 +7,7 @@ export default async function NewBannerPage() {
   await requirePagePermission("content:manage");
   const [t, td] = await Promise.all([getTranslations("Content"), getTranslations("Docs")]);
   return (
-    <Page>
+    <Page width="narrow">
       <PageHeader title={t("bannerNew")} back={{ href: "/admin/content/banners", label: td("back") }} />
       <BannerForm />
     </Page>

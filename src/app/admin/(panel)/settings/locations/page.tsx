@@ -1,10 +1,11 @@
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { getLocationState, listLocationStates, searchTownships, type LocationLevel } from "@/server/locations/admin";
 import { saveLocationsAction } from "@/server/locations/actions";
 import { ActionForm } from "@/components/admin/action-form";
-import { Badge, fieldClass, FilterBar, FilterButton, Page, PageHeader, SearchInput } from "@/components/admin/ui";
+import { Badge, checkboxClass, DataTable, EmptyState, fieldClass, FilterBar, FilterButton, Page, PageHeader, SearchInput } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 
 type Row = { level: LocationLevel; id: string; code: string; nameEn: string; nameMy: string; active: boolean };
@@ -12,7 +13,7 @@ type Row = { level: LocationLevel; id: string; code: string; nameEn: string; nam
 /** Một dòng sửa được: mã VTP chỉ đọc, tên Anh / Myanmar, ô "đang giao". `row` hidden = dòng có trong form. */
 function LocationRow({ r, label, extra, strong }: { r: Row; label: string; extra?: React.ReactNode; strong?: boolean }) {
   return (
-    <tr className={cn("border-t align-middle", strong && "bg-muted/50")} data-testid={`location-${r.level}`}>
+    <tr className={cn("align-middle", strong && "bg-muted/50")} data-testid={`location-${r.level}`}>
       <td className={cn("px-3 py-1.5 font-mono text-xs", r.level === "township" && "pl-6")}>
         <input type="hidden" name="row" value={`${r.level}:${r.id}`} />
         {r.code}
@@ -24,7 +25,7 @@ function LocationRow({ r, label, extra, strong }: { r: Row; label: string; extra
         <input name={`nameMy:${r.id}`} defaultValue={r.nameMy} required maxLength={100} lang="my" aria-label={`${label} MY`} className={fieldClass} />
       </td>
       <td className="px-3 py-1.5 text-center">
-        <input type="checkbox" name={`active:${r.id}`} defaultChecked={r.active} aria-label={`${label} active`} className="size-4" />
+        <input type="checkbox" name={`active:${r.id}`} defaultChecked={r.active} aria-label={`${label} active`} className={checkboxClass} />
       </td>
       {extra !== undefined && <td className="px-3 py-1.5 text-sm whitespace-nowrap">{extra}</td>}
     </tr>
@@ -42,24 +43,10 @@ export default async function LocationsPage({ searchParams }: PageProps<"/admin/
   const stateId = typeof sp.state === "string" ? sp.state : "";
   const t = await getTranslations("Locations");
 
-  const head = (extra?: string) => (
-    <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
-      <tr>
-        <th className="px-3 py-2 font-medium">{t("code")}</th>
-        <th className="px-3 py-2 font-medium">{t("nameEn")}</th>
-        <th className="px-3 py-2 font-medium">{t("nameMy")}</th>
-        <th className="px-3 py-2 text-center font-medium">{t("active")}</th>
-        {extra && <th className="px-3 py-2 font-medium">{extra}</th>}
-      </tr>
-    </thead>
-  );
   const table = (children: React.ReactNode, extra?: string) => (
-    <div className="overflow-x-auto rounded-lg border">
-      <table className="w-full min-w-[40rem] text-sm">
-        {head(extra)}
-        <tbody>{children}</tbody>
-      </table>
-    </div>
+    <DataTable tableClassName="min-w-[40rem]" head={[t("code"), t("nameEn"), t("nameMy"), t("active"), ...(extra ? [extra] : [])]}>
+      {children}
+    </DataTable>
   );
   const form = (children: React.ReactNode) => (
     <ActionForm action={saveLocationsAction} submitLabel={t("save")} className="space-y-3">
@@ -72,7 +59,7 @@ export default async function LocationsPage({ searchParams }: PageProps<"/admin/
     const rows = await searchTownships(q);
     body =
       rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("noResults")}</p>
+        <EmptyState>{t("noResults")}</EmptyState>
       ) : (
         form(
           table(
@@ -91,7 +78,7 @@ export default async function LocationsPage({ searchParams }: PageProps<"/admin/
   } else if (stateId) {
     const state = await getLocationState(stateId);
     body = !state ? (
-      <p className="text-sm text-muted-foreground">{t("noResults")}</p>
+      <EmptyState>{t("noResults")}</EmptyState>
     ) : (
       <>
         <h2 className="font-medium">
@@ -123,7 +110,8 @@ export default async function LocationsPage({ searchParams }: PageProps<"/admin/
             label={s.nameEn}
             extra={
               <Link href={`/admin/settings/locations?state=${s.id}`} className="text-primary hover:underline">
-                {t("townships", { active: s.townships.active, total: s.townships.total, districts: s._count.districts })} →
+                {t("townships", { active: s.townships.active, total: s.townships.total, districts: s._count.districts })}
+                <ArrowRight aria-hidden className="ml-1 inline size-3.5" />
               </Link>
             }
           />

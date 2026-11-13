@@ -6,29 +6,22 @@ import { buttonVariants } from "@/components/ui/button";
 import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { productFilterOptions } from "@/server/catalog/admin-queries";
-import { listProductsPage, LIST_TABS, PAGE_SIZES, parseListTab, SELL_MODES, type ListLabel, type ListTab, type SellMode } from "@/server/catalog/product-list";
+import { listProductsPage, LIST_TABS, PAGE_SIZES, parseListTab, SELL_MODES, type ListTab, type SellMode } from "@/server/catalog/product-list";
 import { changeSummaries } from "@/server/catalog/review";
 import { catalogStats } from "@/server/catalog/stats";
 import type { ChangeItem } from "@/server/catalog/change-summary";
 import { changeItemText } from "@/components/admin/change-text";
 import { prisma } from "@/lib/db";
 import { BulkCheckbox, BulkPublishBar, RowProductAction } from "@/components/admin/product-bulk-publish";
-import { Badge, DataTable, FilterBar, FilterButton, Page, PageHeader, PageNumbers, SearchInput, StatCard, TabNav, Td, fieldClass } from "@/components/admin/ui";
+import { ActionMenu } from "@/components/admin/action-menu";
+import { Badge, DataTable, FilterBar, FilterButton, MENU_ITEM, Page, PageHeader, PageNumbers, SearchInput, StatCard, TabNav, Td, fieldClass } from "@/components/admin/ui";
 import { fmtDateTime, fmtInt } from "@/lib/format";
 import { localizedPath } from "@/lib/site";
 import { cn } from "@/lib/utils";
+import { PRODUCT_LABEL_TONE, changeTone } from "@/components/admin/status-tones";
 
 const str = (v: string | string[] | undefined) => (typeof v === "string" && v ? v : undefined);
 
-const LABEL_TONE: Record<ListLabel, "success" | "warning" | "danger" | "neutral" | "brand"> = {
-  PUBLISHED: "success",
-  PENDING: "warning",
-  INCOMPLETE: "danger",
-  REJECTED: "danger",
-  DRAFT: "neutral",
-  HIDDEN: "neutral",
-  ARCHIVED: "neutral",
-};
 const SELL_TONE: Record<SellMode, "success" | "brand" | "danger"> = { instock: "success", preorder: "brand", out: "danger" };
 
 /**
@@ -160,15 +153,10 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
           <Link href="/admin/products/new" className={buttonVariants({ size: "lg" })}>
             <Plus aria-hidden /> {t("new")}
           </Link>
-          <details className="relative">
-            <summary className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "list-none [&::-webkit-details-marker]:hidden")} aria-label={t("list.moreCreate")} title={t("list.moreCreate")}>
-              <MoreHorizontal aria-hidden />
-            </summary>
-            <div className="absolute right-0 z-20 mt-1 grid w-48 rounded-lg border bg-popover p-1 text-sm shadow-md">
-              <Link href="/admin/products/new?type=combo" className="rounded px-3 py-2 hover:bg-muted">{t("newCombo")}</Link>
-              <Link href="/admin/categories#new-category" className="rounded px-3 py-2 hover:bg-muted">{t("newCategory")}</Link>
-            </div>
-          </details>
+          <ActionMenu trigger={<MoreHorizontal aria-hidden />} triggerClassName={buttonVariants({ variant: "outline", size: "icon-lg" })} label={t("list.moreCreate")}>
+            <Link href="/admin/products/new?type=combo" className={MENU_ITEM}>{t("newCombo")}</Link>
+            <Link href="/admin/categories#new-category" className={MENU_ITEM}>{t("newCategory")}</Link>
+          </ActionMenu>
         </div>
       </div>
 
@@ -182,7 +170,6 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
       <DataTable
         stack
         empty={t("empty")}
-        className="rounded-xl bg-card"
         numeric={[4, 5]}
         head={[
           <span key="sel" className="sr-only">{t("colSelect")}</span>,
@@ -198,7 +185,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
         ]}
       >
         {products.map((p) => (
-          <tr key={p.id} className="hover:bg-muted/30">
+          <tr key={p.id}>
             <Td className="w-8 align-middle">
               <BulkCheckbox id={p.id} label={t("selectProduct", { name: p.name })} version={p.approvalVersion} />
             </Td>
@@ -241,8 +228,8 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
             </Td>
             <Td label={t("colStatus")} className="align-middle">
               <div className="flex flex-col items-start gap-1" data-testid="product-readiness" data-label={p.label}>
-                <Badge tone={LABEL_TONE[p.label]}>{t(`lifecycle.${p.label}`)}</Badge>
-                {p.change && <Badge tone={p.change === "REJECTED" ? "danger" : "warning"}>{t(`change.${p.change}`)}</Badge>}
+                <Badge tone={PRODUCT_LABEL_TONE[p.label]}>{t(`lifecycle.${p.label}`)}</Badge>
+                {p.change && <Badge tone={changeTone(p.change)}>{t(`change.${p.change}`)}</Badge>}
                 {p.label === "INCOMPLETE" && <span className="text-xs text-muted-foreground">{t("list.missing", { n: p.missing })}</span>}
               </div>
             </Td>
@@ -254,20 +241,15 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
                 <Link href={`/admin/products/${p.id}`} className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }))} aria-label={`${t("edit")} ${p.name}`} title={t("edit")}>
                   <Pencil aria-hidden="true" />
                 </Link>
-                <details className="relative">
-                  <summary className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "list-none [&::-webkit-details-marker]:hidden")} aria-label={t("list.rowMenu", { name: p.name })} title={t("list.rowMenu", { name: p.name })}>
-                    <MoreHorizontal aria-hidden />
-                  </summary>
-                  <div className="absolute right-0 z-20 mt-1 grid w-48 rounded-lg border bg-popover p-1 text-sm shadow-md">
-                    {p.published && (
-                      <a href={localizedPath("my", `/p/${p.slug}`)} target="_blank" rel="noreferrer" className="rounded px-3 py-2 hover:bg-muted">
-                        {t("block.viewAsCustomer")}
-                      </a>
-                    )}
-                    <Link href={`/admin/products/new?copyFrom=${p.id}`} className="rounded px-3 py-2 hover:bg-muted">{t("list.duplicate")}</Link>
-                    <RowProductAction id={p.id} name={p.name} kind={p.archived ? "restore" : "delete"} menu />
-                  </div>
-                </details>
+                <ActionMenu trigger={<MoreHorizontal aria-hidden />} triggerClassName={buttonVariants({ variant: "outline", size: "icon-lg" })} label={t("list.rowMenu", { name: p.name })}>
+                  {p.published && (
+                    <a href={localizedPath("my", `/p/${p.slug}`)} target="_blank" rel="noreferrer" className={MENU_ITEM}>
+                      {t("block.viewAsCustomer")}
+                    </a>
+                  )}
+                  <Link href={`/admin/products/new?copyFrom=${p.id}`} className={MENU_ITEM}>{t("list.duplicate")}</Link>
+                  <RowProductAction id={p.id} name={p.name} kind={p.archived ? "restore" : "delete"} menu />
+                </ActionMenu>
               </div>
             </Td>
           </tr>

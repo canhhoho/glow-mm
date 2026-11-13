@@ -52,7 +52,7 @@ export default async function AffiliatesPage({ searchParams }: PageProps<"/admin
           <option value="active">{t("active")}</option>
           <option value="locked">{t("locked")}</option>
         </select>
-        <FilterButton>{t("filter")}</FilterButton>
+        <FilterButton>{(await getTranslations("Common"))("filter")}</FilterButton>
       </FilterBar>
       <DataTable
         stack

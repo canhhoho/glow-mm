@@ -51,7 +51,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/admin">) {
         <>
           <form action={setAdminLocaleAction} className="flex sm:gap-1" aria-label={t("language")}>
             {ADMIN_LOCALES.map((l) => (
-              <Button key={l} type="submit" name="locale" value={l} size="sm" variant={l === locale ? "secondary" : "ghost"} className="max-sm:px-2">
+              <Button key={l} type="submit" name="locale" value={l} size="sm" variant={l === locale ? "secondary" : "ghost"} aria-pressed={l === locale} lang={l} className="max-sm:px-2">
                 {l.toUpperCase()}
               </Button>
             ))}
@@ -83,5 +83,5 @@ export default async function PanelLayout({ children }: LayoutProps<"/admin">) {
 
 async function NavBadge({ counts, kind }: { counts: ReturnType<typeof navCounts>; kind: NavCountKey }) {
   const n = (await counts)[kind] ?? 0;
-  return n > 0 ? <span className={cn("ml-auto rounded-full px-1.5 text-[11px] font-medium tabular-nums", TONES[BADGE_TONE[kind]])}>{n}</span> : null;
+  return n > 0 ? <span className={cn("ml-auto rounded-full px-1.5 text-2xs font-medium tabular-nums", TONES[BADGE_TONE[kind]])}>{n}</span> : null;
 }

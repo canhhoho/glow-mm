@@ -29,7 +29,7 @@ export function ExpandableRow({
               onClick={() => setOpen((o) => !o)}
               aria-expanded={open}
               aria-label={label}
-              className="rounded p-0.5 text-muted-foreground hover:bg-muted"
+              className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               <ChevronRight className={cn("size-4 transition-transform", open && "rotate-90")} aria-hidden />
             </button>

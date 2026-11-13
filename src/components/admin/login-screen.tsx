@@ -33,7 +33,7 @@ export function LoginScreen({
 
       <form action={localeAction} className="flex justify-end gap-1 pt-4" aria-label={languageLabel}>
         {ADMIN_LOCALES.map((l) => (
-          <Button key={l} type="submit" name="locale" value={l} size="sm" variant={l === locale ? "secondary" : "ghost"}>
+          <Button key={l} type="submit" name="locale" value={l} size="sm" variant={l === locale ? "secondary" : "ghost"} aria-pressed={l === locale} lang={l}>
             {l.toUpperCase()}
           </Button>
         ))}

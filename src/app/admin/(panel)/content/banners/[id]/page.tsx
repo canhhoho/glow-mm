@@ -12,7 +12,7 @@ export default async function EditBannerPage({ params }: PageProps<"/admin/conte
   const [t, td, banner] = await Promise.all([getTranslations("Content"), getTranslations("Docs"), getBannerAdmin(id)]);
   if (!banner) notFound();
   return (
-    <Page>
+    <Page width="narrow">
       <PageHeader title={t("bannerEdit")} back={{ href: "/admin/content/banners", label: td("back") }} />
       <BannerForm
         key={banner.updatedAt.toISOString()}

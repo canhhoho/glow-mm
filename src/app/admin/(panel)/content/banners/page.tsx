@@ -1,4 +1,4 @@
-import { LockKeyhole, LockKeyholeOpen, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, LockKeyhole, LockKeyholeOpen, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { fmtDateTime } from "@/lib/format";
@@ -7,7 +7,7 @@ import { deleteBannerAction, moveBannerAction, toggleBannerAction } from "@/serv
 import { listBannersAdmin } from "@/server/content/banners";
 import { SCHEDULE_TONE, scheduleStatus } from "@/server/content/common";
 import { ActionButton } from "@/components/admin/action-button";
-import { Badge, DataTable, LinkButton, Page, PageHeader, Td } from "@/components/admin/ui";
+import { Badge, DataTable, LinkButton, Notice, Page, PageHeader, Td } from "@/components/admin/ui";
 
 export default async function BannersPage({ searchParams }: PageProps<"/admin/content/banners">) {
   await requirePagePermission("content:manage");
@@ -21,23 +21,23 @@ export default async function BannersPage({ searchParams }: PageProps<"/admin/co
       <PageHeader
         title={t("bannersTitle")}
         actions={
-          <LinkButton href="/admin/content/banners/new" variant="primary" icon="new" iconOnly={false}>
+          <LinkButton href="/admin/content/banners/new" variant="primary" icon="new">
             {t("bannerNew")}
           </LinkButton>
         }
       />
-      {saved && <p className="text-sm text-success">{t("saved")}</p>}
+      {saved && <Notice tone="success">{t("saved")}</Notice>}
       <DataTable
         stack
         empty={t("bannersEmpty")}
-        head={[t("colImage"), t("colAlt"), t("colLocale"), t("colSchedule"), t("colStatus"), ""]}
+        head={[t("colImage"), t("colAlt"), t("colLocale"), t("colSchedule"), t("colStatus"), <span key="a" className="sr-only">{(await getTranslations("Common"))("actions")}</span>]}
       >
         {banners.map((b, i) => {
           const st = scheduleStatus(b, now);
           return (
             <tr key={b.id} data-testid="banner-row">
               <Td>
-                <div className="relative aspect-[3/1] w-40 overflow-hidden rounded bg-muted">
+                <div className="relative aspect-[3/1] w-40 overflow-hidden rounded-lg border bg-muted">
                   <Image src={b.desktopFile.url} alt={b.alt} fill sizes="160px" className="object-cover" />
                 </div>
               </Td>
@@ -55,17 +55,17 @@ export default async function BannersPage({ searchParams }: PageProps<"/admin/co
               <Td>
                 <div className="flex flex-wrap gap-1">
                   <LinkButton href={`/admin/content/banners/${b.id}`} iconOnly={true} icon="edit">{t("edit")}</LinkButton>
-                  {i > 0 && <ActionButton action={moveBannerAction} fields={{ id: b.id, direction: "up" }} label={`↑ ${t("up")}`} variant="outline" />}
+                  {i > 0 && <ActionButton action={moveBannerAction} fields={{ id: b.id, direction: "up" }} label={t("up")} icon={<ArrowUp aria-hidden />} iconOnly={false} variant="outline" />}
                   {i < banners.length - 1 && (
-                    <ActionButton action={moveBannerAction} fields={{ id: b.id, direction: "down" }} label={`↓ ${t("down")}`} variant="outline" />
+                    <ActionButton action={moveBannerAction} fields={{ id: b.id, direction: "down" }} label={t("down")} icon={<ArrowDown aria-hidden />} iconOnly={false} variant="outline" />
                   )}
                   <ActionButton
                     action={toggleBannerAction}
                     fields={{ id: b.id, active: String(!b.active) }}
                     label={b.active ? t("disable") : t("enable")}
-                    variant="outline" iconOnly={true} icon={b.active ? <LockKeyhole aria-hidden className="size-4 shrink-0" /> : <LockKeyholeOpen aria-hidden className="size-4 shrink-0" />}
+                    variant="outline" iconOnly={true} icon={b.active ? <LockKeyhole aria-hidden /> : <LockKeyholeOpen aria-hidden />}
                   />
-                  <ActionButton action={deleteBannerAction} fields={{ id: b.id }} label={t("delete")} variant="destructive" confirm={t("deleteConfirm")} iconOnly={true} icon={<Trash2 aria-hidden className="size-4 shrink-0" />} />
+                  <ActionButton action={deleteBannerAction} fields={{ id: b.id }} label={t("delete")} variant="destructive" confirm={t("deleteConfirm")} iconOnly={true} icon={<Trash2 aria-hidden />} />
                 </div>
               </Td>
             </tr>

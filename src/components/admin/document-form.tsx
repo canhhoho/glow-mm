@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Save } from "lucide-react";
 import { startTransition, useActionState, useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -267,7 +267,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
           {t("error")}: {state.error}
         </p>
       )}
-      <Button size="lg" type="submit" disabled={pending}><Plus aria-hidden className="size-4 shrink-0" /> {t("saveDraft")}</Button>
+      <Button size="lg" type="submit" disabled={pending}><Save aria-hidden /> {t("saveDraft")}</Button>
     </form>
   );
 }

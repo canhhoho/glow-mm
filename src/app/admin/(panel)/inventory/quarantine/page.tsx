@@ -12,15 +12,14 @@ import { cn } from "@/lib/utils";
 
 export default async function QuarantinePage() {
   const user = await requirePagePermission("stock:view");
-  const [t, ti, rows] = await Promise.all([getTranslations("Quarantine"), getTranslations("Inventory"), listQuarantine()]);
+  const [t, ti, tn, tc, rows] = await Promise.all([getTranslations("Quarantine"), getTranslations("Inventory"), getTranslations("Nav"), getTranslations("Common"), listQuarantine()]);
   const canRestock = can(user.role, "stock:transfer");
   const canDiscard = can(user.role, "stock:issue");
 
   return (
     <Page>
-      <PageHeader title={(await getTranslations("Nav"))("quarantine")} />
-      <p className="text-sm text-muted-foreground">{t("hint")}</p>
-      <DataTable stack empty={t("empty")} head={[t("product"), t("lot"), t("qty"), t("orders"), ""]}>
+      <PageHeader title={tn("quarantine")} description={t("hint")} />
+      <DataTable stack empty={t("empty")} numeric={[2]} head={[t("product"), t("lot"), t("qty"), t("orders"), <span key="a" className="sr-only">{tc("actions")}</span>]}>
         {rows.map((r) => {
           const hidden = (
             <>

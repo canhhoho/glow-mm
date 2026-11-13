@@ -5,7 +5,7 @@ import { Eye, EyeOff, ArrowRightLeft, RotateCcw, Trash2 } from "lucide-react";
 import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { Notice, fieldClass } from "@/components/admin/ui";
+import { MENU_ITEM, Notice, checkboxClass, fieldClass } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import { confirmOrPrevent } from "@/lib/confirm";
 import { productBulkAction, type ProductBulkState } from "@/server/catalog/actions";
@@ -20,7 +20,7 @@ const REVIEW_KINDS = new Set(["submit", "approve", "approvePublish", "reject"]);
 export function BulkCheckbox({ id, label, version }: { id: string; label: string; version?: number }) {
   return (
     <>
-      <input type="checkbox" name="ids" value={id} form={BULK_FORM_ID} aria-label={label} className="size-4 accent-primary" />
+      <input type="checkbox" name="ids" value={id} form={BULK_FORM_ID} aria-label={label} className={checkboxClass} />
       {version !== undefined && <input type="hidden" name={`v:${id}`} value={version} form={BULK_FORM_ID} />}
     </>
   );
@@ -42,7 +42,7 @@ export function RowProductAction({ id, name, kind, menu = false }: { id: string;
         name="intent"
         value={`${kind}:${id}`}
         aria-label={`${t(kind === "delete" ? "delete" : "restore")} ${name}`}
-        className={cn("w-full rounded px-3 py-2 text-left hover:bg-muted", kind === "delete" && "text-destructive")}
+        className={cn(MENU_ITEM, kind === "delete" && "text-destructive")}
         onClick={kind === "delete" ? confirmOrPrevent(t("deleteOneConfirm", { name })) : undefined}
       >
         {t(kind === "delete" ? "delete" : "restore")}

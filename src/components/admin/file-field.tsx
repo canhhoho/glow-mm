@@ -38,7 +38,7 @@ export function FileField({ className, onChange, ...props }: Omit<React.Componen
       <button
         type="button"
         onClick={() => ref.current?.click()}
-        className="inline-flex h-8 flex-none items-center rounded-lg border border-border px-3 whitespace-nowrap outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="inline-flex h-9 flex-none items-center rounded-lg border border-border px-3 whitespace-nowrap outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         {t("chooseFile")}
       </button>

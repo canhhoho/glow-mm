@@ -5,11 +5,10 @@ import { classifyExpiry, daysLeft } from "@/server/alerts/compute";
 import { can, type Permission, type Role } from "@/server/auth/roles";
 import type { StockFilter } from "@/server/inventory/overview";
 import type { Thresholds } from "@/server/inventory/stock-summary";
-import { Badge } from "@/components/admin/ui";
+import { ActionMenu } from "@/components/admin/action-menu";
+import { Badge, MENU_ITEM } from "@/components/admin/ui";
 import { buttonVariants } from "@/components/ui/button";
-import { Pagination } from "@/components/ui/pagination";
 import { fmtDay } from "@/lib/format";
-import { cn } from "@/lib/utils";
 
 /** Khối dùng chung cho trang Tồn kho + lịch sử lô (P9c). Server components. */
 
@@ -28,18 +27,20 @@ export function NewDocMenu({ role, label, td }: { role: Role; label: string; td:
   const types = NEW_DOCS.filter(([, p]) => can(role, p));
   if (types.length === 0) return null;
   return (
-    <details className="group relative">
-      <summary className={cn(buttonVariants({ size: "lg" }), "cursor-pointer list-none [&::-webkit-details-marker]:hidden")}>
-        <Plus className="size-4" aria-hidden />
-        {label}
-        <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden />
-      </summary>
-      <div className="absolute right-0 z-20 mt-1 w-48 rounded-lg border bg-popover p-1 text-sm shadow-md">
-        {types.map(([type]) => (
-          <Link key={type} href={`/admin/inventory/documents/new?type=${type}`} className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted"><Plus aria-hidden className="size-4 shrink-0" /> {td(type)}</Link>
-        ))}
-      </div>
-    </details>
+    <ActionMenu
+      triggerClassName={buttonVariants({ size: "lg" })}
+      trigger={
+        <>
+          <Plus aria-hidden />
+          {label}
+          <ChevronDown className="transition-transform group-open:rotate-180" aria-hidden />
+        </>
+      }
+    >
+      {types.map(([type]) => (
+        <Link key={type} href={`/admin/inventory/documents/new?type=${type}`} className={MENU_ITEM}><Plus aria-hidden className="size-4 shrink-0" /> {td(type)}</Link>
+      ))}
+    </ActionMenu>
   );
 }
 
@@ -73,35 +74,3 @@ export function ExpiryTag({ date, status, now, t, th }: { date: Date | null; sta
   );
 }
 
-/** Phân trang trang Kho — dùng `Pagination` chung; trạng thái = "từ–đến / tổng". */
-export function Pager({
-  page,
-  pageCount,
-  total,
-  pageSize,
-  href,
-  t,
-}: {
-  page: number;
-  pageCount: number;
-  total: number;
-  pageSize: number;
-  href: (page: number) => string;
-  t: T;
-}) {
-  if (total === 0) return null;
-  const from = Math.min(total, (page - 1) * pageSize + 1);
-  const to = Math.min(total, page * pageSize);
-  return (
-    <Pagination
-      label={t("pagination")}
-      page={page}
-      pages={pageCount}
-      hrefFor={href}
-      prevLabel={t("prev")}
-      nextLabel={t("next")}
-      status={t("pageInfo", { from, to, total })}
-      statusTestId="page-info"
-    />
-  );
-}

@@ -53,7 +53,7 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
           <option value="active">{t("active")}</option>
           <option value="locked">{t("locked")}</option>
         </select>
-        <FilterButton>{t("filter")}</FilterButton>
+        <FilterButton>{(await getTranslations("Common"))("filter")}</FilterButton>
       </FilterBar>
       <DataTable stack empty={t("empty")} head={[t("name"), t("email"), t("role"), t("status"), t("createdAt"), (await getTranslations("Customers"))("actions")]}>
         {users.map((u) => (

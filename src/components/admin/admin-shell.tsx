@@ -71,7 +71,7 @@ export type ShellGroup = { label: string | null; icon?: NavIcon; items: ShellIte
 function ItemBadge({ item }: { item: ShellItem }) {
   return <>
     {item.badgeContent}
-    {item.badge && <span className={cn("ml-auto rounded-full px-1.5 text-[11px] font-medium tabular-nums", TONES[item.badge.tone])}>{item.badge.n}</span>}
+    {item.badge && <span className={cn("ml-auto rounded-full px-1.5 text-2xs font-medium tabular-nums", TONES[item.badge.tone])}>{item.badge.n}</span>}
   </>;
 }
 
@@ -169,10 +169,10 @@ export function AdminShell({
         )}
       >
         <div className="flex h-14 flex-none items-center gap-2 border-b px-4">
-          <div className="grid h-7 min-w-7 flex-none place-items-center rounded-md bg-primary px-1 text-[10px] font-bold text-primary-foreground">{BRAND_MARK}</div>
+          <div className="grid h-7 min-w-7 flex-none place-items-center rounded-md bg-primary px-1 text-2xs font-bold text-primary-foreground">{BRAND_MARK}</div>
           <div className="leading-tight">
             <div className="font-semibold">{BRAND_NAME}</div>
-            <div className="text-[11px] text-muted-foreground">{labels.subtitle}</div>
+            <div className="text-2xs text-muted-foreground">{labels.subtitle}</div>
           </div>
           <button
             type="button"

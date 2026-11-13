@@ -10,7 +10,7 @@ export default async function AdminNotFound() {
       <h1 className="mt-2 text-lg font-medium">{t("notFoundTitle")}</h1>
       <p className="mt-1 text-sm text-muted-foreground">{t("notFoundHint")}</p>
       <div className="mt-6">
-        <LinkButton href="/admin">← {t("backToDashboard")}</LinkButton>
+        <LinkButton href="/admin" icon="back">{t("backToDashboard")}</LinkButton>
       </div>
     </div>
   );

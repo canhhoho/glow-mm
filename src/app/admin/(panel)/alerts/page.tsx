@@ -66,7 +66,7 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
         <DataTable
           empty={t("empty")}
           numeric={[6]}
-          head={[t("level"), t("product"), t("lot"), t("expiry"), t("location"), "", t("qty")]}
+          head={[t("level"), t("product"), t("lot"), t("expiry"), t("location"), <span key="st" className="sr-only">{ti("stockTypeFilter")}</span>, t("qty")]}
         >
           {alerts.expiry.map((e) => (
             <tr key={`${e.batchId}|${e.location}|${e.stockType}`} data-testid="alert-row">

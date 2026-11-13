@@ -14,7 +14,7 @@ export default async function PickListPage({ searchParams }: PageProps<"/admin/o
   await requirePagePermission("orders:view");
   const ids = parsePrintIds((await searchParams).ids);
   if (!ids) notFound();
-  const [t, { orders, groups, hash, plannable }] = await Promise.all([getTranslations("Orders"), pickListFor(ids)]);
+  const [t, tc, { orders, groups, hash, plannable }] = await Promise.all([getTranslations("Orders"), getTranslations("Common"), pickListFor(ids)]);
   if (orders.length === 0) notFound();
   const cell = "border border-foreground/40 px-2 py-1";
 
@@ -23,7 +23,7 @@ export default async function PickListPage({ searchParams }: PageProps<"/admin/o
       <style>{"@page { size: A4; margin: 10mm; }"}</style>
       <div className="flex flex-wrap items-center gap-2 print:hidden">
         <PickPrintButton ids={orders.map((o) => o.id)} hash={hash} plannable={plannable} />
-        <LinkButton href="/admin/orders">← {t("title")}</LinkButton>
+        <LinkButton href="/admin/orders" icon="back">{t("title")}</LinkButton>
       </div>
       <header className="flex flex-wrap items-baseline justify-between gap-2 border-b pb-2">
         <h1 className="text-lg font-bold">{t("bulk.pickTitle")}</h1>
@@ -42,7 +42,7 @@ export default async function PickListPage({ searchParams }: PageProps<"/admin/o
             <thead>
               <tr className="text-left text-xs">
                 <th className={`${cell} w-8`}>✓</th>
-                <th className={cell}>SKU</th>
+                <th className={cell}>{t("sku")}</th>
                 <th className={cell}>{t("bulk.pickItem")}</th>
                 <th className={cell}>{t("bulk.pickLot")}</th>
                 <th className={`${cell} text-right`}>{t("bulk.pickQty")}</th>
@@ -60,7 +60,7 @@ export default async function PickListPage({ searchParams }: PageProps<"/admin/o
                       {lot.lotNo ? (
                         <>
                           <span className="font-mono">{lot.lotNo}</span>
-                          {lot.expiryDate && <div>HSD {fmtDate(lot.expiryDate)}</div>}
+                          {lot.expiryDate && <div>{tc("expiryShort")} {fmtDate(lot.expiryDate)}</div>}
                         </>
                       ) : (
                         "—"

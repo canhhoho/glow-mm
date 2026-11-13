@@ -4,7 +4,7 @@ import { Trash2, Plus, Save } from "lucide-react";
 import { useActionState, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { Field, fieldClass } from "@/components/admin/ui";
+import { checkboxClass, Field, fieldClass } from "@/components/admin/ui";
 import { saveProductAction } from "@/server/catalog/actions";
 import type { ProductEditData } from "@/server/catalog/admin-queries";
 import { cn } from "@/lib/utils";
@@ -211,7 +211,7 @@ export function ProductForm({
                 <div className="col-span-full flex flex-wrap items-center gap-4 text-sm">
                   {v.id && (
                     <label className="flex items-center gap-1">
-                      <input type="checkbox" checked={v.active} onChange={(e) => setVar(v.key, { active: e.target.checked })} />
+                      <input type="checkbox" className={checkboxClass} checked={v.active} onChange={(e) => setVar(v.key, { active: e.target.checked })} />
                       {t("active")}
                     </label>
                   )}
@@ -325,14 +325,14 @@ export function ProductForm({
           {/* Biến thể duy nhất đã lưu: vẫn tắt/bật được (ô này ở khối biến thể khi có nhiều loại). */}
           {isSingleVariant && variants[0].id && (
             <label className="flex items-center gap-2 text-sm sm:col-span-2">
-              <input type="checkbox" checked={variants[0].active} onChange={(e) => setVar(variants[0].key, { active: e.target.checked })} />
+              <input type="checkbox" className={checkboxClass} checked={variants[0].active} onChange={(e) => setVar(variants[0].key, { active: e.target.checked })} />
               {t("active")}
             </label>
           )}
 
           {/* Quản lý hạn sử dụng */}
           <label className="flex items-center gap-2 text-sm sm:col-span-2">
-            <input type="checkbox" checked={p.requiresExpiry} onChange={(e) => set("requiresExpiry", e.target.checked)} />
+            <input type="checkbox" className={checkboxClass} checked={p.requiresExpiry} onChange={(e) => set("requiresExpiry", e.target.checked)} />
             {t("requiresExpiry")}
           </label>
         </div>
