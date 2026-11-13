@@ -8,7 +8,7 @@ import {
   stockByLocation,
   type Range,
 } from "@/server/reports/queries";
-import { DataTable, fieldClass, fieldLabelClass, FilterButton, Notice, Page, PageHeader, Stat, Td } from "@/components/admin/ui";
+import { DataTable, fieldClass, fieldLabelClass, FilterBar, FilterButton, Notice, Page, PageHeader, Section, Stat, Td } from "@/components/admin/ui";
 import { ReportsTabs } from "@/components/admin/reports-tabs";
 import { fmtDay, fmtInt } from "@/lib/format";
 import { addDays } from "@/lib/time";
@@ -29,8 +29,9 @@ function parseRange(sp: Record<string, string | string[] | undefined>): Range {
 export default async function ReportsPage({ searchParams }: PageProps<"/admin/reports">) {
   await requirePagePermission("reports:view");
   const range = parseRange(await searchParams);
-  const [t, report, slow, inbound, stock] = await Promise.all([
+  const [t, tc, report, slow, inbound, stock] = await Promise.all([
     getTranslations("Reports"),
+    getTranslations("Common"),
     salesReport(range),
     slowMovers(),
     inboundShipments(),
@@ -44,7 +45,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
       <PageHeader title={(await getTranslations("Nav"))("salesReports")} description={t("basis")} />
       <ReportsTabs active="sales" />
       {/* key theo kỳ: điều hướng phía client giữ DOM → defaultValue cũ; đổi key để ô ngày hiện kỳ đã chuẩn hoá. */}
-      <form key={`${range.from}|${range.to}`} className="flex flex-wrap items-end gap-2">
+      <FilterBar key={`${range.from}|${range.to}`}>
         <label className={fieldLabelClass}>
           <span className="text-muted-foreground">{t("from")}</span>
           <input type="date" name="from" defaultValue={range.from} className={cn(fieldClass, "w-40")} />
@@ -53,8 +54,8 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
           <span className="text-muted-foreground">{t("to")}</span>
           <input type="date" name="to" defaultValue={range.to} className={cn(fieldClass, "w-40")} />
         </label>
-        <FilterButton>{(await getTranslations("Common"))("filter")}</FilterButton>
-      </form>
+        <FilterButton>{tc("filter")}</FilterButton>
+      </FilterBar>
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label={`${t("revenue")} (MMK)`} value={fmtInt(totals.revenue)} testId="r-revenue" />
@@ -80,95 +81,90 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
       )}
 
       {report.estimatedCostOrders.length > 0 && (
-        <p role="status" className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
+        <Notice>
           {t("estimatedCost")} <span className="font-mono">{report.estimatedCostOrders.slice(0, 10).join(", ")}</span>
           {report.estimatedCostOrders.length > 10 && ` ${t("andMore", { count: report.estimatedCostOrders.length - 10 })}`}
-        </p>
+        </Notice>
       )}
 
-      <section className="space-y-2">
-        <h2 className="font-medium">{t("daily")}</h2>
-        <DataTable empty={t("empty")} head={[t("day"), t("orders"), t("revenue"), "", t("cogs"), t("profit")]}>
+      <Section title={t("daily")}>
+        <DataTable empty={t("empty")} numeric={[1, 2, 4, 5]} head={[t("day"), t("orders"), t("revenue"), <span key="bar" className="sr-only">{t("revenue")}</span>, t("cogs"), t("profit")]}>
           {report.daily
             .filter((d) => d.orders > 0)
             .map((d) => (
               <tr key={d.day}>
                 <Td className="whitespace-nowrap">{d.day}</Td>
-                <Td className="text-right tabular-nums">{d.orders}</Td>
-                <Td className="text-right tabular-nums">{fmtInt(d.revenue)}</Td>
+                <Td numeric>{d.orders}</Td>
+                <Td numeric>{fmtInt(d.revenue)}</Td>
                 <Td className="w-1/3">
                   <div className="h-2 rounded bg-primary/70" style={{ width: `${(Math.max(0, d.revenue) / maxRevenue) * 100}%` }} />
                 </Td>
-                <Td className="text-right tabular-nums">{fmtInt(d.cogs)}</Td>
-                <Td className="text-right tabular-nums">{fmtInt(d.profit)}</Td>
+                <Td numeric>{fmtInt(d.cogs)}</Td>
+                <Td numeric>{fmtInt(d.profit)}</Td>
               </tr>
             ))}
         </DataTable>
-      </section>
+      </Section>
 
-      <section className="grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
-        <div className="space-y-2">
-          <h2 className="font-medium">{t("top")}</h2>
-          <DataTable empty={t("empty")} head={["SKU", t("units"), t("revenue"), t("profit")]}>
+      <div className="grid gap-5 lg:grid-cols-2 [&>*]:min-w-0">
+        <Section title={t("top")}>
+          <DataTable empty={t("empty")} numeric={[1, 2, 3]} head={[tc("sku"), t("units"), t("revenue"), t("profit")]}>
             {report.topProducts.map((p) => (
               <tr key={p.sku}>
                 <Td>
                   <span className="font-mono text-xs">{p.sku}</span>
                   <div className="text-xs text-muted-foreground">{p.name}</div>
                 </Td>
-                <Td className="text-right tabular-nums">{fmtInt(p.units)}</Td>
-                <Td className="text-right tabular-nums">{fmtInt(p.revenue)}</Td>
-                <Td className="text-right tabular-nums">{fmtInt(p.profit)}</Td>
+                <Td numeric>{fmtInt(p.units)}</Td>
+                <Td numeric>{fmtInt(p.revenue)}</Td>
+                <Td numeric>{fmtInt(p.profit)}</Td>
               </tr>
             ))}
           </DataTable>
-        </div>
-        <div className="space-y-2">
-          <h2 className="font-medium">{t("slow", { days: slow.days })}</h2>
-          <DataTable empty={t("empty")} head={["SKU", t("available")]}>
+        </Section>
+        <Section title={t("slow", { days: slow.days })}>
+          <DataTable empty={t("empty")} numeric={[1]} head={[tc("sku"), t("available")]}>
             {slow.items.slice(0, 20).map((v) => (
               <tr key={v.variantId}>
                 <Td>
                   <span className="font-mono text-xs">{v.sku}</span>
                   <div className="text-xs text-muted-foreground">{v.name}</div>
                 </Td>
-                <Td className="text-right tabular-nums">{fmtInt(v.available)}</Td>
+                <Td numeric>{fmtInt(v.available)}</Td>
               </tr>
             ))}
           </DataTable>
-        </div>
-      </section>
+        </Section>
+      </div>
 
-      <section className="grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
-        <div className="space-y-2">
-          <h2 className="font-medium">{t("stock")}</h2>
-          <DataTable head={[t("locType"), t("qty"), t("tester"), t("value"), t("estimatedQty"), t("noCost")]}>
+      <div className="grid gap-5 lg:grid-cols-2 [&>*]:min-w-0">
+        <Section title={t("stock")}>
+          <DataTable empty={t("empty")} numeric={[1, 2, 3, 4, 5]} head={[t("locType"), t("qty"), t("tester"), t("value"), t("estimatedQty"), t("noCost")]}>
             {stock.map((s) => (
               <tr key={s.code ?? "inactive"} data-testid={`stock-${s.code ?? "inactive"}`}>
                 <Td>{s.name ?? t("inactiveLocations")}</Td>
-                <Td className="text-right tabular-nums">{fmtInt(s.qty)}</Td>
-                <Td className="text-right tabular-nums">{fmtInt(s.testerQty)}</Td>
-                <Td className="text-right tabular-nums">{fmtInt(s.valueMmk)}</Td>
-                <Td className="text-right tabular-nums">{s.estimatedQty ? fmtInt(s.estimatedQty) : "—"}</Td>
-                <Td className="text-right tabular-nums">{s.missingCost ? fmtInt(s.missingCost) : "—"}</Td>
+                <Td numeric>{fmtInt(s.qty)}</Td>
+                <Td numeric>{fmtInt(s.testerQty)}</Td>
+                <Td numeric>{fmtInt(s.valueMmk)}</Td>
+                <Td numeric>{s.estimatedQty ? fmtInt(s.estimatedQty) : "—"}</Td>
+                <Td numeric>{s.missingCost ? fmtInt(s.missingCost) : "—"}</Td>
               </tr>
             ))}
           </DataTable>
-        </div>
-        <div className="space-y-2">
-          <h2 className="font-medium">{t("inbound")}</h2>
-          <DataTable empty={t("empty")} head={[t("shipment"), t("departed"), t("batches"), t("costs")]}>
+        </Section>
+        <Section title={t("inbound")}>
+          <DataTable empty={t("empty")} numeric={[2, 3]} head={[t("shipment"), t("departed"), t("batches"), t("costs")]}>
             {inbound.map((s) => (
               <tr key={s.id}>
                 <Td className="font-mono text-xs">{s.code}</Td>
                 <Td>{fmtDay(s.departedAt)}</Td>
-                <Td className="text-right tabular-nums">{s.batches}</Td>
-                <Td className="text-right tabular-nums">{fmtInt(s.costsVnd)}</Td>
+                <Td numeric>{s.batches}</Td>
+                <Td numeric>{fmtInt(s.costsVnd)}</Td>
               </tr>
             ))}
           </DataTable>
-        </div>
-      </section>
+        </Section>
+      </div>
     </Page>
   );
 }

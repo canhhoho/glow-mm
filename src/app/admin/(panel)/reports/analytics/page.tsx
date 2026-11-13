@@ -6,7 +6,7 @@ import { defaultRange } from "@/server/reports/queries";
 import { addDays } from "@/lib/time";
 import { fmtDateTime, fmtInt } from "@/lib/format";
 import { ReportsTabs } from "@/components/admin/reports-tabs";
-import { DataTable, fieldClass, fieldLabelClass, FilterButton, Page, PageHeader, Stat, Td } from "@/components/admin/ui";
+import { DataTable, fieldClass, fieldLabelClass, FilterBar, FilterButton, Notice, Page, PageHeader, Section, Stat, Td } from "@/components/admin/ui";
 
 export default async function AnalyticsPage({ searchParams }: PageProps<"/admin/reports/analytics">) {
   await requirePagePermission("reports:view");
@@ -21,12 +21,12 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/admin/
   return <Page>
     <PageHeader title={t("title")} description={t("basis")} />
     <ReportsTabs active="analytics" />
-    {!report.enabled && <p role="status" className="text-sm text-muted-foreground">{t("disabled")}</p>}
-    <form key={`${from}|${to}`} className="flex flex-wrap items-end gap-3">
+    {!report.enabled && <Notice>{t("disabled")}</Notice>}
+    <FilterBar key={`${from}|${to}`}>
       <label className={fieldLabelClass}><span>{t("from")}</span><input name="from" type="date" defaultValue={from} className={fieldClass} /></label>
       <label className={fieldLabelClass}><span>{t("to")}</span><input name="to" type="date" defaultValue={to} className={fieldClass} /></label>
       <FilterButton>{(await getTranslations("Common"))("filter")}</FilterButton>
-    </form>
+    </FilterBar>
     <p className="text-sm text-muted-foreground">{t("collection", { started: report.startedAt ? fmtDateTime(report.startedAt) : "—", days: report.activeDays })}</p>
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       <Stat label={t("step.view")} value={fmtInt(report.total.view)} testId="analytics-view" />
@@ -34,13 +34,14 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/admin/
       <Stat label={t("step.completed")} value={fmtInt(report.total.completed)} />
       <Stat label={t("conversion")} value={report.conversionPct == null ? "—" : `${report.conversionPct}%`} />
     </div>
-    <DataTable head={[t("stepLabel"), t("all"), t("mobile"), t("desktop"), t("unknown")]}>
-      {FUNNEL_KEYS.map((key) => <tr key={key}><Td>{t(`step.${key}`)}</Td><Td>{fmtInt(report.total[key])}</Td><Td>{fmtInt(report.groups.mobile[key])}</Td><Td>{fmtInt(report.groups.desktop[key])}</Td><Td>{fmtInt(report.groups.unknown[key])}</Td></tr>)}
+    <DataTable numeric={[1, 2, 3, 4]} empty={t("empty")} head={[t("stepLabel"), t("all"), t("mobile"), t("desktop"), t("unknown")]}>
+      {FUNNEL_KEYS.map((key) => <tr key={key}><Td>{t(`step.${key}`)}</Td><Td numeric>{fmtInt(report.total[key])}</Td><Td numeric>{fmtInt(report.groups.mobile[key])}</Td><Td numeric>{fmtInt(report.groups.desktop[key])}</Td><Td numeric>{fmtInt(report.groups.unknown[key])}</Td></tr>)}
     </DataTable>
-    <h2 className="font-medium">{t("vitals")}</h2>
-    <p className="text-sm text-muted-foreground">{t("vitalsHelp")}</p>
-    <DataTable head={[t("pageType"), t("device"), t("metric"), t("samples"), "p75"]} empty={t("empty")}>
-      {report.vitals.map((v) => <tr key={`${v.device}|${v.pageType}|${v.metric}`}><Td>{t(`page.${v.pageType}`)}</Td><Td>{v.device === "mobile" ? t("mobile") : v.device === "desktop" ? t("desktop") : t("unknown")}</Td><Td>{v.metric}</Td><Td>{fmtInt(v.samples)}</Td><Td>{v.metric === "CLS" ? v.p75.toFixed(3) : `${Math.round(v.p75)} ms`}</Td></tr>)}
-    </DataTable>
+    <Section title={t("vitals")}>
+      <p className="text-sm text-muted-foreground">{t("vitalsHelp")}</p>
+      <DataTable head={[t("pageType"), t("device"), t("metric"), t("samples"), "p75"]} numeric={[3, 4]} empty={t("empty")}>
+        {report.vitals.map((v) => <tr key={`${v.device}|${v.pageType}|${v.metric}`}><Td>{t(`page.${v.pageType}`)}</Td><Td>{v.device === "mobile" ? t("mobile") : v.device === "desktop" ? t("desktop") : t("unknown")}</Td><Td>{v.metric}</Td><Td numeric>{fmtInt(v.samples)}</Td><Td numeric>{v.metric === "CLS" ? v.p75.toFixed(3) : `${Math.round(v.p75)} ms`}</Td></tr>)}
+      </DataTable>
+    </Section>
   </Page>;
 }

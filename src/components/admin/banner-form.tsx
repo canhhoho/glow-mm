@@ -45,7 +45,7 @@ export function BannerForm({ banner }: { banner?: BannerFormValue }) {
 
   const error = sizeError ?? state?.error;
   return (
-    <form action={action} onSubmit={checkSizes} className="max-w-3xl space-y-4">
+    <form action={action} onSubmit={checkSizes} className=" space-y-4">
       {banner && <input type="hidden" name="id" value={banner.id} />}
 
       <fieldset className="grid gap-4 sm:grid-cols-2">

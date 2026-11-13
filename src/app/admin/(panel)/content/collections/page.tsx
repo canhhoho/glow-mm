@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { ArrowDown, ArrowUp, Plus } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { fmtDateTime } from "@/lib/format";
 import { requirePagePermission } from "@/server/auth/session";
@@ -19,14 +19,14 @@ export default async function CollectionsPage() {
     <Page>
       <PageHeader title={t("collectionsTitle")} />
       <Section title={t("collectionNew")}>
-        <ActionForm action={createCollectionAction} submitLabel={t("create")} icon={<Plus aria-hidden className="size-4 shrink-0" />}>
+        <ActionForm action={createCollectionAction} submitLabel={t("create")} icon={<Plus aria-hidden />}>
           <CollectionFields />
         </ActionForm>
       </Section>
       <DataTable
         stack
         empty={t("collectionsEmpty")}
-        head={[t("colName"), t("slug"), t("colItems"), t("colHome"), t("colSchedule"), t("colStatus"), ""]}
+        numeric={[2]} head={[t("colName"), t("slug"), t("colItems"), t("colHome"), t("colSchedule"), t("colStatus"), <span key="a" className="sr-only">{(await getTranslations("Common"))("actions")}</span>]}
       >
         {collections.map((c, i) => {
           const st = scheduleStatus(c, now);
@@ -39,8 +39,8 @@ export default async function CollectionsPage() {
                 </p>
               </Td>
               <Td label={t("slug")} className="font-mono text-xs">{c.slug}</Td>
-              <Td label={t("colItems")}>{c.items}</Td>
-              <Td label={t("colHome")}>{c.showOnHome ? t("yes") : t("no")}</Td>
+              <Td label={t("colItems")} numeric>{c.items}</Td>
+              <Td label={t("colHome")}>{c.showOnHome ? <Badge tone="success">{t("yes")}</Badge> : <Badge>{t("no")}</Badge>}</Td>
               <Td label={t("colSchedule")} className="text-xs whitespace-nowrap">
                 {c.startAt || c.endAt ? `${fmtDateTime(c.startAt)} → ${fmtDateTime(c.endAt)}` : t("always")}
               </Td>
@@ -50,9 +50,9 @@ export default async function CollectionsPage() {
               <Td>
                 <div className="flex flex-wrap gap-1">
                   <LinkButton href={`/admin/content/collections/${c.id}`} iconOnly={true} icon="edit">{t("edit")}</LinkButton>
-                  {i > 0 && <ActionButton action={moveCollectionAction} fields={{ id: c.id, direction: "up" }} label={`↑ ${t("up")}`} variant="outline" />}
+                  {i > 0 && <ActionButton action={moveCollectionAction} fields={{ id: c.id, direction: "up" }} label={t("up")} icon={<ArrowUp aria-hidden />} iconOnly={false} variant="outline" />}
                   {i < collections.length - 1 && (
-                    <ActionButton action={moveCollectionAction} fields={{ id: c.id, direction: "down" }} label={`↓ ${t("down")}`} variant="outline" />
+                    <ActionButton action={moveCollectionAction} fields={{ id: c.id, direction: "down" }} label={t("down")} icon={<ArrowDown aria-hidden />} iconOnly={false} variant="outline" />
                   )}
                 </div>
               </Td>

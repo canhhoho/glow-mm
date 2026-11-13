@@ -1,4 +1,4 @@
-import { Trash2, Plus } from "lucide-react";
+import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
@@ -14,9 +14,8 @@ import { getCollectionAdmin } from "@/server/content/collections";
 import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
 import { CollectionFields } from "@/components/admin/collection-fields";
-import { Badge, fieldClass, LinkButton, Page, PageHeader } from "@/components/admin/ui";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { localizedPath } from "@/lib/site";
+import { Badge, EmptyState, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Section } from "@/components/admin/ui";
 
 const SEARCH_LIMIT = 20;
 
@@ -38,26 +37,23 @@ export default async function EditCollectionPage({ params, searchParams }: PageP
       <PageHeader
         title={`${t("collectionEdit")}: ${collection.nameEn}`}
         back={{ href: "/admin/content/collections", label: td("back") }}
-        actions={<LinkButton href={`/en/collection/${collection.slug}`}>{t("viewOnStore")}</LinkButton>}
+        actions={<LinkButton href={localizedPath("en", `/collection/${collection.slug}`)} icon="view">{t("viewOnStore")}</LinkButton>}
       />
 
-      <section className="rounded-lg border p-4">
+      <Section>
         <ActionForm action={updateCollectionAction} submitLabel={t("save")} okText={t("saved")}>
           <input type="hidden" name="id" value={collection.id} />
           <CollectionFields value={collection} />
         </ActionForm>
-      </section>
+      </Section>
 
-      <section aria-labelledby="items-h" className="rounded-lg border p-4">
-        <h2 id="items-h" className="mb-3 font-medium">
-          {t("products")} ({collection.items.length})
-        </h2>
+      <Section title={<>{t("products")} ({collection.items.length})</>}>
         {collection.items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("productsEmpty")}</p>
+          <EmptyState>{t("productsEmpty")}</EmptyState>
         ) : (
           <ol className="space-y-2">
             {collection.items.map((item, i) => (
-              <li key={item.productId} data-testid="collection-item" className="flex flex-wrap items-center gap-2 rounded-md border p-2 text-sm">
+              <li key={item.productId} data-testid="collection-item" className="flex flex-wrap items-center gap-2 rounded-lg border p-2 text-sm">
                 <span className="w-6 text-right text-muted-foreground tabular-nums">{i + 1}.</span>
                 <span className="min-w-48 flex-1">
                   {item.name} <span className="font-mono text-xs text-muted-foreground">{item.slug}</span>
@@ -67,7 +63,9 @@ export default async function EditCollectionPage({ params, searchParams }: PageP
                   <ActionButton
                     action={moveCollectionProductAction}
                     fields={{ id: collection.id, productId: item.productId, direction: "up" }}
-                    label={`↑ ${t("up")}`}
+        label={t("up")}
+                    icon={<ArrowUp aria-hidden />}
+                    iconOnly={false}
                     variant="outline"
                   />
                 )}
@@ -75,7 +73,9 @@ export default async function EditCollectionPage({ params, searchParams }: PageP
                   <ActionButton
                     action={moveCollectionProductAction}
                     fields={{ id: collection.id, productId: item.productId, direction: "down" }}
-                    label={`↓ ${t("down")}`}
+                    label={t("down")}
+                    icon={<ArrowDown aria-hidden />}
+                    iconOnly={false}
                     variant="outline"
                   />
                 )}
@@ -83,25 +83,21 @@ export default async function EditCollectionPage({ params, searchParams }: PageP
                   action={removeCollectionProductAction}
                   fields={{ id: collection.id, productId: item.productId }}
                   label={t("remove")}
-                  variant="destructive" iconOnly={true} icon={<Trash2 aria-hidden className="size-4 shrink-0" />}
+                  variant="destructive" iconOnly={true} icon={<Trash2 aria-hidden />}
                 />
               </li>
             ))}
           </ol>
         )}
-      </section>
+      </Section>
 
-      <section aria-labelledby="add-h" className="rounded-lg border p-4">
-        <h2 id="add-h" className="mb-3 font-medium">
-          {t("addProducts")}
-        </h2>
-        <form className="mb-3 flex flex-wrap gap-2">
-          <input name="q" type="search" defaultValue={query} placeholder={t("searchProducts")} aria-label={t("searchProducts")} className={cn(fieldClass, "max-w-sm")} />
-          <Button size="lg" type="submit" variant="outline">
-            {t("search")}
-          </Button>
-        </form>
-        {query && (
+      <Section title={t("addProducts")}>
+        <FilterBar>
+          <SearchInput label={t("searchProducts")} defaultValue={query} />
+          <FilterButton>{t("search")}</FilterButton>
+        </FilterBar>
+        {query && found.length === 0 && <EmptyState>{(await getTranslations("Common"))("noData")}</EmptyState>}
+        {query && found.length > 0 && (
           <ul className="space-y-1">
             {found.slice(0, SEARCH_LIMIT).map((p) => (
               <li key={p.id} data-testid="product-result" className="flex flex-wrap items-center gap-2 text-sm">
@@ -112,20 +108,20 @@ export default async function EditCollectionPage({ params, searchParams }: PageP
                 {inCollection.has(p.id) ? (
                   <Badge tone="success">{t("inCollection")}</Badge>
                 ) : (
-                  <ActionButton action={addCollectionProductAction} fields={{ id: collection.id, productId: p.id }} label={t("add")} variant="outline" iconOnly={false} icon={<Plus aria-hidden className="size-4 shrink-0" />} />
+                  <ActionButton action={addCollectionProductAction} fields={{ id: collection.id, productId: p.id }} label={t("add")} variant="outline" iconOnly={false} icon={<Plus aria-hidden />} />
                 )}
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </Section>
 
       <ActionButton
         action={deleteCollectionAction}
         fields={{ id: collection.id }}
         label={t("deleteCollection")}
         variant="destructive"
-        confirm={t("deleteCollectionConfirm")} iconOnly={false} icon={<Trash2 aria-hidden className="size-4 shrink-0" />}
+        confirm={t("deleteCollectionConfirm")} iconOnly={false} icon={<Trash2 aria-hidden />}
       />
     </Page>
   );

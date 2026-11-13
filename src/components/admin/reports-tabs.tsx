@@ -10,8 +10,8 @@ export async function ReportsTabs({ active }: { active: "sales" | "health" | "an
       label={t("reports")}
       tabs={[
         { href: "/admin/reports", label: t("salesReports"), active: active === "sales" },
-        { href: "/admin/reports/data-health", label: t("dataHealth"), active: active === "health" },
         { href: "/admin/reports/analytics", label: t("analyticsReports"), active: active === "analytics" },
+        { href: "/admin/reports/data-health", label: t("dataHealth"), active: active === "health" },
       ]}
     />
   );

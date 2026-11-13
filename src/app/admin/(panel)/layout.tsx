@@ -51,7 +51,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/admin">) {
         <>
           <form action={setAdminLocaleAction} className="flex sm:gap-1" aria-label={t("language")}>
             {ADMIN_LOCALES.map((l) => (
-              <Button key={l} type="submit" name="locale" value={l} size="sm" variant={l === locale ? "secondary" : "ghost"} className="max-sm:px-2">
+              <Button key={l} type="submit" name="locale" value={l} size="sm" variant={l === locale ? "secondary" : "ghost"} aria-pressed={l === locale} lang={l} className="max-sm:px-2">
                 {l.toUpperCase()}
               </Button>
             ))}
