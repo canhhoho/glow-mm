@@ -22,7 +22,9 @@ export type TemplateRow = Record<string, string | number | null | undefined>;
 const YES_NO = ["Có", "Không"];
 // Giá/hoa hồng đặt ở bước Giá. Các cột phụ vẫn có thể mở bằng dấu + trong Excel.
 const PRICING_COLUMNS = new Set(["price_mmk", "affiliate_commission_mmk"]);
-const EXTRA_COLUMNS = new Set(["weight_g", "description_my", "description_en", "has_expiry", "sku", "inbound_unit_vnd", "lot_no"]);
+// Khối lượng + mô tả luôn hiện (cần để đăng bán / khách thấy); nội dung phụ và mã thu gọn.
+const EXTRA_COLUMNS = new Set(["usage_my", "usage_en", "ingredients", "storage_note", "pao_months", "has_expiry", "sku", "inbound_unit_vnd", "lot_no"]);
+const WRAP_COLUMNS = new Set(["description_my", "description_en", "usage_my", "usage_en", "ingredients", "storage_note"]);
 
 const xml = (s: string) =>
   s
@@ -55,16 +57,16 @@ function cell(ref: string, value: string | number | null | undefined, style: num
 const row = (r: number, cells: string[], height?: number) =>
   `<row r="${r}"${height ? ` ht="${height}" customHeight="1"` : ""}>${cells.join("")}</row>`;
 
-const dataStyle = (c: SheetColumn) => (c.type === "date" ? S.date : c.type === "text" && c.key.startsWith("description") ? S.wrap : c.type === "text" || c.type === "yesno" ? S.text : S.number);
+const dataStyle = (c: SheetColumn) => (c.type === "date" ? S.date : WRAP_COLUMNS.has(c.key) ? S.wrap : c.type === "text" || c.type === "yesno" ? S.text : S.number);
 
 function inputSheet(columns: SheetColumn[], lists: TemplateLists, rows: TemplateRow[]) {
   const last = CATALOG_HEADER_ROW + Math.max(CATALOG_INPUT_ROWS, rows.length + 100);
   const firstStock = columns.findIndex((c) => c.group === "stock");
   const out: string[] = [
     row(1, [cell("A1", `${BRAND_NAME} — Nhập / cập nhật sản phẩm`, S.title)], 24),
-    row(2, [cell("A2", "Tạo mới: điền một tên, Thương hiệu và Danh mục. Biến thể tuỳ chọn. Không cần giá bán; đặt giá ở bước 3 trên website.", S.note)]),
-    row(3, [cell("A3", "Mỗi dòng một biến thể; cùng tên + thương hiệu để gộp sản phẩm. Mở dấu + để thêm thông tin hoặc điền SKU khi cập nhật; ô trống giữ nguyên.", S.note)]),
-    row(4, [cell("A4", "Không nhập tồn: để trống toàn bộ cột xanh. Có nhập tồn: điền Số lượng + Giá mua (VND/MMK theo kho). Giá mua khác giá bán.", S.note)]),
+    row(2, [cell("A2", "Bắt buộc (*): một tên (Myanmar hoặc tiếng Anh), Thương hiệu, Danh mục. Nên điền: Khối lượng (bắt buộc trước khi đăng bán hàng kho nhập VN) và Mô tả hai thứ tiếng.", S.note)]),
+    row(3, [cell("A3", "Mỗi dòng một biến thể; cùng tên + thương hiệu để gộp sản phẩm. Bấm dấu + phía trên cột để mở Cách dùng, Thành phần, Bảo quản, PAO, SKU… Ô trống giữ nguyên.", S.note)]),
+    row(4, [cell("A4", "Tự sinh: mã SP, SKU, số lô. Làm tiếp trên web: giá bán (bước 3), ảnh, ghi sổ phiếu nhập, gửi duyệt → duyệt → đăng bán. Cột xanh = nhập tồn (tuỳ chọn).", S.note)]),
     row(5, [cell("A5", "SẢN PHẨM", S.group), ...(firstStock >= 0 ? [cell(`${colName(firstStock)}5`, "NHẬP TỒN (tuỳ chọn)", S.group)] : [])]),
     row(
       CATALOG_HEADER_ROW,
@@ -100,22 +102,38 @@ function inputSheet(columns: SheetColumn[], lists: TemplateLists, rows: Template
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetPr><outlinePr summaryRight="1"/></sheetPr><sheetViews><sheetView workbookViewId="0" tabSelected="1" showOutlineSymbols="1"><pane ySplit="${CATALOG_HEADER_ROW}" topLeftCell="A${CATALOG_HEADER_ROW + 1}" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A${CATALOG_HEADER_ROW + 1}" sqref="A${CATALOG_HEADER_ROW + 1}"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="15" outlineLevelCol="1"/><cols>${cols}</cols><sheetData>${out.join("")}</sheetData><dataValidations count="${validations.length}">${validations.join("")}</dataValidations></worksheet>`;
 }
 
+/** Cột "Khi tạo mới" của sheet hướng dẫn: bắt buộc / nên điền / tự sinh / tuỳ chọn. */
+function requirement(c: SheetColumn): string {
+  if (c.required) return "Bắt buộc";
+  if (c.key === "name_my" || c.key === "name_en") return "Bắt buộc (một trong hai tên)";
+  if (c.key === "weight_g") return "Bắt buộc trước khi đăng (kho nhập VN)";
+  if (c.key === "description_my" || c.key === "description_en") return "Nên điền";
+  if (c.key === "sku" || c.key === "lot_no") return "Để trống = tự sinh";
+  if (c.key === "price_mmk" || c.key === "affiliate_commission_mmk") return "Không dùng (SKU mới giá 0)";
+  if (c.key === "qty") return "Tuỳ chọn (có = tạo phiếu nhập nháp)";
+  if (c.key === "unit_cost") return "Bắt buộc nếu nhập tồn";
+  return "Tuỳ chọn";
+}
+
 function guideSheet(columns: SheetColumn[]) {
   const rules = [
-    "Tạo sản phẩm mới: chỉ cần một tên (Myanmar hoặc tiếng Anh), Thương hiệu và Danh mục. SKU tự sinh. Sản phẩm mới ở trạng thái ẨN, chưa có giá bán; đặt giá ở bước 3 trên website.",
-    "Nhiều màu/dung tích: mỗi loại một dòng, cùng tên và thương hiệu, khác cột Biến thể.",
-    "Cột phụ được thu gọn: bấm dấu + phía trên cột để mở mô tả, khối lượng, SKU, hạn dùng, phí đưa về kho và số lô. Tạo mới để trống SKU; khối lượng có thể điền ở bước Nhập kho.",
-    "Cập nhật: tải file 'Danh sách sản phẩm hiện có', giữ SKU và sửa thông tin cần đổi. Ô trống = giữ nguyên. Giá bán và hoa hồng chỉnh ở bước 3; không đổi kho bán/combo qua Excel.",
-    "Không nhập tồn: để trống toàn bộ cột xanh, kể cả hạn và số lô. Có nhập tồn: cần Số lượng nhập + Giá mua (VND cho kho nhập Việt Nam, MMK cho kho mua tại Myanmar). Giá mua để tính vốn, không phải giá bán. Phiếu nhập là NHÁP, kiểm tra rồi Ghi sổ mới có tồn.",
-    "Hàng có hạn dùng mà để trống Hạn sử dụng → lô chưa biết hạn, chưa bán được đến khi cập nhật hạn thật.",
+    "Bắt buộc khi tạo mới (*): ít nhất một tên (Myanmar hoặc tiếng Anh; thiếu tên nào dùng tên còn lại), Thương hiệu (chọn hoặc gõ tên mới) và Danh mục (phải có sẵn — tạo ở trang Danh mục trước).",
+    "Nên điền ngay: Khối lượng (g) — bắt buộc trước khi gửi duyệt / đăng bán với kho hàng nhập Việt Nam; Mô tả Myanmar và tiếng Anh — trang tiếng Anh không tự lấy mô tả Myanmar.",
+    "Nhiều màu/dung tích: mỗi loại một dòng, cùng tên và thương hiệu, khác cột Biến thể. Để trống Biến thể = một loại tiêu chuẩn.",
+    "Cột thu gọn (bấm dấu + phía trên cột): Cách dùng, Thành phần, Bảo quản, Hạn sau mở nắp (PAO), Có hạn dùng, SKU, Phí đưa về kho, Số lô. Tạo mới để trống SKU.",
+    "Hệ thống tự sinh: mã sản phẩm (đường dẫn), SKU, số lô. Sản phẩm mới ở trạng thái ẨN, CHƯA DUYỆT, giá bán 0.",
+    "Làm tiếp trên trang sản phẩm để khách thấy: Ghi sổ phiếu nhập (nếu có tồn) → đặt Giá bán ở bước 3 → thêm Ảnh (nên có) → Gửi duyệt → Duyệt → Đăng bán. Điều kiện đăng: giá > 0, có khối lượng (kho nhập VN), kho bán hợp lệ, đã duyệt.",
+    "Cập nhật: tải file 'Danh sách sản phẩm hiện có', giữ SKU và sửa thông tin cần đổi. Ô trống = giữ nguyên (không xoá nội dung qua Excel). Không đổi kho bán / combo qua Excel. Cột Giá bán, Hoa hồng CTV chỉ có trong file của người có quyền giá và chỉ sửa SKU đã có.",
+    "Nhập tồn (cột xanh, tuỳ chọn): Số lượng + Giá mua (VND cho kho nhập Việt Nam, MMK cho kho mua tại Myanmar). Giá mua để tính vốn, không phải giá bán. Phiếu nhập là NHÁP, kiểm tra rồi Ghi sổ mới có tồn. Số viết 150000, 150,000 hoặc 150.000 đều được.",
+    "Hàng có hạn dùng mà để trống Hạn sử dụng → lô chưa biết hạn, chưa bán được đến khi cập nhật hạn thật. Ngày theo dd/mm/yyyy.",
     "Luôn bấm Xem trước để kiểm tra; chỉ khi không còn lỗi mới xác nhận được.",
   ];
   const head = row(1, [cell("A1", "Hướng dẫn nhập / cập nhật sản phẩm", S.title)], 24);
   const ruleRows = rules.map((r, i) => row(i + 3, [cell(`A${i + 3}`, `${i + 1}. ${r}`, S.wrap)], 44));
   const start = rules.length + 4;
   const table = [
-    row(start, [cell(`A${start}`, "Cột", S.guideHead), cell(`B${start}`, "Bắt buộc khi tạo mới", S.guideHead), cell(`C${start}`, "Hướng dẫn", S.guideHead)]),
-    ...columns.map((c, i) => row(start + 1 + i, [cell(`A${start + 1 + i}`, c.label, S.text), cell(`B${start + 1 + i}`, c.required ? "Có" : "", S.text), cell(`C${start + 1 + i}`, c.hint, S.wrap)], 44)),
+    row(start, [cell(`A${start}`, "Cột", S.guideHead), cell(`B${start}`, "Khi tạo mới", S.guideHead), cell(`C${start}`, "Hướng dẫn", S.guideHead)]),
+    ...columns.map((c, i) => row(start + 1 + i, [cell(`A${start + 1 + i}`, c.label, S.text), cell(`B${start + 1 + i}`, requirement(c), S.text), cell(`C${start + 1 + i}`, c.hint, S.wrap)], 44)),
   ];
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetFormatPr defaultRowHeight="15"/><cols><col min="1" max="1" width="26" customWidth="1"/><col min="2" max="2" width="18" customWidth="1"/><col min="3" max="3" width="90" customWidth="1"/></cols><sheetData>${[head, ...ruleRows, ...table].join("")}</sheetData><mergeCells count="${rules.length + 1}"><mergeCell ref="A1:C1"/>${rules.map((_, i) => `<mergeCell ref="A${i + 3}:C${i + 3}"/>`).join("")}</mergeCells></worksheet>`;

@@ -1,7 +1,8 @@
 import { slugify } from "./slug";
 
-export function suggestProductSlug(nameEn: string, nameMy: string): string {
-  return slugify(nameEn.trim() || nameMy.trim(), "product");
+/** `fallback`: gốc khi tên không có chữ Latin (tên chỉ có tiếng Myanmar) — vd slug thương hiệu, thay cho "product". */
+export function suggestProductSlug(nameEn: string, nameMy: string, fallback = "product"): string {
+  return slugify(nameEn.trim() || nameMy.trim(), slugify(fallback, "product"));
 }
 
 export function suggestVariantSku(slug: string, index: number): string {
@@ -37,9 +38,14 @@ export async function resolveProductIdentifiers<T extends Identifiers>(
     return candidate;
   };
   const slug = !input.id && input.autoSlug ? await unique("slug", input.slug, 80) : input.slug;
+  // Slug tự sinh bị đổi để không trùng (vd "kem-2") → SKU tự sinh theo slug mới ("KEM-2-01"), không phải "KEM-01-2".
+  const oldPrefix = `${input.slug.slice(0, 30).toUpperCase()}-`;
+  const newPrefix = `${slug.slice(0, 30).toUpperCase()}-`;
   const variants = [];
   for (const v of input.variants) {
-    variants.push({ ...v, sku: !v.id && v.autoSku ? await unique("sku", v.sku, 40) : v.sku });
+    const auto = !v.id && v.autoSku;
+    const base = auto && slug !== input.slug && v.sku.startsWith(oldPrefix) ? newPrefix + v.sku.slice(oldPrefix.length) : v.sku;
+    variants.push({ ...v, sku: auto ? await unique("sku", base, 40) : v.sku });
   }
   return { ...input, slug, variants };
 }

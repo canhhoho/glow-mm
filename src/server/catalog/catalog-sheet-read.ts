@@ -1,7 +1,7 @@
 import "server-only";
 import { readSheet, type CellValue } from "read-excel-file/node";
 import { parseCsv, toCsv } from "@/lib/csv";
-import { ALL_SHEET_COLUMNS, CATALOG_SHEET, sheetHeaderKey } from "@/lib/catalog-sheet";
+import { ALL_SHEET_COLUMNS, CATALOG_SHEET, normalizeNumberText, sheetHeaderKey } from "@/lib/catalog-sheet";
 
 /** Đọc file nhập/cập nhật sản phẩm (một sheet). Trả CSV khoá chuẩn + số dòng Excel để báo lỗi. */
 
@@ -40,7 +40,11 @@ export function sheetRowsToCsv(rows: (CellValue | Date | null)[][]) {
     data.push(columns.map((key) => {
       const value = row[keys.indexOf(key)];
       if (value == null || String(value).trim() === "") return "";
-      return TYPES.get(key) === "date" ? dateValue(value, i + 1) : String(value).trim();
+      const type = TYPES.get(key);
+      if (type === "date") return dateValue(value, i + 1);
+      // Số (tiền, số lượng, khối lượng, PAO): ô số của Excel giữ nguyên; ô chữ bỏ phân cách nghìn.
+      if (type === "money" || type === "whole" || type === "positive") return typeof value === "number" ? String(value) : normalizeNumberText(String(value));
+      return String(value).trim();
     }));
     lines.push(i + 1);
   }

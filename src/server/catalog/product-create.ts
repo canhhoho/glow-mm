@@ -6,6 +6,7 @@ import { suggestProductSlug, suggestVariantSku } from "@/lib/product-identifiers
 import { PRODUCT_EDIT_INCLUDE, toProductEditData } from "./admin-queries";
 import { productCopyDraft } from "./product-copy";
 import { CatalogError, saveProduct } from "./products";
+import { brandSlug } from "./brands";
 
 /**
  * Bước 1 "Tạo sản phẩm" (kế hoạch quy trình 5 bước, G1): chỉ tên, thương hiệu, danh mục, kho bán, phân loại.
@@ -49,7 +50,9 @@ export async function createProduct(raw: unknown, userId: string) {
   if (input.copyFromId && !source) throw new CatalogError("Sản phẩm nguồn không còn tồn tại");
   const draft = source ? productCopyDraft(toProductEditData(source)) : null;
 
-  const slug = suggestProductSlug(input.nameEn, input.nameMy);
+  // Tên chỉ có chữ Myanmar → mã SP theo thương hiệu (giống nhập Excel) thay vì "product".
+  const brandName = input.brandName || (input.brandId ? (await prisma.brand.findUnique({ where: { id: input.brandId }, select: { name: true } }))?.name : "") || "";
+  const slug = suggestProductSlug(input.nameEn, input.nameMy, brandSlug(brandName) || "product");
   const labels = input.kind === "combo" ? [input.defaultLabel] : input.labels.length ? input.labels : [input.defaultLabel];
   const variants = labels.map((label, index) => {
     // Sao chép: giữ khối lượng / ngưỡng tồn của biến thể nguồn cùng vị trí; giá và hoa hồng để bước 3.

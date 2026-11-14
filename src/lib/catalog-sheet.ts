@@ -33,11 +33,16 @@ export const CATALOG_COLUMNS: SheetColumn[] = [
   { key: "brand", label: "Thương hiệu", group: "product", type: "text", width: 22, required: true, list: "brands", hint: "Chọn trong danh sách hoặc gõ tên mới — thương hiệu mới sẽ được tạo." },
   { key: "category", label: "Danh mục", group: "product", type: "text", width: 26, required: true, list: "categories", hint: "Chọn trong danh sách (nhận cả tên hoặc mã danh mục).", aliases: ["Mã danh mục"] },
   { key: "variant_label", label: "Biến thể", group: "product", type: "text", width: 18, hint: "Dung tích, kích cỡ hoặc màu. Để trống nếu sản phẩm chỉ có một loại.", aliases: ["Biến thể (dung tích/màu)"] },
-  { key: "price_mmk", label: "Giá bán (MMK)", group: "product", type: "money", width: 16, hint: "Chỉ cập nhật giá SKU đã có (để trống = giữ giá cũ). SKU mới bỏ qua cột này — đặt giá ở bước 3 trên trang sản phẩm." },
-  { key: "weight_g", label: "Khối lượng (g)", group: "product", type: "whole", width: 15, hint: "Gram. Cần trước khi mở bán hàng kho nhập từ Việt Nam." },
+  { key: "price_mmk", label: "Giá bán (MMK)", group: "product", type: "money", width: 16, hint: "Chỉ có trong file sản phẩm hiện có của người có quyền giá. Chỉ sửa giá SKU đã có (trống = giữ giá; đổi giá cần duyệt lại). SKU mới luôn vào giá 0 — đặt giá ở bước 3 trên trang sản phẩm." },
+  { key: "weight_g", label: "Khối lượng (g)", group: "product", type: "whole", width: 15, hint: "Gram, số nguyên. Kho hàng nhập Việt Nam: bắt buộc trước khi gửi duyệt / đăng bán (tính phí ship vào giá). Kho mua tại Myanmar: tuỳ chọn." },
   { key: "affiliate_commission_mmk", label: "Hoa hồng CTV (MMK/cái)", group: "product", type: "money", width: 18, hint: "Số tiền CTV nhận cho mỗi cái bán ra. Để trống = theo % của CTV (dòng cập nhật: giữ mức cũ). Muốn bỏ mức riêng thì xoá trong trang sản phẩm.", aliases: ["Hoa hồng CTV"] },
-  { key: "description_my", label: "Mô tả Myanmar", group: "product", type: "text", width: 34, hint: "Tuỳ chọn. Có thể xuống dòng trong một ô." },
-  { key: "description_en", label: "Mô tả tiếng Anh", group: "product", type: "text", width: 34, hint: "Tuỳ chọn." },
+  { key: "description_my", label: "Mô tả Myanmar", group: "product", type: "text", width: 34, hint: "Khách thấy trên trang sản phẩm (tiếng Myanmar). Nên điền; có thể xuống dòng trong một ô." },
+  { key: "description_en", label: "Mô tả tiếng Anh", group: "product", type: "text", width: 34, hint: "Khách thấy ở trang tiếng Anh — không tự lấy mô tả Myanmar, nên điền cả hai." },
+  { key: "usage_my", label: "Cách dùng Myanmar", group: "product", type: "text", width: 30, hint: "Tuỳ chọn. Hiện ở mục Cách dùng trên trang sản phẩm (tiếng Myanmar)." },
+  { key: "usage_en", label: "Cách dùng tiếng Anh", group: "product", type: "text", width: 30, hint: "Tuỳ chọn. Hiện ở trang tiếng Anh." },
+  { key: "ingredients", label: "Thành phần", group: "product", type: "text", width: 30, hint: "Tuỳ chọn. Một nội dung dùng cho mọi ngôn ngữ (thường là bảng INCI)." },
+  { key: "storage_note", label: "Bảo quản", group: "product", type: "text", width: 24, hint: "Tuỳ chọn. Ví dụ: nơi khô ráo, tránh ánh nắng." },
+  { key: "pao_months", label: "Hạn sau mở nắp (tháng)", group: "product", type: "positive", width: 16, hint: "Tuỳ chọn. Số tháng dùng được sau khi mở nắp (ký hiệu PAO, ví dụ 12). Khác với hạn sử dụng của lô." },
   { key: "warehouse_code", label: "Kho bán", group: "product", type: "text", width: 12, list: "warehouses", hint: "Mã kho bán. Để trống = kho mặc định. Sản phẩm đã có: đổi kho trong trang sản phẩm.", aliases: ["Mã kho bán"] },
   { key: "has_expiry", label: "Có hạn dùng", group: "product", type: "yesno", width: 13, list: "yesno", hint: "Có (mặc định) hoặc Không (túi, phụ kiện...).", aliases: ["expiry_policy", "Quản lý hạn sử dụng"] },
   { key: "sku", label: "SKU", group: "product", type: "text", width: 20, hint: "Để trống khi tạo mới (tự sinh). Điền SKU đã có để cập nhật sản phẩm đó.", aliases: ["Mã SKU"] },
@@ -51,11 +56,6 @@ export const CATALOG_COLUMNS: SheetColumn[] = [
 /** Cột của mẫu cũ: không có trên mẫu mới nhưng file cũ có thì vẫn đọc. */
 export const LEGACY_COLUMNS: SheetColumn[] = [
   { key: "product_slug", label: "Mã sản phẩm", group: "product", type: "text", width: 0, hint: "" },
-  { key: "usage_my", label: "Cách dùng Myanmar", group: "product", type: "text", width: 0, hint: "" },
-  { key: "usage_en", label: "Cách dùng tiếng Anh", group: "product", type: "text", width: 0, hint: "" },
-  { key: "ingredients", label: "Thành phần", group: "product", type: "text", width: 0, hint: "" },
-  { key: "storage_note", label: "Bảo quản", group: "product", type: "text", width: 0, hint: "" },
-  { key: "pao_months", label: "Hạn sau mở nắp (tháng)", group: "product", type: "positive", width: 0, hint: "" },
   { key: "mfg_date", label: "Ngày sản xuất", group: "stock", type: "date", width: 0, hint: "" },
   { key: "stock_type", label: "Loại hàng", group: "stock", type: "text", width: 0, hint: "" },
   { key: "expiry_status", label: "Trạng thái hạn dùng", group: "stock", type: "text", width: 0, hint: "" },
@@ -74,6 +74,16 @@ export function parseYesNo(value: string): boolean | undefined | null {
   if (["có", "co", "yes", "y", "true", "1", "dated", "x"].includes(v)) return true;
   if (["không", "khong", "no", "n", "false", "0", "none"].includes(v)) return false;
   return null;
+}
+
+/**
+ * Số trong ô Excel/CSV → chuỗi số chuẩn: bỏ khoảng trắng; "150,000" / "150.000" / "1.250.000" (phân cách nghìn) → "150000".
+ * Dấu chấm/phẩy không theo nhóm 3 số (vd "1.5") giữ nguyên để báo lỗi "phải là số nguyên" thay vì đoán sai.
+ */
+export function normalizeNumberText(value: string): string {
+  const v = value.replace(/[\s\u00a0]/g, "");
+  if (/^-?\d{1,3}(?:[.,]\d{3})+$/.test(v)) return v.replace(/[.,]/g, "");
+  return v;
 }
 
 const fold = (s: string) => s.normalize("NFC").toLowerCase().replace(/\*/g, "").trim();

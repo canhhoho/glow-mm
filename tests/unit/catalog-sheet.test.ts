@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readSheet } from "read-excel-file/node";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
-import { CATALOG_HEADER_ROW, CATALOG_GUIDE_SHEET, CATALOG_LIST_SHEET, CATALOG_SHEET, parseYesNo, sheetHeaderKey } from "@/lib/catalog-sheet";
+import { CATALOG_HEADER_ROW, CATALOG_GUIDE_SHEET, CATALOG_LIST_SHEET, CATALOG_SHEET, normalizeNumberText, parseYesNo, sheetHeaderKey } from "@/lib/catalog-sheet";
 import { parseCsvObjects } from "@/lib/csv";
 import { buildCatalogWorkbook } from "@/server/catalog/catalog-workbook";
 import { readCatalogFile, sheetRowsToCsv } from "@/server/catalog/catalog-sheet-read";
@@ -42,14 +42,14 @@ describe("File Excel nhập/cập nhật sản phẩm (một sheet)", () => {
     expect(parseCsvObjects(csv)[0]).not.toHaveProperty("price_mmk");
   });
 
-  it("mẫu đơn giản: 9 cột hiện, cột phụ mở được và SKU luôn hiện trên file cập nhật", async () => {
+  it("mẫu: cột chính + khối lượng + mô tả hiện, nội dung phụ thu gọn và SKU luôn hiện trên file cập nhật", async () => {
     for (const rows of [[], [{ name_en: "Cream", brand: "Sen Việt", category: "Skincare", sku: "000123" }]]) {
       const bytes = buildCatalogWorkbook(lists, rows);
       const sheet = strFromU8(unzipSync(bytes)["xl/worksheets/sheet1.xml"]);
       const header = (await readSheet(Buffer.from(bytes), CATALOG_SHEET))[CATALOG_HEADER_ROW - 1].map(sheetHeaderKey);
       const colTags = [...sheet.matchAll(/<col\s[^>]*\/>/g)].map((m) => m[0]);
       const visible = header.filter((_, i) => !colTags[i].includes('hidden="1"'));
-      expect(visible).toEqual(["name_my", "name_en", "brand", "category", "variant_label", "warehouse_code", ...(rows.length ? ["sku"] : []), "qty", "expiry_date", "unit_cost"]);
+      expect(visible).toEqual(["name_my", "name_en", "brand", "category", "variant_label", "weight_g", "description_my", "description_en", "warehouse_code", ...(rows.length ? ["sku"] : []), "qty", "expiry_date", "unit_cost"]);
       expect(sheet).toContain('showOutlineSymbols="1"');
       expect(sheet).toContain('outlineLevel="1"');
       expect(sheet).toContain('collapsed="1"');
@@ -63,8 +63,11 @@ describe("File Excel nhập/cập nhật sản phẩm (một sheet)", () => {
     const { csv } = await readCatalogFile(asFile(bytes));
     expect(parseCsvObjects(csv)[0]).toMatchObject({ name_en: "Cream", brand: "Sen Việt", category: "Skincare", sku: "", qty: "", unit_cost: "" });
     const guide = (await readSheet(Buffer.from(bytes), CATALOG_GUIDE_SHEET)).flat().join(" ");
-    expect(guide).toContain("chỉ cần một tên");
-    expect(guide).toContain("đặt giá ở bước 3");
+    expect(guide).toContain("ít nhất một tên");
+    expect(guide).toContain("đặt Giá bán ở bước 3");
+    expect(guide).toContain("Khối lượng (g) — bắt buộc trước khi gửi duyệt");
+    expect(guide).toContain("Bắt buộc (một trong hai tên)");
+    for (const label of ["Cách dùng Myanmar", "Thành phần", "Bảo quản", "Hạn sau mở nắp (tháng)"]) expect(guide).toContain(label);
     expect(guide).toContain("Giá mua để tính vốn, không phải giá bán");
     expect(guide).not.toContain("Danh mục, Giá bán;");
   });
@@ -75,6 +78,13 @@ describe("File Excel nhập/cập nhật sản phẩm (một sheet)", () => {
     expect(ok.lines).toEqual([3, 5]);
     expect(parseCsvObjects(ok.csv).map((r) => r.expiry_date)).toEqual(["2028-03-31", "2029-02-01"]);
     expect(() => sheetRowsToCsv([header, ["A", "B", "C", "31/02/2028", "X"]])).toThrow("Dòng 2");
+  });
+
+  it("ô số: bỏ phân cách nghìn (150.000 / 150,000 / khoảng trắng), giữ số Excel, số lẻ để báo lỗi", () => {
+    expect(["150.000", "150,000", "1.250.000", " 150 000 ", "150000", "1.5", "12"].map(normalizeNumberText)).toEqual(["150000", "150000", "1250000", "150000", "150000", "1.5", "12"]);
+    const header = ["Tên Myanmar", "Thương hiệu", "Danh mục", "Số lượng nhập", "Giá mua/đv", "Khối lượng (g)", "Hạn sau mở nắp (tháng)"];
+    const read = sheetRowsToCsv([header, ["A", "B", "C", "1,200", "150.000", 85, "12"]]);
+    expect(parseCsvObjects(read.csv)[0]).toMatchObject({ qty: "1200", unit_cost: "150000", weight_g: "85", pao_months: "12" });
   });
 
   it("nhận cột của mẫu cũ (khoá và nhãn), chặn cột lặp và thiếu cột chính", () => {
