@@ -1,10 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import { customerAuthClient } from "@/lib/customer-auth-client";
-import { phoneRegisterAction, phoneSignInAction } from "@/server/accounts/actions";
-import { Notice, outlineButton, primaryButton, storeField } from "./ui";
+import { phoneRegisterAction, phoneSignInAction, requestPasswordResetAction } from "@/server/accounts/actions";
+import { Notice, primaryButton, storeField } from "./ui";
 import { PasswordToggle } from "@/components/ui/password-toggle";
 
 /**
@@ -71,32 +71,6 @@ function EmailInput() {
 const loginUrl = (prefix: string, next: string, extra = "") =>
   `${prefix}/login?next=${encodeURIComponent(next)}${extra}`;
 
-export function GoogleButton({ prefix, next }: { prefix: string; next: string }) {
-  const t = useTranslations("Auth");
-  const [pending, setPending] = useState(false);
-  return (
-    <button
-      type="button"
-      disabled={pending}
-      onClick={async () => {
-        setPending(true);
-        const { error } = await customerAuthClient.signIn.social({
-          provider: "google",
-          callbackURL: next,
-          errorCallbackURL: loginUrl(prefix, next),
-        });
-        if (error) setPending(false);
-      }}
-      className={`${outlineButton} w-full`}
-    >
-      <svg viewBox="0 0 24 24" className="size-5" aria-hidden>
-        <path fill="currentColor" d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" />
-      </svg>
-      {t("google")}
-    </button>
-  );
-}
-
 /**
  * Đăng nhập bằng SĐT (P17, luôn có) hoặc email (khi bật gửi email): ô nhập có "@" → email, còn lại → SĐT.
  * SĐT đi qua Server Action (chuẩn hoá số, giới hạn số lần thử) rồi server chuyển trang.
@@ -160,8 +134,15 @@ export function LoginForm({ prefix, next, emailEnabled }: { prefix: string; next
 export function PhoneRegisterForm({ locale, next }: { locale: string; next: string }) {
   const t = useTranslations("Auth");
   const [state, action, pending] = useActionState(phoneRegisterAction, undefined);
+  // Gửi qua onSubmit (không dùng `action=`): React 19 reset form sau mỗi lần action chạy → báo lỗi thì khách mất hết ô đã nhập.
+  // Thành công thì server chuyển trang nên không cần reset.
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    startTransition(() => action(data));
+  }
   return (
-    <form action={action} className="space-y-3">
+    <form onSubmit={onSubmit} className="space-y-3">
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="next" value={next} />
       <label className="block space-y-1 text-sm">
@@ -231,6 +212,45 @@ export function RegisterForm({ prefix, next }: { prefix: string; next: string })
       {error && <Notice tone="danger">{t(`err.${error}`, { min: 8 })}</Notice>}
       <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
         {t("submitRegister")}
+      </button>
+    </form>
+  );
+}
+
+/**
+ * Quên mật khẩu bằng SĐT: khách nhập SĐT + mật khẩu MỚI → yêu cầu chờ cửa hàng xác nhận trên web admin.
+ * Luôn hiện cùng một câu khi gửi được (không lộ SĐT có tài khoản hay không). Gửi qua onSubmit để lỗi không xoá ô đã nhập.
+ */
+export function PhoneResetRequestForm() {
+  const t = useTranslations("Auth");
+  const [state, action, pending] = useActionState(requestPasswordResetAction, undefined);
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    startTransition(() => action(data));
+  }
+  if (state?.ok) return <Notice tone="success">{t("resetRequested")}</Notice>;
+  return (
+    <form onSubmit={onSubmit} className="space-y-3">
+      <label className="block space-y-1 text-sm">
+        <span>{t("phone")}</span>
+        <input
+          name="phone"
+          required
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          maxLength={30}
+          placeholder={t("phoneHint")}
+          className={storeField}
+        />
+      </label>
+      <PasswordInput name="password" autoComplete="new-password" label={t("newPassword")} />
+      <p className="-mt-2 text-xs text-muted-foreground">{t("passwordHint")}</p>
+      <PasswordInput name="confirmPassword" autoComplete="new-password" label={t("confirmPassword")} />
+      {state?.error && <Notice tone="danger">{t(`err.${state.error}`, { min: 8 })}</Notice>}
+      <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
+        {t("submitResetRequest")}
       </button>
     </form>
   );

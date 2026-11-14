@@ -1,10 +1,12 @@
 import { getTranslations } from "next-intl/server";
-import { ChevronDown, Info, Mail, Phone, UserCheck, Users, UserX } from "lucide-react";
+import { Check, ChevronDown, Info, KeyRound, Mail, Phone, UserCheck, Users, UserX, X } from "lucide-react";
 import { fmtDateTime, fmtInt } from "@/lib/format";
 import { requirePagePermission } from "@/server/auth/session";
 import { isPhoneEmail } from "@/server/auth/customer-policy";
 import { listCustomerAccounts } from "@/server/accounts/admin";
-import { deleteCustomerAccountAction, setCustomerActiveAction } from "@/server/accounts/actions";
+import { listPasswordResetRequests } from "@/server/accounts/password-reset";
+import { decidePasswordResetAction, deleteCustomerAccountAction, setCustomerActiveAction } from "@/server/accounts/actions";
+import { ActionButton } from "@/components/admin/action-button";
 import { AccountRowActions } from "@/components/admin/account-row-actions";
 import { Badge, ClearFilters, DataTable, FilterBar, FilterButton, Page, PageHeader, SearchInput, StatCard, Td } from "@/components/admin/ui";
 
@@ -16,12 +18,56 @@ export default async function CustomerAccountsPage({ searchParams }: PageProps<"
   await requirePagePermission("users:manage");
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
-  const [t, accounts] = await Promise.all([getTranslations("Customers"), listCustomerAccounts(q)]);
+  const [t, accounts, resets] = await Promise.all([getTranslations("Customers"), listCustomerAccounts(q), listPasswordResetRequests()]);
   const activeCount = accounts.filter((a) => a.active).length;
 
   return (
     <Page>
       <PageHeader title={(await getTranslations("Nav"))("customers")} description={t("description")} />
+      {resets.length > 0 && (
+        <section aria-labelledby="reset-requests-title" data-testid="reset-requests" className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
+          <div className="space-y-1">
+            <h2 id="reset-requests-title" className="flex items-center gap-2 font-medium">
+              <KeyRound className="size-4" aria-hidden />
+              {t("resetRequestsTitle", { count: resets.length })}
+            </h2>
+            <p className="text-xs text-muted-foreground">{t("resetRequestsHint")}</p>
+          </div>
+          <ul className="space-y-2">
+            {resets.map((r) => (
+              <li key={r.id} data-testid="reset-request" className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg bg-card p-3 ring-1 ring-border">
+                <div className="min-w-0 flex-1 space-y-0.5 text-sm">
+                  <div className="font-medium break-words">{r.name}</div>
+                  <div className="font-mono text-xs text-muted-foreground">{r.phone}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {t("requestedAt")}: {fmtDateTime(r.createdAt)} · {t("orders")}: {r.orders} · {t("createdAt")}: {fmtDateTime(r.accountCreatedAt)}
+                    {!r.active && <> · <Badge tone="danger">{t("locked")}</Badge></>}
+                  </div>
+                </div>
+                <div className="flex items-start gap-1">
+                  <ActionButton
+                    action={decidePasswordResetAction}
+                    fields={{ id: r.id, decision: "approve" }}
+                    label={t("approveReset")}
+                    icon={<Check aria-hidden="true" />}
+                    iconOnly={false}
+                    confirm={t("approveResetConfirm", { name: r.name, phone: r.phone })}
+                  />
+                  <ActionButton
+                    action={decidePasswordResetAction}
+                    fields={{ id: r.id, decision: "reject" }}
+                    label={t("rejectReset")}
+                    variant="outline"
+                    icon={<X aria-hidden="true" />}
+                    iconOnly={false}
+                    confirm={t("rejectResetConfirm", { name: r.name })}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" data-testid="customer-summary">
         <StatCard icon={<Users />} tone="brand" label={t("listCount")} value={fmtInt(accounts.length)} />
         <StatCard icon={<UserCheck />} tone="success" label={t("active")} value={fmtInt(activeCount)} />

@@ -18,6 +18,7 @@ const BADGE_TONE: Record<NavCountKey, NonNullable<ShellItem["badge"]>["tone"]> =
   quarantineLots: "neutral",
   blockedLots: "warning",
   pendingApplications: "brand",
+  passwordResets: "brand",
   catalogIncomplete: "warning",
   catalogReview: "warning",
   catalogPublished: "success",

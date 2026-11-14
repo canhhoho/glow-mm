@@ -29,6 +29,7 @@ test("quên mật khẩu → link email → đặt mật khẩu mới → đăng
   await page.context().clearCookies();
   const since = Date.now();
   await page.goto("/en/forgot-password");
+  await page.getByText("Reset by email instead").click(); // cách chính là SĐT + chờ admin xác nhận; email nằm trong khối thu gọn
   await page.getByLabel("Email").fill(email);
   await page.getByRole("button", { name: "Send link" }).click();
   await expect(page.getByText(`If an account exists for ${email}`)).toBeVisible();

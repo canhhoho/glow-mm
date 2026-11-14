@@ -262,7 +262,7 @@ async function variantStockRows(variants: StockVariant[], now: Date, blockDays: 
   const ids = variants.map((v) => v.id);
   const [rows, available, held] = await Promise.all([
     loadRows({ batch: { variantId: { in: ids } } }),
-    prisma.$transaction((tx) => availableToSell(tx, ids, { now, blockDays })),
+    availableToSell(prisma, ids, { now, blockDays }), // chỉ đọc: không cần transaction 5s
     prisma.reservation.groupBy({
       by: ["variantId"],
       where: { variantId: { in: ids }, status: "ACTIVE", OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] },

@@ -1,5 +1,7 @@
 # Hướng dẫn đưa T&C Cosmetics lên tandcstore.com và server 10.201.42.65
 
+> **Cập nhật 14/11/2026:** đăng nhập **Google đã gỡ khỏi code** (làm lại sau) — bỏ qua mọi bước/mục kiểm tra về Google (OAuth, redirect URI, `GOOGLE_CLIENT_*`). Khách quên mật khẩu tự gửi yêu cầu ở `/forgot-password`, admin Xác nhận ở Tài khoản → Khách hàng (có migration mới `20261114120000_password_reset_requests` — cần backup trước khi cập nhật server). Xem DEPLOY.md §1.4.
+
 > Cập nhật: 2026-10-30. **Đang làm theo cách đi thẳng lên server (không qua giai đoạn A): dùng danh sách lệnh [lenh-trien-khai-tandcstore.md](lenh-trien-khai-tandcstore.md).** File này giải thích chi tiết + xử lý sự cố (PHẦN F); tham khảo thêm [DEPLOY.md](../DEPLOY.md).
 > Đánh dấu `[x]` khi xong từng ô. `<...>` = chỗ cần điền. **[CẦN XÁC MINH]** = giao diện/chính sách dịch vụ ngoài có thể đã đổi — làm theo màn hình thật.
 
@@ -68,7 +70,7 @@
 - [ ] **Deployments → Redeploy** bản Production mới nhất. Bắt buộc build lại: canonical, sitemap, Open Graph và phiên đăng nhập (Better Auth) đều dùng `APP_URL`.
 - [ ] Vercel → Domains → `glow-mm.vercel.app` → **Redirect to `tandcstore.com`** **[CẦN XÁC MINH Vercel cho phép với tên miền .vercel.app]**. Link cũ (kể cả link CTV `?ref=MAUNG`) tự chuyển sang tên miền mới — đăng nhập chỉ chạy trên đúng `APP_URL`. Nếu Vercel không cho, báo Claude thêm chuyển hướng trong code.
 
-## A4. Đăng nhập Google (bắt buộc — 5 phút)
+## A4. ~~Đăng nhập Google~~ — BỎ QUA (đã gỡ khỏi code 14/11/2026)
 - [ ] Google Cloud Console → **Google Auth Platform → Clients** → client web hiện có → thêm (giữ URI cũ):
   - Authorized JavaScript origins: `https://tandcstore.com`
   - Authorized redirect URIs: `https://tandcstore.com/api/customer-auth/callback/google`
@@ -101,7 +103,7 @@ Hiện dùng SĐT nên giữ `EMAIL_DRIVER=none` (mặc định) và **chuyển 
 - [ ] `https://www.tandcstore.com` và `https://glow-mm.vercel.app` → chuyển về `https://tandcstore.com`.
 - [ ] `https://tandcstore.com/sitemap.xml`, `/robots.txt` chỉ chứa `tandcstore.com`.
 - [ ] `/en/register`: đăng ký bằng **SĐT + mật khẩu** (số thử) → vào `/en/account`; đăng xuất → `/en/login` đăng nhập lại bằng SĐT.
-- [ ] `/en/login`: **không** có form email; có dòng hướng dẫn quên mật khẩu (nhắn shop); nút **Google** → đăng nhập → về `/en/account`.
+- [ ] `/en/login`: **không** có form email, **không** có nút Google; có link **Quên mật khẩu?** → gửi yêu cầu → admin Xác nhận → đăng nhập bằng mật khẩu mới.
 - [ ] `/admin/customer-accounts`: tìm số thử → đặt lại mật khẩu → đăng nhập được bằng mật khẩu mới. Xong khoá/xoá tài khoản thử.
 - [ ] `/admin` (3 vai trò) và cổng `/ctv` đăng nhập được.
 - [ ] Link CTV `https://tandcstore.com/?ref=<mã CTV>` → đặt thử đơn → đơn gắn đúng CTV (rồi huỷ).

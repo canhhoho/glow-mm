@@ -1,5 +1,7 @@
 # Hướng dẫn đưa web T&C Cosmetics lên tandcstore.com
 
+> **Cập nhật 14/11/2026:** đăng nhập **Google đã gỡ khỏi code** (làm lại sau) — bỏ qua mọi bước/mục kiểm tra về Google (OAuth, redirect URI, `GOOGLE_CLIENT_*`). Khách quên mật khẩu tự gửi yêu cầu ở `/forgot-password`, admin Xác nhận ở Tài khoản → Khách hàng (có migration mới `20261114120000_password_reset_requests` — cần backup trước khi cập nhật server). Xem DEPLOY.md §1.4.
+
 > Cập nhật 2026-10-30. Dành cho người **không chuyên IT**: chỉ cần copy–dán lệnh và bấm theo hướng dẫn.
 > Tài liệu kỹ thuật chi tiết (cho người IT/Claude): [huong-dan-trien-khai-tandcstore.md](huong-dan-trien-khai-tandcstore.md).
 
@@ -325,7 +327,7 @@ tail -3 /var/log/nginx/access.log | cut -d' ' -f1
 ```
 ⛔ **Gửi kết quả cho Claude** (3 dòng địa chỉ). Claude sẽ báo là đúng hay cần chỉnh; nếu cần chỉnh, Claude gửi lệnh riêng.
 
-## Bước 10. Cho phép đăng nhập Google trên tên miền mới
+## Bước 10. ~~Cho phép đăng nhập Google trên tên miền mới~~ — BỎ QUA (Google đã gỡ khỏi code)
 
 🖱️ **LÀM TRÊN TRANG WEB Google Cloud Console** (console.cloud.google.com):
 1. Menu → **Google Auth Platform** → **Clients** → bấm vào client web đang dùng.
@@ -393,7 +395,7 @@ docker exec tandc-db-1 psql -U glow -d glow -v ON_ERROR_STOP=1 -c "BEGIN; UPDATE
 - [ ] `https://tandcstore.com`: trang chủ, ảnh sản phẩm, banner hiện đủ. `https://tandcstore.com/en`: hiện tiếng Anh.
 - [ ] `https://www.tandcstore.com` tự chuyển về `https://tandcstore.com`.
 - [ ] **Đăng ký** bằng một số điện thoại thử → vào được trang tài khoản → **đăng xuất** → **đăng nhập** lại bằng số đó.
-- [ ] Trang đăng nhập có dòng hướng dẫn "quên mật khẩu thì nhắn shop"; nút **Google** đăng nhập được.
+- [ ] Trang đăng nhập có link **Quên mật khẩu?**; gửi yêu cầu → admin Xác nhận → đăng nhập được bằng mật khẩu mới. (Không còn nút Google.)
 - [ ] `https://tandcstore.com/admin`: đăng nhập được cả 3 loại tài khoản nhân viên; mở thử 1 đơn chuyển khoản, kiểm tra nút **Đã nhận tiền**; khách không cần tải biên lai.
 - [ ] Admin → **Tài khoản khách** → tìm số thử → **đặt lại mật khẩu** → đăng nhập bằng mật khẩu mới được.
 - [ ] Cổng cộng tác viên `https://tandcstore.com/ctv` đăng nhập được.

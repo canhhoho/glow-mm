@@ -46,6 +46,7 @@ model User {
   /// Tài khoản khách (P14): đơn thuộc tài khoản + sổ địa chỉ.
   orders              Order[]          @relation("AccountOrders")
   addresses           AccountAddress[]
+  passwordResets      PasswordResetRequest[]
 
   @@map("user")
 }
@@ -1107,6 +1108,32 @@ model AffiliateApplication {
 
   @@index([status, createdAt])
   @@index([inviterId, status])
+}
+
+enum PasswordResetStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUPERSEDED
+}
+
+/// Khách quên mật khẩu (tài khoản SĐT): khách tự nhập mật khẩu mới trên web → yêu cầu chờ admin xác nhận ở web admin.
+/// Chỉ lưu HASH; hash bị xoá (null) khi yêu cầu được xác nhận / từ chối / bị thay thế / hết hạn dọn.
+model PasswordResetRequest {
+  id           String                @id @default(cuid())
+  userId       String
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone        String
+  passwordHash String?
+  status       PasswordResetStatus   @default(PENDING)
+  ip           String?
+  createdAt    DateTime              @default(now())
+  expiresAt    DateTime
+  decidedAt    DateTime?
+  decidedById  String?
+
+  @@index([status, createdAt])
+  @@index([userId, status])
 }
 
 model OrderItem {

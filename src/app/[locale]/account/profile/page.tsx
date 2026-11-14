@@ -45,7 +45,7 @@ async function ProfileContent({ params }: PageProps<"/[locale]/account/profile">
           <ChangePasswordForm locale={locale} />
         ) : (
           <p className="text-sm text-muted-foreground">
-            {t("googleOnly")}{" "}
+            {t("noPassword")}{" "}
             {emailAuthEnabled() && (
               <Link href="/forgot-password" className="inline-flex min-h-11 items-center text-accent-foreground hover:underline">
                 {ta("forgot")}

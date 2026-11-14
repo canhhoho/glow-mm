@@ -4,7 +4,7 @@ import { salesBlockDays } from "@/server/inventory/documents";
 import { availableToSell } from "@/server/orders/availability";
 import { preorderCapacity } from "@/server/orders/preorder";
 import { AWAITING_REVIEW_WHERE, labelWhere, PRODUCT_LABELS, type ProductLabel } from "./approval-rules";
-import { loadReadiness } from "./readiness";
+import { loadReadinessErrors } from "./readiness";
 
 /**
  * Số liệu SP cho dashboard (P2) — cùng quy tắc với nhãn hiển thị (§4.2, `labelWhere`), không viết cứng.
@@ -26,8 +26,8 @@ export async function catalogStats(now = new Date()) {
   ]);
 
   const drafts = await prisma.product.findMany({ where: labelWhere("DRAFT"), select: { id: true } });
-  const readiness = await loadReadiness(prisma, drafts.map((p) => p.id), now);
-  const draftIncomplete = drafts.filter((p) => (readiness.get(p.id)?.errors.length ?? 0) > 0).length;
+  const readiness = await loadReadinessErrors(prisma, drafts.map((p) => p.id));
+  const draftIncomplete = drafts.filter((p) => (readiness.get(p.id)?.length ?? 0) > 0).length;
 
   const published = await prisma.product.findMany({
     where: labelWhere("PUBLISHED"),

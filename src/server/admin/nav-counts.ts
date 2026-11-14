@@ -5,7 +5,8 @@ import { sellableCutoff } from "@/server/inventory/fefo";
 import { getNumberSetting } from "@/server/settings";
 import type { NavCountKey } from "./nav";
 import { AWAITING_REVIEW_WHERE, labelWhere } from "@/server/catalog/approval-rules";
-import { loadReadiness } from "@/server/catalog/readiness";
+import { loadReadinessErrors } from "@/server/catalog/readiness";
+import { pendingPasswordResetCount } from "@/server/accounts/password-reset";
 
 /**
  * Số đếm cho badge menu admin — chỉ tính những số được yêu cầu (theo quyền của người xem).
@@ -14,6 +15,7 @@ import { loadReadiness } from "@/server/catalog/readiness";
  *  - quarantineLots: số lô còn hàng ở khu Chờ kiểm tra.
  *  - blockedLots: số lô còn hàng (mọi vị trí) đã ngừng bán / hết hạn — như mục "Hạn dùng" ở trang Cảnh báo.
  *  - pendingApplications: đơn đăng ký CTV chờ duyệt (P11).
+ *  - passwordResets: yêu cầu đặt lại mật khẩu của khách chờ admin xác nhận.
  */
 export async function navCounts(keys: Set<NavCountKey>, now = new Date()): Promise<Partial<Record<NavCountKey, number>>> {
   const distinctLots = async (where: Prisma.StockBalanceWhereInput) =>
@@ -39,6 +41,7 @@ export async function navCounts(keys: Set<NavCountKey>, now = new Date()): Promi
   if (keys.has("pendingApplications")) {
     jobs.push(prisma.affiliateApplication.count({ where: { status: "PENDING" } }).then((n) => ["pendingApplications", n]));
   }
+  if (keys.has("passwordResets")) jobs.push(pendingPasswordResetCount(now).then((n) => ["passwordResets", n]));
   if (keys.has("catalogReview")) jobs.push(prisma.product.count({ where: AWAITING_REVIEW_WHERE }).then((n) => ["catalogReview", n]));
   if (keys.has("catalogPublished")) jobs.push(prisma.product.count({ where: labelWhere("PUBLISHED") }).then((n) => ["catalogPublished", n]));
   if (keys.has("catalogIncomplete")) {
@@ -47,8 +50,8 @@ export async function navCounts(keys: Set<NavCountKey>, now = new Date()): Promi
       prisma.product
         .findMany({ where: labelWhere("DRAFT"), select: { id: true } })
         .then(async (drafts) => {
-          const r = await loadReadiness(prisma, drafts.map((d) => d.id), now);
-          return ["catalogIncomplete", drafts.filter((d) => (r.get(d.id)?.errors.length ?? 0) > 0).length] as [NavCountKey, number];
+          const r = await loadReadinessErrors(prisma, drafts.map((d) => d.id));
+          return ["catalogIncomplete", drafts.filter((d) => (r.get(d.id)?.length ?? 0) > 0).length] as [NavCountKey, number];
         }),
     );
   }
