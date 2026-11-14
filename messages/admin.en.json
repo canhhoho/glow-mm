@@ -2259,7 +2259,7 @@
   },
   "CatalogImport": {
     "title": "Import / update products from Excel",
-    "help": "One file creates products, updates prices/details and receives stock. Always preview; you can confirm only when there are no errors.",
+    "help": "One file to create products, update their details and receive stock. New products start hidden with price 0 — set the price, add images, submit for approval and publish on the product page. Always preview; you can confirm only when there are no errors.",
     "templateBlank": "Download blank template",
     "templateCurrent": "Download current products (to update)",
     "setupHint": "Set up first:",

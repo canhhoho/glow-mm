@@ -2259,7 +2259,7 @@
   },
   "CatalogImport": {
     "title": "Nhập / cập nhật sản phẩm bằng Excel",
-    "help": "Một file cho cả tạo sản phẩm mới, cập nhật giá/thông tin và nhập tồn. Luôn xem trước, không còn lỗi mới xác nhận được.",
+    "help": "Một file cho cả tạo sản phẩm mới, cập nhật thông tin và nhập tồn. Sản phẩm mới vào trạng thái ẩn, giá 0 — đặt giá, thêm ảnh, gửi duyệt rồi đăng trên trang sản phẩm. Luôn xem trước, không còn lỗi mới xác nhận được.",
     "templateBlank": "Tải file mẫu trống",
     "templateCurrent": "Tải danh sách sản phẩm hiện có (để cập nhật)",
     "setupHint": "Cần có trước:",

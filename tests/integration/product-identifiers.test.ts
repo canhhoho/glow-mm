@@ -16,7 +16,8 @@ describe("automatic catalog identifiers", () => {
     const products = await Promise.all([saveProduct(draft, f.userId), saveProduct(draft, f.userId)]);
     expect(products.map(p => p.slug).sort()).toEqual([slug, `${slug}-2`].sort());
     const variants = await prisma.variant.findMany({ where: { productId: { in: products.map(p => p.id) } } });
-    expect(variants.map(v => v.sku).sort()).toEqual([sku, `${sku}-2`].sort());
+    // SKU tự sinh theo slug đã đổi: SP thứ hai `auto-x-2` → `AUTO-X-2-01`.
+    expect(variants.map(v => v.sku).sort()).toEqual([sku, `${slug}-2-01`.toUpperCase()].sort());
     expect(variants).toHaveLength(2);
   });
 

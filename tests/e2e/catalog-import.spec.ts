@@ -61,8 +61,8 @@ test("file lỗi vẫn hiện Xác nhận nhập; sửa file và xem trước l�
   // Chỉ kiểm tra xem trước, không ghi sản phẩm/tồn vào DB.
 });
 
-test("mẫu một sheet: tạo SP hai biến thể kèm tồn → xem trước → xác nhận → ghi sổ phiếu nháp", async ({ page }) => {
-  test.setTimeout(150_000);
+test("mẫu một sheet: tạo SP hai biến thể kèm tồn + nội dung → xác nhận → ghi sổ → giá → duyệt → đăng → khách thấy đúng", async ({ page }) => {
+  test.setTimeout(240_000);
   const suffix = Date.now();
   const name = `Excel imported ${suffix}`;
   await login(page, "admin@glow.local");
@@ -70,7 +70,12 @@ test("mẫu một sheet: tạo SP hai biến thể kèm tồn → xem trước �
   const template = await download(page, "Tải file mẫu trống");
   expect(template.name).toBe("mau-nhap-san-pham.xlsx");
   const filled = fillCatalogTemplate(template.bytes, [
-    { name_my: `နေကာခရင်မ် ${suffix}`, name_en: name, brand: "Sen Việt", category: "skincare", variant_label: "50 ml", weight_g: 90, description_en: "Imported through the Excel browser flow.", warehouse_code: "THAM", qty: 3, expiry_date: "31/03/2028", unit_cost: 100000, inbound_unit_vnd: 5000 },
+    {
+      name_my: `နေကာခရင်မ် ${suffix}`, name_en: name, brand: "Sen Việt", category: "skincare", variant_label: "50 ml", weight_g: 90,
+      description_my: "Excel ဖြင့် ထည့်သွင်းသည်။", description_en: "Imported through the Excel browser flow.",
+      usage_my: "နေ့စဉ် လိမ်းပါ။", usage_en: "Apply every morning.", ingredients: "Aqua, Zinc Oxide", storage_note: "Keep below 30°C", pao_months: 12,
+      warehouse_code: "THAM", qty: "3", expiry_date: "31/03/2028", unit_cost: "100.000", inbound_unit_vnd: 5000,
+    },
     { name_my: `နေကာခရင်မ် ${suffix}`, name_en: name, brand: "Sen Việt", category: "skincare", variant_label: "100 ml", weight_g: 140, warehouse_code: "THAM" },
   ]);
   await upload(page, "nhap.xlsx", filled);
@@ -124,6 +129,26 @@ test("mẫu một sheet: tạo SP hai biến thể kèm tồn → xem trước �
   await expect(page.getByTestId("step-price-row").first()).toContainText("Sửa tay");
   await expect(page.getByTestId("step-price-row").first()).toContainText("Giá mở bán");
   await page.screenshot({ path: "test-results/screens/product-price-step.png", fullPage: true });
+
+  // Bước 5: đăng → khách thấy đúng dữ liệu đã nhập từ Excel (tiếng Anh + tiếng Myanmar mặc định).
+  const publish = page.getByTestId("step-publish-block");
+  page.once("dialog", (d) => d.accept());
+  await publish.getByRole("button", { name: "Bật hiển thị trên web" }).click();
+  await expect(publish).toContainText("Đang hiển thị trên web", { timeout: 15_000 });
+  const slug = `excel-imported-${suffix}`;
+  await page.goto(`/en/p/${slug}`);
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { level: 1 })).toHaveText(name);
+  await expect(main).toContainText("Sen Việt");
+  await expect(main).toContainText("27,000");
+  for (const text of ["50 ml", "100 ml", "Imported through the Excel browser flow.", "Apply every morning.", "Aqua, Zinc Oxide", "Keep below 30°C", "Use within 12 months after opening", "2028-03-31"]) {
+    await expect(main).toContainText(text);
+  }
+  await page.screenshot({ path: "test-results/screens/catalog-import-storefront-en.png", fullPage: true });
+  await page.goto(`/p/${slug}`);
+  await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toHaveText(`နေကာခရင်မ် ${suffix}`);
+  await expect(page.getByRole("main")).toContainText("Excel ဖြင့် ထည့်သွင်းသည်။");
+  await expect(page.getByRole("main")).toContainText("နေ့စဉ် လိမ်းပါ။");
 });
 
 test("cập nhật giá: danh sách SP hiện có chứa SKU; tải lên dòng SKU + giá mới → giá đổi, ô trống giữ nguyên", async ({ page }) => {

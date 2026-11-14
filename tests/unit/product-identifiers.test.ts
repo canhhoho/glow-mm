@@ -5,6 +5,8 @@ describe("product identifiers", () => {
   it("suggests ASCII codes for Vietnamese names and a valid fallback for Myanmar", () => {
     expect(suggestProductSlug("Túi Đỏ Dior", "")).toBe("tui-do-dior");
     expect(suggestProductSlug("", "နေကာခရင်မ်")).toBe("product");
+    // Tên chỉ có chữ Myanmar: gốc theo thương hiệu (nhập Excel + form tạo SP truyền slug thương hiệu).
+    expect(suggestProductSlug("", "နေကာခရင်မ်", "nivea")).toBe("nivea");
     expect(suggestVariantSku("dior-pink-bag", 0)).toBe("DIOR-PINK-BAG-01");
     expect(suggestVariantSku("x".repeat(80), 99).length).toBeLessThanOrEqual(40);
   });
@@ -21,7 +23,8 @@ describe("product identifiers", () => {
       ],
     }, exists);
     expect(result.slug).toBe("bag-3");
-    expect(result.variants.map(v => v.sku)).toEqual(["BAG-01-3", "BAG-01", "BAG-01-4"]);
+    // SKU tự sinh đi theo slug đã đổi (BAG-3-01), không thành "BAG-01-3".
+    expect(result.variants.map(v => v.sku)).toEqual(["BAG-3-01", "BAG-01", "BAG-3-01-2"]);
     expect(result.variants[0].label).toBe("A");
   });
 

@@ -5,10 +5,10 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { parseCsvObjects } from "@/lib/csv";
 import { toUnicode } from "@/lib/myanmar";
-import { parseYesNo } from "@/lib/catalog-sheet";
+import { normalizeNumberText, parseYesNo } from "@/lib/catalog-sheet";
 import { resolveProductIdentifiers, suggestProductSlug, suggestVariantSku } from "@/lib/product-identifiers";
 import type { Tx } from "@/server/inventory/ledger";
-import { createDocument } from "@/server/inventory/documents";
+import { createDocument, salesBlockDays } from "@/server/inventory/documents";
 import { vndToMmk } from "@/server/inventory/landed-cost";
 import { latestRate } from "@/server/pricing/latest-rate";
 import { defaultStockLocationId } from "@/server/inventory/warehouses";
@@ -18,6 +18,9 @@ import { saveProduct } from "./products";
 import { IMPORT_PRICE_PREFIX } from "./product-pricing";
 import { brandSlug } from "./brands";
 import { MAX_SHEET_ROWS } from "./catalog-sheet-read";
+import adminVi from "../../../messages/admin.vi.json";
+import adminEn from "../../../messages/admin.en.json";
+import adminMy from "../../../messages/admin.my.json";
 
 /**
  * Nhập/cập nhật sản phẩm từ một sheet (mỗi dòng một SKU, tồn tuỳ chọn).
@@ -70,10 +73,20 @@ export type CatalogImportPreview = {
 
 type Plan = { preview: CatalogImportPreview; saves: Record<string, unknown>[]; stock: StockPlan[] };
 
-const money = z.coerce.number().int().min(0).max(2_147_483_647);
-const positive = z.coerce.number().int().positive().max(2_147_483_647);
+const money = z.coerce.number({ message: "phải là số" }).int("phải là số nguyên").min(0, "không được âm").max(2_147_483_647, "số quá lớn");
+const positive = z.coerce.number({ message: "phải là số" }).int("phải là số nguyên").positive("phải lớn hơn 0").max(2_147_483_647, "số quá lớn");
+/** Ô số: bỏ phân cách nghìn rồi kiểm (file CSV / gọi trực tiếp không qua bộ đọc Excel). `what` = tên cột trong câu báo lỗi. */
+const num = (schema: typeof money, text: string, what: string) => {
+  const r = schema.safeParse(normalizeNumberText(text));
+  if (!r.success) throw new Error(`${what} "${text}" ${r.error.issues[0]?.message ?? "không hợp lệ"}`);
+  return r.data;
+};
+/** Nhãn "một loại tiêu chuẩn" ở mọi ngôn ngữ admin — dòng không ghi biến thể khớp đúng biến thể chuẩn dù người nhập dùng ngôn ngữ nào. */
+const STANDARD_LABELS = [adminVi, adminEn, adminMy].map((m) => m.Products.standardVariant);
 const skuSchema = z.string().trim().min(1).max(40).regex(/^[A-Za-z0-9._-]+$/, "SKU chỉ gồm chữ, số, . _ -");
 const fold = (s: string) => toUnicode(s).normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase();
+/** Ô chữ: Zawgyi → Unicode, NFC, gộp khoảng trắng trong dòng (giữ xuống dòng của mô tả). */
+const clean = (s: string) => toUnicode(s).normalize("NFC").replace(/[ \t\u00a0]+/g, " ").replace(/ *\n */g, "\n").trim();
 const errorText = (e: unknown) => (e instanceof z.ZodError ? e.issues.map((i) => i.message).join("; ") : (e as Error).message);
 const isoDay = (d: Date) => d.toISOString().slice(2, 10).replaceAll("-", "");
 
@@ -86,11 +99,18 @@ type Group = {
   variants: Map<string, Row[]>;
 };
 
-/** Giá trị chung của nhiều dòng: lấy ô có dữ liệu; hai ô khác nhau → lỗi. */
+/**
+ * Giá trị chung của nhiều dòng: lấy ô có dữ liệu (đã chuẩn hoá Zawgyi/khoảng trắng); hai ô khác nhau → lỗi.
+ * Chỉ khác hoa/thường, khoảng trắng hoặc kiểu gõ Zawgyi/Unicode coi là một (lấy giá trị của dòng đầu).
+ */
 function shared(rows: Row[], key: string, what: string): string {
-  const values = [...new Set(rows.map((r) => (r[key] ?? "").trim()).filter(Boolean))];
-  if (values.length > 1) throw new Error(`${what} khác nhau giữa các dòng (dòng ${rows.map((r) => r.__line).join(", ")})`);
-  return values[0] ?? "";
+  const values = new Map<string, string>();
+  for (const r of rows) {
+    const v = clean(r[key] ?? "");
+    if (v && !values.has(fold(v))) values.set(fold(v), v);
+  }
+  if (values.size > 1) throw new Error(`${what} khác nhau giữa các dòng (dòng ${rows.map((r) => r.__line).join(", ")})`);
+  return [...values.values()][0] ?? "";
 }
 
 async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
@@ -198,6 +218,17 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
     return lot;
   };
 
+  // Lô đã có của các SKU trong file (kiểm xung đột lô ngay ở bước xem trước) + ngưỡng chặn bán theo hạn dùng.
+  const existingLots = new Map(
+    (await db.batch.findMany({
+      where: { variant: { sku: { in: skus } } },
+      select: { lotNo: true, expiryDate: true, expiryStatus: true, unitCostVnd: true, shipmentId: true, variant: { select: { sku: true } } },
+    })).map((b) => [`${b.variant.sku}\u0000${b.lotNo}`, b]),
+  );
+  const blockDays = await salesBlockDays();
+  const today = new Date().toISOString().slice(0, 10);
+  const blockFrom = new Date(Date.now() + blockDays * 86_400_000).toISOString().slice(0, 10);
+
   const views: ImportRowView[] = [];
   const saves: Record<string, unknown>[] = [];
   const stock: StockPlan[] = [];
@@ -211,15 +242,19 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
       const base = g.existing;
       const rowsOf = g.rows;
       // Thông tin chung của SP.
-      const nameMy = toUnicode(shared(rowsOf, "name_my", "Tên Myanmar"));
+      const nameMy = shared(rowsOf, "name_my", "Tên Myanmar");
       const nameEn = shared(rowsOf, "name_en", "Tên tiếng Anh");
       const brandText = shared(rowsOf, "brand", "Thương hiệu");
       const categoryText = shared(rowsOf, "category", "Danh mục");
-      const descMy = toUnicode(shared(rowsOf, "description_my", "Mô tả Myanmar"));
+      const descMy = shared(rowsOf, "description_my", "Mô tả Myanmar");
       const descEn = shared(rowsOf, "description_en", "Mô tả tiếng Anh");
       const expiryText = shared(rowsOf, "has_expiry", "Có hạn dùng");
       const warehouseText = shared(rowsOf, "warehouse_code", "Kho bán").toUpperCase();
-      const legacy = Object.fromEntries(["usage_my", "usage_en", "ingredients", "storage_note", "pao_months"].map((k) => [k, shared(rowsOf, k, k)]));
+      const legacy = Object.fromEntries(
+        ([["usage_my", "Cách dùng Myanmar"], ["usage_en", "Cách dùng tiếng Anh"], ["ingredients", "Thành phần"], ["storage_note", "Bảo quản"], ["pao_months", "Hạn sau mở nắp"]] as const).map(([k, what]) => [k, shared(rowsOf, k, what)]),
+      );
+      const pao = legacy.pao_months ? num(positive, legacy.pao_months, "Hạn sau mở nắp") : null;
+      if (pao != null && pao > 120) throw new Error(`Hạn sau mở nắp ${pao} tháng — tối đa 120`);
       const hasExpiry = parseYesNo(expiryText);
       if (hasExpiry === null) throw new Error(`Có hạn dùng: điền "Có" hoặc "Không" (đang là "${expiryText}")`);
 
@@ -254,9 +289,12 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
       const location = locationById.get(locationId);
       const requiresExpiry = hasExpiry ?? base?.requiresExpiry ?? true;
 
+      // Tên chỉ có chữ Myanmar → mã SP lấy theo thương hiệu (vd "nivea", "nivea-2") thay vì "product".
+      const slugFallback = brandSlug(brand?.name ?? brandText) || "product";
+
       // Biến thể: SKU đã có / SKU mới / theo tên biến thể (nhiều dòng cùng biến thể = nhiều lô).
       for (const r of rowsOf) {
-        const label = r.variant_label?.trim() || "";
+        const label = clean(r.variant_label ?? "");
         const vKey = r.sku?.trim() ? `sku:${r.sku.trim()}` : `label:${fold(label || input.standardLabel)}`;
         g.variants.set(vKey, [...(g.variants.get(vKey) ?? []), r]);
       }
@@ -266,7 +304,9 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
       for (const [vKey, vRows] of g.variants) {
         const sku = vKey.startsWith("sku:") ? vKey.slice(4) : "";
         // Dòng không SKU của SP có sẵn: khớp biến thể cùng tên (nếu đúng một) thay vì tạo biến thể trùng tên.
-        const byLabel = !sku ? baseVariants.filter((v) => !v.isBundle && `label:${fold(v.label)}` === vKey) : [];
+        const standard = vKey === `label:${fold(input.standardLabel)}`;
+        const isStandard = (l: string) => STANDARD_LABELS.some((s) => fold(s) === fold(l));
+        const byLabel = !sku ? baseVariants.filter((v) => !v.isBundle && (`label:${fold(v.label)}` === vKey || (standard && isStandard(v.label)))) : [];
         const current = sku ? baseVariants.find((v) => v.sku === sku) : byLabel.length === 1 ? byLabel[0] : undefined;
         if (sku && !current) {
           const other = newSkuOwner.get(sku);
@@ -279,13 +319,13 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
         const weightText = shared(vRows, "weight_g", "Khối lượng");
         // QT1b: SKU mới vào giá 0 (đặt giá ở bước 3); cột giá chỉ cập nhật SKU đã có (ghi lịch sử giá "import").
         if (!current && priceText) warnings.push(`Dòng ${vRows.map((r) => r.__line).join(", ")}: bỏ qua giá bán của SKU mới — đặt giá ở bước 3 (Giá bán) trên trang sản phẩm.`);
-        const price = current ? (priceText ? money.parse(priceText.replace(/[,\s]/g, "")) : current.priceMmk) : 0;
+        const price = current ? (priceText ? num(money, priceText, "Giá bán") : current.priceMmk) : 0;
         // P0-C2: giá bán qua Excel phải > 0 (để trống nếu không đổi giá).
         if (current && priceText && price < 1) throw new Error(`Giá bán của SKU ${current.sku} phải lớn hơn 0 (để trống nếu không đổi giá)`);
-        const weight = weightText ? money.parse(weightText.replace(/[,\s]/g, "")) : current?.weightGrams ?? null;
+        const weight = weightText ? num(money, weightText, "Khối lượng") : current?.weightGrams ?? null;
         // Hoa hồng CTV cố định MMK/cái: trống = SP mới theo % CTV, SP có sẵn giữ mức cũ.
         const commissionText = shared(vRows, "affiliate_commission_mmk", "Hoa hồng CTV");
-        const commission = commissionText ? money.parse(commissionText.replace(/[,\s]/g, "")) : current?.affiliateCommissionMmk ?? null;
+        const commission = commissionText ? num(money, commissionText, "Hoa hồng CTV") : current?.affiliateCommissionMmk ?? null;
         if (commission != null && price > 0 && commission > price) throw new Error(`Hoa hồng CTV${sku ? ` của SKU ${sku}` : ""} lớn hơn giá bán`);
         if (current && (current.priceMmk !== price || (current.affiliateCommissionMmk ?? null) !== commission)) {
           priceBase[current.sku] = `${current.priceMmk}|${current.affiliateCommissionMmk ?? ""}`;
@@ -309,22 +349,22 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
           oldPrice: current?.priceMmk ?? null,
           changed: !current || current.label !== (label || current.label) || current.priceMmk !== price || (current.weightGrams ?? null) !== weight || (current.affiliateCommissionMmk ?? null) !== commission,
         };
-        if (next.autoSku) next.sku = suggestVariantSku(base?.slug ?? (g.key.startsWith("s:") ? g.key.slice(2) : suggestProductSlug(nameEn, nameMy)), nextIndex++);
+        if (next.autoSku) next.sku = suggestVariantSku(base?.slug ?? (g.key.startsWith("s:") ? g.key.slice(2) : suggestProductSlug(nameEn, nameMy, slugFallback)), nextIndex++);
         variants.push(next);
       }
 
       // Dữ liệu lưu: SP có sẵn giữ mọi trường không có trong file.
-      const my = { name: nameMy || base?.my.name || "", description: descMy || base?.my.description || "", usage: toUnicode(legacy.usage_my) || base?.my.usage || "" };
+      const my = { name: nameMy || base?.my.name || "", description: descMy || base?.my.description || "", usage: legacy.usage_my || base?.my.usage || "" };
       const en = { name: nameEn || base?.en.name || "", description: descEn || base?.en.description || "", usage: legacy.usage_en || base?.en.usage || "" };
       const draft = {
         id: base?.id,
-        slug: base?.slug ?? (g.key.startsWith("s:") ? g.key.slice(2) : suggestProductSlug(en.name, my.name)),
+        slug: base?.slug ?? (g.key.startsWith("s:") ? g.key.slice(2) : suggestProductSlug(en.name, my.name, slugFallback)),
         autoSlug: !base && !g.key.startsWith("s:"),
         ...(brand ? { brandId: brand.id } : brandText ? { brandName: brandText } : { brandId: base!.brandId }),
         categoryId,
         stockLocationId: locationId,
         requiresExpiry,
-        paoMonths: legacy.pao_months || base?.paoMonths || null,
+        paoMonths: pao ?? base?.paoMonths ?? null,
         storageNote: legacy.storage_note || base?.storageNote || "",
         ingredientsText: legacy.ingredients || base?.ingredientsText || "",
         my,
@@ -346,9 +386,9 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
         || (brandText && (!brand || brand.id !== base.brandId)) || categoryId !== base.categoryId
         || (descMy && descMy !== base.my.description) || (descEn && descEn !== base.en.description)
         || requiresExpiry !== base.requiresExpiry
-        || (!!legacy.usage_my && toUnicode(legacy.usage_my) !== base.my.usage) || (!!legacy.usage_en && legacy.usage_en !== base.en.usage)
+        || (!!legacy.usage_my && legacy.usage_my !== base.my.usage) || (!!legacy.usage_en && legacy.usage_en !== base.en.usage)
         || (!!legacy.ingredients && legacy.ingredients !== base.ingredientsText) || (!!legacy.storage_note && legacy.storage_note !== base.storageNote)
-        || (!!legacy.pao_months && Number(legacy.pao_months) !== base.paoMonths)
+        || (pao != null && pao !== base.paoMonths)
         || variants.some((v) => v.changed);
       if (!base) counts.createdProducts++;
       else if (productChanged) counts.updatedProducts++;
@@ -370,19 +410,19 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
           if (!stockCells) continue;
           try {
             if (!r.qty?.trim()) throw new Error("Có thông tin tồn nhưng chưa điền Số lượng nhập");
-            const qty = positive.parse(r.qty);
+            const qty = num(positive, r.qty, "Số lượng nhập");
             const legacyLoc = (r.location_code ?? "").trim().toUpperCase();
             const target = legacyLoc ? locationByCode.get(legacyLoc) : location;
             if (!target) throw new Error(`Mã kho ${legacyLoc} không tồn tại hoặc đã ngừng dùng`);
             if (target.sellable && target.id !== locationId) throw new Error(`Sản phẩm thuộc kho ${location?.code}; tồn bán phải nhập vào đúng kho này`);
             const mmk = location?.pricingMode === "LOCAL_MMK";
-            const costText = (r.unit_cost || (mmk ? r.unit_cost_mmk : r.unit_cost_vnd) || "").replace(/[,\s]/g, "");
+            const costText = normalizeNumberText(r.unit_cost || (mmk ? r.unit_cost_mmk : r.unit_cost_vnd) || "");
             if (!costText) throw new Error(mmk ? `Chưa điền giá mua (MMK/đv) — kho ${location?.code} mua tại Myanmar` : `Chưa điền giá mua (VND/đv) — kho ${location?.code} nhập từ Việt Nam`);
             if (mmk ? r.unit_cost_vnd : r.unit_cost_mmk) throw new Error(mmk ? `Kho ${location?.code} nhập giá mua MMK, để trống cột VND` : `Kho ${location?.code} nhập giá mua VND, để trống cột MMK`);
-            const purchase = money.parse(costText);
-            const inboundText = (r.inbound_unit_vnd ?? "").replace(/[,\s]/g, "");
+            const purchase = num(money, costText, "Giá mua");
+            const inboundText = normalizeNumberText(r.inbound_unit_vnd ?? "");
             if (mmk && inboundText && Number(inboundText) !== 0) throw new Error("Hàng mua bằng MMK không có phí đưa về kho VND");
-            const inbound = mmk ? 0 : money.parse(inboundText || 0);
+            const inbound = mmk || !inboundText ? 0 : num(money, inboundText, "Phí đưa về kho");
             const date = r.expiry_date?.trim() || "";
             const legacyStatus = (r.expiry_status ?? "").trim().toUpperCase();
             const status = legacyStatus ? z.enum(["DATED", "NONE", "UNKNOWN"]).parse(legacyStatus) : date ? "DATED" : requiresExpiry ? "UNKNOWN" : "NONE";
@@ -401,6 +441,17 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
               if (["expiry_date", "mfg_date", "unit_cost", "unit_cost_vnd", "unit_cost_mmk", "inbound_unit_vnd"].some((k) => (previous[k] || "") !== (r[k] || ""))) throw new Error(`Cùng SKU và lô ${lotNo} phải có cùng hạn, ngày sản xuất và giá mua`);
             }
             seen.set(key, r);
+            // Lô đã có của SKU: cùng quy tắc với phiếu nhập (createDocument) → báo ngay ở bước xem trước.
+            const lot = existingLots.get(`${v.sku}\u0000${lotNo}`);
+            if (lot) {
+              if (lot.shipmentId) throw new Error(`Lô ${lotNo} của SKU ${v.sku} thuộc chuyến hàng — nhập thêm qua phiếu nhập của chuyến, không qua Excel`);
+              if ((lot.unitCostVnd == null) === !mmk) throw new Error(`Lô ${lotNo} của SKU ${v.sku} đã có giá mua bằng loại tiền khác`);
+              if (lot.expiryStatus !== status || (lot.expiryDate?.toISOString().slice(0, 10) ?? "") !== date) {
+                throw new Error(`Lô ${lotNo} của SKU ${v.sku} đã có với hạn dùng khác (${lot.expiryDate ? lot.expiryDate.toISOString().slice(0, 10) : lot.expiryStatus}) — đổi số lô hoặc sửa hạn cho khớp`);
+              }
+            }
+            if (status === "DATED" && date < today) warnings.push(`Dòng ${r.__line}: lô ${lotNo} đã hết hạn (${date}) → không bán được.`);
+            else if (status === "DATED" && date < blockFrom) warnings.push(`Dòng ${r.__line}: lô ${lotNo} còn dưới ${blockDays} ngày hạn dùng (${date}) → bị chặn bán.`);
             const costMmk = mmk ? purchase : rate ? money.parse(vndToMmk(purchase + inbound, rate)) : null;
             if (!mmk) needsRate = true;
             if (status === "UNKNOWN") warnings.push(`Dòng ${r.__line}: lô ${lotNo} chưa có hạn sử dụng → chưa bán được đến khi cập nhật hạn.`);

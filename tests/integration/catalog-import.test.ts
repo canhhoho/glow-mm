@@ -188,4 +188,85 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     await commitCatalogImport(fresh.input, f.userId, { allowPricing: true });
     expect((await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).priceMmk).toBe(15000);
   });
+
+  it("mẫu nhập ban đầu: nội dung khách thấy (mô tả, cách dùng, thành phần, bảo quản, PAO, khối lượng) ghi đúng; số có phân cách nghìn", async () => {
+    const { f, cat } = await setup();
+    const brand = `Content ${f.tag}`;
+    const input = sheet([
+      {
+        name_my: `ခရင်မ် ${f.tag}`, name_en: `Cream ${f.tag}`, brand, category: cat, weight_g: "1.250", warehouse_code: f.mm.code,
+        description_my: "ဖော်ပြချက်\nလိုင်း ၂", description_en: "Line one\nLine two", usage_my: "နေ့စဉ် သုံးပါ", usage_en: "Apply daily",
+        ingredients: "Aqua, Glycerin", storage_note: "Nơi khô ráo", pao_months: 12, qty: "1,200", unit_cost: "150.000",
+      },
+    ]);
+    const preview = await previewCatalogImport(input);
+    expect(preview.errors).toEqual([]);
+    expect(preview.rows[0].stock).toMatchObject({ qty: 1200 });
+    await commitCatalogImport(preview.input, f.userId);
+    const p = await prisma.product.findFirstOrThrow({ where: { translations: { some: { name: `Cream ${f.tag}` } } }, include: { translations: true, variants: true } });
+    const tr = (l: string) => p.translations.find((t) => t.locale === l)!;
+    expect(p).toMatchObject({ storageNote: "Nơi khô ráo", paoMonths: 12, published: false, approvedAt: null });
+    expect(p.variants[0]).toMatchObject({ weightGrams: 1250, priceMmk: 0 });
+    expect(tr("my")).toMatchObject({ name: `ခရင်မ် ${f.tag}`, description: "ဖော်ပြချက်\nလိုင်း ၂", usage: "နေ့စဉ် သုံးပါ", ingredientsText: "Aqua, Glycerin" });
+    expect(tr("en")).toMatchObject({ description: "Line one\nLine two", usage: "Apply daily", ingredientsText: "Aqua, Glycerin" });
+    const line = await prisma.stockDocumentLine.findFirstOrThrow({ where: { variantId: p.variants[0].id } });
+    expect(line).toMatchObject({ qty: 1200, unitCostVnd: 150000 });
+  });
+
+  it("cùng SP khác hoa/thường hoặc khoảng trắng không báo lỗi; tên chỉ Myanmar lấy mã theo thương hiệu; số lẻ báo lỗi rõ", async () => {
+    const { f, cat } = await setup();
+    const brand = `Zeta ${f.tag}`;
+    const input = sheet([
+      { name_en: `Serum ${f.tag}`, brand, category: cat, variant_label: "30ml", description_en: "Bright  skin" },
+      { name_en: `serum ${f.tag}`, brand: brand.toUpperCase(), category: cat, variant_label: "50ml", description_en: "bright skin" },
+      { name_my: "ဆီရမ်", brand, category: cat },
+    ]);
+    const preview = await previewCatalogImport(input);
+    expect(preview.errors).toEqual([]);
+    expect(preview.counts.createdProducts).toBe(2);
+    const slugBase = `zeta-${f.tag.toLowerCase()}`;
+    expect(preview.rows[2].sku.startsWith(slugBase.toUpperCase().slice(0, 30))).toBe(true);
+    await commitCatalogImport(preview.input, f.userId);
+    const mm = await prisma.product.findFirstOrThrow({ where: { brand: { name: brand }, translations: { some: { name: "ဆီရမ်" } } }, include: { variants: true } });
+    expect(mm.slug.startsWith(slugBase)).toBe(true);
+
+    const bad = await previewCatalogImport(sheet([{ name_en: `Odd ${f.tag}`, brand, category: cat, warehouse_code: f.mm.code, qty: "1.5", unit_cost: 1000 }]));
+    expect(bad.errors.join("\n")).toContain('Số lượng nhập "1.5" phải là số nguyên');
+  });
+
+  it("dòng không ghi biến thể khớp biến thể chuẩn dù admin dùng ngôn ngữ khác", async () => {
+    const { f, cat } = await setup();
+    const brand = `Std ${f.tag}`;
+    // Tạo bằng admin tiếng Anh: biến thể chuẩn tên "Standard" + biến thể "Mini".
+    const created = await previewCatalogImport({ ...sheet([{ name_en: `Lotion ${f.tag}`, brand, category: cat }, { name_en: `Lotion ${f.tag}`, brand, category: cat, variant_label: "Mini" }]), standardLabel: "Standard" });
+    await commitCatalogImport(created.input, f.userId);
+    const p = await prisma.product.findFirstOrThrow({ where: { translations: { some: { name: `Lotion ${f.tag}` } } }, include: { variants: true } });
+    const std = p.variants.find((v) => v.label === "Standard")!;
+    const mini = p.variants.find((v) => v.label === "Mini")!;
+    // Admin tiếng Việt ("Tiêu chuẩn") cập nhật: dòng không ghi biến thể phải khớp "Standard", không tạo biến thể mới.
+    const upd = await previewCatalogImport({ ...sheet([{ sku: mini.sku, name_en: `Lotion ${f.tag}`, brand, category: cat }, { name_en: `Lotion ${f.tag}`, brand, category: cat, weight_g: 95 }]), standardLabel: "Tiêu chuẩn" });
+    expect(upd.errors).toEqual([]);
+    expect(upd.rows.map((r) => r.sku)).toEqual([mini.sku, std.sku]);
+    expect(upd.rows[1].action).toBe("update");
+  });
+
+  it("lô đã có khác hạn dùng → báo ở bước xem trước; lô hết hạn / dưới ngưỡng bán → cảnh báo", async () => {
+    const { f } = await setup();
+    const sku = `IT-${f.tag}`;
+    await prisma.batch.create({ data: { variantId: f.variantId, lotNo: "L-OLD", expiryDate: new Date("2029-01-01"), expiryStatus: "DATED", unitCostVnd: 100000 } });
+    const clash = await previewCatalogImport(sheet([{ sku, qty: 2, unit_cost: 100000, lot_no: "L-OLD", expiry_date: "2030-01-01" }]));
+    expect(clash.errors.join("\n")).toContain("Lô L-OLD của SKU");
+    expect(clash.errors.join("\n")).toContain("hạn dùng khác");
+    const same = await previewCatalogImport(sheet([{ sku, qty: 2, unit_cost: 120000, lot_no: "L-OLD", expiry_date: "2029-01-01" }]));
+    expect(same.errors).toEqual([]);
+
+    const soon = new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10);
+    const warn = await previewCatalogImport(sheet([
+      { sku, qty: 1, unit_cost: 1000, lot_no: "L-EXP", expiry_date: "2020-01-01" },
+      { sku, qty: 1, unit_cost: 1000, lot_no: "L-SOON", expiry_date: soon },
+    ]));
+    expect(warn.errors).toEqual([]);
+    expect(warn.warnings.join("\n")).toContain("L-EXP đã hết hạn");
+    expect(warn.warnings.join("\n")).toMatch(/L-SOON còn dưới \d+ ngày/);
+  });
 });
