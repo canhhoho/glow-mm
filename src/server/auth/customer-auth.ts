@@ -33,13 +33,11 @@ import {
  * Better Auth cho KHÁCH HÀNG storefront (P14) — instance riêng, tách khỏi nhân viên/CTV (`auth.ts`):
  * đường dẫn /api/customer-auth, cookie tiền tố `glow-customer`, secret suy ra riêng, phiên 30 ngày, bảng rate limit riêng.
  * Dùng chung bảng user/session/account/verification; hook bảo đảm chỉ khách (CUSTOMER) và CTV (AFFILIATE) tạo được
- * phiên ở đây — CTV mua/đặt hộ trên storefront bằng chính tài khoản CTV (email/mật khẩu hoặc Google cùng email).
- * Đăng ký/đăng nhập email chỉ bật khi gửi được email (EMAIL_DRIVER ≠ none); Google chỉ bật khi có GOOGLE_CLIENT_ID/SECRET.
+ * phiên ở đây — CTV mua/đặt hộ trên storefront bằng chính tài khoản CTV (email/mật khẩu).
+ * Đăng ký/đăng nhập email chỉ bật khi gửi được email (EMAIL_DRIVER ≠ none). Đăng nhập Google đã gỡ (làm lại sau).
  */
 
 const emailOn = process.env.EMAIL_DRIVER === "outbox" || process.env.EMAIL_DRIVER === "resend";
-const googleId = process.env.GOOGLE_CLIENT_ID;
-const googleSecret = process.env.GOOGLE_CLIENT_SECRET;
 
 /** Gửi email xác minh / đặt lại mật khẩu — chỉ cho khách + CTV (instance này không bao giờ gửi link cho nhân viên). */
 async function sendAuthEmail(kind: AuthEmailKind, userId: string, url: string) {
@@ -83,10 +81,6 @@ export const customerAuth = betterAuth({
     expiresIn: 60 * 60 * 24,
     sendVerificationEmail: ({ user, url }) => sendAuthEmail("verify", user.id, url),
   },
-  socialProviders:
-    googleId && googleSecret ? { google: { clientId: googleId, clientSecret: googleSecret, prompt: "select_account" } } : {},
-  // Liên kết Google vào tài khoản email đã xác minh của chính khách; tài khoản nhân viên/CTV bị chặn ở validateUserInfo.
-  account: { accountLinking: { enabled: true } },
   // Khách Myanmar thường dùng chung IP (mạng di động CGNAT) → nới hơn nhân viên.
   rateLimit: {
     enabled: true,
@@ -100,7 +94,6 @@ export const customerAuth = betterAuth({
       "/sign-up/email": { window: 300, max: 10 },
       "/request-password-reset": { window: 600, max: 5 },
       "/send-verification-email": { window: 600, max: 5 },
-      "/sign-in/social": { window: 60, max: 30 },
     },
   },
   session: {

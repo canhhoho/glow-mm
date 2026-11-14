@@ -34,8 +34,8 @@ export function customerSessionDecision(user: SessionUser): SessionDecision {
 
 /**
  * Gate `user.validateUserInfo` của instance khách: tạo user mới luôn được (hook ép role CUSTOMER);
- * liên kết Google / đăng nhập lại vào user đã có chỉ khi user đó là khách hoặc CTV — chặn Google cùng email chiếm
- * tài khoản nhân viên (nhân viên có emailVerified=true nên Better Auth sẽ tự liên kết nếu không chặn).
+ * liên kết tài khoản ngoài (OAuth, vd Google nếu bật lại sau này) / đăng nhập lại vào user đã có chỉ khi user đó là khách hoặc CTV —
+ * chặn tài khoản ngoài cùng email chiếm tài khoản nhân viên (nhân viên có emailVerified=true nên Better Auth sẽ tự liên kết nếu không chặn).
  */
 export function customerIdentityDecision(action: string, existingRole: string | null): { error: string } | undefined {
   if (action === "create-user") return undefined;
@@ -80,11 +80,9 @@ export function decodeCookieValue(raw: string | null | undefined): string | null
   }
 }
 
-/** Mã lỗi Better Auth gắn vào `?error=` khi chuyển về trang đăng nhập (Google, link xác minh) → khoá chuỗi `Auth.err.*`. */
+/** Mã lỗi Better Auth gắn vào `?error=` khi chuyển về trang đăng nhập (link xác minh) → khoá chuỗi `Auth.err.*`. */
 export function authRedirectErrorKey(code: string): string {
   switch (code) {
-    case "account_not_linked":
-      return "notLinked";
     case NOT_CUSTOMER:
       return "notCustomer";
     case "USER_INACTIVE":

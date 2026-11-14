@@ -34,6 +34,7 @@ export type NavCountKey =
   | "quarantineLots"
   | "blockedLots"
   | "pendingApplications"
+  | "passwordResets"
   | "catalogIncomplete"
   | "catalogReview"
   | "catalogPublished";
@@ -96,7 +97,7 @@ export const NAV: NavGroup[] = [
     icon: "users",
     items: [
       { href: "/admin/users", key: "users", permission: "users:manage", icon: "users" },
-      { href: "/admin/customer-accounts", key: "customers", permission: "users:manage", icon: "userCircle" },
+      { href: "/admin/customer-accounts", key: "customers", permission: "users:manage", icon: "userCircle", count: "passwordResets" },
     ],
   },
   {

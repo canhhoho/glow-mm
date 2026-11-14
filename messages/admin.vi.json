@@ -1955,7 +1955,7 @@
     "passwordHint": "Đặt mật khẩu tạm rồi gửi riêng cho khách. Thao tác này sẽ đăng xuất khách khỏi mọi thiết bị.",
     "helpTitle": "Hướng dẫn hỗ trợ khách hàng",
     "title": "Tài khoản khách",
-    "hint": "Khách đăng ký trên web (SĐT + mật khẩu, Google, email). Khách SĐT quên mật khẩu → đặt mật khẩu tạm rồi báo khách qua Viber/Messenger; khách nên đổi lại trong Tài khoản → Hồ sơ.",
+    "hint": "Khách đăng ký trên web bằng SĐT + mật khẩu (hoặc email nếu đã bật). Khách quên mật khẩu tự nhập mật khẩu mới trên web → yêu cầu hiện ở đầu trang này (và số trên menu) → bấm Xác nhận là khách dùng được mật khẩu mới, Từ chối thì mật khẩu cũ giữ nguyên. Cần đặt tay: vào Sửa → Đặt lại mật khẩu.",
     "search": "Tìm (SĐT, email, tên)",
     "find": "Tìm",
     "empty": "Không có tài khoản khách.",
@@ -1984,7 +1984,11 @@
       "in_use": "Khách đã có đơn hàng; hãy khoá tài khoản để giữ lịch sử.",
       "phone_taken": "Số điện thoại đã được dùng cho tài khoản khác",
       "invalid_phone": "Số điện thoại không hợp lệ",
-      "invalid": "Dữ liệu không hợp lệ"
+      "invalid": "Dữ liệu không hợp lệ",
+      "reset_not_found": "Không tìm thấy yêu cầu",
+      "reset_not_pending": "Yêu cầu đã được xử lý",
+      "reset_expired": "Yêu cầu đã hết hạn — khách cần gửi lại",
+      "reset_not_customer": "Không phải tài khoản khách"
     },
     "deleteConfirm": "Xoá tài khoản khách {name}? Thao tác này không thể hoàn tác.",
     "deleteHint": "Chỉ xoá được tài khoản chưa có đơn hàng. Khách đã mua hàng thì dùng Khoá để giữ lịch sử.",
@@ -1995,7 +1999,17 @@
     "profile": "Thông tin",
     "save": "Lưu",
     "access": "Quyền truy cập",
-    "phone": "Số điện thoại"
+    "phone": "Số điện thoại",
+    "no_password": "Tài khoản này không có mật khẩu",
+    "resetRequestsTitle": "Yêu cầu đặt lại mật khẩu ({count})",
+    "resetRequestsHint": "Khách quên mật khẩu đã tự nhập mật khẩu mới. Xác nhận → mật khẩu mới có hiệu lực và khách bị đăng xuất khỏi mọi thiết bị. Từ chối → mật khẩu cũ giữ nguyên. Yêu cầu tự hết hạn sau 7 ngày.",
+    "requestedAt": "Gửi lúc",
+    "approveReset": "Xác nhận",
+    "rejectReset": "Từ chối",
+    "approveResetConfirm": "Xác nhận đặt lại mật khẩu cho {name} ({phone})? Mật khẩu mới có hiệu lực ngay và khách bị đăng xuất khỏi mọi thiết bị.",
+    "rejectResetConfirm": "Từ chối yêu cầu của {name}? Mật khẩu hiện tại giữ nguyên.",
+    "resetApproved": "Đã xác nhận — khách dùng được mật khẩu mới",
+    "resetRejected": "Đã từ chối yêu cầu"
   },
   "VtpExport": {
     "title": "Xuất đơn sang VTP Myanmar",

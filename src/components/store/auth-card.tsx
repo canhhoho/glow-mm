@@ -10,12 +10,3 @@ export function AuthCard({ title, intro, children }: { title: string; intro?: st
     </div>
   );
 }
-
-/** Đường kẻ "hoặc" giữa nút Google và form email. */
-export function OrDivider({ label }: { label: string }) {
-  return (
-    <p className="flex items-center gap-3 text-xs text-muted-foreground before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">
-      {label}
-    </p>
-  );
-}

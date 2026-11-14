@@ -5,11 +5,11 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import type { StoreLocale } from "@/i18n/routing";
 import { localePrefix } from "@/lib/site";
-import { emailAuthEnabled, googleAuthEnabled } from "@/lib/env";
+import { emailAuthEnabled } from "@/lib/env";
 import { safeNextPath } from "@/server/auth/customer-policy";
 import { getCustomerUser } from "@/server/auth/customer-session";
-import { AuthCard, OrDivider } from "@/components/store/auth-card";
-import { GoogleButton, PhoneRegisterForm, RegisterForm } from "@/components/store/auth-forms";
+import { AuthCard } from "@/components/store/auth-card";
+import { PhoneRegisterForm, RegisterForm } from "@/components/store/auth-forms";
 import { BlockSkeleton } from "@/components/store/ui";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -22,7 +22,7 @@ export default function RegisterPage(props: PageProps<"/[locale]/register">) {
   );
 }
 
-/** Đăng ký khách (P14b): email + mật khẩu → email xác minh; hoặc Google (tạo tài khoản ngay). */
+/** Đăng ký khách: SĐT + mật khẩu (mặc định, P17); email + mật khẩu → email xác minh khi đã bật gửi email. */
 async function RegisterContent({ params, searchParams }: PageProps<"/[locale]/register">) {
   const { locale } = (await params) as { locale: StoreLocale };
   setRequestLocale(locale);
@@ -33,12 +33,9 @@ async function RegisterContent({ params, searchParams }: PageProps<"/[locale]/re
 
   const t = await getTranslations({ locale, namespace: "Auth" });
   const emailOn = emailAuthEnabled();
-  const googleOn = googleAuthEnabled();
 
   return (
     <AuthCard title={t("registerTitle")}>
-      {googleOn && <GoogleButton prefix={prefix} next={next} />}
-      {googleOn && <OrDivider label={t("or")} />}
       {/* Mặc định đăng ký bằng SĐT + mật khẩu (P17); email là tuỳ chọn khi đã bật gửi email. */}
       <PhoneRegisterForm locale={locale} next={next} />
       {emailOn && (

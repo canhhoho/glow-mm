@@ -25,6 +25,7 @@ import type { StoreActionState } from "@/server/cart/actions";
 import { AccountError, createAddress, deleteAddress, setDefaultAddress, updateAddress, updateProfile } from "./accounts";
 import { CustomerAccountError, deleteCustomerAccount, resetCustomerPassword, setCustomerActive, updateCustomerAccount } from "./admin";
 import { consumePhoneLoginLimit, MIN_CUSTOMER_PASSWORD, PhoneAccountError, registerPhoneCustomer } from "./phone";
+import { decidePasswordReset, PasswordResetError, requestPasswordReset } from "./password-reset";
 
 /** Server Action khu tài khoản khách (P14b) + đăng ký/đăng nhập bằng SĐT (P17). `requireCustomer` → userId lấy từ phiên. */
 
@@ -92,6 +93,22 @@ export async function phoneRegisterAction(_prev: StoreActionState, formData: For
     return { error: phoneErrorKey(e) };
   }
   nextRedirect(safeNextPath(formData.get("next"), `${prefix}/account`));
+}
+
+/**
+ * Khách quên mật khẩu (tài khoản SĐT): gửi yêu cầu kèm mật khẩu mới, chờ admin xác nhận. Thành công luôn `{ ok: true }`
+ * dù SĐT có tài khoản hay không (không dò được SĐT đã đăng ký); lỗi định dạng / quá nhiều lần → khoá `Auth.err.*`.
+ */
+export async function requestPasswordResetAction(_prev: StoreActionState, formData: FormData): Promise<StoreActionState> {
+  try {
+    await requestPasswordReset(
+      { phone: formData.get("phone"), password: formData.get("password"), confirmPassword: formData.get("confirmPassword") },
+      { ip: clientIp(await headers()) },
+    );
+  } catch (e) {
+    return { error: phoneErrorKey(e) };
+  }
+  return { ok: true };
 }
 
 function localeOf(fd: FormData): StoreLocale {
@@ -216,6 +233,22 @@ export async function resetCustomerPasswordAction(_prev: ActionState, formData: 
   }
   revalidatePath("/admin/customer-accounts", "layout");
   return { ok: t("passwordReset") };
+}
+
+/** Admin xác nhận / từ chối yêu cầu đặt lại mật khẩu của khách (quyền users:manage). */
+export async function decidePasswordResetAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const t = await getTranslations("Customers");
+  const approve = formData.get("decision") === "approve";
+  try {
+    const user = await requirePermission("users:manage");
+    await decidePasswordReset(formData.get("id"), approve, user.id);
+  } catch (e) {
+    if (e instanceof PasswordResetError) return { error: t(`err.reset_${e.code}`) };
+    if (e instanceof ZodError) return { error: t("err.reset_not_found") };
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+  revalidatePath("/admin/customer-accounts", "layout");
+  return { ok: t(approve ? "resetApproved" : "resetRejected") };
 }
 
 export async function setCustomerActiveAction(_prev: ActionState, formData: FormData): Promise<ActionState> {

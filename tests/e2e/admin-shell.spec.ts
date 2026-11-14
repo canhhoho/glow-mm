@@ -48,7 +48,9 @@ test("nhân viên đơn hàng: chỉ thấy nhóm được phép", async ({ page
 test("menu tài khoản và nội dung lồng nhau mở đúng trang, tự đánh dấu và mở nhóm hiện tại", async ({ page }) => {
   await login(page, "admin@glow.local");
   let nav = await openAdminGroup(page, "Tài khoản");
-  for (const label of ["Nhân viên", "Khách hàng"]) await expect(nav.getByRole("link", { name: label, exact: true })).toBeVisible();
+  // "Khách hàng" có thể kèm số yêu cầu đặt lại mật khẩu đang chờ ("Khách hàng 2") → khớp theo tiền tố.
+  await expect(nav.getByRole("link", { name: "Nhân viên", exact: true })).toBeVisible();
+  await expect(nav.getByRole("link", { name: /^Khách hàng/ })).toBeVisible();
   await expect(nav.getByRole("link", { name: "Danh sách CTV", exact: true })).toBeHidden();
   nav = await openAdminGroup(page, "Cộng tác viên");
   await nav.getByRole("link", { name: "Danh sách CTV", exact: true }).click();

@@ -1955,7 +1955,7 @@
     "passwordHint": "Set a temporary password and share it privately with the customer. This signs them out on every device.",
     "helpTitle": "Customer support guide",
     "title": "Customer accounts",
-    "hint": "Customers registered on the website (phone + password, Google, email). A phone customer who forgot their password → set a temporary password and tell them via Viber/Messenger; they should change it in Account → Profile.",
+    "hint": "Customers register on the website with phone + password (or email when enabled). A customer who forgot their password enters a new one on the website → the request shows at the top of this page (and as a number on the menu) → click Approve and the new password works; Reject keeps the old one. To set one by hand: Edit → Reset password.",
     "search": "Search (phone, email, name)",
     "find": "Find",
     "empty": "No customer accounts.",
@@ -1984,7 +1984,11 @@
       "in_use": "This customer has orders. Lock the account to keep its history.",
       "phone_taken": "This phone number is already used by another account",
       "invalid_phone": "Invalid phone number",
-      "invalid": "Invalid data"
+      "invalid": "Invalid data",
+      "reset_not_found": "Request not found",
+      "reset_not_pending": "This request was already handled",
+      "reset_expired": "This request has expired — the customer must send it again",
+      "reset_not_customer": "Not a customer account"
     },
     "deleteConfirm": "Delete customer account {name}? This cannot be undone.",
     "deleteHint": "Only accounts without orders can be deleted. Lock customers who have ordered to keep their history.",
@@ -1995,7 +1999,17 @@
     "profile": "Profile",
     "save": "Save",
     "access": "Access",
-    "phone": "Phone"
+    "phone": "Phone",
+    "no_password": "This account has no password",
+    "resetRequestsTitle": "Password reset requests ({count})",
+    "resetRequestsHint": "These customers forgot their password and entered a new one. Approve → the new password takes effect and the customer is signed out everywhere. Reject → the old password stays. Requests expire after 7 days.",
+    "requestedAt": "Sent",
+    "approveReset": "Approve",
+    "rejectReset": "Reject",
+    "approveResetConfirm": "Approve the password reset for {name} ({phone})? The new password takes effect now and the customer is signed out everywhere.",
+    "rejectResetConfirm": "Reject the request from {name}? Their current password stays.",
+    "resetApproved": "Approved — the customer can use the new password",
+    "resetRejected": "Request rejected"
   },
   "VtpExport": {
     "title": "Export orders to VTP Myanmar",

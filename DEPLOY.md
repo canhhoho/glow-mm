@@ -63,7 +63,6 @@ Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong bi�
    - Secret chỉ dùng ký tự ASCII (dùng lệnh tạo ngẫu nhiên). Có chữ tiếng Việt có dấu trong `CRON_SECRET` → build lỗi ngay ("not valid in HTTP headers").
    - Biến Preview chọn **Preview Branches → `dev`** (bỏ tick Production) để mỗi bộ biến chỉ áp cho đúng môi trường.
    | `FB_PAGE_USERNAME`, `VIBER_CHAT_URI` | tuỳ chọn | tuỳ chọn |
-   | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | OAuth client (xem §1.4) | để trống (URL preview không khớp redirect) |
    | `EMAIL_DRIVER` | `none` tới khi có tên miền, sau đó `resend` | `none` |
    | `RESEND_API_KEY`, `EMAIL_FROM` | khi `EMAIL_DRIVER=resend` | — |
 
@@ -88,24 +87,18 @@ Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong bi�
    - `GET /api/health` trả `{"ok":true}`;
    - `/` hiển thị tiếng Myanmar;
    - đăng nhập `/admin` được;
-   - `/login` có nút Google (nếu đã đặt biến), đăng nhập → `/account`.
+   - `/login` đăng nhập bằng SĐT → `/account`; `/forgot-password` gửi được yêu cầu đặt lại mật khẩu (admin xác nhận ở Tài khoản → Khách hàng).
 
-### 1.4 Đăng nhập khách: Google OAuth + email (P14)
-Khách bắt buộc có tài khoản khi đặt hàng. Đăng ký/đăng nhập bằng **SĐT + mật khẩu luôn bật** (P17); Google và email là tuỳ chọn, bật khi đặt biến bên dưới.
+### 1.4 Đăng nhập khách: SĐT + mật khẩu, quên mật khẩu, email (P14/P17)
+Khách bắt buộc có tài khoản khi đặt hàng. Đăng ký/đăng nhập bằng **SĐT + mật khẩu luôn bật** (P17); email là tuỳ chọn, bật khi đặt biến bên dưới.
 
-**Google OAuth client** (Google Cloud Console, tài khoản Google của shop):
-1. Tạo project (vd `glow-vn`) → **APIs & Services → OAuth consent screen**:
-   - User type **External**; tên app "T&C Cosmetics", email hỗ trợ, logo (tuỳ chọn), link chính sách bảo mật `https://<domain>/info/privacy`.
-   - Scopes: `openid`, `email`, `profile` (mặc định, không cần duyệt thêm).
-   - **Publish app** (chuyển khỏi chế độ Testing, nếu không chỉ tài khoản test mới đăng nhập được).
-2. **Credentials → Create credentials → OAuth client ID → Web application**:
-   - Authorized JavaScript origins: `https://glow-mm.vercel.app`, `http://localhost:3000`.
-   - Authorized redirect URIs (khớp tuyệt đối, kể cả `https`):
-     - `https://glow-mm.vercel.app/api/customer-auth/callback/google`
-     - `http://localhost:3000/api/customer-auth/callback/google`
-     - sau này thêm `https://<domain Myanmar>/api/customer-auth/callback/google`.
-3. Chép Client ID + Client secret → Vercel (Production) `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` → Redeploy. Local: thêm vào `.env`. Không commit.
-4. Kiểm tra: `/login` có nút "Google ဖြင့် ဆက်လုပ်မည်" → đăng nhập → về `/account`. Tài khoản Google trùng email nhân viên/CTV bị từ chối (đúng thiết kế).
+**Quên mật khẩu (không SMS/OTP, không cần email):** khách vào `/forgot-password`, nhập SĐT + mật khẩu mới → yêu cầu chờ; admin thấy số trên menu Tài khoản → Khách hàng và khối "Yêu cầu đặt lại mật khẩu" đầu trang, bấm **Xác nhận** (mật khẩu mới có hiệu lực, khách bị đăng xuất khỏi mọi thiết bị) hoặc **Từ chối**. Yêu cầu hết hạn sau 7 ngày. Migration `20261114120000_password_reset_requests` (thêm bảng, không đụng dữ liệu cũ).
+
+**Đăng nhập Google: đã gỡ khỏi code (14/11/2026), sẽ làm lại sau.** Biến `GOOGLE_CLIENT_*` không còn được đọc (còn trong `.env.prod` cũng không lỗi). Trước khi deploy bản này, kiểm tra có khách chỉ đăng nhập bằng Google không (chỉ đọc) — họ sẽ không vào lại được tài khoản đó:
+```sql
+SELECT u.email FROM "user" u JOIN account a ON a."userId" = u.id AND a."providerId" = 'google'
+WHERE NOT EXISTS (SELECT 1 FROM account c WHERE c."userId" = u.id AND c."providerId" = 'credential');
+```
 
 **Email (Resend)** — cần tên miền riêng, `*.vercel.app` không gửi được **[CẦN XÁC MINH: tên miền]**:
 1. resend.com → Domains → thêm tên miền → thêm bản ghi DNS (SPF, DKIM, tuỳ chọn DMARC) → chờ Verified.
@@ -139,7 +132,7 @@ Khách bắt buộc có tài khoản khi đặt hàng. Đăng ký/đăng nhập 
    - `FB_PAGE_USERNAME`, `VIBER_CHAT_URI`;
    - `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` (`openssl rand -base64 32`, **giữ cố định** — đổi thì tab khách đang mở lỗi gửi form sau deploy). Dùng lúc build: trong Coolify đánh dấu là biến build **[CẦN XÁC MINH tên tuỳ chọn trong Coolify]**;
    - `DATABASE_POOL_MAX` (mặc định 20 trong compose);
-   - tuỳ chọn: `EMAIL_DRIVER=resend` + `RESEND_API_KEY` + `EMAIL_FROM`; `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` (§1.4).
+   - tuỳ chọn: `EMAIL_DRIVER=resend` + `RESEND_API_KEY` + `EMAIL_FROM` (§1.4).
    - `NEXT_DEPLOYMENT_ID` lấy từ `SOURCE_COMMIT` mà Coolify truyền lúc build **[CẦN XÁC MINH]**; không có thì chỉ tắt tính năng tự tải lại khi có bản mới.
 4. Persistent storage:
    - volume `pgdata` (DB), `uploads` (`/app/storage`) và `next-cache` (cache ảnh `/_next/image`) đã khai báo sẵn. Dùng **named volume** như compose; nếu Coolify đổi sang thư mục host thì phải `chown 1001:1001` thư mục đó, nếu không app không ghi được file;
@@ -192,11 +185,11 @@ Làm trong giờ thấp điểm, khoảng 15–30 phút ngừng ghi dữ liệu.
 - [ ] Storefront `/` (Myanmar) và `/en` hiển thị đúng; ảnh sản phẩm tải được.
 - [ ] Đăng nhập admin bằng cả 3 vai trò; đổi mật khẩu mặc định (bấm tên mình ở góc trên → `/admin/account`).
 - [ ] Cài đặt → bật lại "Nhận đơn trên web".
-- [ ] Google OAuth: thêm redirect URI của domain mới (§1.4); `EMAIL_DRIVER=resend` + DNS Resend cho domain; thử đăng ký email + quên mật khẩu + đăng nhập Google.
+- [ ] `EMAIL_DRIVER=resend` + DNS Resend cho domain (tuỳ chọn); thử đăng ký SĐT + quên mật khẩu (admin xác nhận) (§1.4).
 - [ ] Tồn kho trùng khớp: tổng `StockBalance` theo biến thể = số liệu trước khi chuyển.
 - [ ] Đặt thử 1 đơn COD và 1 đơn chuyển khoản (upload biên lai → duyệt) rồi huỷ.
 - [ ] Gọi tay từng cron (kể cả `cleanup`) với `CRON_SECRET` qua `http://127.0.0.1:3000` → 200; không có secret → 401.
-- [ ] `curl -sI https://<domain>/` có `Strict-Transport-Security`, `Permissions-Policy`, `Content-Security-Policy` (có `upgrade-insecure-requests`); `curl -sI https://<domain>/admin/login` có CSP chứa `'nonce-…'`; bấm "Đăng nhập Google" trên `/login` phải tới được trang Google (CSP `form-action` không chặn); `curl -sI https://<domain>/icons/icon-192.png` có `Cache-Control: public, max-age=86400…`.
+- [ ] `curl -sI https://<domain>/` có `Strict-Transport-Security`, `Permissions-Policy`, `Content-Security-Policy` (có `upgrade-insecure-requests`); `curl -sI https://<domain>/admin/login` có CSP chứa `'nonce-…'`; `curl -sI https://<domain>/icons/icon-192.png` có `Cache-Control: public, max-age=86400…`.
 - [ ] Đăng nhập sai mật khẩu nhiều lần từ 2 mạng khác nhau: chỉ mạng bị dò mới bị chặn (rate limit theo IP thật qua `x-real-ip`).
 - [ ] Backup đầu tiên chạy thành công, file có trên off-site (§3).
 - [ ] **Khôi phục thử** backup đó vào một DB tạm (§3.3) → OK.
