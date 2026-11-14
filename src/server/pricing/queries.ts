@@ -101,7 +101,7 @@ export async function pricingGaps() {
           bundleItems: { select: { component: { select: { weightGrams: true } } } },
         },
       });
-      const costs = await prisma.$transaction((tx) => variantCosts(tx, variants.map((v) => v.id), mmk ? "MMK" : "VND", mmk ? "LANDED" : "PURCHASE"));
+      const costs = await variantCosts(prisma, variants.map((v) => v.id), mmk ? "MMK" : "VND", mmk ? "LANDED" : "PURCHASE");
       const hasWeight = (v: (typeof variants)[number]) =>
         (v.weightGrams ?? 0) > 0 || (v.isBundle && v.bundleItems.length > 0 && v.bundleItems.every((b) => (b.component.weightGrams ?? 0) > 0));
       return {

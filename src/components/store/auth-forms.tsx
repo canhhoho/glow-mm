@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import { customerAuthClient } from "@/lib/customer-auth-client";
 import { phoneRegisterAction, phoneSignInAction } from "@/server/accounts/actions";
@@ -160,8 +160,15 @@ export function LoginForm({ prefix, next, emailEnabled }: { prefix: string; next
 export function PhoneRegisterForm({ locale, next }: { locale: string; next: string }) {
   const t = useTranslations("Auth");
   const [state, action, pending] = useActionState(phoneRegisterAction, undefined);
+  // Gửi qua onSubmit (không dùng `action=`): React 19 reset form sau mỗi lần action chạy → báo lỗi thì khách mất hết ô đã nhập.
+  // Thành công thì server chuyển trang nên không cần reset.
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    startTransition(() => action(data));
+  }
   return (
-    <form action={action} className="space-y-3">
+    <form onSubmit={onSubmit} className="space-y-3">
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="next" value={next} />
       <label className="block space-y-1 text-sm">

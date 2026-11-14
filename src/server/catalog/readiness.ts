@@ -126,6 +126,59 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
   return out;
 }
 
+/**
+ * Chỉ lỗi chặn mở bán (`errors`) cho nhiều SP — dùng cho số đếm/tab "Chờ hoàn thiện".
+ * Lỗi chỉ phụ thuộc biến thể (đang bán, giá, khối lượng) và kho của SP, không phụ thuộc tồn / giá vốn / tỷ giá,
+ * nên bỏ hẳn các truy vấn kho của `loadReadiness` (nặng khi có hàng nghìn SP nháp: badge menu chạy ở mọi trang admin).
+ * Kết quả `errors` trùng với `loadReadiness` (test readiness-errors đối chiếu).
+ */
+export async function loadReadinessErrors(db: Tx, productIds: string[]): Promise<Map<string, Issue[]>> {
+  const ids = [...new Set(productIds)];
+  if (ids.length === 0) return new Map();
+  const products = await db.product.findMany({
+    where: { id: { in: ids } },
+    select: {
+      id: true,
+      stockLocation: { select: { active: true, sellable: true, pricingMode: true } },
+      variants: {
+        select: {
+          id: true,
+          sku: true,
+          active: true,
+          priceMmk: true,
+          weightGrams: true,
+          isBundle: true,
+          bundleItems: { select: { component: { select: { weightGrams: true } } } },
+        },
+      },
+    },
+  });
+  const none = new Map<string, number>();
+  return new Map(
+    products.map((p) => [
+      p.id,
+      evaluateReadiness({
+        location: p.stockLocation,
+        imageCount: 0,
+        content: [],
+        variants: p.variants.map((v) => ({
+          id: v.id,
+          sku: v.sku,
+          active: v.active,
+          priceMmk: v.priceMmk,
+          weightGrams: v.weightGrams,
+          isBundle: v.isBundle,
+          componentWeights: v.isBundle ? v.bundleItems.map((b) => b.component.weightGrams) : null,
+        })),
+        available: none,
+        costMissingSkus: [],
+        costEstimatedSkus: [],
+        otherWarehouseSkus: [],
+      }).errors,
+    ]),
+  );
+}
+
 /** Bật hiển thị bị chặn vì còn lỗi — action dịch `issues` sang câu báo theo ngôn ngữ admin. */
 export class ReadinessError extends Error {
   constructor(public readonly issues: Issue[]) {

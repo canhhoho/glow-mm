@@ -129,9 +129,20 @@ export async function placeOrderAction(_prev: StoreActionState, formData: FormDa
     const error = await errorText(e, locale);
     const fieldErrors: Record<string, string> = {};
     if (e instanceof ZodError) {
+      // Câu riêng theo ô để khách biết sửa gì; ô không có câu riêng dùng câu chung.
+      const tc = await getTranslations({ locale, namespace: "Checkout" });
+      const FIELD_ERR: Record<string, string> = {
+        name: "err.invalid_name",
+        phone: "err.invalid_phone",
+        phone2: "err.invalid_phone",
+        townshipId: "err.invalid_zone",
+        addressLine: "err.invalid_address",
+      };
       for (const issue of e.issues) {
         const field = String(issue.path[0]);
-        if (["name", "phone", "phone2", "townshipId", "addressLine", "note", "paymentMethod"].includes(field)) fieldErrors[field] = error;
+        if (["name", "phone", "phone2", "townshipId", "addressLine", "note", "paymentMethod"].includes(field)) {
+          fieldErrors[field] ??= FIELD_ERR[field] ? tc(FIELD_ERR[field]) : error;
+        }
       }
     }
     if (e instanceof OrderError && e.code === "invalid_phone") fieldErrors[e.details?.field === "phone2" ? "phone2" : "phone"] = error;

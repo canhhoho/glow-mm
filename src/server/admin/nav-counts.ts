@@ -5,7 +5,7 @@ import { sellableCutoff } from "@/server/inventory/fefo";
 import { getNumberSetting } from "@/server/settings";
 import type { NavCountKey } from "./nav";
 import { AWAITING_REVIEW_WHERE, labelWhere } from "@/server/catalog/approval-rules";
-import { loadReadiness } from "@/server/catalog/readiness";
+import { loadReadinessErrors } from "@/server/catalog/readiness";
 
 /**
  * Số đếm cho badge menu admin — chỉ tính những số được yêu cầu (theo quyền của người xem).
@@ -47,8 +47,8 @@ export async function navCounts(keys: Set<NavCountKey>, now = new Date()): Promi
       prisma.product
         .findMany({ where: labelWhere("DRAFT"), select: { id: true } })
         .then(async (drafts) => {
-          const r = await loadReadiness(prisma, drafts.map((d) => d.id), now);
-          return ["catalogIncomplete", drafts.filter((d) => (r.get(d.id)?.errors.length ?? 0) > 0).length] as [NavCountKey, number];
+          const r = await loadReadinessErrors(prisma, drafts.map((d) => d.id));
+          return ["catalogIncomplete", drafts.filter((d) => (r.get(d.id)?.length ?? 0) > 0).length] as [NavCountKey, number];
         }),
     );
   }

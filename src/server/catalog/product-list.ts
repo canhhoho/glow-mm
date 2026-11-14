@@ -6,7 +6,7 @@ import { productName } from "@/server/inventory/queries";
 import { availableToSell } from "@/server/orders/availability";
 import { preorderCapacity } from "@/server/orders/preorder";
 import { AWAITING_REVIEW_WHERE, deriveLabel, labelWhere, type ChangeLabel, type ProductLabel } from "./approval-rules";
-import { loadReadiness } from "./readiness";
+import { loadReadiness, loadReadinessErrors } from "./readiness";
 
 /**
  * Danh sách SP admin có phân trang (P3, ảnh thiết kế "Sản phẩm"). Tab = trạng thái hiển thị (cùng quy tắc nhãn §4.2);
@@ -108,8 +108,8 @@ export async function listProductsPage(f: ListFilter, now = new Date()) {
   // Lọc theo dữ liệu tính được (kiểm tra mở bán, khả dụng) trên toàn bộ ứng viên rồi mới cắt trang.
   let ids = candidates.map((c) => c.id);
   if (f.tab === "incomplete" || f.tab === "draft") {
-    const r = await loadReadiness(prisma, ids, now);
-    ids = ids.filter((id) => ((r.get(id)?.errors.length ?? 0) > 0) === (f.tab === "incomplete"));
+    const r = await loadReadinessErrors(prisma, ids);
+    ids = ids.filter((id) => ((r.get(id)?.length ?? 0) > 0) === (f.tab === "incomplete"));
   }
   if (f.tab === "outOfStock" || f.sell) {
     const keep = new Set(ids);

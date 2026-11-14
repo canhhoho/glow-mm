@@ -46,9 +46,8 @@ export async function salesReport(range: Range, opts: { topN?: number } = {}) {
       },
     },
   });
-  const defs = await prisma.$transaction((tx) =>
-    bundleDefs(tx, [...new Set(orders.flatMap((o) => o.items.map((i) => i.variantId)))]),
-  );
+  // Chỉ đọc: không bọc interactive transaction (giới hạn 5s → P2028 khi DB bận).
+  const defs = await bundleDefs(prisma, [...new Set(orders.flatMap((o) => o.items.map((i) => i.variantId)))]);
 
   const days = new Map(
     dayRange(range.from, range.to).map((k) => [k, { day: k, orders: 0, revenue: 0, cogs: 0, profit: 0 }]),

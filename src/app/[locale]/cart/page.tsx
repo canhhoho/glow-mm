@@ -27,7 +27,11 @@ async function CartContent({ params }: PageProps<"/[locale]/cart">) {
   const { locale } = await params;
   setRequestLocale(locale);
   const lines = parseCart((await cookies()).get(CART_COOKIE)?.value);
-  const [t, cart] = await Promise.all([getTranslations({ locale, namespace: "Cart" }), getCartDetails(lines, locale)]);
+  const [t, ta, cart] = await Promise.all([
+    getTranslations({ locale, namespace: "Cart" }),
+    getTranslations({ locale, namespace: "Address" }),
+    getCartDetails(lines, locale),
+  ]);
 
   if (cart.lines.length === 0) {
     return (
@@ -104,7 +108,8 @@ async function CartContent({ params }: PageProps<"/[locale]/cart">) {
             {formatMmk(cart.subtotalMmk, locale)}
           </span>
         </div>
-        <p className="text-xs text-muted-foreground">{t("shippingNote")}</p>
+        {/* Cùng câu với checkout: không tính ship trên đơn, hãng vận chuyển thu khi giao (P15). */}
+        <p className="text-xs text-muted-foreground">{ta("shippingNote")}</p>
         {cart.ok && cart.preorder && <Notice>{t("preorderNotice")}</Notice>}
         {cart.ok ? (
           <Link href="/checkout" className={cn(primaryButton, "w-full")}>

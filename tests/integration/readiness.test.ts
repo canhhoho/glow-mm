@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { createDocument, postDocument } from "@/server/inventory/documents";
-import { loadReadiness } from "@/server/catalog/readiness";
+import { loadReadiness, loadReadinessErrors } from "@/server/catalog/readiness";
 import { saveProduct, setProductsPublished } from "@/server/catalog/products";
 import { makeFixture, markApproved, unpublishTestProducts, type Fixture } from "./fixtures";
 
@@ -105,5 +105,25 @@ describe("Sẵn sàng mở bán (D2)", () => {
     await prisma.product.update({ where: { id: f.productId }, data: { stockLocationId: f.mm.id } });
     const r = (await loadReadiness(prisma, [f.productId])).get(f.productId)!;
     expect(r.warnings).toEqual(expect.arrayContaining([{ code: "STOCK_OTHER_WAREHOUSE", skus: [`IT-${f.tag}`] }, { code: "OUT_OF_STOCK" }]));
+  });
+
+  it("loadReadinessErrors (badge/tab Chờ hoàn thiện) trả đúng errors của loadReadiness, kể cả khi có tồn", async () => {
+    const f = await makeFixture();
+    const ok = await saveProduct(product(f, `re-ok-${f.tag.toLowerCase()}`, { sku: `REOK-${f.tag}`, priceMmk: 10_000, weightGrams: 100 }), f.userId);
+    const zero = await saveProduct(product(f, `re-z-${f.tag.toLowerCase()}`, { sku: `REZ-${f.tag}`, priceMmk: 0 }), f.userId);
+    // Có tồn để chắc phần kho không làm lệch kết quả; sau đó kho của SP ngừng bán được → BAD_LOCATION.
+    const doc = await createDocument(
+      { type: "RECEIVE", toId: f.mm.id, lines: [{ variantId: f.variantId, lotNo: "E", expiryDate: "2028-12-31", unitCostVnd: 1_000, qty: 2 }] },
+      f.userId,
+    );
+    await postDocument(doc.id, f.userId);
+    await prisma.product.update({ where: { id: f.productId }, data: { stockLocationId: f.qc.id } });
+    const ids = [ok.id, zero.id, f.productId];
+    const full = await loadReadiness(prisma, ids);
+    const fast = await loadReadinessErrors(prisma, ids);
+    for (const id of ids) expect(fast.get(id)).toEqual(full.get(id)!.errors);
+    expect(fast.get(ok.id)).toEqual([]);
+    expect(fast.get(zero.id)!.map((e) => e.code)).toEqual(["PRICE_ZERO", "NO_WEIGHT"]);
+    expect(fast.get(f.productId)!.map((e) => e.code)).toContain("BAD_LOCATION");
   });
 });

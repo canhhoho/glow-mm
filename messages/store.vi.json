@@ -98,7 +98,6 @@
     "update": "Cập nhật",
     "remove": "Xoá",
     "subtotal": "Tạm tính",
-    "shippingNote": "Phí giao hàng tính ở bước thanh toán",
     "checkout": "Thanh toán",
     "unavailable": "Không còn bán",
     "onlyLeft": "Chỉ còn {count}",
@@ -127,6 +126,8 @@
     "err": {
       "invalid_phone": "Vui lòng nhập số di động Myanmar hợp lệ",
       "invalid_zone": "Vui lòng chọn thị trấn",
+      "invalid_name": "Vui lòng nhập họ tên người nhận",
+      "invalid_address": "Vui lòng nhập địa chỉ đầy đủ (ít nhất 3 ký tự)",
       "variant_unavailable": "Một số sản phẩm không còn bán — vui lòng kiểm tra giỏ hàng",
       "price_missing": "Một số sản phẩm chưa có giá bán — vui lòng liên hệ cửa hàng",
       "out_of_stock": "Một số sản phẩm không đủ hàng — vui lòng kiểm tra giỏ hàng",

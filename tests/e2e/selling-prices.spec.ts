@@ -6,7 +6,8 @@ test("giá bán: tìm SKU, sửa giá tại bảng và mở tính tự động",
   await page.goto("/admin/selling-prices");
   await expect(page.getByRole("heading", { name: "Giá bán", exact: true })).toBeVisible();
   const row = page.getByTestId("selling-price-row").first();
-  const sku = await row.locator("td").nth(1).locator("span").innerText();
+  // Ô SKU: thẻ đầu là mã; dòng combo có thêm nhãn "combo" (DB chỉ có seed → combo đứng đầu).
+  const sku = await row.locator("td").nth(1).locator("span").first().innerText();
   await page.getByRole("searchbox").fill(sku);
   await page.getByRole("button", { name: "Lọc", exact: true }).click();
   await expect(row).toContainText(sku);
