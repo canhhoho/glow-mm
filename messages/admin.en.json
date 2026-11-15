@@ -1313,7 +1313,7 @@
     "newRun": "Recalculate prices (preview)",
     "formula": "Price = VND cost (latest batch) ÷ rate (VND per 1 MMK) × (1 + margin %), rounded up",
     "formulaVn": "VN-import warehouse: VND purchase cost (latest posted receipt) × rate × (1 + margin %) + VN → MM freight (MMK/kg) × weight, rounded up. Margin applies to the purchase cost only. Combos without a declared weight use the sum of component weights.",
-    "formulaMmk": "Myanmar-purchase warehouse: price = MMK cost (latest posted receipt) + the product's fixed MMK profit, rounded up. Set the fixed profit on the product edit page.",
+    "formulaMmk": "Myanmar-purchase warehouse: price = MMK cost (the selected posted receipt, latest by default) + the product's fixed MMK profit, rounded up. Set the fixed profit on the Selling prices page (manual, MMK warehouse).",
     "warehouse": "Warehouse",
     "shipMmkPerKg": "Shipping VN → MM (MMK/kg)",
     "shipShort": "shipping {n} MMK/kg",

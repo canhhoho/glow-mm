@@ -156,8 +156,9 @@ test("QT1b/QT2: tạo SP → nhập hàng từ bước 2 (điền sẵn, khối 
   await expect(page.getByTestId("step-price-row").first()).toContainText("150 g");
   await expect(steps.getByRole("link", { name: /Giá bán/ })).toHaveAttribute("aria-current", "step");
 
-  // Bước 3: "Tính giá SP này" → bảng tính giá chỉ SP này → áp dụng.
-  await page.getByRole("link", { name: "Tính giá SP này" }).click();
+  // Bước 3: "Tính tự động" → trang Giá bán (tự động) chỉ SP này → bảng tính giá → áp dụng.
+  await page.getByTestId("price-actions").getByRole("link", { name: "Tính tự động" }).click();
+  await expect(page).toHaveURL(/\/admin\/selling-prices\?mode=auto&productId=/);
   await expect(page.getByTestId("pricing-product-scope")).toContainText(`Flow ${tag}`);
   await page.getByLabel("% lãi").fill("40");
   await page.getByLabel("Phí ship VN → MM (MMK/kg)").fill("8000");

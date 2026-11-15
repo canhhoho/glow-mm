@@ -1313,7 +1313,7 @@
     "newRun": "Tính giá mới (xem trước)",
     "formula": "Giá = vốn VND (lô nhập gần nhất) ÷ tỷ giá (VND cho 1 MMK) × (1 + % lãi), làm tròn lên",
     "formulaVn": "Kho hàng nhập VN: giá mua gốc VND (phiếu nhập đã ghi sổ gần nhất) × tỷ giá × (1 + % lãi) + cước VN → MM (MMK/kg) × khối lượng, làm tròn lên. % lãi chỉ tính trên giá mua gốc. Combo chưa khai báo khối lượng thì cộng khối lượng thành phần.",
-    "formulaMmk": "Kho mua tại Myanmar: giá = vốn MMK (phiếu nhập đã ghi sổ gần nhất) + lãi cố định MMK của sản phẩm, làm tròn lên. Lãi cố định nhập ở trang Sửa sản phẩm.",
+    "formulaMmk": "Kho mua tại Myanmar: giá = vốn MMK (lần nhập đã ghi sổ được chọn, mặc định gần nhất) + lãi cố định MMK của sản phẩm, làm tròn lên. Lãi cố định đặt ở trang Giá bán (Nhập thủ công, kho MMK).",
     "warehouse": "Kho",
     "shipMmkPerKg": "Phí ship VN → MM (MMK/kg)",
     "shipShort": "ship {n} MMK/kg",

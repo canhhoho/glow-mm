@@ -27,7 +27,7 @@ test("D8 nhập theo chuyến, phân bổ theo kg rồi thay chi phí báo cần
   await page.getByRole("button", { name: "Ghi sổ" }).click();
   await expect(page.getByText("Đã ghi sổ", { exact: true }).filter({ visible:true })).toBeVisible();
   await page.getByRole("link", { name: "Tính giá SKU vừa nhập", exact: true }).click();
-  await expect(page).toHaveURL(/\/admin\/pricing\?tab=runs&receiptId=/);
+  await expect(page).toHaveURL(/\/admin\/selling-prices\?mode=auto&receiptId=/);
   await expect(page.getByText(/Chỉ tính các SKU trong phiếu/)).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Kho", exact: true }).locator("option:checked")).toHaveText("Kho Thắm");
   await page.goto(shipmentUrl);

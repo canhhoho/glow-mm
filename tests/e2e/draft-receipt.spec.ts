@@ -6,8 +6,8 @@ import { login } from "./helpers";
 const SKU = "SV-SUN-50";
 
 async function fillLine(page: Page, qty: string, lot: string, cost: string) {
-  await page.getByLabel(`Số lượng ${SKU}`, { exact: true }).fill(qty);
-  await page.getByLabel(`Số lô ${SKU}`, { exact: true }).fill(lot);
+  await page.getByLabel(`Số lượng ${SKU}`, { exact: true }).filter({ visible: true }).fill(qty);
+  await page.getByLabel(`Số lô ${SKU}`, { exact: true }).filter({ visible: true }).fill(lot);
   await page.getByLabel(`Hạn dùng ${SKU}`, { exact: true }).fill("2029-12-31");
   await page.getByLabel(`Giá mua/đv (VND) ${SKU}`, { exact: true }).fill(cost);
 }
@@ -38,9 +38,9 @@ test("sửa phiếu nhập nháp giữ nguyên phiếu; huỷ nháp rồi nhập
   // Sửa: form mở lại ở bước 2 với số đã lưu; lưu → cùng phiếu, SL mới.
   await page.getByRole("link", { name: "Sửa phiếu", exact: true }).click();
   await expect(page).toHaveURL(/\/edit$/);
-  await expect(page.getByLabel(`Số lượng ${SKU}`, { exact: true })).toHaveValue("2");
-  await expect(page.getByLabel(`Số lô ${SKU}`, { exact: true })).toHaveValue(lot);
-  await page.getByLabel(`Số lượng ${SKU}`, { exact: true }).fill("5");
+  await expect(page.getByLabel(`Số lượng ${SKU}`, { exact: true }).filter({ visible: true })).toHaveValue("2");
+  await expect(page.getByLabel(`Số lô ${SKU}`, { exact: true }).filter({ visible: true })).toHaveValue(lot);
+  await page.getByLabel(`Số lượng ${SKU}`, { exact: true }).filter({ visible: true }).fill("5");
   await page.getByRole("button", { name: "Lưu nháp" }).click();
   await expect(page).toHaveURL(`${docUrl}?updated=1`, { timeout: 30_000 });
   await expect(page.getByText("Đã cập nhật phiếu nháp.")).toBeVisible();

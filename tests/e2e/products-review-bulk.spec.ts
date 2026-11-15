@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { approveChanges, login, priceInputs, setPrices } from "./helpers";
+import { approveChanges, livePrices, login, setPrices } from "./helpers";
 
 // P2: hàng đợi "Chờ duyệt" trên danh sách SP — cột Thay đổi + duyệt hàng loạt theo phiên bản đang hiển thị.
 const SLUG = "sen-viet-sunscreen-spf50";
@@ -11,11 +11,11 @@ test("đổi giá SP đang bán → gửi duyệt → danh sách Chờ duyệt h
   await page.getByRole("row", { name: new RegExp(SLUG) }).getByRole("link", { name: /^Sửa / }).click();
   await expect(page).toHaveURL(/\/admin\/products\/[^/?]+$/);
   const productUrl = page.url();
-  const original = Number(await (await priceInputs(page)).first().inputValue());
+  const [original] = await livePrices(page);
   const next = original + 100 * (1 + (Date.now() % 9));
 
   try {
-    await setPrices(page, [next], "E2E duyệt hàng loạt");
+    await setPrices(page, [next]);
     const check = page.getByTestId("launch-check").filter({ visible: true });
     await check.getByRole("button", { name: "Gửi duyệt", exact: true }).click();
     await expect(check.getByTestId("approval-status")).toHaveAttribute("data-change", "PENDING", { timeout: 15_000 });
@@ -30,10 +30,10 @@ test("đổi giá SP đang bán → gửi duyệt → danh sách Chờ duyệt h
 
     await page.goto(productUrl);
     await expect(page.getByTestId("launch-check").filter({ visible: true }).getByTestId("approval-status")).toHaveAttribute("data-change", "");
-    await expect((await priceInputs(page)).first()).toHaveValue(String(next));
+    expect((await livePrices(page))[0]).toBe(next);
   } finally {
     await page.goto(productUrl);
-    await setPrices(page, [original], "E2E trả giá cũ");
+    await setPrices(page, [original]);
     await approveChanges(page);
   }
 });

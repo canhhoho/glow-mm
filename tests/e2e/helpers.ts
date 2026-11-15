@@ -70,26 +70,45 @@ export async function openProductSettings(page: Page) {
   if (!(await summary.evaluate((el) => el.parentElement?.hasAttribute("open")))) await summary.click();
 }
 
-/** Trang SP bước 3 (QT1b): mở khối "Sửa giá tay" nếu đang đóng. */
-export async function openPriceManual(page: Page) {
-  const box = page.getByTestId("price-manual").filter({ visible: true });
-  if (!(await box.evaluate((el) => el.hasAttribute("open")))) await box.locator("summary").click();
-  return box;
+/** Trang SP bước 3: giá ĐANG BÁN của từng biến thể (theo thứ tự trên trang). */
+export async function livePrices(page: Page): Promise<number[]> {
+  return (await page.getByTestId("step-price-value").filter({ visible: true }).allInnerTexts()).map((t) => Number(t.replace(/\D/g, "")));
 }
 
-/** Ô giá (MMK) của từng biến thể trong "Sửa giá tay" — theo thứ tự biến thể trên trang. */
-export async function priceInputs(page: Page) {
-  return (await openPriceManual(page)).getByRole("spinbutton", { name: /^Giá \(MMK\) / });
+/** Trang SP bước 3: SKU của từng biến thể (theo thứ tự trên trang). */
+export async function variantSkus(page: Page): Promise<string[]> {
+  return page.getByTestId("step-price-row").filter({ visible: true }).locator("td:first-child span.font-mono").allInnerTexts();
 }
 
-/** Đặt giá ở bước 3 (bắt buộc lý do), chờ báo đã lưu. `prices[i]` = biến thể thứ i; bỏ trống = giữ nguyên. */
-export async function setPrices(page: Page, prices: (number | string | undefined)[], reason = "E2E") {
-  const box = await openPriceManual(page);
-  const inputs = box.getByRole("spinbutton", { name: /^Giá \(MMK\) / });
-  for (const [i, p] of prices.entries()) if (p !== undefined) await inputs.nth(i).fill(String(p));
-  await box.getByRole("textbox", { name: "Lý do sửa giá", exact: true }).fill(reason);
-  await box.getByRole("button", { name: "Lưu giá", exact: true }).click();
-  await expect(box.getByRole("status")).toContainText("Đã lưu giá", { timeout: 15_000 });
+/**
+ * Đặt giá TRỰC TIẾP cho các biến thể của SP đang mở (16/11): bước 3 không còn form giá; giá nhập thẳng đi qua Excel
+ * (trang Giá bán thủ công của kho VND tính theo công thức, và đặt hoa hồng cố định — không dùng để trả giá seed).
+ * `prices[i]` = biến thể thứ i; bỏ trống = giữ nguyên. Không "Gửi duyệt ngay". Quay lại trang SP khi xong.
+ */
+export async function setPrices(page: Page, prices: (number | string | undefined)[]) {
+  const productUrl = page.url();
+  const skus = await variantSkus(page);
+  const rows = prices.flatMap((p, i) => (p !== undefined ? [[skus[i], String(p)]] : []));
+  // Cột tên / thương hiệu / danh mục bắt buộc có mặt ở dòng tiêu đề (để trống với SKU có sẵn).
+  const csv = ["sku,name_en,brand,category,price_mmk", ...rows.map(([sku, price]) => `${sku},,,,${price}`)].join("\n");
+  // Mọi file đã xác nhận được ghi dấu (nhập lại đúng file bị chặn) — DB test: xoá dấu để file giống hệt lần chạy trước không bị chặn.
+  const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  try {
+    await client.query('DELETE FROM "CatalogOpeningImport"');
+  } finally {
+    await client.end();
+  }
+  await page.goto("/admin/products/import");
+  await page.getByLabel("File Excel nhập sản phẩm", { exact: true }).setInputFiles({ name: `gia-${Date.now()}.csv`, mimeType: "text/csv", buffer: Buffer.from(csv) });
+  await page.getByRole("button", { name: "Xem trước", exact: true }).click();
+  const preview = page.getByTestId("catalog-import-preview");
+  await expect(preview).toBeVisible({ timeout: 30_000 });
+  const submit = preview.getByRole("checkbox", { name: "Gửi duyệt ngay" });
+  if (await submit.count()) await submit.uncheck();
+  await preview.getByRole("button", { name: "Xác nhận nhập", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Đã nhập" })).toBeVisible({ timeout: 30_000 });
+  await page.goto(productUrl);
 }
 
 /**

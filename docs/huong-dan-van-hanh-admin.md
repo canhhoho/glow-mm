@@ -1,6 +1,6 @@
 # Hướng dẫn vận hành web Admin — T&C Cosmetics
 
-Tài liệu dành cho người **không biết lập trình** vận hành web quản trị (đường dẫn `/admin`). Viết dựa trên chức năng thực tế có trong hệ thống tại ngày 15/11/2026. Hướng dẫn riêng cho cộng tác viên: [huong-dan-cong-ctv.md](huong-dan-cong-ctv.md).
+Tài liệu dành cho người **không biết lập trình** vận hành web quản trị (đường dẫn `/admin`). Viết dựa trên chức năng thực tế có trong hệ thống tại ngày 15/11/2026; phần giá (mục 6, 7, 9, 10.6) cập nhật 16/11/2026 theo luồng giá mới. Hướng dẫn riêng cho cộng tác viên: [huong-dan-cong-ctv.md](huong-dan-cong-ctv.md).
 
 ## Mục lục
 
@@ -154,7 +154,7 @@ Làm theo vai trò. Mục ghi "(QTV)" chỉ Quản trị viên mới thấy.
 
 - [ ] **Kho hàng › Cảnh báo**: tồn thấp, hạn dùng, gợi ý đặt hàng.
 - [ ] **Báo cáo › Sức khoẻ dữ liệu**: xử lý các mục mức "Lỗi" trước, rồi "Cảnh báo".
-- [ ] **Sản phẩm › Giá bán**: lọc **Giá cũ hơn phiếu nhập** và **Chưa có giá**; tính lại giá khi cần ([mục 7.2](#72-tính-giá-bảng-tính-giá)).
+- [ ] **Sản phẩm › Giá bán**: lọc **Giá cũ hơn phiếu nhập** và **Chưa có giá**; tính lại giá khi cần ([mục 7.2](#72-trang-giá-bán-danh-sách)).
 - [ ] **Đối soát COD**: đơn nào quá vài ngày chưa có tiền về thì hỏi hãng ([mục 11](#11-đối-soát-tiền-cod)).
 - [ ] **Cộng tác viên › Hoa hồng & chi trả**: ai có **Đến hạn** thì chuyển tiền rồi bấm **Ghi nhận đã trả** ([mục 12.4](#124-chi-trả-hoa-hồng)).
 - [ ] **Kho hàng › Chuyến hàng**: chuyến nào báo **Cần phân bổ lại — đầu vào đã thay đổi** thì phân bổ lại ([mục 8.6](#86-chuyến-hàng-vn--mm-và-giá-vốn)).
@@ -320,7 +320,7 @@ Mở sản phẩm từ **Danh sách sản phẩm**. Ở đầu trang có nút **
 |---|---|---|
 | 1 | **Tạo sản phẩm** | Ảnh và thông tin sản phẩm ([5.3](#53-sửa-thông-tin-sản-phẩm), [5.4](#54-ảnh-sản-phẩm)) |
 | 2 | **Nhập kho + giá vốn** | Nút **Nhập hàng**, **Xem tồn kho** ([mục 8](#8-kho-hàng)) |
-| 3 | **Giá bán** | **Tính giá SP này** hoặc **Sửa giá tay** ([mục 7](#7-giá-bán-và-tỷ-giá)) |
+| 3 | **Giá bán** | Nút **Đặt giá** (Thủ công) hoặc **Tính tự động** — cả hai mở trang **Giá bán** ([mục 7](#7-giá-bán-và-tỷ-giá)) |
 | 4 | **Duyệt** | Gửi duyệt/duyệt ([mục 9](#9-duyệt-và-đăng-bán)) |
 | 5 | **Đăng bán** | **Bật hiển thị trên web** / **Ẩn khỏi web**, **Đặt trước khi hết hàng** |
 
@@ -451,9 +451,9 @@ Dấu * = bắt buộc khi tạo sản phẩm mới.
 | Thương hiệu * | Chọn hoặc gõ tên mới (tự tạo thương hiệu) |
 | Danh mục * | Tên hoặc mã danh mục — danh mục phải có sẵn |
 | Biến thể | Màu/dung tích. Trống = "Tiêu chuẩn" |
-| Giá bán (MMK) | 💰 **Chỉ đổi giá cho SKU đã có**; trống = giữ nguyên; phải > 0. **SKU mới luôn có giá 0** (đặt giá ở bước 3) |
+| Giá bán (MMK) | 💰 Điền = đặt giá (> 0) cho SKU có sẵn **và SKU mới**; **trống = giữ nguyên** (kể cả giá đang chờ duyệt). SKU mới để trống → giá 0, lưu nháp. Cần quyền quản lý giá |
 | Khối lượng (g) | Số nguyên gam. Kho Hàng nhập VN bắt buộc có trước khi gửi duyệt/đăng |
-| Hoa hồng CTV (MMK/cái) | Trống = tính theo % của CTV. Không xoá được qua Excel |
+| Hoa hồng CTV (MMK/cái) | 💰 Số tiền cố định/cái. Trống = giữ nguyên (SKU mới: theo % CTV). SP đã duyệt: chờ duyệt **cùng giá**. Không xoá được qua Excel |
 | Mô tả Myanmar / Mô tả tiếng Anh | Tuỳ chọn |
 | Cách dùng, Thành phần, Bảo quản, Hạn sau mở nắp (tháng) | Tuỳ chọn; hạn sau mở nắp tối đa 120 tháng. **Đây là nơi duy nhất sửa các trường này** (form sản phẩm không có ô) |
 | Kho bán | Mã kho. Trống = kho mặc định. Không đổi được kho của sản phẩm đã có |
@@ -462,7 +462,7 @@ Dấu * = bắt buộc khi tạo sản phẩm mới.
 | Số lượng nhập | Điền thì tạo **phiếu nhập nháp** |
 | Hạn sử dụng | dd/mm/yyyy. Trống ở sản phẩm có quản lý hạn = lô "chưa biết hạn", chưa bán được |
 | Giá mua/đv | VND với kho Hàng nhập VN, MMK với kho Hàng mua MMK |
-| Phí đưa về kho (VND/đv) | Chỉ kho VND; trở thành giá vốn thực tế của lô |
+| Phí đưa về kho (VND/đv) | Chỉ kho VND. Điền số (kể cả **0** = không phát sinh phí) → giá vốn thực tế = giá mua + phí. **Để trống = chưa biết** → lô **chưa có giá vốn** (không tự coi là 0; đơn dùng lô này không bàn giao được đến khi có giá vốn tạm/thực tế) |
 | Số lô | Trống = hệ thống tự đặt `NK<yymmdd>[-n]` |
 
 Dấu phân cách hàng nghìn kiểu 150,000 hoặc 150.000 đều được nhận. Tối đa **2 MB** và **5000 dòng** mỗi lần.
@@ -479,10 +479,13 @@ Dấu phân cách hàng nghìn kiểu 150,000 hoặc 150.000 đều được nh�
 ### 6.4. Điều gì thay đổi
 
 - **SKU có sẵn** → cập nhật. **Ô trống = giữ nguyên** (không xoá được dữ liệu bằng Excel). Không đổi kho, không sửa combo.
-- **SKU mới hoặc không có SKU** → tạo sản phẩm **ẩn, chưa duyệt, giá 0** 👁 (khách chưa thấy). Nếu tên trùng sản phẩm đã có, hệ thống cảnh báo "đã có sản phẩm cùng tên … Muốn cập nhật sản phẩm đó thì điền SKU của nó."
-- **Sản phẩm đã duyệt:** nội dung/giá đổi qua Excel đi vào **bản đang sửa** chờ duyệt ([9.4](#94-sửa-sản-phẩm-đã-duyệt)); khối lượng và hoa hồng CTV áp dụng ngay.
+- **SKU mới hoặc không có SKU** → tạo sản phẩm **ẩn, chưa duyệt** 👁 (khách chưa thấy), giá = cột Giá bán (trống → 0, lưu nháp). Nếu tên trùng sản phẩm đã có, hệ thống cảnh báo "đã có sản phẩm cùng tên … Muốn cập nhật sản phẩm đó thì điền SKU của nó."
+- **Sản phẩm đã duyệt:** nội dung, giá **và hoa hồng CTV** đổi qua Excel đi vào **bản đang sửa** chờ duyệt ([9.4](#94-sửa-sản-phẩm-đã-duyệt)) — giá và hoa hồng có hiệu lực cùng lúc khi duyệt; khối lượng áp dụng ngay. Ô giá để trống **không** đụng tới giá đang chờ duyệt.
+- **Tải "danh sách sản phẩm hiện có"** ghi giá / hoa hồng **hiệu lực** (đang chờ duyệt nếu có) → tải về rồi nhập lại không sửa gì sẽ không đổi giá.
 - **Có Số lượng nhập** → 📦 tạo **phiếu Nhập kho NHÁP** (lý do "Nhập hàng từ Excel"), mỗi kho một phiếu. **Tồn chưa tăng cho đến khi bạn mở phiếu, kiểm tra và Ghi sổ** ([8.2](#82-phiếu-nhập-kho)). Hộp kết quả có link "{code} · kiểm tra và ghi sổ".
-- **Gửi duyệt ngay** sẽ **luôn bỏ qua sản phẩm mới** vì giá = 0: "Chưa gửi được {n} sản phẩm (chưa đủ điều kiện): … Giá bán ≤ 0". Bình thường — đặt giá ở bước 3 rồi gửi duyệt.
+- **Gửi duyệt ngay** bỏ qua sản phẩm chưa đủ điều kiện (vd chưa có giá): "Chưa gửi được {n} sản phẩm (chưa đủ điều kiện): … Giá bán ≤ 0". Đặt giá ([mục 7](#7-giá-bán-và-tỷ-giá)) rồi gửi duyệt.
+- **Duyệt luôn** chỉ duyệt sản phẩm mà lượt nhập này là thay đổi duy nhất. Sản phẩm đã có thay đổi / đang chờ duyệt từ trước được liệt kê "Chưa duyệt luôn … — mở xem đầy đủ rồi duyệt".
+- **Xem trước giá vốn** chỉ hiện giá vốn sẽ thực sự được ghi; dòng để trống Phí đưa về kho hiện "—" và cảnh báo "để trống Phí đưa về kho → lô CHƯA CÓ giá vốn".
 - 💰 **Tỷ giá được chốt:** preview hiện "Tỷ giá tính giá vốn: 1 VND = {rate} MMK (chốt cho các lô nhập lần này)"; giá vốn các lô lấy theo tỷ giá đó.
 
 ### 6.5. Hệ thống tự chặn
@@ -523,7 +526,15 @@ Cảnh báo (không chặn) về lô: đã hết hạn, còn dưới ngưỡng n
 
 Chỉ **Quản trị viên** làm. 💰 Mọi thao tác trong mục này ảnh hưởng đến giá khách trả.
 
-Giá bán có 3 cách đặt: **Tính giá** (hàng loạt theo công thức), **Sửa giá tay** (từng sản phẩm), **Excel** (sửa giá SKU đã có). Mọi lần đổi giá đều ghi vào **Lịch sử giá** với nguồn: "Bảng tính giá", "Sửa tay" hoặc "Excel".
+**Nơi đặt giá chính là trang Sản phẩm › Giá bán** (cập nhật 16/11/2026). Ở đây tick các SKU rồi chọn **Nhập thủ công** hoặc **Tính tự động**. Ngoài ra chỉ còn **Excel** nhập thẳng giá ([mục 6](#6-nhập-và-cập-nhật-sản-phẩm-bằng-excel)). Bước 3 trang sản phẩm, phiếu nhập ("Tính giá SKU vừa nhập") và tab Tính giá của **Giá & tỷ giá** đều dẫn về trang Giá bán.
+
+Nguyên tắc chung:
+- **Giá áp dụng chung cho SKU.** "Lô cơ sở" chỉ là lần nhập dùng để tính; khách không chọn lô, không có giá riêng theo lô.
+- **Đổi tỷ giá hoặc giá vốn KHÔNG tự đổi giá trên web.** Hệ thống chỉ gắn nhãn **"Đầu vào mới — nên tính lại"** (có phiếu nhập / tỷ giá mới hơn lần đặt giá gần nhất, kể cả giá đang chờ duyệt). Giá thủ công khác công thức tự động **không** bị coi là lỗi.
+- **Sản phẩm chưa từng duyệt:** giá ghi thẳng (khách chưa thấy vì sản phẩm chưa đăng). **Sản phẩm đã duyệt:** giá **và hoa hồng CTV** vào **bản đang sửa**, khách vẫn thấy giá cũ đến khi **Duyệt thay đổi**; giá và hoa hồng có hiệu lực **cùng lúc**. Đơn cũ giữ nguyên giá / hoa hồng đã chốt.
+- Được **thay giá đang chờ duyệt** bằng kết quả mới (các thay đổi khác của bản đang sửa giữ nguyên). Nếu giá / hoa hồng vừa bị người khác đổi sau khi bạn mở trang → báo "vừa được đổi ở nơi khác — tải lại trang" (không ghi đè).
+- Mọi đường đều chặn **hoa hồng CTV lớn hơn giá bán**.
+- Lịch sử giá ghi nguồn: "Bảng tính giá" (cả tự động lẫn thủ công) / "Excel" / "Sửa tay" (kho MMK), kèm hoa hồng khi đổi cùng lúc.
 
 ### 7.1. Tỷ giá
 
@@ -532,69 +543,80 @@ Giá bán có 3 cách đặt: **Tính giá** (hàng loạt theo công thức), *
 1. Điền **1 USD = … MMK**, **1 USD = … VND**, **Ghi chú**. Dòng xem trước hiện "1 MMK = x VND · 1 VND = y MMK".
 2. Bấm **Thêm tỷ giá** → "Đã thêm tỷ giá".
 
-Kết quả: tỷ giá mới nhất (hiệu lực từ lúc thêm) thành **Đang dùng**.
+Kết quả: tỷ giá mới nhất thành **Đang dùng**. ⛔ **Tỷ giá chỉ thêm, không sửa, không xoá** — nhập sai thì thêm tỷ giá đúng ngay sau đó.
 
-⛔ **Tỷ giá chỉ thêm, không sửa, không xoá.** Nhập sai thì thêm một tỷ giá đúng ngay sau đó.
+Tỷ giá được chốt vào lô lúc **ghi sổ phiếu nhập** (phiếu tay) hoặc lúc **xác nhận Excel**; sửa phiếu nháp mà không đổi giá mua thì giữ tỷ giá đã chốt. Lỗi: "Tỷ giá USD→MMK phải > 0, tối đa 2 chữ số thập phân".
 
-Ảnh hưởng: tỷ giá **không tự đổi giá đang bán**. Nó được dùng khi tính giá mới, và được **chốt vào lô** lúc ghi sổ phiếu nhập/xác nhận Excel. Thêm tỷ giá mới sẽ làm sản phẩm kho nhập VN báo "Có tỷ giá mới hơn lần đổi giá gần nhất — nên tính lại giá".
+### 7.2. Trang Giá bán (danh sách)
 
-Lỗi: "Tỷ giá USD→MMK phải > 0, tối đa 2 chữ số thập phân".
+**Sản phẩm › Giá bán**, thẻ **Danh sách · Thủ công**. Mỗi SKU hiện:
+- giá **đang bán**, giá **chờ duyệt** (nếu có), **CTV: …** (hoa hồng đang áp dụng, "theo %" nếu chưa đặt) và hoa hồng chờ duyệt;
+- **nguồn giá** (bảng tính / Excel / sửa tay + ngày), **giá mua gần nhất** (lần nhập đã ghi sổ, hàng bán được, đúng kho bán);
+- nhãn **Đầu vào mới — nên tính lại**.
 
-### 7.2. Tính giá (bảng tính giá)
+Thẻ lọc: **Chưa có giá** (biến thể đang dùng), **Giá chờ duyệt**, **Giá cũ hơn phiếu nhập**. Nút **Đặt giá** ở từng dòng mở trang thủ công cho SKU đó; tick nhiều dòng rồi bấm **Nhập thủ công** hoặc **Tính tự động** ở thanh phía trên bảng.
 
-**Mục đích:** tính giá bán hàng loạt từ giá vốn, xem trước rồi áp dụng.
+### 7.3. Thủ công — kho hàng nhập VN (công thức VND)
+
+**Mục đích:** đặt giá theo lãi mong muốn bằng tiền VND trên giá mua của nhà cung cấp.
+
+**Cần chuẩn bị:** phiếu nhập **đã ghi sổ** cho SKU (để có giá mua NCC); tỷ giá.
+
+**Công thức** (máy chủ tự tính lại khi lưu, không nhận giá từ trình duyệt):
+
+```
+Giá bán VND = Giá mua NCC (VND) + Lãi mong muốn (VND)
+Giá bán MMK = Giá bán VND ÷ tỷ giá (VND cho 1 MMK) + Vận chuyển (MMK/sp) + CTV (MMK/sp)
+→ làm tròn LÊN theo "Làm tròn giá lên bội số (MMK)" ở Cấu hình cửa hàng
+```
+
+**Ví dụ (đã kiểm bằng test):** giá mua 100.000 + lãi 50.000 VND = 150.000 VND; tỷ giá 1 MMK = 6 VND → 25.000 MMK; + vận chuyển 800 + CTV 2.000 → **27.800 MMK**.
+
+**Các bước**
+1. Tick SKU ở trang Giá bán → **Nhập thủ công** (hoặc **Đặt giá** ở bước 3 của sản phẩm).
+2. Chọn **Tỷ giá** (hiện "1 MMK = … VND · từ ngày…", mặc định tỷ giá **đang dùng**; chọn tỷ giá cũ sẽ hiện cảnh báo).
+3. Mỗi dòng:
+   - **Lô cơ sở**: chọn lần nhập ("Lô … · phiếu … · ngày … · giá … VND"). Lô nhập nhiều lần với giá khác nhau hiện **từng lần nhập riêng** — giá mua lấy đúng lần đã chọn, **không bình quân**. Combo dùng tổng giá mua gần nhất của thành phần.
+   - **Giá mua NCC (VND)**: tự hiện theo lô đã chọn (là giá mua, **không phải** tổng giá vốn về kho).
+   - Điền **Lãi mong muốn (VND/sp)**, **Vận chuyển (MMK/sp)**, **CTV (MMK/sp)** (gợi ý lấy từ lần thủ công trước / cước tính giá gần nhất).
+   - **Giá bán VND** và **Giá bán cuối (MMK)** tự tính; giá cuối **không sửa tay**. Muốn đổi giá thì đổi lãi / vận chuyển / CTV.
+4. Tuỳ chọn **Gửi duyệt ngay** / **Duyệt luôn**, rồi bấm **Lưu giá**.
+
+**Lưu ý**
+- **CTV** nhập ở đây đồng thời là **hoa hồng cố định của SKU** cho đơn có CTV (thay cho %).
+- **Lãi mong muốn chưa phải lợi nhuận cuối**: chưa trừ chi phí về kho / chuyến hàng, phí COD, hàng trả, chi phí vận hành.
+- Dòng chưa có phiếu nhập đã ghi sổ hiện "Chưa có phiếu nhập đã ghi sổ" và không lưu được.
+
+Lỗi: "Giá / hoa hồng của … vừa được đổi ở nơi khác — tải lại trang"; "… không thuộc kho …"; "Giá và hoa hồng không đổi so với hiện tại"; "Chế độ thủ công theo VND chỉ dùng cho kho hàng nhập Việt Nam".
+
+### 7.4. Thủ công — kho hàng mua MMK
+
+Giữ cách cũ, không dùng công thức VND: mỗi sản phẩm một khung, điền **Giá bán (MMK)**, **CTV (MMK/sp)** (trống = theo % CTV), **Lãi cố định (MMK/đv)** (dùng cho Tính tự động), **Lý do sửa giá** (bắt buộc khi giá đổi) → **Lưu giá**. Lỗi: "Nhập lý do sửa giá", "Giá bán phải lớn hơn 0", "Hoa hồng CTV của … lớn hơn giá bán".
+
+### 7.5. Tự động (bảng tính giá)
 
 **Công thức**
 
 | Kho | Giá bán = |
 |---|---|
-| **Hàng nhập VN (VND)** | giá mua gốc VND (phiếu nhập **đã ghi sổ gần nhất**) × tỷ giá × (1 + % lãi) + cước (MMK/kg) × khối lượng, **làm tròn lên** |
-| **Hàng mua MMK** | vốn MMK (phiếu nhập đã ghi sổ gần nhất) + **lãi cố định** của sản phẩm, làm tròn lên |
-| Combo | tổng giá vốn thành phần; khối lượng = của combo hoặc tổng thành phần |
+| **Hàng nhập VN (VND)** | giá mua VND của **lần nhập cơ sở** × tỷ giá × (1 + % lãi) + cước (MMK/kg) × khối lượng, **làm tròn lên** |
+| **Hàng mua MMK** | giá mua MMK của lần nhập cơ sở + **lãi cố định** của sản phẩm, làm tròn lên |
+| Combo | tổng giá mua thành phần; khối lượng = của combo hoặc tổng thành phần |
 
-% lãi chỉ tính trên giá hàng, **không** tính trên cước. Chi phí chuyến hàng chỉ ảnh hưởng **giá vốn**, không ảnh hưởng giá bán.
-
-**Ví dụ (số giả định, kho Hàng nhập VN):** giá mua 150.000 VND; 1 USD = 4.500 MMK và 1 USD = 25.500 VND (→ 1 VND ≈ 0,1765 MMK); lãi 30%; cước 20.000 MMK/kg; khối lượng 200 g; làm tròn lên 100 MMK.
-- Hàng: 150.000 × 0,1765 ≈ 26.471 MMK → × 1,3 ≈ 34.412 MMK
-- Cước: 20.000 × 0,2 = 4.000 MMK
-- Cộng ≈ 38.412 → **làm tròn lên: 38.500 MMK**
+"Lần nhập cơ sở" mặc định là lần nhập **đã ghi sổ gần nhất**, chỉ tính **hàng bán được** vào **đúng kho bán** của sản phẩm (hoặc kho chưa bán như kho VN); dòng **Tester/quà**, khu chờ kiểm tra và kho bán khác bị loại. % lãi chỉ tính trên tiền hàng. Chi phí chuyến hàng chỉ ảnh hưởng **giá vốn**, không ảnh hưởng giá bán.
 
 **Các bước**
-1. **Sản phẩm › Giá & tỷ giá › tab Tính giá**, khối **Tính giá mới (xem trước)**. (Lối tắt: **Tính giá SP này** ở trang sản phẩm; **Tính giá SKU vừa nhập** ở phiếu nhập đã ghi sổ.)
-2. Chọn **Kho**, điền **Tỷ giá**, **% lãi**, **Phí ship VN → MM (MMK/kg)** (kho nhập VN) và **Làm tròn lên (MMK)**; có thể lọc **Danh mục**, **Thương hiệu**. Bấm **Xem trước**.
-3. Mở trang bản tính ("Tính giá {ngày}"), đọc các cảnh báo: "Giá thay đổi từ 20% — kiểm tra trước khi áp dụng." và cảnh báo lãi thấp (≤ 5% giá bán).
-4. Tick các dòng muốn áp dụng. Tuỳ chọn **Gửi duyệt ngay** / **Duyệt luôn**.
-5. Bấm **Áp dụng giá đã chọn** (xác nhận) → "Đã áp dụng {applied} giá, bỏ qua {skipped}, còn chờ {remaining}".
-6. Không muốn dùng nữa: **Huỷ bản xem trước** (chỉ khi còn là bản xem trước).
+1. Tick SKU → **Tính tự động** (hoặc thẻ **Tự động**; lối tắt **Tính tự động** ở bước 3 sản phẩm, **Tính giá SKU vừa nhập** ở phiếu nhập).
+2. Chọn **Kho**, **Tỷ giá**, **% lãi**, **Phí ship VN → MM (MMK/kg)**, **Làm tròn lên (MMK)** → **Xem trước**.
+3. Trang bản tính hiện giá **đang bán**, **đang chờ duyệt**, **đề xuất**, nguồn giá mua và cảnh báo (đổi ≥ 20%, lãi thấp). Muốn dùng lô khác: chọn **Lô cơ sở** ở từng dòng → **Tính lại với lô đã chọn** (tạo bản mới).
+4. Tick dòng, tuỳ chọn **Gửi duyệt ngay** / **Duyệt luôn** → **Áp dụng giá đã chọn**.
 
-**Kết quả:** giá mới thành giá bán 👁 (khách thấy ngay với sản phẩm đang bán chưa có thay đổi chờ duyệt). Với sản phẩm **đã duyệt**, giá mới vào **bản đang sửa** và **cần duyệt** mới có hiệu lực ([9.4](#94-sửa-sản-phẩm-đã-duyệt)).
+Dòng bị bỏ qua khi xem trước: "Thiếu giá mua đã ghi sổ", "Thiếu khối lượng", "Thiếu lãi cố định", "Giá tính ra bằng 0". Khi áp: "Giá / hoa hồng đã bị sửa sau khi xem trước", "Đầu vào đã đổi … — tạo bản mới", "Hoa hồng CTV lớn hơn giá mới — sửa hoa hồng ở trang Giá bán". Bản xem trước hết hạn sau **3 ngày** (Cấu hình cửa hàng).
 
-**Biến thể bị bỏ qua** ("Không tính được {count} biến thể"): "Thiếu giá mua đã ghi sổ" (chưa có phiếu nhập đã ghi sổ); "Thiếu khối lượng"; "Thiếu lãi cố định" (kho mua MMK); "Giá tính ra bằng 0" (không bao giờ được đưa vào bảng).
+### 7.6. Lãi cố định và hoa hồng CTV theo sản phẩm
 
-**Hết hạn / lệch:** bản xem trước hết hạn sau **3 ngày** (đổi ở Cấu hình cửa hàng): "Bản xem trước đã hết hạn… — tạo bản mới". Khi áp dụng, dòng bị bỏ qua nếu "Giá đã bị sửa sau khi xem trước" hoặc "Đầu vào đã đổi (lô, giá mua, khối lượng, combo, lãi hoặc kho) — tạo bản mới".
-
-Xem lại: tab **Lịch sử giá**.
-
-### 7.3. Sửa giá tay (bước 3)
-
-1. Trang sản phẩm › bước **Giá bán** › **Sửa giá tay** (hoặc **Sản phẩm › Giá bán** › **Nhập tay** › **Sửa**).
-2. Điền từng biến thể: **Giá (MMK)** (≥ 1), **Hoa hồng CTV (MMK/cái)** (trống = theo % của CTV), và với kho Hàng mua MMK: **Lãi cố định (MMK/đơn vị)**.
-3. Điền **Lý do sửa giá** — **bắt buộc khi giá đổi** (lưu vào lịch sử giá).
-4. Bấm **Lưu giá**.
-
-Lỗi: "Nhập lý do sửa giá"; "Giá bán phải lớn hơn 0"; "Giá của {sku} vừa được đổi ở nơi khác — tải lại trang"; "Hoa hồng CTV của {sku} lớn hơn giá bán".
-
-Lưu ý: với sản phẩm đã duyệt, giá mới hiện là "chờ duyệt: {giá}"; hoa hồng CTV và lãi cố định áp dụng ngay. Hoa hồng CTV theo sản phẩm được **chép vào từng dòng đơn lúc tạo đơn** (đổi sau không ảnh hưởng đơn cũ).
-
-### 7.4. Trang Giá bán
-
-**Sản phẩm › Giá bán** liệt kê từng SKU với giá bán, giá chờ duyệt và giá mua gần nhất. Các thẻ lọc: **Chưa có giá**, **Giá chờ duyệt**, **Giá cũ hơn phiếu nhập** (có phiếu nhập ghi sổ sau lần đổi giá gần nhất → nên tính lại giá).
-
-### 7.5. Lãi cố định và hoa hồng CTV theo sản phẩm
-
-- **Lãi cố định (MMK/đơn vị):** chỉ cho kho **Hàng mua MMK**; đặt ở bước 3. (Một số dòng chữ trên màn hình còn ghi "nhập ở trang Sửa sản phẩm" — **không đúng**: form sửa không có ô này.)
-- **Hoa hồng CTV (MMK/cái):** số tiền cố định cho CTV bán sản phẩm này, thay cho % khi để trống ([12.3](#123-cách-tính-hoa-hồng)).
-- Cả hai chỉ đặt ở bước 3 hoặc (hoa hồng) qua Excel cho SKU có sẵn.
+- **Lãi cố định (MMK/đơn vị):** chỉ kho **Hàng mua MMK**, đặt ở trang Giá bán (khung thủ công MMK); áp dụng ngay (không cần duyệt).
+- **Hoa hồng CTV (MMK/cái):** đặt ở trang Giá bán (thủ công) hoặc Excel. Với sản phẩm đã duyệt, hoa hồng chờ duyệt **cùng giá** và có hiệu lực cùng lúc ([12.3](#123-cách-tính-hoa-hồng)). Hoa hồng được chép vào dòng đơn lúc tạo đơn — đổi sau không ảnh hưởng đơn cũ.
 
 ---
 
@@ -616,9 +638,9 @@ Lưu ý: với sản phẩm đã duyệt, giá mới hiện là "chờ duyệt: 
 3. **Bước 2 — Nhập thông số nhập kho:**
    - **Chuyến hàng** (nếu hàng thuộc một chuyến VN → MM), **Lý do / ghi chú**.
    - **Giá trị chung** để điền nhanh: **Số lô chung**, **Hạn dùng chung**, **Ngày SX chung**, **Loại tồn chung**; **Cước tạm tính VN → MM (MMK/kg)**.
-   - Mỗi dòng: **Số lượng**, **Số lô**, **Hạn dùng** (hoặc **Chưa biết hạn · Chưa được bán**), **Ngày SX**, **Giá mua/đv (VND)** hoặc **(MMK)** tuỳ kho, **Loại tồn** (bán được / Tester/quà), **Khối lượng (g)** (chỉ điền cho biến thể đang trống khối lượng), **+ Lô** để thêm lô thứ hai.
+   - Mỗi dòng: **Số lượng**, **Số lô**, **Hạn dùng** (hoặc **Chưa biết hạn · Chưa được bán**), **Ngày SX**, **Giá mua/đv (VND)** hoặc **(MMK)** tuỳ kho, **Phí về kho (VND/đv)** (chỉ hàng VND, tuỳ chọn: **0** = không phát sinh → giá vốn thực tế; **trống** = chưa biết → dùng giá vốn tạm theo cước tạm tính, không có thì thiếu giá vốn), **Loại tồn** (bán được / Tester/quà), **Khối lượng (g)** (chỉ điền cho biến thể đang trống khối lượng), **+ Lô** để thêm lô thứ hai.
    - Có thể **Dán từ Excel** với các cột: SKU · Số lượng · Số lô · Hạn dùng · Giá mua (VND) · [Ngày SX] · [SELLABLE/TESTER].
-4. Bấm **Lưu nháp** → phiếu ở trạng thái **Nháp**. Phiếu nháp còn **Sửa phiếu** được.
+4. Bấm **Lưu nháp** → phiếu ở trạng thái **Nháp**. Phiếu nháp còn **Sửa phiếu** được — trang sửa điền lại **giá mua và phí về kho của chính dòng** (không lấy bình quân của lô); lưu lại mà không đổi giá mua thì giữ tỷ giá đã chốt (vd từ Excel).
 5. Kiểm tra lại, bấm **Ghi sổ** (hỏi "Ghi sổ phiếu {code}? Tồn kho sẽ thay đổi và không hoàn tác được.").
 
 **Kết quả:** 📦⛔ tồn tăng; phiếu thành **Đã ghi sổ**. Giá mua và tỷ giá được chốt vào lô 💰: các lần tính giá sau dùng giá của phiếu nhập đã ghi sổ gần nhất. Nếu có đơn đặt trước đang chờ, phiếu cảnh báo "Có {count} đơn đặt trước đang chờ hàng trong phiếu này." kèm link **Mở danh sách đơn đặt trước**.
@@ -709,7 +731,7 @@ Ngưỡng "tồn thấp" là **5** cho mọi sản phẩm — hiện **không c�
 
 ### 9.1. Gửi duyệt
 
-Điều kiện: không còn **lỗi** ở [5.2](#52-trang-sản-phẩm-5-bước-và-các-lưu-ý). Cách làm: **Gửi duyệt** ở bước 4 / **Lưu & Gửi duyệt** ở form / **Gửi duyệt** ở thao tác hàng loạt trong danh sách / tuỳ chọn **Gửi duyệt ngay** khi nhập Excel hay áp dụng bảng giá. Sản phẩm đã duyệt mà không có thay đổi nào: "Không có thay đổi nào để gửi duyệt".
+Điều kiện: không còn **lỗi** ở [5.2](#52-trang-sản-phẩm-5-bước-và-các-lưu-ý). **Duyệt luôn** (khi nhập Excel / áp giá) chỉ duyệt sản phẩm mà lượt đó là thay đổi duy nhất; sản phẩm có thay đổi khác từ trước được liệt kê để mở xem đầy đủ rồi duyệt. Cách làm: **Gửi duyệt** ở bước 4 / **Lưu & Gửi duyệt** ở form / **Gửi duyệt** ở thao tác hàng loạt trong danh sách / tuỳ chọn **Gửi duyệt ngay** khi nhập Excel hay áp dụng bảng giá. Sản phẩm đã duyệt mà không có thay đổi nào: "Không có thay đổi nào để gửi duyệt".
 
 ### 9.2. Duyệt hoặc từ chối một sản phẩm
 
@@ -727,9 +749,9 @@ Nếu nội dung đã đổi sau khi bạn mở trang: "Nội dung vừa thay đ
 
 ### 9.4. Sửa sản phẩm đã duyệt
 
-Với sản phẩm đã duyệt, các trường sau **cần duyệt lại**: tên, mô tả, danh mục, thương hiệu, biến thể (SKU/tên/bật-tắt), thành phần combo, **thêm/xoá ảnh**, **giá bán**. Lưu các trường này tạo **bản đang sửa**; 👁 **khách vẫn thấy bản đã duyệt** cho đến khi bản mới được duyệt. Nhãn: **Có thay đổi (nháp)** → **Thay đổi chờ duyệt** → **Thay đổi bị từ chối**.
+Với sản phẩm đã duyệt, các trường sau **cần duyệt lại**: tên, mô tả, danh mục, thương hiệu, biến thể (SKU/tên/bật-tắt), thành phần combo, **thêm/xoá ảnh**, **giá bán** và **hoa hồng CTV cố định** (có hiệu lực cùng giá khi duyệt). Lưu các trường này tạo **bản đang sửa**; 👁 **khách vẫn thấy bản đã duyệt** cho đến khi bản mới được duyệt. Nhãn: **Có thay đổi (nháp)** → **Thay đổi chờ duyệt** → **Thay đổi bị từ chối**.
 
-Các trường **áp dụng ngay, không cần duyệt:** khối lượng, hoa hồng CTV, lãi cố định, kho, hạn dùng/PAO, bảo quản, cách dùng, thành phần, tag, slug (nếu chưa khoá), thứ tự và mô tả ảnh, thiết lập đặt trước.
+Các trường **áp dụng ngay, không cần duyệt:** khối lượng, lãi cố định, kho, hạn dùng/PAO, bảo quản, cách dùng, thành phần, tag, slug (nếu chưa khoá), thứ tự và mô tả ảnh, thiết lập đặt trước.
 
 Nút: **Gửi duyệt** → người duyệt bấm **Duyệt thay đổi**. **Huỷ thay đổi** bỏ bản đang sửa ("Huỷ mọi thay đổi đang chờ và quay về bản đang bán?").
 
@@ -793,7 +815,7 @@ Trang danh sách **Đơn hàng › Danh sách đơn** có bộ lọc (kể cả 
 | "Số điện thoại không hợp lệ" | Nhập số Myanmar đúng định dạng |
 | "Khu vực giao hàng không hợp lệ hoặc chưa có bảng phí" | Chọn lại Vùng/Huyện/Thị trấn (chỉ thị trấn đang giao mới chọn được — [15.2](#152-địa-bàn-giao-hàng-vtp)) |
 | "Có sản phẩm đã ngừng bán" | Bỏ dòng đó |
-| "Có sản phẩm chưa có giá bán (giá ≤ 0): SKU" | Đặt giá trước ([7.3](#73-sửa-giá-tay-bước-3)) |
+| "Có sản phẩm chưa có giá bán (giá ≤ 0): SKU" | Đặt giá trước ([7.2](#72-trang-giá-bán-danh-sách)) |
 | "Không đủ hàng (còn/cần): SKU (còn/cần)" | Giảm số lượng hoặc nhập thêm hàng. **Nhân viên không tạo được đơn đặt trước** |
 | "CTV không tồn tại hoặc đã bị khoá" | Chọn CTV khác hoặc bỏ trống |
 
@@ -842,6 +864,8 @@ Xuất file **không** chuyển đơn sang **Đang giao** và **không** trừ k
 **Bàn giao vận chuyển** — nút **Đã bàn giao vận chuyển** (từ **Chuẩn bị giao**)
 - Cần **Đơn vị vận chuyển**; **Mã vận đơn** không bắt buộc (sửa sau bằng **Lưu vận đơn**).
 - ⛔📦 **Xuất kho thật**: lấy lô theo FEFO (hoặc đúng lô đã chốt trên phiếu lấy hàng), bỏ qua lô dưới ngưỡng ngừng bán, trừ từng thành phần của combo, mỗi kho một phiếu **Xuất kho**, ghi giá vốn từng lô cho báo cáo lợi nhuận. Không hoàn tác được; nếu khách trả hàng, dùng chức năng **Trả hàng**.
+- **Lô chưa có giá vốn** (cả thực tế lẫn tạm tính) → **không bàn giao được** (16/11): "Không bàn giao được: lô sắp xuất chưa có giá vốn … SKU · lô". Vào trang lô bấm **Tính giá vốn tạm**, hoặc phân bổ chi phí chuyến hàng, rồi bàn giao lại. Phiếu lấy hàng ghi sẵn "Thiếu giá vốn — chưa bàn giao được" cạnh lô đó.
+- **Lô dùng giá vốn tạm** → vẫn bàn giao, hiện lưu ý "… lô xuất đang dùng giá vốn tạm — lợi nhuận của đơn là tạm tính" (bàn giao hàng loạt: "… đơn xuất lô đang dùng giá vốn tạm").
 
 **Giao thành công** — nút **Giao thành công** (đơn COD: **Giao thành công · Đã thu tiền**), từ **Đang giao**
 - Chỉ bấm khi khách đã nhận hàng và (COD) hãng đã thu tiền: "Chỉ hoàn tất khi khách đã nhận hàng và tiền COD đã được thu."
@@ -957,7 +981,7 @@ Bấm **Giao thành công · Đã thu tiền** chỉ ghi nhận **khách đã tr
 ### 12.3. Cách tính hoa hồng
 
 - **Cơ sở tính** = tiền hàng **thực giữ** = (số lượng − số lượng trả) × đơn giá. **Phí ship không tính.**
-- **Hoa hồng người bán** = (hoa hồng cố định theo sản phẩm × số lượng giữ) + (% CTV × tiền hàng các dòng còn lại). Hoa hồng cố định là ô **Hoa hồng CTV (MMK/cái)** ở bước 3 của sản phẩm ([7.3](#73-sửa-giá-tay-bước-3)); nó được **chốt vào đơn** lúc gắn CTV.
+- **Hoa hồng người bán** = (hoa hồng cố định theo sản phẩm × số lượng giữ) + (% CTV × tiền hàng các dòng còn lại). Hoa hồng cố định là ô **CTV (MMK/sp)** ở trang Giá bán ([7.3](#73-thủ-công--kho-hàng-nhập-vn-công-thức-vnd)) hoặc cột Excel; nó được **chốt vào đơn** lúc gắn CTV.
 - **Hoa hồng tầng trên** = % cấp trên × **toàn bộ** tiền hàng giữ (không xét hoa hồng cố định). **Cửa hàng trả**, không trừ vào CTV bán.
 - % của CTV lúc đơn được tạo/gán **được chốt vào đơn**; đổi % sau chỉ áp cho đơn mới.
 
@@ -1121,7 +1145,7 @@ Xem [10.10](#1010-đánh-giá-của-khách).
 | **Xác nhận tiền đã về cửa hàng** / **Đóng ngoại lệ COD** | Không có nút sửa | Liên hệ kỹ thuật viên **[CHƯA XÁC MINH — không có công cụ sửa trên giao diện]** |
 | **Ghi nhận đã trả** (hoa hồng) | Trả hết một lần, khoá đơn | Khoản trả nhầm xử lý ngoài hệ thống |
 | **Thêm tỷ giá** | Không sửa/xoá | Thêm tỷ giá đúng ngay sau đó |
-| **Áp dụng giá đã chọn**, **Lưu giá** | Lịch sử giá giữ vĩnh viễn | Đặt lại giá đúng (kèm lý do) |
+| **Áp dụng giá đã chọn**, **Lưu giá** | Lịch sử giá giữ vĩnh viễn | Đặt lại giá đúng ở trang Giá bán (SP đã duyệt: còn chờ duyệt thì có thể **Huỷ thay đổi**) |
 | **Xác nhận nhập** Excel | File đó không nhập lại được | Sửa file rồi nhập (khác nội dung) |
 | **Xoá** sản phẩm chưa có lịch sử | Xoá hẳn cùng ảnh và lịch sử giá | Tạo lại |
 | Slug sau lần **đăng bán** đầu | Link khách đã dùng | Không đổi được |
@@ -1144,8 +1168,10 @@ Bảng này chỉ gom các thông báo **hay gặp nhất**; các lỗi đặc t
 | "Đăng nhập quá nhiều lần. Vui lòng thử lại sau ít phút." | Bị giới hạn số lần thử | [1.1](#11-đăng-nhập-lần-đầu) |
 | "Tài khoản đã bị khoá. Liên hệ quản trị viên." | Tài khoản bị khoá | [13.1](#131-nhân-viên) |
 | "Không đủ hàng (còn/cần)" / "Không đủ hàng: cần x, khả dụng y" | Tồn không đủ, hoặc hàng đang được giữ cho đơn khác | [8.3](#83-chuyển-kho-xuất-kho-và-điều-chỉnh), [10.2](#102-tạo-đơn-thủ-công) |
-| "Giá bán ≤ 0" / "Có sản phẩm chưa có giá bán (giá ≤ 0)" | Chưa đặt giá | [7.3](#73-sửa-giá-tay-bước-3) |
-| "Nhập lý do sửa giá" | Đổi giá phải có lý do | [7.3](#73-sửa-giá-tay-bước-3) |
+| "Giá bán ≤ 0" / "Có sản phẩm chưa có giá bán (giá ≤ 0)" | Chưa đặt giá | [7.2](#72-trang-giá-bán-danh-sách) |
+| "Nhập lý do sửa giá" | Đổi giá (kho MMK) phải có lý do | [7.4](#74-thủ-công--kho-hàng-mua-mmk) |
+| "Không bàn giao được: lô sắp xuất chưa có giá vốn …" | Lô chưa có giá vốn | [10.6](#106-bàn-giao-giao-thành-công-huỷ-và-trả-hàng) |
+| "Hoa hồng CTV … lớn hơn giá bán" | Hoa hồng cố định vượt giá | [7.6](#76-lãi-cố-định-và-hoa-hồng-ctv-theo-sản-phẩm) |
 | "Thiếu khối lượng …" | Thiếu khối lượng (gam) | [5.2](#52-trang-sản-phẩm-5-bước-và-các-lưu-ý) |
 | "Chưa bật hiển thị / lưu được: …" | Sản phẩm còn lỗi chặn đăng | [5.2](#52-trang-sản-phẩm-5-bước-và-các-lưu-ý) |
 | "Nội dung vừa thay đổi — tải lại và xem lại trước khi duyệt" | Người khác vừa sửa | [9.2](#92-duyệt-hoặc-từ-chối-một-sản-phẩm) |
@@ -1173,6 +1199,8 @@ Nếu gặp trang lỗi chung của hệ thống (không phải thông báo nghi
 - **Nút hoàn tiền cho khách**; hoàn tiền làm ngoài hệ thống.
 - **Chuyển tiền thật** cho CTV hay đối soát tự động với ngân hàng/hãng: hệ thống chỉ **ghi nhận**.
 - **Tính phí ship** (luôn bằng 0; hãng thu khi giao).
+- **Gõ đè giá cuối ở chế độ Thủ công kho VND** (giá luôn theo công thức; muốn giá tròn / khuyến mãi thì đổi lãi, hoặc nhập thẳng qua Excel).
+- **Giá bán riêng theo lô** (lô chỉ là cơ sở tính; giá áp chung cho SKU).
 - **Đơn đặt trước do nhân viên hoặc CTV tạo** (chỉ khách web).
 - **Sửa ở giao diện** các trường **Cách dùng**, **Thành phần (INCI)**, **Bảo quản**, **Hạn sau mở nắp** (chỉ qua Excel) và các ngưỡng **báo tồn thấp**, **thời gian VN→MM**, **tồn an toàn** theo sản phẩm (hiện cố định mặc định: 5, 21, 0).
 - **Xoá hoặc sửa tỷ giá**; **huỷ/sửa đối soát COD** đã xác nhận.
@@ -1215,7 +1243,7 @@ Các điểm sau đọc từ mã nguồn nhưng **chưa được thử trên ser
 ### 19.3. Một số dòng chữ trên màn hình chưa khớp hành vi thật
 
 Phát hiện khi viết tài liệu (**không sửa mã** theo yêu cầu; để nhóm kỹ thuật cân nhắc):
-- Trang **Giá & tỷ giá** ghi "Lãi cố định nhập ở trang Sửa sản phẩm" — thực tế lãi cố định chỉ nhập ở bước 3 (**Sửa giá tay**).
+- Trang **Giá & tỷ giá** ghi "Lãi cố định nhập ở trang Sửa sản phẩm" — thực tế lãi cố định nhập ở trang **Giá bán** (khung thủ công của kho MMK). **Đã sửa chữ trên màn hình ngày 16/11/2026.**
 
 ### 19.4. Khi cần hỗ trợ
 

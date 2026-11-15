@@ -391,7 +391,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
                 </Td>
                 <Td label={t("label")}>{v.label}</Td>
                 <Td label={t("price")} className={v.priceMmk > 0 ? "text-right tabular-nums" : "text-right text-destructive tabular-nums"}>
-                  {fmtInt(v.priceMmk)}
+                  <span data-testid="step-price-value">{fmtInt(v.priceMmk)}</span>
                   {cr?.prices[v.id] && (
                     <div className="text-xs text-muted-foreground" data-testid="pending-price">
                       {t("review.pendingPrice", { price: fmtInt(cr.prices[v.id].priceMmk) })}
