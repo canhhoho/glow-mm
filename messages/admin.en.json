@@ -2335,10 +2335,11 @@
     "submitNow": "Submit for approval now",
     "submitNowHint": "Only products created or changed in this batch that are ready; the rest are listed.",
     "approveNow": "Approve right away",
-    "approveNowHint": "Self-approval is logged. New products are never published automatically; products on sale only get the changes applied.",
+    "approveNowHint": "You approve (logged) the products whose only change is this batch. Products with other earlier changes are listed for a full review. New products are never published automatically.",
     "submitted": "{n} products submitted",
     "approved": "{n} approved",
     "notReady": "{n} products not submitted (not ready):",
-    "approveFailed": "{n} products not approved (still pending):"
+    "approveFailed": "{n} products not approved (still pending):",
+    "needsReview": "{n} product(s) were not approved now because they have other earlier changes (content, images or prices) — open them to review in full:"
   }
 }

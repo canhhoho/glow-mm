@@ -9,6 +9,8 @@ export type BatchReviewView = {
   notReady: { id: string; name: string; reason: string }[];
   approved: number;
   approveFailed: { id: string; name: string; reason: string }[];
+  /** SP có thay đổi khác từ trước lượt này → không duyệt luôn, cần mở xem đầy đủ (16/11). */
+  needsReview?: { id: string; name: string }[];
 };
 
 /**
@@ -21,12 +23,16 @@ export async function finishBatchReview(review: BatchSubmitResult, userId: strin
     r.issues?.length
       ? r.issues.map((i) => t(`readiness.issue.${i.code}` as Parameters<typeof t>[0]) + (i.skus?.length ? ` (${i.skus.join(", ")})` : "")).join("; ")
       : (r.error ?? "");
-  const approvedResults = approve ? await approveSubmitted([...review.submitted, ...review.already], userId) : [];
+  // 16/11: "Duyệt luôn" chỉ duyệt SP mà lượt này là thay đổi duy nhất, đúng phiên bản sau lượt; SP có thay đổi /
+  // chờ duyệt từ trước (nội dung, ảnh, giá của người khác) → để người duyệt xem đầy đủ.
+  const hold = new Set((review.needsReview ?? []).map((r) => r.id));
+  const approvedResults = approve ? await approveSubmitted(review.submitted.filter((id) => !hold.has(id)), userId, review.versions) : [];
   return {
     submitted: review.submitted.length,
     already: review.already.length,
     notReady: review.skipped.map((s) => ({ id: s.id, name: s.name, reason: reason(s) })),
     approved: approvedResults.filter((r) => r.ok).length,
     approveFailed: approvedResults.filter((r) => !r.ok).map((r) => ({ id: r.id, name: r.name, reason: reason(r) })),
+    ...(approve && hold.size > 0 && { needsReview: review.needsReview }),
   };
 }

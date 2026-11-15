@@ -1,5 +1,5 @@
 import "server-only";
-import { submitTouched } from "@/server/catalog/review";
+import { changedBefore, submitTouched } from "@/server/catalog/review";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { rawId } from "@/lib/schemas";
@@ -357,6 +357,7 @@ async function applyLines(tx: Tx, runId: string, lines: RunLineRow[], fresh: Map
   const productIds = [...new Set(owners.map((v) => v.productId))].sort();
   if (productIds.length) await tx.$queryRaw`SELECT "id" FROM "Product" WHERE "id" IN (${Prisma.join(productIds)}) ORDER BY "id" FOR UPDATE`;
   const owner = new Map(owners.map((v) => [v.id, v]));
+  const before = await changedBefore(tx, productIds);
   return guardApproval(tx, productIds, userId, async () => {
     const current = await effectivePricingOf(tx, lines.map((l) => l.variantId));
     let applied = 0;
@@ -434,7 +435,7 @@ async function applyLines(tx: Tx, runId: string, lines: RunLineRow[], fresh: Map
     });
     /** `awaitingApproval`: số SP đã duyệt có giá mới đang chờ duyệt (chưa hiện cho khách). */
     const touched = [...new Set(details.map((d) => owner.get(lines.find((l) => l.variant.sku === d.sku)!.variantId)!.productId))];
-    return { applied, skipped, remaining, awaitingApproval: stagedProducts.size, stagedProductIds: [...stagedProducts], touched, details };
+    return { applied, skipped, remaining, awaitingApproval: stagedProducts.size, stagedProductIds: [...stagedProducts], touched, details, changedBefore: before };
   });
 }
 
@@ -470,7 +471,7 @@ export async function applyRun(runId: string, variantIds: string[], userId: stri
       const fresh = new Map((await computeLines(tx, lines.map((l) => l.variantId), ctx, sources)).lines.map((l) => [l.variantId, l]));
       const outcome = await applyLines(tx, runId, lines, fresh, userId, now);
       // Sau khi so dấu vân tay (guardApproval) — gửi duyệt không đổi nội dung SP.
-      const review = opts.submit ? await submitTouched(tx, outcome.touched, userId) : null;
+      const review = opts.submit ? await submitTouched(tx, outcome.touched, userId, { changedBefore: outcome.changedBefore }) : null;
       return { ...outcome, review };
     },
     { maxWait: 10_000, timeout: 120_000 },
@@ -573,7 +574,7 @@ export async function applyManualVnd(raw: unknown, userId: string, now = new Dat
       await tx.$queryRaw`SELECT "id" FROM "PriceUpdateRun" WHERE "id" = ${run.id} FOR UPDATE`;
       const lines = await tx.priceRunLine.findMany({ where: { runId: run.id }, include: { variant: { select: { sku: true } } } });
       const outcome = await applyLines(tx, run.id, lines, null, userId, now);
-      const review = opts.submit ? await submitTouched(tx, outcome.touched, userId) : null;
+      const review = opts.submit ? await submitTouched(tx, outcome.touched, userId, { changedBefore: outcome.changedBefore }) : null;
       return { ...outcome, runId: run.id, unchanged: computed.length - changed.length, review };
     },
     { maxWait: 10_000, timeout: 120_000 },

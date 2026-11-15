@@ -207,3 +207,22 @@ describe("A3 Sửa phiếu nhập nháp giữ dữ liệu", () => {
     expect(inventoryCost(e5)).toMatchObject({ costStatus: "ACTUAL", unitCostMmk: 17_850 }); // 105.000 × 0,17 (tỷ giá đã chốt)
   });
 });
+
+describe("Duyệt luôn an toàn", () => {
+  it("SP đã có thay đổi từ trước → không nằm trong nhóm được duyệt luôn; SP chỉ có thay đổi của lượt → được", async () => {
+    const a = await ready();
+    const b = await ready();
+    const rate = await createRate({ mmkPerUsd: "4420", vndPerUsd: "26000" }, a.userId);
+    await approve(a);
+    await approve(b);
+    // a: đã có giá chờ từ trước lượt; b: không.
+    await saveProductPricing({ productId: a.productId, reason: "Cũ", variants: [{ id: a.variantId, priceMmk: 12_000, expectedPriceMmk: 10_000 }] }, a.userId);
+    const run = await previewRun({ locationId: a.mm.id, rateId: rate.id, marginPct: "40", shipMmkPerKg: 8000, roundTo: 100, variantIds: [a.variantId] }, a.userId);
+    const runB = await previewRun({ locationId: b.mm.id, rateId: rate.id, marginPct: "40", shipMmkPerKg: 8000, roundTo: 100, variantIds: [b.variantId] }, b.userId);
+    const resA = await applyRun(run.id, [a.variantId], a.userId, new Date(), { submit: true });
+    const resB = await applyRun(runB.id, [b.variantId], b.userId, new Date(), { submit: true });
+    expect(resA.review?.needsReview?.map((r) => r.id)).toEqual([a.productId]);
+    expect(resB.review?.needsReview).toEqual([]);
+    expect(resB.review?.versions?.[b.productId]).toBe(await version(b));
+  });
+});

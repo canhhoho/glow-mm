@@ -414,6 +414,7 @@
     "BatchReview.approveNowHint",
     "BatchReview.approved",
     "BatchReview.legend",
+    "BatchReview.needsReview",
     "BatchReview.notReady",
     "BatchReview.submitNow",
     "BatchReview.submitNowHint",

@@ -1,5 +1,5 @@
 import "server-only";
-import { submitTouched } from "./review";
+import { changedBefore, submitTouched } from "./review";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
@@ -563,6 +563,7 @@ export async function commitCatalogImport(raw: unknown, userId: string, opts: { 
 
     const fileTag = receiptId.slice(0, 8);
     const touched: string[] = [];
+    const before = await changedBefore(tx, saves.flatMap((p) => (typeof p.id === "string" ? [p.id] : [])));
     for (const payload of saves) touched.push((await saveProduct(payload, userId, tx, { priceReason: `${IMPORT_PRICE_PREFIX}${fileTag}` })).id);
 
     const ids = new Map((await tx.variant.findMany({ where: { sku: { in: stock.map((s) => s.sku) } }, select: { id: true, sku: true } })).map((v) => [v.sku, v.id]));
@@ -580,7 +581,7 @@ export async function commitCatalogImport(raw: unknown, userId: string, opts: { 
       const lines = await tx.stockDocumentLine.findMany({ where: { documentId: { in: docIds } }, select: { batchId: true, batch: { select: { unitCostVnd: true } } } });
       await tx.batch.updateMany({ where: { rateId: null, id: { in: lines.flatMap((l) => (l.batchId && l.batch?.unitCostVnd != null ? [l.batchId] : [])) } }, data: { rateId: input.rateId } });
     }
-    const review = opts.submit ? await submitTouched(tx, touched, userId) : null;
+    const review = opts.submit ? await submitTouched(tx, touched, userId, { changedBefore: before }) : null;
     const result = { ...preview.counts, documents };
     await tx.catalogOpeningImport.create({ data: { id: receiptId, userId, result } });
     await tx.auditLog.create({
