@@ -62,3 +62,6 @@ next-env.d.ts
 
 # Script phát hành cục bộ (đọc token GitHub lúc chạy) — không commit
 scripts/github-release.mjs
+
+# Bản sao lưu DB/ảnh local (không commit)
+/backups
