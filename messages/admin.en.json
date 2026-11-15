@@ -1091,7 +1091,8 @@
       "invalid_affiliate": "Affiliate not found or locked",
       "invalid_form": "Order details are invalid — check the fields",
       "pick_mismatch": "The pick slip no longer matches (lot short / past cut-off or order changed) — reprint the pick slip",
-      "pick_required": "Print the pick slip (Lock lots & print) before handover"
+      "pick_required": "Print the pick slip (Lock lots & print) before handover",
+      "cost_missing": "Cannot hand over: a lot to be shipped has no cost (neither actual nor estimated). Open the lot and use \"Estimate cost\", or allocate the shipment costs, then hand over again"
     },
     "ret": {
       "title": "Return items",
@@ -1156,7 +1157,10 @@
         "stale": "Stock just changed — reload the slip and print again",
         "forbidden": "Not allowed to print pick slips",
         "nothing": "No order can have lots locked"
-      }
+      },
+      "pickCostEstimated": "Estimated cost",
+      "pickCostMissingLot": "No cost — cannot hand over yet",
+      "pickCostMissing": "{count} lot(s) on this list have no cost — orders using them cannot be handed over. Estimate the lot cost or allocate the shipment costs first."
     },
     "shippingPayer": "Delivery charge payer",
     "receiverPays": "Receiver pays delivery",
@@ -1175,7 +1179,9 @@
     "saveTracking": "Save tracking",
     "trackingSaved": "Tracking updated",
     "preorderHint": "Pre-order, no stock reserved yet. Once stock is available, click \"Stock arrived — move to processing\" to reserve it and handle it like a new order.",
-    "preorderTag": "Pre-order"
+    "preorderTag": "Pre-order",
+    "estimatedCostShipped": "Handed over. Note: {count} lot(s) shipped with an estimated cost — the order's profit is provisional until the actual cost is known.",
+    "estimatedCostOrders": "{count} order(s) shipped lots with an estimated cost — profit is provisional."
   },
   "Settings": {
     "description": "Manage accounts and store operating preferences.",

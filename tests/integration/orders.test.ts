@@ -201,7 +201,7 @@ describe("Chuyển trạng thái + xuất kho FEFO khi bàn giao", () => {
       { lot: "NEAR", expiryInDays: 30, qty: 5 },
       { lot: "MID", expiryInDays: 300, qty: 3 },
       { lot: "FAR", expiryInDays: 600, qty: 10 },
-    ]);
+    ], { cost: false });
     const batches = await prisma.batch.findMany({ where: { variantId: f.variantId } });
     const lot = (no: string) => batches.find((b) => b.lotNo === no)!;
     await prisma.batch.update({ where: { id: lot("MID").id }, data: { landedCostMmk: 4000 } });
@@ -213,6 +213,15 @@ describe("Chuyển trạng thái + xuất kho FEFO khi bàn giao", () => {
     await transitionOrder(order.id, "confirmCod", admin(f));
     expect((await prisma.reservation.findFirstOrThrow({ where: { orderId: order.id } })).expiresAt).toBeNull();
 
+    // 16/11: lô FAR (sẽ xuất 2 cái) chưa có giá vốn → chặn bàn giao, tồn không đổi.
+    await expect(transitionOrder(order.id, "ship", admin(f), { fromLocationId: f.mm.id, carrier: "Royal Express" })).rejects.toMatchObject({
+      code: "cost_missing",
+      details: { lots: [{ lotNo: "FAR" }] },
+    });
+    expect(await balance(lot("FAR").id, f.mm.id)).toBe(10);
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe("COD_CONFIRMED");
+    // Giá vốn tạm → cho bàn giao, đánh dấu ESTIMATED.
+    await prisma.batch.update({ where: { id: lot("FAR").id }, data: { estimatedCostMmk: 3000 } });
     const shipped = await transitionOrder(order.id, "ship", admin(f), { fromLocationId: f.mm.id, carrier: "Royal Express", trackingNo: "RX123" });
     expect(shipped.status).toBe("SHIPPING");
     expect(await prisma.delivery.findFirst({ where: { orderId: order.id } })).toMatchObject({ carrier: "Royal Express", trackingNo: "RX123" });
@@ -221,10 +230,10 @@ describe("Chuyển trạng thái + xuất kho FEFO khi bàn giao", () => {
     expect(await balance(lot("FAR").id, f.mm.id)).toBe(8);
 
     const allocs = await prisma.orderAllocation.findMany({ where: { orderItem: { orderId: order.id } } });
-    expect(allocs.map((a) => [a.batchId, a.qty, a.unitLandedCostMmk]).sort()).toEqual(
+    expect(allocs.map((a) => [a.batchId, a.qty, a.unitLandedCostMmk, a.costStatus]).sort()).toEqual(
       [
-        [lot("MID").id, 3, 4000],
-        [lot("FAR").id, 2, 0],
+        [lot("MID").id, 3, 4000, "ACTUAL"],
+        [lot("FAR").id, 2, 3000, "ESTIMATED"],
       ].sort(),
     );
     const res = await prisma.reservation.findMany({ where: { orderId: order.id } });

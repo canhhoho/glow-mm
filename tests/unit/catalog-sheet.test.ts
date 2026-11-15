@@ -64,7 +64,7 @@ describe("File Excel nhập/cập nhật sản phẩm (một sheet)", () => {
     expect(parseCsvObjects(csv)[0]).toMatchObject({ name_en: "Cream", brand: "Sen Việt", category: "Skincare", sku: "", qty: "", unit_cost: "" });
     const guide = (await readSheet(Buffer.from(bytes), CATALOG_GUIDE_SHEET)).flat().join(" ");
     expect(guide).toContain("ít nhất một tên");
-    expect(guide).toContain("đặt Giá bán ở bước 3");
+    expect(guide).toContain("để trống thì giá 0, lưu nháp, đặt giá sau ở trang Giá bán");
     expect(guide).toContain("Khối lượng (g) — bắt buộc trước khi gửi duyệt");
     expect(guide).toContain("Bắt buộc (một trong hai tên)");
     for (const label of ["Cách dùng Myanmar", "Thành phần", "Bảo quản", "Hạn sau mở nắp (tháng)"]) expect(guide).toContain(label);

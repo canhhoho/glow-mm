@@ -1,4 +1,5 @@
 import "server-only";
+import { inventoryCost } from "@/server/inventory/cost";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { rawId } from "@/lib/schemas";
@@ -88,4 +89,14 @@ export async function pickListFor(ids: string[], now = new Date()) {
     hash: planHash(plans),
     plannable: plans.some((p) => p.status === "PLANNED"),
   };
+}
+
+/**
+ * 16/11: tình trạng giá vốn của các lô trên phiếu lấy hàng — lô THIẾU giá vốn sẽ không bàn giao được (chặn ở bước
+ * bàn giao), lô giá vốn tạm vẫn bàn giao được. Hiện sẵn trên phiếu để kho xử lý trước.
+ */
+export async function lotCostStatuses(batchIds: string[]) {
+  if (batchIds.length === 0) return new Map<string, "ACTUAL" | "ESTIMATED" | "MISSING">();
+  const rows = await prisma.batch.findMany({ where: { id: { in: batchIds } }, select: { id: true, landedCostMmk: true, estimatedCostMmk: true } });
+  return new Map(rows.map((b) => [b.id, inventoryCost(b).costStatus]));
 }

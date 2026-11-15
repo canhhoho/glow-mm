@@ -45,6 +45,10 @@ async function message(e: unknown): Promise<string> {
       return `${t("err.out_of_stock")}: ${list}`;
     }
     if (e.code === "price_missing" && e.details?.sku) return `${t("err.price_missing")}: ${String(e.details.sku)}`;
+    if (e.code === "cost_missing") {
+      const lots = (e.details?.lots as { sku: string; lotNo: string }[]) ?? [];
+      return `${t("err.cost_missing")}: ${lots.map((l) => `${l.sku} · ${l.lotNo}`).join(", ")}`;
+    }
     return t(`err.${e.code}`);
   }
   if (e instanceof ZodError) return e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
@@ -138,6 +142,11 @@ export async function transitionOrderAction(_prev: ActionState, formData: FormDa
   revalidatePath("/admin/orders");
   revalidatePath("/admin/orders/preorders"); // QT3: đơn chuyển khỏi danh sách chờ hàng
   revalidatePath("/admin");
+  // 16/11: bàn giao bằng lô giá vốn tạm → vẫn xong, báo rõ (lợi nhuận đơn là tạm tính).
+  if (name === "ship") {
+    const estimated = await prisma.orderAllocation.count({ where: { orderItem: { orderId: id }, costStatus: "ESTIMATED" } });
+    if (estimated) return { ok: (await getTranslations("Orders"))("estimatedCostShipped", { count: estimated }) };
+  }
   return { ok: name };
 }
 
@@ -156,7 +165,15 @@ export async function bulkTransitionAction(_prev: BulkState, formData: FormData)
     );
     revalidatePath("/admin/orders");
     revalidatePath("/admin");
-    return { done: results.length - failed.length, total: results.length, failed };
+    // 16/11: đơn bàn giao bằng lô giá vốn tạm → báo kèm kết quả.
+    let warning: string | undefined;
+    if (transition === "ship") {
+      const okIds = results.flatMap((r) => (r.ok ? [r.id] : []));
+      const estimated = okIds.length ? await prisma.orderAllocation.findMany({ where: { orderItem: { orderId: { in: okIds } }, costStatus: "ESTIMATED" }, select: { orderItem: { select: { orderId: true } } } }) : [];
+      const n = new Set(estimated.map((a) => a.orderItem.orderId)).size;
+      if (n) warning = (await getTranslations("Orders"))("estimatedCostOrders", { count: n });
+    }
+    return { done: results.length - failed.length, total: results.length, failed, warning };
   } catch (e) {
     return { error: await message(e) };
   }

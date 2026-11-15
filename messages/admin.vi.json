@@ -1091,7 +1091,8 @@
       "invalid_affiliate": "CTV không tồn tại hoặc đã bị khoá",
       "invalid_form": "Thông tin đơn chưa hợp lệ, kiểm tra lại các ô",
       "pick_mismatch": "Phiếu soạn không còn khớp (lô không đủ / hết hạn bán hoặc đơn đã đổi) — in lại phiếu soạn",
-      "pick_required": "Cần in phiếu soạn (Chốt lô & In) trước khi bàn giao"
+      "pick_required": "Cần in phiếu soạn (Chốt lô & In) trước khi bàn giao",
+      "cost_missing": "Không bàn giao được: lô sắp xuất chưa có giá vốn (cả thực tế lẫn tạm tính). Vào trang lô bấm \"Tính giá vốn tạm\", hoặc phân bổ chi phí chuyến hàng, rồi bàn giao lại"
     },
     "ret": {
       "title": "Trả hàng",
@@ -1156,7 +1157,10 @@
         "stale": "Tồn kho vừa thay đổi — tải lại phiếu rồi in lại",
         "forbidden": "Không có quyền in phiếu soạn",
         "nothing": "Không có đơn nào chốt lô được"
-      }
+      },
+      "pickCostEstimated": "Giá vốn tạm",
+      "pickCostMissingLot": "Thiếu giá vốn — chưa bàn giao được",
+      "pickCostMissing": "{count} lô trên phiếu chưa có giá vốn — đơn dùng các lô này sẽ không bàn giao được. Vào trang lô bấm \"Tính giá vốn tạm\" hoặc phân bổ chi phí chuyến hàng trước."
     },
     "shippingPayer": "Người trả cước giao khách",
     "receiverPays": "Người nhận trả cước",
@@ -1175,7 +1179,9 @@
     "saveTracking": "Lưu vận đơn",
     "trackingSaved": "Đã cập nhật vận đơn",
     "preorderHint": "Đơn đặt trước, chưa giữ hàng. Khi đủ hàng, bấm \"Hàng đã về — chuyển xử lý\" để giữ hàng và xử lý như đơn mới.",
-    "preorderTag": "Đặt trước"
+    "preorderTag": "Đặt trước",
+    "estimatedCostShipped": "Đã bàn giao. Lưu ý: {count} lô xuất đang dùng giá vốn tạm — lợi nhuận của đơn là tạm tính cho đến khi có giá vốn thực tế.",
+    "estimatedCostOrders": "{count} đơn xuất lô đang dùng giá vốn tạm — lợi nhuận là tạm tính."
   },
   "Settings": {
     "description": "Quản lý tài khoản và các thiết lập vận hành của cửa hàng.",
