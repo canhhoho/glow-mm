@@ -4,7 +4,7 @@ import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { variantCosts, type CostSource } from "@/server/pricing/cost";
 import { CatalogError, lockCatalog } from "./products";
-import { effectivePrices, stagePrices } from "./change-request";
+import { effectivePricing, stagePrices } from "./change-request";
 import { guardApproval } from "./approval";
 
 /**
@@ -51,46 +51,57 @@ export async function saveProductPricing(raw: unknown, userId: string) {
       select: { id: true, fixedProfitMmk: true, approvedAt: true, variants: { select: { id: true, sku: true, priceMmk: true, affiliateCommissionMmk: true } } },
     });
     if (!product) throw new CatalogError("Không tìm thấy sản phẩm");
-    // P1-A: SP đã duyệt → giá vào bản đang sửa (khách vẫn thấy giá đã duyệt); so xung đột theo giá hiệu lực.
+    // P1-A + 16/11: SP đã duyệt → giá VÀ hoa hồng CTV vào bản đang sửa, có hiệu lực cùng lúc khi duyệt (khách vẫn thấy
+    // bản đã duyệt); so xung đột theo giá trị hiệu lực. SP chưa duyệt → ghi thẳng cả hai cùng lúc.
     const staged = product.approvedAt != null;
-    const effective = staged ? await effectivePrices(tx, product.id) : new Map(product.variants.map((v) => [v.id, v.priceMmk]));
-    const current = new Map(product.variants.map((v) => [v.id, { ...v, priceMmk: effective.get(v.id) ?? v.priceMmk, livePriceMmk: v.priceMmk }]));
-    const priceChanges = input.variants.filter((v) => {
-      const cur = current.get(v.id);
-      if (!cur) throw new CatalogError("Biến thể không thuộc sản phẩm này");
-      if (v.expectedPriceMmk !== undefined && cur.priceMmk !== v.expectedPriceMmk) throw new CatalogError(`Giá của ${cur.sku} vừa được đổi ở nơi khác — tải lại trang`);
-      return cur.priceMmk !== v.priceMmk;
+    const effective = staged
+      ? await effectivePricing(tx, product.id)
+      : new Map(product.variants.map((v) => [v.id, { priceMmk: v.priceMmk, commission: v.affiliateCommissionMmk }]));
+    const reason = `${MANUAL_PRICE_PREFIX}${input.reason}`;
+    const plan = input.variants.map((entry) => {
+      const live = product.variants.find((v) => v.id === entry.id);
+      if (!live) throw new CatalogError("Biến thể không thuộc sản phẩm này");
+      const cur = effective.get(live.id)!;
+      if (entry.expectedPriceMmk !== undefined && cur.priceMmk !== entry.expectedPriceMmk) throw new CatalogError(`Giá của ${live.sku} vừa được đổi ở nơi khác — tải lại trang`);
+      const commission = entry.affiliateCommissionMmk === undefined ? cur.commission : entry.affiliateCommissionMmk;
+      if (commission != null && commission > entry.priceMmk) throw new CatalogError(`Hoa hồng CTV của ${live.sku} lớn hơn giá bán`);
+      return { live, cur, priceMmk: entry.priceMmk, commission, priceChanged: cur.priceMmk !== entry.priceMmk, commissionChanged: cur.commission !== commission };
     });
-    if (priceChanges.length && !input.reason) throw new CatalogError("Nhập lý do sửa giá");
-    if (staged) {
-      await stagePrices(tx, product.id, priceChanges.map((v) => ({ variantId: v.id, priceMmk: v.priceMmk, reason: `${MANUAL_PRICE_PREFIX}${input.reason}` })), userId);
-    }
+    if (plan.some((p) => p.priceChanged) && !input.reason) throw new CatalogError("Nhập lý do sửa giá");
 
     const changes: { sku: string; price?: [number, number]; commission?: [number | null, number | null] }[] = [];
-    for (const entry of input.variants) {
-      const cur = current.get(entry.id)!;
-      const v = { ...entry, affiliateCommissionMmk: entry.affiliateCommissionMmk === undefined ? cur.affiliateCommissionMmk : entry.affiliateCommissionMmk };
-      if (v.affiliateCommissionMmk != null && v.affiliateCommissionMmk > v.priceMmk) throw new CatalogError(`Hoa hồng CTV của ${cur.sku} lớn hơn giá bán`);
-      const priceChanged = cur.priceMmk !== v.priceMmk;
-      const commissionChanged = cur.affiliateCommissionMmk !== v.affiliateCommissionMmk;
-      if (!priceChanged && !commissionChanged) continue;
-      // Khoá theo giá đang đọc: bảng tính giá áp xen giữa → báo lỗi thay vì ghi đè. SP đã duyệt: giá đã vào bản
-      // đang sửa ở trên, ở đây chỉ ghi hoa hồng CTV (không cần duyệt).
-      const res = await tx.variant.updateMany({
-        where: { id: v.id, priceMmk: cur.livePriceMmk },
-        data: { ...(!staged && { priceMmk: v.priceMmk }), affiliateCommissionMmk: v.affiliateCommissionMmk },
-      });
-      if (res.count !== 1) throw new CatalogError(`Giá của ${cur.sku} vừa được đổi ở nơi khác — tải lại trang`);
-      if (priceChanged && !staged) {
-        await tx.priceHistory.create({
-          data: { variantId: v.id, oldPriceMmk: cur.priceMmk, newPriceMmk: v.priceMmk, reason: `${MANUAL_PRICE_PREFIX}${input.reason}`, userId },
-        });
+    for (const p of plan) {
+      if (!p.priceChanged && !p.commissionChanged) continue;
+      if (!staged) {
+        // Khoá theo giá đang đọc: bảng tính giá áp xen giữa → báo lỗi thay vì ghi đè.
+        const res = await tx.variant.updateMany({ where: { id: p.live.id, priceMmk: p.live.priceMmk }, data: { priceMmk: p.priceMmk, affiliateCommissionMmk: p.commission } });
+        if (res.count !== 1) throw new CatalogError(`Giá của ${p.live.sku} vừa được đổi ở nơi khác — tải lại trang`);
+        if (p.priceChanged) {
+          await tx.priceHistory.create({
+            data: {
+              variantId: p.live.id,
+              oldPriceMmk: p.cur.priceMmk,
+              newPriceMmk: p.priceMmk,
+              ...(p.commissionChanged && { oldCommissionMmk: p.cur.commission, newCommissionMmk: p.commission }),
+              reason,
+              userId,
+            },
+          });
+        }
       }
       changes.push({
-        sku: cur.sku,
-        ...(priceChanged && { price: [cur.priceMmk, v.priceMmk] as [number, number] }),
-        ...(commissionChanged && { commission: [cur.affiliateCommissionMmk, v.affiliateCommissionMmk] as [number | null, number | null] }),
+        sku: p.live.sku,
+        ...(p.priceChanged && { price: [p.cur.priceMmk, p.priceMmk] as [number, number] }),
+        ...(p.commissionChanged && { commission: [p.cur.commission, p.commission] as [number | null, number | null] }),
       });
+    }
+    if (staged) {
+      await stagePrices(
+        tx,
+        product.id,
+        plan.filter((p) => p.priceChanged || p.commissionChanged).map((p) => ({ variantId: p.live.id, priceMmk: p.priceMmk, commission: p.commission, reason })),
+        userId,
+      );
     }
     const profitChanged = input.fixedProfitMmk !== undefined && input.fixedProfitMmk !== product.fixedProfitMmk;
     if (profitChanged) await tx.product.update({ where: { id: product.id }, data: { fixedProfitMmk: input.fixedProfitMmk } });

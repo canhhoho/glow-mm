@@ -24,7 +24,7 @@ const RUN_TONE = { PREVIEW: "warning", APPLIED: "success", CANCELLED: "neutral" 
 const LINE_TONE = { PENDING: "warning", APPLIED: "success", SKIPPED: "neutral" } as const;
 /** Thay đổi giá vượt ngưỡng này (%) được tô nổi để kiểm tra lại. */
 const BIG_CHANGE = 20;
-const SKIP_REASONS = ["UNCHANGED", "PRICE_CHANGED", "INPUT_CHANGED", "CANCELLED", "LEGACY"] as const;
+const SKIP_REASONS = ["UNCHANGED", "PRICE_CHANGED", "INPUT_CHANGED", "COMMISSION_OVER_PRICE", "CANCELLED", "LEGACY"] as const;
 
 export default async function PriceRunPage({ params }: PageProps<"/admin/pricing/runs/[id]">) {
   const user = await requirePagePermission("pricing:manage");

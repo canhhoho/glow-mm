@@ -1314,14 +1314,16 @@
     },
     "skipReason": {
       "UNCHANGED": "Giá không đổi",
-      "PRICE_CHANGED": "Giá đã bị sửa sau khi xem trước",
+      "PRICE_CHANGED": "Giá / hoa hồng đã bị sửa sau khi xem trước",
       "INPUT_CHANGED": "Đầu vào đã đổi (lô, giá mua, khối lượng, combo, lãi hoặc kho) — tạo bản mới",
       "CANCELLED": "Đã huỷ bản xem trước",
-      "LEGACY": "Không áp dụng (bản trước khi lưu trạng thái dòng)"
+      "LEGACY": "Không áp dụng (bản trước khi lưu trạng thái dòng)",
+      "COMMISSION_OVER_PRICE": "Hoa hồng CTV lớn hơn giá mới — sửa hoa hồng ở trang Giá bán"
     },
     "skipShort": {
-      "PRICE_CHANGED": "giá đã sửa",
-      "INPUT_CHANGED": "đầu vào đổi"
+      "PRICE_CHANGED": "giá / hoa hồng đã sửa",
+      "INPUT_CHANGED": "đầu vào đổi",
+      "COMMISSION_OVER_PRICE": "hoa hồng > giá"
     },
     "skippedTitle": "Không tính được {count} biến thể",
     "skippedReason": {
@@ -2273,7 +2275,7 @@
   },
   "CatalogImport": {
     "title": "Nhập / cập nhật sản phẩm bằng Excel",
-    "help": "Một file cho cả tạo sản phẩm mới, cập nhật thông tin và nhập tồn. Sản phẩm mới vào trạng thái ẩn, giá 0 — đặt giá, thêm ảnh, gửi duyệt rồi đăng trên trang sản phẩm. Luôn xem trước, không còn lỗi mới xác nhận được.",
+    "help": "Một file cho cả tạo sản phẩm mới, cập nhật thông tin, giá bán và nhập tồn. Sản phẩm mới vào trạng thái ẩn; có giá bán thì gửi duyệt được, chưa có giá thì lưu nháp. Ô trống = giữ nguyên (kể cả giá đang chờ duyệt). Luôn xem trước, không còn lỗi mới xác nhận được.",
     "templateBlank": "Tải file mẫu trống",
     "templateCurrent": "Tải danh sách sản phẩm hiện có (để cập nhật)",
     "setupHint": "Cần có trước:",

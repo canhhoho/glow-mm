@@ -35,6 +35,13 @@ export async function approvalHashes(db: Tx, productIds: string[]): Promise<Map<
   );
 }
 
+/** Ảnh chụp hoa hồng CTV cố định của các SP (chuỗi so sánh được). */
+async function commissionsOf(tx: Tx, productIds: string[]): Promise<string> {
+  if (productIds.length === 0) return "";
+  const rows = await tx.variant.findMany({ where: { productId: { in: productIds } }, select: { id: true, affiliateCommissionMmk: true }, orderBy: { id: "asc" } });
+  return rows.map((v) => `${v.id}:${v.affiliateCommissionMmk ?? ""}`).join(",");
+}
+
 /**
  * Chạy `fn` (trong `tx`) và theo dõi phần cần duyệt của các SP:
  * - SP chưa từng duyệt mà phần cần duyệt đổi → phiên bản +1; đang chờ duyệt → về nháp (rời hàng đợi, người duyệt
@@ -46,9 +53,16 @@ export async function guardApproval<T>(tx: Tx, productIds: string[], userId: str
   if (ids.length === 0) return fn();
   const products = await tx.product.findMany({ where: { id: { in: ids } }, select: { id: true, approvedAt: true, approvalStatus: true } });
   if (products.length === 0) return fn();
+  const approved = products.filter((p) => p.approvedAt).map((p) => p.id);
   const before = await approvalHashes(tx, products.map((p) => p.id));
+  const commissionBefore = await commissionsOf(tx, approved);
   const result = await fn();
   const after = await approvalHashes(tx, products.map((p) => p.id));
+  // 16/11: hoa hồng CTV cố định của SP đã duyệt có hiệu lực cùng giá → chỉ đổi qua bản đang sửa (không nằm trong dấu
+  // vân tay để SP cũ không bị coi là "có thay đổi"; kiểm riêng ở đây).
+  if (!opts.applying && approved.length && (await commissionsOf(tx, approved)) !== commissionBefore) {
+    throw new CatalogError("Hoa hồng CTV của sản phẩm đã duyệt phải đổi cùng giá qua bản đang sửa (trang Giá bán)");
+  }
   for (const p of products) {
     if (before.get(p.id) === after.get(p.id)) continue;
     if (p.approvedAt) {

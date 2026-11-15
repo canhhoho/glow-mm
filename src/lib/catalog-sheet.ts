@@ -33,9 +33,9 @@ export const CATALOG_COLUMNS: SheetColumn[] = [
   { key: "brand", label: "Thương hiệu", group: "product", type: "text", width: 22, required: true, list: "brands", hint: "Chọn trong danh sách hoặc gõ tên mới — thương hiệu mới sẽ được tạo." },
   { key: "category", label: "Danh mục", group: "product", type: "text", width: 26, required: true, list: "categories", hint: "Chọn trong danh sách (nhận cả tên hoặc mã danh mục).", aliases: ["Mã danh mục"] },
   { key: "variant_label", label: "Biến thể", group: "product", type: "text", width: 18, hint: "Dung tích, kích cỡ hoặc màu. Để trống nếu sản phẩm chỉ có một loại.", aliases: ["Biến thể (dung tích/màu)"] },
-  { key: "price_mmk", label: "Giá bán (MMK)", group: "product", type: "money", width: 16, hint: "Chỉ có trong file sản phẩm hiện có của người có quyền giá. Chỉ sửa giá SKU đã có (trống = giữ giá; đổi giá cần duyệt lại). SKU mới luôn vào giá 0 — đặt giá ở bước 3 trên trang sản phẩm." },
+  { key: "price_mmk", label: "Giá bán (MMK)", group: "product", type: "money", width: 16, hint: "Chỉ có trong file của người có quyền giá. Trống = giữ nguyên (kể cả giá đang chờ duyệt). SKU mới: điền giá thì gửi duyệt được, trống thì giá 0 (lưu nháp). SP đã duyệt: đổi giá cần duyệt lại." },
   { key: "weight_g", label: "Khối lượng (g)", group: "product", type: "whole", width: 15, hint: "Gram, số nguyên. Kho hàng nhập Việt Nam: bắt buộc trước khi gửi duyệt / đăng bán (tính phí ship vào giá). Kho mua tại Myanmar: tuỳ chọn." },
-  { key: "affiliate_commission_mmk", label: "Hoa hồng CTV (MMK/cái)", group: "product", type: "money", width: 18, hint: "Số tiền CTV nhận cho mỗi cái bán ra. Để trống = theo % của CTV (dòng cập nhật: giữ mức cũ). Muốn bỏ mức riêng thì xoá trong trang sản phẩm.", aliases: ["Hoa hồng CTV"] },
+  { key: "affiliate_commission_mmk", label: "Hoa hồng CTV (MMK/cái)", group: "product", type: "money", width: 18, hint: "Số tiền CTV nhận cho mỗi cái bán ra. Để trống = theo % của CTV (dòng cập nhật: giữ mức cũ). SP đã duyệt: có hiệu lực cùng giá khi duyệt. Muốn bỏ mức riêng thì sửa ở trang Giá bán.", aliases: ["Hoa hồng CTV"] },
   { key: "description_my", label: "Mô tả Myanmar", group: "product", type: "text", width: 34, hint: "Khách thấy trên trang sản phẩm (tiếng Myanmar). Nên điền; có thể xuống dòng trong một ô." },
   { key: "description_en", label: "Mô tả tiếng Anh", group: "product", type: "text", width: 34, hint: "Khách thấy ở trang tiếng Anh — không tự lấy mô tả Myanmar, nên điền cả hai." },
   { key: "usage_my", label: "Cách dùng Myanmar", group: "product", type: "text", width: 30, hint: "Tuỳ chọn. Hiện ở mục Cách dùng trên trang sản phẩm (tiếng Myanmar)." },
@@ -49,7 +49,7 @@ export const CATALOG_COLUMNS: SheetColumn[] = [
   { key: "qty", label: "Số lượng nhập", group: "stock", type: "positive", width: 14, hint: "Tuỳ chọn. Có số lượng → tạo phiếu nhập nháp, kiểm tra rồi ghi sổ.", aliases: ["Số lượng"] },
   { key: "expiry_date", label: "Hạn sử dụng", group: "stock", type: "date", width: 15, hint: "dd/mm/yyyy. Để trống với hàng có hạn → lô chưa biết hạn, chưa bán được đến khi cập nhật." },
   { key: "unit_cost", label: "Giá mua/đv", group: "stock", type: "money", width: 15, hint: "Theo kho bán: VND (kho hàng nhập Việt Nam) hoặc MMK (kho mua tại Myanmar)." },
-  { key: "inbound_unit_vnd", label: "Phí đưa về kho (VND/đv)", group: "stock", type: "money", width: 20, hint: "Tuỳ chọn, chỉ kho hàng nhập Việt Nam: vận chuyển, thuế phân bổ mỗi đơn vị.", aliases: ["Phí đưa về kho"] },
+  { key: "inbound_unit_vnd", label: "Phí đưa về kho (VND/đv)", group: "stock", type: "money", width: 20, hint: "Tuỳ chọn, chỉ kho hàng nhập Việt Nam: vận chuyển, thuế phân bổ mỗi đơn vị. Điền 0 nếu không phát sinh; để trống = chưa biết (lô chưa có giá vốn).", aliases: ["Phí đưa về kho"] },
   { key: "lot_no", label: "Số lô", group: "stock", type: "text", width: 14, hint: "Tuỳ chọn. Để trống = tự sinh số lô." },
 ];
 

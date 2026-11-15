@@ -1314,14 +1314,16 @@
     },
     "skipReason": {
       "UNCHANGED": "Price unchanged",
-      "PRICE_CHANGED": "Price was edited after the preview",
+      "PRICE_CHANGED": "Price / commission changed after the preview",
       "INPUT_CHANGED": "Inputs changed (lot, purchase cost, weight, combo, profit or warehouse) — create a new preview",
       "CANCELLED": "Preview cancelled",
-      "LEGACY": "Not applied (run from before line statuses)"
+      "LEGACY": "Not applied (run from before line statuses)",
+      "COMMISSION_OVER_PRICE": "Affiliate commission exceeds the new price — fix the commission on the Selling prices page"
     },
     "skipShort": {
-      "PRICE_CHANGED": "price edited",
-      "INPUT_CHANGED": "inputs changed"
+      "PRICE_CHANGED": "price / commission changed",
+      "INPUT_CHANGED": "inputs changed",
+      "COMMISSION_OVER_PRICE": "commission > price"
     },
     "skippedTitle": "{count} variants could not be priced",
     "skippedReason": {
@@ -2273,7 +2275,7 @@
   },
   "CatalogImport": {
     "title": "Import / update products from Excel",
-    "help": "One file to create products, update their details and receive stock. New products start hidden with price 0 — set the price, add images, submit for approval and publish on the product page. Always preview; you can confirm only when there are no errors.",
+    "help": "One file to create products, update their details and prices, and receive stock. New products start hidden; with a price they can be submitted for approval, without one they stay as drafts. Blank cells keep the current value (including a price awaiting approval). Always preview; you can confirm only when there are no errors.",
     "templateBlank": "Download blank template",
     "templateCurrent": "Download current products (to update)",
     "setupHint": "Set up first:",
