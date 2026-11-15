@@ -111,12 +111,14 @@ export function ManualVndForm({
       <Notice tone="info">{t("profitNote")}</Notice>
       <DataTable
         stack
+        dense
+        tableClassName="[&_th]:whitespace-normal [&_th]:align-bottom"
         numeric={[2, 4, 7]}
         head={[t("colSku"), t("colLot"), t("colPurchase"), t("colProfit"), t("colSellVnd"), t("colShip"), t("colCtv"), t("colFinal")]}
       >
         {computed.map((c) => (
           <tr key={c.r.variantId} data-testid="manual-row" className={cn(c.changed && "bg-primary/5")}>
-            <Td className="align-top">
+            <Td className="min-w-36 align-top">
               <div className="font-mono text-xs">{c.r.sku}</div>
               <div className="text-xs">
                 {c.r.productName} <span className="text-muted-foreground">({c.r.label})</span>
@@ -133,7 +135,7 @@ export function ManualVndForm({
                   aria-label={`${t("colLot")} ${c.r.sku}`}
                   value={c.st.sourceLineId}
                   onChange={(e) => set(c.r.variantId, { sourceLineId: e.target.value })}
-                  className={cn(fieldClass, "w-auto max-w-64 text-xs")}
+                  className={cn(fieldClass, "w-auto max-w-44 text-xs")}
                 >
                   {c.r.sources.map((s) => (
                     <option key={s.lineId} value={s.lineId}>
@@ -145,17 +147,17 @@ export function ManualVndForm({
             </Td>
             <Td label={t("colPurchase")} className="align-top tabular-nums md:text-right">{c.purchase != null ? fmtInt(c.purchase) : "—"}</Td>
             <Td label={t("colProfit")} className="align-top">
-              <input aria-label={`${t("colProfit")} ${c.r.sku}`} type="number" min={0} step={1} inputMode="numeric" value={c.st.profit} onChange={(e) => set(c.r.variantId, { profit: e.target.value })} className={cn(fieldClass, "w-28")} />
+              <input aria-label={`${t("colProfit")} ${c.r.sku}`} type="number" min={0} step={1} inputMode="numeric" value={c.st.profit} onChange={(e) => set(c.r.variantId, { profit: e.target.value })} className={cn(fieldClass, "w-24")} />
             </Td>
             <Td label={t("colSellVnd")} className="align-top tabular-nums md:text-right">
               {c.sellVnd != null ? fmtInt(c.sellVnd) : "—"}
               {c.sellMmk != null && <div className="text-xs text-muted-foreground">≈ {fmtInt(c.sellMmk)} MMK</div>}
             </Td>
             <Td label={t("colShip")} className="align-top">
-              <input aria-label={`${t("colShip")} ${c.r.sku}`} type="number" min={0} step={1} inputMode="numeric" value={c.st.ship} onChange={(e) => set(c.r.variantId, { ship: e.target.value })} className={cn(fieldClass, "w-24")} />
+              <input aria-label={`${t("colShip")} ${c.r.sku}`} type="number" min={0} step={1} inputMode="numeric" value={c.st.ship} onChange={(e) => set(c.r.variantId, { ship: e.target.value })} className={cn(fieldClass, "w-20")} />
             </Td>
             <Td label={t("colCtv")} className="align-top">
-              <input aria-label={`${t("colCtv")} ${c.r.sku}`} type="number" min={0} step={1} inputMode="numeric" value={c.st.ctv} onChange={(e) => set(c.r.variantId, { ctv: e.target.value })} className={cn(fieldClass, "w-24")} />
+              <input aria-label={`${t("colCtv")} ${c.r.sku}`} type="number" min={0} step={1} inputMode="numeric" value={c.st.ctv} onChange={(e) => set(c.r.variantId, { ctv: e.target.value })} className={cn(fieldClass, "w-20")} />
             </Td>
             <Td label={t("colFinal")} className="align-top whitespace-nowrap tabular-nums md:text-right">
               <div className="text-base font-semibold" data-testid="manual-final">{c.price != null ? fmtInt(c.price) : "—"}</div>
