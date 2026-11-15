@@ -50,8 +50,9 @@ export default async function PricingPage({ searchParams }: PageProps<"/admin/pr
         }))}
       />
       {tab === "rates" && <RatesTab />}
+      {/* 16/11: tạo bản tính ở trang Giá bán (nơi đặt giá chính); ở đây chỉ còn danh sách các lần tính. */}
       {tab === "runs" && (
-        <PricingRunsTab receiptId={typeof receiptId === "string" ? receiptId : undefined} productId={typeof productId === "string" ? productId : undefined} />
+        <PricingRunsTab receiptId={typeof receiptId === "string" ? receiptId : undefined} productId={typeof productId === "string" ? productId : undefined} listOnly />
       )}
       {tab === "history" && <HistoryTab />}
     </Page>

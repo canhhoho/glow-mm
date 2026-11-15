@@ -7,7 +7,8 @@ import { can } from "@/server/auth/roles";
 import { BatchReviewOptions, BatchReviewSummary } from "@/components/admin/batch-review";
 import type { BatchReviewView } from "@/server/catalog/batch-review-text";
 import { prisma } from "@/lib/db";
-import { applyRunAction, cancelRunAction } from "@/server/pricing/actions";
+import { applyRunAction, cancelRunAction, recomputeRunAction } from "@/server/pricing/actions";
+import { receiptSources } from "@/server/pricing/cost";
 import { changePct } from "@/server/pricing/formula";
 import { getRun } from "@/server/pricing/queries";
 import { FORMULA_VERSION } from "@/server/pricing/runs";
@@ -49,6 +50,10 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
   const mmk = run.location?.pricingMode === "LOCAL_MMK";
   const vn = run.shipMmkPerKg != null;
   const extra = run.location ? (mmk ? t("profitCol") : t("shipCol")) : null;
+  // 16/11: chọn lô / lần nhập làm cơ sở cho từng dòng (bản tự động còn mở, hàng VND/MMK thường — không combo).
+  const pickable = editable && run.mode === "AUTO";
+  const sources = pickable ? await receiptSources(prisma, run.lines.filter((l) => !l.isBundle && l.status === "PENDING").map((l) => l.variantId)) : new Map();
+  const RECOMPUTE = "recompute-form";
   const skipLabel = (r: string | null) => (r && (SKIP_REASONS as readonly string[]).includes(r) ? t(`skipReason.${r as (typeof SKIP_REASONS)[number]}`) : null);
 
   const table = (
@@ -62,6 +67,7 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
         ...(vn ? [t("weight")] : []),
         t("source"),
         t("oldPrice"),
+        t("pendingPrice"),
         t("newPrice"),
         t("change"),
         t("status"),
@@ -70,7 +76,8 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
       {run.lines.map((l) => {
         const pct = changePct(l.oldPriceMmk, l.newPriceMmk);
         const pendingLine = l.status === "PENDING";
-        const stale = editable && pendingLine && l.currentPriceMmk !== l.oldPriceMmk;
+        const stale = editable && pendingLine && l.changedSince;
+        const lineSources = sources.get(l.variantId) ?? [];
         const costMmk = l.costMmk ?? (l.costVnd != null && run.rate ? convertVndToMmk(l.costVnd, run.rate) : null);
         const risks = priceRisks({ oldPriceMmk: l.oldPriceMmk, priceMmk: l.newPriceMmk, costMmk, shipMmk: l.shipMmk ?? 0, commissionBp, fixedCommissionMmk: l.fixedCommissionMmk, uplineBp });
         return (
@@ -119,8 +126,25 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
               ) : (
                 "—"
               )}
+              {pickable && pendingLine && lineSources.length > 1 && (
+                <select
+                  form={RECOMPUTE}
+                  name={`source:${l.variantId}`}
+                  defaultValue={l.sourceLineId ?? ""}
+                  aria-label={`${t("basisLot")} ${l.sku}`}
+                  className="mt-1 block max-w-56 rounded border bg-background px-1 py-0.5 text-xs"
+                >
+                  <option value="">{t("basisLatest")}</option>
+                  {lineSources.map((s: (typeof lineSources)[number]) => (
+                    <option key={s.lineId} value={s.lineId}>
+                      {s.lotNo} · {s.documentCode} · {s.postedAt ? fmtDate(s.postedAt) : "—"} · {fmtInt(mmk ? s.unitCostMmk : s.unitCostVnd)}
+                    </option>
+                  ))}
+                </select>
+              )}
             </Td>
             <Td className="text-right tabular-nums">{fmtInt(l.oldPriceMmk)}</Td>
+            <Td className="text-right tabular-nums text-warning">{l.pendingPriceMmk != null ? fmtInt(l.pendingPriceMmk) : "—"}</Td>
             <Td className="text-right font-medium tabular-nums">{fmtInt(l.newPriceMmk)}</Td>
             <Td className={cn("text-right tabular-nums", pct != null && Math.abs(pct) >= BIG_CHANGE && "font-medium text-destructive")}>
               {pct == null ? "—" : `${pct > 0 ? "+" : ""}${pct}%`}
@@ -197,7 +221,14 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
             {table}
             {can(user.role, "catalog:manage") && <BatchReviewOptions canApprove={can(user.role, "catalog:approve")} />}
           </ActionForm>
-          <ActionButton action={cancelRunAction} fields={{ runId: run.id }} label={t("cancelRun")} icon={<X aria-hidden />} iconOnly={false} variant="outline" />
+          <div className="flex flex-wrap items-start gap-3">
+            {pickable && [...sources.values()].some((list) => list.length > 1) && (
+              <ActionForm id={RECOMPUTE} action={recomputeRunAction} submitLabel={t("recompute")} variant="outline" icon={<ListOrdered aria-hidden />}>
+                <input type="hidden" name="runId" value={run.id} />
+              </ActionForm>
+            )}
+            <ActionButton action={cancelRunAction} fields={{ runId: run.id }} label={t("cancelRun")} icon={<X aria-hidden />} iconOnly={false} variant="outline" />
+          </div>
         </>
       ) : (
         <>

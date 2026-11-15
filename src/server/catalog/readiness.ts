@@ -2,6 +2,7 @@ import "server-only";
 import { inventoryCost } from "@/server/inventory/cost";
 import { salesBlockDays } from "@/server/inventory/documents";
 import { isSourceForProduct } from "@/server/pricing/cost";
+import { changeRequestsFor } from "./change-request";
 import { latestRate } from "@/server/pricing/latest-rate";
 import type { Tx } from "@/server/inventory/ledger";
 import { availableToSell } from "@/server/orders/availability";
@@ -74,6 +75,13 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
     ? await db.priceHistory.groupBy({ by: ["variantId"], where: { variantId: { in: allVariantIds } }, _max: { createdAt: true } })
     : [];
   const lastPriceChange = new Map(priceChanges.map((c) => [c.variantId, c._max.createdAt?.getTime() ?? 0]));
+  // 16/11: giá đang chờ duyệt cũng là "lần đặt giá" — đặt sau phiếu nhập / tỷ giá mới → không còn cảnh báo cần tính lại.
+  for (const cr of (await changeRequestsFor(db, products.map((p) => p.id))).values()) {
+    for (const [variantId, sp] of Object.entries(cr.prices)) {
+      const at = sp.stagedAt ? Date.parse(sp.stagedAt) : NaN;
+      if (Number.isFinite(at)) lastPriceChange.set(variantId, Math.max(lastPriceChange.get(variantId) ?? 0, at));
+    }
+  }
   // P1-D (M5): tỷ giá đang hiệu lực mới hơn lần đổi giá gần nhất (chỉ kho nhập VN; chưa có lịch sử giá → không đoán).
   const rateAt = (await latestRate(db, now))?.effectiveAt.getTime() ?? 0;
 

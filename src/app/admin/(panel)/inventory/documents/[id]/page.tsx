@@ -29,7 +29,7 @@ export default async function DocumentPage({ params, searchParams }: PageProps<"
       <PageHeader
         title={`${t(doc.type)} · ${doc.code}`}
         back={{ href: "/admin/inventory/documents", label: t("back") }}
-        actions={doc.type === "RECEIVE" && doc.status === "POSTED" && can(user.role, "pricing:manage") && <LinkButton href={`/admin/pricing?tab=runs&receiptId=${doc.id}`}>{t("priceReceived")}</LinkButton>}
+        actions={doc.type === "RECEIVE" && doc.status === "POSTED" && can(user.role, "pricing:manage") && <LinkButton href={`/admin/selling-prices?mode=auto&receiptId=${doc.id}`}>{t("priceReceived")}</LinkButton>}
       />
       {updated && <Notice tone="success">{t("updated")}</Notice>}
       {waitingPreorders > 0 && (

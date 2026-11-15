@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { productName } from "@/server/inventory/queries";
 import { postedSourceBatch, variantCosts } from "./cost";
+import { effectivePricingOf } from "./runs";
 import type { SkipReason } from "./runs";
 
 /** Truy vấn cho trang /admin/pricing (chỉ đọc). */
@@ -40,6 +41,8 @@ export async function getRun(id: string) {
     },
   });
   if (!run) return null;
+  // 16/11: giá / hoa hồng HIỆU LỰC hiện tại (đang chờ duyệt nếu có) — so với lúc tạo dòng để báo "đã đổi".
+  const eff = await effectivePricingOf(prisma, run.lines.map((l) => l.variantId));
   return {
     ...run,
     lines: run.lines.map((l) => ({
@@ -53,6 +56,14 @@ export async function getRun(id: string) {
       oldPriceMmk: l.oldPriceMmk,
       newPriceMmk: l.newPriceMmk,
       currentPriceMmk: l.variant.priceMmk,
+      /** Giá đang chờ duyệt hiện tại (null = không có). */
+      pendingPriceMmk: eff.get(l.variantId)?.pending ? eff.get(l.variantId)!.priceMmk : null,
+      /** Giá + hoa hồng hiệu lực đã đổi kể từ lúc tạo dòng → áp sẽ bị bỏ qua (PRICE_CHANGED). */
+      changedSince:
+        l.basePriceMmk != null
+          ? eff.get(l.variantId)!.priceMmk !== l.basePriceMmk || eff.get(l.variantId)!.commission !== l.baseCommissionMmk
+          : l.variant.priceMmk !== l.oldPriceMmk,
+      sourceLineId: l.sourceLineId,
       isBundle: l.variant.isBundle,
       fixedCommissionMmk: l.variant.affiliateCommissionMmk,
       status: l.status,

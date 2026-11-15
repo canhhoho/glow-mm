@@ -10,7 +10,7 @@ import { can } from "@/server/auth/roles";
 import { finishBatchReview } from "@/server/catalog/batch-review-text";
 import { CATALOG_TAG } from "@/server/catalog/category-tree";
 import type { ActionState } from "@/server/inventory/actions";
-import { applyRun, cancelRun, createRate, previewRun } from "./runs";
+import { applyManualVnd, applyRun, cancelRun, createRate, previewRun } from "./runs";
 
 function message(e: unknown): string {
   if (e instanceof ZodError) return e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
@@ -63,37 +63,104 @@ export async function previewRunAction(_prev: ActionState, formData: FormData): 
   redirect(`/admin/pricing/runs/${id}`);
 }
 
+/** Giá mới hiện ngay trên storefront (P20) + các trang admin liên quan — gọi NGAY sau khi lượt đã commit (16/11). */
+function refreshPricing(runId?: string) {
+  updateTag(CATALOG_TAG);
+  if (runId) revalidatePath(`/admin/pricing/runs/${runId}`);
+  revalidatePath("/admin/pricing");
+  revalidatePath("/admin/selling-prices");
+  revalidatePath("/admin/selling-prices/manual");
+  revalidatePath("/admin/products", "layout");
+}
+
+type ApplyOutcome = { applied: number; skipped: { sku: string; reason: string }[]; remaining: number; review: Awaited<ReturnType<typeof applyRun>>["review"] };
+
+/** Câu kết quả + (tuỳ chọn) gửi duyệt / duyệt luôn sau khi lượt đã commit. */
+async function outcomeText(res: ApplyOutcome, runId: string, userId: string, approve: boolean) {
+  const t = await getTranslations("Pricing");
+  let ok = t("appliedResult", { applied: res.applied, skipped: res.skipped.length, remaining: res.remaining });
+  if (res.skipped.length) ok += ` (${res.skipped.map((s) => `${s.sku}: ${t(`skipShort.${s.reason}` as Parameters<typeof t>[0])}`).join(", ")})`;
+  if (res.review) {
+    const view = await finishBatchReview(res.review, userId, approve);
+    // Form áp giá biến mất khi hết dòng chờ → lưu kết quả để trang bản tính giá hiện lại (BatchReviewSummary).
+    await prisma.auditLog.create({ data: { userId, action: "pricing.apply.review", entity: "PriceUpdateRun", entityId: runId, data: view } });
+    const tb = await getTranslations("BatchReview");
+    ok += ` · ${tb("submitted", { n: view.submitted + view.already })}`;
+    if (view.approved) ok += ` · ${tb("approved", { n: view.approved })}`;
+    if (view.notReady.length) ok += ` · ${tb("notReady", { n: view.notReady.length })} ${view.notReady.map((r) => `${r.name} — ${r.reason}`).join("; ")}`;
+    if (view.approveFailed.length) ok += ` · ${tb("approveFailed", { n: view.approveFailed.length })} ${view.approveFailed.map((r) => `${r.name} — ${r.reason}`).join("; ")}`;
+    if (view.needsReview?.length) ok += ` · ${tb("needsReview", { n: view.needsReview.length })} ${view.needsReview.map((r) => r.name).join("; ")}`;
+  }
+  return ok;
+}
+
+/** §6.4: gửi duyệt = thao tác của người quản lý SP; "Duyệt luôn" chỉ người có quyền duyệt (server kiểm lại). */
+async function reviewOptions(formData: FormData, role: Parameters<typeof can>[0]) {
+  const submit = formData.get("submitNow") === "on" && can(role, "catalog:manage");
+  const approve = submit && formData.get("approveNow") === "on";
+  if (approve) await requirePermission("catalog:approve");
+  return { submit, approve };
+}
+
 export async function applyRunAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const runId = String(formData.get("runId"));
   let ok: string;
   try {
     const user = await requirePermission("pricing:manage");
     const ids = formData.getAll("variantId").map(String);
-    // §6.4: gửi duyệt = thao tác của người quản lý SP; "Duyệt luôn" chỉ người có quyền duyệt (server kiểm lại).
-    const submit = formData.get("submitNow") === "on" && can(user.role, "catalog:manage");
-    const approve = submit && formData.get("approveNow") === "on";
-    if (approve) await requirePermission("catalog:approve");
+    const { submit, approve } = await reviewOptions(formData, user.role);
     const res = await applyRun(runId, ids, user.id, new Date(), { submit });
-    const t = await getTranslations("Pricing");
-    ok = t("appliedResult", { applied: res.applied, skipped: res.skipped.length, remaining: res.remaining });
-    if (res.skipped.length) ok += ` (${res.skipped.map((s) => `${s.sku}: ${t(`skipShort.${s.reason}`)}`).join(", ")})`;
-    if (res.review) {
-      const view = await finishBatchReview(res.review, user.id, approve);
-      // Form áp giá biến mất khi hết dòng chờ → lưu kết quả để trang bản tính giá hiện lại (BatchReviewSummary).
-      await prisma.auditLog.create({ data: { userId: user.id, action: "pricing.apply.review", entity: "PriceUpdateRun", entityId: runId, data: view } });
-      const tb = await getTranslations("BatchReview");
-      ok += ` · ${tb("submitted", { n: view.submitted + view.already })}`;
-      if (view.approved) ok += ` · ${tb("approved", { n: view.approved })}`;
-      if (view.notReady.length) ok += ` · ${tb("notReady", { n: view.notReady.length })} ${view.notReady.map((r) => `${r.name} — ${r.reason}`).join("; ")}`;
-      if (view.approveFailed.length) ok += ` · ${tb("approveFailed", { n: view.approveFailed.length })} ${view.approveFailed.map((r) => `${r.name} — ${r.reason}`).join("; ")}`;
-    }
+    refreshPricing(runId);
+    ok = await outcomeText(res, runId, user.id, approve);
   } catch (e) {
     return { error: message(e) };
   }
-  updateTag(CATALOG_TAG); // giá mới hiện ngay trên storefront (P20)
-  revalidatePath(`/admin/pricing/runs/${runId}`);
-  revalidatePath("/admin/pricing");
+  refreshPricing(runId);
   return { ok };
+}
+
+/** Trang Giá bán — Thủ công kho VND: `payload` = JSON { locationId, rateId, lines[] } (máy chủ tự tính lại giá). */
+export async function applyManualVndAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  let ok: string;
+  try {
+    const user = await requirePermission("pricing:manage");
+    const { submit, approve } = await reviewOptions(formData, user.role);
+    const res = await applyManualVnd(JSON.parse(String(formData.get("payload") ?? "{}")), user.id, new Date(), { submit });
+    refreshPricing(res.runId);
+    ok = await outcomeText(res, res.runId, user.id, approve);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  refreshPricing();
+  return { ok };
+}
+
+/** Bản tính tự động: tính lại với lô cơ sở đã chọn cho từng dòng (`source:<variantId>` = dòng phiếu nhập). */
+export async function recomputeRunAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  let id: string;
+  try {
+    const user = await requirePermission("pricing:manage");
+    const run = await prisma.priceUpdateRun.findUnique({ where: { id: String(formData.get("runId")) }, include: { lines: { select: { variantId: true } } } });
+    if (!run || run.mode !== "AUTO") throw new Error("Không tìm thấy bản tính giá");
+    const sources: Record<string, string> = {};
+    for (const [k, v] of formData.entries()) if (k.startsWith("source:") && typeof v === "string" && v) sources[k.slice(7)] = v;
+    const next = await previewRun(
+      {
+        locationId: run.locationId ?? undefined,
+        rateId: run.rateId ?? undefined,
+        marginPct: run.marginPct?.toString(),
+        shipMmkPerKg: run.shipMmkPerKg ?? undefined,
+        roundTo: run.roundTo,
+        variantIds: [...new Set(run.lines.map((l) => l.variantId))],
+        sources,
+      },
+      user.id,
+    );
+    id = next.id;
+  } catch (e) {
+    return { error: message(e) };
+  }
+  redirect(`/admin/pricing/runs/${id}`);
 }
 
 export async function cancelRunAction(_prev: ActionState, formData: FormData): Promise<ActionState> {

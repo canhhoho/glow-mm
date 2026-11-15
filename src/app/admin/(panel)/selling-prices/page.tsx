@@ -2,14 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Calculator, CircleDollarSign, Clock, Layers, Pencil, TriangleAlert } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { fmtDateTime, fmtInt } from "@/lib/format";
 import { requirePagePermission } from "@/server/auth/session";
 import { PricingRunsTab } from "@/components/admin/pricing-runs-tab";
-import { ActionForm } from "@/components/admin/action-form";
-import { Badge, ClearFilters, DataTable, FilterBar, FilterButton, LinkButton, Page, PageHeader, PageNumbers, SearchInput, StatCard, TabNav, Td, fieldClass, fieldLabelClass } from "@/components/admin/ui";
-import { saveSellingPriceAction } from "@/server/catalog/actions";
+import { Badge, ClearFilters, DataTable, FilterBar, FilterButton, LinkButton, Page, PageHeader, PageNumbers, SearchInput, StatCard, TabNav, Td, checkboxClass, fieldClass } from "@/components/admin/ui";
 import {
   listSellingPrices,
   SELLING_PAGE_SIZES,
@@ -21,6 +18,8 @@ import {
 } from "@/server/pricing/selling-prices";
 
 const one = (v: string | string[] | undefined) => (typeof v === "string" ? v : undefined);
+const many = (v: string | string[] | undefined) => (Array.isArray(v) ? v : v ? [v] : []).filter((x) => /^[a-z0-9]{1,40}$/i.test(x)).slice(0, 5000);
+const PICK_FORM = "price-pick";
 
 export default async function SellingPricesPage({ searchParams }: PageProps<"/admin/selling-prices">) {
   await requirePagePermission("pricing:manage");
@@ -54,10 +53,7 @@ export default async function SellingPricesPage({ searchParams }: PageProps<"/ad
       <PageHeader
         title={t("title")}
         description={t("subtitle")}
-        actions={[
-          <LinkButton key="rates" href="/admin/pricing">{t("rates")}</LinkButton>,
-          <LinkButton key="runs" href="/admin/pricing?tab=runs" variant="primary"><Calculator aria-hidden /> {t("runs")}</LinkButton>,
-        ]}
+        actions={[<LinkButton key="rates" href="/admin/pricing">{t("rates")}</LinkButton>]}
       />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard icon={<Layers />} tone="brand" value={fmtInt(stats.total)} label={t("statTotal")} href={href({ state: null, page: 1 })} active={!automatic && !state} />
@@ -73,7 +69,7 @@ export default async function SellingPricesPage({ searchParams }: PageProps<"/ad
         ]}
       />
       {automatic ? (
-        <PricingRunsTab />
+        <PricingRunsTab variantIds={many(sp.ids)} productId={one(sp.productId)} receiptId={one(sp.receiptId)} />
       ) : (
         <ManualPrices q={q} state={state} warehouseId={warehouseId} page={page} size={size} href={href} />
       )}
@@ -140,11 +136,22 @@ async function ManualPrices({
           <ClearFilters href={href({ q: null, state: null, warehouse: null, page: 1 })}>{t("clearFilters")}</ClearFilters>
         )}
       </FilterBar>
+      {/* Chọn SKU → Thủ công (trang riêng) hoặc Tự động (bảng tính giá cho đúng các SKU này). */}
+      <form id={PICK_FORM} method="get" action="/admin/selling-prices/manual" className="flex flex-wrap items-center gap-2 text-sm" data-testid="price-pick">
+        <span className="text-muted-foreground">{t("pickHint")}</span>
+        <Button type="submit" size="lg">
+          <Pencil aria-hidden /> {t("pickManual")}
+        </Button>
+        <Button type="submit" size="lg" variant="outline" name="mode" value="auto" formAction="/admin/selling-prices">
+          <Calculator aria-hidden /> {t("pickAuto")}
+        </Button>
+      </form>
       <DataTable stack empty={t("empty")} numeric={[3, 4]} head={[t("product"), t("sku"), t("warehouse"), t("price"), t("colCost"), t("colSource"), t("actions")]}>
         {rows.map((v) => (
           <tr key={v.id} data-testid="selling-price-row">
             <Td className="align-middle">
               <div className="flex min-w-52 items-center gap-3">
+                <input type="checkbox" form={PICK_FORM} name="ids" value={v.id} aria-label={`${t("pick")} ${v.sku}`} className={checkboxClass} />
                 <span className="relative size-10 shrink-0 overflow-hidden rounded-lg border bg-muted">
                   {v.image && <Image src={v.image} alt={v.productName} fill sizes="40px" className="object-cover" />}
                 </span>
@@ -167,6 +174,12 @@ async function ManualPrices({
                   <Badge tone="warning">{t("pendingPrice", { price: fmtInt(v.pendingMmk) })}</Badge>
                 </div>
               )}
+              <div className="mt-1 text-xs text-muted-foreground" data-testid="selling-commission">
+                {t("commission", { value: v.commissionMmk == null ? t("commissionPercent") : fmtInt(v.commissionMmk) })}
+                {v.pendingCommission !== undefined && (
+                  <span className="text-warning"> · {t("pendingCommission", { value: v.pendingCommission == null ? t("commissionPercent") : fmtInt(v.pendingCommission) })}</span>
+                )}
+              </div>
               {v.stale && (
                 <div className="mt-1">
                   <Badge tone="neutral">{t("staleBadge")}</Badge>
@@ -184,26 +197,7 @@ async function ManualPrices({
             </Td>
             <Td label={t("colSource")} className="align-middle text-sm">{source(v)}</Td>
             <Td label={t("actions")} className="align-middle">
-              <details className="group">
-                <summary className={cn(buttonVariants({ variant: "outline", size: "lg" }), "cursor-pointer list-none [&::-webkit-details-marker]:hidden")}>
-                  <Pencil aria-hidden />
-                  {t("edit")}
-                </summary>
-                <ActionForm action={saveSellingPriceAction} submitLabel={t("save")} okText={t("saved")} className="mt-3 min-w-48 space-y-3">
-                  <input type="hidden" name="productId" value={v.productId} />
-                  <input type="hidden" name="variantId" value={v.id} />
-                  {/* So xung đột theo giá hiệu lực (giá chờ duyệt nếu có) — cùng quy tắc với form giá trên trang SP. */}
-                  <input type="hidden" name="expectedPriceMmk" value={v.effectiveMmk} />
-                  <label className={fieldLabelClass}>
-                    <span className="text-muted-foreground">{t("price")}</span>
-                    <input name="priceMmk" type="number" min="1" max="1000000000" step="1" inputMode="numeric" required defaultValue={v.effectiveMmk || ""} className={fieldClass} />
-                  </label>
-                  <label className={fieldLabelClass}>
-                    <span className="text-muted-foreground">{t("reason")}</span>
-                    <input name="reason" required maxLength={200} className={fieldClass} />
-                  </label>
-                </ActionForm>
-              </details>
+              <LinkButton href={`/admin/selling-prices/manual?ids=${v.id}`} icon="edit">{t("setPrice")}</LinkButton>
             </Td>
           </tr>
         ))}
