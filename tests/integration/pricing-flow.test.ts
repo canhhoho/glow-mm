@@ -4,7 +4,7 @@ import { toCsv } from "@/lib/csv";
 import { commitCatalogImport, previewCatalogImport } from "@/server/catalog/catalog-import";
 import { saveProductPricing } from "@/server/catalog/product-pricing";
 import { reviewProducts, submitProducts } from "@/server/catalog/review";
-import { createDocument, postDocument } from "@/server/inventory/documents";
+import { createDocument, postDocument, updateReceiveDraft } from "@/server/inventory/documents";
 import { inventoryCost } from "@/server/inventory/cost";
 import { receiptSources } from "@/server/pricing/cost";
 import { applyManualVnd, applyRun, createRate, previewRun } from "@/server/pricing/runs";
@@ -158,5 +158,52 @@ describe("Thủ công kho VND", () => {
     const f = await makeFixture();
     const rate = await createRate({ mmkPerUsd: "4500", vndPerUsd: "27000" }, f.userId);
     await expect(applyManualVnd({ locationId: f.chi.id, rateId: rate.id, lines: [{ variantId: f.variantId, profitVnd: 1, shipMmk: 0, commissionMmk: 0, expectedPriceMmk: 10_000, expectedCommissionMmk: "" }] }, f.userId)).rejects.toThrow("kho hàng nhập Việt Nam");
+  });
+});
+
+describe("A3 Sửa phiếu nhập nháp giữ dữ liệu", () => {
+  it("lưu lại không đổi → giữ giá mua, phí về kho, tỷ giá đã chốt từ Excel; đổi giá → chốt lại khi ghi sổ", async () => {
+    const f = await makeFixture();
+    const rate = await createRate({ mmkPerUsd: "4420", vndPerUsd: "26000" }, f.userId);
+    const sku = `IT-${f.tag}`;
+    const p = await previewCatalogImport(
+      csv([
+        { sku, qty: 2, expiry_date: "2029-12-31", unit_cost: 100000, inbound_unit_vnd: 5000, lot_no: "E5" },
+        { sku, qty: 1, expiry_date: "2029-12-31", unit_cost: 90000, lot_no: "E9" },
+      ]),
+    );
+    const docId = (await commitCatalogImport(p.input, f.userId)).documents[0].id;
+    const lines = async () =>
+      (await prisma.stockDocumentLine.findMany({ where: { documentId: docId }, include: { batch: true }, orderBy: { batch: { lotNo: "asc" } } })).map((l) => ({
+        lot: l.batch!.lotNo,
+        unitCostVnd: l.unitCostVnd,
+        landedCostVnd: l.landedCostVnd,
+        rate: l.rateId === rate.id,
+      }));
+    expect(await lines()).toEqual([
+      { lot: "E5", unitCostVnd: 100_000, landedCostVnd: 105_000, rate: true },
+      { lot: "E9", unitCostVnd: 90_000, landedCostVnd: null, rate: true },
+    ]);
+    // Payload giống form sửa: giá + phí của chính dòng (E5), đổi giá E9.
+    await createRate({ mmkPerUsd: "4680", vndPerUsd: "26000" }, f.userId);
+    await updateReceiveDraft(
+      docId,
+      {
+        type: "RECEIVE",
+        toId: f.mm.id,
+        lines: [
+          { variantId: f.variantId, lotNo: "E5", expiryStatus: "DATED", expiryDate: "2029-12-31", unitCostVnd: "100000", landedCostVnd: "105000", qty: 2 },
+          { variantId: f.variantId, lotNo: "E9", expiryStatus: "DATED", expiryDate: "2029-12-31", unitCostVnd: "95000", qty: 1 },
+        ],
+      },
+      f.userId,
+    );
+    expect(await lines()).toEqual([
+      { lot: "E5", unitCostVnd: 100_000, landedCostVnd: 105_000, rate: true },
+      { lot: "E9", unitCostVnd: 95_000, landedCostVnd: null, rate: false },
+    ]);
+    await postDocument(docId, f.userId);
+    const e5 = await prisma.batch.findFirstOrThrow({ where: { variantId: f.variantId, lotNo: "E5" } });
+    expect(inventoryCost(e5)).toMatchObject({ costStatus: "ACTUAL", unitCostMmk: 17_850 }); // 105.000 × 0,17 (tỷ giá đã chốt)
   });
 });

@@ -32,10 +32,14 @@ export async function listVariantsForPicker() {
 }
 
 /** Biến thể nhập kho được (đang dùng, không phải combo) cho bảng nhập nhanh; `lastCost` = giá mua của lần nhập gần nhất. */
-export async function listVariantsForReceive() {
+/** `includeIds`: biến thể đang có trong phiếu nháp được sửa — luôn kèm (kể cả đã tắt / ngừng KD) để không rơi dòng khi lưu. */
+export async function listVariantsForReceive(opts: { includeIds?: string[] } = {}) {
   const [variants, lastVnd, lastMmk] = await Promise.all([
     prisma.variant.findMany({
-      where: { active: true, isBundle: false, product: { archivedAt: null } },
+      where: {
+        isBundle: false,
+        OR: [{ active: true, product: { archivedAt: null } }, ...(opts.includeIds?.length ? [{ id: { in: opts.includeIds } }] : [])],
+      },
       orderBy: { sku: "asc" },
       include: { product: { include: { translations: true, brand: true, stockLocation: { select: { pricingMode: true } } } } },
     }),

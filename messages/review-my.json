@@ -896,6 +896,8 @@
     "Docs.editTitle",
     "Docs.expiryStatus",
     "Docs.filterBrand",
+    "Docs.inboundFee",
+    "Docs.inboundFeeHint",
     "Docs.lineMissing",
     "Docs.location",
     "Docs.noLines",

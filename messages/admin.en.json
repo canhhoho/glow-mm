@@ -480,7 +480,9 @@
     "preorderOpen": "Open the pre-order list",
     "editDraft": "Edit",
     "editTitle": "Edit draft receipt",
-    "updated": "Draft updated."
+    "updated": "Draft updated.",
+    "inboundFee": "Inbound fee (VND/unit)",
+    "inboundFeeHint": "Freight, duties… per unit. Enter 0 if there is none; leave blank if unknown (the lot uses the estimated freight cost, or has no cost)."
   },
   "Ship": {
     "title": "Shipments VN → MM",

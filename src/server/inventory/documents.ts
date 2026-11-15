@@ -155,6 +155,8 @@ type DraftLine = {
   unitCostVnd?: number | null;
   unitCostMmk?: number | null;
   landedCostVnd?: number | null;
+  /** Tỷ giá đã chốt của dòng (giữ khi sửa phiếu nháp không đổi giá — A3). */
+  rateId?: string | null;
 };
 
 /** Kiểm vị trí đi/đến của phiếu (kho đang dùng, đúng kho của SP với hàng vào kho bán…). */
@@ -355,9 +357,17 @@ export async function updateReceiveDraft(documentId: string, raw: unknown, userI
       if (!doc) throw new DocumentError("Không tìm thấy phiếu");
       if (doc.type !== "RECEIVE" || doc.status !== "DRAFT") throw new DocumentError("Chỉ sửa được phiếu nhập đang nháp");
       const { toId } = await checkLocations(tx, input);
+      // A3 16/11: dòng không đổi (cùng biến thể, lô, loại tồn, giá mua) giữ tỷ giá đã chốt (vd nhập Excel); dòng đổi giá
+      // thì chốt lại lúc ghi sổ. Giá mua + phí về kho lấy từ form (trang sửa điền giá của chính dòng).
+      const before = await tx.stockDocumentLine.findMany({ where: { documentId: doc.id }, select: { variantId: true, stockType: true, unitCostVnd: true, rateId: true, batch: { select: { lotNo: true } } } });
+      const lockedRate = new Map(before.flatMap((l) => (l.rateId && l.unitCostVnd != null && l.batch ? [[`${l.variantId}|${l.batch.lotNo}|${l.stockType}|${l.unitCostVnd}`, l.rateId] as const] : [])));
       await releaseDraftBatches(tx, doc.id);
       await tx.stockDocumentLine.deleteMany({ where: { documentId: doc.id } });
-      const lines = await buildReceiveLines(tx, input);
+      const lines = (await buildReceiveLines(tx, input)).map((l, i) => {
+        const src = input.lines[i];
+        const rateId = src.unitCostVnd != null ? lockedRate.get(`${src.variantId}|${src.lotNo}|${src.stockType}|${src.unitCostVnd}`) : undefined;
+        return rateId ? { ...l, rateId } : l;
+      });
       const updated = await tx.stockDocument.update({
         where: { id: doc.id },
         data: {
