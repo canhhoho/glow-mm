@@ -102,4 +102,10 @@ test("thủ công kho VND: SP mới từ Excel → ghi sổ → Đặt giá (lô
   await page.getByRole("button", { name: "Add to cart" }).click();
   await expect(page).toHaveURL(/\/en\/cart$/);
   await expect(page.getByTestId("cart-line")).toContainText(shown);
+
+  // Dọn: ẩn SP khỏi web để không làm đầy trang chủ / danh mục của các spec khác khi chạy lại trên cùng DB.
+  await page.goto(productUrl);
+  page.once("dialog", (d) => d.accept());
+  await page.getByTestId("step-publish-block").getByRole("button", { name: "Ẩn khỏi web" }).click();
+  await expect(page.getByTestId("step-publish-block")).toContainText("Đang ẩn khỏi web", { timeout: 15_000 });
 });

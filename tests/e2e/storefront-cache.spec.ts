@@ -19,7 +19,7 @@ async function db<T>(fn: (c: pg.Client) => Promise<T>) {
 
 test("admin đổi giá biến thể → trang SP và thẻ ở trang danh mục hiện giá mới ngay", async ({ page }) => {
   test.setTimeout(90_000);
-  const price = 1100 + (Date.now() % 50) * 100; // giá lạ, thấp hơn mọi biến thể → thành giá thẻ
+  const price = 1100 + (Date.now() % 5000); // giá lạ (5.000 khả năng, không trùng giá SP khác), thấp hơn mọi biến thể → thành giá thẻ
   const shown = `${price.toLocaleString("en-US")} MMK`;
 
   // Làm ấm cache trước khi sửa.
