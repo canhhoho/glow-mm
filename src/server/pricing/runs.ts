@@ -129,8 +129,11 @@ type ComputedLine = {
   fingerprint: string;
 };
 
-/** Phiên bản cách chọn nguồn giá + công thức (D1). Đổi cách tính → tăng số để bản cũ không áp được. */
-export const FORMULA_VERSION = 2;
+/**
+ * Phiên bản cách chọn nguồn giá + công thức (D1). Đổi cách tính → tăng số để bản cũ không áp được.
+ * 3 (16/11): nguồn giá bỏ dòng Tester / khu chờ kiểm tra / kho bán khác; chọn được lần nhập làm cơ sở.
+ */
+export const FORMULA_VERSION = 3;
 
 const fingerprintOf = (input: unknown) => createHash("sha256").update(JSON.stringify(input)).digest("hex").slice(0, 32);
 

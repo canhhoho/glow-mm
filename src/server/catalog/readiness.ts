@@ -1,6 +1,7 @@
 import "server-only";
 import { inventoryCost } from "@/server/inventory/cost";
 import { salesBlockDays } from "@/server/inventory/documents";
+import { isSourceForProduct } from "@/server/pricing/cost";
 import { latestRate } from "@/server/pricing/latest-rate";
 import type { Tx } from "@/server/inventory/ledger";
 import { availableToSell } from "@/server/orders/availability";
@@ -54,15 +55,18 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
   const receivedRows = stockVariantIds.length
     ? await db.stockDocumentLine.findMany({
         where: { variantId: { in: stockVariantIds }, document: { status: "POSTED", type: { in: ["RECEIVE", "TRANSFER"] } } },
-        select: { variantId: true, qty: true, document: { select: { type: true, postedAt: true } } },
+        select: { variantId: true, qty: true, stockType: true, document: { select: { type: true, postedAt: true, to: { select: { id: true, sellable: true, type: true } } } } },
       })
     : [];
   const received = new Set(receivedRows.map((r) => r.variantId));
   // QT1b PRICE_STALE: lần ghi sổ phiếu NHẬP mới nhất theo biến thể so với lần đổi giá gần nhất (PriceHistory).
   // Chưa có lịch sử giá (giá đặt lúc tạo theo cách cũ) → không đoán, không cảnh báo.
+  // A1 16/11: cùng điều kiện nguồn giá mua (hàng bán được, không vào khu chờ kiểm tra, không vào kho bán khác).
+  const ownerLocation = new Map(products.flatMap((p) => p.variants.flatMap((v) => [[v.id, p.stockLocationId] as const, ...v.bundleItems.map((b) => [b.componentId, p.stockLocationId] as const)])));
   const lastReceive = new Map<string, number>();
   for (const r of receivedRows) {
-    if (r.document.type !== "RECEIVE" || r.qty <= 0 || !r.document.postedAt) continue;
+    if (r.document.type !== "RECEIVE" || r.qty <= 0 || !r.document.postedAt || r.stockType !== "SELLABLE") continue;
+    if (r.document.to?.type === "QUARANTINE" || !isSourceForProduct(r.document.to, ownerLocation.get(r.variantId) ?? null)) continue;
     lastReceive.set(r.variantId, Math.max(lastReceive.get(r.variantId) ?? 0, r.document.postedAt.getTime()));
   }
   const allVariantIds = products.flatMap((p) => p.variants.map((v) => v.id));

@@ -25,14 +25,18 @@ async function pendingPrices() {
 
 /**
  * Cùng quy tắc cảnh báo `PRICE_STALE` (readiness): SKU đang bật, giá > 0, đã có lịch sử giá, và có phiếu NHẬP ghi sổ
- * (combo: của bất kỳ thành phần nào) sau lần đổi giá gần nhất.
+ * (combo: của bất kỳ thành phần nào) sau lần đổi giá gần nhất. Chỉ tính lần nhập hợp lệ làm nguồn giá
+ * (`receiptSourceLine` + đúng kho — A1 16/11).
  */
 async function staleVariantIds(): Promise<string[]> {
   const rows = await prisma.$queryRaw<{ id: string }[]>`
     WITH rcv AS (
       SELECT l."variantId", MAX(d."postedAt") AS at
       FROM "StockDocumentLine" l JOIN "StockDocument" d ON d.id = l."documentId"
-      WHERE d.type = 'RECEIVE' AND d.status = 'POSTED' AND l.qty > 0
+      JOIN "Location" t ON t.id = d."toId"
+      JOIN "Variant" lv ON lv.id = l."variantId" JOIN "Product" lp ON lp.id = lv."productId"
+      WHERE d.type = 'RECEIVE' AND d.status = 'POSTED' AND l.qty > 0 AND l."stockType" = 'SELLABLE'
+        AND t.type <> 'QUARANTINE' AND (NOT t.sellable OR t.id = lp."stockLocationId")
       GROUP BY 1),
     chg AS (SELECT "variantId", MAX("createdAt") AS at FROM "PriceHistory" GROUP BY 1)
     SELECT v.id FROM "Variant" v

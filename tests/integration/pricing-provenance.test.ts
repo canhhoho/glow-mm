@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { cancelDocument, createDocument, postDocument } from "@/server/inventory/documents";
 import { pricingGaps } from "@/server/pricing/queries";
-import { applyRun, cancelRun, createRate, previewRun } from "@/server/pricing/runs";
+import { applyRun, cancelRun, createRate, FORMULA_VERSION, previewRun } from "@/server/pricing/runs";
 import { makeFixture, type Fixture } from "./fixtures";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -36,7 +36,7 @@ describe("D1 — nguồn giá mua theo phiếu nhập đã ghi sổ", () => {
     expect(line).toMatchObject({ costVnd: 50_000, sourceBatchId: old.id, sourceDocumentId: again.id, status: "PENDING" });
     expect(line.sourcePostedAt).toBeInstanceOf(Date);
     expect(line.fingerprint).toMatch(/^[0-9a-f]{32}$/);
-    expect(run).toMatchObject({ formulaVersion: 2 });
+    expect(run).toMatchObject({ formulaVersion: FORMULA_VERSION });
     expect(run.expiresAt!.getTime() - run.createdAt.getTime()).toBe(3 * DAY); // mặc định pricing.previewDays = 3
   });
 

@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { receiptSourceLine } from "@/server/pricing/cost";
 import type { DocStatus, DocType } from "@/generated/prisma/client";
 
 /** Tên hiển thị của sản phẩm cho admin: ưu tiên tiếng Anh, sau đó tiếng Myanmar. */
@@ -38,17 +39,17 @@ export async function listVariantsForReceive() {
       orderBy: { sku: "asc" },
       include: { product: { include: { translations: true, brand: true, stockLocation: { select: { pricingMode: true } } } } },
     }),
-    // Giá mua gợi ý: giá của lần nhập gần nhất (dòng phiếu NHẬP chưa huỷ) — không phải giá bình quân của lô (P1-C).
+    // Giá mua gợi ý: giá của lần nhập ĐÃ GHI SỔ gần nhất (hàng bán được) — không phải giá bình quân của lô (P1-C, A1 16/11).
     prisma.stockDocumentLine.findMany({
-      where: { unitCostVnd: { not: null }, document: { type: "RECEIVE", status: { not: "CANCELLED" } } },
+      where: { unitCostVnd: { not: null }, ...receiptSourceLine },
       distinct: ["variantId"],
-      orderBy: [{ variantId: "asc" }, { document: { createdAt: "desc" } }, { id: "desc" }],
+      orderBy: [{ variantId: "asc" }, { document: { postedAt: "desc" } }, { id: "desc" }],
       select: { variantId: true, unitCostVnd: true },
     }),
     prisma.stockDocumentLine.findMany({
-      where: { unitCostMmk: { not: null }, document: { type: "RECEIVE", status: { not: "CANCELLED" } } },
+      where: { unitCostMmk: { not: null }, ...receiptSourceLine },
       distinct: ["variantId"],
-      orderBy: [{ variantId: "asc" }, { document: { createdAt: "desc" } }, { id: "desc" }],
+      orderBy: [{ variantId: "asc" }, { document: { postedAt: "desc" } }, { id: "desc" }],
       select: { variantId: true, unitCostMmk: true },
     }),
   ]);
