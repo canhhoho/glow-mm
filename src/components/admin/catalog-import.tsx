@@ -5,7 +5,7 @@ import { Check, Download, Eye } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { catalogImportAction } from "@/server/catalog/actions";
-import type { CatalogImportPreview, ImportRowView } from "@/server/catalog/catalog-import";
+import type { CatalogImportPreview, ImportIssue, ImportRowView } from "@/server/catalog/catalog-import";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { FileField } from "@/components/admin/file-field";
 import { Badge, DataTable, Notice, Td } from "@/components/admin/ui";
@@ -17,8 +17,10 @@ const ACTION_TONE = { create: "brand", update: "warning", same: "neutral", error
 const FILTERS = ["all", "error", "warning", "create", "update", "same"] as const;
 type Filter = (typeof FILTERS)[number];
 
+/** Trang này chỉ nói về thông tin SP: lưu ý về lô nhập kho (hạn dùng, giá vốn) xem ở phiếu nhập nháp; lỗi thì luôn hiện. */
+const shownIssues = (r: ImportRowView): ImportIssue[] => r.issues.filter((i) => i.level === "error" || !i.stock);
 const matches = (r: ImportRowView, f: Filter) =>
-  f === "all" ? true : f === "warning" ? r.issues.some((i) => i.level === "warning") : r.action === f;
+  f === "all" ? true : f === "warning" ? shownIssues(r).some((i) => i.level === "warning") : r.action === f;
 
 /** Một luồng cho tạo mới + cập nhật + nhập tồn: tải mẫu → chọn file → xem trước → xác nhận. */
 export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) {
@@ -35,11 +37,6 @@ export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) 
         <a className={buttonVariants({ variant: "outline", size: "lg" })} href="/api/templates/catalog.xlsx"><Download aria-hidden />{t("templateBlank")}</a>
         <a className={buttonVariants({ variant: "outline", size: "lg" })} href="/api/templates/catalog-current.xlsx"><Download aria-hidden />{t("templateCurrent")}</a>
       </div>
-      <p className="text-sm text-muted-foreground">
-        {t("setupHint")} <Link className="text-primary underline" href="/admin/categories">{t("categories")}</Link> ·{" "}
-        <Link className="text-primary underline" href="/admin/settings/warehouses">{t("warehouses")}</Link> ·{" "}
-        <Link className="text-primary underline" href="/admin/selling-prices?mode=rates">{t("rates")}</Link>
-      </p>
       <form action={action} className="flex flex-wrap items-end gap-3">
         <input type="hidden" name="step" value="preview" />
         <FileField name="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required aria-label={t("file")} className="max-w-72" />
@@ -77,56 +74,34 @@ function ImportPreview({ preview, action, pending, canApprove }: { preview: Cata
   const [filter, setFilter] = useState<Filter>("all");
   const rows = preview.rows.filter((r) => matches(r, filter));
   const blocked = preview.errors.length > 0;
-  const head = ["colLine", "colAction", "colProduct", "colLabel", "colSku", "colWeight", "colStock", "colNotes"];
+  const head = ["colLine", "colAction", "colProduct", "colLabel", "colSku", "colWeight", "colNotes"];
   const counts = Object.fromEntries(FILTERS.map((f) => [f, preview.rows.filter((r) => matches(r, f)).length])) as Record<Filter, number>;
   const rc = preview.rowCounts;
   return (
     <div className="space-y-3" data-testid="catalog-import-preview">
-      <div className="space-y-1 text-sm">
-        <p className="font-medium" data-testid="catalog-import-summary">
-          {t("summaryRows", { total: preview.rows.length, create: rc.create, update: rc.update, same: rc.same, error: rc.error })}
-        </p>
-        <p className="text-muted-foreground">
-          {t("summaryProducts", { created: preview.counts.createdProducts, updated: preview.counts.updatedProducts, unchanged: preview.counts.unchangedProducts })}
-          {preview.counts.stockLines > 0 && <> · {t("summaryStock", { stock: preview.counts.stockLines, documents: preview.documents })}</>}
-        </p>
-        {preview.rate && <p className="text-muted-foreground">{t("rateQuote", { rate: preview.rate.vndPerMmk })}</p>}
-      </div>
+      <p className="text-sm font-medium" data-testid="catalog-import-summary">
+        {t("summaryRows", { total: preview.rows.length, create: rc.create, update: rc.update, same: rc.same, error: rc.error })}
+      </p>
 
       {preview.general.length > 0 && (
         <Notice tone="danger" className="p-4">
           <ul className="list-disc space-y-1 pl-5">{preview.general.map((e, i) => <li key={i}>{e}</li>)}</ul>
         </Notice>
       )}
-      {preview.errors.length > preview.general.length && (
-        <Notice tone="danger" className="p-4">
-          <p className="font-medium">{t("errorsTitle")}</p>
-          <details className="mt-1">
-            <summary className="cursor-pointer">{t("issuesDetail", { count: preview.errors.length - preview.general.length })}</summary>
-            <ul className="mt-1 list-disc space-y-1 pl-5">{preview.errors.filter((e) => !preview.general.includes(e)).map((e, i) => <li key={i} className="whitespace-pre-line">{e}</li>)}</ul>
-          </details>
-        </Notice>
-      )}
-      {preview.warnings.length > 0 && (
-        <Notice tone="warning" className="p-4">
-          <p className="font-medium">{t("warningsTitle")}</p>
-          <details className="mt-1">
-            <summary className="cursor-pointer">{t("issuesDetail", { count: preview.warnings.length })}</summary>
-            <ul className="mt-1 list-disc space-y-1 pl-5">{preview.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
-          </details>
-        </Notice>
+
+      {/* Bộ lọc chỉ hiện khi file có nhiều loại dòng. */}
+      {FILTERS.filter((f) => f !== "all" && counts[f] > 0).length > 1 && (
+        <div className="flex flex-wrap gap-2" role="group" aria-label={t("filterLabel")}>
+          {FILTERS.filter((f) => f === "all" || counts[f] > 0).map((f) => (
+            <Button key={f} type="button" size="sm" variant={filter === f ? "secondary" : "ghost"} aria-pressed={filter === f} onClick={() => setFilter(f)}>
+              {t(`filter.${f}`)} ({counts[f]})
+            </Button>
+          ))}
+        </div>
       )}
 
-      <div className="flex flex-wrap gap-2" role="group" aria-label={t("filterLabel")}>
-        {FILTERS.filter((f) => f === "all" || counts[f] > 0).map((f) => (
-          <Button key={f} type="button" size="sm" variant={filter === f ? "secondary" : "ghost"} aria-pressed={filter === f} onClick={() => setFilter(f)}>
-            {t(`filter.${f}`)} ({counts[f]})
-          </Button>
-        ))}
-      </div>
-
-      {/* Điện thoại: mỗi dòng file một thẻ (nhãn từng ô); máy tính: bảng đủ cột. */}
-      <DataTable stack numeric={[0]} head={head.map((k) => t(k))} empty={t("noRows")} tableClassName="md:min-w-[960px]">
+      {/* Điện thoại: mỗi dòng file một thẻ (nhãn từng ô); máy tính: bảng. Chỉ thông tin SP — nhập kho xem ở phiếu nháp. */}
+      <DataTable stack numeric={[0]} head={head.map((k) => t(k))} empty={t("noRows")}>
         {rows.map((r) => <PreviewRow key={r.line} r={r} />)}
       </DataTable>
 
@@ -151,7 +126,7 @@ function ImportPreview({ preview, action, pending, canApprove }: { preview: Cata
 function PreviewRow({ r }: { r: ImportRowView }) {
   const t = useTranslations("CatalogImport");
   const muted = "text-muted-foreground";
-  const s = r.stock;
+  const issues = shownIssues(r);
   return (
     <tr data-testid={`catalog-import-row-${r.line}`}>
       <Td label={t("colLine")} numeric>{r.line}</Td>
@@ -166,37 +141,17 @@ function PreviewRow({ r }: { r: ImportRowView }) {
         {(r.brand || r.category) && <div className={cn("text-xs", muted)}>{[r.brand, r.category].filter(Boolean).join(" · ")}</div>}
       </Td>
       <Td label={t("colLabel")}><span className={cn(!r.labelFromFile && muted)}>{r.labelFromFile ? r.label : t("standardLabel")}</span></Td>
-      <Td label={t("colSku")} className="font-mono text-xs">
-        {r.sku || "—"}
-        {r.skuAuto && <div className={cn("font-sans", muted)}>{t("autoSku")}</div>}
+      <Td label={t("colSku")} className="text-xs">
+        <span className="font-mono">{r.sku || "—"}</span>
+        {r.skuAuto && <span className={muted}> · {t("autoSku")}</span>}
       </Td>
       <Td label={t("colWeight")} className="whitespace-nowrap tabular-nums">
         {r.weight == null ? <span className={muted}>—</span> : <span className={cn(!r.weightFromFile && muted)}>{fmtInt(r.weight)}</span>}
       </Td>
-      <Td label={t("colStock")} className="text-xs">
-        {s && (
-          <div className="space-y-0.5">
-            <div className="text-sm">{t("stockQty", { qty: fmtInt(s.qty), location: s.location })}</div>
-            <div className={muted}>{t("stockLot", { lot: s.lotNo })}{s.lotAuto && ` (${t("autoSku")})`}</div>
-            <div className={s.expiryStatus === "UNKNOWN" ? "text-destructive" : muted}>
-              {s.expiryDate ?? t(s.expiryStatus === "NONE" ? "expiryNone" : "expiryUnknown")}
-            </div>
-            <div>{t("purchase", { cost: fmtInt(s.unitCost), currency: s.currency })}</div>
-            {s.currency === "VND" && (
-              <div className={cn(s.inboundVnd == null && "text-warning-foreground")}>
-                {s.inboundVnd == null ? t("inboundUnknown") : t("inbound", { fee: fmtInt(s.inboundVnd) })}
-              </div>
-            )}
-            <div className={s.costMmk == null ? "text-warning-foreground" : muted}>
-              {s.costMmk == null ? t("costMissing") : t("costMmk", { cost: fmtInt(s.costMmk) })}
-            </div>
-          </div>
-        )}
-      </Td>
-      <Td label={t("colNotes")} className="text-xs">
-        {r.issues.length > 0 && (
+      <Td label={t("colNotes")} className={cn("text-xs", issues.length === 0 && "max-md:hidden")}>
+        {issues.length > 0 && (
           <ul className="space-y-1">
-            {r.issues.map((i, k) => (
+            {issues.map((i, k) => (
               <li key={k} className={i.level === "error" ? "text-destructive" : "text-warning-foreground"}>{i.text}</li>
             ))}
           </ul>

@@ -39,7 +39,8 @@ export const catalogImportInputSchema = z.object({
 });
 export type CatalogImportInput = z.infer<typeof catalogImportInputSchema>;
 
-export type ImportIssue = { level: "error" | "warning"; text: string };
+/** `stock`: lưu ý về lô nhập kho (hạn dùng, giá vốn) — trang nhập Excel chỉ hiện thông tin SP nên ẩn; trang phiếu nháp xem lại. */
+export type ImportIssue = { level: "error" | "warning"; text: string; stock?: boolean };
 /** Trường bị đổi trên một dòng (khoá ổn định, UI dịch qua `CatalogImport.field.*`). */
 export type ImportChange =
   | "name" | "brand" | "category" | "description" | "usage" | "ingredients" | "storage" | "pao" | "expiry"
@@ -175,16 +176,16 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
     errors.push(`Dòng ${lines.join(", ")}: ${text}`);
     attach(lines, { level: "error", text });
   };
-  const warn = (rowsOrLine: Row[] | string, text: string) => {
+  const warn = (rowsOrLine: Row[] | string, text: string, stock = false) => {
     const lines = linesOf(rowsOrLine);
     warnings.push(`Dòng ${lines.join(", ")}: ${text}`);
-    attach(lines, { level: "warning", text });
+    attach(lines, { level: "warning", text, ...(stock && { stock }) });
   };
   /** Lưu ý lặp ở nhiều dòng (lô chưa biết hạn, chưa có phí về kho…) → một dòng tóm tắt, vẫn gắn vào từng dòng. */
   const repeated = new Map<string, number[]>();
   const warnEach = (line: string, text: string) => {
     repeated.set(text, [...(repeated.get(text) ?? []), Number(line)]);
-    attach([line], { level: "warning", text });
+    attach([line], { level: "warning", text, stock: true });
   };
 
   // Mọi dòng của file đều có trong bảng, kể cả dòng lỗi: điền sẵn theo đúng nội dung ô, bước sau bổ sung.
@@ -563,8 +564,8 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
                 throw new Error(`Lô ${lotNo} của SKU ${v.sku} đã có với hạn dùng khác (${lot.expiryDate ? lot.expiryDate.toISOString().slice(0, 10) : lot.expiryStatus}) — đổi số lô hoặc sửa hạn cho khớp`);
               }
             }
-            if (status === "DATED" && date < today) warn(r.__line, `lô ${lotNo} đã hết hạn (${date}) → không bán được.`);
-            else if (status === "DATED" && date < blockFrom) warn(r.__line, `lô ${lotNo} còn dưới ${blockDays} ngày hạn dùng (${date}) → bị chặn bán.`);
+            if (status === "DATED" && date < today) warn(r.__line, `lô ${lotNo} đã hết hạn (${date}) → không bán được.`, true);
+            else if (status === "DATED" && date < blockFrom) warn(r.__line, `lô ${lotNo} còn dưới ${blockDays} ngày hạn dùng (${date}) → bị chặn bán.`, true);
             // Xem trước chỉ hiện giá vốn sẽ thực sự được ghi (thực tế); chưa biết phí → để trống + cảnh báo.
             const costMmk = mmk ? purchase : inbound != null && rate ? money.parse(vndToMmk(purchase + inbound, rate)) : null;
             if (!mmk && inbound == null) warnEach(r.__line, NO_LANDED);
@@ -603,8 +604,8 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
   errors.push(...general);
   for (const [text, lines] of repeated) warnings.push(`Dòng ${lines.sort((a, b) => a - b).join(", ")}: ${text}`);
   // File cũ còn cột Giá bán / Hoa hồng CTV: bỏ qua (giá chỉ đặt ở trang Giá bán — 16/11/2026).
-  const pricedLines = rows.filter((r) => (r.price_mmk ?? "").trim() || (r.affiliate_commission_mmk ?? "").trim()).map((r) => r.__line);
-  if (pricedLines.length) warnings.push(`Dòng ${pricedLines.join(", ")}: cột Giá bán / Hoa hồng CTV không còn nhập qua Excel — đã bỏ qua. Đặt giá ở trang Giá bán.`);
+  const pricedRows = rows.filter((r) => (r.price_mmk ?? "").trim() || (r.affiliate_commission_mmk ?? "").trim());
+  if (pricedRows.length) warn(pricedRows, "cột Giá bán / Hoa hồng CTV không còn nhập qua Excel — đã bỏ qua. Đặt giá ở trang Giá bán.");
   const rowList = [...views.values()].sort((a, b) => a.line - b.line);
   for (const view of rowList) {
     view.issues = rowIssues.get(view.line) ?? [];

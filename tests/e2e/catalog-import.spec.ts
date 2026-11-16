@@ -81,12 +81,11 @@ test("mẫu một sheet: tạo SP hai biến thể kèm tồn + nội dung → x
   await upload(page, "nhap.xlsx", filled);
   const preview = page.getByTestId("catalog-import-preview");
   await expect(preview.getByTestId("catalog-import-summary")).toHaveText("2 dòng: 2 tạo mới · 0 cập nhật · 0 không đổi · 0 lỗi");
-  await expect(preview).toContainText("1 SP mới · 0 SP cập nhật · 0 SP không đổi · 1 dòng nhập kho → 1 phiếu nhập nháp");
-  // Giá mua hiện đúng đơn vị trong file (VND), phí về kho riêng, giá vốn MMK chỉ là dòng phụ.
-  await expect(preview.getByRole("row").filter({ hasText: "50 ml" })).toContainText("Giá mua 100,000 VND/đv");
-  await expect(preview.getByRole("row").filter({ hasText: "50 ml" })).toContainText("Phí về kho 5,000 VND/đv");
+  // Trang nhập chỉ hiện thông tin SP: không có cột Nhập kho (giá mua, lô… xem ở phiếu nhập nháp).
+  await expect(preview.getByRole("columnheader", { name: "Nhập kho" })).toHaveCount(0);
+  await expect(preview.getByRole("row").filter({ hasText: "50 ml" })).not.toContainText("100,000");
+  await expect(preview.getByRole("row").filter({ hasText: "50 ml" })).toContainText("90");
   await expect(preview.getByRole("alert")).toHaveCount(0);
-  await expect(preview.getByRole("row").filter({ hasText: "50 ml" })).toContainText("2028-03-31");
   await page.screenshot({ path: "test-results/screens/catalog-import-preview.png", fullPage: true });
   await page.getByRole("button", { name: "Xác nhận nhập", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Đã nhập: 1 SP mới", { timeout: 30_000 });
@@ -188,7 +187,7 @@ test("file SP hiện có: cùng cột với mẫu, một cột tên, không còn
   // CSV kiểu cũ có cột giá: chỉ lưu ý, dòng "Không đổi" (không xác nhận — không ghi gì).
   await upload(page, "gia-cu.csv", Buffer.from(toCsv([["sku", "brand", "category", "price_mmk"], [sku, "", "", String(original + 1000)]])));
   const preview = page.getByTestId("catalog-import-preview");
-  await expect(preview).toContainText("0 SP mới · 0 SP cập nhật · 1 SP không đổi");
+  await expect(preview.getByTestId("catalog-import-summary")).toHaveText("1 dòng: 0 tạo mới · 0 cập nhật · 1 không đổi · 0 lỗi");
   await expect(preview.getByRole("row").filter({ hasText: sku })).toContainText("Không đổi");
   await expect(preview).toContainText("không còn nhập qua Excel");
 });
