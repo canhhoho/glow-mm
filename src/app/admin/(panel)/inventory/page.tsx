@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
-import { Ban, Clock, FileText, Package, ShieldAlert, Wallet } from "lucide-react";
+import { Ban, Bell, Clock, FileText, Package, ShieldAlert, Wallet } from "lucide-react";
 import { requirePagePermission } from "@/server/auth/session";
 import { classifyExpiry, daysLeft } from "@/server/alerts/compute";
 import {
@@ -38,8 +38,9 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
   const f = parseStockFilter(sp);
   const view: StockView = sp.view === "lots" ? "lots" : "products";
   const now = new Date();
-  const [t, tc, td, locale, summary, products, lots, tabs, notReceived, archived] = await Promise.all([
+  const [t, tn, tc, td, locale, summary, products, lots, tabs, notReceived, archived] = await Promise.all([
     getTranslations("Inventory"),
+    getTranslations("Nav"),
     getTranslations("Common"),
     getTranslations("Docs"),
     getLocale(),
@@ -61,7 +62,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
   const shownTabs = tabs.filter((l) => top.has(l) || l.code === f.tab);
   const th = summary.thresholds;
   const href = (patch: Partial<StockFilter> & { view?: StockView } = {}) => stockHref(f, view, patch);
-  const filtered = f.tab !== "all" || !!f.q || !!f.expiry || !!f.stockType || !!f.received || !!f.status;
+  const filtered = f.tab !== "all" || !!f.q || !!f.expiry || !!f.stockType || !!f.received || !!f.status || !!f.cost;
 
   return (
     <Page>
@@ -70,6 +71,11 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
         description={t("subtitle", { variants: summary.variants, lots: summary.lots })}
         actions={
           <>
+          {/* Cảnh báo + Chờ kiểm tra là lối tắt từ Tồn kho (không còn mục menu riêng). */}
+          <LinkButton href="/admin/alerts">
+            <Bell aria-hidden />
+            {tn("alerts")}
+          </LinkButton>
           <LinkButton href="/admin/inventory/documents">
             <FileText aria-hidden />
             {t("documents")}
@@ -141,11 +147,12 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
       {/* Bộ lọc (GET, chạy không cần JS) + cách xem */}
       <div className="flex flex-wrap items-center gap-2">
         {/* key theo bộ lọc: điều hướng phía client giữ nguyên DOM → defaultValue cũ; đổi key để form dựng lại. */}
-        <FilterBar key={`${f.tab}|${f.q}|${f.expiry}|${f.stockType}|${view}`} className="flex-1">
+        <FilterBar key={`${f.tab}|${f.q}|${f.expiry}|${f.stockType}|${f.cost}|${view}`} className="flex-1">
           {f.tab !== "all" && <input type="hidden" name="tab" value={f.tab} />}
           {view === "lots" && <input type="hidden" name="view" value="lots" />}
           {f.received && <input type="hidden" name="received" value={f.received} />}
           {f.status && <input type="hidden" name="status" value={f.status} />}
+          {f.cost && <input type="hidden" name="cost" value={f.cost} />}
           <SearchInput label={t("search")} defaultValue={f.q} />
           <select name="expiry" defaultValue={f.expiry ?? ""} aria-label={t("expiryFilter")} className={cn(fieldClass, "w-auto")}>
             <option value="">{t("expiryAll")}</option>
@@ -172,18 +179,23 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
       </div>
 
       {/* Ngoài "Tất cả": SP chưa từng nhập hàng, SP ngừng kinh doanh (bấm Xoá nhưng có lịch sử) — xem riêng ở đây. */}
-      {view === "products" && (f.received || f.status) && (
+      {view === "products" && (f.received || f.status || f.cost) && (
         <p className="text-sm">
-          <Link href={href({ received: undefined, status: undefined })} className="text-primary underline">
-            {t(f.status ? "showAll" : "showReceived")}
+          <Link href={href({ received: undefined, status: undefined, cost: undefined })} className="text-primary underline">
+            {t(f.status || f.cost ? "showAll" : "showReceived")}
           </Link>
         </p>
       )}
-      {view === "products" && !f.received && !f.status && (notReceived > 0 || archived.withStock > 0 || archived.history > 0) && (
+      {view === "products" && !f.received && !f.status && !f.cost && (notReceived > 0 || archived.withStock > 0 || archived.history > 0 || summary.unvaluedUnits > 0) && (
         <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
           {notReceived > 0 && (
             <Link href={href({ received: "no", tab: "all", expiry: undefined, stockType: undefined })} className="text-primary underline" data-testid="not-received-link">
               {t("notReceived", { count: notReceived })}
+            </Link>
+          )}
+          {summary.unvaluedUnits > 0 && (
+            <Link href={href({ cost: "missing", tab: "all", expiry: undefined, stockType: undefined })} className="text-primary underline" data-testid="missing-cost-link">
+              {t("missingCostLink", { count: summary.unvaluedUnits })}
             </Link>
           )}
           {archived.withStock > 0 && (

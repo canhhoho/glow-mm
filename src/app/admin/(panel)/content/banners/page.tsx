@@ -8,6 +8,7 @@ import { listBannersAdmin } from "@/server/content/banners";
 import { SCHEDULE_TONE, scheduleStatus } from "@/server/content/common";
 import { ActionButton } from "@/components/admin/action-button";
 import { Badge, DataTable, LinkButton, Notice, Page, PageHeader, Td } from "@/components/admin/ui";
+import { ContentTabs } from "@/components/admin/section-tabs";
 
 export default async function BannersPage({ searchParams }: PageProps<"/admin/content/banners">) {
   await requirePagePermission("content:manage");
@@ -19,13 +20,14 @@ export default async function BannersPage({ searchParams }: PageProps<"/admin/co
   return (
     <Page>
       <PageHeader
-        title={t("bannersTitle")}
+        title={(await getTranslations("Nav"))("websiteContent")}
         actions={
           <LinkButton href="/admin/content/banners/new" variant="primary" icon="new">
             {t("bannerNew")}
           </LinkButton>
         }
       />
+      <ContentTabs active="banners" />
       {saved && <Notice tone="success">{t("saved")}</Notice>}
       <DataTable
         stack

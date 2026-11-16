@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { rawId, mmTextReq } from "@/lib/schemas";
 import { can, type Role } from "@/server/auth/roles";
+import { summarizeCod } from "./cod-aging";
 
 const schema = z.object({
   orderId: rawId,
@@ -31,6 +32,11 @@ export async function remitCod(raw: unknown, actor: { userId: string; role: Role
 
 export async function outstandingCod() {
   return prisma.order.findMany({ where: { paymentMethod: "COD", codCollectedAt: { not: null }, codRemittedAt: null }, orderBy: { codCollectedAt: "asc" }, include: { items: { select: { returnedQty: true } }, deliveries: { orderBy: { createdAt: "desc" }, take: 1 } } });
+}
+
+/** Tổng COD chưa về (thường + ngoại lệ) — cùng nguồn `outstandingCod()` với trang Đối soát COD. */
+export async function outstandingCodSummary() {
+  return summarizeCod(await outstandingCod());
 }
 
 /** Close an exception only with explicitly reconciled amounts; no automatic refund inference. */

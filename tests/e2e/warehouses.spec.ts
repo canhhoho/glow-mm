@@ -15,7 +15,7 @@ test("admin xem kho; danh sách SP lọc theo kho; thủ kho không vào đượ
   }
   await login(page, "admin@glow.local");
   await page.goto("/admin/settings/warehouses");
-  await expect(page.getByRole("heading", { name: "Quản lý kho" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Kho", exact: true })).toBeVisible();
   await expect(page.getByTestId("warehouse-THAM")).toContainText("Đang dùng");
   await expect(page.getByTestId("warehouse-THAM")).toContainText("Hàng nhập VN");
   await expect(page.getByTestId("warehouse-CHI")).toContainText("Kho bán");
@@ -38,6 +38,7 @@ test("admin xem kho; danh sách SP lọc theo kho; thủ kho không vào đượ
 
   await page.goto("/admin/products?q=SV-SUN-50");
   await expect(page.getByRole("row").filter({ hasText: "sen-viet-sunscreen-spf50" })).toContainText("Kho Thắm");
+  await page.getByText("Bộ lọc nâng cao", { exact: true }).click(); // bộ lọc kho nằm trong khối nâng cao (thu gọn)
   await page.getByRole("combobox", { name: "Kho", exact: true }).selectOption({ label: "Kho Chi" });
   await page.getByRole("button", { name: "Lọc", exact: true }).click();
   await expect(page.getByRole("row").filter({ hasText: "sen-viet-sunscreen-spf50" })).toHaveCount(0);

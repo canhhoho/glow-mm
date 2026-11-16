@@ -87,6 +87,13 @@ test("phiếu kho: lỗi server giữ lựa chọn; ghi sổ cần xác nhận; 
   await expect(shown("Nháp")).toBeVisible();
   const draftPath = new URL(page.url()).pathname;
 
+  // Xem trước khi ghi sổ: số dòng, tăng/giảm, tồn hiện tại → dự kiến ở kho đi và kho đến.
+  const preview = page.getByTestId("post-preview").filter({ visible: true });
+  await expect(preview).toBeVisible();
+  await expect(preview.getByTestId("preview-summary")).toContainText("1 dòng");
+  await expect(preview.getByTestId("preview-row")).toHaveCount(2);
+  await expect(preview).toContainText("Lưu nháp chưa đổi tồn kho");
+
   // Bấm "Ghi sổ" rồi từ chối hộp xác nhận → vẫn là nháp.
   page.once("dialog", (d) => d.dismiss());
   await page.getByRole("button", { name: "Ghi sổ" }).click();
@@ -158,4 +165,31 @@ test("nhân viên đơn hàng không tạo được phiếu nhập kho", async (
   await login(page, "donhang@glow.local");
   await page.goto("/admin/inventory/documents/new?type=RECEIVE");
   await expect(page).toHaveURL(/\/admin\?denied=1$/);
+});
+
+test("form chuyển kho: đổi kho xuất thì bỏ chọn lô không còn hàng ở kho mới và báo lại", async ({ page }) => {
+  await login(page, "kho@glow.local");
+  await page.goto("/admin/inventory/documents/new?type=TRANSFER");
+  const from = page.getByLabel("Chọn vị trí xuất");
+  await from.selectOption({ label: "THAM — Kho Thắm" });
+  await page.getByLabel("Biến thể").selectOption({ label: VARIANT });
+  const batch = page.locator('select[name="batch-0"]');
+  expect(await batch.locator("option").count()).toBeGreaterThan(1); // có lô còn hàng ở Kho Thắm
+  await batch.selectOption({ index: 1 });
+  await expect(batch).not.toHaveValue("");
+
+  // Thử lần lượt các kho xuất khác: ít nhất một kho không còn lô này → lô bị bỏ chọn kèm thông báo.
+  const values = await from.locator("option").evaluateAll((os) => (os as HTMLOptionElement[]).map((o) => o.value).filter(Boolean));
+  let cleared = false;
+  for (const v of values) {
+    await from.selectOption(v);
+    if (await page.getByTestId("lots-cleared").isVisible()) {
+      cleared = true;
+      await expect(batch).toHaveValue("");
+      break;
+    }
+    await from.selectOption({ label: "THAM — Kho Thắm" });
+    await batch.selectOption({ index: 1 });
+  }
+  expect(cleared).toBe(true);
 });

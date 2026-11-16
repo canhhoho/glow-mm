@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Eye, Pencil, Plus, Search } from "lucide-react";
+import { ArrowLeft, ChevronRight, Eye, Pencil, Plus, Search } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { FIELD } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
@@ -170,6 +170,8 @@ export function Section({
   className,
   children,
   testId,
+  collapsible = false,
+  defaultOpen = false,
 }: {
   /** Neo `#id` để link nhảy tới khối (thêm `scroll-mt-*` qua `className` nếu có header dính). */
   id?: string;
@@ -178,7 +180,26 @@ export function Section({
   className?: string;
   children: React.ReactNode;
   testId?: string;
+  /** Khối ít dùng: tiêu đề là nút thu gọn/mở (`<details>`, chạy không cần JS); `defaultOpen` = mở sẵn. */
+  collapsible?: boolean;
+  defaultOpen?: boolean;
 }) {
+  if (collapsible && title) {
+    return (
+      <section id={id} className={cn("rounded-xl border bg-card p-4", className)} data-testid={testId} aria-label={typeof title === "string" ? title : undefined}>
+        <details open={defaultOpen} className="group/section">
+          <summary className={cn("flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 rounded-md font-medium [&::-webkit-details-marker]:hidden", focusRing)}>
+            <span className="flex items-center gap-1.5">
+              <ChevronRight className="size-4 text-muted-foreground transition-transform group-open/section:rotate-90" aria-hidden />
+              {title}
+            </span>
+            {actions}
+          </summary>
+          <div className="mt-3 space-y-3">{children}</div>
+        </details>
+      </section>
+    );
+  }
   return (
     // Tiêu đề chữ → section có tên (role region) để trình đọc màn hình/E2E tìm theo tên khối.
     <section id={id} className={cn("space-y-3 rounded-xl border bg-card p-4", className)} data-testid={testId} aria-label={typeof title === "string" ? title : undefined}>
@@ -314,12 +335,15 @@ export function Stat({
   value,
   href,
   tone = "neutral",
+  hint,
   testId,
 }: {
   label: string;
   value: React.ReactNode;
   href?: string;
   tone?: "neutral" | "warning" | "danger";
+  /** Dòng nhỏ dưới số: kỳ / phạm vi / điều kiện của chỉ số. */
+  hint?: React.ReactNode;
   testId?: string;
 }) {
   const body = (
@@ -334,6 +358,7 @@ export function Stat({
       >
         {value}
       </div>
+      {hint && <div className="mt-0.5 text-xs text-muted-foreground">{hint}</div>}
     </>
   );
   const cls = "block min-w-0 rounded-xl border bg-card p-3 shadow-xs";

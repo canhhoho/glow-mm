@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { balanceKey, previewDocument, type PreviewDoc } from "./document-preview";
 import { receiptSourceLine } from "@/server/pricing/cost";
 import type { DocStatus, DocType } from "@/generated/prisma/client";
 
@@ -124,11 +125,32 @@ export async function getDocument(id: string) {
       to: true,
       shipment: true,
       lines: {
-        include: { batch: true, variant: { include: { product: { include: { translations: true } } } } },
+        include: { batch: true, rate: true, variant: { include: { product: { include: { translations: true } } } } },
         orderBy: { id: "asc" },
       },
     },
   });
+}
+
+/**
+ * Xem trước ghi sổ của phiếu nháp: tồn hiện tại tại kho đi / đến theo biến thể × loại tồn (cộng mọi lô) rồi tính thay đổi
+ * và tồn dự kiến (`document-preview.ts`). Chỉ đọc; server vẫn kiểm tra lại khi ghi sổ.
+ */
+export async function loadDocumentPreview(doc: PreviewDoc) {
+  const locationIds = [doc.fromId, doc.toId].filter((x): x is string => !!x);
+  const variantIds = [...new Set(doc.lines.map((l) => l.variantId))];
+  const rows = locationIds.length && variantIds.length
+    ? await prisma.stockBalance.findMany({
+        where: { locationId: { in: locationIds }, qty: { not: 0 }, batch: { variantId: { in: variantIds } } },
+        select: { locationId: true, stockType: true, qty: true, batch: { select: { variantId: true } } },
+      })
+    : [];
+  const current = new Map<string, number>();
+  for (const r of rows) {
+    const key = balanceKey(r.locationId, r.batch.variantId, r.stockType);
+    current.set(key, (current.get(key) ?? 0) + r.qty);
+  }
+  return previewDocument(doc, current);
 }
 
 export async function listShipments() {

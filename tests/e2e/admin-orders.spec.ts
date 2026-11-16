@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { readSheet } from "read-excel-file/node";
-import { login, pickAddressAdmin } from "./helpers";
+import { login, openOrderSection, pickAddressAdmin } from "./helpers";
 
 const VARIANT = "SV-SUN-50 — Sunscreen SPF50 PA++++ (50ml)";
 
@@ -79,6 +79,7 @@ test("đơn thủ công (Facebook, COD): tạo → xác nhận → bàn giao (FE
   await page.getByLabel("Mã vận đơn").fill("RX-E2E-1");
   await page.getByRole("button", { name: "Đã bàn giao vận chuyển" }).click();
   await expectStatus(page, "Đang giao");
+  await openOrderSection(page, "order-documents");
   await expect(page.getByRole("link", { name: /^IS-/ })).toBeVisible();
   await page.getByLabel("Mã vận đơn", { exact: true }).fill("RX-E2E-UPDATED");
   await page.getByRole("button", { name: "Lưu vận đơn", exact: true }).click();
@@ -107,6 +108,7 @@ test("đơn thủ công (Facebook, COD): tạo → xác nhận → bàn giao (FE
   await expect(page.getByRole("button", { name: "Xác nhận tiền đã về cửa hàng", exact: true })).toHaveCount(0);
 
   // Khách trả lại 1 món → hàng vào khu Chờ kiểm tra (MM-QC); trả hết nên đơn → Trả hàng.
+  await openOrderSection(page, "order-return");
   await page.getByLabel("Trả hàng SV-SUN-50").fill("1");
   const qc = page.getByLabel("Vị trí chờ kiểm tra");
   if (await qc.count()) {

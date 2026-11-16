@@ -5,20 +5,24 @@ import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { computeAlerts } from "@/server/alerts/queries";
 import { defaultRange, salesReport, workQueue } from "@/server/reports/queries";
-
-import { yangonDayKey } from "@/lib/time";
-import { prisma } from "@/lib/db";
+import { outstandingCodSummary } from "@/server/orders/cod";
+import { stockExceptions } from "@/server/inventory/overview";
 import { catalogStats } from "@/server/catalog/stats";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowDown, ArrowRight, ArrowUp, Box, ClipboardList, FileText, ImageOff, Package, ShieldCheck, ShoppingCart, Store, Tag, TriangleAlert } from "lucide-react";
-import { Badge, BlockSkeleton, DataTable, LinkButton, Notice, Page, PageHeader, Segmented, Stat, StatCard, Td } from "@/components/admin/ui";
-import { Donut, LineChart } from "@/components/admin/charts";
+import { ArrowRight, Box, FileText, ImageOff, Package, ShieldCheck, Store, Tag, TriangleAlert } from "lucide-react";
+import { Badge, BlockSkeleton, DataTable, LinkButton, Notice, Page, PageHeader, Segmented, Stat, Td } from "@/components/admin/ui";
+import { LineChart } from "@/components/admin/charts";
 import { cn } from "@/lib/utils";
 import { PRODUCT_LABEL_TONE } from "@/components/admin/status-tones";
 import { fmtDateTime, fmtInt } from "@/lib/format";
-import { catalogTasks, DASHBOARD_RANGES, dashboardKpis, productActivity, recentProducts, recentReceipts } from "@/server/reports/catalog-dashboard";
+import { catalogTasks, DASHBOARD_RANGES, productActivity, recentProducts, recentReceipts } from "@/server/reports/catalog-dashboard";
 
+/**
+ * Tổng quan: trả lời "hiện tại cần chú ý điều gì?" theo thứ tự
+ * kết quả kinh doanh → việc cần xử lý → ngoại lệ → hoạt động gần đây. Báo cáo chi tiết nằm ở mục Báo cáo.
+ * Mỗi ô số ghi rõ kỳ/phạm vi và mở đúng trang/bộ lọc đã dùng để tính; số tài chính chỉ hiện cho người có quyền.
+ */
 export default async function DashboardPage({ searchParams }: PageProps<"/admin">) {
   const user = await requirePagePermission("dashboard:view");
   const { denied, range } = await searchParams;
@@ -27,6 +31,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
   const showOrders = can(user.role, "orders:view");
   const showStock = can(user.role, "stock:view");
   const showSales = can(user.role, "reports:view");
+  const showCod = can(user.role, "orders:reconcile-cod");
   const [t, tr] = await Promise.all([
     getTranslations("Dashboard"),
     getTranslations("Role"),
@@ -37,39 +42,77 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
       <PageHeader
         title={t("welcomeBack", { name: user.name })}
         description={<span data-testid="role">{t("role", { role: tr(user.role) })} · {t("overviewSubtitle")}</span>}
-        actions={
-          showCatalog ? (
-            <Segmented
-              label={t("rangeLabel")}
-              items={DASHBOARD_RANGES.map((d) => ({ href: d === DASHBOARD_RANGES[0] ? "/admin" : `/admin?range=${d}`, label: t("rangeDays", { n: d }), active: d === days }))}
-            />
-          ) : undefined
-        }
       />
-      {showCatalog && <Suspense fallback={<BlockSkeleton label={t("catalog")} />}><CatalogOverview days={days} showOrders={showOrders} showStock={showStock} /></Suspense>}
-      {showOrders && <Suspense fallback={<BlockSkeleton label={t("todo")} />}><OrderQueue canReconcile={can(user.role, "orders:reconcile-cod")} /></Suspense>}
-      {showStock && <Suspense fallback={<BlockSkeleton label={t("alerts")} />}><StockAlerts /></Suspense>}
-      {showSales && <Suspense fallback={<BlockSkeleton label={t("sales")} />}><SalesOverview /></Suspense>}
-      {showCatalog && <PublishingFlow />}
+      {(showSales || showCod) && <Suspense fallback={<BlockSkeleton label={t("results")} />}><BusinessResults showSales={showSales} showCod={showCod} /></Suspense>}
+      {(showOrders || showCatalog) && <Suspense fallback={<BlockSkeleton label={t("todo")} />}><WorkQueue showOrders={showOrders} showCatalog={showCatalog} /></Suspense>}
+      {(showStock || showCatalog) && <Suspense fallback={<BlockSkeleton label={t("exceptions")} />}><Exceptions showStock={showStock} showCatalog={showCatalog} /></Suspense>}
+      {showCatalog && <Suspense fallback={<BlockSkeleton label={t("recent")} />}><RecentActivity days={days} showStock={showStock} /></Suspense>}
+      {showCatalog && <Suspense fallback={null}><PublishingFlowWhenEmpty /></Suspense>}
     </Page>
   );
 }
 
 const tone = (n: number, level: "warning" | "danger" = "warning") => n > 0 ? level : "neutral";
 
-
-/** Header và điều hướng không phải chờ các truy vấn tổng hợp. Mỗi nhóm dữ liệu stream riêng. */
-async function OrderQueue({ canReconcile }: { canReconcile: boolean }) {
+/** Kết quả kinh doanh: doanh thu / đơn hoàn tất / lợi nhuận gộp theo kỳ 30 ngày; COD chưa về là số dư hiện tại (không theo kỳ). */
+async function BusinessResults({ showSales, showCod }: { showSales: boolean; showCod: boolean }) {
   await connection();
-  const [t, tc, queue, codPending] = await Promise.all([
-    getTranslations("Dashboard"), getTranslations("Cod"), workQueue(),
-    canReconcile ? prisma.order.count({ where: { paymentMethod: "COD", codCollectedAt: { not: null }, codRemittedAt: null } }) : null,
+  const range = defaultRange();
+  const [t, tr, report, cod] = await Promise.all([
+    getTranslations("Dashboard"), getTranslations("Reports"),
+    showSales ? salesReport(range) : null,
+    showCod ? outstandingCodSummary() : null,
+  ]);
+  const reportHref = `/admin/reports?from=${range.from}&to=${range.to}`;
+  const period = t("period", { from: range.from, to: range.to });
+  return (
+    <section className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <h2 className="font-medium">{t("results")}</h2>
+          {report && <p className="text-xs text-muted-foreground" data-testid="results-period">{period}</p>}
+        </div>
+        {report && <LinkButton href={reportHref}>{t("viewReports")}</LinkButton>}
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {report && (
+          <>
+            <Stat label={`${tr("revenue")} (MMK)`} value={fmtInt(report.totals.revenue)} href={reportHref} testId="month-revenue" />
+            <Stat label={tr("orders")} value={fmtInt(report.totals.orders)} href={reportHref} />
+            <Stat label={`${tr("profit")} (MMK)`} value={fmtInt(report.totals.profit)} href={reportHref} hint={report.totals.marginPct == null ? undefined : `${tr("margin")} ${report.totals.marginPct}%`} />
+          </>
+        )}
+        {cod && (
+          <Stat
+            label={`${t("codOutstanding")} (MMK)`}
+            value={fmtInt(cod.regular.mmk)}
+            href="/admin/orders/cod?filter=waiting"
+            tone={tone(cod.regular.count)}
+            hint={t("codHint", { count: cod.regular.count, exception: cod.exception.count })}
+            testId="cod-outstanding"
+          />
+        )}
+      </div>
+      {report && report.missingCostOrders.length > 0 && <Notice tone="warning">{t("profitMissingCost", { n: report.missingCostOrders.length })}</Notice>}
+      {report && report.estimatedCostOrders.length > 0 && <p className="text-xs text-muted-foreground">{t("profitEstimated", { n: report.estimatedCostOrders.length })}</p>}
+    </section>
+  );
+}
+
+/** Việc cần xử lý: hàng đợi đơn + sản phẩm chờ duyệt / chờ hoàn thiện. Header và điều hướng không phải chờ truy vấn tổng hợp. */
+async function WorkQueue({ showOrders, showCatalog }: { showOrders: boolean; showCatalog: boolean }) {
+  await connection();
+  const [t, queue, stats] = await Promise.all([
+    getTranslations("Dashboard"),
+    showOrders ? workQueue() : null,
+    showCatalog ? catalogStats() : null,
   ]);
   return (
-
-        <section className="space-y-2">
-          <h2 className="font-medium">{t("todo")}</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+    <section className="space-y-2">
+      <h2 className="font-medium">{t("todo")}</h2>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {queue && (
+          <>
             <Stat label={t("codToConfirm")} value={queue.codToConfirm} href="/admin/orders?status=PENDING&paymentMethod=COD" tone={tone(queue.codToConfirm)} testId="todo-cod" />
             <Stat label={t("bankToConfirm")} value={queue.bankToConfirm} href="/admin/orders?status=PENDING&paymentMethod=BANK_TRANSFER" tone={tone(queue.bankToConfirm)} testId="todo-bank" />
             <Stat label={t("awaitingStock")} value={queue.awaitingStock} href="/admin/orders/preorders" tone={tone(queue.awaitingStock)} testId="todo-preorder" />
@@ -77,62 +120,70 @@ async function OrderQueue({ canReconcile }: { canReconcile: boolean }) {
             <Stat label={t("shipping")} value={queue.shipping} href="/admin/orders?status=SHIPPING" />
             <Stat label={t("longShipping", { days: 7 })} value={queue.longShipping} href="/admin/orders?shippingDays=7" tone={tone(queue.longShipping, "danger")} />
             <Stat label={t("overdue")} value={queue.overdue} href="/admin/orders?overdue=1" tone={tone(queue.overdue, "danger")} />
-            {codPending != null && <Stat label={tc("waiting")} value={codPending} href="/admin/orders/cod" tone={tone(codPending)} />}
-          </div>
-        </section>
+          </>
+        )}
+        {stats && (
+          <>
+            <Stat label={t("toApprove")} value={fmtInt(stats.awaitingReview)} href="/admin/products?status=review" tone={tone(stats.awaitingReview)} hint={t("kpiRejected", { n: stats.rejected })} testId="todo-approve" />
+            <Stat label={t("task.incomplete")} value={fmtInt(stats.draftIncomplete)} href="/admin/products?status=incomplete" tone={tone(stats.draftIncomplete)} testId="todo-incomplete" />
+          </>
+        )}
+      </div>
+    </section>
   );
 }
 
-async function StockAlerts() {
+/** Ngoại lệ cần chú ý: cảnh báo kho (tồn thấp, hạn dùng, chưa biết hạn, chờ kiểm tra, thiếu giá vốn) + SP thiếu dữ liệu. */
+async function Exceptions({ showStock, showCatalog }: { showStock: boolean; showCatalog: boolean }) {
   await connection();
-  const [t, alerts] = await Promise.all([getTranslations("Dashboard"), computeAlerts()]);
-  return (
-        <section className="space-y-2">
-          <h2 className="font-medium">{t("alerts")}</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <Stat label={t("lowStock")} value={alerts.counts.lowStock} href="/admin/alerts?tab=low" tone={tone(alerts.counts.lowStock)} testId="alert-low" />
-            <Stat
-              label={t("expiry")}
-              value={`${alerts.counts.expired} / ${alerts.counts.blocked} / ${alerts.counts.near}`}
-              href="/admin/alerts?tab=expiry"
-              tone={tone(alerts.counts.expired + alerts.counts.blocked, "danger")}
-            />
-            <Stat label={t("reorder")} value={alerts.counts.reorder} href="/admin/alerts?tab=reorder" tone={tone(alerts.counts.reorder)} />
-            {alerts.counts.unknown > 0 && <Stat label={t("unknownExpiry")} value={alerts.counts.unknown} href="/admin/inventory?view=lots&expiry=unknown" tone="warning" />}
-          </div>
-        </section>
-  );
-}
-
-async function SalesOverview() {
-  await connection();
-  const today = yangonDayKey(new Date());
-  const [t, trp, month, todaySales] = await Promise.all([
-    getTranslations("Dashboard"), getTranslations("Reports"), salesReport(defaultRange()), salesReport({ from: today, to: today }),
+  const [t, alerts, stockEx, tasks, stats] = await Promise.all([
+    getTranslations("Dashboard"),
+    showStock ? computeAlerts() : null,
+    showStock ? stockExceptions() : null,
+    showCatalog ? catalogTasks() : null,
+    showCatalog ? catalogStats() : null,
   ]);
+  const taskRows = tasks && stats ? [
+    { key: "noImage", icon: <ImageOff />, n: tasks.noImage, href: "/admin/products" },
+    { key: "noPrice", icon: <Tag />, n: tasks.noPrice, href: "/admin/selling-prices" },
+    { key: "notReceived", icon: <Box />, n: tasks.notReceived, href: "/admin/inventory?received=no" },
+    { key: "outOfStock", icon: <TriangleAlert />, n: stats.published.outOfStock - stats.published.preorder, href: "/admin/products?status=outOfStock" },
+    { key: "rejected", icon: <FileText />, n: stats.rejected, href: "/admin/products?status=rejected" },
+  ].filter((r) => r.n > 0) : [];
   return (
-        <section className="space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="font-medium">{t("sales")}</h2>
-            <LinkButton href="/admin/reports">{t("viewReports")}</LinkButton>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label={`${t("today")} · ${trp("revenue")} (MMK)`} value={fmtInt(todaySales.totals.revenue)} />
-            <Stat label={`${trp("revenue")} (MMK)`} value={fmtInt(month.totals.revenue)} testId="month-revenue" />
-            <Stat label={trp("margin")} value={month.totals.marginPct == null ? "—" : `${month.totals.marginPct}%`} />
-            <Stat label={trp("orders")} value={month.totals.orders} />
-          </div>
-        </section>
-  );
-}
-
-function Trend({ n, text }: { n: number; text: string }) {
-  const Icon = n > 0 ? ArrowUp : n < 0 ? ArrowDown : null;
-  return (
-    <span className={cn("mt-1 inline-flex items-center gap-1 text-xs", n > 0 ? "text-success" : n < 0 ? "text-destructive" : "text-muted-foreground")}>
-      {Icon && <Icon className="size-3" aria-hidden />}
-      {text}
-    </span>
+    <section className="space-y-2">
+      <h2 className="font-medium">{t("exceptions")}</h2>
+      {alerts && stockEx && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <Stat label={t("lowStock")} value={alerts.counts.lowStock} href="/admin/alerts?tab=low" tone={tone(alerts.counts.lowStock)} testId="alert-low" />
+          <Stat
+            label={t("expiry")}
+            value={`${alerts.counts.expired} / ${alerts.counts.blocked} / ${alerts.counts.near}`}
+            href="/admin/alerts?tab=expiry"
+            tone={tone(alerts.counts.expired + alerts.counts.blocked, "danger")}
+          />
+          <Stat label={t("reorder")} value={alerts.counts.reorder} href="/admin/alerts?tab=reorder" tone={tone(alerts.counts.reorder)} />
+          {alerts.counts.unknown > 0 && <Stat label={t("unknownExpiry")} value={alerts.counts.unknown} href="/admin/inventory?view=lots&expiry=unknown" tone="warning" />}
+          {stockEx.quarantineUnits > 0 && <Stat label={t("quarantine")} value={fmtInt(stockEx.quarantineUnits)} href="/admin/inventory/quarantine" tone="warning" hint={t("units")} testId="exc-quarantine" />}
+          {stockEx.missingCostUnits > 0 && <Stat label={t("missingCost")} value={fmtInt(stockEx.missingCostUnits)} href="/admin/inventory?cost=missing" tone="warning" hint={t("units")} testId="exc-missing-cost" />}
+        </div>
+      )}
+      {taskRows.length > 0 && (
+        <Card title={t("catalogExceptions", { n: taskRows.reduce((s, r) => s + r.n, 0) })} testId="catalog-tasks">
+          <ul className="divide-y text-sm">
+            {taskRows.map((r) => (
+              <li key={r.key}>
+                <Link href={r.href} className="flex items-center gap-3 py-2 hover:text-primary">
+                  <span className="text-muted-foreground [&_svg]:size-4" aria-hidden>{r.icon}</span>
+                  <span className="flex-1">{t(`task.${r.key}`)}</span>
+                  <Badge tone="warning">{fmtInt(r.n)}</Badge>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+    </section>
   );
 }
 
@@ -148,100 +199,19 @@ function Card({ title, action, children, className, testId }: { title: string; a
   );
 }
 
-/** P3 — khối SP của dashboard (thiết kế "Dashboard"): ô số + xu hướng, biểu đồ, cơ cấu, việc cần làm, gần đây. */
-async function CatalogOverview({ days, showOrders, showStock }: { days: number; showOrders: boolean; showStock: boolean }) {
+/** Hoạt động gần đây: phiếu nhập, sản phẩm cập nhật; biểu đồ hoạt động sản phẩm ở cuối (chỉ biểu đồ này theo khoảng 7/30 ngày). */
+async function RecentActivity({ days, showStock }: { days: number; showStock: boolean }) {
   await connection();
-  const [t, tp, stats, kpi, activity, tasks, receipts, recent] = await Promise.all([
+  const [t, tp, activity, receipts, recent] = await Promise.all([
     getTranslations("Dashboard"),
     getTranslations("Products"),
-    catalogStats(),
-    dashboardKpis(days),
     productActivity(days),
-    catalogTasks(),
     showStock ? recentReceipts() : Promise.resolve([]),
     recentProducts(),
   ]);
-  const taskRows = [
-    { key: "review", icon: <ShieldCheck />, n: stats.awaitingReview, href: "/admin/products?status=review" },
-    { key: "incomplete", icon: <ClipboardList />, n: stats.draftIncomplete, href: "/admin/products?status=incomplete" },
-    { key: "noImage", icon: <ImageOff />, n: tasks.noImage, href: "/admin/products" },
-    { key: "noPrice", icon: <Tag />, n: tasks.noPrice, href: "/admin/selling-prices" },
-    { key: "notReceived", icon: <Box />, n: tasks.notReceived, href: "/admin/inventory" },
-    { key: "outOfStock", icon: <TriangleAlert />, n: stats.published.outOfStock - stats.published.preorder, href: "/admin/products?status=outOfStock" },
-    { key: "rejected", icon: <FileText />, n: stats.rejected, href: "/admin/products?status=rejected" },
-  ].filter((r) => r.n > 0);
-  const draftAll = stats.byLabel.DRAFT + stats.byLabel.REJECTED;
   return (
-    <div className="space-y-5">
-      <div className={cn("grid grid-cols-2 gap-3 md:grid-cols-3", showOrders ? "xl:grid-cols-5" : "xl:grid-cols-4")}>
-        <div>
-          <StatCard icon={<Package />} tone="brand" value={fmtInt(stats.totalProducts)} label={t("kpiProducts")} href="/admin/products" testId="kpi-products" />
-          <Trend n={kpi.newProducts} text={t("trendNew", { n: kpi.newProducts, days })} />
-        </div>
-        <div>
-          <StatCard icon={<Box />} tone="green" value={fmtInt(kpi.inStockSkus)} label={t("kpiInStock")} href="/admin/inventory" />
-          <span className="mt-1 block text-xs text-muted-foreground">{t("kpiInStockHint", { n: fmtInt(stats.skus) })}</span>
-        </div>
-        <div>
-          <StatCard icon={<ShieldCheck />} tone="warning" value={fmtInt(stats.awaitingReview)} label={t("toApprove")} href="/admin/products?status=review" testId="todo-approve" />
-          <span className="mt-1 block text-xs text-muted-foreground">{t("kpiRejected", { n: stats.rejected })}</span>
-        </div>
-        <div>
-          <StatCard icon={<Store />} tone="success" value={fmtInt(stats.published.total)} label={t("catalogPublished")} href="/admin/products?status=published" testId="catalog-published" />
-          <Trend n={kpi.newlyPublished} text={t("trendPublished", { n: kpi.newlyPublished, days })} />
-        </div>
-        {showOrders && (
-          <div>
-            <StatCard icon={<ShoppingCart />} tone="neutral" value={fmtInt(kpi.orders)} label={t("kpiOrders", { days })} href="/admin/orders" />
-            <Trend n={kpi.ordersDelta} text={t("trendOrders", { n: (kpi.ordersDelta > 0 ? "+" : "") + kpi.ordersDelta })} />
-          </div>
-        )}
-      </div>
-
-      <div className="grid gap-5 xl:grid-cols-12">
-        <Card title={t("activityTitle", { days })} className="xl:col-span-5" testId="catalog-activity">
-          <LineChart
-            ariaLabel={t("activityTitle", { days })}
-            labels={activity.map((a) => a.day.slice(8, 10) + "/" + a.day.slice(5, 7))}
-            series={[
-              { key: "created", label: t("series.created"), color: "var(--primary)", values: activity.map((a) => a.created) },
-              { key: "published", label: t("series.published"), color: "var(--success)", values: activity.map((a) => a.published) },
-              { key: "submitted", label: t("series.submitted"), color: "var(--warning)", values: activity.map((a) => a.submitted) },
-            ]}
-          />
-        </Card>
-        <Card title={t("mixTitle")} className="xl:col-span-3" testId="catalog-mix">
-          <Donut
-            ariaLabel={t("mixTitle")}
-            total={stats.totalProducts}
-            centerLabel={t("mixCenter")}
-            slices={[
-              { key: "published", label: t("mix.published"), value: stats.byLabel.PUBLISHED, color: "var(--success)", href: "/admin/products?status=published" },
-              { key: "review", label: t("mix.review"), value: stats.byLabel.PENDING, color: "var(--warning)", href: "/admin/products?status=review" },
-              { key: "draft", label: t("mix.draft"), value: draftAll, color: "var(--primary)", href: "/admin/products?status=draft" },
-              { key: "hidden", label: t("mix.hidden"), value: stats.byLabel.HIDDEN, color: "var(--muted-foreground)", href: "/admin/products?status=hidden" },
-            ]}
-          />
-        </Card>
-        <Card title={t("tasksTitle", { n: taskRows.reduce((s, r) => s + r.n, 0) })} className="xl:col-span-4" testId="catalog-tasks">
-          {taskRows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("tasksEmpty")}</p>
-          ) : (
-            <ul className="divide-y text-sm">
-              {taskRows.map((r) => (
-                <li key={r.key}>
-                  <Link href={r.href} className="flex items-center gap-3 py-2 hover:text-primary">
-                    <span className="text-muted-foreground [&_svg]:size-4" aria-hidden>{r.icon}</span>
-                    <span className="flex-1">{t(`task.${r.key}`)}</span>
-                    <Badge tone="warning">{fmtInt(r.n)}</Badge>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-      </div>
-
+    <div className="space-y-3">
+      <h2 className="font-medium">{t("recent")}</h2>
       <div className={cn("grid gap-5", showStock && "lg:grid-cols-2")}>
         {showStock && (
           <Card title={t("receiptsTitle")} action={<Link href="/admin/inventory/documents" className="inline-flex items-center gap-1 text-sm text-primary">{t("viewAll")} <ArrowRight className="size-3.5" aria-hidden /></Link>} testId="recent-receipts">
@@ -286,8 +256,36 @@ async function CatalogOverview({ days, showOrders, showStock }: { days: number; 
           </ul>
         </Card>
       </div>
+      <Card
+        title={t("activityTitle", { days })}
+        action={
+          <Segmented
+            label={t("rangeLabel")}
+            items={DASHBOARD_RANGES.map((d) => ({ href: d === DASHBOARD_RANGES[0] ? "/admin" : `/admin?range=${d}`, label: t("rangeDays", { n: d }), active: d === days }))}
+          />
+        }
+        testId="catalog-activity"
+      >
+        <LineChart
+          ariaLabel={t("activityTitle", { days })}
+          labels={activity.map((a) => a.day.slice(8, 10) + "/" + a.day.slice(5, 7))}
+          series={[
+            { key: "created", label: t("series.created"), color: "var(--primary)", values: activity.map((a) => a.created) },
+            { key: "published", label: t("series.published"), color: "var(--success)", values: activity.map((a) => a.published) },
+            { key: "submitted", label: t("series.submitted"), color: "var(--warning)", values: activity.map((a) => a.submitted) },
+          ]}
+        />
+      </Card>
     </div>
   );
+}
+
+/** Dải "Quy trình đăng bán" chỉ hiện khi cửa hàng chưa có sản phẩm nào (người mới thiết lập). */
+async function PublishingFlowWhenEmpty() {
+  await connection();
+  const stats = await catalogStats();
+  if (stats.totalProducts > 0) return null;
+  return <PublishingFlow />;
 }
 
 /** Dải "Quy trình đăng bán": 2A nhập kho và 2B thiết lập giá làm song song, không bắt theo thứ tự. */

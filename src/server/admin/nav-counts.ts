@@ -4,8 +4,6 @@ import { prisma } from "@/lib/db";
 import { blockedBatchWhere } from "@/server/inventory/fefo";
 import { getNumberSetting } from "@/server/settings";
 import type { NavCountKey } from "./nav";
-import { AWAITING_REVIEW_WHERE, labelWhere } from "@/server/catalog/approval-rules";
-import { loadReadinessErrors } from "@/server/catalog/readiness";
 import { pendingPasswordResetCount } from "@/server/accounts/password-reset";
 
 /**
@@ -42,18 +40,5 @@ export async function navCounts(keys: Set<NavCountKey>, now = new Date()): Promi
     jobs.push(prisma.affiliateApplication.count({ where: { status: "PENDING" } }).then((n) => ["pendingApplications", n]));
   }
   if (keys.has("passwordResets")) jobs.push(pendingPasswordResetCount(now).then((n) => ["passwordResets", n]));
-  if (keys.has("catalogReview")) jobs.push(prisma.product.count({ where: AWAITING_REVIEW_WHERE }).then((n) => ["catalogReview", n]));
-  if (keys.has("catalogPublished")) jobs.push(prisma.product.count({ where: labelWhere("PUBLISHED") }).then((n) => ["catalogPublished", n]));
-  if (keys.has("catalogIncomplete")) {
-    // Nháp còn lỗi mở bán (cùng quy tắc tab "Chờ hoàn thiện").
-    jobs.push(
-      prisma.product
-        .findMany({ where: labelWhere("DRAFT"), select: { id: true } })
-        .then(async (drafts) => {
-          const r = await loadReadinessErrors(prisma, drafts.map((d) => d.id));
-          return ["catalogIncomplete", drafts.filter((d) => (r.get(d.id)?.length ?? 0) > 0).length] as [NavCountKey, number];
-        }),
-    );
-  }
   return Object.fromEntries(await Promise.all(jobs));
 }

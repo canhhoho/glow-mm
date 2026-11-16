@@ -1,5 +1,5 @@
 import "server-only";
-import { inventoryCost } from "./cost";
+import { inventoryCost, MISSING_COST_BATCH } from "./cost";
 import { z } from "zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
@@ -43,6 +43,8 @@ export const stockFilterSchema = z.object({
   stockType: z.enum(["SELLABLE", "TESTER"]).optional().catch(undefined),
   /** "no" = chỉ biến thể đang dùng chưa từng nhập hàng (SP mới tạo / làm thử). */
   received: z.enum(["no"]).optional().catch(undefined),
+  /** "missing" = chỉ lô thiếu hoàn toàn giá vốn (cùng điều kiện ô "thiếu giá vốn"). */
+  cost: z.enum(["missing"]).optional().catch(undefined),
   /** SP ngừng kinh doanh: "archived" = còn tồn / đang giữ hàng; "history" = đã hết tồn (lịch sử). */
   status: z.enum(["archived", "history"]).optional().catch(undefined),
   page: z.coerce.number().int().min(1).catch(1),
@@ -57,6 +59,7 @@ export function parseStockFilter(sp: Record<string, string | string[] | undefine
     expiry: one("expiry"),
     stockType: one("stockType"),
     received: one("received"),
+    cost: one("cost"),
     status: one("status"),
     page: one("page") ?? 1,
   });
@@ -92,7 +95,7 @@ function balanceWhere(f: StockFilter, now: Date, t: Thresholds): Prisma.StockBal
     qty: { not: 0 },
     stockType: f.stockType,
     location: f.tab === "all" ? undefined : isLocationType(f.tab) ? { type: f.tab } : { code: f.tab },
-    batch: { AND: [expiryWhere(f.expiry, now, t), f.q ? batchSearch(f.q) : {}] },
+    batch: { AND: [expiryWhere(f.expiry, now, t), f.q ? batchSearch(f.q) : {}, f.cost === "missing" ? MISSING_COST_BATCH : {}] },
   };
 }
 
@@ -232,6 +235,20 @@ export function countNotReceived() {
   return prisma.variant.count({ where: NOT_RECEIVED_VARIANT });
 }
 
+/**
+ * Số liệu ngoại lệ kho cho Tổng quan — cùng điều kiện với ô "Chờ kiểm tra" và liên kết `cost=missing` của trang Tồn kho
+ * (tồn > 0; khu chờ kiểm tra; lô thiếu hoàn toàn giá vốn) nên số trên Tổng quan = số ở trang đích.
+ */
+export async function stockExceptions() {
+  const sum = (where: Prisma.StockBalanceWhereInput) =>
+    prisma.stockBalance.aggregate({ _sum: { qty: true }, where: { qty: { gt: 0 }, ...where } }).then((r) => r._sum.qty ?? 0);
+  const [quarantineUnits, missingCostUnits] = await Promise.all([
+    sum({ location: { type: "QUARANTINE" } }),
+    sum({ batch: MISSING_COST_BATCH }),
+  ]);
+  return { quarantineUnits, missingCostUnits };
+}
+
 /** Số biến thể của SP ngừng kinh doanh: còn tồn / đang giữ (hiện ở "Tất cả", có nhãn) và đã hết tồn (lịch sử). */
 export async function countArchived(now = new Date()) {
   const [withStock, history] = await Promise.all([
@@ -243,7 +260,7 @@ export async function countArchived(now = new Date()) {
 
 export async function stockByVariant(f: StockFilter, now = new Date()): Promise<Page<VariantStockRow>> {
   const t = await loadThresholds();
-  const filtered = f.tab !== "all" || !!f.expiry || !!f.stockType;
+  const filtered = f.tab !== "all" || !!f.expiry || !!f.stockType || !!f.cost;
   const search: Prisma.VariantWhereInput = f.q
     ? { OR: [{ sku: contains(f.q) }, { product: productSearch(f.q) }, { batches: { some: { lotNo: contains(f.q) } } }] }
     : {};

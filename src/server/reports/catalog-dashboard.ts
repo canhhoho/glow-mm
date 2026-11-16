@@ -30,22 +30,6 @@ export async function productActivity(days: number, now = new Date()) {
   return keys.map((d) => ({ day: d, created: series.created.get(d) ?? 0, submitted: series.submitted.get(d) ?? 0, published: series.published.get(d) ?? 0 }));
 }
 
-/** Ô số đầu trang: tổng + thay đổi trong kỳ. */
-export async function dashboardKpis(days: number, now = new Date()) {
-  const since = yangonDayStart(addDays(yangonDayKey(now), -(days - 1)));
-  const prevSince = yangonDayStart(addDays(yangonDayKey(now), -(2 * days - 1)));
-  const [newProducts, publishedEvents, inStockSkus, ordersNow, ordersPrev] = await Promise.all([
-    prisma.product.count({ where: { archivedAt: null, createdAt: { gte: since } } }),
-    prisma.auditLog.findMany({ where: { entity: "Product", action: "product.publish", createdAt: { gte: since } }, select: { entityId: true }, distinct: ["entityId"] }),
-    prisma.variant.count({
-      where: { active: true, product: { archivedAt: null }, batches: { some: { balances: { some: { qty: { gt: 0 }, stockType: "SELLABLE", location: { sellable: true } } } } } },
-    }),
-    prisma.order.count({ where: { createdAt: { gte: since } } }),
-    prisma.order.count({ where: { createdAt: { gte: prevSince, lt: since } } }),
-  ]);
-  return { newProducts, newlyPublished: publishedEvents.length, inStockSkus, orders: ordersNow, ordersDelta: ordersNow - ordersPrev };
-}
-
 /** Việc cần xử lý về SP (mỗi dòng dẫn tới danh sách đã lọc). */
 export async function catalogTasks() {
   const [noImage, noPrice, notReceived] = await Promise.all([

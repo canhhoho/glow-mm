@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { createDocument, postDocument } from "@/server/inventory/documents";
-import { batchDetail, parseStockFilter, stockByVariant, stockLots, stockSummary } from "@/server/inventory/overview";
+import { batchDetail, parseStockFilter, stockByVariant, stockExceptions, stockLots, stockSummary } from "@/server/inventory/overview";
 import { createOrder } from "@/server/orders/orders";
 import { deleteProducts } from "@/server/catalog/product-delete";
 import { blockedBatchWhere, sellableBatchWhere } from "@/server/inventory/fefo";
@@ -200,5 +200,24 @@ describe("SP ngừng kinh doanh ở trang Tồn kho (bấm Xoá nhưng có lịc
     expect(parseStockFilter({ status: "xoa" }).status).toBeUndefined();
     const lots = await stockLots(filter(withStock.tag));
     expect(lots.rows.map((r) => r.archived)).toEqual([true]);
+  });
+
+  it("lọc cost=missing chỉ giữ lô thiếu hoàn toàn giá vốn; số ngoại lệ Tổng quan khớp ô tổng", async () => {
+    const { f, a, c, d } = await scenario();
+    // Lô A có giá vốn thực tế (1.000 MMK); B, C, D chưa phân bổ → thiếu giá vốn. Tester A cùng lô A nên không tính.
+    const missing = await stockLots(filter(f.tag, { cost: "missing" }));
+    const lotIds = new Set(missing.rows.map((r) => r.batchId));
+    expect(lotIds.has(a.id)).toBe(false);
+    expect(lotIds.has(c.id) && lotIds.has(d.id)).toBe(true);
+    expect(missing.rows.every((r) => r.qty > 0)).toBe(true);
+    // Theo sản phẩm: biến thể có lô thiếu giá vốn vẫn hiện, combo (không có lô) thì không.
+    expect((await stockByVariant(filter(f.tag, { cost: "missing" }))).rows.map((r) => r.variantId)).toEqual([f.variantId]);
+    // Giá trị lạ → bỏ qua bộ lọc.
+    expect(parseStockFilter({ cost: "xoa" }).cost).toBeUndefined();
+
+    const summary = await stockSummary();
+    const ex = await stockExceptions();
+    expect(ex.missingCostUnits).toBe(summary.unvaluedUnits);
+    expect(ex.quarantineUnits).toBe(summary.byLocationType.QUARANTINE);
   });
 });

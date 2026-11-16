@@ -2,23 +2,23 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { outstandingCod } from "@/server/orders/cod";
-import { codAgeBuckets, codAgeDays } from "@/server/orders/cod-aging";
+import { codAgeBuckets, codAgeDays, isRegularCod, summarizeCod } from "@/server/orders/cod-aging";
 import { Badge, Page, PageHeader, DataTable, TabNav, Td, Stat } from "@/components/admin/ui";
 import { fmtDateTime, fmtInt } from "@/lib/format";
 
 export default async function CodPage({ searchParams }: PageProps<"/admin/orders/cod">) {
   await requirePagePermission("orders:reconcile-cod");
   const [t, orders, sp] = await Promise.all([getTranslations("Cod"), outstandingCod(), searchParams]);
-  const isRegular = (o: typeof orders[number]) => o.status === "COMPLETED" && o.paymentStatus === "PAID" && !o.items.some((i) => i.returnedQty > 0);
-  const regular = orders.filter(isRegular);
+  const isRegular = isRegularCod;
+  const summary = summarizeCod(orders);
   const filter = sp.filter === "waiting" || sp.filter === "exception" ? sp.filter : "all";
   const visible = orders.filter((o) => filter === "all" || (filter === "waiting" ? isRegular(o) : !isRegular(o)));
   const now = new Date();
   return <Page>
     <PageHeader title={t("title")} description={t("help")} />
     <div className="space-y-1">
-    <p className="font-medium">{t("outstanding", { count: regular.length, amount: fmtInt(regular.reduce((s, o) => s + o.totalMmk, 0)) })}</p>
-    <p className="text-sm text-muted-foreground">{t("exceptionTotal", { count: orders.length - regular.length, amount: fmtInt(orders.filter((o) => !isRegular(o)).reduce((s, o) => s + o.totalMmk, 0)) })}</p>
+    <p className="font-medium">{t("outstanding", { count: summary.regular.count, amount: fmtInt(summary.regular.mmk) })}</p>
+    <p className="text-sm text-muted-foreground">{t("exceptionTotal", { count: summary.exception.count, amount: fmtInt(summary.exception.mmk) })}</p>
     </div>
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{codAgeBuckets(orders, now).map((b) => <Stat key={b.label} label={t("ageBucket", { days: b.label, count: b.orders })} value={`${fmtInt(b.mmk)} MMK`} />)}</div>
     <TabNav label={t("filterLabel")} tabs={(["all", "waiting", "exception"] as const).map((key) => ({ href: `/admin/orders/cod?filter=${key}`, label: t(key), active: filter === key }))} />

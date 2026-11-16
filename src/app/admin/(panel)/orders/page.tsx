@@ -9,6 +9,7 @@ import { ORDER_FILTER_STATUSES, PREPARING_STATUSES, TRANSITIONS } from "@/server
 import { BULK_TRANSITIONS } from "@/server/orders/bulk";
 import { BulkOrderBar } from "@/components/admin/bulk-order-bar";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/admin/order-badges";
+import { ORDER_TAB_STATUSES, OrdersTabs, type OrdersTab } from "@/components/admin/orders-tabs";
 import { Badge, checkboxClass, ClearFilters, DataTable, fieldClass, fieldLabelClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, PageNumbers, SearchInput, Td } from "@/components/admin/ui";
 import { fmtDate, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,8 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
   const [t, tc, tcod, result, affiliates, locations] = await Promise.all([getTranslations("Orders"), getTranslations("Common"), getTranslations("Cod"), listOrdersPageAdmin(filter), affiliateOptions(), sellableLocations()]);
   const orders = result.orders;
   const pageHref = (page: number) => { const params = new URLSearchParams(); for (const [key,value] of Object.entries(sp)) { if (key !== "page") for (const v of Array.isArray(value) ? value : value ? [value] : []) params.append(key,v); } params.set("page",String(page)); return `/admin/orders?${params}`; };
+  const tabStatus = ORDER_TAB_STATUSES.find((s) => s === filter.status);
+  const activeTab: OrdersTab | null = tabStatus ?? (filter.status ? null : "all");
   const filtered = !!(filter.status || filter.paymentMethod || filter.channel || filter.q || filter.overdue || filter.affiliateId || filter.from || filter.to || filter.locationId || filter.shippingDays);
 
   return (
@@ -49,20 +52,26 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
           </>
         }
       />
+      <OrdersTabs active={activeTab} />
       <FilterBar>
         <label className={fieldLabelClass}><span>{t("fromDate")}</span><input type="date" name="from" defaultValue={filter.from} className={fieldClass} /></label>
         <label className={fieldLabelClass}><span>{t("toDate")}</span><input type="date" name="to" defaultValue={filter.to} className={fieldClass} /></label>
         <select name="locationId" defaultValue={filter.locationId ?? ""} aria-label={t("warehouse")} className={cn(fieldClass,"w-auto")}><option value="">{t("allWarehouses")}</option>{locations.map(l=><option key={l.id} value={l.id}>{l.code} — {l.name}</option>)}</select>
         <label className={fieldLabelClass}><span>{t("shippingDays")}</span><input type="number" name="shippingDays" min={1} max={365} defaultValue={filter.shippingDays} className={cn(fieldClass,"w-28")} /></label>
         <SearchInput label={t("search")} defaultValue={filter.q} />
-        <select name="status" defaultValue={filter.status ?? ""} aria-label={t("colStatus")} className={cn(fieldClass, "w-auto")}>
-          <option value="">{t("allStatuses")}</option>
-          {ORDER_FILTER_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {t(`status.${s}`)}
-            </option>
-          ))}
-        </select>
+        {/* Trạng thái chính nằm ở tab (giữ qua nút Lọc bằng ô ẩn); ô chọn chỉ còn Đã huỷ / Trả hàng. */}
+        {tabStatus ? (
+          <input type="hidden" name="status" value={tabStatus} />
+        ) : (
+          <select name="status" defaultValue={filter.status ?? ""} aria-label={t("colStatus")} className={cn(fieldClass, "w-auto")}>
+            <option value="">{t("otherStatuses")}</option>
+            {ORDER_FILTER_STATUSES.filter((s) => s === "CANCELLED" || s === "RETURNED").map((s) => (
+              <option key={s} value={s}>
+                {t(`status.${s}`)}
+              </option>
+            ))}
+          </select>
+        )}
         <select name="paymentMethod" defaultValue={filter.paymentMethod ?? ""} aria-label={t("paymentMethod")} className={cn(fieldClass, "w-auto")}>
           <option value="">{t("allPaymentMethods")}</option>
           <option value="COD">{t("method.COD")}</option>
@@ -109,7 +118,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
               <input type="checkbox" data-bulk-id={o.id} aria-label={t("bulk.select", { code: o.code })} className={checkboxClass} />
             </Td>
             <Td>
-              <Link href={`/admin/orders/${o.id}`} className="font-mono text-xs whitespace-nowrap text-primary underline">
+              <Link href={`/admin/orders/${o.id}?from=${encodeURIComponent(pageHref(result.page))}`} className="font-mono text-xs whitespace-nowrap text-primary underline">
                 {o.code}
               </Link>
               <div className="text-xs text-muted-foreground">

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { fieldClass, fieldLabelClass, fieldLabelSmClass, Notice } from "@/components/admin/ui";
 import { createDocumentAction } from "@/server/inventory/actions";
+import { batchQtyAt, batchSelectable, keepValidBatches } from "@/server/inventory/document-form-rules";
 import { cn } from "@/lib/utils";
 
 type DocType = "RECEIVE" | "TRANSFER" | "ISSUE" | "ADJUST";
@@ -85,12 +86,27 @@ export function DocumentForm({ type, data, replace }: { type: DocType; data: For
   const stockLoc = type === "ADJUST" ? toId : fromId;
   const variants = data.variants.filter((v) => !v.isBundle);
 
-  const update = (key: number, patch: Partial<Line>) =>
+  const update = (key: number, patch: Partial<Line>) => {
+    setLotsCleared(0);
     setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
+  };
 
-  const qtyAt = (batchId: string, stockType: StockType) =>
-    data.batches.find((b) => b.id === batchId)?.balances.find((x) => x.locationId === stockLoc && x.stockType === stockType)
-      ?.qty ?? 0;
+  const qtyAt = (batchId: string, stockType: StockType) => {
+    const b = data.batches.find((x) => x.id === batchId);
+    return b ? batchQtyAt(b, stockLoc, stockType) : 0;
+  };
+
+  // Đổi kho: bỏ chọn lô không còn hợp lệ ở kho mới (cùng quy tắc với danh sách lô hiện ra) và báo cho người dùng,
+  // để lô đã chọn ở kho cũ không âm thầm đi theo vào phiếu mới.
+  const [lotsCleared, setLotsCleared] = useState(0);
+  const pickLocation = (kind: "from" | "to") => (value: string) => {
+    if (kind === "from") setFromId(value);
+    else setToId(value);
+    const nextStockLoc = type === "ADJUST" ? (kind === "to" ? value : toId) : kind === "from" ? value : fromId;
+    const kept = keepValidBatches(lines, data.batches, type, nextStockLoc);
+    setLines(kept.lines);
+    setLotsCleared(kept.cleared);
+  };
 
   const payload = useMemo(() => {
     const base: Record<string, unknown> = { type, reason: reason || undefined };
@@ -153,8 +169,8 @@ export function DocumentForm({ type, data, replace }: { type: DocType; data: For
         </Notice>
       )}
       <div className="grid gap-3 sm:grid-cols-3">
-        {needsFrom && locSelect(fromId, setFromId, t("chooseFrom"), "fromId", "from")}
-        {needsTo && locSelect(toId, setToId, type === "ADJUST" ? t("chooseLocation") : t("chooseTo"), "toId", "to")}
+        {needsFrom && locSelect(fromId, pickLocation("from"), t("chooseFrom"), "fromId", "from")}
+        {needsTo && locSelect(toId, pickLocation("to"), type === "ADJUST" ? t("chooseLocation") : t("chooseTo"), "toId", "to")}
         {type === "RECEIVE" && (
           <label className={fieldLabelClass}>
             <span className="text-muted-foreground">{t("shipment")}</span>
@@ -180,11 +196,15 @@ export function DocumentForm({ type, data, replace }: { type: DocType; data: For
         </label>
       </div>
 
+      {lotsCleared > 0 && (
+        <Notice tone="warning" data-testid="lots-cleared">
+          {t("lotsCleared", { count: lotsCleared })}
+        </Notice>
+      )}
+
       <div className="space-y-3">
         {lines.map((l, i) => {
-          const batchOptions = data.batches.filter(
-            (b) => b.variantId === l.variantId && (type === "ADJUST" ? b.posted !== false : qtyAt(b.id, l.stockType) > 0),
-          );
+          const batchOptions = data.batches.filter((b) => b.variantId === l.variantId && batchSelectable(type, b, stockLoc, l.stockType));
           return (
             <fieldset key={l.key} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-6" aria-label={`${t("line")} ${i + 1}`}>
               <label className={cn(fieldLabelSmClass, "sm:col-span-2")}>

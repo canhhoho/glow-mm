@@ -10,6 +10,7 @@ import { listApplications, pendingApplicationsCount } from "@/server/affiliates/
 import { getNumberSetting } from "@/server/settings";
 import { ActionForm } from "@/components/admin/action-form";
 import { Badge, DataTable, EmptyState, fieldClass, fieldLabelClass, Page, PageHeader, Section, Td } from "@/components/admin/ui";
+import { AffiliateTabs } from "@/components/admin/section-tabs";
 import { cn } from "@/lib/utils";
 
 /** Duyệt đơn đăng ký CTV qua link mời (P11b). */
@@ -25,7 +26,8 @@ export default async function AffiliateApplicationsPage() {
 
   return (
     <Page>
-      <PageHeader title={t("apps.title")} description={t("apps.hint")} />
+      <PageHeader title={(await getTranslations("Nav"))("affiliatesCommission")} description={t("apps.hint")} />
+      <AffiliateTabs active="applications" />
       {pendingTotal > 0 && (
         <p className="text-sm font-medium" data-testid="apps-pending-total">
           {t("apps.pendingTotal", { count: pendingTotal, shown: pending.length })}

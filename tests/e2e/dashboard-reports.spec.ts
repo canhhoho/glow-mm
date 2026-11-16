@@ -16,8 +16,12 @@ test("dashboard (admin) + báo cáo có số liệu từ đơn mẫu seed", asyn
   await expect(page.getByRole("heading", { name: "Bán hàng & lợi nhuận" })).toBeVisible();
   // Seed có đơn mẫu hoàn tất trong 30 ngày → doanh thu > 0.
   await expect(page.getByTestId("r-orders")).not.toContainText(/\b0$/);
-  await expect(page.getByTestId("stock-THAM")).toBeVisible();
   await page.screenshot({ path: "test-results/screens/reports.png", fullPage: true });
+
+  // Báo cáo tồn kho (tồn hiện tại theo kho) là tab riêng — dời từ báo cáo Bán hàng.
+  await page.getByRole("main").getByRole("link", { name: "Tồn kho" }).click();
+  await expect(page.getByRole("heading", { name: "Tồn kho", exact: true })).toBeVisible();
+  await expect(page.getByTestId("stock-THAM")).toBeVisible();
 
   // D0: báo cáo sức khoẻ dữ liệu (chỉ đọc) + tải mốc JSON.
   await page.getByRole("main").getByRole("link", { name: "Sức khoẻ dữ liệu" }).click();

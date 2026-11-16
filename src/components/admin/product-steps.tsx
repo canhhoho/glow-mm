@@ -19,46 +19,51 @@ const DOT_CLASS: Record<StepView["state"], string> = {
 };
 
 /**
- * "Tiến độ đăng bán" (P3): 5 mốc nối nhau — tròn xanh có dấu ✓ khi xong, viền màu chính ở mốc đang cần làm,
- * dòng mô tả ngắn dưới mỗi mốc (`notes`). Chỉ để xem tiến độ, không bắt làm theo thứ tự; bấm mốc → cuộn tới khối.
+ * "Điều kiện đăng bán": danh sách đạt / còn thiếu, mỗi dòng dẫn tới nơi xử lý (tab hoặc khối bên dưới).
+ * Dùng chung dữ liệu `productSteps` (readiness) — không viết thêm bộ kiểm tra riêng. Không phải các bước bắt buộc nối tiếp:
+ * nhập hàng và đặt giá làm song song; `current` chỉ đánh dấu việc đầu tiên còn thiếu.
  */
-export function ProductStepsBar({ steps, current, t, notes = {} }: { steps: StepView[]; current: ProductStep | null; t: T; notes?: Partial<Record<ProductStep, string>> }) {
+export function ProductConditions({
+  steps,
+  current,
+  t,
+  notes = {},
+  hrefs,
+}: {
+  steps: StepView[];
+  current: ProductStep | null;
+  t: T;
+  notes?: Partial<Record<ProductStep, string>>;
+  hrefs: Record<ProductStep, string>;
+}) {
   return (
-    <nav aria-label={t("stepsLabel")} data-testid="product-steps">
-      <ol className="grid grid-cols-5">
-        {steps.map((s, i) => (
-          <li key={s.key} data-testid={`step-${s.key}`} data-state={s.state} className="relative flex flex-col items-center text-center">
-            {i > 0 && (
-              <span aria-hidden className={cn("absolute top-4 right-1/2 h-0.5 w-full -translate-y-1/2", steps[i - 1].state === "done" ? "bg-success" : "bg-border")} />
-            )}
-            <a href={`#step-${s.key}`} aria-current={s.key === current ? "step" : undefined} className="group relative z-10 flex flex-col items-center gap-1 px-1">
-              <span className={cn("flex size-8 items-center justify-center rounded-full border-2 text-sm font-semibold", DOT_CLASS[s.state], s.key === current && "ring-4 ring-primary/15")}>
-                {s.state === "done" ? <Check className="size-4" aria-hidden /> : s.state === "warn" ? <CircleAlert className="size-4" aria-hidden /> : i + 1}
-              </span>
-              <span className={cn("text-xs font-medium sm:text-sm", s.key === current ? "text-primary" : "text-foreground", "group-hover:underline")}>{t(`step.${s.key}`)}</span>
-              <span className="hidden text-xs text-muted-foreground sm:block">
-                {notes[s.key] ?? (
-                  <span className="inline-flex items-center gap-1">
-                    {s.state === "waiting" && <Clock className="size-3" aria-hidden />}
-                    {t(`stepState.${s.state}`)}
-                  </span>
-                )}
-              </span>
+    <section className="space-y-3 rounded-xl border bg-card p-4" aria-labelledby="product-conditions-title" data-testid="product-steps">
+      <h2 id="product-conditions-title" className="font-medium">
+        {t("hero.checklist")}
+      </h2>
+      <ul className="divide-y text-sm">
+        {steps.map((s) => (
+          <li key={s.key} data-testid={`step-${s.key}`} data-state={s.state} className="flex items-center gap-3 py-2.5">
+            <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-full border-2", DOT_CLASS[s.state])} aria-hidden>
+              {s.state === "done" ? <Check className="size-3.5" /> : s.state === "warn" ? <CircleAlert className="size-3.5" /> : s.state === "waiting" ? <Clock className="size-3" /> : <span className="size-1.5 rounded-full bg-current" />}
+            </span>
+            <a href={hrefs[s.key]} aria-current={s.key === current ? "step" : undefined} className={cn("min-w-0 flex-1 hover:underline", s.key === current && "text-primary")}>
+              <span className="block font-medium">{t(`step.${s.key}`)}</span>
+              <span className="block text-xs text-muted-foreground">{notes[s.key] ?? t(`stepState.${s.state}`)}</span>
             </a>
+            <span className={cn("rounded border px-1.5 py-0.5 text-xs", STATE_CLASS[s.state])}>{t(`stepState.${s.state}`)}</span>
           </li>
         ))}
-      </ol>
-    </nav>
+      </ul>
+    </section>
   );
 }
 
-/** Tiêu đề khối của một bước (số + tên + trạng thái), dùng làm `title` của `Section`. */
-export function StepTitle({ index, step, t }: { index: number; step: StepView; t: T }) {
+/** Tiêu đề khối (tên + trạng thái), dùng làm `title` của `Section`. */
+export function StepTitle({ step, t }: { step: StepView; t: T }) {
   return (
     <span className="flex flex-wrap items-center gap-2">
-      <span>
-        {index}. {t(`step.${step.key}`)}
-      </span>
+      <span>{t(`step.${step.key}`)}</span>
       <span className={cn("rounded border px-1.5 py-0.5 text-xs font-normal", STATE_CLASS[step.state])}>{t(`stepState.${step.state}`)}</span>
     </span>
   );

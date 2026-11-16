@@ -30,7 +30,7 @@ test("admin đổi giá biến thể → trang SP và thẻ ở trang danh mục
   await login(page, "admin@glow.local");
   await page.goto(`/admin/products?q=${SLUG}`);
   await page.getByRole("row", { name: new RegExp(SLUG) }).getByRole("link", { name: /^Sửa / }).click();
-  await expect(page).toHaveURL(/\/admin\/products\/[^/?]+$/);
+  await expect(page).toHaveURL(/\/admin\/products\/[^/?]+(?:\?from=.*)?$/);
   const adminUrl = page.url();
   // QT1b: giá sửa ở bước 3 "Giá bán" (có lý do), không còn trong form sửa.
   const [original] = await livePrices(page);

@@ -11,7 +11,8 @@ test("admin tạo nhân viên → nhân viên đăng nhập đúng quyền → a
   const password = `E2E-tam-${randomBytes(6).toString("hex")}`;
 
   await login(page, "admin@glow.local");
-  await (await openAdminGroup(page, "Tài khoản")).getByRole("link", { name: "Nhân viên" }).click();
+  await (await openAdminGroup(page, "Cài đặt")).getByRole("link", { name: /^Tài khoản/ }).click();
+  await expect(page).toHaveURL(/\/admin\/users$/);
   await page.getByRole("link", { name: "Thêm nhân viên" }).click();
   // React reset form sau mỗi lần gửi → điền lại toàn bộ.
   // getByRole bỏ qua các trang trước Next còn giữ ẩn trong DOM (ô tìm "…email", form đăng nhập).

@@ -15,7 +15,7 @@ function renderMenu(pathname: string, role: "ADMIN" | "ORDER_STAFF" = "ADMIN") {
   const props: Omit<ComponentProps<typeof AdminShell>, "children"> = {
     groups: visibleNav(role).map(g => ({
       label: g.key ? t[g.key] : null, icon: g.icon,
-      items: g.items.map(i => ({ href: i.href, label: t[i.key], icon: i.icon, section: i.section ? t[i.section] : undefined })),
+      items: g.items.map(i => ({ href: i.href, label: t[i.key], icon: i.icon, match: i.match })),
     })),
     labels: { subtitle: "Quản trị", menu: "Mở menu", close: "Đóng menu", breadcrumb: "Vị trí trang" },
     header: null,
@@ -24,33 +24,54 @@ function renderMenu(pathname: string, role: "ADMIN" | "ORDER_STAFF" = "ADMIN") {
 }
 
 describe("admin shell accordion", () => {
-  it("shows the dashboard with eight collapsed menu groups", () => {
+  it("shows the dashboard with five collapsed menu groups", () => {
     const html = renderMenu("/admin");
-    expect(html.match(/class="group\/nav"/g)).toHaveLength(8); // + nhóm Đăng bán (P3)
+    expect(html.match(/class="group\/nav"/g)).toHaveLength(5); // Đơn hàng, Sản phẩm, Kho hàng, Báo cáo, Cài đặt
     expect(html).not.toContain('<details open=""');
     expect(html).toContain('href="/admin" aria-current="page"');
     expect(html.match(/aria-current="page"/g)).toHaveLength(1);
   });
 
-  it("opens both Settings and Homepage content for a nested banner route", () => {
-    const html = renderMenu("/admin/content/banners/new");
-    expect(html).toContain('<details open="" class="group/nav">');
-    expect(html).toContain('<details open="" class="group/section">');
-    expect(html.match(/<details open=""/g)).toHaveLength(2);
-    expect(html).toContain('href="/admin/content/banners" aria-current="page"');
-    expect(html).toMatch(/aria-label="Vị trí trang"[^]*?Cài đặt[^]*?Nội dung trang chủ[^]*?Banner/);
+  it("opens Settings and marks website content for any content route", () => {
+    for (const path of ["/admin/content/banners/new", "/admin/content/collections"]) {
+      const html = renderMenu(path);
+      expect(html.match(/<details open=""/g)).toHaveLength(1);
+      expect(html).toContain('href="/admin/content/banners" aria-current="page"');
+      expect(html).toMatch(/aria-label="Vị trí trang"[^]*?Cài đặt[^]*?Nội dung website/);
+    }
   });
 
-  it("keeps affiliate list, profile and commission pages under the Affiliates group", () => {
-    const profile = renderMenu("/admin/affiliates/person-1");
-    const profileGroup = profile.match(/<details open="" class="group\/nav">([^]*?)<\/summary>/)?.[1];
-    expect(profileGroup).toContain("Cộng tác viên");
-    expect(profile).toContain('href="/admin/affiliates" aria-current="page"');
-    const commissions = renderMenu("/admin/affiliates/commissions");
-    const commissionGroup = commissions.match(/<details open="" class="group\/nav">([^]*?)<\/summary>/)?.[1];
-    expect(commissionGroup).toContain("Cộng tác viên");
-    expect(commissions).toContain('href="/admin/affiliates/commissions" aria-current="page"');
-    expect(commissions.match(/aria-current="page"/g)).toHaveLength(1);
+  it("keeps staff and customer accounts under one Settings item", () => {
+    for (const path of ["/admin/users/abc", "/admin/customer-accounts", "/admin/customer-accounts/c1"]) {
+      const html = renderMenu(path);
+      expect(html).toContain('href="/admin/users" aria-current="page"');
+      expect(html.match(/aria-current="page"/g)).toHaveLength(1);
+      expect(html).toMatch(/aria-label="Vị trí trang"[^]*?Cài đặt[^]*?Tài khoản/);
+    }
+  });
+
+  it("keeps affiliate pages under Orders › CTV & hoa hồng", () => {
+    for (const path of ["/admin/affiliates", "/admin/affiliates/person-1", "/admin/affiliates/applications", "/admin/affiliates/commissions"]) {
+      const html = renderMenu(path);
+      const group = html.match(/<details open="" class="group\/nav">([^]*?)<\/summary>/)?.[1];
+      expect(group, path).toContain("Đơn hàng");
+      expect(html).toContain('href="/admin/affiliates" aria-current="page"');
+      expect(html.match(/aria-current="page"/g)).toHaveLength(1);
+    }
+  });
+
+  it("keeps old shortcut pages lit under their new parent item", () => {
+    const cases: [string, string][] = [
+      ["/admin/orders/preorders", "/admin/orders"],
+      ["/admin/alerts", "/admin/inventory"],
+      ["/admin/inventory/quarantine", "/admin/inventory"],
+      ["/admin/pricing/runs/r1", "/admin/selling-prices"],
+    ];
+    for (const [path, active] of cases) {
+      const html = renderMenu(path);
+      expect(html, path).toContain(`href="${active}" aria-current="page"`);
+      expect(html.match(/aria-current="page"/g), path).toHaveLength(1);
+    }
   });
 
   it("does not render protected account and COD links for order staff", () => {

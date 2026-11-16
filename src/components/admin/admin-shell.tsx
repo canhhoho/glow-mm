@@ -61,7 +61,8 @@ export type ShellItem = {
   href: string;
   label: string;
   icon: NavIcon;
-  section?: string;
+  /** Tiền tố đường dẫn bổ sung để mục vẫn sáng ở trang con/trang gộp (xem `NavItem.match`). */
+  match?: string[];
   badge?: { n: number; tone: "brand" | "neutral" | "warning" | "success" };
   /** Nội dung server stream riêng, không để số đếm chặn cả khung điều hướng. */
   badgeContent?: React.ReactNode;
@@ -92,25 +93,7 @@ function MenuItems({ items, current, close }: { items: ShellItem[]; current: str
       </Link>
     </li>;
   };
-  const sections = new Set<string>();
-  return <ul className="space-y-0.5">
-    {items.map(item => {
-      if (!item.section) return link(item);
-      if (sections.has(item.section)) return null;
-      sections.add(item.section);
-      const children = items.filter(child => child.section === item.section);
-      return <li key={item.section}>
-        <details open={children.some(child => child.href === current)} className="group/section">
-          <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 rounded-md px-2 py-2 text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
-            <Layers className="size-4 flex-none" aria-hidden />
-            <span className="flex-1">{item.section}</span>
-            <ChevronRight className="size-3.5 transition-transform group-open/section:rotate-90" aria-hidden />
-          </summary>
-          <ul className="ml-3 space-y-0.5 border-l pl-2">{children.map(link)}</ul>
-        </details>
-      </li>;
-    })}
-  </ul>;
+  return <ul className="space-y-0.5">{items.map(link)}</ul>;
 }
 
 /**
@@ -144,7 +127,7 @@ export function AdminShell({
 
   const current = activeHref(
     pathname,
-    groups.flatMap((g) => g.items.map((i) => i.href)),
+    groups.flatMap((g) => g.items.map((i) => ({ href: i.href, match: i.match }))),
   );
   const group = groups.find((g) => g.items.some((i) => i.href === current));
   const item = group?.items.find((i) => i.href === current);
@@ -225,10 +208,6 @@ export function AdminShell({
                   <ChevronRight className="hidden size-3 md:block" aria-hidden />
                 </>
               )}
-              {item.section && <>
-                <span className="hidden md:inline">{item.section}</span>
-                <ChevronRight className="hidden size-3 md:block" aria-hidden />
-              </>}
               <span className="truncate font-medium text-foreground">{item.label}</span>
             </nav>
           )}

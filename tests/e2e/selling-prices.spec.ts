@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import pg from "pg";
 import { toCsv } from "../../src/lib/csv";
 import { priceVndManual } from "../../src/server/pricing/formula";
-import { login } from "./helpers";
+import { login, openProductTab } from "./helpers";
 
 // 16/11: trang Giá bán là nơi đặt giá chính — chọn SKU → Thủ công (công thức VND) / Tự động.
 
@@ -55,10 +55,11 @@ test("thủ công kho VND: SP mới từ Excel → ghi sổ → Đặt giá (lô
 
   await page.goto(`/admin/products?q=${encodeURIComponent(name)}`);
   await page.getByRole("row").filter({ hasText: name }).getByRole("link", { name: /^Sửa / }).click();
-  await expect(page).toHaveURL(/\/admin\/products\/[^/?]+$/);
+  await expect(page).toHaveURL(/\/admin\/products\/[^/?]+(?:\?from=.*)?$/);
   const productUrl = page.url();
 
   // Bước 3 → trang Giá bán thủ công.
+  await openProductTab(page, "price");
   await page.getByTestId("price-actions").getByRole("link", { name: "Đặt giá" }).click();
   await expect(page).toHaveURL(/\/admin\/selling-prices\/manual\?productId=/);
   const vnd = page.getByTestId("manual-vnd");
@@ -87,6 +88,7 @@ test("thủ công kho VND: SP mới từ Excel → ghi sổ → Đặt giá (lô
 
   // SP chưa từng duyệt → giá + hoa hồng ghi thẳng; gửi duyệt → Duyệt & Đăng.
   await page.goto(productUrl);
+  await openProductTab(page, "price");
   await expect(page.getByTestId("step-price-value").first()).toHaveText(shown);
   await expect(page.getByTestId("step-commission").first()).toContainText("2,000");
   const check = page.getByTestId("launch-check");
