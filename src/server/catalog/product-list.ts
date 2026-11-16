@@ -7,6 +7,7 @@ import { availableToSell } from "@/server/orders/availability";
 import { preorderCapacity } from "@/server/orders/preorder";
 import { AWAITING_REVIEW_WHERE, deriveLabel, labelWhere, type ChangeLabel, type ProductLabel } from "./approval-rules";
 import { loadReadiness, loadReadinessErrors } from "./readiness";
+import { changeRequestsFor } from "./change-request";
 
 /**
  * Danh sách SP admin có phân trang (P3, ảnh thiết kế "Sản phẩm"). Tab = trạng thái hiển thị (cùng quy tắc nhãn §4.2);
@@ -144,6 +145,8 @@ export async function listProductsPage(f: ListFilter, now = new Date()) {
   const ordered = pageIds.map((id) => byId.get(id)!).filter(Boolean);
   const readiness = await loadReadiness(prisma, ordered.filter((p) => !p.approvedAt && !p.archivedAt).map((p) => p.id), now);
   const stock = await stockOf(candidates.filter((c) => pageIds.includes(c.id)), now);
+  // Giá chờ duyệt (SP đã duyệt có bản đang sửa) — hiện cạnh giá đang bán.
+  const staged = await changeRequestsFor(prisma, ordered.filter((p) => p.approvedAt && p.changeRequest).map((p) => p.id));
 
   return {
     total,
@@ -155,6 +158,11 @@ export async function listProductsPage(f: ListFilter, now = new Date()) {
       const missing = readiness.get(p.id)?.errors.length ?? 0;
       const active = p.variants.filter((v) => v.active);
       const prices = active.map((v) => v.priceMmk).filter((x) => x > 0);
+      const stagedPrices = staged.get(p.id)?.prices ?? {};
+      const pending = active.flatMap((v) => {
+        const x = stagedPrices[v.id]?.priceMmk;
+        return x != null && x > 0 && x !== v.priceMmk ? [x] : [];
+      });
       const s = stock.get(p.id) ?? { stock: null, sell: "out" as SellMode };
       return {
         id: p.id,
@@ -176,6 +184,8 @@ export async function listProductsPage(f: ListFilter, now = new Date()) {
         variants: p.variants.map((v) => ({ sku: v.sku, label: v.label, isBundle: v.isBundle, active: v.active })),
         priceMin: prices.length ? Math.min(...prices) : null,
         priceMax: prices.length ? Math.max(...prices) : null,
+        pendingMin: pending.length ? Math.min(...pending) : null,
+        pendingMax: pending.length ? Math.max(...pending) : null,
         stock: s.stock,
         sell: s.sell,
       };

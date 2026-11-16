@@ -18,7 +18,8 @@ const BASE: Prisma.VariantWhereInput = { product: { archivedAt: null } };
 
 /** Biến thể có giá chờ duyệt (khoá trong `ProductChangeRequest.prices`). Số bản đang sửa nhỏ → đọc hết. */
 async function pendingPrices() {
-  const rows = await prisma.productChangeRequest.findMany({ where: { product: { archivedAt: null } }, select: { prices: true } });
+  // Như `effectivePricingOf`: giá chờ duyệt chỉ có nghĩa với SP đã duyệt.
+  const rows = await prisma.productChangeRequest.findMany({ where: { product: { archivedAt: null, approvedAt: { not: null } } }, select: { prices: true } });
   const out = new Map<string, StagedPrice>();
   for (const r of rows) for (const [id, p] of Object.entries((r.prices as Record<string, StagedPrice> | null) ?? {})) out.set(id, p);
   return out;
@@ -143,7 +144,8 @@ export async function listSellingPrices(f: { q: string; warehouseId?: string; st
   const staleSet = new Set(stale);
   const rows: SellingPriceRow[] = variants.map((v) => {
     const sp = pending.get(v.id);
-    const p = sp?.priceMmk ?? null;
+    // Bản chờ duyệt chỉ đổi hoa hồng vẫn lưu `priceMmk` = giá đang bán → không hiện "giá chờ duyệt" trùng giá cũ.
+    const p = sp && sp.priceMmk !== v.priceMmk ? sp.priceMmk : null;
     return {
       id: v.id,
       sku: v.sku,

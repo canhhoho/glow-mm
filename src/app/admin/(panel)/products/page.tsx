@@ -243,6 +243,11 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
             </Td>
             <Td label={t("list.colPrice")} className="text-right whitespace-nowrap tabular-nums align-middle">
               {price(p.priceMin, p.priceMax)}
+              {p.pendingMin != null && (
+                <div className="text-xs whitespace-nowrap text-warning-foreground" data-testid="list-price-pending">
+                  {t("list.pricePending", { price: price(p.pendingMin, p.pendingMax) })}
+                </div>
+              )}
             </Td>
             <Td label={t("list.colStock")} className={cn("text-right tabular-nums align-middle", p.stock === 0 && "font-medium text-destructive")}>
               {p.stock == null ? "—" : fmtInt(p.stock)}

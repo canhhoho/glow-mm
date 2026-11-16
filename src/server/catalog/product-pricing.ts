@@ -126,6 +126,8 @@ export type VariantPricingRow = {
   source: PriceSource;
   /** Giá mua của phiếu nhập ghi sổ mới nhất (theo loại tiền của kho SP); combo = tổng thành phần. */
   cost: { amount: number; currency: "VND" | "MMK"; source?: CostSource } | null;
+  /** Phiếu NHẬP nháp mới nhất có SKU này: giá mua trong đó chưa được tính đến khi ghi sổ. */
+  draft: { documentId: string; code: string } | null;
 };
 
 /** Dữ liệu khối "Giá bán": nguồn giá hiện tại (lần đổi gần nhất) + giá mua gần nhất của từng biến thể. */
@@ -141,6 +143,13 @@ export async function loadProductPricing(variantIds: string[], pricingMode: "VN_
     }),
     variantCosts(prisma, variantIds, currency, currency === "VND" ? "PURCHASE" : "LANDED"),
   ]);
+  const drafts = await prisma.stockDocumentLine.findMany({
+    where: { variantId: { in: variantIds }, document: { type: "RECEIVE", status: "DRAFT" } },
+    orderBy: [{ document: { createdAt: "desc" } }, { id: "desc" }],
+    select: { variantId: true, document: { select: { id: true, code: true } } },
+  });
+  const draftOf = new Map<string, { documentId: string; code: string }>();
+  for (const d of drafts) if (!draftOf.has(d.variantId)) draftOf.set(d.variantId, { documentId: d.document.id, code: d.document.code });
   const last = new Map(history.map((h) => [h.variantId, h]));
   return new Map(
     variantIds.map((id) => {
@@ -153,7 +162,7 @@ export async function loadProductPricing(variantIds: string[], pricingMode: "VN_
             ? { kind: "import", at: h.createdAt }
             : { kind: "manual", note: h.reason?.startsWith(MANUAL_PRICE_PREFIX) ? h.reason.slice(MANUAL_PRICE_PREFIX.length) : "", at: h.createdAt };
       const c = costs.get(id);
-      return [id, { id, source, cost: c ? { amount: c.costVnd, currency, source: c.source } : null }];
+      return [id, { id, source, cost: c ? { amount: c.costVnd, currency, source: c.source } : null, draft: draftOf.get(id) ?? null }];
     }),
   );
 }

@@ -153,7 +153,13 @@ export default async function EditProductPage({ params, searchParams }: PageProp
   const plain = active.filter((v) => !v.isBundle);
   const stockTotal = (plain.length ? plain : active).reduce((sum, v) => sum + Math.max(0, avail.get(v.id) ?? 0), 0);
   const prices = active.map((v) => v.priceMmk).filter((x) => x > 0);
-  const priceText = prices.length ? (Math.min(...prices) === Math.max(...prices) ? fmtInt(prices[0]) : `${fmtInt(Math.min(...prices))} – ${fmtInt(Math.max(...prices))}`) : null;
+  const range = (xs: number[]) => (Math.min(...xs) === Math.max(...xs) ? fmtInt(xs[0]) : `${fmtInt(Math.min(...xs))} – ${fmtInt(Math.max(...xs))}`);
+  const priceText = prices.length ? range(prices) : null;
+  // Giá đang chờ duyệt (khác giá đang bán) — ghi kèm để không nhầm là giá đã áp dụng.
+  const pendingPrices = active.flatMap((v) => {
+    const staged = cr?.prices[v.id]?.priceMmk;
+    return staged != null && staged > 0 && staged !== v.priceMmk ? [staged] : [];
+  });
   const brandName = options.brands.find((b) => b.id === product.brandId)?.name ?? view.draftBrandName ?? "—";
   const categoryName = options.categories.find((c) => c.id === product.categoryId)?.name ?? "—";
   const warehouseName = options.warehouses.find((w) => w.id === product.stockLocationId)?.name ?? "—";
@@ -161,7 +167,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
   const notes: Partial<Record<ProductStep, string>> = {
     create: step("create").state === "todo" ? t("hero.noteCreateMissing") : t("hero.noteCreateOk"),
     stock: t("hero.noteStock", { n: fmtInt(stockTotal) }),
-    price: priceText ? t("hero.notePrice", { price: priceText }) : t("hero.notePriceMissing"),
+    price: [priceText ? t("hero.notePrice", { price: priceText }) : t("hero.notePriceMissing"), ...(pendingPrices.length ? [t("hero.notePricePending", { price: range(pendingPrices) })] : [])].join(" · "),
     review: reviewNote,
     publish: product.published ? t("hero.notePublished") : t("hero.noteNotPublished"),
   };
@@ -461,6 +467,11 @@ export default async function EditProductPage({ params, searchParams }: PageProp
                     </>
                   ) : (
                     "—"
+                  )}
+                  {row?.draft && (
+                    <div className="text-warning-foreground" data-testid="price-draft-receipt">
+                      <Link href={`/admin/inventory/documents/${row.draft.documentId}`} className="underline">{t("priceBlock.draftReceipt", { code: row.draft.code })}</Link>
+                    </div>
                   )}
                 </Td>
                 <Td label={t("weight")} className="text-xs tabular-nums">{v.weightGrams ? `${fmtInt(v.weightGrams)} g` : "—"}</Td>

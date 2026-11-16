@@ -36,16 +36,24 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     expect(preview.counts).toEqual({ createdProducts: 2, updatedProducts: 0, unchangedProducts: 0, stockLines: 4, priceChanges: 3 });
     expect(preview.input.rateId).toBe(rate.id);
     expect(preview.rows.map((r) => r.action)).toEqual(["create", "create", "create", "create"]);
-    expect(preview.rows[0].stock).toMatchObject({ qty: 5, expiryStatus: "DATED", costMmk: 21000, location: f.mm.code });
+    expect(preview.rows[0].stock).toMatchObject({ qty: 5, expiryStatus: "DATED", costMmk: 21000, location: f.mm.code, currency: "VND", unitCost: 100000, inboundVnd: 5000, lotAuto: true });
+    expect(preview.rows[0]).toMatchObject({ name: `Toner ${f.tag}`, nameFromFile: true, label: "100ml", labelFromFile: true, weight: 120, skuAuto: true, issues: [] });
+    expect(preview.rowCounts).toEqual({ create: 4, update: 0, same: 0, error: 0 });
+    expect(preview.documents).toBe(2);
+    expect(preview.rate?.vndPerMmk).toBeTruthy();
     expect(preview.rows[2].stock).toMatchObject({ expiryStatus: "UNKNOWN", expiryDate: null });
     expect(preview.warnings.join("\n")).toContain("chưa có hạn sử dụng");
     // A2 16/11: SKU mới nhận giá bán từ file (không còn cảnh báo "bỏ qua giá").
     expect(preview.warnings.join("\n")).not.toContain("bỏ qua giá bán của SKU mới");
-    expect(preview.rows.map((r) => r.price)).toEqual([20000, 35000, 35000, 50000]);
+    // Giá chỉ hiện ở dòng có điền ô giá (dòng 3 cùng biến thể 200ml nhưng ô trống).
+    expect(preview.rows.map((r) => r.price)).toEqual([20000, 35000, null, 50000]);
     // A4 16/11: để trống Phí đưa về kho = chưa biết → xem trước không hiện giá vốn, có cảnh báo (không coi là 0).
-    expect(preview.rows[1].stock).toMatchObject({ costMmk: null });
+    expect(preview.rows[1].stock).toMatchObject({ costMmk: null, inboundVnd: null, unitCost: 180000 });
+    expect(preview.rows[1].issues.map((i) => i.text).join(" | ")).toContain("để trống Phí đưa về kho");
+    // Lưu ý lặp gộp một dòng tóm tắt.
+    expect(preview.warnings.filter((w) => w.includes("để trống Phí đưa về kho"))).toHaveLength(1);
     expect(preview.warnings.join("\n")).toContain("để trống Phí đưa về kho");
-    expect(preview.rows[3].stock).toMatchObject({ expiryStatus: "NONE", costMmk: 30000, location: f.chi.code });
+    expect(preview.rows[3].stock).toMatchObject({ expiryStatus: "NONE", costMmk: 30000, location: f.chi.code, currency: "MMK", unitCost: 30000, inboundVnd: null });
     expect(await prisma.brand.count({ where: { name: brand } })).toBe(0); // xem trước không ghi
 
     await expect(commitCatalogImport(preview.input, f.userId)).rejects.toThrow("cần quyền quản lý giá");
@@ -80,7 +88,7 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     const input = sheet([{ sku, price_mmk: 12000, name_my: "", brand: "", category: "" }]);
     const preview = await previewCatalogImport(input);
     expect(preview.errors).toEqual([]);
-    expect(preview.rows[0]).toMatchObject({ action: "update", oldPrice: 10000, price: 12000 });
+    expect(preview.rows[0]).toMatchObject({ action: "update", currentPrice: 10000, price: 12000, changes: ["price"], nameFromFile: false, name: `IT product ${f.tag}` });
     expect(preview.counts.priceChanges).toBe(1);
     await commitCatalogImport(preview.input, f.userId, { allowPricing: true });
     const after = await prisma.product.findUniqueOrThrow({ where: { id: f.productId }, include: { translations: true, variants: true } });
@@ -151,6 +159,28 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     expect(await prisma.productTranslation.count({ where: { name: `Rate ${f.tag}` } })).toBe(0);
   });
 
+  it("xem trước có đủ mọi dòng của file: dòng lỗi (cấp dòng và cấp SP) vẫn hiện, lỗi gắn vào đúng dòng", async () => {
+    const { f, cat } = await setup();
+    const preview = await previewCatalogImport({
+      ...sheet([
+        { name_en: `Ok ${f.tag}`, brand: "B", category: cat },
+        { name_en: `Bad cat ${f.tag}`, brand: "B", category: "khong-co" },
+        { name_en: `Two ${f.tag}`, brand: "B", category: cat, description_en: "A" },
+        { name_en: `Two ${f.tag}`, brand: "B", category: cat, description_en: "B", variant_label: "50ml" },
+        { sku: "co dau cach", brand: "", category: "" },
+      ]),
+      lines: [7, 8, 9, 10, 11],
+    });
+    expect(preview.rows.map((r) => [r.line, r.action])).toEqual([[7, "create"], [8, "error"], [9, "error"], [10, "error"], [11, "error"]]);
+    expect(preview.rowCounts).toEqual({ create: 1, update: 0, same: 0, error: 4 });
+    expect(preview.rows[1].issues[0]).toMatchObject({ level: "error", text: expect.stringContaining("Danh mục") });
+    // Lỗi chung của cả SP (hai dòng khác mô tả) gắn vào cả hai dòng; bảng vẫn hiện tên như trong file.
+    expect(preview.rows[2].issues[0].text).toContain("khác nhau giữa các dòng");
+    expect(preview.rows[3]).toMatchObject({ name: `Two ${f.tag}`, label: "50ml", labelFromFile: true });
+    expect(preview.rows[4]).toMatchObject({ sku: "co dau cach", issues: [{ level: "error", text: expect.stringContaining("SKU") }] });
+    expect(preview.errors).toHaveLength(3);
+  });
+
   it("cột Hoa hồng CTV: đổi mức là cập nhật, ô trống giữ mức cũ, lớn hơn giá bị chặn", async () => {
     const { f } = await setup();
     const sku = `IT-${f.tag}`;
@@ -189,7 +219,7 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
 
     // Xem trước lại → xác nhận được.
     const fresh = await previewCatalogImport(input);
-    expect(fresh.rows[0]).toMatchObject({ oldPrice: 11000, price: 15000 });
+    expect(fresh.rows[0]).toMatchObject({ currentPrice: 11000, price: 15000 });
     await commitCatalogImport(fresh.input, f.userId, { allowPricing: true });
     expect((await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).priceMmk).toBe(15000);
   });

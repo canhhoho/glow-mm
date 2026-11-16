@@ -9,6 +9,7 @@ import { cancelDocumentAction, postDocumentAction } from "@/server/inventory/act
 import { ActionButton } from "@/components/admin/action-button";
 import { Badge, DataTable, LinkButton, Notice, Page, PageHeader, Section, Td } from "@/components/admin/ui";
 import { fmtDate, fmtDay, fmtInt } from "@/lib/format";
+import { rateDisplay } from "@/server/pricing/formula";
 import { cn } from "@/lib/utils";
 
 const STATUS_TONE = { DRAFT: "warning", POSTED: "success", CANCELLED: "neutral" } as const;
@@ -119,10 +120,13 @@ export default async function DocumentPage({ params, searchParams }: PageProps<"
                   <span data-testid="line-cost">{l.unitCostVnd != null ? `${fmtInt(l.unitCostVnd)} VND` : l.unitCostMmk != null ? `${fmtInt(l.unitCostMmk)} MMK` : "—"}</span>
                 </Td>
                 <Td label={t("costRate")} numeric>
-                  {l.rate ? <>{l.rate.mmkPerVnd.toString()}<span className="block text-xs text-muted-foreground">{fmtDay(l.rate.effectiveAt)}</span></> : "—"}
+                  {l.rate ? <>{rateDisplay(l.rate).vndPerMmk}<span className="block text-xs text-muted-foreground">{fmtDay(l.rate.effectiveAt)}</span></> : "—"}
                 </Td>
                 <Td label={t("costInbound")} numeric>
-                  {l.landedCostVnd != null ? fmtInt(l.landedCostVnd) : doc.shipment ? <span className="text-xs text-muted-foreground">{t("costViaShipment")}</span> : "—"}
+                  {/* `landedCostVnd` của dòng = giá mua + phí → phí = hiệu (như trang sửa phiếu). */}
+                  {l.landedCostVnd != null && l.unitCostVnd != null ? (
+                    <span data-testid="line-inbound">{fmtInt(l.landedCostVnd - l.unitCostVnd)}</span>
+                  ) : doc.shipment ? <span className="text-xs text-muted-foreground">{t("costViaShipment")}</span> : "—"}
                 </Td>
               </>
             )}

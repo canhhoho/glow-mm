@@ -80,7 +80,11 @@ test("mẫu một sheet: tạo SP hai biến thể kèm tồn + nội dung → x
   ]);
   await upload(page, "nhap.xlsx", filled);
   const preview = page.getByTestId("catalog-import-preview");
-  await expect(preview).toContainText("1 SP mới · 0 SP cập nhật · 0 SP không đổi · 1 dòng nhập tồn");
+  await expect(preview.getByTestId("catalog-import-summary")).toHaveText("2 dòng: 2 tạo mới · 0 cập nhật · 0 không đổi · 0 lỗi");
+  await expect(preview).toContainText("1 SP mới · 0 SP cập nhật · 0 SP không đổi · 1 dòng nhập kho → 1 phiếu nhập nháp");
+  // Giá mua hiện đúng đơn vị trong file (VND), phí về kho riêng, giá vốn MMK chỉ là dòng phụ.
+  await expect(preview.getByRole("row").filter({ hasText: "50 ml" })).toContainText("Giá mua 100,000 VND/đv");
+  await expect(preview.getByRole("row").filter({ hasText: "50 ml" })).toContainText("Phí về kho 5,000 VND/đv");
   await expect(preview.getByRole("alert")).toHaveCount(0);
   await expect(preview.getByRole("row").filter({ hasText: "50 ml" })).toContainText("2028-03-31");
   await page.screenshot({ path: "test-results/screens/catalog-import-preview.png", fullPage: true });

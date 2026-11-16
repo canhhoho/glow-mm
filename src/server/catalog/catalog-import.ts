@@ -11,6 +11,7 @@ import type { Tx } from "@/server/inventory/ledger";
 import { createDocument, salesBlockDays } from "@/server/inventory/documents";
 import { vndToMmk } from "@/server/inventory/landed-cost";
 import { latestRate } from "@/server/pricing/latest-rate";
+import { rateDisplay } from "@/server/pricing/formula";
 import { defaultStockLocationId } from "@/server/inventory/warehouses";
 import { productName } from "@/server/inventory/queries";
 import { PRODUCT_EDIT_INCLUDE, toProductEditData, type ProductEditData } from "./admin-queries";
@@ -44,15 +45,52 @@ export const catalogImportInputSchema = z.object({
 });
 export type CatalogImportInput = z.infer<typeof catalogImportInputSchema>;
 
+export type ImportIssue = { level: "error" | "warning"; text: string };
+/** Trường bị đổi trên một dòng (khoá ổn định, UI dịch qua `CatalogImport.field.*`). */
+export type ImportChange =
+  | "name" | "brand" | "category" | "description" | "usage" | "ingredients" | "storage" | "pao" | "expiry"
+  | "label" | "weight" | "price" | "commission";
+
+/**
+ * Một dòng của file (đủ mọi dòng có dữ liệu, kể cả dòng lỗi) — xem trước hiện đúng như file:
+ * `*FromFile = false` = ô trống, giá trị lấy từ dữ liệu hiện có / tự sinh.
+ */
 export type ImportRowView = {
   line: number;
-  action: "create" | "update" | "same";
+  action: "create" | "update" | "same" | "error";
   name: string;
+  nameFromFile: boolean;
+  brand: string;
+  category: string;
   sku: string;
+  skuAuto: boolean;
   label: string;
+  labelFromFile: boolean;
+  weight: number | null;
+  weightFromFile: boolean;
+  changes: ImportChange[];
+  /** Ô Giá bán trong file (null = trống → giữ nguyên / SKU mới chưa có giá). */
   price: number | null;
-  oldPrice: number | null;
-  stock: { qty: number; lotNo: string; location: string; expiryDate: string | null; expiryStatus: "DATED" | "NONE" | "UNKNOWN"; costMmk: number | null } | null;
+  /** Giá đang bán của SKU có sẵn (live, không phải giá chờ duyệt). */
+  currentPrice: number | null;
+  /** SP đã duyệt: giá mới vào hàng chờ duyệt, khách vẫn thấy giá đang bán. */
+  priceStaged: boolean;
+  stock: {
+    qty: number;
+    lotNo: string;
+    lotAuto: boolean;
+    location: string;
+    expiryDate: string | null;
+    expiryStatus: "DATED" | "NONE" | "UNKNOWN";
+    /** Giá mua đúng như file: VND (kho nhập VN) hoặc MMK (kho mua tại Myanmar). */
+    currency: "VND" | "MMK";
+    unitCost: number;
+    /** Phí đưa về kho VND/đv; null = để trống (chưa biết). */
+    inboundVnd: number | null;
+    /** Giá vốn MMK/đv của dòng này (quy đổi theo tỷ giá đang dùng); null = chưa có giá vốn. */
+    costMmk: number | null;
+  } | null;
+  issues: ImportIssue[];
 };
 
 type StockPlan = {
@@ -69,7 +107,14 @@ export type CatalogImportPreview = {
   rows: ImportRowView[];
   /** `priceChanges`: số SKU có sẵn bị đổi giá bán / hoa hồng CTV (cần quyền `pricing:manage`). */
   counts: { createdProducts: number; updatedProducts: number; unchangedProducts: number; stockLines: number; priceChanges: number };
-  rate: string | null;
+  /** Số dòng file theo trạng thái (bảng xem trước). */
+  rowCounts: { create: number; update: number; same: number; error: number };
+  /** Số phiếu nhập nháp sẽ tạo (mỗi kho một phiếu). */
+  documents: number;
+  /** Tỷ giá chốt cho các lô VND: VND cho 1 MMK (cách ghi chung của admin). */
+  rate: { vndPerMmk: string } | null;
+  /** Lỗi không thuộc dòng nào (vd chưa có tỷ giá) — luôn hiện trên bảng. */
+  general: string[];
 };
 
 type Plan = { preview: CatalogImportPreview; saves: Record<string, unknown>[]; stock: StockPlan[] };
@@ -90,6 +135,9 @@ const fold = (s: string) => toUnicode(s).normalize("NFC").trim().replace(/\s+/g,
 const clean = (s: string) => toUnicode(s).normalize("NFC").replace(/[ \t\u00a0]+/g, " ").replace(/ *\n */g, "\n").trim();
 const errorText = (e: unknown) => (e instanceof z.ZodError ? e.issues.map((i) => i.message).join("; ") : (e as Error).message);
 const isoDay = (d: Date) => d.toISOString().slice(2, 10).replaceAll("-", "");
+const NO_LANDED =
+  'để trống Phí đưa về kho → lô CHƯA CÓ giá vốn (không tự coi là 0). Điền 0 nếu không phát sinh phí; hoặc nhập "Cước tạm tính" ở phiếu nháp trước khi ghi sổ để có giá vốn tạm. Thiếu giá vốn sẽ không bàn giao đơn được.';
+const NO_EXPIRY = "lô chưa có hạn sử dụng → chưa bán được đến khi cập nhật hạn.";
 
 type Row = Record<string, string> & { __line: string };
 type Group = {
@@ -122,10 +170,58 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
   const rows: Row[] = records.map((r, i) => ({ ...r, __line: String(input.lines?.[i] ?? i + 2) }));
   const errors: string[] = [];
   const warnings: string[] = [];
-  const fail = (rowsOrLine: Row[] | string, e: unknown) => {
-    const lines = typeof rowsOrLine === "string" ? rowsOrLine : [...new Set(rowsOrLine.map((r) => r.__line))].join(", ");
-    errors.push(`Dòng ${lines}: ${errorText(e)}`);
+  /** Lỗi/lưu ý gắn vào từng dòng của bảng xem trước (cùng nội dung với `errors` / `warnings`). */
+  const rowIssues = new Map<number, ImportIssue[]>();
+  const attach = (lines: (string | number)[], issue: ImportIssue) => {
+    for (const l of new Set(lines.map(Number))) rowIssues.set(l, [...(rowIssues.get(l) ?? []), issue]);
   };
+  const linesOf = (rowsOrLine: Row[] | string) => (typeof rowsOrLine === "string" ? [rowsOrLine] : [...new Set(rowsOrLine.map((r) => r.__line))]);
+  const fail = (rowsOrLine: Row[] | string, e: unknown) => {
+    const lines = linesOf(rowsOrLine);
+    const text = errorText(e);
+    errors.push(`Dòng ${lines.join(", ")}: ${text}`);
+    attach(lines, { level: "error", text });
+  };
+  const warn = (rowsOrLine: Row[] | string, text: string) => {
+    const lines = linesOf(rowsOrLine);
+    warnings.push(`Dòng ${lines.join(", ")}: ${text}`);
+    attach(lines, { level: "warning", text });
+  };
+  /** Lưu ý lặp ở nhiều dòng (lô chưa biết hạn, chưa có phí về kho…) → một dòng tóm tắt, vẫn gắn vào từng dòng. */
+  const repeated = new Map<string, number[]>();
+  const warnEach = (line: string, text: string) => {
+    repeated.set(text, [...(repeated.get(text) ?? []), Number(line)]);
+    attach([line], { level: "warning", text });
+  };
+
+  // Mọi dòng của file đều có trong bảng, kể cả dòng lỗi: điền sẵn theo đúng nội dung ô, bước sau bổ sung.
+  const views = new Map<number, ImportRowView>(
+    rows.map((r) => {
+      const fileName = clean(r.name_en || r.name_my || "");
+      const label = clean(r.variant_label ?? "");
+      const weight = normalizeNumberText(r.weight_g ?? "");
+      return [Number(r.__line), {
+        line: Number(r.__line),
+        action: "error",
+        name: fileName,
+        nameFromFile: !!fileName,
+        brand: clean(r.brand ?? ""),
+        category: clean(r.category ?? ""),
+        sku: (r.sku ?? "").trim(),
+        skuAuto: false,
+        label,
+        labelFromFile: !!label,
+        weight: /^\d+$/.test(weight) ? Number(weight) : null,
+        weightFromFile: !!weight,
+        changes: [],
+        price: null,
+        currentPrice: null,
+        priceStaged: false,
+        stock: null,
+        issues: [],
+      } satisfies ImportRowView];
+    }),
+  );
 
   // ── Dữ liệu tham chiếu ──
   const skus = [...new Set(rows.map((r) => r.sku?.trim()).filter(Boolean))];
@@ -141,9 +237,10 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
     }),
   ]);
   const defaultLocationId = await defaultStockLocationId(db).catch(() => null);
-  const products = new Map(owners.map((p) => [p.id, { data: toProductEditData(p), archived: !!p.archivedAt, brandName: p.brand.name }]));
+  const products = new Map(owners.map((p) => [p.id, { data: toProductEditData(p), archived: !!p.archivedAt, approved: !!p.approvedAt, brandName: p.brand.name }]));
   // A2 16/11: giá hiệu lực = giá đang chờ duyệt (nếu có) — để so "có đổi giá không" và kiểm hoa hồng ≤ giá.
-  const staged = await changeRequestsFor(db, owners.map((p) => p.id));
+  // Như `effectivePricingOf`: giá chờ duyệt chỉ có nghĩa với SP đã duyệt.
+  const staged = await changeRequestsFor(db, owners.filter((p) => p.approvedAt).map((p) => p.id));
   const pendingPrice = new Map([...staged.values()].flatMap((c) => Object.entries(c.prices).map(([variantId, sp]) => [variantId, sp.priceMmk] as const)));
   const variantOwner = new Map(owners.flatMap((p) => p.variants.map((v) => [v.sku, { productId: p.id, isBundle: v.isBundle }] as const)));
   const productBySlug = new Map(owners.map((p) => [p.slug, p.id]));
@@ -233,15 +330,12 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
   const today = new Date().toISOString().slice(0, 10);
   const blockFrom = new Date(Date.now() + blockDays * 86_400_000).toISOString().slice(0, 10);
 
-  const views: ImportRowView[] = [];
   const saves: Record<string, unknown>[] = [];
   const stock: StockPlan[] = [];
   const counts = { createdProducts: 0, updatedProducts: 0, unchangedProducts: 0, stockLines: 0, priceChanges: 0 };
   const priceBase: Record<string, string> = {};
   /** SKU mới có ô giá bán / hoa hồng trong file — cũng là thao tác giá (cần quyền `pricing:manage`). */
   const newPriced = new Set<string>();
-  /** Dòng nhập tồn VND để trống Phí đưa về kho → lô chưa có giá vốn thực tế (A4). */
-  const noLandedLines: number[] = [];
   let needsRate = false;
   const newSkuOwner = new Map<string, string>(); // SKU mới (chưa có trong hệ thống) → nhóm SP
 
@@ -274,7 +368,7 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
       const brand = brandText ? brandOf(brandText) : undefined;
       if (brand && fold(brand.name) !== fold(brandText) && !brandAliasWarned.has(fold(brandText))) {
         brandAliasWarned.add(fold(brandText));
-        warnings.push(`Dòng ${rowsOf.map((r) => r.__line).join(", ")}: thương hiệu "${brandText}" dùng chung với "${brand.name}" đã có.`);
+        warn(rowsOf, `thương hiệu "${brandText}" dùng chung với "${brand.name}" đã có.`);
       }
       const categoryId = categoryText ? categoryOf(categoryText) : base!.categoryId;
 
@@ -316,7 +410,10 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
         rows: Row[];
         isNew: boolean;
         changed: boolean;
-        oldPrice: number | null;
+        /** Trường cấp biến thể bị đổi (SKU có sẵn). */
+        changes: ImportChange[];
+        /** Giá đang bán (live) của SKU có sẵn. */
+        livePrice: number | null;
       };
       const variants: ImportVariant[] = [];
       for (const [vKey, vRows] of g.variants) {
@@ -351,6 +448,16 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
           priceBase[current.sku] = `${effective}|${current.affiliateCommissionMmk ?? ""}`;
         }
         if (!current && (priceText || commissionText)) newPriced.add(`${g.key}|${vKey}`);
+        const labelChanged = !!current && current.label !== (label || current.label);
+        const weightChanged = !!current && (current.weightGrams ?? null) !== weight;
+        const variantChanges: ImportChange[] = current
+          ? [
+              ...(labelChanged ? (["label"] as const) : []),
+              ...(weightChanged ? (["weight"] as const) : []),
+              ...(priceChanged ? (["price"] as const) : []),
+              ...(commissionChanged ? (["commission"] as const) : []),
+            ]
+          : [];
         const next = {
           id: current?.id ?? "",
           sku: current?.sku ?? sku,
@@ -367,8 +474,9 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
           components: [],
           rows: vRows,
           isNew: !current,
-          oldPrice: current ? effective : null,
-          changed: !current || current.label !== (label || current.label) || priceChanged || (current.weightGrams ?? null) !== weight || commissionChanged,
+          livePrice: current ? current.priceMmk : null,
+          changes: variantChanges,
+          changed: !current || variantChanges.length > 0,
         };
         if (next.autoSku) next.sku = suggestVariantSku(base?.slug ?? (g.key.startsWith("s:") ? g.key.slice(2) : suggestProductSlug(nameEn, nameMy, slugFallback)), nextIndex++);
         variants.push(next);
@@ -402,31 +510,52 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
       // Mã đã chốt ở bước xem trước → lưu với mã cố định (xác nhận chạy lại trong khoá nên không đổi).
       const payload = { ...resolved, autoSlug: false, variants: resolved.variants.map((v) => ({ ...v, autoSku: false })) };
 
-      const productChanged = !base
-        || (nameMy && nameMy !== base.my.name) || (nameEn && nameEn !== base.en.name)
-        || (brandText && (!brand || brand.id !== base.brandId)) || categoryId !== base.categoryId
-        || (descMy && descMy !== base.my.description) || (descEn && descEn !== base.en.description)
-        || requiresExpiry !== base.requiresExpiry
-        || (!!legacy.usage_my && legacy.usage_my !== base.my.usage) || (!!legacy.usage_en && legacy.usage_en !== base.en.usage)
-        || (!!legacy.ingredients && legacy.ingredients !== base.ingredientsText) || (!!legacy.storage_note && legacy.storage_note !== base.storageNote)
-        || (pao != null && pao !== base.paoMonths)
-        || variants.some((v) => v.changed);
+      // Trường cấp SP bị đổi (SP có sẵn) — hiện "đổi: …" trên từng dòng của SP.
+      const productChanges: ImportChange[] = !base ? [] : ([
+        ["name", (!!nameMy && nameMy !== base.my.name) || (!!nameEn && nameEn !== base.en.name)],
+        ["brand", !!brandText && (!brand || brand.id !== base.brandId)],
+        ["category", categoryId !== base.categoryId],
+        ["description", (!!descMy && descMy !== base.my.description) || (!!descEn && descEn !== base.en.description)],
+        ["usage", (!!legacy.usage_my && legacy.usage_my !== base.my.usage) || (!!legacy.usage_en && legacy.usage_en !== base.en.usage)],
+        ["ingredients", !!legacy.ingredients && legacy.ingredients !== base.ingredientsText],
+        ["storage", !!legacy.storage_note && legacy.storage_note !== base.storageNote],
+        ["pao", pao != null && pao !== base.paoMonths],
+        ["expiry", requiresExpiry !== base.requiresExpiry],
+      ] as const).filter(([, changed]) => changed).map(([k]) => k);
+      const productChanged = !base || productChanges.length > 0 || variants.some((v) => v.changed);
       if (!base) counts.createdProducts++;
       else if (productChanged) counts.updatedProducts++;
       else counts.unchangedProducts++;
       if (productChanged) saves.push(payload);
       if (!base && (nameMy || nameEn)) {
         const twin = await db.productTranslation.findFirst({ where: { name: { in: [my.name, en.name].filter(Boolean), mode: "insensitive" }, product: { archivedAt: null } }, select: { product: { select: { slug: true } } } });
-        if (twin) warnings.push(`Dòng ${rowsOf.map((r) => r.__line).join(", ")}: đã có sản phẩm cùng tên (${twin.product.slug}). Muốn cập nhật sản phẩm đó thì điền SKU của nó.`);
+        if (twin) warn(rowsOf, `đã có sản phẩm cùng tên (${twin.product.slug}). Muốn cập nhật sản phẩm đó thì điền SKU của nó.`);
       }
 
-      // Tồn nhập theo từng dòng.
-      const display = my.name || en.name;
+      // Bảng xem trước + tồn nhập theo từng dòng.
+      const brandName = brand?.name ?? (brandText || products.get(base?.id ?? "")?.brandName || "");
+      const categoryRow = categories.find((c) => c.id === categoryId);
+      const categoryName = categoryText || (categoryRow ? productName(categoryRow.translations, categoryRow.slug) : "");
+      const existingName = en.name || my.name;
+      const approved = !!base && !!products.get(base.id)?.approved;
       const seen = new Map<string, Row>();
       for (const v of variants) {
         for (const r of v.rows) {
-          const view: ImportRowView = { line: Number(r.__line), action: !base || v.isNew ? "create" : v.changed || productChanged ? "update" : "same", name: display, sku: v.sku, label: v.label, price: v.priceMmk ?? v.oldPrice, oldPrice: v.oldPrice, stock: null };
-          views.push(view);
+          const view = views.get(Number(r.__line))!;
+          Object.assign(view, {
+            action: !base || v.isNew ? "create" : v.changed || productChanged ? "update" : "same",
+            name: view.nameFromFile ? view.name : existingName,
+            brand: brandName,
+            category: categoryName,
+            sku: v.sku,
+            skuAuto: !!v.autoSku,
+            label: v.label,
+            weight: v.weightGrams,
+            changes: [...productChanges, ...v.changes],
+            price: v.priceMmk !== undefined && (r.price_mmk ?? "").trim() ? v.priceMmk : null,
+            currentPrice: v.livePrice,
+            priceStaged: approved,
+          } satisfies Partial<ImportRowView>);
           const stockCells = ["qty", "expiry_date", "unit_cost", "unit_cost_vnd", "unit_cost_mmk", "inbound_unit_vnd", "lot_no"].some((k) => (r[k] ?? "").trim());
           if (!stockCells) continue;
           try {
@@ -472,20 +601,31 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
                 throw new Error(`Lô ${lotNo} của SKU ${v.sku} đã có với hạn dùng khác (${lot.expiryDate ? lot.expiryDate.toISOString().slice(0, 10) : lot.expiryStatus}) — đổi số lô hoặc sửa hạn cho khớp`);
               }
             }
-            if (status === "DATED" && date < today) warnings.push(`Dòng ${r.__line}: lô ${lotNo} đã hết hạn (${date}) → không bán được.`);
-            else if (status === "DATED" && date < blockFrom) warnings.push(`Dòng ${r.__line}: lô ${lotNo} còn dưới ${blockDays} ngày hạn dùng (${date}) → bị chặn bán.`);
+            if (status === "DATED" && date < today) warn(r.__line, `lô ${lotNo} đã hết hạn (${date}) → không bán được.`);
+            else if (status === "DATED" && date < blockFrom) warn(r.__line, `lô ${lotNo} còn dưới ${blockDays} ngày hạn dùng (${date}) → bị chặn bán.`);
             // Xem trước chỉ hiện giá vốn sẽ thực sự được ghi (thực tế); chưa biết phí → để trống + cảnh báo.
             const costMmk = mmk ? purchase : inbound != null && rate ? money.parse(vndToMmk(purchase + inbound, rate)) : null;
-            if (!mmk && inbound == null) noLandedLines.push(Number(r.__line));
+            if (!mmk && inbound == null) warnEach(r.__line, NO_LANDED);
             if (!mmk) needsRate = true;
-            if (status === "UNKNOWN") warnings.push(`Dòng ${r.__line}: lô ${lotNo} chưa có hạn sử dụng → chưa bán được đến khi cập nhật hạn.`);
+            if (status === "UNKNOWN") warnEach(r.__line, NO_EXPIRY);
             stock.push({
               sku: v.sku,
               locationId: target.id,
               vnd: !mmk,
               line: { lotNo, expiryDate: date || undefined, expiryStatus: status, mfgDate: mfg, ...(mmk ? { unitCostMmk: purchase } : { unitCostVnd: purchase, ...(inbound != null ? { landedCostVnd: purchase + inbound } : {}) }), qty, stockType },
             });
-            view.stock = { qty, lotNo, location: target.code, expiryDate: date || null, expiryStatus: status, costMmk };
+            view.stock = {
+              qty,
+              lotNo,
+              lotAuto: !r.lot_no?.trim(),
+              location: target.code,
+              expiryDate: date || null,
+              expiryStatus: status,
+              currency: mmk ? "MMK" : "VND",
+              unitCost: purchase,
+              inboundVnd: mmk ? null : inbound,
+              costMmk,
+            };
             counts.stockLines++;
           } catch (e) {
             fail(r.__line, e);
@@ -496,21 +636,29 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
       fail(g.rows, e);
     }
   }
-  if (needsRate && !rate) errors.push("Cần thiết lập tỷ giá đang có hiệu lực (Giá & tỷ giá) trước khi nhập tồn hàng VND.");
-  if (noLandedLines.length) {
-    warnings.push(
-      `Dòng ${noLandedLines.sort((a, b) => a - b).join(", ")}: để trống Phí đưa về kho → lô CHƯA CÓ giá vốn (không tự coi là 0). Điền 0 nếu không phát sinh phí; hoặc nhập "Cước tạm tính" ở phiếu nháp trước khi ghi sổ để có giá vốn tạm. Thiếu giá vốn sẽ không bàn giao đơn được.`,
-    );
+  const general: string[] = [];
+  if (needsRate && !rate) general.push("Cần thiết lập tỷ giá đang có hiệu lực (Giá & tỷ giá) trước khi nhập tồn hàng VND.");
+  errors.push(...general);
+  for (const [text, lines] of repeated) warnings.push(`Dòng ${lines.sort((a, b) => a - b).join(", ")}: ${text}`);
+  const rowList = [...views.values()].sort((a, b) => a.line - b.line);
+  for (const view of rowList) {
+    view.issues = rowIssues.get(view.line) ?? [];
+    // Dòng có lỗi (kể cả lỗi chung của cả SP) không được ghi gì → trạng thái Lỗi.
+    if (view.issues.some((i) => i.level === "error")) view.action = "error";
   }
-  views.sort((a, b) => a.line - b.line);
+  const rowCounts = { create: 0, update: 0, same: 0, error: 0 };
+  for (const view of rowList) rowCounts[view.action]++;
   return {
     preview: {
       input: { ...input, rateId: needsRate ? rate?.id : undefined, priceBase: Object.keys(priceBase).length ? priceBase : undefined },
       errors,
       warnings,
-      rows: views,
+      rows: rowList,
       counts: { ...counts, priceChanges: Object.keys(priceBase).length + newPriced.size },
-      rate: needsRate ? rate?.mmkPerVnd.toString() ?? null : null,
+      rowCounts,
+      documents: new Set(stock.map((s) => s.locationId)).size,
+      rate: needsRate && rate ? { vndPerMmk: rateDisplay(rate).vndPerMmk } : null,
+      general,
     },
     saves,
     stock,

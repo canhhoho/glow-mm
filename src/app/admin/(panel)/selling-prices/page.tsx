@@ -197,6 +197,11 @@ async function ManualPrices({
               ) : (
                 <span className="text-muted-foreground">—</span>
               )}
+              {v.pricing?.draft && (
+                <div className="text-xs text-warning-foreground" data-testid="selling-draft-receipt">
+                  <Link href={`/admin/inventory/documents/${v.pricing.draft.documentId}`} className="underline">{t("draftReceipt", { code: v.pricing.draft.code })}</Link>
+                </div>
+              )}
             </Td>
             <Td label={t("colSource")} className="align-middle text-sm">{source(v)}</Td>
             <Td label={t("actions")} className="align-middle">
