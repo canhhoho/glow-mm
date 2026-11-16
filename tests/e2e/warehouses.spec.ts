@@ -38,6 +38,7 @@ test("admin xem kho; danh sách SP lọc theo kho; thủ kho không vào đượ
 
   await page.goto("/admin/products?q=SV-SUN-50");
   await expect(page.getByRole("row").filter({ hasText: "sen-viet-sunscreen-spf50" })).toContainText("Kho Thắm");
+  await page.getByText("Bộ lọc nâng cao", { exact: true }).click(); // bộ lọc kho nằm trong khối nâng cao (thu gọn)
   await page.getByRole("combobox", { name: "Kho", exact: true }).selectOption({ label: "Kho Chi" });
   await page.getByRole("button", { name: "Lọc", exact: true }).click();
   await expect(page.getByRole("row").filter({ hasText: "sen-viet-sunscreen-spf50" })).toHaveCount(0);

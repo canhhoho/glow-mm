@@ -314,12 +314,15 @@ export function Stat({
   value,
   href,
   tone = "neutral",
+  hint,
   testId,
 }: {
   label: string;
   value: React.ReactNode;
   href?: string;
   tone?: "neutral" | "warning" | "danger";
+  /** Dòng nhỏ dưới số: kỳ / phạm vi / điều kiện của chỉ số. */
+  hint?: React.ReactNode;
   testId?: string;
 }) {
   const body = (
@@ -334,6 +337,7 @@ export function Stat({
       >
         {value}
       </div>
+      {hint && <div className="mt-0.5 text-xs text-muted-foreground">{hint}</div>}
     </>
   );
   const cls = "block min-w-0 rounded-xl border bg-card p-3 shadow-xs";

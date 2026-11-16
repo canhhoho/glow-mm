@@ -6,3 +6,6 @@ export function inventoryCost(batch: { landedCostMmk: number | null; estimatedCo
   if (batch.estimatedCostMmk != null) return { unitCostMmk: batch.estimatedCostMmk, costStatus: "ESTIMATED" };
   return { unitCostMmk: null, costStatus: "MISSING" };
 }
+
+/** Điều kiện Prisma của lô thiếu hoàn toàn giá vốn (`costStatus === "MISSING"`) — dùng chung bộ lọc Tồn kho và liên kết từ Tổng quan. */
+export const MISSING_COST_BATCH = { landedCostMmk: null, estimatedCostMmk: null } as const;

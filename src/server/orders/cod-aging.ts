@@ -17,3 +17,17 @@ export function codAgeBuckets(orders: { codCollectedAt: Date | null; totalMmk: n
   }
   return buckets;
 }
+
+type CodOrder = { status: string; paymentStatus: string; totalMmk: number; items: { returnedQty: number }[] };
+
+/** COD "thường" = đơn hoàn tất, đã thu đủ, không có hàng trả; còn lại là ngoại lệ cần xử lý riêng ở trang Đối soát COD. */
+export function isRegularCod(o: Pick<CodOrder, "status" | "paymentStatus" | "items">) {
+  return o.status === "COMPLETED" && o.paymentStatus === "PAID" && !o.items.some((i) => i.returnedQty > 0);
+}
+
+/** Số đơn + số tiền COD đã thu từ khách nhưng chưa đối soát tiền về — dùng chung cho trang COD và Tổng quan. */
+export function summarizeCod(orders: CodOrder[]) {
+  const sum = (list: CodOrder[]) => ({ count: list.length, mmk: list.reduce((s, o) => s + o.totalMmk, 0) });
+  const regular = orders.filter(isRegularCod);
+  return { regular: sum(regular), exception: sum(orders.filter((o) => !isRegularCod(o))), total: sum(orders) };
+}

@@ -1,12 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ClipboardList, Download, FileText, Layers, MoreHorizontal, Package, Pencil, Plus, ShieldCheck, Store, Upload } from "lucide-react";
+import { Archive, Download, Layers, MoreHorizontal, Package, Pencil, Plus, TriangleAlert, Upload } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { buttonVariants } from "@/components/ui/button";
 import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { productFilterOptions } from "@/server/catalog/admin-queries";
-import { listProductsPage, LIST_TABS, PAGE_SIZES, parseListTab, SELL_MODES, type ListTab, type SellMode } from "@/server/catalog/product-list";
+import { listProductsPage, MAIN_LIST_TABS, OTHER_LIST_TABS, PAGE_SIZES, parseListTab, SELL_MODES, type ListTab, type SellMode } from "@/server/catalog/product-list";
 import { changeSummaries } from "@/server/catalog/review";
 import { catalogStats } from "@/server/catalog/stats";
 import type { ChangeItem } from "@/server/catalog/change-summary";
@@ -74,7 +74,10 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
     rejected: stats.rejected,
     archived: stats.byLabel.ARCHIVED,
   };
-  const tabs = LIST_TABS.filter((k) => (k !== "rejected" && k !== "archived") || tabCount[k] > 0 || k === tab);
+  // Tab chính = hàng đợi công việc; "Ngừng kinh doanh" chỉ hiện khi có SP; trạng thái phụ nằm trong ô chọn.
+  const tabs = MAIN_LIST_TABS.filter((k) => k !== "archived" || tabCount[k] > 0 || k === tab);
+  const otherTabs = OTHER_LIST_TABS.filter((k) => k !== "rejected" || tabCount[k] > 0 || k === tab);
+  const mainTab = tab !== "active" && (MAIN_LIST_TABS as readonly string[]).includes(tab);
   const from = list.total ? (list.page - 1) * list.pageSize + 1 : 0;
   const to = Math.min(list.total, list.page * list.pageSize);
   const filtered = !!(query || brandId || categoryId || warehouseId || sell);
@@ -84,13 +87,12 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
     <Page>
       <PageHeader title={t("title")} description={t("list.subtitle")} />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+      {/* Ô số khác với tab: tổng (ghi rõ không gồm ngừng kinh doanh), SKU, hàng đang bán đã hết, và số SP ngừng kinh doanh. */}
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <StatCard icon={<Package />} tone="brand" value={fmtInt(stats.totalProducts)} label={t("list.statTotal")} href={href({ status: undefined, page: undefined })} active={tab === "active"} testId="stat-total" />
         <StatCard icon={<Layers />} tone="green" value={fmtInt(stats.skus)} label={t("list.statSkus")} testId="stat-skus" />
-        <StatCard icon={<Store />} tone="success" value={fmtInt(stats.byLabel.PUBLISHED)} label={t("tab.published")} href={href({ status: "published", page: undefined })} active={tab === "published"} />
-        <StatCard icon={<ShieldCheck />} tone="warning" value={fmtInt(stats.awaitingReview)} label={t("tab.review")} href={href({ status: "review", page: undefined })} active={tab === "review"} />
-        <StatCard icon={<ClipboardList />} tone="danger" value={fmtInt(stats.draftIncomplete)} label={t("tab.incomplete")} href={href({ status: "incomplete", page: undefined })} active={tab === "incomplete"} />
-        <StatCard icon={<FileText />} tone="neutral" value={fmtInt(draftComplete)} label={t("tab.draft")} href={href({ status: "draft", page: undefined })} active={tab === "draft"} />
+        <StatCard icon={<TriangleAlert />} tone="warning" value={fmtInt(stats.published.outOfStock)} label={t("tab.outOfStock")} href={href({ status: "outOfStock", page: undefined })} active={tab === "outOfStock"} testId="stat-out-of-stock" />
+        <StatCard icon={<Archive />} tone="neutral" value={fmtInt(stats.byLabel.ARCHIVED)} label={t("tab.archived")} href={href({ status: "archived", page: undefined })} active={tab === "archived"} testId="stat-archived" />
       </div>
 
       <TabNav
@@ -100,42 +102,61 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <FilterBar className="flex-1">
-          {tab !== "active" && <input type="hidden" name="status" value={tab} />}
-          <SearchInput label={t("search")} defaultValue={query} />
-          <select name="category" defaultValue={categoryId ?? ""} aria-label={t("colCategory")} className={fieldClass}>
-            <option value="">{t("allCategories")}</option>
-            {options.categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.depth ? `— ${c.name}` : c.name}
-              </option>
-            ))}
-          </select>
-          <select name="brand" defaultValue={brandId ?? ""} aria-label={t("colBrand")} className={fieldClass}>
-            <option value="">{t("allBrands")}</option>
-            {options.brands.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-          {options.warehouses.length > 1 && (
-            <select name="warehouse" defaultValue={warehouseId ?? ""} aria-label={t("warehouse")} className={fieldClass}>
-              <option value="">{t("allWarehouses")}</option>
-              {options.warehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
+          {mainTab ? (
+            <input type="hidden" name="status" value={tab} />
+          ) : (
+            <select name="status" defaultValue={tab === "active" ? "" : tab} aria-label={t("otherStatuses")} className={fieldClass}>
+              <option value="">{t("otherStatuses")}</option>
+              {otherTabs.map((k) => (
+                <option key={k} value={k}>
+                  {t(`tab.${k}`)} ({fmtInt(tabCount[k])})
                 </option>
               ))}
             </select>
           )}
-          <select name="sell" defaultValue={sell ?? ""} aria-label={t("list.colSell")} className={fieldClass}>
-            <option value="">{t("sell.all")}</option>
-            {SELL_MODES.map((s) => (
-              <option key={s} value={s}>
-                {t(`sell.${s}`)}
-              </option>
-            ))}
-          </select>
+          <SearchInput label={t("search")} defaultValue={query} />
+          {/* Bộ lọc nâng cao thu gọn (vẫn nằm trong form nên gửi cùng nút Lọc); tự mở khi đang lọc. */}
+          <details className="group/adv w-full md:w-auto" open={!!(categoryId || brandId || warehouseId || sell)}>
+            <summary className="flex min-h-9 cursor-pointer list-none items-center gap-1 rounded-md px-2 text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+              {t("advancedFilters")}
+            </summary>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <select name="category" defaultValue={categoryId ?? ""} aria-label={t("colCategory")} className={fieldClass}>
+                <option value="">{t("allCategories")}</option>
+                {options.categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.depth ? `— ${c.name}` : c.name}
+                  </option>
+                ))}
+              </select>
+              <select name="brand" defaultValue={brandId ?? ""} aria-label={t("colBrand")} className={fieldClass}>
+                <option value="">{t("allBrands")}</option>
+                {options.brands.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+              {options.warehouses.length > 1 && (
+                <select name="warehouse" defaultValue={warehouseId ?? ""} aria-label={t("warehouse")} className={fieldClass}>
+                  <option value="">{t("allWarehouses")}</option>
+                  {options.warehouses.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <select name="sell" defaultValue={sell ?? ""} aria-label={t("list.colSell")} className={fieldClass}>
+                <option value="">{t("sell.all")}</option>
+                {SELL_MODES.map((s) => (
+                  <option key={s} value={s}>
+                    {t(`sell.${s}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </details>
           <FilterButton>{tc("filter")}</FilterButton>
           {filtered && (
             <Link href={href({ q: undefined, brand: undefined, category: undefined, warehouse: undefined, sell: undefined, page: undefined })} className="self-center text-sm text-primary underline">

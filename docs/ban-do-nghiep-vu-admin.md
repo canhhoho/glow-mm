@@ -30,7 +30,7 @@ Ký hiệu: ✅ dùng chung đúng · ⚠️ logic lặp, có rủi ro · 🗑 c
 | **Xuất kho theo đơn** | (bàn giao vận chuyển) | — | qua chuyển trạng thái | `transitions.ts` `issueOrderStock` → ✅ `inventory/documents.ts` `postOrderDocumentTx` (tạo + ghi sổ) | `StockDocument` ISSUE, `OrderAllocation` (giá vốn chốt) | Tồn, lãi gộp |
 | **Trả hàng** | `/admin/orders/[id]` | — | `returnItemsAction` | `orders/returns.ts` → ✅ `postOrderDocumentTx`, chuyển trạng thái qua `transitionInTx` ✅ | phiếu RETURN, `OrderItem.returnedQty` | Tồn, hoa hồng (trừ phần trả) |
 | **Hoa hồng chốt theo dòng đơn** | (tự động khi tạo đơn) | Gán CTV sau ở trang đơn | `createOrderAction`/`placeOrderAction`, `assignOrderAffiliateAction` | `orders/orders.ts` (tạo đơn) và `affiliates/affiliates.ts` `assignOrderAffiliate` — cùng ✅ `commissionPerUnitSnapshot` (`affiliates/commission.ts`) | `OrderItem.commissionPerUnitMmk` | Hoa hồng & chi trả, cổng CTV |
-| **COD** | `/admin/orders/cod` | — | `remitCodAction`, `settleCodExceptionAction` | ✅ `orders/cod.ts` | `Order.cod*`, audit | Báo cáo, tuổi nợ COD |
+| **COD** | `/admin/orders/cod` | Tổng quan (ô "COD chưa về": `outstandingCodSummary` → cùng `summarizeCod` với trang COD) | `remitCodAction`, `settleCodExceptionAction` | ✅ `orders/cod.ts` | `Order.cod*`, audit | Báo cáo, tuổi nợ COD |
 
 ## 2. Bản đồ — nhóm còn lại (rủi ro thấp)
 
