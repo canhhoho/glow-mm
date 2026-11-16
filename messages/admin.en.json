@@ -1638,7 +1638,9 @@
     "deleteCollectionConfirm": "Delete this collection? Products are not affected.",
     "viewOnStore": "View on store",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "archivedProduct": "Discontinued — hidden on the store",
+    "visibleOnStore": "{n} shown on the store"
   },
   "Users": {
     "title": "Staff",

@@ -44,6 +44,7 @@ Ký hiệu: ✅ dùng chung đúng · ⚠️ logic lặp, có rủi ro · 🗑 c
 | Đặt trước | Trang SP (bật/tắt, hạn mức) | Cài đặt (`preorder.defaultLimit`), `/admin/orders/preorders` | ✅ `catalog/product-preorder.ts`, `orders/preorder.ts` | — |
 | Tài khoản NV/khách/CTV (khoá, xoá, đặt lại mật khẩu) | Trang chi tiết | Danh sách (`AccountRowActions` ✅) | `users/*`, `accounts/*`, `affiliates/*` | Lối tắt hợp lý, cùng action |
 | Danh mục, banner, bộ sưu tập | Trang riêng | — | `catalog/categories.ts`, `content/*` | — |
+| Bộ sưu tập: trạng thái SP và số hiện ngoài web | `/admin/content/collections/[id]`, danh sách | — | `addCollectionProductAction` | `content/collections.ts`: `getCollectionAdmin` (cờ `archived`, `visible` theo `STORE_VISIBLE`), `listCollectionsAdmin` (`items` đã cấu hình vs `visible` hiện ngoài web), `addCollectionProducts` (bỏ qua SP ngừng KD) | `CollectionItem` | Storefront lọc bằng `STORE_VISIBLE`; SP ngừng KD giữ dòng để xem lịch sử / gỡ |
 
 ## 3. Phân loại: giữ lối tắt, gom logic lặp
 

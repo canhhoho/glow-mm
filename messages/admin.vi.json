@@ -1638,7 +1638,9 @@
     "deleteCollectionConfirm": "Xoá bộ sưu tập này? Sản phẩm không bị ảnh hưởng.",
     "viewOnStore": "Xem trên web",
     "yes": "Có",
-    "no": "Không"
+    "no": "Không",
+    "archivedProduct": "Ngừng kinh doanh — không hiện trên web",
+    "visibleOnStore": "{n} hiện trên web"
   },
   "Users": {
     "title": "Nhân viên",

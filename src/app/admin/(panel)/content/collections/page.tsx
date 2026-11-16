@@ -39,7 +39,10 @@ export default async function CollectionsPage() {
                 </p>
               </Td>
               <Td label={t("slug")} className="font-mono text-xs">{c.slug}</Td>
-              <Td label={t("colItems")} numeric>{c.items}</Td>
+              <Td label={t("colItems")} numeric>
+                {c.items}
+                <div className="text-xs text-muted-foreground">{t("visibleOnStore", { n: c.visible })}</div>
+              </Td>
               <Td label={t("colHome")}>{c.showOnHome ? <Badge tone="success">{t("yes")}</Badge> : <Badge>{t("no")}</Badge>}</Td>
               <Td label={t("colSchedule")} className="text-xs whitespace-nowrap">
                 {c.startAt || c.endAt ? `${fmtDateTime(c.startAt)} → ${fmtDateTime(c.endAt)}` : t("always")}

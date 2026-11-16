@@ -13,8 +13,10 @@ import {
   collectionVisible,
   createCollection,
   deleteCollection,
+  getCollectionAdmin,
   getStoreCollection,
   homeCollections,
+  listCollectionsAdmin,
   moveCollectionProduct,
   removeCollectionProduct,
   updateCollection,
@@ -143,6 +145,37 @@ describe("Bộ sưu tập", () => {
     expect(await collectionVisible(slug, now)).toBe(true);
     await deleteCollection(c.id, userId); // dọn (xem ghi chú ở test banner)
     expect(await collectionVisible(slug, now)).toBe(false);
+  });
+});
+
+describe("Bộ sưu tập: SP ngừng kinh doanh và số hiện ngoài web (#8)", () => {
+  it("phân biệt ngừng KD với đang ẩn; đếm số hiện ngoài web; không thêm mới SP ngừng KD", async () => {
+    const live = await makeFixture();
+    const hidden = await makeFixture();
+    const gone = await makeFixture(); // sẽ ngừng kinh doanh sau khi đã nằm trong bộ sưu tập
+    const fresh = await makeFixture();
+    await prisma.product.updateMany({ where: { id: { in: [live.productId, gone.productId] } }, data: { published: true, approvedAt: new Date() } });
+    const userId = live.userId;
+    const c = await createCollection({ slug: `it-${live.tag.toLowerCase()}-arch`, nameMy: "စုစည်းမှု", nameEn: `IT ${live.tag}`, showOnHome: false, ...open }, userId);
+    expect(await addCollectionProducts(c.id, [live.productId, hidden.productId, gone.productId], userId)).toBe(3);
+    // Ngừng kinh doanh: ẩn khỏi web (published=false) + archivedAt — như nút Xoá SP có lịch sử.
+    await prisma.product.update({ where: { id: gone.productId }, data: { archivedAt: new Date(), published: false } });
+
+    const detail = (await getCollectionAdmin(c.id))!;
+    const by = (id: string) => detail.items.find((i) => i.productId === id)!;
+    expect(by(live.productId)).toMatchObject({ published: true, archived: false, visible: true });
+    expect(by(hidden.productId)).toMatchObject({ published: false, archived: false, visible: false }); // đang ẩn, chưa đăng
+    expect(by(gone.productId)).toMatchObject({ published: false, archived: true, visible: false }); // ngừng KD: giữ dòng, có cờ riêng
+    // Số đã cấu hình (3) khác số thực sự hiện ngoài web (1).
+    expect((await listCollectionsAdmin()).find((x) => x.id === c.id)).toMatchObject({ items: 3, visible: 1 });
+    expect((await getStoreCollection(c.slug, "en", new Date()))?.products.map((p) => p.slug)).toEqual([`it-${live.tag}`]);
+
+    // Thêm mới: SP ngừng KD bị bỏ qua trong lô; chỉ có SP ngừng KD → báo lỗi rõ.
+    expect(await addCollectionProducts(c.id, [gone.productId, fresh.productId], userId)).toBe(1);
+    const other = await makeFixture();
+    await prisma.product.update({ where: { id: other.productId }, data: { archivedAt: new Date() } });
+    await expect(addCollectionProducts(c.id, [other.productId], userId)).rejects.toThrow(/ngừng kinh doanh/);
+    await deleteCollection(c.id, userId);
   });
 });
 
