@@ -3,6 +3,7 @@ import {
   bpToPercent,
   commissionBaseMmk,
   commissionMmk,
+  commissionPerUnitSnapshot,
   effectiveUplineRateBp,
   hasFixedCommission,
   orderCommission,
@@ -156,6 +157,14 @@ describe("% tầng trên riêng (P13)", () => {
 });
 
 describe("Hoa hồng cố định theo sản phẩm (MMK/cái)", () => {
+  it("chốt mức trên dòng đơn (R4): có CTV → mức của biến thể (0 giữ 0, chưa đặt → null); không CTV → null", () => {
+    expect(commissionPerUnitSnapshot(2_500, true)).toBe(2_500);
+    expect(commissionPerUnitSnapshot(0, true)).toBe(0);
+    expect(commissionPerUnitSnapshot(null, true)).toBeNull();
+    expect(commissionPerUnitSnapshot(undefined, true)).toBeNull();
+    expect(commissionPerUnitSnapshot(2_500, false)).toBeNull();
+  });
+
   const items = [
     { qty: 3, returnedQty: 1, unitPriceMmk: 20_000, commissionPerUnitMmk: 2_500 }, // cố định: 2 × 2.500
     { qty: 1, returnedQty: 0, unitPriceMmk: 15_005, commissionPerUnitMmk: null }, // theo %: floor(15.005 × 10%)

@@ -16,6 +16,7 @@ import { getNumberSetting } from "@/server/settings";
 import { uplineSnapshot } from "./upline";
 import {
   commissionBaseMmk,
+  commissionPerUnitSnapshot,
   effectiveUplineRateBp,
   payoutLines,
   percentToBp,
@@ -550,7 +551,7 @@ export async function assignOrderAffiliate(
     // Mức hoa hồng cố định theo SP: chốt lại theo biến thể hiện tại khi gán/đổi CTV, xoá khi bỏ CTV.
     const items = await tx.orderItem.findMany({ where: { orderId }, select: { id: true, variant: { select: { affiliateCommissionMmk: true } } } });
     for (const item of items) {
-      await tx.orderItem.update({ where: { id: item.id }, data: { commissionPerUnitMmk: affiliateId ? item.variant.affiliateCommissionMmk : null } });
+      await tx.orderItem.update({ where: { id: item.id }, data: { commissionPerUnitMmk: commissionPerUnitSnapshot(item.variant.affiliateCommissionMmk, !!affiliateId) } });
     }
     await tx.auditLog.create({
       data: {

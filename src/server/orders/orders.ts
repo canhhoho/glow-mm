@@ -17,6 +17,7 @@ import { orderTotals } from "./pricing";
 import { reserveForOrder } from "./reservations";
 import { planOrderStock } from "./preorder";
 import { recordOrderEvent } from "@/server/analytics/record";
+import { commissionPerUnitSnapshot } from "@/server/affiliates/commission";
 
 /**
  * Tạo đơn — dùng chung cho storefront (khách tự đặt) và admin (đơn từ FB/Viber/điện thoại).
@@ -147,7 +148,7 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
             // Đơn có CTV: chốt mức hoa hồng cố định của từng biến thể (null = dòng tính theo % của đơn).
             items: {
               create: lines.map(({ variantId, sku, name, qty, unitPriceMmk, affiliateCommissionMmk }) => ({
-                variantId, sku, name, qty, unitPriceMmk, commissionPerUnitMmk: affiliate ? affiliateCommissionMmk : null,
+                variantId, sku, name, qty, unitPriceMmk, commissionPerUnitMmk: commissionPerUnitSnapshot(affiliateCommissionMmk, !!affiliate),
               })),
             },
             history: { create: { toStatus: status, userId: ctx.userId, createdAt: now } },
