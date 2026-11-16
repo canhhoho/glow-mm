@@ -31,7 +31,7 @@ export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) 
       <p className="text-sm text-muted-foreground">
         {t("setupHint")} <Link className="text-primary underline" href="/admin/categories">{t("categories")}</Link> ·{" "}
         <Link className="text-primary underline" href="/admin/settings/warehouses">{t("warehouses")}</Link> ·{" "}
-        <Link className="text-primary underline" href="/admin/pricing">{t("rates")}</Link>
+        <Link className="text-primary underline" href="/admin/selling-prices?mode=rates">{t("rates")}</Link>
       </p>
       <form action={action} className="flex flex-wrap items-end gap-3">
         <input type="hidden" name="step" value="preview" />

@@ -1,6 +1,7 @@
 import { RotateCcw, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { LocationName } from "@/components/admin/stock-parts";
 import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { discardAction, restockAction } from "@/server/inventory/actions";
@@ -33,7 +34,7 @@ export default async function QuarantinePage() {
               <Td>
                 <span className="font-mono text-xs">{r.sku}</span> {r.name}
                 <div className="text-xs text-muted-foreground">
-                  {r.location} · {ti(r.stockType)}
+                  <LocationName loc={{ code: r.location, name: r.locationName, active: r.locationActive }} inactiveLabel={ti("inactive")} /> · {ti(r.stockType)}
                 </div>
               </Td>
               <Td label={t("lot")} className="font-mono text-xs whitespace-nowrap">

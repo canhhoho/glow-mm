@@ -35,7 +35,7 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
           priceMmk: true,
           weightGrams: true,
           isBundle: true,
-          bundleItems: { select: { componentId: true, component: { select: { weightGrams: true } } } },
+          bundleItems: { select: { componentId: true, component: { select: { weightGrams: true, active: true, product: { select: { archivedAt: true } } } } } },
         },
       },
     },
@@ -117,6 +117,7 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
           weightGrams: v.weightGrams,
           isBundle: v.isBundle,
           componentWeights: v.isBundle ? v.bundleItems.map((b) => b.component.weightGrams) : null,
+          inactiveComponent: hasInactiveComponent(v),
         })),
         available,
         costMissingSkus: skusWhere(here, (b) => inventoryCost(b.batch).costStatus === "MISSING"),
@@ -136,6 +137,11 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
     });
   }
   return out;
+}
+
+/** Combo có thành phần đã tắt hoặc thuộc SP ngừng kinh doanh (#6). */
+function hasInactiveComponent(v: { isBundle: boolean; bundleItems: { component: { active: boolean; product: { archivedAt: Date | null } } }[] }) {
+  return v.isBundle && v.bundleItems.some((b) => !b.component.active || b.component.product.archivedAt != null);
 }
 
 /**
@@ -160,7 +166,7 @@ export async function loadReadinessErrors(db: Tx, productIds: string[]): Promise
           priceMmk: true,
           weightGrams: true,
           isBundle: true,
-          bundleItems: { select: { component: { select: { weightGrams: true } } } },
+          bundleItems: { select: { component: { select: { weightGrams: true, active: true, product: { select: { archivedAt: true } } } } } },
         },
       },
     },
@@ -181,6 +187,7 @@ export async function loadReadinessErrors(db: Tx, productIds: string[]): Promise
           weightGrams: v.weightGrams,
           isBundle: v.isBundle,
           componentWeights: v.isBundle ? v.bundleItems.map((b) => b.component.weightGrams) : null,
+          inactiveComponent: hasInactiveComponent(v),
         })),
         available: none,
         costMissingSkus: [],

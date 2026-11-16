@@ -36,7 +36,7 @@ export default async function ManualPricesPage({ searchParams }: PageProps<"/adm
           <Section key={g.location.id} title={t("groupVnd", { name: g.location.name })} testId="manual-vnd">
             {view.rates.length === 0 ? (
               <Notice tone="warning">
-                {t("noRate")} <LinkButton href="/admin/pricing">{t("addRate")}</LinkButton>
+                {t("noRate")} <LinkButton href="/admin/selling-prices?mode=rates">{t("addRate")}</LinkButton>
               </Notice>
             ) : (
               <ManualVndForm location={g.location} rows={g.rows} rates={view.rates} currentRateId={view.currentRateId} roundTo={view.roundTo} canReview={canReview} canApprove={canApprove} />

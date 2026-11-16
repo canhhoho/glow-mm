@@ -404,7 +404,7 @@ export async function batchDetail(batchId: string) {
     where: { batchId },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     include: {
-      location: { select: { code: true, type: true } },
+      location: { select: { code: true, name: true, active: true, type: true } },
       document: { select: { id: true, code: true, type: true, reason: true, order: { select: { id: true, code: true } } } },
     },
   });

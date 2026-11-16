@@ -47,7 +47,7 @@ export default async function EditCollectionPage({ params, searchParams }: PageP
         </ActionForm>
       </Section>
 
-      <Section title={<>{t("products")} ({collection.items.length})</>}>
+      <Section title={<>{t("products")} ({collection.items.length}) · {t("visibleOnStore", { n: collection.items.filter((i) => i.visible).length })}</>}>
         {collection.items.length === 0 ? (
           <EmptyState>{t("productsEmpty")}</EmptyState>
         ) : (
@@ -58,7 +58,7 @@ export default async function EditCollectionPage({ params, searchParams }: PageP
                 <span className="min-w-48 flex-1">
                   {item.name} <span className="font-mono text-xs text-muted-foreground">{item.slug}</span>
                 </span>
-                {!item.published && <Badge tone="warning">{t("hiddenProduct")}</Badge>}
+                {item.archived ? <Badge tone="danger">{t("archivedProduct")}</Badge> : !item.published && <Badge tone="warning">{t("hiddenProduct")}</Badge>}
                 {i > 0 && (
                   <ActionButton
                     action={moveCollectionProductAction}

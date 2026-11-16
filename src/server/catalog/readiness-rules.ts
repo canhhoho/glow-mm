@@ -8,7 +8,11 @@
  * NOT_APPROVED: không còn do `evaluateReadiness` sinh ra (P1-A: readiness = điều kiện, duyệt là thao tác riêng) —
  * chỉ `publishBlockers` thêm vào khi bản live chưa được duyệt (chặn bật hiển thị).
  */
-export const ERROR_CODES = ["NO_ACTIVE_VARIANT", "BAD_LOCATION", "PRICE_ZERO", "NO_WEIGHT", "NOT_APPROVED"] as const;
+/**
+ * COMPONENT_INACTIVE (#6): combo đang dùng có thành phần đã tắt / thuộc SP ngừng kinh doanh — combo vẫn bán được nếu thành
+ * phần còn tồn, nên chặn BẬT hiển thị; KHÔNG thuộc `ALWAYS_BLOCKING` → combo đang hiển thị vẫn lưu được, không tự ẩn.
+ */
+export const ERROR_CODES = ["NO_ACTIVE_VARIANT", "BAD_LOCATION", "PRICE_ZERO", "NO_WEIGHT", "COMPONENT_INACTIVE", "NOT_APPROVED"] as const;
 export const WARNING_CODES = [
   "NO_IMAGE",
   "CONTENT_INCOMPLETE",
@@ -43,6 +47,8 @@ export type ReadinessInput = {
     isBundle: boolean;
     /** Khối lượng các thành phần combo (null nếu không phải combo). */
     componentWeights: (number | null)[] | null;
+    /** Combo có thành phần đã tắt / ngừng kinh doanh (#6). */
+    inactiveComponent?: boolean;
   }[];
   /** Khả dụng bán theo biến thể (đã trừ giữ hàng, hạn, kho của SP). */
   available: Map<string, number>;
@@ -76,6 +82,7 @@ export function evaluateReadiness(p: ReadinessInput): Readiness {
     ...withSkus("PRICE_ZERO", active.filter((v) => v.priceMmk <= 0).map((v) => v.sku)),
     // Kho hàng nhập VN: công thức giá cần khối lượng (combo chưa khai báo → cộng thành phần).
     ...(localMode ? [] : withSkus("NO_WEIGHT", noWeight)),
+    ...withSkus("COMPONENT_INACTIVE", active.filter((v) => v.inactiveComponent).map((v) => v.sku)),
   ];
   const warnings: Issue[] = [
     ...(p.imageCount === 0 ? [{ code: "NO_IMAGE" as const }] : []),
@@ -127,6 +134,7 @@ const STEP_OF: Record<IssueCode, ProductStep> = {
   BAD_LOCATION: "create",
   NO_IMAGE: "create",
   CONTENT_INCOMPLETE: "create",
+  COMPONENT_INACTIVE: "create",
   NO_WEIGHT: "stock",
   NO_WEIGHT_LOCAL: "stock",
   COST_MISSING: "stock",

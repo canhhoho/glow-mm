@@ -98,7 +98,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
               <tr key={l.id}>
                 <Td className="font-mono text-xs">{l.batch.variant.sku}</Td>
                 <Td label={t("bulk.pickLot")}>{l.batch.lotNo} · {fmtDay(l.batch.expiryDate)}</Td>
-                <Td label={t("warehouse")}>{l.location.code}</Td>
+                <Td label={t("warehouse")}>{l.location.name} <span className="font-mono text-2xs text-muted-foreground">{l.location.code}</span></Td>
                 <Td label={t("bulk.pickQty")} numeric>{fmtInt(l.qty)}</Td>
               </tr>
             ))}

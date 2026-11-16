@@ -122,11 +122,14 @@ export async function addCollectionProducts(id: string, productIds: string[], us
   const ids = [...new Set(z.array(formId(40)).min(1).max(50).parse(productIds))];
   return prisma.$transaction(async (tx) => {
     await lockCollection(tx, id);
-    const found = await tx.product.findMany({ where: { id: { in: ids } }, select: { id: true } });
+    const found = await tx.product.findMany({ where: { id: { in: ids } }, select: { id: true, archivedAt: true } });
     if (found.length !== ids.length) throw new ContentError("Có sản phẩm không tồn tại");
+    // SP ngừng kinh doanh không thêm mới được (ô tìm đã ẩn chúng); gọi trực tiếp → bỏ qua, riêng một SP duy nhất thì báo lỗi rõ.
+    const archived = new Set(found.filter((p) => p.archivedAt).map((p) => p.id));
+    if (archived.size > 0 && archived.size === ids.length) throw new ContentError("Sản phẩm đã ngừng kinh doanh — không thêm vào bộ sưu tập");
     const existing = await tx.collectionItem.findMany({ where: { collectionId: id }, select: { productId: true, sortOrder: true } });
     const have = new Set(existing.map((i) => i.productId));
-    const add = ids.filter((pid) => !have.has(pid));
+    const add = ids.filter((pid) => !have.has(pid) && !archived.has(pid));
     if (existing.length + add.length > MAX_ITEMS) throw new ContentError(`Tối đa ${MAX_ITEMS} sản phẩm mỗi bộ sưu tập`);
     let sortOrder = Math.max(-1, ...existing.map((i) => i.sortOrder)) + 1;
     for (const productId of add) await tx.collectionItem.create({ data: { collectionId: id, productId, sortOrder: sortOrder++ } });
@@ -184,6 +187,9 @@ export async function listCollectionsAdmin() {
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     include: { translations: true, _count: { select: { items: true } } },
   });
+  // Số SP THỰC SỰ hiện ngoài web (cùng điều kiện storefront `STORE_VISIBLE`) — khác số đã cấu hình `items` (#8).
+  const visible = await prisma.collectionItem.groupBy({ by: ["collectionId"], where: { product: { AND: STORE_VISIBLE } }, _count: { _all: true } });
+  const visibleOf = new Map(visible.map((v) => [v.collectionId, v._count._all]));
   return rows.map((c) => ({
     id: c.id,
     slug: c.slug,
@@ -194,6 +200,7 @@ export async function listCollectionsAdmin() {
     startAt: c.startAt,
     endAt: c.endAt,
     items: c._count.items,
+    visible: visibleOf.get(c.id) ?? 0,
   }));
 }
 
@@ -204,7 +211,7 @@ export async function getCollectionAdmin(id: string) {
       translations: true,
       items: {
         orderBy: [{ sortOrder: "asc" }, { productId: "asc" }],
-        include: { product: { select: { id: true, slug: true, published: true, translations: true } } },
+        include: { product: { select: { id: true, slug: true, published: true, archivedAt: true, variants: { select: { active: true } }, translations: true } } },
       },
     },
   });
@@ -222,6 +229,10 @@ export async function getCollectionAdmin(id: string) {
       productId: i.product.id,
       slug: i.product.slug,
       published: i.product.published,
+      /** SP ngừng kinh doanh (đã bấm Xoá nhưng có lịch sử) — khác SP chỉ đang ẩn (`published=false`). */
+      archived: i.product.archivedAt != null,
+      /** Hiện ngoài web: cùng điều kiện `STORE_VISIBLE` (đã đăng, chưa ngừng KD, còn biến thể đang bán). */
+      visible: i.product.published && i.product.archivedAt == null && i.product.variants.some((v) => v.active),
       name: pick(i.product.translations, "en")?.name ?? i.product.slug,
     })),
   };

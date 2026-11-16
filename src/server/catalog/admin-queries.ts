@@ -124,7 +124,7 @@ export async function productFormOptions(brandId?: string) {
     prisma.variant.findMany({
       where: { isBundle: false },
       orderBy: { sku: "asc" },
-      select: { id: true, sku: true, label: true, product: { select: { stockLocationId: true } } },
+      select: { id: true, sku: true, label: true, active: true, product: { select: { stockLocationId: true, archivedAt: true } } },
     }),
     stockLocationOptions(),
   ]);
@@ -132,7 +132,14 @@ export async function productFormOptions(brandId?: string) {
     brands: brands.map((b) => ({ id: b.id, name: b.name })),
     categories: categories.map((c) => ({ id: c.id, name: productName(c.translations, c.slug) })),
     tags: tags.map((t) => ({ id: t.id, kind: t.kind, name: productName(t.translations, t.slug) })),
-    components: variants.map((v) => ({ id: v.id, label: `${v.sku} (${v.label})`, stockLocationId: v.product.stockLocationId })),
+    // `inactive` / `archived`: bộ chọn chỉ gợi ý thành phần đang dùng cho lựa chọn MỚI; thành phần đã lưu vẫn hiện, có nhãn (#6).
+    components: variants.map((v) => ({
+      id: v.id,
+      label: `${v.sku} (${v.label})`,
+      stockLocationId: v.product.stockLocationId,
+      inactive: !v.active,
+      archived: v.product.archivedAt != null,
+    })),
     warehouses,
   };
 }

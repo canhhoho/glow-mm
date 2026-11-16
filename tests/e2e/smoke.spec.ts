@@ -29,7 +29,9 @@ for (const [email, roleText, canSeePricing] of [
     await login(page, email);
     await expect(page.getByTestId("role")).toContainText(roleText);
     const nav = canSeePricing ? await openAdminGroup(page, "Sản phẩm") : await openAdminNav(page);
-    await expect(nav.getByRole("link", { name: "Giá & tỷ giá" })).toHaveCount(canSeePricing ? 1 : 0);
+    // 16/11: trang "Giá & tỷ giá" gộp vào Giá bán (tab Tỷ giá / Lịch sử giá) → menu chỉ còn "Giá bán".
+    await expect(nav.getByRole("link", { name: "Giá bán" })).toHaveCount(canSeePricing ? 1 : 0);
+    await expect(nav.getByRole("link", { name: "Giá & tỷ giá" })).toHaveCount(0);
     await page.keyboard.press("Escape"); // đóng ngăn kéo menu (mobile)
 
     // Đổi ngôn ngữ admin (cookie) rồi đổi lại, sau đó đăng xuất.

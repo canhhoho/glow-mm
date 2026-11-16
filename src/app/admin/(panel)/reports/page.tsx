@@ -153,6 +153,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
           </DataTable>
         </Section>
         <Section title={t("inbound")}>
+          <p className="text-xs text-muted-foreground">{t("inboundHint")}</p>
           <DataTable empty={t("empty")} numeric={[2, 3]} head={[t("shipment"), t("departed"), t("batches"), t("costs")]}>
             {inbound.map((s) => (
               <tr key={s.id}>

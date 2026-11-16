@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { batchDetail, loadThresholds } from "@/server/inventory/overview";
-import { ExpiryTag } from "@/components/admin/stock-parts";
+import { ExpiryTag, LocationName } from "@/components/admin/stock-parts";
 import { Badge, DataTable, fieldClass, fieldLabelClass, Page, PageHeader, Section, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
 import { rateDisplay } from "@/server/pricing/formula";
@@ -116,7 +116,7 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
           {batch.balances.map((b) => (
             <tr key={`${b.locationId}|${b.stockType}`} data-testid="balance-row">
               <Td>
-                <span className="font-mono text-xs">{b.location.code}</span> · {ti(`loc.${b.location.type}`)}
+                <LocationName loc={b.location} inactiveLabel={ti("inactive")} />
               </Td>
               <Td>
                 <Badge tone={b.stockType === "TESTER" ? "brand" : "neutral"}>{ti(b.stockType)}</Badge>
@@ -144,7 +144,9 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
                 <span className="text-muted-foreground">{td(e.document.type)}</span>
                 {e.document.reason && <div className="text-xs text-muted-foreground">{e.document.reason}</div>}
               </Td>
-              <Td className="font-mono text-xs">{e.location.code}</Td>
+              <Td>
+                <LocationName loc={e.location} inactiveLabel={ti("inactive")} />
+              </Td>
               <Td>
                 <Badge tone={e.stockType === "TESTER" ? "brand" : "neutral"}>{ti(e.stockType)}</Badge>
               </Td>

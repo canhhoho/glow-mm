@@ -11,6 +11,8 @@ import { Badge, DataTable, LinkButton, Notice, Page, PageHeader, Section, Td } f
 import { fmtDate, fmtDay, fmtInt } from "@/lib/format";
 
 const STATUS_TONE = { DRAFT: "warning", POSTED: "success", CANCELLED: "neutral" } as const;
+/** Phiếu nháp không có trang sửa (trừ Nhập) → "Huỷ và tạo lại" mở form tạo điền sẵn; cần đúng quyền tạo loại phiếu đó (#5). */
+const REPLACE_PERMISSION = { TRANSFER: "stock:transfer", ISSUE: "stock:issue", ADJUST: "stock:adjust" } as const;
 
 export default async function DocumentPage({ params, searchParams }: PageProps<"/admin/inventory/documents/[id]">) {
   const user = await requirePagePermission("stock:view");
@@ -106,6 +108,11 @@ export default async function DocumentPage({ params, searchParams }: PageProps<"
           {doc.type === "RECEIVE" && can(user.role, "stock:receive") && (
             <LinkButton href={`/admin/inventory/documents/${doc.id}/edit`}>{t("editDraft")}</LinkButton>
           )}
+          {doc.type in REPLACE_PERMISSION && can(user.role, REPLACE_PERMISSION[doc.type as keyof typeof REPLACE_PERMISSION]) && (
+            <LinkButton href={`/admin/inventory/documents/new?type=${doc.type}&from=${doc.id}`} icon="edit">
+              {t("replaceDraft")}
+            </LinkButton>
+          )}
           <ActionButton
             action={postDocumentAction}
             fields={{ id: doc.id }}
@@ -121,7 +128,7 @@ export default async function DocumentPage({ params, searchParams }: PageProps<"
           />
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">{doc.status === "CANCELLED" ? t("cancelledNote") : t("postedNote")}</p>
+        <p className="text-sm text-muted-foreground">{doc.status === "CANCELLED" ? t("cancelledNote") : t(doc.type === "RECEIVE" ? "postedNoteReceive" : "postedNote")}</p>
       )}
     </Page>
   );

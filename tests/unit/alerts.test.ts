@@ -13,8 +13,7 @@ const v = (over: Partial<VariantStock>): VariantStock => ({
   safetyStock: 0,
   leadTimeDays: 21,
   available: 10,
-  vnQty: 0,
-  inboundQty: 0,
+  otherQty: 0,
   soldUnits: 0,
   ...over,
 });
@@ -41,10 +40,11 @@ describe("Tồn thấp", () => {
 describe("Gợi ý đặt hàng", () => {
   const p = { salesWindowDays: 60, coverDays: 30 };
 
-  it("nhu cầu = tốc độ × (lead time + cover) + an toàn − hàng đang có/đang về", () => {
-    // 60 cái / 60 ngày = 1/ngày; nhu cầu 1 × (21 + 30) + 5 = 56; đang có 10 + VN 4 + đang về 6 = 20 → đặt 36
-    const r = reorderSuggestion(v({ soldUnits: 60, safetyStock: 5, available: 10, vnQty: 4, inboundQty: 6 }), p);
-    expect(r).toMatchObject({ dailySales: 1, need: 56, suggestQty: 36, coverDaysLeft: 20 });
+  it("nhu cầu = tốc độ × (lead time + cover) + an toàn − khả dụng; tồn ở vị trí khác chỉ để xem", () => {
+    // 60 cái / 60 ngày = 1/ngày; nhu cầu 1 × (21 + 30) + 5 = 56; khả dụng 10 → đặt 46 (50 ở vị trí khác không tính)
+    const r = reorderSuggestion(v({ soldUnits: 60, safetyStock: 5, available: 10, otherQty: 50 }), p);
+    expect(r).toMatchObject({ dailySales: 1, need: 56, suggestQty: 46, coverDaysLeft: 10 });
+    expect(reorderSuggestion(v({ soldUnits: 60, safetyStock: 5, available: 10, otherQty: 0 }), p).suggestQty).toBe(46);
   });
 
   it("không bán → chỉ bù tồn an toàn; đủ hàng → không đề xuất", () => {

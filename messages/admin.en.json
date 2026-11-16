@@ -22,7 +22,6 @@
     "previous": "Previous",
     "next": "Next",
     "page": "Page {page} / {pages}",
-    "rates": "Exchange rate settings",
     "subtitle": "Selling price, pending price and latest cost for every SKU",
     "runs": "Price calculator",
     "statTotal": "Managed SKUs",
@@ -96,7 +95,6 @@
     "inventory": "Inventory",
     "shipments": "Shipments",
     "orders": "Orders",
-    "pricing": "Pricing & FX",
     "reports": "Reports",
     "users": "Staff",
     "settings": "Settings",
@@ -397,13 +395,6 @@
     "pageInfo": "{from}–{to} / {total}",
     "prev": "‹ Prev",
     "next": "Next ›",
-    "loc": {
-      "VN_STOCK": "VN warehouse",
-      "IN_TRANSIT": "In transit",
-      "CUSTOMS": "Customs",
-      "MM_STOCK": "MM warehouse",
-      "QUARANTINE": "Quarantine"
-    },
     "expiryDated": "Known expiry date",
     "expiryNone": "No expiry date applies",
     "expiryUnknown": "Unknown expiry · Not sellable",
@@ -457,7 +448,7 @@
     "CANCELLED": "Cancelled",
     "post": "Post",
     "cancel": "Cancel document",
-    "postedNote": "Posted documents can not be edited. Create an adjustment to correct mistakes.",
+    "postedNote": "Posted documents can not be edited or deleted. Wrong quantity: create an adjustment, or a reverse transfer / issue.",
     "cancelledNote": "Cancelled document — stock is not affected.",
     "postConfirm": "Post document {code}? Stock will change and this cannot be undone.",
     "cancelConfirm": "Cancel draft document {code}?",
@@ -533,7 +524,12 @@
     "editTitle": "Edit draft receipt",
     "updated": "Draft updated.",
     "inboundFee": "Inbound fee (VND/unit)",
-    "inboundFeeHint": "Freight, duties… per unit. Enter 0 if there is none; leave blank if unknown (the lot uses the estimated freight cost, or has no cost)."
+    "inboundFeeHint": "Freight, duties… per unit. Enter 0 if there is none; leave blank if unknown (the lot uses the estimated freight cost, or has no cost).",
+    "variantArchived": "discontinued",
+    "variantInactive": "turned off",
+    "postedNoteReceive": "Posted receipts can not be edited or deleted. Wrong quantity: create an adjustment (it only changes stock; purchase price, exchange rate, inbound cost and the quantity used for lot costing stay as they were). Wrong price, rate or inbound cost: tell an administrator — a separate correction process is needed.",
+    "replaceDraft": "Cancel and recreate",
+    "replacingNote": "Recreating from draft {code}: when you save, {code} will be cancelled."
   },
   "Ship": {
     "title": "Shipments VN → MM",
@@ -610,7 +606,7 @@
     "warehouse": "Warehouse",
     "allWarehouses": "All warehouses",
     "fixedProfitMmk": "Fixed profit (MMK/unit)",
-    "fixedProfitHint": "Bought in Myanmar: selling price = latest lot MMK cost + this amount (calculated on Prices & rates).",
+    "fixedProfitHint": "Bought in Myanmar: selling price = latest lot MMK cost + this amount (calculated on Selling prices).",
     "warehouseChangeHint": "Changing warehouse: stock left in the old warehouse sells again only after a transfer to the new one.",
     "moveTo": "Move to warehouse",
     "bulkMove": "Change warehouse",
@@ -726,7 +722,8 @@
         "STOCK_OTHER_WAREHOUSE": "Stock sits in another sales warehouse — transfer it to sell",
         "PRICE_STALE": "Stock was received after the last price change — recalculate the price",
         "NOT_APPROVED": "Not approved (step 4)",
-        "RATE_NEWER": "A newer exchange rate exists than the last price change — consider recalculating"
+        "RATE_NEWER": "A newer exchange rate exists than the last price change — consider recalculating",
+        "COMPONENT_INACTIVE": "Combo has a turned-off or discontinued component"
       },
       "blockedSave": "Cannot publish / save:",
       "blockedBulk": "{count} products were not published because of errors:",
@@ -1299,9 +1296,7 @@
     "requirePickHint": "Turn on once the warehouse uses pick slips: orders without locked lots cannot be handed over. Off: orders without a slip are issued by FEFO as before."
   },
   "Pricing": {
-    "title": "Prices & exchange rate",
     "tabRates": "Exchange rates",
-    "tabRuns": "Repricing",
     "tabHistory": "Price history",
     "current": "Current",
     "rates": "Exchange rates",
@@ -1360,7 +1355,7 @@
     "reason": "Reason",
     "reasonBulk": "Bulk update",
     "reasonManual": "Manual edit",
-    "back": "Prices",
+    "back": "Selling prices",
     "noRate": "No exchange rate yet — add one first",
     "empty": "Nothing yet",
     "purchaseCost": "Purchase cost (VND)",
@@ -1404,10 +1399,6 @@
     "lowMarginWarningFixed": "Illustrative profit after shipping, affiliate commission {fixed} MMK/unit and upline {rate}%: {profit} MMK (≤ 5% of price). Other selling fees not deducted.",
     "productScope": "Only the active variants of {name}.",
     "productInvalid": "The product does not exist or has no active variants.",
-    "subtitle": "Exchange rates, price calculation and price history",
-    "statRate": "Current rate · since {at}",
-    "statPreviews": "Previews awaiting apply",
-    "statChanges": "Price changes ({days} days)",
     "historySource": "Source",
     "srcRun": "Calculator",
     "srcImport": "Excel",
@@ -1421,8 +1412,6 @@
     "basisLot": "Basis lot",
     "basisLatest": "Latest receipt",
     "recompute": "Recalculate with the selected lots",
-    "runsMoved": "Create new price runs on the Selling prices page (select SKUs → Calculate automatically). Previous runs are listed below.",
-    "openSellingPrices": "Open Selling prices",
     "modeManual": "Manual (VND)"
   },
   "Quarantine": {
@@ -1450,8 +1439,6 @@
     "product": "Product",
     "available": "Available",
     "threshold": "Threshold",
-    "vn": "VN stock",
-    "inbound": "Inbound",
     "level": "Level",
     "lot": "Lot",
     "expiry": "Expiry",
@@ -1468,7 +1455,8 @@
       "unknown": "Unknown expiry"
     },
     "note": "Stop selling below {block} days, warn below {warn} days. Sales velocity over the last {window} days, cover {cover} days after arrival. Change in Settings.",
-    "reorderHint": "Suggest = sold/day × (lead time + cover days) + safety stock − (available + VN + inbound)."
+    "reorderHint": "Suggest = sold/day × (lead time + cover days) + safety stock − available. Goods received into the selling warehouse (including a shipment not yet marked arrived) are already in “available”; the “Stock elsewhere” column is for reference only and is not sellable until moved to the selling warehouse.",
+    "other": "Stock elsewhere (not counted)"
   },
   "Reports": {
     "title": "Reports",
@@ -1489,7 +1477,7 @@
     "units": "Units",
     "slow": "Slow movers (in stock, no sales in {days} days)",
     "available": "Available",
-    "inbound": "Inbound shipments",
+    "inbound": "Shipments not marked arrived",
     "shipment": "Shipment",
     "departed": "Departed",
     "batches": "Batches",
@@ -1518,7 +1506,8 @@
     "estimatedQty": "Estimated-cost units",
     "codCarrierFees": "Recorded COD carrier fees",
     "profitAfterRecordedCosts": "After recorded selling costs",
-    "recordedCostBasis": "Based on order completion period and fees recorded as of viewing. {pending} COD orders await settlement. Store pays delivery on {sender} orders: only recorded fees are deducted; other unrecorded delivery costs are excluded. This is not accounting net profit."
+    "recordedCostBasis": "Based on order completion period and fees recorded as of viewing. {pending} COD orders await settlement. Store pays delivery on {sender} orders: only recorded fees are deducted; other unrecorded delivery costs are excluded. This is not accounting net profit.",
+    "inboundHint": "Goods of these shipments are already received into the selling warehouse and counted in stock; the list only tracks shipments that have not arrived."
   },
   "Reviews": {
     "title": "Product reviews",
@@ -1649,7 +1638,9 @@
     "deleteCollectionConfirm": "Delete this collection? Products are not affected.",
     "viewOnStore": "View on store",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "archivedProduct": "Discontinued — hidden on the store",
+    "visibleOnStore": "{n} shown on the store"
   },
   "Users": {
     "title": "Staff",

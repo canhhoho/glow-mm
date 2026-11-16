@@ -15,15 +15,17 @@ export async function loadVariantStock(now: Date, opts: { blockDays: number; sal
     orderBy: { sku: "asc" },
   });
   const ids = variants.map((v) => v.id);
+  const homeOf = new Map(variants.map((v) => [v.id, v.product.stockLocationId]));
   const since = new Date(now.getTime() - opts.salesWindowDays * DAY_MS);
 
   const [available, balances, issued, returned] = await Promise.all([
     // Chỉ đọc; READ COMMITTED cũ cũng không có snapshot xuyên hai câu SELECT.
     // Không giữ interactive transaction 5s: DB bận không được làm dashboard lỗi P2028.
     baseAvailability(prisma, ids, { now, blockDays: opts.blockDays }),
+    // Tồn SELLABLE ngoài kho bán của SP và ngoài khu chờ kiểm tra — chỉ để xem ("Tồn ở vị trí khác").
     prisma.stockBalance.findMany({
-      where: { qty: { gt: 0 }, stockType: "SELLABLE", location: { type: { in: ["VN_STOCK", "IN_TRANSIT", "CUSTOMS"] } } },
-      select: { qty: true, location: { select: { type: true } }, batch: { select: { variantId: true } } },
+      where: { qty: { gt: 0 }, stockType: "SELLABLE", location: { type: { not: "QUARANTINE" } }, batch: { variantId: { in: ids } } },
+      select: { qty: true, locationId: true, batch: { select: { variantId: true } } },
     }),
     // Đã bán = xuất cho đơn (phiếu ISSUE gắn đơn) − hàng khách trả (phiếu RETURN gắn đơn), trong cửa sổ.
     prisma.stockLedger.findMany({
@@ -36,11 +38,10 @@ export async function loadVariantStock(now: Date, opts: { blockDays: number; sal
     }),
   ]);
 
-  const vn = new Map<string, number>();
-  const inbound = new Map<string, number>();
+  const other = new Map<string, number>();
   for (const b of balances) {
-    const m = b.location.type === "VN_STOCK" ? vn : inbound;
-    m.set(b.batch.variantId, (m.get(b.batch.variantId) ?? 0) + b.qty);
+    if (b.locationId === homeOf.get(b.batch.variantId)) continue; // kho bán của SP đã nằm trong `available`
+    other.set(b.batch.variantId, (other.get(b.batch.variantId) ?? 0) + b.qty);
   }
   const sold = new Map<string, number>();
   for (const l of issued) sold.set(l.batch.variantId, (sold.get(l.batch.variantId) ?? 0) - l.qtyDelta);
@@ -55,8 +56,7 @@ export async function loadVariantStock(now: Date, opts: { blockDays: number; sal
       safetyStock: v.safetyStock,
       leadTimeDays: v.leadTimeDays,
       available: Math.max(0, available.get(v.id) ?? 0),
-      vnQty: vn.get(v.id) ?? 0,
-      inboundQty: inbound.get(v.id) ?? 0,
+      otherQty: other.get(v.id) ?? 0,
       soldUnits: Math.max(0, sold.get(v.id) ?? 0),
     }),
   );
@@ -69,6 +69,8 @@ export type ExpiryAlert = {
   lotNo: string;
   expiryDate: Date | null;
   location: string;
+  locationName: string;
+  locationActive: boolean;
   stockType: "SELLABLE" | "TESTER";
   qty: number;
   level: ExpiryLevel;
@@ -79,7 +81,7 @@ export async function loadExpiryAlerts(now: Date, t: { blockDays: number; warnDa
   const rows = await prisma.stockBalance.findMany({
     where: { qty: { gt: 0 } },
     include: {
-      location: { select: { code: true } },
+      location: { select: { code: true, name: true, active: true } },
       batch: { include: { variant: { include: { product: { include: { translations: true } } } } } },
     },
     orderBy: { batch: { expiryDate: "asc" } },
@@ -95,6 +97,8 @@ export async function loadExpiryAlerts(now: Date, t: { blockDays: number; warnDa
         lotNo: r.batch.lotNo,
         expiryDate: r.batch.expiryDate,
         location: r.location.code,
+        locationName: r.location.name,
+        locationActive: r.location.active,
         stockType: r.stockType,
         qty: r.qty,
         level,

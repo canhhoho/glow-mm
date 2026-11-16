@@ -7,7 +7,7 @@ import { estimateBatchCost } from "./estimate";
 import type { DocType } from "@/generated/prisma/client";
 import { requirePermission } from "@/server/auth/session";
 import type { Permission } from "@/server/auth/roles";
-import { cancelDocument, createDocument, postDocument, resolveBatchExpiry, updateReceiveDraft } from "./documents";
+import { cancelDocument, createDocument, postDocument, replaceDraftDocument, resolveBatchExpiry, updateReceiveDraft } from "./documents";
 import { discardFromQuarantine, restockFromQuarantine } from "./quarantine";
 import { createWarehouse, setWarehouseActive, updateWarehouse } from "./warehouses";
 import {
@@ -107,7 +107,10 @@ export async function createDocumentAction(_prev: ActionState, formData: FormDat
     const type = payload?.type as DocType;
     if (!DOC_PERMISSION[type]) return { error: "Loại phiếu không hợp lệ" };
     const user = await requirePermission(DOC_PERMISSION[type]);
-    id = (await createDocument(payload, user.id)).id;
+    // "Huỷ và tạo lại" phiếu nháp (#5): `replacesId` trong payload → tạo phiếu mới + huỷ phiếu cũ cùng một giao dịch.
+    const replacesId = typeof payload?.replacesId === "string" ? payload.replacesId : undefined;
+    id = (replacesId ? await replaceDraftDocument(replacesId, payload, user.id) : await createDocument(payload, user.id)).id;
+    if (replacesId) revalidatePath("/admin/inventory/documents");
   } catch (e) {
     return { error: message(e) };
   }

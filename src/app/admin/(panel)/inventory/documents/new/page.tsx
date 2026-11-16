@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import type { Permission } from "@/server/auth/roles";
-import { batchesForForms, listLocations, listShipments, listVariantsForPicker, listVariantsForReceive } from "@/server/inventory/queries";
+import { batchesForForms, getDocument, listLocations, listShipments, listVariantsForPicker, listVariantsForReceive } from "@/server/inventory/queries";
 import { DocumentForm } from "@/components/admin/document-form";
 import { ReceiveBulkForm } from "@/components/admin/receive-bulk-form";
 import { lastShipRate } from "@/server/pricing/queries";
@@ -16,7 +16,7 @@ const TYPES: Record<string, Permission> = {
 };
 
 export default async function NewDocumentPage({ searchParams }: PageProps<"/admin/inventory/documents/new">) {
-  const { type, product } = await searchParams;
+  const { type, product, from } = await searchParams;
   if (typeof type !== "string" || !TYPES[type]) notFound();
   await requirePagePermission(TYPES[type]);
   if (type === "RECEIVE") {
@@ -36,18 +36,34 @@ export default async function NewDocumentPage({ searchParams }: PageProps<"/admi
   }
   const [t, locations, variants, batches, shipments] = await Promise.all([
     getTranslations("Docs"),
-    listLocations({ includeInactive: true }), // xuất/chuyển được tồn còn ở kho đã ngừng dùng
+    listLocations({ includeInactive: true }), // kho ĐI gồm kho đã ngừng dùng (dọn tồn cũ); form tự lọc kho ĐẾN / điều chỉnh
     listVariantsForPicker(),
     batchesForForms(),
     listShipments(),
   ]);
+  // "Huỷ và tạo lại" (#5): chỉ phiếu NHÁP cùng loại, không phải phiếu Nhập; sai điều kiện → form trống như thường.
+  const old = typeof from === "string" && type !== "RECEIVE" ? await getDocument(from) : null;
+  const replace =
+    old && old.status === "DRAFT" && old.type === type
+      ? {
+          id: old.id,
+          code: old.code,
+          fromId: old.fromId ?? "",
+          toId: old.toId ?? "",
+          reason: old.reason ?? "",
+          lines: old.lines.map((l) => ({ variantId: l.variantId, batchId: l.batchId ?? "", qty: l.qty, stockType: l.stockType })),
+        }
+      : undefined;
   return (
     <Page>
       <PageHeader title={`${t("new")}: ${t(type)}`} back={{ href: "/admin/inventory", label: t("back") }} />
+      {/* key: cùng route /new với query khác (type, from) → dựng lại form, không giữ state của lần mở trước. */}
       <DocumentForm
+        key={`${type}|${replace?.id ?? ""}`}
+        replace={replace}
         type={type as "RECEIVE" | "TRANSFER" | "ISSUE" | "ADJUST"}
         data={{
-          locations: locations.map((l) => ({ id: l.id, code: l.code, name: l.name, type: l.type })),
+          locations: locations.map((l) => ({ id: l.id, code: l.code, name: l.name, type: l.type, active: l.active })),
           variants,
           batches,
           shipments: shipments.map((s) => ({ id: s.id, code: s.code })),

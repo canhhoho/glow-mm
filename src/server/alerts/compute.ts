@@ -3,7 +3,9 @@
  *  - Tồn thấp: khả dụng để bán ≤ `lowStockAt` của biến thể.
  *  - Hạn dùng: hết hạn (< 0 ngày) / ngừng bán (< blockDays) / cận date (< warnDays).
  *  - Gợi ý đặt: nhu cầu = tốc độ bán × (thời gian về VN→MM + số ngày cần đủ hàng) + tồn an toàn;
- *    gợi ý = nhu cầu − (khả dụng + tồn kho VN + đang vận chuyển/hải quan), không âm.
+ *    gợi ý = nhu cầu − khả dụng để bán, không âm. Từ P24 hàng nhập vào THẲNG kho bán của SP (kể cả hàng của chuyến chưa
+ *    đánh dấu đã đến) nên đã nằm trong "khả dụng" — không cộng "hàng đang về" nữa (sẽ trùng). Tồn SELLABLE ở vị trí
+ *    khác (`otherQty`: kho cũ, kho bán khác) chỉ để xem, không tính vào gợi ý.
  */
 
 const DAY_MS = 86_400_000;
@@ -41,10 +43,11 @@ export type VariantStock = {
   leadTimeDays: number;
   /** Khả dụng để bán (kho bán, lô còn hạn, đã trừ giữ hàng). */
   available: number;
-  /** Tồn ở kho VN (chưa gửi). */
-  vnQty: number;
-  /** Đang vận chuyển + đang ở hải quan. */
-  inboundQty: number;
+  /**
+   * Tồn SELLABLE ở vị trí KHÁC kho bán của SP (kho cũ đã ngừng, kho bán khác; không gồm khu chờ kiểm tra).
+   * Chỉ để xem — hàng này chưa bán được cho tới khi chuyển về kho bán, nên KHÔNG tính vào gợi ý đặt.
+   */
+  otherQty: number;
   /** Số đã bán (đã xuất cho đơn, trừ hàng trả) trong cửa sổ tính tốc độ. */
   soldUnits: number;
 };
@@ -53,7 +56,7 @@ export type ReorderParams = { salesWindowDays: number; coverDays: number };
 
 export type ReorderSuggestion = VariantStock & {
   dailySales: number;
-  /** Số ngày còn bán được với hàng hiện có + đang về (null nếu không bán). */
+  /** Số ngày còn bán được với hàng khả dụng hiện có (null nếu không bán). */
   coverDaysLeft: number | null;
   need: number;
   suggestQty: number;
@@ -66,7 +69,7 @@ export function lowStock(list: VariantStock[]): VariantStock[] {
 export function reorderSuggestion(v: VariantStock, p: ReorderParams): ReorderSuggestion {
   if (p.salesWindowDays <= 0) throw new Error("Cửa sổ tính tốc độ bán phải > 0");
   const dailySales = Math.max(0, v.soldUnits) / p.salesWindowDays;
-  const pipeline = Math.max(0, v.available) + v.vnQty + v.inboundQty;
+  const pipeline = Math.max(0, v.available);
   const need = Math.ceil(dailySales * (v.leadTimeDays + p.coverDays)) + v.safetyStock;
   return {
     ...v,

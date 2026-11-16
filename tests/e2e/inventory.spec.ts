@@ -57,7 +57,7 @@ test("quản lý kho: nhận → chuyển chờ kiểm tra → xuất, tồn kh�
 });
 
 test("phiếu kho: lỗi server giữ lựa chọn; ghi sổ cần xác nhận; huỷ nháp", async ({ page }) => {
-  test.setTimeout(60_000); // gồm lỗi server, lưu nháp và hai hộp xác nhận
+  test.setTimeout(90_000); // gồm lỗi server, lưu nháp, huỷ-và-tạo-lại và hai hộp xác nhận
   await login(page, "kho@glow.local");
   await page.goto("/admin/inventory/documents");
   const statusTabs = page.getByRole("navigation", { name: "Trạng thái", exact: true });
@@ -92,6 +92,22 @@ test("phiếu kho: lỗi server giữ lựa chọn; ghi sổ cần xác nhận; 
   await page.getByRole("button", { name: "Ghi sổ" }).click();
   await expect(shown("Nháp")).toBeVisible();
 
+  // "Huỷ và tạo lại" (#5): form mở sẵn dòng của phiếu nháp; lưu phiếu mới thì phiếu cũ thành "Đã huỷ".
+  await page.getByRole("link", { name: "Huỷ và tạo lại" }).click();
+  await expect(page).toHaveURL(/type=TRANSFER&from=/, { timeout: 20_000 });
+  await expect(page.getByTestId("replacing-note")).toBeVisible();
+  await expect(page.getByLabel("Biến thể").locator("option:checked")).toHaveText(VARIANT);
+  await expect(page.getByLabel("Số lượng")).toHaveValue("1");
+  await page.getByLabel("Số lượng").fill("2");
+  await page.getByRole("button", { name: "Lưu nháp" }).click();
+  await expect(page).toHaveURL(/\/admin\/inventory\/documents\/(?!new)[^/?]+$/, { timeout: 20_000 });
+  const newPath = new URL(page.url()).pathname;
+  expect(newPath).not.toBe(draftPath);
+  await page.goto(draftPath);
+  await expect(shown("Đã huỷ")).toBeVisible();
+  await page.goto(newPath);
+  await expect(shown("Nháp")).toBeVisible();
+
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Huỷ phiếu" }).click();
   await expect(shown("Đã huỷ")).toBeVisible();
@@ -100,6 +116,7 @@ test("phiếu kho: lỗi server giữ lựa chọn; ghi sổ cần xác nhận; 
   await page.goto("/admin/inventory/documents?status=DRAFT");
   await expect(page.getByRole("link").filter({ hasText: "Đã huỷ" })).toHaveCount(0);
   await expect(page.locator(`a[href="${draftPath}"]`)).toHaveCount(0);
+  await expect(page.locator(`a[href="${newPath}"]`)).toHaveCount(0);
 });
 
 test("phiếu nhập: dán từ Excel điền nhiều dòng, báo dòng lỗi, dòng thiếu hạn bị chặn", async ({ page }) => {

@@ -16,9 +16,14 @@ export async function listLocations(opts: { includeInactive?: boolean } = {}) {
   });
 }
 
+/**
+ * Biến thể chọn được ở form Xuất / Chuyển / Điều chỉnh (#2): đang dùng, HOẶC đã tắt / SP ngừng KD nhưng còn tồn —
+ * để dọn nốt tồn còn lại. `inactive` / `archived` để form gắn nhãn. Không đổi quyền bán: storefront và đơn lọc
+ * `active` + `published` + `archivedAt` riêng, nên chuyển tồn của biến thể đã tắt không làm nó bán lại.
+ */
 export async function listVariantsForPicker() {
   const variants = await prisma.variant.findMany({
-    where: { active: true },
+    where: { OR: [{ active: true }, { batches: { some: { balances: { some: { qty: { not: 0 } } } } } }] },
     orderBy: { sku: "asc" },
     include: { product: { include: { translations: true } } },
   });
@@ -27,6 +32,8 @@ export async function listVariantsForPicker() {
     sku: v.sku,
     isBundle: v.isBundle,
     requiresExpiry: v.product.requiresExpiry,
+    inactive: !v.active,
+    archived: v.product.archivedAt != null,
     label: `${v.sku} — ${productName(v.product.translations, v.product.slug)} (${v.label})`,
   }));
 }
@@ -80,11 +87,14 @@ export async function listVariantsForReceive(opts: { includeIds?: string[] } = {
 }
 export type ReceiveVariant = Awaited<ReturnType<typeof listVariantsForReceive>>[number];
 
-/** Mọi lô (kèm tồn theo vị trí) — dữ liệu cho form phiếu kho. */
+/**
+ * Mọi lô (kèm tồn theo vị trí) — dữ liệu cho form phiếu kho. `posted` = lô đã có sổ kho (đã ghi nhận nhập thật);
+ * lô chỉ thuộc phiếu nhập nháp chưa có sổ → form Điều chỉnh không cho chọn (#4).
+ */
 export async function batchesForForms() {
   const batches = await prisma.batch.findMany({
     orderBy: [{ expiryDate: "asc" }],
-    include: { balances: { where: { qty: { not: 0 } } } },
+    include: { balances: { where: { qty: { not: 0 } } }, _count: { select: { ledger: true } } },
   });
   return batches.map((b) => ({
     id: b.id,
@@ -92,6 +102,7 @@ export async function batchesForForms() {
     lotNo: b.lotNo,
     expiryDate: b.expiryDate?.toISOString().slice(0, 10) ?? "",
     expiryStatus: b.expiryStatus,
+    posted: b._count.ledger > 0,
     balances: b.balances.map((x) => ({ locationId: x.locationId, stockType: x.stockType, qty: x.qty })),
   }));
 }

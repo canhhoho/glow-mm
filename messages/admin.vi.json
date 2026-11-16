@@ -22,7 +22,6 @@
     "previous": "Trang trước",
     "next": "Trang sau",
     "page": "Trang {page} / {pages}",
-    "rates": "Thiết lập tỷ giá",
     "subtitle": "Giá bán, giá chờ duyệt và giá mua gần nhất của mọi SKU",
     "runs": "Bảng tính giá",
     "statTotal": "SKU đang quản lý",
@@ -96,7 +95,6 @@
     "inventory": "Tồn kho",
     "shipments": "Chuyến hàng",
     "orders": "Đơn hàng",
-    "pricing": "Giá & tỷ giá",
     "reports": "Báo cáo",
     "users": "Nhân viên",
     "settings": "Cài đặt",
@@ -397,13 +395,6 @@
     "pageInfo": "{from}–{to} / {total}",
     "prev": "‹ Trước",
     "next": "Sau ›",
-    "loc": {
-      "VN_STOCK": "Kho VN",
-      "IN_TRANSIT": "Đang vận chuyển",
-      "CUSTOMS": "Hải quan",
-      "MM_STOCK": "Kho MM",
-      "QUARANTINE": "Chờ kiểm tra"
-    },
     "expiryDated": "Đã biết hạn",
     "expiryNone": "Không áp dụng hạn sử dụng",
     "expiryUnknown": "Chưa biết hạn · Chưa được bán",
@@ -457,7 +448,7 @@
     "CANCELLED": "Đã huỷ",
     "post": "Ghi sổ",
     "cancel": "Huỷ phiếu",
-    "postedNote": "Phiếu đã ghi sổ — không sửa được. Muốn sửa sai hãy tạo phiếu điều chỉnh.",
+    "postedNote": "Phiếu đã ghi sổ — không sửa hay xoá được. Sai số lượng: tạo phiếu điều chỉnh, hoặc phiếu chuyển / xuất ngược lại.",
     "cancelledNote": "Phiếu đã huỷ — không ảnh hưởng tồn kho.",
     "postConfirm": "Ghi sổ phiếu {code}? Tồn kho sẽ thay đổi và không hoàn tác được.",
     "cancelConfirm": "Huỷ phiếu nháp {code}?",
@@ -533,7 +524,12 @@
     "editTitle": "Sửa phiếu nhập nháp",
     "updated": "Đã cập nhật phiếu nháp.",
     "inboundFee": "Phí về kho (VND/đv)",
-    "inboundFeeHint": "Vận chuyển, thuế… phân bổ mỗi đơn vị. Điền 0 nếu không phát sinh; để trống = chưa biết (lô dùng giá vốn tạm theo cước tạm tính, không có thì thiếu giá vốn)."
+    "inboundFeeHint": "Vận chuyển, thuế… phân bổ mỗi đơn vị. Điền 0 nếu không phát sinh; để trống = chưa biết (lô dùng giá vốn tạm theo cước tạm tính, không có thì thiếu giá vốn).",
+    "variantArchived": "ngừng kinh doanh",
+    "variantInactive": "đã tắt",
+    "postedNoteReceive": "Phiếu nhập đã ghi sổ — không sửa hay xoá được. Sai số lượng: tạo phiếu điều chỉnh (chỉ đổi tồn; giá mua, tỷ giá, phí về kho và số lượng dùng tính giá vốn không đổi). Sai giá, tỷ giá hoặc phí về kho: báo quản trị — cần quy trình sửa phiếu riêng.",
+    "replaceDraft": "Huỷ và tạo lại",
+    "replacingNote": "Đang tạo lại từ phiếu nháp {code}: khi lưu, phiếu {code} sẽ bị huỷ."
   },
   "Ship": {
     "title": "Chuyến hàng VN → MM",
@@ -610,7 +606,7 @@
     "warehouse": "Kho",
     "allWarehouses": "Mọi kho",
     "fixedProfitMmk": "Lãi cố định (MMK/đơn vị)",
-    "fixedProfitHint": "Kho mua tại Myanmar: giá bán = giá mua MMK lô mới nhất + số này (tính ở trang Giá & tỷ giá).",
+    "fixedProfitHint": "Kho mua tại Myanmar: giá bán = giá mua MMK lô mới nhất + số này (tính ở trang Giá bán).",
     "warehouseChangeHint": "Đổi kho: hàng còn ở kho cũ chỉ bán lại sau khi tạo phiếu chuyển kho sang kho mới.",
     "moveTo": "Chuyển sang kho",
     "bulkMove": "Đổi kho",
@@ -726,7 +722,8 @@
         "STOCK_OTHER_WAREHOUSE": "Có tồn ở kho bán khác — chuyển kho để bán",
         "PRICE_STALE": "Có phiếu nhập mới sau lần đặt giá gần nhất — nên tính lại giá",
         "NOT_APPROVED": "Chưa duyệt (bước 4)",
-        "RATE_NEWER": "Có tỷ giá mới hơn lần đổi giá gần nhất — nên tính lại giá"
+        "RATE_NEWER": "Có tỷ giá mới hơn lần đổi giá gần nhất — nên tính lại giá",
+        "COMPONENT_INACTIVE": "Combo có thành phần đã tắt hoặc ngừng kinh doanh"
       },
       "blockedSave": "Chưa bật hiển thị / lưu được:",
       "blockedBulk": "{count} sản phẩm chưa bật được vì còn lỗi:",
@@ -1299,9 +1296,7 @@
     "requirePickHint": "Bật khi kho đã quen phiếu soạn: đơn chưa chốt lô sẽ không bàn giao được. Tắt: đơn chưa có phiếu vẫn xuất theo FEFO như trước."
   },
   "Pricing": {
-    "title": "Giá & tỷ giá",
     "tabRates": "Tỷ giá",
-    "tabRuns": "Tính giá",
     "tabHistory": "Lịch sử giá",
     "current": "Đang dùng",
     "rates": "Tỷ giá",
@@ -1360,7 +1355,7 @@
     "reason": "Lý do",
     "reasonBulk": "Cập nhật hàng loạt",
     "reasonManual": "Sửa tay",
-    "back": "Giá & tỷ giá",
+    "back": "Giá bán",
     "noRate": "Chưa có tỷ giá — thêm tỷ giá trước",
     "empty": "Chưa có dữ liệu",
     "purchaseCost": "Giá mua gốc (VND)",
@@ -1404,10 +1399,6 @@
     "lowMarginWarningFixed": "Lãi minh họa sau cước, hoa hồng CTV {fixed} MMK/cái và tầng trên {rate}%: {profit} MMK (≤ 5% giá bán). Chưa trừ phí bán khác.",
     "productScope": "Chỉ tính các biến thể đang bán của sản phẩm {name}.",
     "productInvalid": "Sản phẩm không tồn tại hoặc không còn biến thể đang bán.",
-    "subtitle": "Tỷ giá, bảng tính giá theo lô nhập và lịch sử đổi giá",
-    "statRate": "Tỷ giá hiện tại · từ {at}",
-    "statPreviews": "Bản xem trước chờ áp",
-    "statChanges": "Lần đổi giá ({days} ngày)",
     "historySource": "Nguồn",
     "srcRun": "Bảng tính giá",
     "srcImport": "Excel",
@@ -1421,8 +1412,6 @@
     "basisLot": "Lô cơ sở",
     "basisLatest": "Lần nhập gần nhất",
     "recompute": "Tính lại với lô đã chọn",
-    "runsMoved": "Tạo bản tính giá mới ở trang Giá bán (chọn SKU → Tính tự động). Dưới đây là các lần tính đã có.",
-    "openSellingPrices": "Mở trang Giá bán",
     "modeManual": "Thủ công (VND)"
   },
   "Quarantine": {
@@ -1450,8 +1439,6 @@
     "product": "Sản phẩm",
     "available": "Còn bán được",
     "threshold": "Ngưỡng",
-    "vn": "Kho VN",
-    "inbound": "Đang về",
     "level": "Mức",
     "lot": "Lô",
     "expiry": "Hạn dùng",
@@ -1468,7 +1455,8 @@
       "unknown": "Chưa biết hạn"
     },
     "note": "Ngừng bán khi còn < {block} ngày, cảnh báo < {warn} ngày. Tốc độ bán tính trong {window} ngày gần nhất, cần đủ hàng {cover} ngày sau khi về. Sửa ở Cài đặt.",
-    "reorderHint": "Nên đặt = bán/ngày × (thời gian về + số ngày cần đủ) + tồn an toàn − (còn bán được + kho VN + đang về)."
+    "reorderHint": "Nên đặt = bán/ngày × (thời gian về + số ngày cần đủ) + tồn an toàn − còn bán được. Hàng đã nhập vào kho bán (kể cả hàng của chuyến chưa đánh dấu đã đến) đã nằm trong “còn bán được”; cột “Tồn ở vị trí khác” chỉ để xem, chưa bán được cho tới khi chuyển về kho bán.",
+    "other": "Tồn ở vị trí khác (chưa tính)"
   },
   "Reports": {
     "title": "Báo cáo",
@@ -1489,7 +1477,7 @@
     "units": "SL bán",
     "slow": "Bán chậm (còn hàng, không bán trong {days} ngày)",
     "available": "Còn bán được",
-    "inbound": "Hàng đang vận chuyển",
+    "inbound": "Chuyến chưa đánh dấu đã đến",
     "shipment": "Chuyến",
     "departed": "Ngày đi",
     "batches": "Số lô",
@@ -1518,7 +1506,8 @@
     "estimatedQty": "SL vốn tạm tính",
     "codCarrierFees": "Phí hãng khấu trừ COD",
     "profitAfterRecordedCosts": "Sau chi phí bán đã ghi nhận",
-    "recordedCostBasis": "Theo kỳ hoàn tất đơn; phí cập nhật đến lúc xem. Có {pending} đơn COD chưa đối soát nên chưa đủ phí. {sender} đơn cửa hàng trả cước: chỉ phần phí đã ghi nhận được trừ; cước khác chưa có số liệu chưa được trừ. Đây không phải lãi ròng kế toán."
+    "recordedCostBasis": "Theo kỳ hoàn tất đơn; phí cập nhật đến lúc xem. Có {pending} đơn COD chưa đối soát nên chưa đủ phí. {sender} đơn cửa hàng trả cước: chỉ phần phí đã ghi nhận được trừ; cước khác chưa có số liệu chưa được trừ. Đây không phải lãi ròng kế toán.",
+    "inboundHint": "Hàng của các chuyến này đã nhập vào kho bán và đã tính trong tồn; danh sách chỉ để theo dõi chuyến chưa đến."
   },
   "Reviews": {
     "title": "Đánh giá sản phẩm",
@@ -1649,7 +1638,9 @@
     "deleteCollectionConfirm": "Xoá bộ sưu tập này? Sản phẩm không bị ảnh hưởng.",
     "viewOnStore": "Xem trên web",
     "yes": "Có",
-    "no": "Không"
+    "no": "Không",
+    "archivedProduct": "Ngừng kinh doanh — không hiện trên web",
+    "visibleOnStore": "{n} hiện trên web"
   },
   "Users": {
     "title": "Nhân viên",

@@ -4,7 +4,7 @@ import { Trash2, Plus, Save } from "lucide-react";
 import { startTransition, useActionState, useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { fieldClass, fieldLabelClass, fieldLabelSmClass } from "@/components/admin/ui";
+import { fieldClass, fieldLabelClass, fieldLabelSmClass, Notice } from "@/components/admin/ui";
 import { createDocumentAction } from "@/server/inventory/actions";
 import { cn } from "@/lib/utils";
 
@@ -12,16 +12,28 @@ type DocType = "RECEIVE" | "TRANSFER" | "ISSUE" | "ADJUST";
 type StockType = "SELLABLE" | "TESTER";
 
 export type FormData = {
-  locations: { id: string; code: string; name: string; type: string }[];
-  variants: { id: string; label: string; isBundle: boolean; requiresExpiry: boolean }[];
+  locations: { id: string; code: string; name: string; type: string; active: boolean }[];
+  variants: { id: string; label: string; isBundle: boolean; requiresExpiry: boolean; inactive?: boolean; archived?: boolean }[];
   batches: {
     id: string;
     variantId: string;
     lotNo: string;
     expiryDate: string;
+    /** Lô đã có sổ kho; lô chỉ có ở phiếu nhập nháp không điều chỉnh được. */
+    posted?: boolean;
     balances: { locationId: string; stockType: StockType; qty: number }[];
   }[];
   shipments: { id: string; code: string }[];
+};
+
+/** "Huỷ và tạo lại" (#5): phiếu nháp cũ điền sẵn vào form; lưu phiếu mới thì phiếu cũ bị huỷ cùng giao dịch. */
+export type ReplaceDraft = {
+  id: string;
+  code: string;
+  fromId: string;
+  toId: string;
+  reason: string;
+  lines: { variantId: string; batchId: string; qty: number; stockType: StockType }[];
 };
 
 type Line = {
@@ -52,17 +64,21 @@ const blank = (): Line => ({
 });
 
 /** Form tạo phiếu kho nhiều dòng; gửi JSON tới server action (validate lại ở server). */
-export function DocumentForm({ type, data }: { type: DocType; data: FormData }) {
+export function DocumentForm({ type, data, replace }: { type: DocType; data: FormData; replace?: ReplaceDraft }) {
   const t = useTranslations("Docs");
   const ti = useTranslations("Inventory");
   const [state, action, pending] = useActionState(createDocumentAction, undefined);
   /** Chống tạo trùng: một khoá cho form này (gửi lại sau lỗi dùng lại khoá). */
   const idempotencyKey = useRef<string | null>(null);
-  const [fromId, setFromId] = useState("");
-  const [toId, setToId] = useState("");
+  const [fromId, setFromId] = useState(replace?.fromId ?? "");
+  const [toId, setToId] = useState(replace?.toId ?? "");
   const [shipmentId, setShipmentId] = useState("");
-  const [reason, setReason] = useState("");
-  const [lines, setLines] = useState<Line[]>([blank()]);
+  const [reason, setReason] = useState(replace?.reason ?? "");
+  const [lines, setLines] = useState<Line[]>(() =>
+    replace?.lines.length
+      ? replace.lines.map((l) => ({ ...blank(), variantId: l.variantId, batchId: l.batchId, qty: String(l.qty), stockType: l.stockType }))
+      : [blank()],
+  );
 
   const needsFrom = type === "TRANSFER" || type === "ISSUE";
   const needsTo = type !== "ISSUE";
@@ -78,6 +94,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
 
   const payload = useMemo(() => {
     const base: Record<string, unknown> = { type, reason: reason || undefined };
+    if (replace) base.replacesId = replace.id;
     if (needsFrom) base.fromId = fromId;
     if (needsTo) base.toId = toId;
     if (type === "RECEIVE" && shipmentId) base.shipmentId = shipmentId;
@@ -96,18 +113,23 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
         : { variantId: l.variantId, batchId: l.batchId || undefined, qty: l.qty, stockType: l.stockType },
     );
     return JSON.stringify(base);
-  }, [type, reason, fromId, toId, shipmentId, lines, needsFrom, needsTo]);
+  }, [type, reason, fromId, toId, shipmentId, lines, needsFrom, needsTo, replace]);
 
-  const locSelect = (value: string, onChange: (v: string) => void, label: string, name: string) => (
+  // Kho ĐI (xuất, chuyển) gồm cả kho ngừng dùng để dọn tồn cũ; kho ĐẾN và vị trí điều chỉnh chỉ kho đang dùng —
+  // khớp `checkLocations` ở server (kho ngừng dùng không nhận hàng / không điều chỉnh).
+  const locSelect = (value: string, onChange: (v: string) => void, label: string, name: string, direction: "from" | "to") => (
     <label className={fieldLabelClass}>
       <span className="text-muted-foreground">{label}</span>
       <select name={name} required value={value} onChange={(e) => onChange(e.target.value)} className={fieldClass}>
         <option value="">—</option>
-        {data.locations.map((l) => (
-          <option key={l.id} value={l.id}>
-            {l.code} — {l.name}
-          </option>
-        ))}
+        {data.locations
+          .filter((l) => direction === "from" || l.active)
+          .map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.code} — {l.name}
+              {l.active ? "" : ` (${ti("inactive")})`}
+            </option>
+          ))}
       </select>
     </label>
   );
@@ -125,9 +147,14 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
   return (
     <form onSubmit={submit} className="space-y-4">
       <input type="hidden" name="payload" value={payload} />
+      {replace && (
+        <Notice tone="warning" data-testid="replacing-note">
+          {t("replacingNote", { code: replace.code })}
+        </Notice>
+      )}
       <div className="grid gap-3 sm:grid-cols-3">
-        {needsFrom && locSelect(fromId, setFromId, t("chooseFrom"), "fromId")}
-        {needsTo && locSelect(toId, setToId, type === "ADJUST" ? t("chooseLocation") : t("chooseTo"), "toId")}
+        {needsFrom && locSelect(fromId, setFromId, t("chooseFrom"), "fromId", "from")}
+        {needsTo && locSelect(toId, setToId, type === "ADJUST" ? t("chooseLocation") : t("chooseTo"), "toId", "to")}
         {type === "RECEIVE" && (
           <label className={fieldLabelClass}>
             <span className="text-muted-foreground">{t("shipment")}</span>
@@ -156,7 +183,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
       <div className="space-y-3">
         {lines.map((l, i) => {
           const batchOptions = data.batches.filter(
-            (b) => b.variantId === l.variantId && (type === "ADJUST" || qtyAt(b.id, l.stockType) > 0),
+            (b) => b.variantId === l.variantId && (type === "ADJUST" ? b.posted !== false : qtyAt(b.id, l.stockType) > 0),
           );
           return (
             <fieldset key={l.key} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-6" aria-label={`${t("line")} ${i + 1}`}>
@@ -173,6 +200,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
                   {variants.map((v) => (
                     <option key={v.id} value={v.id}>
                       {v.label}
+                      {v.archived ? ` (${t("variantArchived")})` : v.inactive ? ` (${t("variantInactive")})` : ""}
                     </option>
                   ))}
                 </select>

@@ -127,6 +127,17 @@ async function assertBatch(tx: Tx, batchId: string, variantId: string) {
 }
 
 /**
+ * Điều chỉnh chỉ áp cho lô ĐÃ có sổ kho (đã ghi nhận nhập thật). Lô chỉ thuộc phiếu nhập nháp chưa có sổ: điều chỉnh vào
+ * đó sẽ để lại lô mang giá nháp, huỷ phiếu nháp không xoá được lô, và số điều chỉnh không vào bình quân giá vốn (#4).
+ */
+async function assertAdjustableBatches(tx: Tx, batchIds: string[]) {
+  const ids = [...new Set(batchIds)];
+  if (ids.length === 0) return;
+  const bad = await tx.batch.findFirst({ where: { id: { in: ids }, ledger: { none: {} } }, select: { lotNo: true, variant: { select: { sku: true } } } });
+  if (bad) throw new DocumentError(`Lô ${bad.lotNo} (${bad.variant.sku}) chưa ghi nhận nhập kho — ghi sổ phiếu nhập trước khi điều chỉnh`);
+}
+
+/**
  * QT1b: ghi khối lượng nhập ở phiếu nhập lên biến thể **đang trống** (không ghi đè số đã có), audit `variant.weight`.
  * Ghi lúc lập phiếu (phiếu nháp chưa có chỗ lưu khối lượng; khối lượng là thuộc tính SP, không phụ thuộc phiếu được ghi sổ).
  */
@@ -286,6 +297,7 @@ export async function createDocument(raw: unknown, userId: string, transaction?:
         if (l.batchId) await assertBatch(tx, l.batchId, l.variantId);
         lines.push({ variantId: l.variantId, batchId: l.batchId ?? null, stockType: l.stockType, qty: l.qty });
       }
+      if (input.type === "ADJUST") await assertAdjustableBatches(tx, lines.flatMap((l) => (l.batchId ? [l.batchId] : [])));
     }
 
     const doc = await tx.stockDocument.create({
@@ -565,6 +577,9 @@ export async function postDocumentTx(tx: Tx, documentId: string, userId: string,
     }
   }
 
+  // Kiểm lại lúc ghi sổ: phiếu điều chỉnh nháp tạo trước khi có chặn vẫn không được ghi vào lô chưa có sổ kho.
+  if (doc.type === "ADJUST") await assertAdjustableBatches(tx, resolved.map((r) => r.batchId));
+
   const moves: StockMove[] = [];
   for (const l of resolved) {
     const base = { batchId: l.batchId, stockType: l.stockType };
@@ -647,15 +662,44 @@ export async function postOrderDocumentTx(
  * và trả lại khối lượng phiếu này đã điền (nếu chưa ai sửa khác đi).
  */
 export async function cancelDocument(documentId: string, userId: string) {
-  await prisma.$transaction(async (tx) => {
-    const res = await tx.stockDocument.updateMany({ where: { id: documentId, status: "DRAFT" }, data: { status: "CANCELLED" } });
-    if (res.count !== 1) throw new DocumentError("Chỉ huỷ được phiếu nháp");
-    const batches = await releaseDraftBatches(tx, documentId);
-    const weights = await revertDraftWeights(tx, documentId, userId);
-    await tx.auditLog.create({
-      data: { userId, action: "stock.cancel", entity: "StockDocument", entityId: documentId, data: { batchesRemoved: batches, weightsReverted: weights } },
-    });
+  await prisma.$transaction((tx) => cancelDocumentTx(tx, documentId, userId));
+}
+
+export async function cancelDocumentTx(tx: Tx, documentId: string, userId: string, extra: Record<string, unknown> = {}) {
+  const res = await tx.stockDocument.updateMany({ where: { id: documentId, status: "DRAFT" }, data: { status: "CANCELLED" } });
+  if (res.count !== 1) throw new DocumentError("Chỉ huỷ được phiếu nháp");
+  const batches = await releaseDraftBatches(tx, documentId);
+  const weights = await revertDraftWeights(tx, documentId, userId);
+  await tx.auditLog.create({
+    data: { userId, action: "stock.cancel", entity: "StockDocument", entityId: documentId, data: { batchesRemoved: batches, weightsReverted: weights, ...extra } },
   });
+}
+
+/**
+ * "Huỷ và tạo lại" phiếu NHÁP Xuất / Chuyển / Điều chỉnh (#5): các phiếu này không có trang sửa. Tạo phiếu mới bằng
+ * `createDocument` (cùng kiểm tra như lúc tạo) rồi huỷ phiếu cũ — MỘT transaction, lỗi ở đâu cũng không mất phiếu cũ.
+ * Phiếu cũ phải còn nháp và cùng loại với phiếu mới; phiếu Nhập sửa trực tiếp (`updateReceiveDraft`) nên không dùng đường này.
+ * Gửi lại cùng `idempotencyKey` (mạng chậm) → trả phiếu mới đã tạo, không huỷ lần hai.
+ */
+export async function replaceDraftDocument(oldId: string, raw: unknown, userId: string) {
+  const key = idempotencyKeyOf(raw);
+  return prisma.$transaction(
+    async (tx) => {
+      if (key) {
+        const done = await tx.stockDocument.findUnique({ where: { idempotencyKey: key } });
+        if (done) return done;
+      }
+      const old = await tx.stockDocument.findUnique({ where: { id: oldId }, select: { code: true, type: true, status: true } });
+      if (!old) throw new DocumentError("Không tìm thấy phiếu cần thay");
+      if (old.type === "RECEIVE") throw new DocumentError("Phiếu nhập nháp sửa trực tiếp, không dùng huỷ và tạo lại");
+      if (old.status !== "DRAFT") throw new DocumentError("Chỉ thay được phiếu nháp");
+      const created = await createDocument(raw, userId, tx);
+      if (created.type !== old.type) throw new DocumentError("Phiếu mới phải cùng loại với phiếu bị thay");
+      await cancelDocumentTx(tx, oldId, userId, { replacedBy: created.code });
+      return created;
+    },
+    { maxWait: 10_000, timeout: 30_000 },
+  );
 }
 
 /** Khối lượng do phiếu (nháp) điền (`variant.weight` + documentId) mà vẫn còn nguyên giá trị đó → đặt lại trống. */

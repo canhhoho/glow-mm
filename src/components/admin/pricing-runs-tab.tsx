@@ -10,7 +10,7 @@ import { prisma } from "@/lib/db";
 import { productName } from "@/server/inventory/queries";
 const RUN_TONE = { PREVIEW: "warning", APPLIED: "success", CANCELLED: "neutral" } as const;
 /** `variantIds`: SKU chọn ở danh sách Giá bán (16/11) — chỉ tính các SKU này. */
-export async function PricingRunsTab({ receiptId, productId, variantIds, listOnly }: { receiptId?: string; productId?: string; variantIds?: string[]; listOnly?: boolean }) {
+export async function PricingRunsTab({ receiptId, productId, variantIds }: { receiptId?: string; productId?: string; variantIds?: string[] }) {
   const [t, rates, runs, options, gaps, roundTo, lastShip] = await Promise.all([
     getTranslations("Pricing"),
     listRates(),
@@ -39,20 +39,6 @@ export async function PricingRunsTab({ receiptId, productId, variantIds, listOnl
         {label} ({skus.length}): <span className="font-mono">{skus.slice(0, 40).join(", ")}{skus.length > 40 ? " …" : ""}</span>
       </p>
     );
-  if (listOnly) {
-    const q = new URLSearchParams({ mode: "auto", ...(receiptId && { receiptId }), ...(productId && { productId }) });
-    return (
-      <>
-        <Notice tone="info">
-          {t("runsMoved")}{" "}
-          <Link href={`/admin/selling-prices?${q}`} className="font-medium text-primary underline" data-testid="runs-moved">
-            {t("openSellingPrices")}
-          </Link>
-        </Notice>
-        <RunList runs={runs} t={t} />
-      </>
-    );
-  }
   return (
     <>
       <Section title={t("newRun")} className="max-w-3xl">
