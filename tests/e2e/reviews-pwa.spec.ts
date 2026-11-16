@@ -36,7 +36,7 @@ test("khách đánh giá sau khi nhận hàng → admin duyệt → hiện trên
   await login(staff, "donhang@glow.local");
   await staff.goto(`/admin/orders?q=${code}`);
   await staff.getByRole("link", { name: code }).click();
-  await expect(staff).toHaveURL(/\/admin\/orders\/[^/?]+$/);
+  await expect(staff).toHaveURL(/\/admin\/orders\/[^/?]+(?:\?from=.*)?$/);
   const orderUrl = staff.url();
   await staff.getByRole("button", { name: "Xác nhận đơn" }).click();
   await expect(staff.getByTestId("order-status")).toContainText("Chuẩn bị giao");
