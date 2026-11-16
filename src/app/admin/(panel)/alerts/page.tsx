@@ -50,14 +50,13 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
       />
 
       {tab === "low" && (
-        <DataTable empty={t("empty")} numeric={[1, 2, 3, 4]} head={[t("product"), t("available"), t("threshold"), t("vn"), t("inbound")]}>
+        <DataTable empty={t("empty")} numeric={[1, 2, 3]} head={[t("product"), t("available"), t("threshold"), t("other")]}>
           {alerts.lowStock.map((v) => (
             <tr key={v.variantId} data-testid="alert-row">
               <Td>{product(v.sku, v.name)}</Td>
               <Td className="text-right font-medium tabular-nums">{fmtInt(v.available)}</Td>
               <Td className="text-right tabular-nums">{fmtInt(v.lowStockAt)}</Td>
-              <Td className="text-right tabular-nums">{fmtInt(v.vnQty)}</Td>
-              <Td className="text-right tabular-nums">{fmtInt(v.inboundQty)}</Td>
+              <Td className="text-right tabular-nums text-muted-foreground">{v.otherQty > 0 ? fmtInt(v.otherQty) : "—"}</Td>
             </tr>
           ))}
         </DataTable>
@@ -92,13 +91,12 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
           <p className="text-xs text-muted-foreground">{t("reorderHint")}</p>
           <DataTable
             empty={t("empty")}
-            numeric={[1, 2, 3, 4, 5, 6, 7]}
+            numeric={[1, 2, 3, 4, 5, 6]}
             head={[
               t("product"),
               t("dailySales"),
               t("available"),
-              t("vn"),
-              t("inbound"),
+              t("other"),
               t("coverDays"),
               t("leadTime"),
               t("suggest"),
@@ -109,8 +107,7 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
                 <Td>{product(r.sku, r.name)}</Td>
                 <Td className="text-right tabular-nums">{r.dailySales}</Td>
                 <Td className="text-right tabular-nums">{fmtInt(r.available)}</Td>
-                <Td className="text-right tabular-nums">{fmtInt(r.vnQty)}</Td>
-                <Td className="text-right tabular-nums">{fmtInt(r.inboundQty)}</Td>
+                <Td className="text-right tabular-nums text-muted-foreground">{r.otherQty > 0 ? fmtInt(r.otherQty) : "—"}</Td>
                 <Td className="text-right tabular-nums">{r.coverDaysLeft ?? "—"}</Td>
                 <Td className="text-right tabular-nums">{r.leadTimeDays}</Td>
                 <Td className="text-right font-medium tabular-nums">{fmtInt(r.suggestQty)}</Td>

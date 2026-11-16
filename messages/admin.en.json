@@ -1438,8 +1438,6 @@
     "product": "Product",
     "available": "Available",
     "threshold": "Threshold",
-    "vn": "VN stock",
-    "inbound": "Inbound",
     "level": "Level",
     "lot": "Lot",
     "expiry": "Expiry",
@@ -1456,7 +1454,8 @@
       "unknown": "Unknown expiry"
     },
     "note": "Stop selling below {block} days, warn below {warn} days. Sales velocity over the last {window} days, cover {cover} days after arrival. Change in Settings.",
-    "reorderHint": "Suggest = sold/day × (lead time + cover days) + safety stock − (available + VN + inbound)."
+    "reorderHint": "Suggest = sold/day × (lead time + cover days) + safety stock − available. Goods received into the selling warehouse (including a shipment not yet marked arrived) are already in “available”; the “Stock elsewhere” column is for reference only and is not sellable until moved to the selling warehouse.",
+    "other": "Stock elsewhere (not counted)"
   },
   "Reports": {
     "title": "Reports",
@@ -1477,7 +1476,7 @@
     "units": "Units",
     "slow": "Slow movers (in stock, no sales in {days} days)",
     "available": "Available",
-    "inbound": "Inbound shipments",
+    "inbound": "Shipments not marked arrived",
     "shipment": "Shipment",
     "departed": "Departed",
     "batches": "Batches",
@@ -1506,7 +1505,8 @@
     "estimatedQty": "Estimated-cost units",
     "codCarrierFees": "Recorded COD carrier fees",
     "profitAfterRecordedCosts": "After recorded selling costs",
-    "recordedCostBasis": "Based on order completion period and fees recorded as of viewing. {pending} COD orders await settlement. Store pays delivery on {sender} orders: only recorded fees are deducted; other unrecorded delivery costs are excluded. This is not accounting net profit."
+    "recordedCostBasis": "Based on order completion period and fees recorded as of viewing. {pending} COD orders await settlement. Store pays delivery on {sender} orders: only recorded fees are deducted; other unrecorded delivery costs are excluded. This is not accounting net profit.",
+    "inboundHint": "Goods of these shipments are already received into the selling warehouse and counted in stock; the list only tracks shipments that have not arrived."
   },
   "Reviews": {
     "title": "Product reviews",

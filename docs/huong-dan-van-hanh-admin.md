@@ -723,7 +723,7 @@ Lỗi: "Mã kho X đã có"; "Kho X còn tồn — chuyển hoặc xuất hết 
 
 ### 8.8. Cảnh báo kho
 
-**Kho hàng › Cảnh báo** (mọi vai trò xem được): ba thẻ **Tồn thấp**, **Hạn dùng** (mức **Hết hạn** / **Ngừng bán** / **Cận date** / **Chưa biết hạn**), **Gợi ý đặt hàng**. Gợi ý đặt hàng dựa vào tốc độ bán và hai ô ở Cấu hình cửa hàng: **Số ngày bán cần đủ hàng sau khi về** (mặc định 30) và **Tính tốc độ bán trong (ngày gần nhất)** (mặc định 60).
+**Kho hàng › Cảnh báo** (mọi vai trò xem được): ba thẻ **Tồn thấp**, **Hạn dùng** (mức **Hết hạn** / **Ngừng bán** / **Cận date** / **Chưa biết hạn**), **Gợi ý đặt hàng**. Gợi ý đặt hàng dựa vào tốc độ bán và hai ô ở Cấu hình cửa hàng: **Số ngày bán cần đủ hàng sau khi về** (mặc định 30) và **Tính tốc độ bán trong (ngày gần nhất)** (mặc định 60). Công thức: **nên đặt = bán/ngày × (thời gian về + số ngày cần đủ) + tồn an toàn − còn bán được**. Từ khi có hai kho bán, hàng nhập đi thẳng vào kho bán của sản phẩm (kể cả hàng của chuyến chưa bấm "Đánh dấu đã đến") nên đã nằm trong **còn bán được** — không cộng thêm "hàng đang về". Cột **Tồn ở vị trí khác (chưa tính)** là hàng còn ở kho cũ hoặc kho bán khác: chỉ để xem, chưa bán được cho tới khi chuyển về kho bán. Báo cáo › **Chuyến chưa đánh dấu đã đến** chỉ để theo dõi chuyến.
 
 Ngưỡng "tồn thấp" là **5** cho mọi sản phẩm — hiện **không có ô để sửa** trên giao diện. Danh sách cảnh báo được tính lại tự động mỗi đêm (23:30) **[CHƯA XÁC MINH — phụ thuộc lịch chạy tự động trên server]**.
 

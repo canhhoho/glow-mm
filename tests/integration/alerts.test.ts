@@ -43,7 +43,8 @@ describe("Cảnh báo kho + gợi ý đặt hàng", () => {
 
     const alerts = await computeAlerts();
     const low = alerts.lowStock.find((v) => v.variantId === f.variantId);
-    expect(low).toMatchObject({ available: 17, vnQty: 4, inboundQty: 3, soldUnits: 5 });
+    // 7 cái nhập vào VN-STOCK / IN-TRANSIT (vị trí cũ) = "tồn ở vị trí khác": hiện để xem, KHÔNG tính vào gợi ý.
+    expect(low).toMatchObject({ available: 17, otherQty: 7, soldUnits: 5 });
 
     const reorder = alerts.reorder.find((r) => r.variantId === f.variantId);
     const expected = reorderSuggestion(low!, {
@@ -51,7 +52,8 @@ describe("Cảnh báo kho + gợi ý đặt hàng", () => {
       coverDays: alerts.settings.coverDays,
     });
     expect(reorder).toMatchObject({ suggestQty: expected.suggestQty });
-    expect(expected.suggestQty).toBeGreaterThan(0); // an toàn 30 > 24 đang có/đang về
+    expect(expected.suggestQty).toBeGreaterThan(0); // an toàn 30 > 17 khả dụng
+    expect(reorderSuggestion({ ...low!, otherQty: 0 }, { salesWindowDays: alerts.settings.salesWindowDays, coverDays: alerts.settings.coverDays }).suggestQty).toBe(expected.suggestQty);
 
     const mine = alerts.expiry.filter((e) => e.sku === `IT-${f.tag}`);
     expect(mine.find((e) => e.lotNo === "NEAR")).toMatchObject({ level: "blocked", qty: 2, location: f.mm.code });

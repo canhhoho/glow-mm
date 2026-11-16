@@ -1438,8 +1438,6 @@
     "product": "Sản phẩm",
     "available": "Còn bán được",
     "threshold": "Ngưỡng",
-    "vn": "Kho VN",
-    "inbound": "Đang về",
     "level": "Mức",
     "lot": "Lô",
     "expiry": "Hạn dùng",
@@ -1456,7 +1454,8 @@
       "unknown": "Chưa biết hạn"
     },
     "note": "Ngừng bán khi còn < {block} ngày, cảnh báo < {warn} ngày. Tốc độ bán tính trong {window} ngày gần nhất, cần đủ hàng {cover} ngày sau khi về. Sửa ở Cài đặt.",
-    "reorderHint": "Nên đặt = bán/ngày × (thời gian về + số ngày cần đủ) + tồn an toàn − (còn bán được + kho VN + đang về)."
+    "reorderHint": "Nên đặt = bán/ngày × (thời gian về + số ngày cần đủ) + tồn an toàn − còn bán được. Hàng đã nhập vào kho bán (kể cả hàng của chuyến chưa đánh dấu đã đến) đã nằm trong “còn bán được”; cột “Tồn ở vị trí khác” chỉ để xem, chưa bán được cho tới khi chuyển về kho bán.",
+    "other": "Tồn ở vị trí khác (chưa tính)"
   },
   "Reports": {
     "title": "Báo cáo",
@@ -1477,7 +1476,7 @@
     "units": "SL bán",
     "slow": "Bán chậm (còn hàng, không bán trong {days} ngày)",
     "available": "Còn bán được",
-    "inbound": "Hàng đang vận chuyển",
+    "inbound": "Chuyến chưa đánh dấu đã đến",
     "shipment": "Chuyến",
     "departed": "Ngày đi",
     "batches": "Số lô",
@@ -1506,7 +1505,8 @@
     "estimatedQty": "SL vốn tạm tính",
     "codCarrierFees": "Phí hãng khấu trừ COD",
     "profitAfterRecordedCosts": "Sau chi phí bán đã ghi nhận",
-    "recordedCostBasis": "Theo kỳ hoàn tất đơn; phí cập nhật đến lúc xem. Có {pending} đơn COD chưa đối soát nên chưa đủ phí. {sender} đơn cửa hàng trả cước: chỉ phần phí đã ghi nhận được trừ; cước khác chưa có số liệu chưa được trừ. Đây không phải lãi ròng kế toán."
+    "recordedCostBasis": "Theo kỳ hoàn tất đơn; phí cập nhật đến lúc xem. Có {pending} đơn COD chưa đối soát nên chưa đủ phí. {sender} đơn cửa hàng trả cước: chỉ phần phí đã ghi nhận được trừ; cước khác chưa có số liệu chưa được trừ. Đây không phải lãi ròng kế toán.",
+    "inboundHint": "Hàng của các chuyến này đã nhập vào kho bán và đã tính trong tồn; danh sách chỉ để theo dõi chuyến chưa đến."
   },
   "Reviews": {
     "title": "Đánh giá sản phẩm",
