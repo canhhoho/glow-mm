@@ -420,6 +420,10 @@
     "estimateSaved": "Estimated cost saved.",
     "notReceived": "Not received yet ({count}) — new products without a posted receipt",
     "showReceived": "← Show received products",
+    "archived": "Discontinued",
+    "archivedWithStock": "Discontinued with stock / held ({count})",
+    "archivedHistory": "Out-of-stock history ({count}) — discontinued products with no stock left",
+    "showAll": "← Back to All",
     "colPhysical": "On hand"
   },
   "Docs": {
@@ -634,8 +638,8 @@
     "restore": "Restore",
     "bulkDelete": "Delete selected",
     "bulkRestore": "Restore selected",
-    "deleteOneConfirm": "Delete \"{name}\"? If it already has stock or orders, it is marked Discontinued (hidden, history kept) instead of being deleted.",
-    "deleteConfirm": "Delete {count} selected products? Products with stock or orders are marked Discontinued (hidden, history kept) instead of being deleted.",
+    "deleteOneConfirm": "Delete \"{name}\"? If it already has stock or orders, it is marked Discontinued (hidden, history kept) instead of being deleted. Remaining stock still shows in Stock with a Discontinued label.",
+    "deleteConfirm": "Delete {count} selected products? Products with stock or orders are marked Discontinued (hidden, history kept) instead of being deleted. Remaining stock still shows in Stock with a Discontinued label.",
     "deleteDone": "Deleted {deleted} products; {archived} with stock/order history marked Discontinued.",
     "restoreDone": "Restored {count} products (still hidden — show them when you sell again).",
     "edit": "Edit",

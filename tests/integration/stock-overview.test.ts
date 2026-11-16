@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { createDocument, postDocument } from "@/server/inventory/documents";
 import { batchDetail, parseStockFilter, stockByVariant, stockLots, stockSummary } from "@/server/inventory/overview";
 import { createOrder } from "@/server/orders/orders";
+import { deleteProducts } from "@/server/catalog/product-delete";
 import { blockedBatchWhere, sellableBatchWhere } from "@/server/inventory/fefo";
 import { isoDay, makeFixture, orderInput, saleFixture, unpublishTestProducts, type SaleFixture } from "./fixtures";
 
@@ -158,5 +159,46 @@ describe("R5: lô bị chặn = phần bù của lô bán được", () => {
         .then((r) => r.map((b) => b.lotNo).sort());
     expect(await lots(blockedBatchWhere(now, 90))).toEqual(["C", "U"]);
     expect(await lots(sellableBatchWhere(now, 90))).toEqual(["A", "N"]);
+  });
+});
+
+describe("SP ngừng kinh doanh ở trang Tồn kho (bấm Xoá nhưng có lịch sử)", () => {
+  const ids = async (f: { tag: string }, extra: Record<string, string> = {}) => {
+    const page = await stockByVariant(filter(f.tag, extra));
+    return page.rows.map((r) => ({ sku: r.sku, archived: r.archived }));
+  };
+
+  it("còn tồn → vẫn ở Tất cả kèm nhãn; hết tồn → chỉ ở Lịch sử; đang giữ hàng → vẫn hiện", async () => {
+    // Còn tồn.
+    const withStock = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 2 }]);
+    expect(await ids(withStock)).toEqual([{ sku: `IT-${withStock.tag}`, archived: false }]);
+    expect(await deleteProducts([withStock.productId], withStock.userId)).toEqual({ deleted: 0, archived: 1 });
+    expect(await ids(withStock)).toEqual([{ sku: `IT-${withStock.tag}`, archived: true }]);
+    expect(await ids(withStock, { status: "archived" })).toEqual([{ sku: `IT-${withStock.tag}`, archived: true }]);
+    expect(await ids(withStock, { status: "history" })).toEqual([]);
+
+    // Đã xuất hết rồi ngừng kinh doanh → không còn ở Tất cả, chỉ ở Lịch sử hết tồn.
+    const empty = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 1 }]);
+    await post(empty, { type: "ISSUE", fromId: empty.mm.id, reason: "IT xuất hết", lines: [{ variantId: empty.variantId, qty: 1 }] });
+    expect(await deleteProducts([empty.productId], empty.userId)).toEqual({ deleted: 0, archived: 1 });
+    expect(await ids(empty)).toEqual([]);
+    expect(await ids(empty, { status: "archived" })).toEqual([]);
+    expect(await ids(empty, { status: "history" })).toEqual([{ sku: `IT-${empty.tag}`, archived: true }]);
+
+    // Hết tồn nhưng còn giữ hàng cho đơn chưa xử lý → vẫn hiện (không giấu đơn đang chờ).
+    const held = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 1 }]);
+    await post(held, { type: "ISSUE", fromId: held.mm.id, reason: "IT xuất hết", lines: [{ variantId: held.variantId, qty: 1 }] });
+    await deleteProducts([held.productId], held.userId);
+    const other = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 1 }]);
+    const order = await createOrder(orderInput(other, 1), { userId: null });
+    await prisma.reservation.create({ data: { orderId: order.id, variantId: held.variantId, qty: 1, status: "ACTIVE" } });
+    expect(await ids(held)).toEqual([{ sku: `IT-${held.tag}`, archived: true }]);
+    expect(await ids(held, { status: "archived" })).toEqual([{ sku: `IT-${held.tag}`, archived: true }]);
+    expect(await ids(held, { status: "history" })).toEqual([]);
+
+    // Bộ lọc lạ → mặc định; theo lô cũng mang cờ ngừng kinh doanh.
+    expect(parseStockFilter({ status: "xoa" }).status).toBeUndefined();
+    const lots = await stockLots(filter(withStock.tag));
+    expect(lots.rows.map((r) => r.archived)).toEqual([true]);
   });
 });

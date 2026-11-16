@@ -71,6 +71,12 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
         description={
           <>
             {detail.name} ({batch.variant.label}) · <span className="font-mono">{batch.variant.sku}</span>
+            {batch.variant.product.archivedAt && (
+              <>
+                {" "}
+                <Badge tone="warning">{ti("archived")}</Badge>
+              </>
+            )}
           </>
         }
       />
