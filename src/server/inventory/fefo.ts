@@ -46,6 +46,15 @@ export function sellableBatchWhere(today: Date, blockDays: number) {
 }
 
 /**
+ * Lô KHÔNG bán được theo hạn dùng (chưa biết hạn, hoặc hết hạn / dưới ngưỡng chặn) — phần bù đúng của
+ * `sellableBatchWhere` (CHECK `Batch_expiry_consistent`: chỉ DATED có ngày). Dùng chung cho bộ lọc "Ngừng bán"
+ * ở Tồn kho và badge "lô bị chặn" ở menu (R5).
+ */
+export function blockedBatchWhere(today: Date, blockDays: number) {
+  return { OR: [{ expiryStatus: "UNKNOWN" as const }, { expiryDate: { lt: sellableCutoff(today, blockDays) } }] };
+}
+
+/**
  * D9 — lô của cái tiếp theo khách đặt (trang SP: "Hạn dùng của lô bạn sẽ nhận"): cùng thứ tự `pickFefo`
  * (lô có ngày trước, rồi lô không hạn theo ngày nhận), bỏ qua `reserved` cái đầu đã giữ cho đơn khác.
  * Không còn hàng → null. Gần đúng: giữ hàng ở cấp biến thể, lô thật chỉ chốt khi bàn giao.
