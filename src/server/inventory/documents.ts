@@ -662,15 +662,44 @@ export async function postOrderDocumentTx(
  * và trả lại khối lượng phiếu này đã điền (nếu chưa ai sửa khác đi).
  */
 export async function cancelDocument(documentId: string, userId: string) {
-  await prisma.$transaction(async (tx) => {
-    const res = await tx.stockDocument.updateMany({ where: { id: documentId, status: "DRAFT" }, data: { status: "CANCELLED" } });
-    if (res.count !== 1) throw new DocumentError("Chỉ huỷ được phiếu nháp");
-    const batches = await releaseDraftBatches(tx, documentId);
-    const weights = await revertDraftWeights(tx, documentId, userId);
-    await tx.auditLog.create({
-      data: { userId, action: "stock.cancel", entity: "StockDocument", entityId: documentId, data: { batchesRemoved: batches, weightsReverted: weights } },
-    });
+  await prisma.$transaction((tx) => cancelDocumentTx(tx, documentId, userId));
+}
+
+export async function cancelDocumentTx(tx: Tx, documentId: string, userId: string, extra: Record<string, unknown> = {}) {
+  const res = await tx.stockDocument.updateMany({ where: { id: documentId, status: "DRAFT" }, data: { status: "CANCELLED" } });
+  if (res.count !== 1) throw new DocumentError("Chỉ huỷ được phiếu nháp");
+  const batches = await releaseDraftBatches(tx, documentId);
+  const weights = await revertDraftWeights(tx, documentId, userId);
+  await tx.auditLog.create({
+    data: { userId, action: "stock.cancel", entity: "StockDocument", entityId: documentId, data: { batchesRemoved: batches, weightsReverted: weights, ...extra } },
   });
+}
+
+/**
+ * "Huỷ và tạo lại" phiếu NHÁP Xuất / Chuyển / Điều chỉnh (#5): các phiếu này không có trang sửa. Tạo phiếu mới bằng
+ * `createDocument` (cùng kiểm tra như lúc tạo) rồi huỷ phiếu cũ — MỘT transaction, lỗi ở đâu cũng không mất phiếu cũ.
+ * Phiếu cũ phải còn nháp và cùng loại với phiếu mới; phiếu Nhập sửa trực tiếp (`updateReceiveDraft`) nên không dùng đường này.
+ * Gửi lại cùng `idempotencyKey` (mạng chậm) → trả phiếu mới đã tạo, không huỷ lần hai.
+ */
+export async function replaceDraftDocument(oldId: string, raw: unknown, userId: string) {
+  const key = idempotencyKeyOf(raw);
+  return prisma.$transaction(
+    async (tx) => {
+      if (key) {
+        const done = await tx.stockDocument.findUnique({ where: { idempotencyKey: key } });
+        if (done) return done;
+      }
+      const old = await tx.stockDocument.findUnique({ where: { id: oldId }, select: { code: true, type: true, status: true } });
+      if (!old) throw new DocumentError("Không tìm thấy phiếu cần thay");
+      if (old.type === "RECEIVE") throw new DocumentError("Phiếu nhập nháp sửa trực tiếp, không dùng huỷ và tạo lại");
+      if (old.status !== "DRAFT") throw new DocumentError("Chỉ thay được phiếu nháp");
+      const created = await createDocument(raw, userId, tx);
+      if (created.type !== old.type) throw new DocumentError("Phiếu mới phải cùng loại với phiếu bị thay");
+      await cancelDocumentTx(tx, oldId, userId, { replacedBy: created.code });
+      return created;
+    },
+    { maxWait: 10_000, timeout: 30_000 },
+  );
 }
 
 /** Khối lượng do phiếu (nháp) điền (`variant.weight` + documentId) mà vẫn còn nguyên giá trị đó → đặt lại trống. */

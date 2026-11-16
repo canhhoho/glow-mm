@@ -448,7 +448,7 @@
     "CANCELLED": "Đã huỷ",
     "post": "Ghi sổ",
     "cancel": "Huỷ phiếu",
-    "postedNote": "Phiếu đã ghi sổ — không sửa được. Muốn sửa sai hãy tạo phiếu điều chỉnh.",
+    "postedNote": "Phiếu đã ghi sổ — không sửa hay xoá được. Sai số lượng: tạo phiếu điều chỉnh, hoặc phiếu chuyển / xuất ngược lại.",
     "cancelledNote": "Phiếu đã huỷ — không ảnh hưởng tồn kho.",
     "postConfirm": "Ghi sổ phiếu {code}? Tồn kho sẽ thay đổi và không hoàn tác được.",
     "cancelConfirm": "Huỷ phiếu nháp {code}?",
@@ -526,7 +526,10 @@
     "inboundFee": "Phí về kho (VND/đv)",
     "inboundFeeHint": "Vận chuyển, thuế… phân bổ mỗi đơn vị. Điền 0 nếu không phát sinh; để trống = chưa biết (lô dùng giá vốn tạm theo cước tạm tính, không có thì thiếu giá vốn).",
     "variantArchived": "ngừng kinh doanh",
-    "variantInactive": "đã tắt"
+    "variantInactive": "đã tắt",
+    "postedNoteReceive": "Phiếu nhập đã ghi sổ — không sửa hay xoá được. Sai số lượng: tạo phiếu điều chỉnh (chỉ đổi tồn; giá mua, tỷ giá, phí về kho và số lượng dùng tính giá vốn không đổi). Sai giá, tỷ giá hoặc phí về kho: báo quản trị — cần quy trình sửa phiếu riêng.",
+    "replaceDraft": "Huỷ và tạo lại",
+    "replacingNote": "Đang tạo lại từ phiếu nháp {code}: khi lưu, phiếu {code} sẽ bị huỷ."
   },
   "Ship": {
     "title": "Chuyến hàng VN → MM",

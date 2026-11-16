@@ -669,9 +669,13 @@ Tạo từ **Tồn kho › Tạo phiếu**. Mỗi loại có quyền riêng (Qu�
 |---|---|---|
 | **Chuyển kho** | Chuyển hàng giữa kho/vị trí, ví dụ sau khi **đổi kho** sản phẩm | Vị trí đi và đến phải khác nhau. Cột **Lô** để "Tự chọn theo FEFO" hoặc chọn lô |
 | **Xuất kho** | Xuất ngoài đơn hàng (hỏng, tặng…) | Bắt buộc **lý do** |
-| **Điều chỉnh** | **Sửa sai tồn** (kiểm kê lệch, nhập nhầm đã ghi sổ) | Bắt buộc chọn **lô** cụ thể, nhập **SL (+ thêm / − bớt)** và lý do |
+| **Điều chỉnh** | **Sửa sai tồn** (kiểm kê lệch, nhập nhầm đã ghi sổ) | Bắt buộc chọn **lô** cụ thể (chỉ lô **đã có sổ kho** — lô chỉ thuộc phiếu nhập nháp thì ghi sổ phiếu nhập trước), nhập **SL (+ thêm / − bớt)** và lý do |
 
-Tất cả: **Lưu nháp** → **Ghi sổ** ⛔📦. Phiếu đã ghi sổ không sửa: "Phiếu đã ghi sổ — không sửa được. Muốn sửa sai hãy tạo phiếu điều chỉnh."
+Tất cả: **Lưu nháp** → **Ghi sổ** ⛔📦.
+
+- **Phiếu nháp sai:** phiếu **Nhập** có nút **Sửa phiếu**. Phiếu **Xuất / Chuyển / Điều chỉnh** bấm **Huỷ và tạo lại**: form tạo phiếu mở sẵn các dòng của phiếu nháp; khi lưu, phiếu mới được tạo và phiếu nháp cũ bị huỷ cùng lúc (lỗi thì phiếu cũ giữ nguyên).
+- **Phiếu đã ghi sổ** không sửa, không xoá. Sai **số lượng**: tạo phiếu **Điều chỉnh** (hoặc phiếu chuyển/xuất ngược lại). Phiếu điều chỉnh **chỉ đổi tồn** — giá mua, tỷ giá, phí về kho và số lượng dùng để tính giá vốn lô / phân bổ chuyến **không đổi**. Sai giá, tỷ giá hoặc phí về kho trên phiếu nhập đã ghi sổ: báo quản trị; hiện chưa có chức năng sửa/đảo phiếu nhập đã ghi sổ (cần thiết kế riêng).
+- Danh sách chọn: ô **đi** gồm cả kho đã ngừng dùng (dọn tồn cũ, có nhãn); ô **đến** và vị trí điều chỉnh chỉ kho đang dùng. Biến thể đã tắt / sản phẩm ngừng kinh doanh **còn tồn** vẫn chọn được (có nhãn) để xử lý nốt; việc này không mở lại quyền bán.
 
 Lỗi hay gặp khi ghi sổ: "Tồn không đủ…"; "Không đủ hàng: cần x, khả dụng y"; "Không thể lấy hàng đang giữ cho đơn — SKU: chỉ xuất được n, còn lại đang giữ cho đơn …" (hàng bạn định xuất đang được giữ cho đơn khác); "Lô X hết hạn hoặc chưa biết hạn — không chuyển vào kho bán …".
 

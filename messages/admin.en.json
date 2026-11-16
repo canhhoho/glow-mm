@@ -448,7 +448,7 @@
     "CANCELLED": "Cancelled",
     "post": "Post",
     "cancel": "Cancel document",
-    "postedNote": "Posted documents can not be edited. Create an adjustment to correct mistakes.",
+    "postedNote": "Posted documents can not be edited or deleted. Wrong quantity: create an adjustment, or a reverse transfer / issue.",
     "cancelledNote": "Cancelled document — stock is not affected.",
     "postConfirm": "Post document {code}? Stock will change and this cannot be undone.",
     "cancelConfirm": "Cancel draft document {code}?",
@@ -526,7 +526,10 @@
     "inboundFee": "Inbound fee (VND/unit)",
     "inboundFeeHint": "Freight, duties… per unit. Enter 0 if there is none; leave blank if unknown (the lot uses the estimated freight cost, or has no cost).",
     "variantArchived": "discontinued",
-    "variantInactive": "turned off"
+    "variantInactive": "turned off",
+    "postedNoteReceive": "Posted receipts can not be edited or deleted. Wrong quantity: create an adjustment (it only changes stock; purchase price, exchange rate, inbound cost and the quantity used for lot costing stay as they were). Wrong price, rate or inbound cost: tell an administrator — a separate correction process is needed.",
+    "replaceDraft": "Cancel and recreate",
+    "replacingNote": "Recreating from draft {code}: when you save, {code} will be cancelled."
   },
   "Ship": {
     "title": "Shipments VN → MM",
