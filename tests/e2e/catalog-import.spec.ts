@@ -46,7 +46,7 @@ test("file lỗi vẫn hiện Xác nhận nhập; sửa file và xem trước l�
   await login(page, "admin@glow.local");
   await page.goto("/admin/products/import");
   const template = await download(page, "Tải file mẫu trống");
-  const product = { name_en: `Preview only ${Date.now()}`, brand: "Sen Việt", category: "skincare" };
+  const product = { name: `Preview only ${Date.now()}`, brand: "Sen Việt", category: "skincare" };
   await upload(page, "loi.xlsx", fillCatalogTemplate(template.bytes, [{ ...product, category: `missing-${Date.now()}` }]));
   const preview = page.getByTestId("catalog-import-preview");
   const confirm = preview.getByRole("button", { name: "Xác nhận nhập", exact: true });
