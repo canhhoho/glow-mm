@@ -153,9 +153,13 @@ test("QT1b/QT2: tạo SP → nhập hàng từ bước 2 (điền sẵn, khối 
   await page.getByLabel(`Khối lượng (g) ${sku}`, { exact: true }).fill("150");
   await page.getByRole("button", { name: "Lưu nháp" }).click();
   await expect(page).toHaveURL(/\/admin\/inventory\/documents\/(?!new(?:\?|$))[^/?]+$/, { timeout: 30_000 });
+  await expect(page.getByTestId("post-preview")).toBeVisible();
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Ghi sổ" }).click();
   await expect(page.getByText("Đã ghi sổ", { exact: true }).filter({ visible: true })).toBeVisible();
+  // Phiếu nhập đã ghi sổ: người có quyền giá thấy giá mua / tỷ giá / phí về kho của lần nhập; xem trước biến mất.
+  await expect(page.getByTestId("line-cost").first()).toContainText("100,000 VND");
+  await expect(page.getByTestId("post-preview")).toHaveCount(0);
 
   await page.goto(productUrl);
   const steps = page.getByTestId("product-steps");
