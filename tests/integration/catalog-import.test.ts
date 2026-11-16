@@ -36,7 +36,9 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     expect(preview.input.rateId).toBe(rate.id);
     expect(preview.rows.map((r) => r.action)).toEqual(["create", "create", "create", "create"]);
     expect(preview.rows[0].stock).toMatchObject({ qty: 5, expiryStatus: "DATED", costMmk: 21000, location: f.mm.code, currency: "VND", unitCost: 100000, inboundVnd: 5000, lotAuto: true });
-    expect(preview.rows[0]).toMatchObject({ name: `Toner ${f.tag}`, nameFromFile: true, label: "100ml", labelFromFile: true, weight: 120, skuAuto: true, issues: [] });
+    expect(preview.rows[0]).toMatchObject({ name: `Toner ${f.tag}`, nameFromFile: true, label: "100ml", labelFromFile: true, weight: 120, skuAuto: true });
+    // Dòng này có cột Giá bán kiểu cũ → chỉ một lưu ý "bỏ qua giá", không có lỗi.
+    expect(preview.rows[0].issues).toEqual([{ level: "warning", text: expect.stringContaining("không còn nhập qua Excel") }]);
     expect(preview.rowCounts).toEqual({ create: 4, update: 0, same: 0, error: 0 });
     expect(preview.documents).toBe(2);
     expect(preview.rate?.vndPerMmk).toBeTruthy();
