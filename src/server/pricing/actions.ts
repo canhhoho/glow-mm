@@ -33,7 +33,7 @@ export async function createRateAction(_prev: ActionState, formData: FormData): 
   } catch (e) {
     return { error: message(e) };
   }
-  revalidatePath("/admin/pricing");
+  refreshPrices(); // tab Tỷ giá, bảng tính / thủ công VND dùng tỷ giá mới nhất (giá bán không tự đổi)
   return { ok: "rate" };
 }
 

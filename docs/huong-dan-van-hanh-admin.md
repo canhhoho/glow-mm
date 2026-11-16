@@ -84,7 +84,7 @@ Menu đầy đủ (mỗi người chỉ thấy các mục mình có quyền):
 |---|---|
 | (không có nhóm) | **Tổng quan** |
 | **Đơn hàng** | **Danh sách đơn**, **Đơn đặt trước**, **Đối soát COD**, **Đánh giá** |
-| **Sản phẩm** | **Danh sách sản phẩm**, **Danh mục**, **Giá bán**, **Giá & tỷ giá** |
+| **Sản phẩm** | **Danh sách sản phẩm**, **Danh mục**, **Giá bán** (gồm các tab Tỷ giá, Lịch sử giá) |
 | **Kho hàng** | **Tồn kho**, **Phiếu kho**, **Chờ kiểm tra**, **Cảnh báo**, **Chuyến hàng** |
 | **Đăng bán** | **Chờ hoàn thiện**, **Chờ duyệt**, **Đang bán** (lối tắt vào danh sách sản phẩm đã lọc sẵn) |
 | **Tài khoản** | **Nhân viên**, **Khách hàng** |
@@ -109,7 +109,7 @@ Chờ xác nhận → Chuẩn bị giao → Đang giao → Hoàn tất → (COD)
 **Luồng 3 — thiết lập một lần trước khi mở bán** (làm theo thứ tự)
 
 1. **Cài đặt › Quản lý kho**: kiểm tra các kho bán ([mục 8.7](#87-quản-lý-kho)).
-2. **Sản phẩm › Giá & tỷ giá › Tỷ giá**: thêm tỷ giá hiện hành ([mục 7.1](#71-tỷ-giá)).
+2. **Sản phẩm › Giá bán › tab Tỷ giá**: thêm tỷ giá hiện hành ([mục 7.1](#71-tỷ-giá)).
 3. **Sản phẩm › Danh mục**: tạo danh mục ([mục 15.5](#155-danh-mục)).
 4. **Cài đặt › Cấu hình cửa hàng**: soát từng ô ([mục 15.1](#151-cấu-hình-cửa-hàng)), đặc biệt **Nhận đơn trên web**, thời gian giữ hàng, hướng dẫn chuyển khoản.
 5. **Cài đặt › Địa bàn giao hàng**: bật/tắt các khu vực giao ([mục 15.2](#152-địa-bàn-giao-hàng-vtp)).
@@ -161,7 +161,7 @@ Làm theo vai trò. Mục ghi "(QTV)" chỉ Quản trị viên mới thấy.
 
 ### 2.5. Hằng tháng (Quản trị viên)
 
-- [ ] **Giá & tỷ giá**: cập nhật tỷ giá nếu thị trường đổi; chạy lại **Tính giá** cho hàng bị cảnh báo tỷ giá mới.
+- [ ] **Giá bán › tab Tỷ giá**: cập nhật tỷ giá nếu thị trường đổi; chạy lại **Tính giá** cho hàng bị cảnh báo tỷ giá mới.
 - [ ] **Báo cáo › Bán hàng & lợi nhuận**: chọn khoảng ngày của tháng, xem doanh thu, lợi nhuận, hoa hồng.
 - [ ] Rà soát tài khoản nhân viên: khoá người đã nghỉ ([mục 13.1](#131-nhân-viên)).
 - [ ] **Banner** / **Bộ sưu tập**: tắt cái đã hết đợt khuyến mãi.
@@ -429,7 +429,7 @@ Xử lý đơn đặt trước: [mục 10.9](#109-đơn-đặt-trước).
 
 **Ai làm được:** Quản trị viên. Quyền cần có tuỳ nội dung file: sửa giá/hoa hồng CTV cần quyền quản lý giá; có cột số lượng cần quyền nhập kho; **Duyệt luôn** cần quyền duyệt.
 
-**Cần chuẩn bị trước:** Danh mục · Kho bán · Tỷ giá (khi nhập tồn hàng VND). Thiếu tỷ giá: "Cần thiết lập tỷ giá đang có hiệu lực (Giá & tỷ giá) trước khi nhập tồn hàng VND."
+**Cần chuẩn bị trước:** Danh mục · Kho bán · Tỷ giá (khi nhập tồn hàng VND). Thiếu tỷ giá: "Cần thiết lập tỷ giá đang có hiệu lực (Giá bán › tab Tỷ giá) trước khi nhập tồn hàng VND."
 
 ### 6.1. Lấy file mẫu
 
@@ -526,7 +526,7 @@ Cảnh báo (không chặn) về lô: đã hết hạn, còn dưới ngưỡng n
 
 Chỉ **Quản trị viên** làm. 💰 Mọi thao tác trong mục này ảnh hưởng đến giá khách trả.
 
-**Nơi đặt giá chính là trang Sản phẩm › Giá bán** (cập nhật 16/11/2026). Ở đây tick các SKU rồi chọn **Nhập thủ công** hoặc **Tính tự động**. Ngoài ra chỉ còn **Excel** nhập thẳng giá ([mục 6](#6-nhập-và-cập-nhật-sản-phẩm-bằng-excel)). Bước 3 trang sản phẩm, phiếu nhập ("Tính giá SKU vừa nhập") và tab Tính giá của **Giá & tỷ giá** đều dẫn về trang Giá bán.
+**Nơi đặt giá chính là trang Sản phẩm › Giá bán** (cập nhật 16/11/2026). Ở đây tick các SKU rồi chọn **Nhập thủ công** hoặc **Tính tự động**. Ngoài ra chỉ còn **Excel** nhập thẳng giá ([mục 6](#6-nhập-và-cập-nhật-sản-phẩm-bằng-excel)). Bước 3 trang sản phẩm, phiếu nhập ("Tính giá SKU vừa nhập") đều dẫn về trang Giá bán. Trang **Giá & tỷ giá** cũ đã gộp vào đây (16/11/2026): tỷ giá và lịch sử giá là hai tab **Tỷ giá**, **Lịch sử giá** của trang Giá bán; đường dẫn cũ tự chuyển sang đúng tab.
 
 Nguyên tắc chung:
 - **Giá áp dụng chung cho SKU.** "Lô cơ sở" chỉ là lần nhập dùng để tính; khách không chọn lô, không có giá riêng theo lô.
@@ -538,7 +538,7 @@ Nguyên tắc chung:
 
 ### 7.1. Tỷ giá
 
-**Sản phẩm › Giá & tỷ giá › tab Tỷ giá.**
+**Sản phẩm › Giá bán › tab Tỷ giá.**
 
 1. Điền **1 USD = … MMK**, **1 USD = … VND**, **Ghi chú**. Dòng xem trước hiện "1 MMK = x VND · 1 VND = y MMK".
 2. Bấm **Thêm tỷ giá** → "Đã thêm tỷ giá".
@@ -1243,7 +1243,7 @@ Các điểm sau đọc từ mã nguồn nhưng **chưa được thử trên ser
 ### 19.3. Một số dòng chữ trên màn hình chưa khớp hành vi thật
 
 Phát hiện khi viết tài liệu (**không sửa mã** theo yêu cầu; để nhóm kỹ thuật cân nhắc):
-- Trang **Giá & tỷ giá** ghi "Lãi cố định nhập ở trang Sửa sản phẩm" — thực tế lãi cố định nhập ở trang **Giá bán** (khung thủ công của kho MMK). **Đã sửa chữ trên màn hình ngày 16/11/2026.**
+- Trang **Giá & tỷ giá** (nay là các tab của trang Giá bán) ghi "Lãi cố định nhập ở trang Sửa sản phẩm" — thực tế lãi cố định nhập ở trang **Giá bán** (khung thủ công của kho MMK). **Đã sửa chữ trên màn hình ngày 16/11/2026.**
 
 ### 19.4. Khi cần hỗ trợ
 

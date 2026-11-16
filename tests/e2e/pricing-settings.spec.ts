@@ -20,7 +20,9 @@ test("admin: lưu cài đặt; tính giá mới (xem trước) rồi huỷ", asy
   await expect(page.getByLabel("Cảnh báo cận date dưới (ngày)")).toHaveValue("10"); // lỗi → giữ số vừa nhập
 
   await page.screenshot({ path: "test-results/screens/settings.png", fullPage: true });
+  // Đường dẫn cũ "Giá & tỷ giá" chuyển sang tab Tỷ giá của trang Giá bán (gộp 16/11).
   await page.goto("/admin/pricing");
+  await expect(page).toHaveURL(/\/admin\/selling-prices\?mode=rates$/);
   // Tỷ giá nhập qua USD (P23); 4,420 / 26,000 = 0.17 như tỷ giá seed → không đổi giá vốn MMK ở test khác.
   await page.getByLabel("1 USD = … MMK").fill("4,420");
   await page.getByLabel("1 USD = … VND").fill("26000");
@@ -28,14 +30,12 @@ test("admin: lưu cài đặt; tính giá mới (xem trước) rồi huỷ", asy
   await page.getByRole("button", { name: "Thêm tỷ giá" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Đã thêm tỷ giá" })).toBeVisible();
   await expect(page.getByRole("cell", { name: /1 USD = 4,420 MMK/ }).first()).toBeVisible();
+  await page.screenshot({ path: "test-results/screens/selling-prices-rates.png", fullPage: true });
 
-  // Tab "Lịch sử giá" mở được; tab "Tính giá" chỉ còn danh sách + link sang trang Giá bán (nơi tạo bản tính, 16/11).
+  // Tab "Lịch sử giá" mở được; tab "Tự động" là nơi tạo bản tính.
   await page.getByRole("link", { name: "Lịch sử giá" }).click();
-  await expect(page).toHaveURL(/tab=history/);
-  // Tên link kèm số bản xem trước đang chờ (vd "Tính giá 3").
-  await page.getByRole("link", { name: /^Tính giá( \d+)?$/ }).click();
-  await expect(page).toHaveURL(/tab=runs/);
-  await page.getByTestId("runs-moved").click();
+  await expect(page).toHaveURL(/mode=history/);
+  await page.goto("/admin/pricing?tab=runs"); // link cũ → tab Tự động
   await expect(page).toHaveURL(/\/admin\/selling-prices\?mode=auto/);
   // P24: kho mặc định = Kho Thắm (hàng nhập VN) → cần % lãi + phí ship theo kg.
   await expect(page.getByRole("combobox", { name: "Kho", exact: true })).toHaveValue(/.+/);

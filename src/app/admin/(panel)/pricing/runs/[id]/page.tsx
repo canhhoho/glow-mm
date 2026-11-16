@@ -161,7 +161,7 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
 
   return (
     <Page>
-      <PageHeader title={t("runTitle", { date: fmtDateTime(run.createdAt) })} back={{ href: "/admin/pricing?tab=runs", label: t("back") }} />
+      <PageHeader title={t("runTitle", { date: fmtDateTime(run.createdAt) })} back={{ href: "/admin/selling-prices?mode=auto", label: t("back") }} />
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <Badge tone={RUN_TONE[run.status]}>{t(`st.${run.status}`)}</Badge>
         {open && appliedCount > 0 && <span data-testid="run-partial">{t("partial", { applied: appliedCount, pending })}</span>}

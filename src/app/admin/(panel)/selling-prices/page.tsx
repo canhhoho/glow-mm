@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { fmtDateTime, fmtInt } from "@/lib/format";
 import { requirePagePermission } from "@/server/auth/session";
 import { PricingRunsTab } from "@/components/admin/pricing-runs-tab";
+import { PriceHistoryTab, RatesTab } from "@/components/admin/pricing-tabs";
 import { Badge, ClearFilters, DataTable, FilterBar, FilterButton, LinkButton, Page, PageHeader, PageNumbers, SearchInput, StatCard, TabNav, Td, checkboxClass, fieldClass } from "@/components/admin/ui";
 import {
   listSellingPrices,
@@ -24,8 +25,10 @@ const PICK_FORM = "price-pick";
 export default async function SellingPricesPage({ searchParams }: PageProps<"/admin/selling-prices">) {
   await requirePagePermission("pricing:manage");
   const sp = await searchParams;
-  const t = await getTranslations("SellingPrices");
-  const automatic = sp.mode === "auto";
+  const [t, tp] = await Promise.all([getTranslations("SellingPrices"), getTranslations("Pricing")]);
+  // Tab: thủ công (mặc định) · tự động · tỷ giá · lịch sử giá (gộp trang "Giá & tỷ giá" cũ, 16/11/2026).
+  const mode = (["auto", "rates", "history"] as const).find((m) => m === sp.mode) ?? "manual";
+  const manual = mode === "manual";
   const q = one(sp.q)?.trim().slice(0, 200) ?? "";
   const state = SELLING_STATES.find((s) => s === sp.state);
   const warehouseId = one(sp.warehouse) || undefined;
@@ -53,26 +56,26 @@ export default async function SellingPricesPage({ searchParams }: PageProps<"/ad
       <PageHeader
         title={t("title")}
         description={t("subtitle")}
-        actions={[<LinkButton key="rates" href="/admin/pricing">{t("rates")}</LinkButton>]}
       />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard icon={<Layers />} tone="brand" value={fmtInt(stats.total)} label={t("statTotal")} href={href({ state: null, page: 1 })} active={!automatic && !state} />
-        <StatCard icon={<CircleDollarSign />} tone="danger" value={fmtInt(stats.zero)} label={t("state.zero")} href={href({ state: "zero", page: 1 })} active={!automatic && state === "zero"} testId="stat-zero" />
-        <StatCard icon={<Clock />} tone="warning" value={fmtInt(stats.pending)} label={t("state.pending")} href={href({ state: "pending", page: 1 })} active={!automatic && state === "pending"} testId="stat-pending" />
-        <StatCard icon={<TriangleAlert />} tone="neutral" value={fmtInt(stats.stale)} label={t("state.stale")} href={href({ state: "stale", page: 1 })} active={!automatic && state === "stale"} testId="stat-stale" />
+        <StatCard icon={<Layers />} tone="brand" value={fmtInt(stats.total)} label={t("statTotal")} href={href({ state: null, page: 1 })} active={manual && !state} />
+        <StatCard icon={<CircleDollarSign />} tone="danger" value={fmtInt(stats.zero)} label={t("state.zero")} href={href({ state: "zero", page: 1 })} active={manual && state === "zero"} testId="stat-zero" />
+        <StatCard icon={<Clock />} tone="warning" value={fmtInt(stats.pending)} label={t("state.pending")} href={href({ state: "pending", page: 1 })} active={manual && state === "pending"} testId="stat-pending" />
+        <StatCard icon={<TriangleAlert />} tone="neutral" value={fmtInt(stats.stale)} label={t("state.stale")} href={href({ state: "stale", page: 1 })} active={manual && state === "stale"} testId="stat-stale" />
       </div>
       <TabNav
         label={t("title")}
         tabs={[
-          { href: "/admin/selling-prices?mode=auto", label: t("automatic"), active: automatic },
-          { href: "/admin/selling-prices?mode=manual", label: t("manual"), active: !automatic },
+          { href: "/admin/selling-prices?mode=auto", label: t("automatic"), active: mode === "auto" },
+          { href: "/admin/selling-prices?mode=manual", label: t("manual"), active: manual },
+          { href: "/admin/selling-prices?mode=rates", label: tp("tabRates"), active: mode === "rates" },
+          { href: "/admin/selling-prices?mode=history", label: tp("tabHistory"), active: mode === "history" },
         ]}
       />
-      {automatic ? (
-        <PricingRunsTab variantIds={many(sp.ids)} productId={one(sp.productId)} receiptId={one(sp.receiptId)} />
-      ) : (
-        <ManualPrices q={q} state={state} warehouseId={warehouseId} page={page} size={size} href={href} />
-      )}
+      {mode === "auto" && <PricingRunsTab variantIds={many(sp.ids)} productId={one(sp.productId)} receiptId={one(sp.receiptId)} />}
+      {mode === "rates" && <RatesTab />}
+      {mode === "history" && <PriceHistoryTab />}
+      {manual && <ManualPrices q={q} state={state} warehouseId={warehouseId} page={page} size={size} href={href} />}
     </Page>
   );
 }
