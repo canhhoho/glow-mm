@@ -25,16 +25,28 @@ async function pendingPrices() {
 
 /**
  * Cùng quy tắc cảnh báo `PRICE_STALE` (readiness): SKU đang bật, giá > 0, đã có lịch sử giá, và có phiếu NHẬP ghi sổ
- * (combo: của bất kỳ thành phần nào) sau lần đổi giá gần nhất.
+ * (combo: của bất kỳ thành phần nào) sau lần đổi giá gần nhất. Chỉ tính lần nhập hợp lệ làm nguồn giá
+ * (`receiptSourceLine` + đúng kho — A1 16/11).
  */
 async function staleVariantIds(): Promise<string[]> {
   const rows = await prisma.$queryRaw<{ id: string }[]>`
     WITH rcv AS (
       SELECT l."variantId", MAX(d."postedAt") AS at
       FROM "StockDocumentLine" l JOIN "StockDocument" d ON d.id = l."documentId"
-      WHERE d.type = 'RECEIVE' AND d.status = 'POSTED' AND l.qty > 0
+      JOIN "Location" t ON t.id = d."toId"
+      JOIN "Variant" lv ON lv.id = l."variantId" JOIN "Product" lp ON lp.id = lv."productId"
+      WHERE d.type = 'RECEIVE' AND d.status = 'POSTED' AND l.qty > 0 AND l."stockType" = 'SELLABLE'
+        AND t.type <> 'QUARANTINE' AND (NOT t.sellable OR t.id = lp."stockLocationId")
       GROUP BY 1),
-    chg AS (SELECT "variantId", MAX("createdAt") AS at FROM "PriceHistory" GROUP BY 1)
+    chg AS (
+      -- Lần đặt giá gần nhất: lịch sử giá, hoặc giá đang chờ duyệt (đặt sau khi có phiếu nhập → không còn "cũ").
+      SELECT "variantId", MAX(at) AS at FROM (
+        SELECT "variantId", "createdAt" AS at FROM "PriceHistory"
+        UNION ALL
+        SELECT e.key AS "variantId", ((e.value->>'stagedAt')::timestamptz AT TIME ZONE 'UTC') AS at
+        FROM "ProductChangeRequest" cr, jsonb_each(cr.prices) e
+        WHERE cr.prices IS NOT NULL AND jsonb_typeof(cr.prices) = 'object' AND e.value ? 'stagedAt'
+      ) x GROUP BY 1)
     SELECT v.id FROM "Variant" v
     JOIN "Product" p ON p.id = v."productId"
     JOIN chg ON chg."variantId" = v.id
@@ -48,7 +60,7 @@ async function staleVariantIds(): Promise<string[]> {
 export async function sellingPriceStats() {
   const [total, zero, pending, stale] = await Promise.all([
     prisma.variant.count({ where: BASE }),
-    prisma.variant.count({ where: { ...BASE, priceMmk: { lte: 0 } } }),
+    prisma.variant.count({ where: { ...BASE, active: true, priceMmk: { lte: 0 } } }),
     pendingPrices(),
     staleVariantIds(),
   ]);
@@ -70,6 +82,10 @@ export type SellingPriceRow = {
   pendingMmk: number | null;
   /** Giá hiệu lực để so xung đột khi lưu: giá chờ duyệt nếu có, không thì giá đang bán (§6.4). */
   effectiveMmk: number;
+  /** Hoa hồng CTV cố định đang áp dụng (null = theo % CTV) và đang chờ duyệt (undefined = không đổi). */
+  commissionMmk: number | null;
+  pendingCommission: number | null | undefined;
+  pricingMode: "VN_IMPORT" | "LOCAL_MMK";
   productId: string;
   productName: string;
   image: string | null;
@@ -89,7 +105,7 @@ export async function listSellingPrices(f: { q: string; warehouseId?: string; st
         { product: { translations: { some: { name: { contains: f.q, mode: "insensitive" } } } } },
       ],
     }),
-    ...(f.state === "zero" && { priceMmk: { lte: 0 } }),
+    ...(f.state === "zero" && { active: true, priceMmk: { lte: 0 } }),
     ...(f.state === "pending" && { id: { in: [...pending.keys()] } }),
     ...(f.state === "stale" && { id: { in: stale } }),
   };
@@ -108,6 +124,7 @@ export async function listSellingPrices(f: { q: string; warehouseId?: string; st
       active: true,
       isBundle: true,
       priceMmk: true,
+      affiliateCommissionMmk: true,
       productId: true,
       product: {
         select: {
@@ -124,7 +141,8 @@ export async function listSellingPrices(f: { q: string; warehouseId?: string; st
   const [vn, mmk] = await Promise.all([loadProductPricing(byMode("VN_IMPORT"), "VN_IMPORT"), loadProductPricing(byMode("LOCAL_MMK"), "LOCAL_MMK")]);
   const staleSet = new Set(stale);
   const rows: SellingPriceRow[] = variants.map((v) => {
-    const p = pending.get(v.id)?.priceMmk ?? null;
+    const sp = pending.get(v.id);
+    const p = sp?.priceMmk ?? null;
     return {
       id: v.id,
       sku: v.sku,
@@ -134,6 +152,9 @@ export async function listSellingPrices(f: { q: string; warehouseId?: string; st
       priceMmk: v.priceMmk,
       pendingMmk: p,
       effectiveMmk: p ?? v.priceMmk,
+      commissionMmk: v.affiliateCommissionMmk,
+      pendingCommission: sp?.commission ? sp.commission.value : undefined,
+      pricingMode: v.product.stockLocation.pricingMode ?? "VN_IMPORT",
       productId: v.productId,
       productName: productName(v.product.translations, v.product.slug),
       image: v.product.images[0]?.file.url ?? null,

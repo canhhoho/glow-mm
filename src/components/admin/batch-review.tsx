@@ -53,6 +53,18 @@ export function BatchReviewSummary({ review }: { review: BatchReviewView }) {
           {list(review.notReady)}
         </div>
       )}
+      {review.needsReview && review.needsReview.length > 0 && (
+        <div data-testid="batch-needs-review">
+          <p className="font-medium text-warning">{t("needsReview", { n: review.needsReview.length })}</p>
+          <ul className="list-disc space-y-0.5 pl-5">
+            {review.needsReview.map((i) => (
+              <li key={i.id}>
+                <Link href={`/admin/products/${i.id}#step-review`} className="text-primary underline">{i.name}</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {review.approveFailed.length > 0 && (
         <div>
           <p className="font-medium text-destructive">{t("approveFailed", { n: review.approveFailed.length })}</p>

@@ -10,7 +10,7 @@ import type { ChangeItem } from "@/server/catalog/change-summary";
 import { changeItemText } from "@/components/admin/change-text";
 import { productEditView, productReadinessView } from "@/server/catalog/review";
 import { getProductForEdit, getProductImages, productFormOptions } from "@/server/catalog/admin-queries";
-import { discardChangesAction, reviewProductsAction, submitProductsAction, saveProductPreorderAction, deleteProductImageAction, reorderProductImageAction, saveProductPricingAction, setProductPublishedAction, updateProductImageAltAction } from "@/server/catalog/actions";
+import { discardChangesAction, reviewProductsAction, submitProductsAction, saveProductPreorderAction, deleteProductImageAction, reorderProductImageAction, setProductPublishedAction, updateProductImageAltAction } from "@/server/catalog/actions";
 import { loadProductPricing, type PriceSource } from "@/server/catalog/product-pricing";
 import { loadReadiness } from "@/server/catalog/readiness";
 import { productSteps, type Issue, type ProductStep } from "@/server/catalog/readiness-rules";
@@ -379,7 +379,6 @@ export default async function EditProductPage({ params, searchParams }: PageProp
         id="step-price"
         className="scroll-mt-20"
         title={<StepTitle index={3} step={step("price")} t={t} />}
-        actions={<LinkButton href={`/admin/pricing?tab=runs&productId=${product.id}`}>{t("priceBlock.calcThis")}</LinkButton>}
       >
         <DataTable stack head={[t("sku"), t("label"), t("price"), t("priceBlock.source"), t("priceBlock.lastCost"), t("weight")]} numeric={[2]}>
           {product.variants.map((v) => {
@@ -392,10 +391,18 @@ export default async function EditProductPage({ params, searchParams }: PageProp
                 </Td>
                 <Td label={t("label")}>{v.label}</Td>
                 <Td label={t("price")} className={v.priceMmk > 0 ? "text-right tabular-nums" : "text-right text-destructive tabular-nums"}>
-                  {fmtInt(v.priceMmk)}
+                  <span data-testid="step-price-value">{fmtInt(v.priceMmk)}</span>
                   {cr?.prices[v.id] && (
                     <div className="text-xs text-muted-foreground" data-testid="pending-price">
                       {t("review.pendingPrice", { price: fmtInt(cr.prices[v.id].priceMmk) })}
+                    </div>
+                  )}
+                  {(v.affiliateCommissionMmk != null || cr?.prices[v.id]?.commission) && (
+                    <div className="text-xs text-muted-foreground" data-testid="step-commission">
+                      {t("priceBlock.commission", { value: v.affiliateCommissionMmk == null ? "%" : fmtInt(v.affiliateCommissionMmk) })}
+                      {cr?.prices[v.id]?.commission && (
+                        <span className="text-warning"> → {cr.prices[v.id].commission!.value == null ? "%" : fmtInt(cr.prices[v.id].commission!.value)}</span>
+                      )}
                     </div>
                   )}
                 </Td>
@@ -416,47 +423,13 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           })}
         </DataTable>
         {stepIssues("price").length > 0 && issueList(stepIssues("price"))}
+        {/* 16/11: đặt giá ở trang Giá bán (nơi đặt giá chính: Thủ công / Tự động, chọn lô cơ sở) — không còn form riêng ở đây. */}
         {can(user.role, "pricing:manage") && (
-        <details className="rounded-lg border p-4" data-testid="price-manual">
-          <summary className="cursor-pointer font-medium">{t("priceBlock.manual")}</summary>
-          {/* ActionForm reset sau khi lưu → ô về giá trị mới (defaultValue của lần render sau revalidate). */}
-          <div className="mt-3">
-            <ActionForm action={saveProductPricingAction} submitLabel={t("priceBlock.save")} okText={t("priceBlock.saved")} className="space-y-3">
-              <p className="text-xs text-muted-foreground">{t("priceBlock.manualHelp")}</p>
-              <input type="hidden" name="productId" value={product.id} />
-              {product.variants.map((v) => (
-                <fieldset key={v.id} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-2">
-                  <legend className="px-1 text-sm">
-                    {v.label} <span className="font-mono text-xs text-muted-foreground">{v.sku}</span>
-                  </legend>
-                  <input type="hidden" name="variantId" value={v.id} />
-                  {/* P0-H2: giá lúc mở trang — đã đổi ở nơi khác (bảng tính giá, Giá bán) thì báo lỗi, không ghi đè. */}
-                  <input type="hidden" name="expectedPriceMmk" value={cr?.prices[v.id]?.priceMmk ?? v.priceMmk} />
-                  <label className={fieldLabelClass}>
-                    <span className="text-muted-foreground">{t("price")}</span>
-                    <input name="priceMmk" aria-label={`${t("price")} ${v.sku}`} type="number" required min={1} step={1} inputMode="numeric" defaultValue={(cr?.prices[v.id]?.priceMmk ?? v.priceMmk) || ""} className={fieldClass} />
-                  </label>
-                  <label className={fieldLabelClass}>
-                    <span className="text-muted-foreground">{t("affiliateCommission")}</span>
-                    <input name="affiliateCommissionMmk" aria-label={`${t("affiliateCommission")} ${v.sku}`} type="number" min={0} step={100} inputMode="numeric" defaultValue={v.affiliateCommissionMmk ?? ""} className={fieldClass} />
-                    <span className="text-xs text-muted-foreground">{t("affiliateCommissionHint")}</span>
-                  </label>
-                </fieldset>
-              ))}
-              {pricingMode === "LOCAL_MMK" && (
-                <label className={fieldLabelClass}>
-                  <span className="text-muted-foreground">{t("fixedProfitMmk")}</span>
-                  <input name="fixedProfitMmk" type="number" min={0} step={1} inputMode="numeric" defaultValue={product.fixedProfitMmk ?? ""} className={fieldClass} />
-                  <span className="text-xs text-muted-foreground">{t("fixedProfitHint")}</span>
-                </label>
-              )}
-              <label className={fieldLabelClass}>
-                <span className="text-muted-foreground">{t("priceBlock.reason")}</span>
-                <input name="reason" maxLength={200} className={fieldClass} />
-              </label>
-            </ActionForm>
+          <div className="flex flex-wrap items-center gap-2" data-testid="price-actions">
+            <LinkButton href={`/admin/selling-prices/manual?productId=${product.id}`} variant="primary" icon="edit">{t("priceBlock.setPrice")}</LinkButton>
+            <LinkButton href={`/admin/selling-prices?mode=auto&productId=${product.id}`}>{t("priceBlock.calcThis")}</LinkButton>
+            <span className="text-xs text-muted-foreground">{t("priceBlock.whereHelp")}</span>
           </div>
-        </details>
         )}
       </Section>
 

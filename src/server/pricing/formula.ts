@@ -128,6 +128,32 @@ export function priceLocalMmk(input: { costMmk: number; fixedProfitMmk: number; 
   return Math.ceil((costMmk + fixedProfitMmk) / roundTo) * roundTo;
 }
 
+/**
+ * Trang Giá bán — chế độ THỦ CÔNG, kho hàng nhập VN (16/11):
+ *   Giá bán VND = giá mua NCC (VND) + lãi mong muốn (VND)
+ *   Giá bán MMK = Giá bán VND ÷ tỷ giá (VND cho 1 MMK) + vận chuyển (MMK/sp) + CTV (MMK/sp), làm tròn LÊN bội số `roundTo`.
+ * Tính bằng phân số chính xác (cùng tỷ giá với các công thức khác), chỉ làm tròn một lần ở cuối.
+ * Vd: 100.000 + 50.000 VND, 6 VND/MMK, 800 + 2.000 MMK → 25.000 + 2.800 = 27.800.
+ */
+export function priceVndManual(input: RateValue & { purchaseVnd: number; profitVnd: number; shipMmk: number; commissionMmk: number; roundTo: number }): number {
+  const { purchaseVnd, profitVnd, shipMmk, commissionMmk, roundTo } = input;
+  assertWhole(purchaseVnd, "Giá mua NCC (VND)");
+  assertWhole(profitVnd, "Lãi mong muốn (VND)");
+  assertWhole(shipMmk, "Vận chuyển (MMK)");
+  assertWhole(commissionMmk, "CTV (MMK)");
+  if (!Number.isInteger(roundTo) || roundTo <= 0) throw new Error("Bội số làm tròn phải > 0");
+  const rate = rateFraction(input);
+  const goods = BigInt(purchaseVnd + profitVnd) * rate.num;
+  const extra = BigInt(shipMmk + commissionMmk) * rate.den;
+  const den = rate.den * BigInt(roundTo);
+  return Number(((goods + extra + den - ONE) / den) * BigInt(roundTo));
+}
+
+/** Giá bán VND ÷ tỷ giá → MMK chưa làm tròn (hiển thị bảng thủ công), làm tròn nửa lên tới 1 MMK. */
+export function sellVndToMmk(sellVnd: number, rate: RateValue): number {
+  return convertVndToMmk(sellVnd, rate);
+}
+
 /** % chênh lệch giá mới so với giá cũ (làm tròn 1 chữ số), để cảnh báo thay đổi lớn. */
 export function changePct(oldPrice: number, newPrice: number): number | null {
   if (oldPrice <= 0) return null;

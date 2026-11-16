@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { receiptSourceLine } from "@/server/pricing/cost";
 import type { DocStatus, DocType } from "@/generated/prisma/client";
 
 /** Tên hiển thị của sản phẩm cho admin: ưu tiên tiếng Anh, sau đó tiếng Myanmar. */
@@ -31,24 +32,28 @@ export async function listVariantsForPicker() {
 }
 
 /** Biến thể nhập kho được (đang dùng, không phải combo) cho bảng nhập nhanh; `lastCost` = giá mua của lần nhập gần nhất. */
-export async function listVariantsForReceive() {
+/** `includeIds`: biến thể đang có trong phiếu nháp được sửa — luôn kèm (kể cả đã tắt / ngừng KD) để không rơi dòng khi lưu. */
+export async function listVariantsForReceive(opts: { includeIds?: string[] } = {}) {
   const [variants, lastVnd, lastMmk] = await Promise.all([
     prisma.variant.findMany({
-      where: { active: true, isBundle: false, product: { archivedAt: null } },
+      where: {
+        isBundle: false,
+        OR: [{ active: true, product: { archivedAt: null } }, ...(opts.includeIds?.length ? [{ id: { in: opts.includeIds } }] : [])],
+      },
       orderBy: { sku: "asc" },
       include: { product: { include: { translations: true, brand: true, stockLocation: { select: { pricingMode: true } } } } },
     }),
-    // Giá mua gợi ý: giá của lần nhập gần nhất (dòng phiếu NHẬP chưa huỷ) — không phải giá bình quân của lô (P1-C).
+    // Giá mua gợi ý: giá của lần nhập ĐÃ GHI SỔ gần nhất (hàng bán được) — không phải giá bình quân của lô (P1-C, A1 16/11).
     prisma.stockDocumentLine.findMany({
-      where: { unitCostVnd: { not: null }, document: { type: "RECEIVE", status: { not: "CANCELLED" } } },
+      where: { unitCostVnd: { not: null }, ...receiptSourceLine },
       distinct: ["variantId"],
-      orderBy: [{ variantId: "asc" }, { document: { createdAt: "desc" } }, { id: "desc" }],
+      orderBy: [{ variantId: "asc" }, { document: { postedAt: "desc" } }, { id: "desc" }],
       select: { variantId: true, unitCostVnd: true },
     }),
     prisma.stockDocumentLine.findMany({
-      where: { unitCostMmk: { not: null }, document: { type: "RECEIVE", status: { not: "CANCELLED" } } },
+      where: { unitCostMmk: { not: null }, ...receiptSourceLine },
       distinct: ["variantId"],
-      orderBy: [{ variantId: "asc" }, { document: { createdAt: "desc" } }, { id: "desc" }],
+      orderBy: [{ variantId: "asc" }, { document: { postedAt: "desc" } }, { id: "desc" }],
       select: { variantId: true, unitCostMmk: true },
     }),
   ]);

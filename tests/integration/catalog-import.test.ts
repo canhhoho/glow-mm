@@ -32,24 +32,29 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     ]);
     const preview = await previewCatalogImport(input);
     expect(preview.errors).toEqual([]);
-    expect(preview.counts).toEqual({ createdProducts: 2, updatedProducts: 0, unchangedProducts: 0, stockLines: 4, priceChanges: 0 });
+    // A2 16/11: SKU mới nhận giá từ file → là thao tác giá (3 SKU có giá: 100ml, 200ml, túi).
+    expect(preview.counts).toEqual({ createdProducts: 2, updatedProducts: 0, unchangedProducts: 0, stockLines: 4, priceChanges: 3 });
     expect(preview.input.rateId).toBe(rate.id);
     expect(preview.rows.map((r) => r.action)).toEqual(["create", "create", "create", "create"]);
     expect(preview.rows[0].stock).toMatchObject({ qty: 5, expiryStatus: "DATED", costMmk: 21000, location: f.mm.code });
     expect(preview.rows[2].stock).toMatchObject({ expiryStatus: "UNKNOWN", expiryDate: null });
     expect(preview.warnings.join("\n")).toContain("chưa có hạn sử dụng");
-    // QT1b: SKU mới bỏ qua cột giá (giá đặt ở bước 3) → cảnh báo, xem trước hiện "—".
-    expect(preview.warnings.join("\n")).toContain("bỏ qua giá bán của SKU mới");
-    expect(preview.rows.every((r) => r.price === null)).toBe(true);
+    // A2 16/11: SKU mới nhận giá bán từ file (không còn cảnh báo "bỏ qua giá").
+    expect(preview.warnings.join("\n")).not.toContain("bỏ qua giá bán của SKU mới");
+    expect(preview.rows.map((r) => r.price)).toEqual([20000, 35000, 35000, 50000]);
+    // A4 16/11: để trống Phí đưa về kho = chưa biết → xem trước không hiện giá vốn, có cảnh báo (không coi là 0).
+    expect(preview.rows[1].stock).toMatchObject({ costMmk: null });
+    expect(preview.warnings.join("\n")).toContain("để trống Phí đưa về kho");
     expect(preview.rows[3].stock).toMatchObject({ expiryStatus: "NONE", costMmk: 30000, location: f.chi.code });
     expect(await prisma.brand.count({ where: { name: brand } })).toBe(0); // xem trước không ghi
 
-    const result = await commitCatalogImport(preview.input, f.userId);
+    await expect(commitCatalogImport(preview.input, f.userId)).rejects.toThrow("cần quyền quản lý giá");
+    const result = await commitCatalogImport(preview.input, f.userId, { allowPricing: true });
     expect(result.documents).toHaveLength(2);
     const toner = await prisma.product.findFirstOrThrow({ where: { translations: { some: { name: `Toner ${f.tag}` } } }, include: { variants: { orderBy: { sku: "asc" } }, translations: true, brand: true } });
     expect(toner).toMatchObject({ published: false, stockLocationId: f.mm.id, requiresExpiry: true, brand: { name: brand } });
     expect(toner.translations.map((t) => t.name)).toEqual([`Toner ${f.tag}`, `Toner ${f.tag}`]); // tên còn thiếu chép theo
-    expect(toner.variants.map((v) => [v.label, v.priceMmk])).toEqual([["100ml", 0], ["200ml", 0]]);
+    expect(toner.variants.map((v) => [v.label, v.priceMmk])).toEqual([["100ml", 20000], ["200ml", 35000]]);
     const bag = await prisma.product.findFirstOrThrow({ where: { translations: { some: { name: `အိတ် ${f.tag}` } } } });
     expect(bag).toMatchObject({ stockLocationId: f.chi.id, requiresExpiry: false });
 
@@ -118,10 +123,10 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     ]);
     const preview = await previewCatalogImport(input);
     expect(preview.errors).toEqual([]);
-    expect(preview.counts).toMatchObject({ createdProducts: 0, updatedProducts: 1 });
-    await commitCatalogImport(preview.input, f.userId);
+    expect(preview.counts).toMatchObject({ createdProducts: 0, updatedProducts: 1, priceChanges: 1 });
+    await commitCatalogImport(preview.input, f.userId, { allowPricing: true });
     const variants = await prisma.variant.findMany({ where: { productId: f.productId }, orderBy: { label: "asc" } });
-    expect(variants.map((v) => [v.label, v.priceMmk])).toEqual([["100ml", 0], ["50ml", 10000]]);
+    expect(variants.map((v) => [v.label, v.priceMmk])).toEqual([["100ml", 18000], ["50ml", 10000]]);
   });
 
   it("chặn: đổi kho qua Excel, combo, thiếu tên, tồn sai kho, tỷ giá đổi giữa xem trước và xác nhận", async () => {

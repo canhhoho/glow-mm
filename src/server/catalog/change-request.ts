@@ -11,11 +11,61 @@ import { CatalogError, productSchema, writeProduct, type ProductInput } from "./
  * nằm ở `ProductChangeRequest` cho đến khi được duyệt (áp vào live qua `writeProduct` + ghi giá) hoặc bị huỷ.
  *
  * Phân loại (người dùng không thấy): CẦN DUYỆT = tên, mô tả, danh mục, thương hiệu, SKU/nhãn/bật-tắt biến thể,
- * combo, thêm/xoá ảnh, giá bán. KHÔNG CẦN DUYỆT (ghi thẳng) = khối lượng, ngưỡng tồn, hoa hồng CTV, lãi cố định,
- * kho bán, hạn dùng/PAO, ghi chú bảo quản, cách dùng, thành phần, tag, slug, thứ tự/alt ảnh, đặt trước.
+ * combo, thêm/xoá ảnh, giá bán + hoa hồng CTV cố định (16/11: có hiệu lực CÙNG LÚC với giá khi duyệt).
+ * KHÔNG CẦN DUYỆT (ghi thẳng) = khối lượng, ngưỡng tồn, lãi cố định, kho bán, hạn dùng/PAO, ghi chú bảo quản,
+ * cách dùng, thành phần, tag, slug, thứ tự/alt ảnh, đặt trước.
  */
 
-export type StagedPrice = { priceMmk: number; baseLivePrice: number; reason: string; runId?: string | null; userId: string };
+/**
+ * Giá (và hoa hồng) chờ duyệt của một biến thể. `priceMmk` = giá sẽ áp (bằng giá live nếu chỉ đổi hoa hồng).
+ * `commission` có mặt = hoa hồng CTV cố định đổi (`value` null = theo % CTV), `base` = hoa hồng live lúc đưa vào.
+ * Bản ghi cũ (trước 16/11) không có `commission` / `stagedAt` → vẫn đọc được.
+ */
+export type StagedPrice = {
+  priceMmk: number;
+  baseLivePrice: number;
+  commission?: { value: number | null; base: number | null };
+  reason: string;
+  runId?: string | null;
+  userId: string;
+  stagedAt?: string;
+};
+
+export const effectivePrice = (sp: StagedPrice | undefined, live: number) => sp?.priceMmk ?? live;
+export const effectiveCommission = (sp: StagedPrice | undefined, live: number | null) => (sp?.commission ? sp.commission.value : live);
+
+/** Thay đổi giá / hoa hồng của một biến thể. `priceMmk` / `commission` undefined = không đổi phần đó. */
+export type PriceEntry = { variantId: string; priceMmk?: number; commission?: number | null; reason: string; runId?: string | null };
+
+/**
+ * Gộp một thay đổi vào `prices` (sửa tại chỗ). Trở về đúng giá + hoa hồng live → bỏ khỏi bản đang sửa.
+ * Trả về true nếu giá trị hiệu lực đổi.
+ */
+function mergeStaged(prices: Record<string, StagedPrice>, live: { priceMmk: number; affiliateCommissionMmk: number | null }, e: PriceEntry, userId: string, now: Date) {
+  const id = e.variantId;
+  const cur = prices[id];
+  const curPrice = effectivePrice(cur, live.priceMmk);
+  const curCommission = effectiveCommission(cur, live.affiliateCommissionMmk);
+  const price = e.priceMmk ?? curPrice;
+  const commission = e.commission !== undefined ? e.commission : curCommission;
+  if (price === curPrice && commission === curCommission) return false;
+  if (price < 1) throw new CatalogError("Giá bán phải lớn hơn 0");
+  if (price === live.priceMmk && commission === live.affiliateCommissionMmk) {
+    delete prices[id];
+    return true;
+  }
+  const priceMoved = price !== curPrice;
+  prices[id] = {
+    priceMmk: price,
+    baseLivePrice: live.priceMmk,
+    ...(commission !== live.affiliateCommissionMmk && { commission: { value: commission, base: live.affiliateCommissionMmk } }),
+    reason: priceMoved || !cur ? e.reason : cur.reason,
+    runId: priceMoved || !cur ? (e.runId ?? null) : (cur.runId ?? null),
+    userId,
+    stagedAt: now.toISOString(),
+  };
+  return true;
+}
 export type StagedImages = { add: { fileId: string }[]; remove: string[] };
 type ChangeRow = { content: ProductInput | null; prices: Record<string, StagedPrice>; images: StagedImages };
 
@@ -85,7 +135,8 @@ const pickB = (v: Variant) => ({
 
 /**
  * Payload mới: tên/mô tả/danh mục/thương hiệu + SKU/nhãn/bật-tắt/combo của biến thể lấy từ `a`; còn lại từ `b`.
- * Biến thể có id: hợp hai bên. Biến thể mới (chưa có id) chỉ lấy từ `a`. Giá luôn bỏ trống (= giữ giá live).
+ * Biến thể có id: hợp hai bên, giá bỏ trống (= giữ giá live; giá đổi đi qua `prices`). Biến thể mới (chưa có id)
+ * chỉ lấy từ `a`, giữ nguyên giá ban đầu của nó.
  */
 export function composePayload(a: ProductInput, b: ProductInput): ProductInput {
   const byIdA = new Map(a.variants.filter((v) => v.id).map((v) => [v.id!, v]));
@@ -97,7 +148,8 @@ export function composePayload(a: ProductInput, b: ProductInput): ProductInput {
     const base = (vb ?? va)!;
     return { ...base, ...pickA(va ?? base), ...pickB(vb ?? base), id, priceMmk: undefined, autoSku: false };
   });
-  for (const v of a.variants) if (!v.id) variants.push({ ...v, priceMmk: undefined });
+  // Biến thể mới (chưa có id) giữ giá + hoa hồng gửi kèm (Excel thêm SKU mới cho SP đã duyệt — A2 16/11): áp khi duyệt.
+  for (const v of a.variants) if (!v.id) variants.push({ ...v });
   return {
     ...b,
     id: b.id ?? a.id,
@@ -120,7 +172,11 @@ export async function livePayload(tx: Tx, productId: string): Promise<{ payload:
   return { payload, edit };
 }
 
-const withoutPrices = (p: ProductInput): ProductInput => ({ ...p, variants: p.variants.map((v) => ({ ...v, priceMmk: undefined })) });
+/** Biến thể có sẵn: bỏ giá + hoa hồng (đi qua `prices`); biến thể mới giữ nguyên (áp cùng nội dung). */
+const withoutPrices = (p: ProductInput): ProductInput => ({
+  ...p,
+  variants: p.variants.map((v) => (v.id ? { ...v, priceMmk: undefined, affiliateCommissionMmk: undefined } : v)),
+});
 
 /** Dấu vân tay của SP nếu ghi `payload` vào live (xem trước, hoàn tác ngay). */
 async function hashIfWritten(tx: Tx, productId: string, payload: ProductInput, userId: string) {
@@ -149,20 +205,20 @@ export async function stageProductEdit(tx: Tx, parsed: ProductInput, userId: str
   // Phần không cần duyệt → live (giữ nguyên phần cần duyệt của live). Lưới an toàn: dấu vân tay live không được đổi.
   await guardApproval(tx, [productId], userId, () => writeProduct(tx, composePayload(live, incoming), userId));
 
-  // Giá trong payload (nhập Excel): SKU có sẵn đổi giá → bản đang sửa.
+  // Giá + hoa hồng trong payload (nhập Excel): SKU có sẵn đổi → bản đang sửa (có hiệu lực cùng lúc khi duyệt).
   const prices = { ...(existing?.prices ?? {}) };
   let pricesChanged = false;
-  const liveVariants = await tx.variant.findMany({ where: { productId }, select: { id: true, priceMmk: true } });
-  const livePrice = new Map(liveVariants.map((v) => [v.id, v.priceMmk]));
+  const liveVariants = await tx.variant.findMany({ where: { productId }, select: { id: true, sku: true, priceMmk: true, affiliateCommissionMmk: true } });
+  const liveById = new Map(liveVariants.map((v) => [v.id, v]));
+  const now = new Date();
   for (const v of parsed.variants) {
-    if (!v.id || v.priceMmk === undefined || !livePrice.has(v.id)) continue;
-    const effective = prices[v.id]?.priceMmk ?? livePrice.get(v.id)!;
-    if (v.priceMmk === effective) continue;
-    if (v.priceMmk < 1) throw new CatalogError(`Giá bán của ${v.sku} phải lớn hơn 0`);
-    pricesChanged = true;
-    if (v.priceMmk === livePrice.get(v.id)) delete prices[v.id];
-    else prices[v.id] = { priceMmk: v.priceMmk, baseLivePrice: livePrice.get(v.id)!, reason: opts.priceReason ?? "manual", userId };
+    const live = v.id ? liveById.get(v.id) : undefined;
+    if (!live || (v.priceMmk === undefined && v.affiliateCommissionMmk === undefined)) continue;
+    if (v.priceMmk !== undefined && v.priceMmk < 1) throw new CatalogError(`Giá bán của ${v.sku} phải lớn hơn 0`);
+    const entry: PriceEntry = { variantId: live.id, priceMmk: v.priceMmk, commission: v.affiliateCommissionMmk, reason: opts.priceReason ?? "manual" };
+    if (mergeStaged(prices, live, entry, userId, now)) pricesChanged = true;
   }
+  checkCommissions(prices, liveVariants);
 
   const next: ChangeRow = {
     content: candidateHash === liveHash ? null : incoming,
@@ -173,34 +229,46 @@ export async function stageProductEdit(tx: Tx, parsed: ProductInput, userId: str
   return tx.product.findUniqueOrThrow({ where: { id: productId } });
 }
 
-/** Giá hiệu lực để so xung đột: giá trong bản đang sửa nếu có, nếu không là giá live. */
-export async function effectivePrices(tx: Tx, productId: string): Promise<Map<string, number>> {
-  const variants = await tx.variant.findMany({ where: { productId }, select: { id: true, priceMmk: true } });
-  const staged = (await readChanges(tx, productId))?.prices ?? {};
-  return new Map(variants.map((v) => [v.id, staged[v.id]?.priceMmk ?? v.priceMmk]));
+/** Hoa hồng CTV hiệu lực không được vượt giá hiệu lực (giá > 0). */
+function checkCommissions(prices: Record<string, StagedPrice>, live: { id: string; sku: string; priceMmk: number; affiliateCommissionMmk: number | null }[]) {
+  for (const v of live) {
+    const price = effectivePrice(prices[v.id], v.priceMmk);
+    const commission = effectiveCommission(prices[v.id], v.affiliateCommissionMmk);
+    if (commission != null && price > 0 && commission > price) throw new CatalogError(`Hoa hồng CTV của ${v.sku} lớn hơn giá bán`);
+  }
 }
 
-/** Đưa giá của SP đã duyệt vào bản đang sửa (Giá bán / bảng tính giá / Excel). Giá trở về đúng giá live → bỏ khỏi bản. */
-export async function stagePrices(
-  tx: Tx,
-  productId: string,
-  entries: { variantId: string; priceMmk: number; reason: string; runId?: string | null }[],
-  userId: string,
-) {
+/** Giá + hoa hồng hiệu lực để so xung đột: trong bản đang sửa nếu có, nếu không là live. */
+export async function effectivePricing(tx: Tx, productId: string): Promise<Map<string, { priceMmk: number; commission: number | null }>> {
+  const variants = await tx.variant.findMany({ where: { productId }, select: { id: true, priceMmk: true, affiliateCommissionMmk: true } });
+  const staged = (await readChanges(tx, productId))?.prices ?? {};
+  return new Map(variants.map((v) => [v.id, { priceMmk: effectivePrice(staged[v.id], v.priceMmk), commission: effectiveCommission(staged[v.id], v.affiliateCommissionMmk) }]));
+}
+
+/** Giá hiệu lực để so xung đột: giá trong bản đang sửa nếu có, nếu không là giá live. */
+export async function effectivePrices(tx: Tx, productId: string): Promise<Map<string, number>> {
+  return new Map([...(await effectivePricing(tx, productId))].map(([id, p]) => [id, p.priceMmk]));
+}
+
+/**
+ * Đưa giá / hoa hồng của SP đã duyệt vào bản đang sửa (Giá bán / bảng tính giá / Excel); giữ nguyên các phần khác
+ * của bản đang sửa. Trở về đúng giá trị live → bỏ khỏi bản. Hoa hồng hiệu lực > giá hiệu lực → lỗi.
+ */
+export async function stagePrices(tx: Tx, productId: string, entries: PriceEntry[], userId: string) {
   if (entries.length === 0) return;
   const existing = await readChanges(tx, productId);
-  const live = new Map((await tx.variant.findMany({ where: { productId }, select: { id: true, priceMmk: true } })).map((v) => [v.id, v.priceMmk]));
+  const liveRows = await tx.variant.findMany({ where: { productId }, select: { id: true, sku: true, priceMmk: true, affiliateCommissionMmk: true } });
+  const live = new Map(liveRows.map((v) => [v.id, v]));
   const prices = { ...(existing?.prices ?? {}) };
   let changed = false;
+  const now = new Date();
   for (const e of entries) {
-    if (!live.has(e.variantId)) throw new CatalogError("Biến thể không thuộc sản phẩm này");
-    const effective = prices[e.variantId]?.priceMmk ?? live.get(e.variantId)!;
-    if (effective === e.priceMmk) continue;
-    changed = true;
-    if (e.priceMmk === live.get(e.variantId)) delete prices[e.variantId];
-    else prices[e.variantId] = { priceMmk: e.priceMmk, baseLivePrice: live.get(e.variantId)!, reason: e.reason, runId: e.runId ?? null, userId };
+    const v = live.get(e.variantId);
+    if (!v) throw new CatalogError("Biến thể không thuộc sản phẩm này");
+    if (mergeStaged(prices, v, e, userId, now)) changed = true;
   }
   if (!changed) return;
+  checkCommissions(prices, liveRows);
   await writeChanges(tx, productId, { content: existing?.content ?? null, prices, images: existing?.images ?? EMPTY_IMAGES }, userId, true);
 }
 
@@ -233,11 +301,28 @@ export async function applyChangeRequest(tx: Tx, productId: string, approverId: 
     const { payload: live } = await livePayload(tx, productId);
     await writeProduct(tx, composePayload(cr.content, live), approverId, { mode: "apply" });
   }
+  // Giá + hoa hồng có hiệu lực CÙNG LÚC (16/11): chỉ ghi khi live vẫn đúng như lúc đưa vào bản đang sửa.
   for (const [variantId, p] of Object.entries(cr.prices)) {
-    const res = await tx.variant.updateMany({ where: { id: variantId, productId, priceMmk: p.baseLivePrice }, data: { priceMmk: p.priceMmk } });
-    if (res.count !== 1) throw new CatalogError("Giá bán vừa bị đổi ở nơi khác — huỷ thay đổi giá rồi đặt lại");
-    await tx.priceHistory.create({ data: { variantId, oldPriceMmk: p.baseLivePrice, newPriceMmk: p.priceMmk, reason: p.reason, runId: p.runId ?? null, userId: p.userId } });
+    const res = await tx.variant.updateMany({
+      where: { id: variantId, productId, priceMmk: p.baseLivePrice, ...(p.commission && { affiliateCommissionMmk: p.commission.base }) },
+      data: { priceMmk: p.priceMmk, ...(p.commission && { affiliateCommissionMmk: p.commission.value }) },
+    });
+    if (res.count !== 1) throw new CatalogError("Giá bán / hoa hồng CTV vừa bị đổi ở nơi khác — huỷ thay đổi giá rồi đặt lại");
+    if (p.priceMmk !== p.baseLivePrice) {
+      await tx.priceHistory.create({
+        data: {
+          variantId,
+          oldPriceMmk: p.baseLivePrice,
+          newPriceMmk: p.priceMmk,
+          ...(p.commission && { oldCommissionMmk: p.commission.base, newCommissionMmk: p.commission.value }),
+          reason: p.reason,
+          runId: p.runId ?? null,
+          userId: p.userId,
+        },
+      });
+    }
   }
+  checkCommissions({}, await tx.variant.findMany({ where: { productId }, select: { id: true, sku: true, priceMmk: true, affiliateCommissionMmk: true } }));
   const orphanKeys: string[] = [];
   if (cr.images.add.length) {
     const last = await tx.productImage.aggregate({ where: { productId }, _max: { sortOrder: true } });

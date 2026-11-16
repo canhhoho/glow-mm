@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
-import { parsePrintIds, pickListFor } from "@/server/orders/print-queries";
+import { lotCostStatuses, parsePrintIds, pickListFor } from "@/server/orders/print-queries";
 import { PickPrintButton } from "@/components/admin/pick-print-button";
 import { LinkButton } from "@/components/admin/ui";
 import { fmtDate, fmtDateTime, fmtInt } from "@/lib/format";
@@ -16,6 +16,8 @@ export default async function PickListPage({ searchParams }: PageProps<"/admin/o
   if (!ids) notFound();
   const [t, tc, { orders, groups, hash, plannable }] = await Promise.all([getTranslations("Orders"), getTranslations("Common"), pickListFor(ids)]);
   if (orders.length === 0) notFound();
+  const costStatus = await lotCostStatuses(groups.flatMap((g) => g.lines.flatMap((l) => l.lots.flatMap((lot) => (lot.batchId ? [lot.batchId] : [])))));
+  const missingCost = [...costStatus.values()].filter((s) => s === "MISSING").length;
   const cell = "border border-foreground/40 px-2 py-1";
 
   return (
@@ -32,6 +34,11 @@ export default async function PickListPage({ searchParams }: PageProps<"/admin/o
         </span>
       </header>
       <p className="text-xs text-muted-foreground">{t("bulk.pickHelpLots")}</p>
+      {missingCost > 0 && (
+        <p role="alert" className="rounded border border-destructive px-2 py-1 text-xs text-destructive print:hidden" data-testid="pick-cost-missing">
+          {t("bulk.pickCostMissing", { count: missingCost })}
+        </p>
+      )}
 
       {groups.map((g) => (
         <section key={g.location.id} className="space-y-1 break-inside-avoid" data-testid="pick-group">
@@ -61,6 +68,8 @@ export default async function PickListPage({ searchParams }: PageProps<"/admin/o
                         <>
                           <span className="font-mono">{lot.lotNo}</span>
                           {lot.expiryDate && <div>{tc("expiryShort")} {fmtDate(lot.expiryDate)}</div>}
+                          {lot.batchId && costStatus.get(lot.batchId) === "ESTIMATED" && <div data-testid="pick-cost">{t("bulk.pickCostEstimated")}</div>}
+                          {lot.batchId && costStatus.get(lot.batchId) === "MISSING" && <div className="font-semibold text-destructive" data-testid="pick-cost">{t("bulk.pickCostMissingLot")}</div>}
                         </>
                       ) : (
                         "—"

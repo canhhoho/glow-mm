@@ -29,12 +29,14 @@ test("admin: lưu cài đặt; tính giá mới (xem trước) rồi huỷ", asy
   await expect(page.getByRole("status").filter({ hasText: "Đã thêm tỷ giá" })).toBeVisible();
   await expect(page.getByRole("cell", { name: /1 USD = 4,420 MMK/ }).first()).toBeVisible();
 
-  // Tab "Lịch sử giá" mở được; tab "Tính giá" có form xem trước.
+  // Tab "Lịch sử giá" mở được; tab "Tính giá" chỉ còn danh sách + link sang trang Giá bán (nơi tạo bản tính, 16/11).
   await page.getByRole("link", { name: "Lịch sử giá" }).click();
   await expect(page).toHaveURL(/tab=history/);
   // Tên link kèm số bản xem trước đang chờ (vd "Tính giá 3").
   await page.getByRole("link", { name: /^Tính giá( \d+)?$/ }).click();
   await expect(page).toHaveURL(/tab=runs/);
+  await page.getByTestId("runs-moved").click();
+  await expect(page).toHaveURL(/\/admin\/selling-prices\?mode=auto/);
   // P24: kho mặc định = Kho Thắm (hàng nhập VN) → cần % lãi + phí ship theo kg.
   await expect(page.getByRole("combobox", { name: "Kho", exact: true })).toHaveValue(/.+/);
   await page.getByLabel("% lãi").fill("40");

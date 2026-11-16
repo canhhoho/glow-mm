@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { productName } from "@/server/inventory/queries";
 import { buildCatalogWorkbook, type TemplateRow } from "./catalog-workbook";
+import { changeRequestsFor, effectiveCommission, effectivePrice } from "./change-request";
 
 /** Danh sách thả xuống từ DB; tên danh mục trùng nhau thì dùng mã (slug) để không nhầm. */
 async function loadLists() {
@@ -19,7 +20,10 @@ async function loadLists() {
   };
 }
 
-/** `withPricing`: thêm cột giá bán / hoa hồng CTV (chỉ file SP hiện có, người có quyền giá). Giá = giá đang bán. */
+/**
+ * `withPricing`: thêm cột giá bán / hoa hồng CTV (chỉ file SP hiện có, người có quyền giá). Giá / hoa hồng = giá trị
+ * HIỆU LỰC (đang chờ duyệt nếu có, nếu không là đang bán) → nhập lại file không sửa gì sẽ không đổi / huỷ giá chờ (A2 16/11).
+ */
 export async function catalogTemplateFile(withProducts: boolean, opts: { withPricing?: boolean } = {}): Promise<Uint8Array> {
   const { lists, categoryLabel, warehouseCode } = await loadLists();
   if (!withProducts) return buildCatalogWorkbook(lists);
@@ -27,6 +31,7 @@ export async function catalogTemplateFile(withProducts: boolean, opts: { withPri
     where: { archivedAt: null },
     orderBy: { slug: "asc" },
     select: {
+      id: true,
       categoryId: true,
       stockLocationId: true,
       requiresExpiry: true,
@@ -34,10 +39,12 @@ export async function catalogTemplateFile(withProducts: boolean, opts: { withPri
       paoMonths: true,
       brand: { select: { name: true } },
       translations: { select: { locale: true, name: true, description: true, usage: true, ingredientsText: true } },
-      variants: { where: { isBundle: false }, orderBy: { sku: "asc" }, select: { sku: true, label: true, weightGrams: true, priceMmk: true, affiliateCommissionMmk: true } },
+      variants: { where: { isBundle: false }, orderBy: { sku: "asc" }, select: { id: true, sku: true, label: true, weightGrams: true, priceMmk: true, affiliateCommissionMmk: true } },
     },
   });
+  const staged = opts.withPricing ? await changeRequestsFor(prisma, products.map((p) => p.id)) : new Map();
   const rows: TemplateRow[] = products.flatMap((p) => {
+    const pending = staged.get(p.id)?.prices ?? {};
     const tr = (l: string) => p.translations.find((t) => t.locale === l);
     return p.variants.map((v) => ({
       name_my: tr("my")?.name,
@@ -56,7 +63,7 @@ export async function catalogTemplateFile(withProducts: boolean, opts: { withPri
       warehouse_code: warehouseCode.get(p.stockLocationId),
       has_expiry: p.requiresExpiry ? "Có" : "Không",
       sku: v.sku,
-      ...(opts.withPricing && { price_mmk: v.priceMmk || null, affiliate_commission_mmk: v.affiliateCommissionMmk }),
+      ...(opts.withPricing && { price_mmk: effectivePrice(pending[v.id], v.priceMmk) || null, affiliate_commission_mmk: effectiveCommission(pending[v.id], v.affiliateCommissionMmk) }),
     }));
   });
   return buildCatalogWorkbook(lists, rows, { pricing: opts.withPricing });

@@ -6,6 +6,7 @@ import {
   parseScaled,
   priceLocalMmk,
   priceVnImport,
+  priceVndManual,
   rateDisplay,
   shippingMmk,
   suggestPrice,
@@ -86,5 +87,25 @@ describe("Công thức giá", () => {
   it("% thay đổi", () => {
     expect(changePct(20_000, 22_700)).toBe(13.5);
     expect(changePct(0, 100)).toBeNull();
+  });
+});
+
+describe("Giá thủ công kho VND (16/11)", () => {
+  const rate6 = { mmkPerVnd: "0.166667", mmkPerUsd: "4500", vndPerUsd: "27000" }; // 1 MMK = 6 VND
+  it("ví dụ chốt: (100.000 + 50.000) ÷ 6 + 800 + 2.000 = 27.800", () => {
+    expect(rateDisplay(rate6).vndPerMmk).toBe("6.0000");
+    expect(priceVndManual({ ...rate6, purchaseVnd: 100_000, profitVnd: 50_000, shipMmk: 800, commissionMmk: 2_000, roundTo: 1 })).toBe(27_800);
+    expect(priceVndManual({ ...rate6, purchaseVnd: 100_000, profitVnd: 50_000, shipMmk: 800, commissionMmk: 2_000, roundTo: 100 })).toBe(27_800);
+  });
+  it("làm tròn LÊN một lần ở cuối theo bội số cấu hình", () => {
+    // 100.001 ÷ 6 = 16.666,83 → + 0 → 16.667 (bội 1), 16.700 (bội 100), 17.000 (bội 1.000)
+    expect(priceVndManual({ ...rate6, purchaseVnd: 100_001, profitVnd: 0, shipMmk: 0, commissionMmk: 0, roundTo: 1 })).toBe(16_667);
+    expect(priceVndManual({ ...rate6, purchaseVnd: 100_001, profitVnd: 0, shipMmk: 0, commissionMmk: 0, roundTo: 100 })).toBe(16_700);
+    expect(priceVndManual({ ...rate6, purchaseVnd: 100_001, profitVnd: 0, shipMmk: 0, commissionMmk: 0, roundTo: 1000 })).toBe(17_000);
+  });
+  it("tỷ giá cũ chỉ có MMK/VND vẫn dùng được; không nhận số âm / lẻ", () => {
+    expect(priceVndManual({ mmkPerVnd: "0.17", purchaseVnd: 100_000, profitVnd: 0, shipMmk: 800, commissionMmk: 0, roundTo: 100 })).toBe(17_800);
+    expect(() => priceVndManual({ ...rate6, purchaseVnd: -1, profitVnd: 0, shipMmk: 0, commissionMmk: 0, roundTo: 1 })).toThrow();
+    expect(() => priceVndManual({ ...rate6, purchaseVnd: 1, profitVnd: 0.5, shipMmk: 0, commissionMmk: 0, roundTo: 1 })).toThrow();
   });
 });

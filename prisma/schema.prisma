@@ -24,27 +24,27 @@ enum Role {
 }
 
 model User {
-  id                  String           @id
+  id                  String                 @id
   name                String
-  email               String           @unique
-  emailVerified       Boolean          @default(false)
+  email               String                 @unique
+  emailVerified       Boolean                @default(false)
   /// Khách đăng ký bằng SĐT + mật khẩu (P17, plugin phoneNumber của Better Auth): lưu dạng chuẩn 09xxxxxxxx.
   /// Tài khoản SĐT không có email thật → `email` là địa chỉ nội bộ <SĐT>@phone.glow.invalid (không bao giờ gửi mail).
-  phoneNumber         String?          @unique
+  phoneNumber         String?                @unique
   /// Luôn false (không có OTP) — SĐT chưa xác minh nên KHÔNG dùng để gắn đơn cũ.
-  phoneNumberVerified Boolean?         @default(false)
+  phoneNumberVerified Boolean?               @default(false)
   image               String?
   /// Mặc định quyền thấp nhất; nhân viên/CTV luôn được tạo với role tường minh.
-  role                Role             @default(CUSTOMER)
-  locale              String           @default("vi")
-  active              Boolean          @default(true)
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
+  role                Role                   @default(CUSTOMER)
+  locale              String                 @default("vi")
+  active              Boolean                @default(true)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
   sessions            Session[]
   accounts            Account[]
   affiliate           Affiliate?
   /// Tài khoản khách (P14): đơn thuộc tài khoản + sổ địa chỉ.
-  orders              Order[]          @relation("AccountOrders")
+  orders              Order[]                @relation("AccountOrders")
   addresses           AccountAddress[]
   passwordResets      PasswordResetRequest[]
 
@@ -400,22 +400,29 @@ model BundleItem {
 // ───────────────────────── Giá ─────────────────────────
 
 model ExchangeRate {
-  id          String           @id @default(cuid())
+  id            String              @id @default(cuid())
   /// Số MMK cho 1 VND. Tỷ giá nhập qua USD (P23): giá trị tính sẵn (làm tròn 6 số lẻ) — công thức dùng 2 cột USD cho chính xác.
-  mmkPerVnd   Decimal          @db.Decimal(14, 6)
+  mmkPerVnd     Decimal             @db.Decimal(14, 6)
   /// 1 USD = ? MMK (P23). Null = tỷ giá cũ nhập thẳng MMK/VND.
-  mmkPerUsd   Decimal?         @db.Decimal(14, 2)
+  mmkPerUsd     Decimal?            @db.Decimal(14, 2)
   /// 1 USD = ? VND (P23).
-  vndPerUsd   Decimal?         @db.Decimal(14, 2)
-  effectiveAt DateTime         @default(now())
-  note        String?
-  createdById String
-  createdAt   DateTime         @default(now())
-  priceRuns   PriceUpdateRun[]
-  batches     Batch[]
+  vndPerUsd     Decimal?            @db.Decimal(14, 2)
+  effectiveAt   DateTime            @default(now())
+  note          String?
+  createdById   String
+  createdAt     DateTime            @default(now())
+  priceRuns     PriceUpdateRun[]
+  batches       Batch[]
   documentLines StockDocumentLine[]
 
   @@index([effectiveAt])
+}
+
+/// Cách đặt giá của một lần tính (16/11): AUTO = bảng tính theo % lãi / lãi cố định (xem trước rồi áp);
+/// MANUAL = trang Giá bán, chế độ Thủ công (kho VND: (giá mua NCC + lãi VND) ÷ tỷ giá + vận chuyển + CTV).
+enum PriceRunMode {
+  AUTO
+  MANUAL
 }
 
 enum PriceRunStatus {
@@ -442,6 +449,7 @@ model PriceUpdateRun {
   marginPct      Decimal?       @db.Decimal(6, 2)
   shipMmkPerKg   Int?
   roundTo        Int            @default(100)
+  mode           PriceRunMode   @default(AUTO)
   status         PriceRunStatus @default(PREVIEW)
   createdById    String
   createdAt      DateTime       @default(now())
@@ -459,11 +467,11 @@ model PriceUpdateRun {
 
 /// Dòng xem trước của một lần cập nhật giá — áp dụng đúng số đã xem (không tính lại).
 model PriceRunLine {
-  id                   String          @id @default(cuid())
+  id                   String             @id @default(cuid())
   runId                String
-  run                  PriceUpdateRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  run                  PriceUpdateRun     @relation(fields: [runId], references: [id], onDelete: Cascade)
   variantId            String
-  variant              Variant         @relation(fields: [variantId], references: [id])
+  variant              Variant            @relation(fields: [variantId], references: [id])
   /// Vốn dùng để tính (lô nhập gần nhất; combo = tổng thành phần): VND (Kho VN_IMPORT) hoặc MMK (LOCAL_MMK).
   costVnd              Int?
   costMmk              Int?
@@ -473,35 +481,50 @@ model PriceRunLine {
   oldPriceMmk          Int
   newPriceMmk          Int
   /// D1: Chờ / Đã áp / Bỏ qua (`skipReason`: UNCHANGED, PRICE_CHANGED, INPUT_CHANGED, CANCELLED, LEGACY).
-  status               PriceLineStatus @default(PENDING)
+  status               PriceLineStatus    @default(PENDING)
   skipReason           String?
   appliedAt            DateTime?
   /// Nguồn giá mua (biến thể thường): lô + phiếu nhập đã ghi sổ được chọn. Combo: null (xem thành phần).
   sourceBatchId        String?
-  sourceBatch          Batch?          @relation(fields: [sourceBatchId], references: [id])
+  sourceBatch          Batch?             @relation(fields: [sourceBatchId], references: [id])
   sourceDocumentId     String?
-  sourceDocument       StockDocument?  @relation(fields: [sourceDocumentId], references: [id])
+  sourceDocument       StockDocument?     @relation(fields: [sourceDocumentId], references: [id])
   sourcePostedAt       DateTime?
   /// Khối lượng dùng tính cước/kg (VN_IMPORT); `weightFromComponents` = combo chưa khai báo → cộng thành phần.
   weightGrams          Int?
-  weightFromComponents Boolean         @default(false)
+  weightFromComponents Boolean            @default(false)
   /// Băm đầu vào của dòng (nguồn giá, khối lượng, combo, lãi cố định…) — áp dụng tính lại, khác thì bỏ qua.
   fingerprint          String?
+  /// 16/11: giá / hoa hồng HIỆU LỰC (đang chờ duyệt nếu có) lúc tạo dòng — áp dụng so với giá trị hiện tại để chống
+  /// ghi đè đồng thời (khác `oldPriceMmk` = giá đang bán, dùng để hiển thị).
+  basePriceMmk         Int?
+  baseCommissionMmk    Int?
+  /// Dòng phiếu nhập (lần nhập của lô) dùng làm cơ sở tính — người dùng chọn hoặc mặc định lần nhập gần nhất.
+  sourceLineId         String?
+  sourceLine           StockDocumentLine? @relation(fields: [sourceLineId], references: [id])
+  /// MANUAL (kho VND): lãi mong muốn VND/sp, giá bán VND = giá mua NCC + lãi, hoa hồng CTV MMK/sp (cũng là
+  /// hoa hồng cố định của SKU, có hiệu lực cùng giá). `shipMmk` = vận chuyển MMK/sp.
+  profitVnd            Int?
+  sellVnd              Int?
+  commissionMmk        Int?
 
   @@unique([runId, variantId])
 }
 
 model PriceHistory {
-  id          String          @id @default(cuid())
-  variantId   String
-  variant     Variant         @relation(fields: [variantId], references: [id])
-  oldPriceMmk Int
-  newPriceMmk Int
-  runId       String?
-  run         PriceUpdateRun? @relation(fields: [runId], references: [id])
-  reason      String?
-  userId      String
-  createdAt   DateTime        @default(now())
+  id               String          @id @default(cuid())
+  variantId        String
+  variant          Variant         @relation(fields: [variantId], references: [id])
+  oldPriceMmk      Int
+  newPriceMmk      Int
+  runId            String?
+  run              PriceUpdateRun? @relation(fields: [runId], references: [id])
+  reason           String?
+  /// 16/11: hoa hồng CTV cố định (MMK/cái) đổi cùng lần đổi giá này; null cả hai = không đổi hoa hồng.
+  oldCommissionMmk Int?
+  newCommissionMmk Int?
+  userId           String
+  createdAt        DateTime        @default(now())
 
   @@index([variantId, createdAt])
 }
@@ -700,17 +723,17 @@ model StockDocument {
 }
 
 model StockDocumentLine {
-  id         String        @id @default(cuid())
-  documentId String
-  document   StockDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  variantId  String
-  variant    Variant       @relation(fields: [variantId], references: [id])
+  id            String        @id @default(cuid())
+  documentId    String
+  document      StockDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  variantId     String
+  variant       Variant       @relation(fields: [variantId], references: [id])
   /// Null khi phiếu xuất để hệ thống tự chọn lô theo FEFO.
-  batchId    String?
-  batch      Batch?        @relation(fields: [batchId], references: [id])
-  stockType  StockType     @default(SELLABLE)
+  batchId       String?
+  batch         Batch?        @relation(fields: [batchId], references: [id])
+  stockType     StockType     @default(SELLABLE)
   /// Với ADJUST có thể âm.
-  qty        Int
+  qty           Int
   /// P1-C (D11): giá mua + tỷ giá của CHÍNH lần nhập này (chỉ dòng NHẬP) — giá vốn lô = bình quân theo SL đã nhập
   /// của các dòng đã ghi sổ (`inventory/lot-cost.ts`). Đúng một loại tiền (CHECK ở DB).
   unitCostVnd   Int?
@@ -719,6 +742,8 @@ model StockDocumentLine {
   landedCostVnd Int?
   rateId        String?
   rate          ExchangeRate? @relation(fields: [rateId], references: [id])
+
+  priceRunLines PriceRunLine[]
 
   @@index([documentId])
   @@index([batchId])
@@ -1120,14 +1145,14 @@ enum PasswordResetStatus {
 /// Khách quên mật khẩu (tài khoản SĐT): khách tự nhập mật khẩu mới trên web → yêu cầu chờ admin xác nhận ở web admin.
 /// Chỉ lưu HASH; hash bị xoá (null) khi yêu cầu được xác nhận / từ chối / bị thay thế / hết hạn dọn.
 model PasswordResetRequest {
-  id           String                @id @default(cuid())
+  id           String              @id @default(cuid())
   userId       String
-  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   phone        String
   passwordHash String?
-  status       PasswordResetStatus   @default(PENDING)
+  status       PasswordResetStatus @default(PENDING)
   ip           String?
-  createdAt    DateTime              @default(now())
+  createdAt    DateTime            @default(now())
   expiresAt    DateTime
   decidedAt    DateTime?
   decidedById  String?

@@ -21,7 +21,7 @@ describe("Sức khoẻ dữ liệu (D0)", () => {
     const before = await counts();
 
     // SP đang hiển thị giá 0 + thiếu khối lượng ở kho VN_IMPORT; lô đã ghi sổ không có giá vốn (chưa phân bổ, chưa tạm).
-    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 3 }]);
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 3 }], { cost: false });
     await prisma.variant.update({ where: { id: f.variantId }, data: { priceMmk: 0 } });
     // SP khác ở kho LOCAL_MMK thiếu khối lượng (chỉ cảnh báo) + chỉ có lô từ phiếu nháp.
     const g = await makeFixture();

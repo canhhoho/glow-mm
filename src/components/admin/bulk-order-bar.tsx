@@ -117,6 +117,7 @@ export function BulkOrderBar({ transitions }: { transitions: BulkTransition[] })
           <p className={state.failed?.length ? "text-warning" : "text-success"}>
             {t("bulk.result", { done: state.done ?? 0, total: state.total ?? 0 })}
           </p>
+          {state.warning && <p className="text-warning" data-testid="bulk-warning">{state.warning}</p>}
           {state.failed && state.failed.length > 0 && (
             <ul className="list-inside list-disc text-xs text-destructive">
               {state.failed.map((f) => (

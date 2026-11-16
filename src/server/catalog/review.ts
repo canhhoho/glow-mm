@@ -127,15 +127,27 @@ export type BatchSubmitResult = {
   already: string[];
   /** SP chưa gửi được: chưa đủ điều kiện (issues) hoặc lý do khác (error). */
   skipped: { id: string; name: string; error?: string; issues?: Issue[] }[];
+  /** 16/11: phiên bản sau khi gửi (trong transaction của lượt) — "Duyệt luôn" chỉ duyệt đúng phiên bản này. */
+  versions?: Record<string, number>;
+  /** 16/11: SP đã có thay đổi / đang chờ duyệt TỪ TRƯỚC lượt này → không "Duyệt luôn", phải xem đầy đủ. */
+  needsReview?: { id: string; name: string }[];
 };
+
+/** SP đang có bản đang sửa hoặc đang chờ duyệt — gọi TRƯỚC khi lượt nhập / áp giá ghi gì (16/11). */
+export async function changedBefore(tx: Tx, productIds: string[]): Promise<Set<string>> {
+  const ids = [...new Set(productIds.filter(Boolean))];
+  if (ids.length === 0) return new Set();
+  const rows = await tx.product.findMany({ where: { id: { in: ids }, OR: [{ approvalStatus: "PENDING" }, { changeRequest: { isNot: null } }] }, select: { id: true } });
+  return new Set(rows.map((r) => r.id));
+}
 
 /**
  * §6.4 "Gửi duyệt ngay": gửi duyệt các SP do lượt này tạo / sửa, trong CHÍNH transaction của lượt đó.
  * SP chưa đủ điều kiện → bỏ qua kèm lý do (lỗi kiểm tra là lỗi JS trước khi ghi → transaction vẫn dùng tiếp được).
  * SP đã duyệt mà không có bản đang sửa (vd. chỉ đổi khối lượng / hoa hồng) → không có gì để gửi, bỏ qua im lặng.
  */
-export async function submitTouched(tx: Tx, productIds: string[], userId: string): Promise<BatchSubmitResult> {
-  const out: BatchSubmitResult = { submitted: [], already: [], skipped: [] };
+export async function submitTouched(tx: Tx, productIds: string[], userId: string, opts: { changedBefore?: Set<string> } = {}): Promise<BatchSubmitResult> {
+  const out: BatchSubmitResult = { submitted: [], already: [], skipped: [], versions: {}, needsReview: [] };
   for (const id of [...new Set(productIds)].sort()) {
     const p = await tx.product.findUnique({ where: { id }, select: { slug: true, archivedAt: true, approvedAt: true, translations: { select: { locale: true, name: true } } } });
     if (!p || p.archivedAt) continue;
@@ -143,6 +155,8 @@ export async function submitTouched(tx: Tx, productIds: string[], userId: string
     try {
       const r = await submitOne(tx, id, userId);
       (r.already ? out.already : out.submitted).push(id);
+      out.versions![id] = (await tx.product.findUniqueOrThrow({ where: { id }, select: { approvalVersion: true } })).approvalVersion;
+      if (r.already || opts.changedBefore?.has(id)) out.needsReview!.push({ id, name: productName(p.translations, p.slug) });
     } catch (e) {
       if (!(e instanceof CatalogError) && !(e instanceof ReadinessError)) throw e;
       out.skipped.push({
@@ -226,11 +240,14 @@ export async function reviewProducts(raw: unknown, userId: string) {
  * (một SP lỗi không ảnh hưởng lượt và SP khác — SP lỗi giữ Chờ duyệt). Không bao giờ tự đăng SP mới;
  * SP đang bán chỉ được áp thay đổi. Ghi vết tự duyệt (`selfApproved`).
  */
-export async function approveSubmitted(ids: string[], userId: string): Promise<ReviewResult[]> {
+export async function approveSubmitted(ids: string[], userId: string, seen?: Record<string, number>): Promise<ReviewResult[]> {
   if (ids.length === 0) return [];
-  const versions = new Map(
-    (await prisma.product.findMany({ where: { id: { in: ids }, approvalStatus: "PENDING" }, select: { id: true, approvalVersion: true } })).map((p) => [p.id, p.approvalVersion]),
-  );
+  // 16/11: có phiên bản của lượt → duyệt ĐÚNG phiên bản đó (đổi xen giữa → lỗi "vừa thay đổi"), không đọc lại.
+  const versions = seen
+    ? new Map(ids.flatMap((id) => (seen[id] != null ? [[id, seen[id]] as const] : [])))
+    : new Map(
+        (await prisma.product.findMany({ where: { id: { in: ids }, approvalStatus: "PENDING" }, select: { id: true, approvalVersion: true } })).map((p) => [p.id, p.approvalVersion]),
+      );
   return perProduct([...versions.keys()], (tx, id) => approveOne(tx, id, versions.get(id)!, userId, { publish: false, selfApproved: true }));
 }
 

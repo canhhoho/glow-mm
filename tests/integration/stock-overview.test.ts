@@ -24,7 +24,7 @@ async function scenario() {
     { lot: "A", expiryInDays: 400, qty: 10 },
     { lot: "B", expiryInDays: 120, qty: 5 },
     { lot: "C", expiryInDays: 30, qty: 4 },
-  ]);
+  ], { cost: false });
   const v = f.variantId;
   const receive = (toId: string, lotNo: string, days: number, qty: number, stockType = "SELLABLE") =>
     post(f, { type: "RECEIVE", toId, lines: [{ variantId: v, lotNo, expiryDate: isoDay(days), unitCostVnd: 100_000, qty, stockType }] });

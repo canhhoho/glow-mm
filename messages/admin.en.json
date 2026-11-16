@@ -4,9 +4,9 @@
   },
   "SellingPrices": {
     "title": "Selling prices",
-    "automatic": "Automatic calculation",
-    "manual": "Manual entry",
-    "help": "Find a product and click Edit to enter a selling price for each variant.",
+    "automatic": "Automatic",
+    "manual": "List · Manual",
+    "help": "The main place to set prices. Tick SKUs, then choose Manual (VND formula: supplier price + profit, converted, plus freight + affiliate) or Automatic (% margin price run). The price applies to the whole SKU; a lot is only the basis. Approved products: price + commission wait for approval before customers see them. Changing rates / costs never changes prices by itself.",
     "search": "Search product name or SKU",
     "filter": "Search",
     "product": "Product",
@@ -38,9 +38,56 @@
     "colCost": "Latest cost",
     "colSource": "Price source",
     "pendingPrice": "Pending: {price}",
-    "staleBadge": "Older than receipt",
+    "staleBadge": "New input — recalculate",
     "showing": "Showing {from}–{to} of {total} SKUs",
-    "pageSize": "Show:"
+    "pageSize": "Show:",
+    "pickHint": "For the ticked SKUs:",
+    "pickManual": "Set manually",
+    "pickAuto": "Calculate automatically",
+    "pick": "Select",
+    "setPrice": "Set price",
+    "commission": "Affiliate: {value}",
+    "commissionPercent": "by %",
+    "pendingCommission": "pending: {value}",
+    "manualPage": {
+      "title": "Set prices manually",
+      "subtitle": "The price applies to the whole SKU (the lot is only the basis). Approved products: price + affiliate commission wait for approval and take effect together.",
+      "back": "Selling prices",
+      "empty": "No SKU selected — go back to Selling prices and tick the SKUs to price.",
+      "truncated": "Only the first 200 SKUs are shown — select fewer.",
+      "groupVnd": "{name} — imported from VN (VND formula)",
+      "groupMmk": "{name} — bought in MMK",
+      "noRate": "No exchange rate yet — add one first.",
+      "addRate": "Add rate",
+      "rate": "Exchange rate",
+      "rateOption": "1 MMK = {vnd} VND · from {date}",
+      "rateCurrent": "current",
+      "oldRate": "An older rate is selected, not the current one — double-check before saving.",
+      "formula": "Sell VND = supplier price + profit · Sell MMK = sell VND ÷ rate + freight + affiliate, rounded up to a multiple of {round} MMK.",
+      "profitNote": "The desired profit is only the mark-up on the supplier price — not the final profit: inbound / shipment costs, COD fees, returns and running costs are not deducted. The purchase price is the exact receipt selected, not an average.",
+      "colSku": "SKU",
+      "colLot": "Basis lot",
+      "colPurchase": "Supplier price (VND)",
+      "colProfit": "Desired profit (VND/unit)",
+      "colSellVnd": "Sell price VND",
+      "colShip": "Freight (MMK/unit)",
+      "colCtv": "Affiliate (MMK/unit)",
+      "colFinal": "Final price (MMK)",
+      "colLastCost": "Latest purchase price",
+      "colPrice": "Price (MMK)",
+      "lotOption": "Lot {lot} · {doc} · {date} · {price} VND",
+      "comboLot": "Combo: sum of components' latest purchase prices",
+      "noSource": "No posted receipt yet",
+      "live": "Live: {price}",
+      "pending": "Pending: {price}",
+      "incomplete": "Fill in profit, freight, affiliate",
+      "save": "Save prices ({count} changed)",
+      "saveMmk": "Save prices",
+      "mmkHelp": "MMK goods keep the existing method: enter the price, affiliate commission (blank = by %) and fixed profit (used by automatic pricing). Price changes need a reason.",
+      "ctvPercent": "by affiliate %",
+      "fixedProfit": "Fixed profit (MMK/unit)",
+      "reason": "Reason for the price change"
+    }
   },
   "Nav": {
     "sellingPrices": "Selling prices",
@@ -480,7 +527,9 @@
     "preorderOpen": "Open the pre-order list",
     "editDraft": "Edit",
     "editTitle": "Edit draft receipt",
-    "updated": "Draft updated."
+    "updated": "Draft updated.",
+    "inboundFee": "Inbound fee (VND/unit)",
+    "inboundFeeHint": "Freight, duties… per unit. Enter 0 if there is none; leave blank if unknown (the lot uses the estimated freight cost, or has no cost)."
   },
   "Ship": {
     "title": "Shipments VN → MM",
@@ -774,7 +823,7 @@
       "next": "Next page"
     },
     "priceBlock": {
-      "calcThis": "Calculate this product",
+      "calcThis": "Calculate automatically",
       "source": "Price source",
       "sourceRun": "Pricing run",
       "sourceManual": "Manual",
@@ -786,7 +835,10 @@
       "manualHelp": "Price must be above 0. Changing a price needs a reason (saved in price history).",
       "reason": "Reason for price change",
       "save": "Save prices",
-      "saved": "Prices saved"
+      "saved": "Prices saved",
+      "setPrice": "Set price",
+      "whereHelp": "Prices and affiliate commission are set on the Selling prices page (manual or automatic) or via Excel.",
+      "commission": "Affiliate: {value}"
     },
     "approval": {
       "approve": "Approve",
@@ -1089,7 +1141,8 @@
       "invalid_affiliate": "Affiliate not found or locked",
       "invalid_form": "Order details are invalid — check the fields",
       "pick_mismatch": "The pick slip no longer matches (lot short / past cut-off or order changed) — reprint the pick slip",
-      "pick_required": "Print the pick slip (Lock lots & print) before handover"
+      "pick_required": "Print the pick slip (Lock lots & print) before handover",
+      "cost_missing": "Cannot hand over: a lot to be shipped has no cost (neither actual nor estimated). Open the lot and use \"Estimate cost\", or allocate the shipment costs, then hand over again"
     },
     "ret": {
       "title": "Return items",
@@ -1154,7 +1207,10 @@
         "stale": "Stock just changed — reload the slip and print again",
         "forbidden": "Not allowed to print pick slips",
         "nothing": "No order can have lots locked"
-      }
+      },
+      "pickCostEstimated": "Estimated cost",
+      "pickCostMissingLot": "No cost — cannot hand over yet",
+      "pickCostMissing": "{count} lot(s) on this list have no cost — orders using them cannot be handed over. Estimate the lot cost or allocate the shipment costs first."
     },
     "shippingPayer": "Delivery charge payer",
     "receiverPays": "Receiver pays delivery",
@@ -1173,7 +1229,9 @@
     "saveTracking": "Save tracking",
     "trackingSaved": "Tracking updated",
     "preorderHint": "Pre-order, no stock reserved yet. Once stock is available, click \"Stock arrived — move to processing\" to reserve it and handle it like a new order.",
-    "preorderTag": "Pre-order"
+    "preorderTag": "Pre-order",
+    "estimatedCostShipped": "Handed over. Note: {count} lot(s) shipped with an estimated cost — the order's profit is provisional until the actual cost is known.",
+    "estimatedCostOrders": "{count} order(s) shipped lots with an estimated cost — profit is provisional."
   },
   "Settings": {
     "description": "Manage accounts and store operating preferences.",
@@ -1255,7 +1313,7 @@
     "newRun": "Recalculate prices (preview)",
     "formula": "Price = VND cost (latest batch) ÷ rate (VND per 1 MMK) × (1 + margin %), rounded up",
     "formulaVn": "VN-import warehouse: VND purchase cost (latest posted receipt) × rate × (1 + margin %) + VN → MM freight (MMK/kg) × weight, rounded up. Margin applies to the purchase cost only. Combos without a declared weight use the sum of component weights.",
-    "formulaMmk": "Myanmar-purchase warehouse: price = MMK cost (latest posted receipt) + the product's fixed MMK profit, rounded up. Set the fixed profit on the product edit page.",
+    "formulaMmk": "Myanmar-purchase warehouse: price = MMK cost (the selected posted receipt, latest by default) + the product's fixed MMK profit, rounded up. Set the fixed profit on the Selling prices page (manual, MMK warehouse).",
     "warehouse": "Warehouse",
     "shipMmkPerKg": "Shipping VN → MM (MMK/kg)",
     "shipShort": "shipping {n} MMK/kg",
@@ -1289,7 +1347,7 @@
     "oldPrice": "Old price",
     "newPrice": "New price",
     "change": "Change",
-    "changedSince": "Price edited after preview — will be skipped",
+    "changedSince": "Price / commission changed after the preview — this line will be skipped",
     "apply": "Apply selected prices",
     "applyConfirm": "Apply new prices to the selected lines?",
     "appliedResult": "Applied {applied} prices, skipped {skipped}, {remaining} still pending",
@@ -1314,14 +1372,16 @@
     },
     "skipReason": {
       "UNCHANGED": "Price unchanged",
-      "PRICE_CHANGED": "Price was edited after the preview",
+      "PRICE_CHANGED": "Price / commission changed after the preview",
       "INPUT_CHANGED": "Inputs changed (lot, purchase cost, weight, combo, profit or warehouse) — create a new preview",
       "CANCELLED": "Preview cancelled",
-      "LEGACY": "Not applied (run from before line statuses)"
+      "LEGACY": "Not applied (run from before line statuses)",
+      "COMMISSION_OVER_PRICE": "Affiliate commission exceeds the new price — fix the commission on the Selling prices page"
     },
     "skipShort": {
-      "PRICE_CHANGED": "price edited",
-      "INPUT_CHANGED": "inputs changed"
+      "PRICE_CHANGED": "price / commission changed",
+      "INPUT_CHANGED": "inputs changed",
+      "COMMISSION_OVER_PRICE": "commission > price"
     },
     "skippedTitle": "{count} variants could not be priced",
     "skippedReason": {
@@ -1351,7 +1411,15 @@
     "statLines": "Lines",
     "statPending": "Lines to apply",
     "statBig": "Change ≥ {pct}%",
-    "statApplied": "Applied lines"
+    "statApplied": "Applied lines",
+    "pickedScope": "Only the {count} SKU(s) selected on the Selling prices page.",
+    "pendingPrice": "Pending approval",
+    "basisLot": "Basis lot",
+    "basisLatest": "Latest receipt",
+    "recompute": "Recalculate with the selected lots",
+    "runsMoved": "Create new price runs on the Selling prices page (select SKUs → Calculate automatically). Previous runs are listed below.",
+    "openSellingPrices": "Open Selling prices",
+    "modeManual": "Manual (VND)"
   },
   "Quarantine": {
     "title": "Quarantine (returned goods)",
@@ -2273,7 +2341,7 @@
   },
   "CatalogImport": {
     "title": "Import / update products from Excel",
-    "help": "One file to create products, update their details and receive stock. New products start hidden with price 0 — set the price, add images, submit for approval and publish on the product page. Always preview; you can confirm only when there are no errors.",
+    "help": "One file to create products, update their details and prices, and receive stock. New products start hidden; with a price they can be submitted for approval, without one they stay as drafts. Blank cells keep the current value (including a price awaiting approval). Always preview; you can confirm only when there are no errors.",
     "templateBlank": "Download blank template",
     "templateCurrent": "Download current products (to update)",
     "setupHint": "Set up first:",
@@ -2325,10 +2393,11 @@
     "submitNow": "Submit for approval now",
     "submitNowHint": "Only products created or changed in this batch that are ready; the rest are listed.",
     "approveNow": "Approve right away",
-    "approveNowHint": "Self-approval is logged. New products are never published automatically; products on sale only get the changes applied.",
+    "approveNowHint": "You approve (logged) the products whose only change is this batch. Products with other earlier changes are listed for a full review. New products are never published automatically.",
     "submitted": "{n} products submitted",
     "approved": "{n} approved",
     "notReady": "{n} products not submitted (not ready):",
-    "approveFailed": "{n} products not approved (still pending):"
+    "approveFailed": "{n} products not approved (still pending):",
+    "needsReview": "{n} product(s) were not approved now because they have other earlier changes (content, images or prices) — open them to review in full:"
   }
 }

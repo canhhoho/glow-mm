@@ -9,7 +9,8 @@ import { fmtDate, fmtDateTime, fmtInt } from "@/lib/format";
 import { prisma } from "@/lib/db";
 import { productName } from "@/server/inventory/queries";
 const RUN_TONE = { PREVIEW: "warning", APPLIED: "success", CANCELLED: "neutral" } as const;
-export async function PricingRunsTab({ receiptId, productId }: { receiptId?: string; productId?: string }) {
+/** `variantIds`: SKU chọn ở danh sách Giá bán (16/11) — chỉ tính các SKU này. */
+export async function PricingRunsTab({ receiptId, productId, variantIds, listOnly }: { receiptId?: string; productId?: string; variantIds?: string[]; listOnly?: boolean }) {
   const [t, rates, runs, options, gaps, roundTo, lastShip] = await Promise.all([
     getTranslations("Pricing"),
     listRates(),
@@ -29,26 +30,48 @@ export async function PricingRunsTab({ receiptId, productId }: { receiptId?: str
       })
     : null;
   if (productId && !product?.variants.length) return <Notice tone="danger">{t("productInvalid")}</Notice>;
+  const picked = variantIds?.length
+    ? await prisma.variant.findMany({ where: { id: { in: variantIds }, active: true, product: { archivedAt: null } }, select: { id: true, product: { select: { stockLocationId: true } } } })
+    : [];
   const gapLine = (label: string, skus: string[]) =>
     skus.length > 0 && (
       <p className="text-xs break-words text-muted-foreground">
         {label} ({skus.length}): <span className="font-mono">{skus.slice(0, 40).join(", ")}{skus.length > 40 ? " …" : ""}</span>
       </p>
     );
+  if (listOnly) {
+    const q = new URLSearchParams({ mode: "auto", ...(receiptId && { receiptId }), ...(productId && { productId }) });
+    return (
+      <>
+        <Notice tone="info">
+          {t("runsMoved")}{" "}
+          <Link href={`/admin/selling-prices?${q}`} className="font-medium text-primary underline" data-testid="runs-moved">
+            {t("openSellingPrices")}
+          </Link>
+        </Notice>
+        <RunList runs={runs} t={t} />
+      </>
+    );
+  }
   return (
     <>
       <Section title={t("newRun")} className="max-w-3xl">
         {receipt && <p className="text-sm">{t("receiptScope", { code: receipt.code })}</p>}
+        {picked.length > 0 && (
+          <p className="text-sm" data-testid="pricing-picked-scope">
+            {t("pickedScope", { count: picked.length })}
+          </p>
+        )}
         {product && (
           <p className="text-sm" data-testid="pricing-product-scope">
             {t("productScope", { name: productName(product.translations, product.slug) })}
           </p>
         )}
         <PricingRunForm
-          key={receiptId ?? productId ?? "all"}
+          key={receiptId ?? productId ?? (picked.length ? picked.map((v) => v.id).join(",") : "all")}
           receiptId={receiptId}
-          variantIds={product?.variants.map((v) => v.id)}
-          initialLocationId={receipt?.lines[0]?.variant.product.stockLocationId ?? product?.stockLocationId}
+          variantIds={product?.variants.map((v) => v.id) ?? (picked.length ? picked.map((v) => v.id) : undefined)}
+          initialLocationId={receipt?.lines[0]?.variant.product.stockLocationId ?? product?.stockLocationId ?? picked[0]?.product.stockLocationId}
           warehouses={options.warehouses}
           rates={rates.map((r) => ({ id: r.id, label: `1 MMK = ${rateDisplay(r).vndPerMmk} VND · ${fmtDate(r.effectiveAt)}` }))}
           categories={options.categories}
@@ -69,6 +92,15 @@ export async function PricingRunsTab({ receiptId, productId }: { receiptId?: str
         ))}
       </Section>
 
+      <RunList runs={runs} t={t} />
+    </>
+  );
+}
+
+
+type Translator = Awaited<ReturnType<typeof getTranslations<"Pricing">>>;
+function RunList({ runs, t }: { runs: Awaited<ReturnType<typeof listRuns>>; t: Translator }) {
+  return (
       <section className="space-y-3 rounded-xl border bg-card p-4">
         <h2 className="font-medium">{t("runs")}</h2>
         <DataTable
@@ -89,7 +121,7 @@ export async function PricingRunsTab({ receiptId, productId }: { receiptId?: str
                 {r.rate ? `1 MMK = ${rateDisplay(r.rate).vndPerMmk} VND` : "—"}
                 {r.shipMmkPerKg != null && <div className="text-xs text-muted-foreground">{t("shipShort", { n: fmtInt(r.shipMmkPerKg) })}</div>}
               </Td>
-              <Td label={t("marginPct")}>{r.marginPct != null ? `${r.marginPct.toString()}%` : t("fixedProfit")}</Td>
+              <Td label={t("marginPct")}>{r.mode === "MANUAL" ? t("modeManual") : r.marginPct != null ? `${r.marginPct.toString()}%` : t("fixedProfit")}</Td>
               <Td label={t("lines")} className="tabular-nums md:text-right">
                 {r._count.lines}
               </Td>
@@ -100,7 +132,5 @@ export async function PricingRunsTab({ receiptId, productId }: { receiptId?: str
           ))}
         </DataTable>
       </section>
-    </>
   );
 }
-

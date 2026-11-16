@@ -1,5 +1,5 @@
 import "server-only";
-import { submitTouched } from "./review";
+import { changedBefore, submitTouched } from "./review";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
@@ -14,6 +14,7 @@ import { latestRate } from "@/server/pricing/latest-rate";
 import { defaultStockLocationId } from "@/server/inventory/warehouses";
 import { productName } from "@/server/inventory/queries";
 import { PRODUCT_EDIT_INCLUDE, toProductEditData, type ProductEditData } from "./admin-queries";
+import { changeRequestsFor } from "./change-request";
 import { saveProduct } from "./products";
 import { IMPORT_PRICE_PREFIX } from "./product-pricing";
 import { brandSlug } from "./brands";
@@ -141,6 +142,9 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
   ]);
   const defaultLocationId = await defaultStockLocationId(db).catch(() => null);
   const products = new Map(owners.map((p) => [p.id, { data: toProductEditData(p), archived: !!p.archivedAt, brandName: p.brand.name }]));
+  // A2 16/11: giá hiệu lực = giá đang chờ duyệt (nếu có) — để so "có đổi giá không" và kiểm hoa hồng ≤ giá.
+  const staged = await changeRequestsFor(db, owners.map((p) => p.id));
+  const pendingPrice = new Map([...staged.values()].flatMap((c) => Object.entries(c.prices).map(([variantId, sp]) => [variantId, sp.priceMmk] as const)));
   const variantOwner = new Map(owners.flatMap((p) => p.variants.map((v) => [v.sku, { productId: p.id, isBundle: v.isBundle }] as const)));
   const productBySlug = new Map(owners.map((p) => [p.slug, p.id]));
   const locationById = new Map(locations.map((l) => [l.id, l]));
@@ -234,6 +238,10 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
   const stock: StockPlan[] = [];
   const counts = { createdProducts: 0, updatedProducts: 0, unchangedProducts: 0, stockLines: 0, priceChanges: 0 };
   const priceBase: Record<string, string> = {};
+  /** SKU mới có ô giá bán / hoa hồng trong file — cũng là thao tác giá (cần quyền `pricing:manage`). */
+  const newPriced = new Set<string>();
+  /** Dòng nhập tồn VND để trống Phí đưa về kho → lô chưa có giá vốn thực tế (A4). */
+  const noLandedLines: number[] = [];
   let needsRate = false;
   const newSkuOwner = new Map<string, string>(); // SKU mới (chưa có trong hệ thống) → nhóm SP
 
@@ -300,7 +308,17 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
       }
       const baseVariants = base?.variants ?? [];
       let nextIndex = baseVariants.length;
-      const variants: (ProductEditData["variants"][number] & { autoSku?: boolean; rows: Row[]; isNew: boolean; changed: boolean; oldPrice: number | null })[] = [];
+      // `priceMmk` / `affiliateCommissionMmk` undefined = ô trống trên SKU có sẵn → giữ nguyên (A2 16/11).
+      type ImportVariant = Omit<ProductEditData["variants"][number], "priceMmk" | "affiliateCommissionMmk"> & {
+        priceMmk: number | undefined;
+        affiliateCommissionMmk: number | null | undefined;
+        autoSku?: boolean;
+        rows: Row[];
+        isNew: boolean;
+        changed: boolean;
+        oldPrice: number | null;
+      };
+      const variants: ImportVariant[] = [];
       for (const [vKey, vRows] of g.variants) {
         const sku = vKey.startsWith("sku:") ? vKey.slice(4) : "";
         // Dòng không SKU của SP có sẵn: khớp biến thể cùng tên (nếu đúng một) thay vì tạo biến thể trùng tên.
@@ -317,19 +335,22 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
         const label = shared(vRows, "variant_label", "Biến thể");
         const priceText = shared(vRows, "price_mmk", "Giá bán");
         const weightText = shared(vRows, "weight_g", "Khối lượng");
-        // QT1b: SKU mới vào giá 0 (đặt giá ở bước 3); cột giá chỉ cập nhật SKU đã có (ghi lịch sử giá "import").
-        if (!current && priceText) warnings.push(`Dòng ${vRows.map((r) => r.__line).join(", ")}: bỏ qua giá bán của SKU mới — đặt giá ở bước 3 (Giá bán) trên trang sản phẩm.`);
-        const price = current ? (priceText ? num(money, priceText, "Giá bán") : current.priceMmk) : 0;
-        // P0-C2: giá bán qua Excel phải > 0 (để trống nếu không đổi giá).
-        if (current && priceText && price < 1) throw new Error(`Giá bán của SKU ${current.sku} phải lớn hơn 0 (để trống nếu không đổi giá)`);
+        // A2 16/11: ô trống = GIỮ NGUYÊN (kể cả giá đang chờ duyệt) → không gửi giá; SKU mới được nhập giá (trống → 0, lưu nháp).
+        const price: number | undefined = priceText ? num(money, priceText, "Giá bán") : current ? undefined : 0;
+        if (priceText && price! < 1) throw new Error(`Giá bán${current ? ` của SKU ${current.sku}` : ""} phải lớn hơn 0 (để trống nếu không đổi giá)`);
+        const effective = current ? (pendingPrice.get(current.id) ?? current.priceMmk) : 0;
         const weight = weightText ? num(money, weightText, "Khối lượng") : current?.weightGrams ?? null;
-        // Hoa hồng CTV cố định MMK/cái: trống = SP mới theo % CTV, SP có sẵn giữ mức cũ.
+        // Hoa hồng CTV cố định MMK/cái: trống = SP mới theo % CTV, SP có sẵn giữ mức cũ (không gửi).
         const commissionText = shared(vRows, "affiliate_commission_mmk", "Hoa hồng CTV");
-        const commission = commissionText ? num(money, commissionText, "Hoa hồng CTV") : current?.affiliateCommissionMmk ?? null;
-        if (commission != null && price > 0 && commission > price) throw new Error(`Hoa hồng CTV${sku ? ` của SKU ${sku}` : ""} lớn hơn giá bán`);
-        if (current && (current.priceMmk !== price || (current.affiliateCommissionMmk ?? null) !== commission)) {
-          priceBase[current.sku] = `${current.priceMmk}|${current.affiliateCommissionMmk ?? ""}`;
+        const commission: number | null | undefined = commissionText ? num(money, commissionText, "Hoa hồng CTV") : current ? undefined : null;
+        const priceForCheck = price ?? effective;
+        if (commission != null && priceForCheck > 0 && commission > priceForCheck) throw new Error(`Hoa hồng CTV${sku ? ` của SKU ${sku}` : ""} lớn hơn giá bán`);
+        const priceChanged = price !== undefined && (!current || price !== effective);
+        const commissionChanged = commission !== undefined && (!current || (current.affiliateCommissionMmk ?? null) !== commission);
+        if (current && (priceChanged || commissionChanged)) {
+          priceBase[current.sku] = `${effective}|${current.affiliateCommissionMmk ?? ""}`;
         }
+        if (!current && (priceText || commissionText)) newPriced.add(`${g.key}|${vKey}`);
         const next = {
           id: current?.id ?? "",
           sku: current?.sku ?? sku,
@@ -346,8 +367,8 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
           components: [],
           rows: vRows,
           isNew: !current,
-          oldPrice: current?.priceMmk ?? null,
-          changed: !current || current.label !== (label || current.label) || current.priceMmk !== price || (current.weightGrams ?? null) !== weight || (current.affiliateCommissionMmk ?? null) !== commission,
+          oldPrice: current ? effective : null,
+          changed: !current || current.label !== (label || current.label) || priceChanged || (current.weightGrams ?? null) !== weight || commissionChanged,
         };
         if (next.autoSku) next.sku = suggestVariantSku(base?.slug ?? (g.key.startsWith("s:") ? g.key.slice(2) : suggestProductSlug(nameEn, nameMy, slugFallback)), nextIndex++);
         variants.push(next);
@@ -404,7 +425,7 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
       const seen = new Map<string, Row>();
       for (const v of variants) {
         for (const r of v.rows) {
-          const view: ImportRowView = { line: Number(r.__line), action: !base || v.isNew ? "create" : v.changed || productChanged ? "update" : "same", name: display, sku: v.sku, label: v.label, price: v.isNew ? null : v.priceMmk, oldPrice: v.oldPrice, stock: null };
+          const view: ImportRowView = { line: Number(r.__line), action: !base || v.isNew ? "create" : v.changed || productChanged ? "update" : "same", name: display, sku: v.sku, label: v.label, price: v.priceMmk ?? v.oldPrice, oldPrice: v.oldPrice, stock: null };
           views.push(view);
           const stockCells = ["qty", "expiry_date", "unit_cost", "unit_cost_vnd", "unit_cost_mmk", "inbound_unit_vnd", "lot_no"].some((k) => (r[k] ?? "").trim());
           if (!stockCells) continue;
@@ -422,7 +443,8 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
             const purchase = num(money, costText, "Giá mua");
             const inboundText = normalizeNumberText(r.inbound_unit_vnd ?? "");
             if (mmk && inboundText && Number(inboundText) !== 0) throw new Error("Hàng mua bằng MMK không có phí đưa về kho VND");
-            const inbound = mmk || !inboundText ? 0 : num(money, inboundText, "Phí đưa về kho");
+            // A4 16/11: "0" = đã biết không phát sinh phí → giá vốn thực tế = giá mua; ô trống = CHƯA BIẾT (không tự coi là 0).
+            const inbound: number | null = mmk ? 0 : inboundText ? num(money, inboundText, "Phí đưa về kho") : null;
             const date = r.expiry_date?.trim() || "";
             const legacyStatus = (r.expiry_status ?? "").trim().toUpperCase();
             const status = legacyStatus ? z.enum(["DATED", "NONE", "UNKNOWN"]).parse(legacyStatus) : date ? "DATED" : requiresExpiry ? "UNKNOWN" : "NONE";
@@ -452,14 +474,16 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
             }
             if (status === "DATED" && date < today) warnings.push(`Dòng ${r.__line}: lô ${lotNo} đã hết hạn (${date}) → không bán được.`);
             else if (status === "DATED" && date < blockFrom) warnings.push(`Dòng ${r.__line}: lô ${lotNo} còn dưới ${blockDays} ngày hạn dùng (${date}) → bị chặn bán.`);
-            const costMmk = mmk ? purchase : rate ? money.parse(vndToMmk(purchase + inbound, rate)) : null;
+            // Xem trước chỉ hiện giá vốn sẽ thực sự được ghi (thực tế); chưa biết phí → để trống + cảnh báo.
+            const costMmk = mmk ? purchase : inbound != null && rate ? money.parse(vndToMmk(purchase + inbound, rate)) : null;
+            if (!mmk && inbound == null) noLandedLines.push(Number(r.__line));
             if (!mmk) needsRate = true;
             if (status === "UNKNOWN") warnings.push(`Dòng ${r.__line}: lô ${lotNo} chưa có hạn sử dụng → chưa bán được đến khi cập nhật hạn.`);
             stock.push({
               sku: v.sku,
               locationId: target.id,
               vnd: !mmk,
-              line: { lotNo, expiryDate: date || undefined, expiryStatus: status, mfgDate: mfg, ...(mmk ? { unitCostMmk: purchase } : { unitCostVnd: purchase, ...(inbound ? { landedCostVnd: purchase + inbound } : {}) }), qty, stockType },
+              line: { lotNo, expiryDate: date || undefined, expiryStatus: status, mfgDate: mfg, ...(mmk ? { unitCostMmk: purchase } : { unitCostVnd: purchase, ...(inbound != null ? { landedCostVnd: purchase + inbound } : {}) }), qty, stockType },
             });
             view.stock = { qty, lotNo, location: target.code, expiryDate: date || null, expiryStatus: status, costMmk };
             counts.stockLines++;
@@ -473,6 +497,11 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
     }
   }
   if (needsRate && !rate) errors.push("Cần thiết lập tỷ giá đang có hiệu lực (Giá & tỷ giá) trước khi nhập tồn hàng VND.");
+  if (noLandedLines.length) {
+    warnings.push(
+      `Dòng ${noLandedLines.sort((a, b) => a - b).join(", ")}: để trống Phí đưa về kho → lô CHƯA CÓ giá vốn (không tự coi là 0). Điền 0 nếu không phát sinh phí; hoặc nhập "Cước tạm tính" ở phiếu nháp trước khi ghi sổ để có giá vốn tạm. Thiếu giá vốn sẽ không bàn giao đơn được.`,
+    );
+  }
   views.sort((a, b) => a.line - b.line);
   return {
     preview: {
@@ -480,7 +509,7 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
       errors,
       warnings,
       rows: views,
-      counts: { ...counts, priceChanges: Object.keys(priceBase).length },
+      counts: { ...counts, priceChanges: Object.keys(priceBase).length + newPriced.size },
       rate: needsRate ? rate?.mmkPerVnd.toString() ?? null : null,
     },
     saves,
@@ -534,6 +563,7 @@ export async function commitCatalogImport(raw: unknown, userId: string, opts: { 
 
     const fileTag = receiptId.slice(0, 8);
     const touched: string[] = [];
+    const before = await changedBefore(tx, saves.flatMap((p) => (typeof p.id === "string" ? [p.id] : [])));
     for (const payload of saves) touched.push((await saveProduct(payload, userId, tx, { priceReason: `${IMPORT_PRICE_PREFIX}${fileTag}` })).id);
 
     const ids = new Map((await tx.variant.findMany({ where: { sku: { in: stock.map((s) => s.sku) } }, select: { id: true, sku: true } })).map((v) => [v.sku, v.id]));
@@ -551,7 +581,7 @@ export async function commitCatalogImport(raw: unknown, userId: string, opts: { 
       const lines = await tx.stockDocumentLine.findMany({ where: { documentId: { in: docIds } }, select: { batchId: true, batch: { select: { unitCostVnd: true } } } });
       await tx.batch.updateMany({ where: { rateId: null, id: { in: lines.flatMap((l) => (l.batchId && l.batch?.unitCostVnd != null ? [l.batchId] : [])) } }, data: { rateId: input.rateId } });
     }
-    const review = opts.submit ? await submitTouched(tx, touched, userId) : null;
+    const review = opts.submit ? await submitTouched(tx, touched, userId, { changedBefore: before }) : null;
     const result = { ...preview.counts, documents };
     await tx.catalogOpeningImport.create({ data: { id: receiptId, userId, result } });
     await tx.auditLog.create({

@@ -63,8 +63,12 @@ export async function balance(batchId: string, locationId: string, stockType: "S
 const DAY = 24 * 60 * 60 * 1000;
 export const isoDay = (offsetDays: number) => new Date(Date.now() + offsetDays * DAY).toISOString().slice(0, 10);
 
-/** Fixture bán hàng: sản phẩm đã đăng, hàng nằm ở kho MM (bán được), vùng giao hàng riêng. */
-export async function saleFixture(lots: { lot: string; expiryInDays: number; qty: number; unitCostVnd?: number }[]) {
+/**
+ * Fixture bán hàng: sản phẩm đã đăng, hàng nằm ở kho MM (bán được), vùng giao hàng riêng.
+ * 16/11: bàn giao bị chặn khi lô thiếu giá vốn → mặc định lô có giá vốn thực tế (giá mua × 0,17);
+ * `{ cost: false }` để giữ lô THIẾU giá vốn (test kiểm cảnh báo / chặn).
+ */
+export async function saleFixture(lots: { lot: string; expiryInDays: number; qty: number; unitCostVnd?: number }[], opts: { cost?: boolean } = {}) {
   const f = await makeFixture();
   await prisma.product.update({ where: { id: f.productId }, data: { published: true, approvedAt: new Date() } });
   const doc = await createDocument(
@@ -82,6 +86,11 @@ export async function saleFixture(lots: { lot: string; expiryInDays: number; qty
     f.userId,
   );
   await postDocument(doc.id, f.userId);
+  if (opts.cost !== false) {
+    for (const l of lots) {
+      await prisma.batch.updateMany({ where: { variantId: f.variantId, lotNo: l.lot }, data: { landedCostMmk: Math.round((l.unitCostVnd ?? 100_000) * 0.17) } });
+    }
+  }
   // Thị trấn VTP có sẵn từ migration P15 (Kamaryut, Yangon West).
   return { ...f, townshipId: "tw-YGN-WYG-KMY" };
 }

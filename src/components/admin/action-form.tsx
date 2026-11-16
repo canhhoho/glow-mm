@@ -22,6 +22,7 @@ export function ActionForm({
   confirm,
   icon = <Save aria-hidden />,
   density = "compact",
+  id,
 }: {
   action: (prev: ActionState, fd: FormData) => Promise<ActionState>;
   children: React.ReactNode;
@@ -33,6 +34,8 @@ export function ActionForm({
   icon?: React.ReactNode;
   /** `touch`: nút cao h-11 (cổng CTV / storefront). */
   density?: Density;
+  /** Để ô nhập nằm ngoài form gắn vào bằng thuộc tính `form`. */
+  id?: string;
 }) {
   const t = useTranslations("Docs");
   const [state, formAction, pending] = useActionState(action, undefined);
@@ -44,6 +47,7 @@ export function ActionForm({
   }, [state]);
   return (
     <form
+      id={id}
       ref={formRef}
       onSubmit={(e) => {
         e.preventDefault();

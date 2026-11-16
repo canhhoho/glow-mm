@@ -352,6 +352,9 @@ export async function catalogImportAction(_prev: CatalogImportState, formData: F
       const approve = submit && formData.get("approveNow") === "on";
       if (approve) await requirePermission("catalog:approve");
       const { review, ...result } = await commitCatalogImport(input, user.id, { allowPricing: can(user.role, "pricing:manage"), submit });
+      // 16/11: xoá cache ngay sau commit (trước bước duyệt luôn) — bước sau lỗi thì web vẫn không giữ giá cũ.
+      updateTag(CATALOG_TAG);
+      revalidatePath("/admin/selling-prices");
       const reviewView = review ? await finishBatchReview(review, user.id, approve) : undefined;
       updateTag(CATALOG_TAG);
       revalidatePath("/admin/products");
@@ -428,6 +431,8 @@ export async function saveProductPricingAction(_prev: ActionState, formData: For
   updateTag(CATALOG_TAG); // giá hiển thị cho khách
   revalidatePath(`/admin/products/${productId}`);
   revalidatePath("/admin/products");
+  revalidatePath("/admin/selling-prices");
+  revalidatePath("/admin/selling-prices/manual");
   return { ok: "1" };
 }
 

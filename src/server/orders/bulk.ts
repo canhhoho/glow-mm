@@ -27,7 +27,7 @@ export const bulkSchema = z.object({
 });
 
 /** Kết quả trả về form hàng loạt (Server Action). */
-export type BulkState = { error?: string; done?: number; total?: number; failed?: { code: string; message: string }[] } | undefined;
+export type BulkState = { error?: string; done?: number; total?: number; failed?: { code: string; message: string }[]; warning?: string } | undefined;
 
 export type BulkResult = { id: string; code: string; ok: true } | { id: string; code: string; ok: false; error: unknown };
 

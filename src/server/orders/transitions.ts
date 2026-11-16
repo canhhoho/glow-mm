@@ -168,6 +168,19 @@ async function issueOrderStock(
     }
   }
 
+  // 16/11: chặn bàn giao khi lô sắp xuất THIẾU HOÀN TOÀN giá vốn (lợi nhuận sẽ sai vì vốn = 0); giá vốn tạm vẫn cho
+  // bàn giao (báo cáo đánh dấu "tạm tính"). Kiểm trước khi ghi sổ — lỗi thì cả transaction huỷ, tồn không đổi.
+  const batches = await tx.batch.findMany({
+    where: { id: { in: picks.map((p) => p.batchId) } },
+    select: { id: true, lotNo: true, landedCostMmk: true, estimatedCostMmk: true, variant: { select: { sku: true } } },
+  });
+  const cost = new Map(batches.map((b) => [b.id, inventoryCost(b)]));
+  const missing = batches.filter((b) => cost.get(b.id)!.costStatus === "MISSING");
+  if (missing.length) {
+    const lots = missing.map((b) => ({ sku: b.variant.sku, lotNo: b.lotNo, batchId: b.id }));
+    throw new OrderError("cost_missing", `Lô chưa có giá vốn: ${lots.map((l) => `${l.sku} · ${l.lotNo}`).join(", ")}`, { lots });
+  }
+
   for (const loc of locations) {
     const own = picks.filter((p) => p.locationId === loc.id);
     if (own.length === 0) continue;
@@ -186,11 +199,6 @@ async function issueOrderStock(
     await postDocumentTx(tx, doc.id, userId);
   }
 
-  const batches = await tx.batch.findMany({
-    where: { id: { in: picks.map((p) => p.batchId) } },
-    select: { id: true, landedCostMmk: true, estimatedCostMmk: true },
-  });
-  const cost = new Map(batches.map((b) => [b.id, inventoryCost(b)]));
   await tx.orderAllocation.createMany({
     data: picks.map((p) => ({
       orderItemId: p.orderItemId,

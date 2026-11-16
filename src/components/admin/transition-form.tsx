@@ -77,6 +77,12 @@ export function TransitionForm({
           {t("error")}: {state.error}
         </p>
       )}
+      {/* Thông báo kèm khi thành công (vd bàn giao bằng lô giá vốn tạm); mã ngắn = tên thao tác thì không hiện. */}
+      {state?.ok && !state.error && state.ok !== transition && (
+        <p role="status" className="w-full text-sm text-warning" data-testid="transition-note">
+          {state.ok}
+        </p>
+      )}
     </form>
   );
 }

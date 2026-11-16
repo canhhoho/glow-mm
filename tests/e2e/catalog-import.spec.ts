@@ -4,7 +4,7 @@ import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { readSheet } from "read-excel-file/node";
 import { CATALOG_HEADER_ROW, CATALOG_SHEET, sheetHeaderKey } from "../../src/lib/catalog-sheet";
 import { toCsv } from "../../src/lib/csv";
-import { approveChanges, login, openProductEdit, openProductSettings, priceInputs, setPrices } from "./helpers";
+import { approveChanges, livePrices, login, openProductEdit, openProductSettings, setPrices } from "./helpers";
 
 const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
@@ -104,16 +104,17 @@ test("mẫu một sheet: tạo SP hai biến thể kèm tồn + nội dung → x
   await openProductSettings(page);
   await expect(page.getByRole("textbox", { name: "Slug (URL)", exact: true })).toHaveValue(`excel-imported-${suffix}`);
 
-  // QT1b: SKU mới từ Excel vào giá 0 (cột giá bị bỏ qua) → bước 4 báo lỗi giá theo SKU, bước 5 chưa bật được.
+  // File không điền giá bán → SKU mới giá 0 (lưu nháp) → bước 4 báo lỗi giá theo SKU, bước 5 chưa bật được.
   const check = page.getByTestId("launch-check");
   const sku = await page.getByRole("textbox", { name: "SKU", exact: true }).first().inputValue();
   await expect(check.getByTestId("issue-PRICE_ZERO")).toContainText(sku);
   await expect(page.getByTestId("product-steps").getByTestId("step-price")).toHaveAttribute("data-state", "todo");
   await expect(page.getByTestId("step-publish-block")).toContainText("Hoàn thành các bước trước");
   await expect(page.getByTestId("step-publish-block").getByRole("button", { name: "Bật hiển thị trên web" })).toHaveCount(0);
-  // Bước 3: đặt giá tay có lý do → đủ điều kiện; thiếu ảnh chỉ là lưu ý; nguồn giá = sửa tay.
-  await expect(await priceInputs(page)).toHaveCount(2);
-  await setPrices(page, [27000, 42000], "Giá mở bán");
+  // 16/11: bước 3 dẫn về trang Giá bán; giá nhập thẳng qua Excel (SKU có sẵn) → đủ điều kiện; thiếu ảnh chỉ là lưu ý.
+  await expect(page.getByTestId("price-actions").getByRole("link", { name: "Đặt giá" })).toHaveAttribute("href", /\/admin\/selling-prices\/manual\?productId=/);
+  await expect(page.getByTestId("step-price-row")).toHaveCount(2);
+  await setPrices(page, [27000, 42000]);
   // P1-A: đủ điều kiện không tự vào hàng đợi → bấm Gửi duyệt; người duyệt "Chỉ duyệt" (có xác nhận) → vẫn ẩn.
   await expect(page.getByTestId("product-steps").getByTestId("step-review")).toHaveAttribute("data-state", "todo");
   await expect(check.getByTestId("approval-status")).toHaveAttribute("data-label", "DRAFT");
@@ -126,8 +127,8 @@ test("mẫu một sheet: tạo SP hai biến thể kèm tồn + nội dung → x
   await expect(page.getByTestId("step-publish-block")).toContainText("Đang ẩn khỏi web");
   await check.getByTestId("readiness-warnings").locator("summary").click();
   await expect(check.getByTestId("issue-NO_IMAGE")).toContainText("Cảnh báo");
-  await expect(page.getByTestId("step-price-row").first()).toContainText("Sửa tay");
-  await expect(page.getByTestId("step-price-row").first()).toContainText("Giá mở bán");
+  await expect(page.getByTestId("step-price-row").first()).toContainText("Excel");
+  expect(await livePrices(page)).toEqual([27000, 42000]);
   await page.screenshot({ path: "test-results/screens/product-price-step.png", fullPage: true });
 
   // Bước 5: đăng → khách thấy đúng dữ liệu đã nhập từ Excel (tiếng Anh + tiếng Myanmar mặc định).
@@ -163,7 +164,7 @@ test("cập nhật giá: danh sách SP hiện có chứa SKU; tải lên dòng S
   const nameEn = await page.getByRole("textbox", { name: "Tên tiếng Anh", exact: true }).inputValue();
   await openProductSettings(page);
   const sku = await page.getByRole("textbox", { name: "SKU", exact: true }).first().inputValue();
-  const original = Number(await (await priceInputs(page)).first().inputValue());
+  const [original] = await livePrices(page);
   // Giá khác nhau mỗi lần chạy → nội dung file khác (P1-D: nhập lại đúng file đã xác nhận bị chặn).
   const next = original + 100 * (1 + (Date.now() % 9));
 
@@ -174,7 +175,7 @@ test("cập nhật giá: danh sách SP hiện có chứa SKU; tải lên dòng S
   const keys = rows[CATALOG_HEADER_ROW - 1].map(sheetHeaderKey);
   const mine = rows.find((r) => r[keys.indexOf("sku")] === sku)!;
   expect(mine[keys.indexOf("name_en")]).toBe(nameEn);
-  // P2: admin có quyền giá → file SP hiện có kèm cột giá (giá đang bán).
+  // P2: admin có quyền giá → file SP hiện có kèm cột giá (giá hiệu lực = đang chờ duyệt nếu có, không thì đang bán).
   expect(keys).toContain("price_mmk");
   expect(keys).toContain("affiliate_commission_mmk");
   expect(Number(mine[keys.indexOf("price_mmk")])).toBe(original);
@@ -193,15 +194,14 @@ test("cập nhật giá: danh sách SP hiện có chứa SKU; tải lên dòng S
     await openProductSettings(page);
     const variant = page.getByRole("textbox", { name: "SKU", exact: true }).first();
     await expect(variant).toHaveValue(sku);
-    await expect((await priceInputs(page)).first()).toHaveValue(String(next));
     // P1-A: SP đang bán → giá từ Excel chờ duyệt; duyệt xong nguồn giá là Excel.
-    await expect(page.getByTestId("pending-price").first()).toBeVisible();
+    await expect(page.getByTestId("pending-price").first()).toContainText(next.toLocaleString("en-US"));
     await approveChanges(page);
     await expect(page.getByTestId("step-price-row").first()).toContainText("Excel");
   } finally {
     // Trả giá cũ cho dữ liệu seed dùng chung.
     await page.goto(productUrl);
-    await setPrices(page, [original], "E2E trả giá cũ");
+    await setPrices(page, [original]);
     await approveChanges(page);
   }
 });

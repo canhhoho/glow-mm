@@ -14,7 +14,7 @@ export default async function EditDocumentPage({ params }: PageProps<"/admin/inv
   const doc = await getDocument(id);
   if (!doc) notFound();
   if (doc.type !== "RECEIVE" || doc.status !== "DRAFT") redirect(`/admin/inventory/documents/${id}`);
-  const [t, locations, variants, shipments] = await Promise.all([getTranslations("Docs"), listLocations(), listVariantsForReceive(), listShipments()]);
+  const [t, locations, variants, shipments] = await Promise.all([getTranslations("Docs"), listLocations(), listVariantsForReceive({ includeIds: doc.lines.map((l) => l.variantId) }), listShipments()]);
   const draft: ReceiveDraft = {
     id: doc.id,
     toId: doc.toId ?? "",
@@ -28,7 +28,9 @@ export default async function EditDocumentPage({ params }: PageProps<"/admin/inv
       expiryStatus: l.batch?.expiryStatus ?? "DATED",
       expiryDate: day(l.batch?.expiryDate),
       mfgDate: day(l.batch?.mfgDate),
-      unitCost: String(l.batch?.unitCostMmk ?? l.batch?.unitCostVnd ?? ""),
+      // A3 16/11: giá mua + phí về kho của CHÍNH dòng phiếu (không phải bình quân của lô); phí trống = chưa biết.
+      unitCost: String(l.unitCostMmk ?? l.unitCostVnd ?? l.batch?.unitCostMmk ?? l.batch?.unitCostVnd ?? ""),
+      inbound: l.unitCostVnd != null && l.landedCostVnd != null ? String(l.landedCostVnd - l.unitCostVnd) : "",
       stockType: l.stockType,
     })),
   };

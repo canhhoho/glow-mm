@@ -1,6 +1,8 @@
 import "server-only";
 import { inventoryCost } from "@/server/inventory/cost";
 import { salesBlockDays } from "@/server/inventory/documents";
+import { isSourceForProduct } from "@/server/pricing/cost";
+import { changeRequestsFor } from "./change-request";
 import { latestRate } from "@/server/pricing/latest-rate";
 import type { Tx } from "@/server/inventory/ledger";
 import { availableToSell } from "@/server/orders/availability";
@@ -54,15 +56,18 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
   const receivedRows = stockVariantIds.length
     ? await db.stockDocumentLine.findMany({
         where: { variantId: { in: stockVariantIds }, document: { status: "POSTED", type: { in: ["RECEIVE", "TRANSFER"] } } },
-        select: { variantId: true, qty: true, document: { select: { type: true, postedAt: true } } },
+        select: { variantId: true, qty: true, stockType: true, document: { select: { type: true, postedAt: true, to: { select: { id: true, sellable: true, type: true } } } } },
       })
     : [];
   const received = new Set(receivedRows.map((r) => r.variantId));
   // QT1b PRICE_STALE: lần ghi sổ phiếu NHẬP mới nhất theo biến thể so với lần đổi giá gần nhất (PriceHistory).
   // Chưa có lịch sử giá (giá đặt lúc tạo theo cách cũ) → không đoán, không cảnh báo.
+  // A1 16/11: cùng điều kiện nguồn giá mua (hàng bán được, không vào khu chờ kiểm tra, không vào kho bán khác).
+  const ownerLocation = new Map(products.flatMap((p) => p.variants.flatMap((v) => [[v.id, p.stockLocationId] as const, ...v.bundleItems.map((b) => [b.componentId, p.stockLocationId] as const)])));
   const lastReceive = new Map<string, number>();
   for (const r of receivedRows) {
-    if (r.document.type !== "RECEIVE" || r.qty <= 0 || !r.document.postedAt) continue;
+    if (r.document.type !== "RECEIVE" || r.qty <= 0 || !r.document.postedAt || r.stockType !== "SELLABLE") continue;
+    if (r.document.to?.type === "QUARANTINE" || !isSourceForProduct(r.document.to, ownerLocation.get(r.variantId) ?? null)) continue;
     lastReceive.set(r.variantId, Math.max(lastReceive.get(r.variantId) ?? 0, r.document.postedAt.getTime()));
   }
   const allVariantIds = products.flatMap((p) => p.variants.map((v) => v.id));
@@ -70,6 +75,13 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
     ? await db.priceHistory.groupBy({ by: ["variantId"], where: { variantId: { in: allVariantIds } }, _max: { createdAt: true } })
     : [];
   const lastPriceChange = new Map(priceChanges.map((c) => [c.variantId, c._max.createdAt?.getTime() ?? 0]));
+  // 16/11: giá đang chờ duyệt cũng là "lần đặt giá" — đặt sau phiếu nhập / tỷ giá mới → không còn cảnh báo cần tính lại.
+  for (const cr of (await changeRequestsFor(db, products.map((p) => p.id))).values()) {
+    for (const [variantId, sp] of Object.entries(cr.prices)) {
+      const at = sp.stagedAt ? Date.parse(sp.stagedAt) : NaN;
+      if (Number.isFinite(at)) lastPriceChange.set(variantId, Math.max(lastPriceChange.get(variantId) ?? 0, at));
+    }
+  }
   // P1-D (M5): tỷ giá đang hiệu lực mới hơn lần đổi giá gần nhất (chỉ kho nhập VN; chưa có lịch sử giá → không đoán).
   const rateAt = (await latestRate(db, now))?.effectiveAt.getTime() ?? 0;
 

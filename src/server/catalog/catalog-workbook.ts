@@ -66,7 +66,7 @@ function inputSheet(columns: SheetColumn[], lists: TemplateLists, rows: Template
     row(1, [cell("A1", `${BRAND_NAME} — Nhập / cập nhật sản phẩm`, S.title)], 24),
     row(2, [cell("A2", "Bắt buộc (*): một tên (Myanmar hoặc tiếng Anh), Thương hiệu, Danh mục. Nên điền: Khối lượng (bắt buộc trước khi đăng bán hàng kho nhập VN) và Mô tả hai thứ tiếng.", S.note)]),
     row(3, [cell("A3", "Mỗi dòng một biến thể; cùng tên + thương hiệu để gộp sản phẩm. Bấm dấu + phía trên cột để mở Cách dùng, Thành phần, Bảo quản, PAO, SKU… Ô trống giữ nguyên.", S.note)]),
-    row(4, [cell("A4", "Tự sinh: mã SP, SKU, số lô. Làm tiếp trên web: giá bán (bước 3), ảnh, ghi sổ phiếu nhập, gửi duyệt → duyệt → đăng bán. Cột xanh = nhập tồn (tuỳ chọn).", S.note)]),
+    row(4, [cell("A4", "Tự sinh: mã SP, SKU, số lô. Làm tiếp trên web: ảnh, ghi sổ phiếu nhập, giá bán (nếu chưa điền — trang Giá bán), gửi duyệt → duyệt → đăng bán. Cột xanh = nhập tồn (tuỳ chọn).", S.note)]),
     row(5, [cell("A5", "SẢN PHẨM", S.group), ...(firstStock >= 0 ? [cell(`${colName(firstStock)}5`, "NHẬP TỒN (tuỳ chọn)", S.group)] : [])]),
     row(
       CATALOG_HEADER_ROW,
@@ -109,7 +109,8 @@ function requirement(c: SheetColumn): string {
   if (c.key === "weight_g") return "Bắt buộc trước khi đăng (kho nhập VN)";
   if (c.key === "description_my" || c.key === "description_en") return "Nên điền";
   if (c.key === "sku" || c.key === "lot_no") return "Để trống = tự sinh";
-  if (c.key === "price_mmk" || c.key === "affiliate_commission_mmk") return "Không dùng (SKU mới giá 0)";
+  if (c.key === "price_mmk") return "Tuỳ chọn (trống = chưa có giá, lưu nháp)";
+  if (c.key === "affiliate_commission_mmk") return "Tuỳ chọn (trống = theo % CTV)";
   if (c.key === "qty") return "Tuỳ chọn (có = tạo phiếu nhập nháp)";
   if (c.key === "unit_cost") return "Bắt buộc nếu nhập tồn";
   return "Tuỳ chọn";
@@ -121,10 +122,10 @@ function guideSheet(columns: SheetColumn[]) {
     "Nên điền ngay: Khối lượng (g) — bắt buộc trước khi gửi duyệt / đăng bán với kho hàng nhập Việt Nam; Mô tả Myanmar và tiếng Anh — trang tiếng Anh không tự lấy mô tả Myanmar.",
     "Nhiều màu/dung tích: mỗi loại một dòng, cùng tên và thương hiệu, khác cột Biến thể. Để trống Biến thể = một loại tiêu chuẩn.",
     "Cột thu gọn (bấm dấu + phía trên cột): Cách dùng, Thành phần, Bảo quản, Hạn sau mở nắp (PAO), Có hạn dùng, SKU, Phí đưa về kho, Số lô. Tạo mới để trống SKU.",
-    "Hệ thống tự sinh: mã sản phẩm (đường dẫn), SKU, số lô. Sản phẩm mới ở trạng thái ẨN, CHƯA DUYỆT, giá bán 0.",
-    "Làm tiếp trên trang sản phẩm để khách thấy: Ghi sổ phiếu nhập (nếu có tồn) → đặt Giá bán ở bước 3 → thêm Ảnh (nên có) → Gửi duyệt → Duyệt → Đăng bán. Điều kiện đăng: giá > 0, có khối lượng (kho nhập VN), kho bán hợp lệ, đã duyệt.",
-    "Cập nhật: tải file 'Danh sách sản phẩm hiện có', giữ SKU và sửa thông tin cần đổi. Ô trống = giữ nguyên (không xoá nội dung qua Excel). Không đổi kho bán / combo qua Excel. Cột Giá bán, Hoa hồng CTV chỉ có trong file của người có quyền giá và chỉ sửa SKU đã có.",
-    "Nhập tồn (cột xanh, tuỳ chọn): Số lượng + Giá mua (VND cho kho nhập Việt Nam, MMK cho kho mua tại Myanmar). Giá mua để tính vốn, không phải giá bán. Phiếu nhập là NHÁP, kiểm tra rồi Ghi sổ mới có tồn. Số viết 150000, 150,000 hoặc 150.000 đều được.",
+    "Hệ thống tự sinh: mã sản phẩm (đường dẫn), SKU, số lô. Sản phẩm mới ở trạng thái ẨN, CHƯA DUYỆT. Điền Giá bán (MMK) thì gửi duyệt được; để trống thì giá 0, lưu nháp, đặt giá sau ở trang Giá bán.",
+    "Làm tiếp trên web để khách thấy: Ghi sổ phiếu nhập (nếu có tồn) → Giá bán (nếu chưa điền, ở trang Giá bán) → thêm Ảnh (nên có) → Gửi duyệt → Duyệt → Đăng bán. Điều kiện đăng: giá > 0, có khối lượng (kho nhập VN), kho bán hợp lệ, đã duyệt.",
+    "Cập nhật: tải file 'Danh sách sản phẩm hiện có', giữ SKU và sửa thông tin cần đổi. Ô trống = giữ nguyên (không xoá nội dung qua Excel). Không đổi kho bán / combo qua Excel. Cột Giá bán, Hoa hồng CTV chỉ có trong file của người có quyền giá; điền là đổi giá (SP đã duyệt → chờ duyệt lại, giá và hoa hồng có hiệu lực cùng lúc), để trống là giữ nguyên kể cả giá đang chờ duyệt.",
+    "Nhập tồn (cột xanh, tuỳ chọn): Số lượng + Giá mua (VND cho kho nhập Việt Nam, MMK cho kho mua tại Myanmar). Giá mua để tính vốn, không phải giá bán. Phiếu nhập là NHÁP, kiểm tra rồi Ghi sổ mới có tồn. Phí đưa về kho: điền 0 nếu không phát sinh phí; để trống = chưa biết → lô chưa có giá vốn (không bàn giao đơn được đến khi có giá vốn tạm/thực tế). Số viết 150000, 150,000 hoặc 150.000 đều được.",
     "Hàng có hạn dùng mà để trống Hạn sử dụng → lô chưa biết hạn, chưa bán được đến khi cập nhật hạn thật. Ngày theo dd/mm/yyyy.",
     "Luôn bấm Xem trước để kiểm tra; chỉ khi không còn lỗi mới xác nhận được.",
   ];

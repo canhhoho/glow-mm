@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import pg from "pg";
-import { approveChanges, login, priceInputs, setPrices } from "./helpers";
+import { approveChanges, livePrices, login, setPrices } from "./helpers";
 
 // P20: nội dung SP được cache ("use cache"), tồn kho thì không. Kiểm tra admin sửa → storefront đổi ngay,
 // và tồn đổi (giữ hàng) → trang SP phản ánh ngay dù nội dung đang nằm trong cache.
@@ -19,7 +19,7 @@ async function db<T>(fn: (c: pg.Client) => Promise<T>) {
 
 test("admin đổi giá biến thể → trang SP và thẻ ở trang danh mục hiện giá mới ngay", async ({ page }) => {
   test.setTimeout(90_000);
-  const price = 1100 + (Date.now() % 50) * 100; // giá lạ, thấp hơn mọi biến thể → thành giá thẻ
+  const price = 1100 + (Date.now() % 5000); // giá lạ (5.000 khả năng, không trùng giá SP khác), thấp hơn mọi biến thể → thành giá thẻ
   const shown = `${price.toLocaleString("en-US")} MMK`;
 
   // Làm ấm cache trước khi sửa.
@@ -33,10 +33,10 @@ test("admin đổi giá biến thể → trang SP và thẻ ở trang danh mục
   await expect(page).toHaveURL(/\/admin\/products\/[^/?]+$/);
   const adminUrl = page.url();
   // QT1b: giá sửa ở bước 3 "Giá bán" (có lý do), không còn trong form sửa.
-  const original = await (await priceInputs(page)).first().inputValue();
+  const [original] = await livePrices(page);
 
   try {
-    await setPrices(page, [price], "E2E cache");
+    await setPrices(page, [price]);
     // P1-A: SP đang bán → giá mới chờ duyệt; khách chỉ thấy sau khi duyệt.
     await page.goto(`/en/p/${SLUG}`);
     await expect(page.getByText(shown)).toHaveCount(0);
@@ -49,7 +49,7 @@ test("admin đổi giá biến thể → trang SP và thẻ ở trang danh mục
     await expect(page.getByRole("link", { name: new RegExp(shown) }).first()).toBeVisible();
   } finally {
     await page.goto(adminUrl);
-    await setPrices(page, [original], "E2E trả giá cũ");
+    await setPrices(page, [original]);
     await approveChanges(page);
   }
   await page.goto(`/en/p/${SLUG}`);
