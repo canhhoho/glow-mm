@@ -104,9 +104,9 @@ describe("Kho của sản phẩm", () => {
 
   /**
    * R3 (docs/ban-do-nghiep-vu-admin.md): form SP phải chặn giống chuyển kho hàng loạt, cả khi SP là thành phần.
-   * `it.fails`: lỗi đã tái hiện 16/11/2026 (`saveProduct` chỉ kiểm khi chính SP là combo) — sửa xong đổi về `it`.
+   * Lỗi tái hiện 16/11/2026 (`saveProduct` chỉ kiểm khi chính SP là combo); sửa bằng `assertBundleWarehouses` dùng chung.
    */
-  it.fails("đổi kho qua form SP: thành phần của combo khác kho bị chặn", async () => {
+  it("đổi kho qua form SP: thành phần của combo khác kho bị chặn", async () => {
     const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 2 }]);
     const tag = f.tag.toLowerCase();
     const product = (slug: string, variants: Record<string, unknown>[]) =>

@@ -274,6 +274,8 @@ export async function writeProduct(tx: Tx, parsed: ProductInput, userId: string,
       }
       await tx.bundleItem.createMany({ data: v.components.map((c) => ({ bundleId, componentId: c.componentId, qty: c.qty })) });
     }
+    // R3: đổi kho SP đang là thành phần của combo khác → chặn như chuyển kho hàng loạt.
+    if (current && stockLocationId !== current.stockLocationId) await assertBundleWarehouses(tx, [product.id]);
 
     if (source?.images.length) {
       await tx.productImage.createMany({ data: source.images.map((image) => ({ ...image, productId: product.id })) });
@@ -296,6 +298,24 @@ export async function writeProduct(tx: Tx, parsed: ProductInput, userId: string,
     if (current && current.brandId !== brandId) await pruneEmptyBrands(tx, [current.brandId], userId);
     return product;
   }
+}
+
+/**
+ * Combo trừ kho từng thành phần ở kho của combo → combo và thành phần phải cùng kho bán (P24). Kiểm cả hai chiều
+ * (SP là combo, hoặc là thành phần của combo khác). Gọi sau khi ghi `stockLocationId`, trong cùng transaction —
+ * dùng chung cho form SP (`writeProduct`) và chuyển kho hàng loạt (`moveProductsToWarehouse`).
+ */
+export async function assertBundleWarehouses(tx: Tx, productIds: string[]) {
+  if (productIds.length === 0) return;
+  const links = await tx.bundleItem.findMany({
+    where: { OR: [{ bundle: { productId: { in: productIds } } }, { component: { productId: { in: productIds } } }] },
+    select: {
+      bundle: { select: { sku: true, product: { select: { stockLocationId: true } } } },
+      component: { select: { sku: true, product: { select: { stockLocationId: true } } } },
+    },
+  });
+  const bad = links.find((l) => l.bundle.product.stockLocationId !== l.component.product.stockLocationId);
+  if (bad) throw new CatalogError(`Combo ${bad.bundle.sku} và thành phần ${bad.component.sku} phải cùng kho — đổi kho cả hai cùng lúc`);
 }
 
 const bulkPublishSchema = z.object({
