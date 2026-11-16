@@ -21,6 +21,7 @@ import { saveProductPricing } from "./product-pricing";
 import { discardChanges, reviewProducts, saveAndApprove, submitProducts, type ReviewResult } from "./review";
 import { finishBatchReview, type BatchReviewView } from "./batch-review-text";
 import { saveProductPreorder } from "./product-preorder";
+import { refreshPrices } from "./refresh-prices";
 import type { Issue } from "./readiness-rules";
 
 /** D2: lỗi mở bán → câu báo theo ngôn ngữ admin, kèm SKU liên quan. */
@@ -85,8 +86,8 @@ export async function saveProductAction(_prev: ActionState, formData: FormData):
     }
     return { error: message(e) };
   }
-  updateTag(CATALOG_TAG); // menu danh mục storefront (SP đăng/ẩn, đổi danh mục)
-  revalidatePath("/admin/products");
+  // Menu danh mục storefront (SP đăng/ẩn, đổi danh mục); "Lưu & Duyệt" áp cả giá chờ duyệt → làm mới như đổi giá.
+  refreshPrices();
   redirect(`/admin/products/${id}?saved=1`);
 }
 
@@ -177,8 +178,7 @@ export async function productBulkAction(_prev: ProductBulkState, formData: FormD
   } catch (e) {
     return { error: message(e) };
   }
-  updateTag(CATALOG_TAG); // thẻ/trang SP, menu danh mục, bộ lọc storefront
-  revalidatePath("/admin/products");
+  refreshPrices(); // thẻ/trang SP, menu danh mục, bộ lọc storefront; duyệt hàng loạt áp giá chờ duyệt
   revalidatePath("/admin");
   return { done, blocked };
 }
@@ -353,11 +353,9 @@ export async function catalogImportAction(_prev: CatalogImportState, formData: F
       if (approve) await requirePermission("catalog:approve");
       const { review, ...result } = await commitCatalogImport(input, user.id, { allowPricing: can(user.role, "pricing:manage"), submit });
       // 16/11: xoá cache ngay sau commit (trước bước duyệt luôn) — bước sau lỗi thì web vẫn không giữ giá cũ.
-      updateTag(CATALOG_TAG);
-      revalidatePath("/admin/selling-prices");
+      refreshPrices();
       const reviewView = review ? await finishBatchReview(review, user.id, approve) : undefined;
-      updateTag(CATALOG_TAG);
-      revalidatePath("/admin/products");
+      refreshPrices();
       revalidatePath("/admin/inventory/documents");
       return { result, review: reviewView };
     }
@@ -402,18 +400,13 @@ export async function saveProductPricingAction(_prev: ActionState, formData: For
   } catch (e) {
     return { error: message(e) };
   }
-  updateTag(CATALOG_TAG); // giá hiển thị cho khách
-  revalidatePath(`/admin/products/${productId}`);
-  revalidatePath("/admin/products");
-  revalidatePath("/admin/selling-prices");
-  revalidatePath("/admin/selling-prices/manual");
+  refreshPrices();
   return { ok: "1" };
 }
 
-function reviewDone(ids: string[]) {
-  updateTag(CATALOG_TAG); // duyệt thay đổi / đăng → khách thấy bản mới
-  for (const id of ids) revalidatePath(`/admin/products/${id}`);
-  revalidatePath("/admin/products");
+/** Duyệt / từ chối / huỷ bản đang sửa có thể áp hoặc bỏ giá chờ duyệt → làm mới như đổi giá (R8). */
+function reviewDone() {
+  refreshPrices();
   revalidatePath("/admin");
 }
 
@@ -426,19 +419,18 @@ async function resultText(results: ReviewResult[]) {
 
 /** Gửi duyệt (một SP từ trang SP, hoặc nhiều SP `ids[]` từ danh sách). */
 export async function submitProductsAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  let ids: string[] = [];
   try {
     const user = await requirePermission("catalog:manage");
-    ids = formData.getAll("ids").map(String);
+    const ids = formData.getAll("ids").map(String);
     const error = await resultText(await submitProducts({ ids }, user.id));
     if (error) {
-      reviewDone(ids);
+      reviewDone();
       return { error };
     }
   } catch (e) {
     return { error: message(e) };
   }
-  reviewDone(ids);
+  reviewDone();
   return { ok: "1" };
 }
 
@@ -447,36 +439,32 @@ export async function submitProductsAction(_prev: ActionState, formData: FormDat
  * lúc xem thì bỏ qua SP đó. Duyệt & Đăng cần thêm quyền đăng.
  */
 export async function reviewProductsAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  let ids: string[] = [];
   try {
     const user = await requirePermission("catalog:approve");
     const decision = z.enum(["approve", "approvePublish", "reject"]).parse(formData.get("decision"));
     if (decision === "approvePublish") await requirePermission("catalog:publish");
     const items = z.array(z.object({ id: z.string(), version: z.coerce.number() })).parse(JSON.parse(String(formData.get("items") ?? "[]")));
-    ids = items.map((i) => i.id);
     const error = await resultText(await reviewProducts({ decision, items, reason: formData.get("reason") ?? undefined }, user.id));
     if (error) {
-      reviewDone(ids);
+      reviewDone();
       return { error };
     }
   } catch (e) {
     return { error: message(e) };
   }
-  reviewDone(ids);
+  reviewDone();
   return { ok: "1" };
 }
 
 /** Huỷ bản đang sửa của SP đã duyệt (về bản đang bán). */
 export async function discardChangesAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  let id = "";
   try {
     const user = await requirePermission("catalog:manage");
-    id = String(formData.get("id") ?? "");
-    await discardChanges({ id }, user.id);
+    await discardChanges({ id: String(formData.get("id") ?? "") }, user.id);
   } catch (e) {
     return { error: message(e) };
   }
-  reviewDone([id]);
+  reviewDone();
   return { ok: "1" };
 }
 

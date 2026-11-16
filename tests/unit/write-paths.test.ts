@@ -21,6 +21,8 @@ const RULES: { what: string; pattern: RegExp; allowed: string[] }[] = [
   { what: "ghi StockBalance", pattern: /\.stockBalance\.(create|update|upsert|delete)(Many)?\(/, allowed: ["src/server/inventory/ledger.ts"] },
   // R1: lịch sử giá chỉ ghi ở price-write.ts (writeLivePrice / recordPriceChange).
   { what: "ghi PriceHistory", pattern: /\.priceHistory\.create(Many)?\(/, allowed: ["src/server/catalog/price-write.ts"] },
+  // R8: action đổi giá làm mới bằng refreshPrices (storefront + mọi trang admin có giá), không tự liệt kê.
+  { what: "làm mới trang Giá bán", pattern: /revalidatePath\(\s*["'`]\/admin\/selling-prices/, allowed: ["src/server/catalog/refresh-prices.ts"] },
 ];
 
 describe("Một đường ghi cho nghiệp vụ giá / kho", () => {

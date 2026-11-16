@@ -54,9 +54,9 @@ Ký hiệu: ✅ dùng chung đúng · ⚠️ logic lặp, có rủi ro · 🗑 c
 | R5 | ✅ Đã gom 16/11/2026 | Điều kiện "lô bị chặn" viết tay ở `inventory/overview.ts` và `admin/nav-counts.ts`. | Badge menu và bộ lọc tồn có thể lệch. | `blockedBatchWhere` (`inventory/fefo.ts`), phần bù đúng của `sellableBatchWhere`; test "R5: lô bị chặn = phần bù…" (`stock-overview.test.ts`). |
 | R6 | ✅ Đã gom 16/11/2026 | Phiếu xuất của đơn (`transitions.ts`) và phiếu trả hàng (`returns.ts`) tạo bằng `tx.stockDocument.create` riêng. | Rủi ro có đường thứ ba bỏ qua `postDocumentTx`. | `postOrderDocumentTx` trong `documents.ts` (không qua `documentSchema` để form không gắn được `orderId` vào phiếu xuất). Unit test `tests/unit/write-paths.test.ts` chặn tạo phiếu kho / ghi `StockBalance` / ghi `PriceHistory` ngoài file được phép. |
 | R7 | ✅ Đã sửa 16/11/2026 | Chú thích `catalog/approval-rules.ts` ghi hoa hồng CTV "ghi thẳng, không cần duyệt". | Người sửa sau hiểu sai. | Đã sửa: hoa hồng không nằm trong dấu vân tay nhưng vẫn qua bản chờ duyệt. |
-| R8 | Thấp – cache | Mỗi action tự liệt kê `updateTag`/`revalidatePath`; đường đổi giá có helper `refreshPricing` (`pricing/actions.ts`) nhưng `catalog/actions.ts` viết tay. | Quên `updateTag(CATALOG_TAG)` → khách thấy giá cũ. | Một helper làm mới dùng chung cho mọi action đổi giá (tầng action, vì cần `next/cache`). |
+| R8 | ✅ Đã gom 16/11/2026 | Mỗi action đổi giá tự liệt kê `updateTag`/`revalidatePath`; `catalog/actions.ts` viết tay, duyệt/huỷ bản đang sửa không làm mới trang Giá bán. | Quên `updateTag(CATALOG_TAG)` → khách thấy giá cũ. | `refreshPrices` (`catalog/refresh-prices.ts`, tầng action) dùng cho Giá bán MMK, bảng tính / thủ công VND, Excel, lưu & duyệt, duyệt / gửi duyệt / huỷ bản đang sửa, thao tác hàng loạt. `write-paths.test.ts` chặn làm mới trang Giá bán ở nơi khác. |
 
-Thứ tự đề xuất: **R8** (R1–R5, R7 xong; R6 chấp nhận, không gom). Mỗi mục một commit/PR riêng, không gộp.
+Trạng thái: R1–R8 đã xử lý (16/11/2026). Điểm trùng mới phát hiện → thêm dòng R9… vào bảng, mỗi mục một commit riêng.
 
 ## 4. Quy trình thay đổi
 
@@ -75,7 +75,7 @@ Thứ tự đề xuất: **R8** (R1–R5, R7 xong; R6 chấp nhận, không gom)
    - Validation: Zod trong hàm domain (không chỉ ở form); khoá dòng/khoá lạc quan giống các đường khác.
    - Duyệt: sửa nội dung/giá/ảnh/khối lượng của SP đã duyệt phải qua `guardApproval`/bản chờ duyệt.
    - Audit: `auditLog` hoặc `PriceHistory`/`StockLedger` với cùng `action`/`reason` như các đường khác.
-   - Cache: `updateTag` đúng tag cho dữ liệu khách thấy.
+   - Cache: `updateTag` đúng tag cho dữ liệu khách thấy; đổi giá/hoa hồng → gọi `refreshPrices` (`catalog/refresh-prices.ts`).
 4. **Test hồi quy**
    - Integration test cho **từng** điểm vào của nghiệp vụ (vd. đổi giá: Giá bán tự động, thủ công VND, thủ công MMK, Excel, duyệt), không chỉ đường vừa sửa.
    - Gom logic lặp: viết test đặc tính (hành vi hiện tại) **trước**, gom sau, test phải giữ nguyên kết quả trừ chỗ cố ý sửa.
