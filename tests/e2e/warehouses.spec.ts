@@ -15,7 +15,7 @@ test("admin xem kho; danh sách SP lọc theo kho; thủ kho không vào đượ
   }
   await login(page, "admin@glow.local");
   await page.goto("/admin/settings/warehouses");
-  await expect(page.getByRole("heading", { name: "Quản lý kho" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Kho", exact: true })).toBeVisible();
   await expect(page.getByTestId("warehouse-THAM")).toContainText("Đang dùng");
   await expect(page.getByTestId("warehouse-THAM")).toContainText("Hàng nhập VN");
   await expect(page.getByTestId("warehouse-CHI")).toContainText("Kho bán");

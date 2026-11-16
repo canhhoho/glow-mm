@@ -6,6 +6,7 @@ import { can } from "@/server/auth/roles";
 import { prisma } from "@/lib/db";
 import { salesBlockDays } from "@/server/inventory/documents";
 import { preorderQueue } from "@/server/orders/preorder";
+import { OrdersTabs } from "@/components/admin/orders-tabs";
 import { TransitionForm } from "@/components/admin/transition-form";
 import { Badge, DataTable, EmptyState, Page, PageHeader, Section, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtInt } from "@/lib/format";
@@ -24,7 +25,8 @@ export default async function PreordersPage() {
 
   return (
     <Page>
-      <PageHeader title={tp("title")} description={tp("help")} />
+      <PageHeader title={t("title")} description={tp("help")} />
+      <OrdersTabs active="awaitingStock" />
       <p className="text-sm" data-testid="preorder-summary">
         {tp("summary", { count: queue.length, ready })}
       </p>

@@ -19,9 +19,6 @@ const BADGE_TONE: Record<NavCountKey, NonNullable<ShellItem["badge"]>["tone"]> =
   blockedLots: "warning",
   pendingApplications: "brand",
   passwordResets: "brand",
-  catalogIncomplete: "warning",
-  catalogReview: "warning",
-  catalogPublished: "success",
 };
 
 export default async function PanelLayout({ children }: LayoutProps<"/admin">) {
@@ -38,7 +35,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/admin">) {
         href: i.href,
         label: t(i.key),
         icon: i.icon,
-        section: i.section ? t(i.section) : undefined,
+        match: i.match,
         badgeContent: i.count ? <Suspense fallback={null}><NavBadge counts={counts} kind={i.count} /></Suspense> : undefined,
       };
     }),

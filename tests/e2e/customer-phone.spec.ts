@@ -129,8 +129,8 @@ test("quên mật khẩu: khách nhập mật khẩu mới → yêu cầu chờ 
 
   // Admin: thấy số trên menu + khối yêu cầu, bấm Xác nhận.
   await login(page, "admin@glow.local");
-  const nav = await openAdminGroup(page, "Tài khoản");
-  await expect(nav.getByRole("link", { name: /Khách hàng/ })).toContainText(/\d/);
+  const nav = await openAdminGroup(page, "Cài đặt");
+  await expect(nav.getByRole("link", { name: /^Tài khoản/ })).toContainText(/\d/);
   await page.keyboard.press("Escape"); // đóng ngăn kéo menu (mobile)
   await page.goto(`/admin/customer-accounts?q=${phone.normalized}`);
   const request = page.getByTestId("reset-request").filter({ hasText: phone.normalized });

@@ -4,10 +4,10 @@ import { fmtInt } from "@/lib/format";
 import { requirePagePermission } from "@/server/auth/session";
 import { bpToPercent } from "@/server/affiliates/commission";
 import { listAffiliates } from "@/server/affiliates/affiliates";
-import { pendingApplicationsCount } from "@/server/affiliates/applications";
 import { deleteAffiliateAction, setAffiliateActiveAction } from "@/server/affiliates/actions";
 import { AccountRowActions } from "@/components/admin/account-row-actions";
 import { Badge, DataTable, fieldClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Td } from "@/components/admin/ui";
+import { AffiliateTabs } from "@/components/admin/section-tabs";
 
 const str = (v: string | string[] | undefined) => (typeof v === "string" ? v.trim() : "");
 
@@ -17,32 +17,23 @@ export default async function AffiliatesPage({ searchParams }: PageProps<"/admin
   const q = str(sp.q);
   const status = str(sp.status);
   const active = status === "active" ? true : status === "locked" ? false : undefined;
-  const [t, affiliates, pendingApps] = await Promise.all([
+  const [t, tn, affiliates] = await Promise.all([
     getTranslations("Affiliates"),
+    getTranslations("Nav"),
     listAffiliates({ q: q || undefined, active }),
-    pendingApplicationsCount(),
   ]);
 
   return (
     <Page>
       <PageHeader
-        title={t("title")}
+        title={tn("affiliatesCommission")}
         actions={
-          <>
-            <LinkButton href="/admin/affiliates/applications">
-              {t("apps.title")}
-              {pendingApps > 0 && (
-                <span className="ml-1.5" data-testid="pending-apps">
-                  <Badge tone="brand">{pendingApps}</Badge>
-                </span>
-              )}
-            </LinkButton>
-            <LinkButton href="/admin/affiliates/new" variant="primary" icon="new" iconOnly={false}>
-              {t("new")}
-            </LinkButton>
-          </>
+          <LinkButton href="/admin/affiliates/new" variant="primary" icon="new" iconOnly={false}>
+            {t("new")}
+          </LinkButton>
         }
       />
+      <AffiliateTabs active="list" />
       <FilterBar>
         <SearchInput label={t("search")} defaultValue={q} />
         <select name="status" defaultValue={status} aria-label={t("status")} className={fieldClass}>

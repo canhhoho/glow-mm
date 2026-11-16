@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
-import { Ban, Clock, FileText, Package, ShieldAlert, Wallet } from "lucide-react";
+import { Ban, Bell, Clock, FileText, Package, ShieldAlert, Wallet } from "lucide-react";
 import { requirePagePermission } from "@/server/auth/session";
 import { classifyExpiry, daysLeft } from "@/server/alerts/compute";
 import {
@@ -38,8 +38,9 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
   const f = parseStockFilter(sp);
   const view: StockView = sp.view === "lots" ? "lots" : "products";
   const now = new Date();
-  const [t, tc, td, locale, summary, products, lots, tabs, notReceived, archived] = await Promise.all([
+  const [t, tn, tc, td, locale, summary, products, lots, tabs, notReceived, archived] = await Promise.all([
     getTranslations("Inventory"),
+    getTranslations("Nav"),
     getTranslations("Common"),
     getTranslations("Docs"),
     getLocale(),
@@ -70,6 +71,11 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
         description={t("subtitle", { variants: summary.variants, lots: summary.lots })}
         actions={
           <>
+          {/* Cảnh báo + Chờ kiểm tra là lối tắt từ Tồn kho (không còn mục menu riêng). */}
+          <LinkButton href="/admin/alerts">
+            <Bell aria-hidden />
+            {tn("alerts")}
+          </LinkButton>
           <LinkButton href="/admin/inventory/documents">
             <FileText aria-hidden />
             {t("documents")}

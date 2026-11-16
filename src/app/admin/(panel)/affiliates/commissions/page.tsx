@@ -3,6 +3,7 @@ import { fmtInt } from "@/lib/format";
 import { requirePagePermission } from "@/server/auth/session";
 import { listAffiliates } from "@/server/affiliates/affiliates";
 import { DataTable, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Td } from "@/components/admin/ui";
+import { AffiliateTabs } from "@/components/admin/section-tabs";
 
 export default async function CommissionsPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
   await requirePagePermission("affiliates:manage");
@@ -12,7 +13,8 @@ export default async function CommissionsPage({ searchParams }: { searchParams: 
     getTranslations("Affiliates"), getTranslations("Nav"), getTranslations("Common"), listAffiliates({ q: q || undefined }),
   ]);
   return <Page>
-    <PageHeader title={tn("affiliateCommissions")} />
+    <PageHeader title={tn("affiliatesCommission")} />
+    <AffiliateTabs active="commissions" />
     <FilterBar><SearchInput label={t("search")} defaultValue={q} /><FilterButton>{tc("filter")}</FilterButton></FilterBar>
     <DataTable stack head={[t("colCtv"), t("colCode"), t("colPending"), t("colPayable"), t("colPaid"), <span key="a" className="sr-only">{tc("actions")}</span>]} empty={q ? t("emptyFiltered") : tc("noData")} numeric={[2, 3, 4]}>
       {affiliates.map((a) => (

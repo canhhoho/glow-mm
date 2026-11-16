@@ -6,6 +6,7 @@ import { listStaff } from "@/server/users/users";
 import { deleteStaffAction, setStaffActiveAction } from "@/server/users/actions";
 import { AccountRowActions } from "@/components/admin/account-row-actions";
 import { Badge, DataTable, fieldClass, FilterBar, FilterButton, LinkButton, Notice, Page, PageHeader, SearchInput, Td } from "@/components/admin/ui";
+import { AccountTabs } from "@/components/admin/section-tabs";
 
 const str = (v: string | string[] | undefined) => (typeof v === "string" ? v.trim() : "");
 
@@ -26,13 +27,14 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
   return (
     <Page>
       <PageHeader
-        title={t("title")}
+        title={(await getTranslations("Nav"))("accounts")}
         actions={
           <LinkButton href="/admin/users/new" variant="primary" icon="new" iconOnly={false}>
             {t("new")}
           </LinkButton>
         }
       />
+      <AccountTabs active="staff" />
       {sp.saved && <Notice tone="success">{t("created")}</Notice>}
       <FilterBar>
         <SearchInput label={t("search")} defaultValue={q} />

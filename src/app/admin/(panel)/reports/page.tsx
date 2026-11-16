@@ -1,16 +1,9 @@
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
-import {
-  defaultRange,
-  inboundShipments,
-  salesReport,
-  slowMovers,
-  stockByLocation,
-  type Range,
-} from "@/server/reports/queries";
+import { defaultRange, salesReport, type Range } from "@/server/reports/queries";
 import { DataTable, fieldClass, fieldLabelClass, FilterBar, FilterButton, Notice, Page, PageHeader, Section, Stat, Td } from "@/components/admin/ui";
 import { ReportsTabs } from "@/components/admin/reports-tabs";
-import { fmtDay, fmtInt } from "@/lib/format";
+import { fmtInt } from "@/lib/format";
 import { addDays } from "@/lib/time";
 import { cn } from "@/lib/utils";
 
@@ -29,13 +22,10 @@ function parseRange(sp: Record<string, string | string[] | undefined>): Range {
 export default async function ReportsPage({ searchParams }: PageProps<"/admin/reports">) {
   await requirePagePermission("reports:view");
   const range = parseRange(await searchParams);
-  const [t, tc, report, slow, inbound, stock] = await Promise.all([
+  const [t, tc, report] = await Promise.all([
     getTranslations("Reports"),
     getTranslations("Common"),
     salesReport(range),
-    slowMovers(),
-    inboundShipments(),
-    stockByLocation(),
   ]);
   const { totals } = report;
   const maxRevenue = Math.max(1, ...report.daily.map((d) => d.revenue));
@@ -106,66 +96,21 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
         </DataTable>
       </Section>
 
-      <div className="grid gap-5 lg:grid-cols-2 [&>*]:min-w-0">
-        <Section title={t("top")}>
-          <DataTable empty={t("empty")} numeric={[1, 2, 3]} head={[tc("sku"), t("units"), t("revenue"), t("profit")]}>
-            {report.topProducts.map((p) => (
-              <tr key={p.sku}>
-                <Td>
-                  <span className="font-mono text-xs">{p.sku}</span>
-                  <div className="text-xs text-muted-foreground">{p.name}</div>
-                </Td>
-                <Td numeric>{fmtInt(p.units)}</Td>
-                <Td numeric>{fmtInt(p.revenue)}</Td>
-                <Td numeric>{fmtInt(p.profit)}</Td>
-              </tr>
-            ))}
-          </DataTable>
-        </Section>
-        <Section title={t("slow", { days: slow.days })}>
-          <DataTable empty={t("empty")} numeric={[1]} head={[tc("sku"), t("available")]}>
-            {slow.items.slice(0, 20).map((v) => (
-              <tr key={v.variantId}>
-                <Td>
-                  <span className="font-mono text-xs">{v.sku}</span>
-                  <div className="text-xs text-muted-foreground">{v.name}</div>
-                </Td>
-                <Td numeric>{fmtInt(v.available)}</Td>
-              </tr>
-            ))}
-          </DataTable>
-        </Section>
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-2 [&>*]:min-w-0">
-        <Section title={t("stock")}>
-          <DataTable empty={t("empty")} tableClassName="min-w-[40rem]" numeric={[1, 2, 3, 4, 5]} head={[t("locType"), t("qty"), t("tester"), t("value"), t("estimatedQty"), t("noCost")]}>
-            {stock.map((s) => (
-              <tr key={s.code ?? "inactive"} data-testid={`stock-${s.code ?? "inactive"}`}>
-                <Td className="whitespace-nowrap">{s.name ?? t("inactiveLocations")}</Td>
-                <Td numeric>{fmtInt(s.qty)}</Td>
-                <Td numeric>{fmtInt(s.testerQty)}</Td>
-                <Td numeric>{fmtInt(s.valueMmk)}</Td>
-                <Td numeric>{s.estimatedQty ? fmtInt(s.estimatedQty) : "—"}</Td>
-                <Td numeric>{s.missingCost ? fmtInt(s.missingCost) : "—"}</Td>
-              </tr>
-            ))}
-          </DataTable>
-        </Section>
-        <Section title={t("inbound")}>
-          <p className="text-xs text-muted-foreground">{t("inboundHint")}</p>
-          <DataTable empty={t("empty")} numeric={[2, 3]} head={[t("shipment"), t("departed"), t("batches"), t("costs")]}>
-            {inbound.map((s) => (
-              <tr key={s.id}>
-                <Td className="font-mono text-xs">{s.code}</Td>
-                <Td>{fmtDay(s.departedAt)}</Td>
-                <Td numeric>{s.batches}</Td>
-                <Td numeric>{fmtInt(s.costsVnd)}</Td>
-              </tr>
-            ))}
-          </DataTable>
-        </Section>
-      </div>
+      <Section title={t("top")}>
+        <DataTable empty={t("empty")} numeric={[1, 2, 3]} head={[tc("sku"), t("units"), t("revenue"), t("profit")]}>
+          {report.topProducts.map((p) => (
+            <tr key={p.sku}>
+              <Td>
+                <span className="font-mono text-xs">{p.sku}</span>
+                <div className="text-xs text-muted-foreground">{p.name}</div>
+              </Td>
+              <Td numeric>{fmtInt(p.units)}</Td>
+              <Td numeric>{fmtInt(p.revenue)}</Td>
+              <Td numeric>{fmtInt(p.profit)}</Td>
+            </tr>
+          ))}
+        </DataTable>
+      </Section>
     </Page>
   );
 }

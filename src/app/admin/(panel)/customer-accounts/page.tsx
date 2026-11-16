@@ -9,6 +9,7 @@ import { decidePasswordResetAction, deleteCustomerAccountAction, setCustomerActi
 import { ActionButton } from "@/components/admin/action-button";
 import { AccountRowActions } from "@/components/admin/account-row-actions";
 import { Badge, ClearFilters, DataTable, FilterBar, FilterButton, Page, PageHeader, SearchInput, StatCard, Td } from "@/components/admin/ui";
+import { AccountTabs } from "@/components/admin/section-tabs";
 
 /**
  * Tài khoản khách storefront (P17): tìm theo SĐT / email / tên; mỗi dòng Sửa (tên, SĐT, mật khẩu tạm ở trang
@@ -23,7 +24,8 @@ export default async function CustomerAccountsPage({ searchParams }: PageProps<"
 
   return (
     <Page>
-      <PageHeader title={(await getTranslations("Nav"))("customers")} description={t("description")} />
+      <PageHeader title={(await getTranslations("Nav"))("accounts")} description={t("description")} />
+      <AccountTabs active="customers" />
       {resets.length > 0 && (
         <section aria-labelledby="reset-requests-title" data-testid="reset-requests" className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
           <div className="space-y-1">

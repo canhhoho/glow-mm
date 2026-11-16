@@ -9,6 +9,7 @@ import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
 import { CollectionFields } from "@/components/admin/collection-fields";
 import { Badge, DataTable, LinkButton, Page, PageHeader, Section, Td } from "@/components/admin/ui";
+import { ContentTabs } from "@/components/admin/section-tabs";
 
 export default async function CollectionsPage() {
   await requirePagePermission("content:manage");
@@ -17,7 +18,8 @@ export default async function CollectionsPage() {
 
   return (
     <Page>
-      <PageHeader title={t("collectionsTitle")} />
+      <PageHeader title={(await getTranslations("Nav"))("websiteContent")} />
+      <ContentTabs active="collections" />
       <Section title={t("collectionNew")}>
         <ActionForm action={createCollectionAction} submitLabel={t("create")} icon={<Plus aria-hidden />}>
           <CollectionFields />

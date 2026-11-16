@@ -12,7 +12,7 @@ test("mobile: menu ngăn kéo mở/đóng (☰, Esc, bấm nền, đổi trang),
 
   // Nhóm + mục theo quyền admin.
   await openAdminNav(page);
-  for (const group of ["Đơn hàng", "Sản phẩm", "Kho hàng", "Tài khoản", "Cộng tác viên", "Báo cáo", "Cài đặt"]) {
+  for (const group of ["Đơn hàng", "Sản phẩm", "Kho hàng", "Báo cáo", "Cài đặt"]) {
     await expect(nav.locator(":scope > details > summary").filter({ has: page.getByText(group, { exact: true }) })).toBeVisible();
   }
   await expect(nav.getByRole("link", { name: "Tổng quan" })).toHaveAttribute("aria-current", "page");
@@ -45,21 +45,52 @@ test("nhân viên đơn hàng: chỉ thấy nhóm được phép", async ({ page
   await expect(nav.getByText("Cài đặt", { exact: true })).toHaveCount(0);
 });
 
-test("menu tài khoản và nội dung lồng nhau mở đúng trang, tự đánh dấu và mở nhóm hiện tại", async ({ page }) => {
+test("mục gộp tab (Tài khoản, CTV & hoa hồng, Nội dung website) mở đúng trang, đánh dấu mục và mở nhóm hiện tại", async ({ page }) => {
   await login(page, "admin@glow.local");
-  let nav = await openAdminGroup(page, "Tài khoản");
-  // "Khách hàng" có thể kèm số yêu cầu đặt lại mật khẩu đang chờ ("Khách hàng 2") → khớp theo tiền tố.
-  await expect(nav.getByRole("link", { name: "Nhân viên", exact: true })).toBeVisible();
-  await expect(nav.getByRole("link", { name: /^Khách hàng/ })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "Danh sách CTV", exact: true })).toBeHidden();
-  nav = await openAdminGroup(page, "Cộng tác viên");
-  await nav.getByRole("link", { name: "Danh sách CTV", exact: true }).click();
+
+  // Cài đặt › Tài khoản = hai tab Nhân viên / Khách hàng ("Tài khoản" có thể kèm số yêu cầu đặt lại mật khẩu).
+  let nav = await openAdminGroup(page, "Cài đặt");
+  await nav.getByRole("link", { name: /^Tài khoản/ }).click();
+  await expect(page).toHaveURL(/\/admin\/users$/);
+  const accountTabs = page.getByRole("navigation", { name: "Tài khoản", exact: true });
+  await expect(accountTabs.getByRole("link", { name: "Nhân viên", exact: true })).toHaveAttribute("aria-current", "page");
+  await accountTabs.getByRole("link", { name: /^Khách hàng/ }).click();
+  await expect(page).toHaveURL(/\/admin\/customer-accounts$/);
+  nav = await openAdminNav(page);
+  await expect(nav.getByRole("link", { name: /^Tài khoản/ })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("navigation", { name: "Vị trí trang" })).toContainText("Tài khoản");
+  await page.keyboard.press("Escape");
+
+  // Đơn hàng › CTV & hoa hồng = ba tab; chuyển tab không đổi mục menu đang sáng.
+  nav = await openAdminGroup(page, "Đơn hàng");
+  await nav.getByRole("link", { name: /^CTV & hoa hồng/ }).click();
   await expect(page).toHaveURL(/\/admin\/affiliates$/);
+  const affiliateTabs = page.getByRole("navigation", { name: "CTV & hoa hồng", exact: true });
+  await expect(affiliateTabs.getByRole("link", { name: "Danh sách CTV", exact: true })).toHaveAttribute("aria-current", "page");
+  await affiliateTabs.getByRole("link", { name: "Hoa hồng & chi trả", exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/affiliates\/commissions$/);
   nav = await openAdminNav(page);
-  await expect(nav.getByRole("link", { name: "Danh sách CTV", exact: true })).toHaveAttribute("aria-current", "page");
-  await page.goto("/admin/content/banners");
+  await expect(nav.getByRole("link", { name: /^CTV & hoa hồng/ })).toHaveAttribute("aria-current", "page");
+  await page.keyboard.press("Escape");
+
+  // Cài đặt › Nội dung website = Banner / Bộ sưu tập.
+  await page.goto("/admin/content/collections");
   nav = await openAdminNav(page);
-  await expect(nav.getByRole("link", { name: "Banner", exact: true })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "Banner", exact: true })).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("navigation", { name: "Vị trí trang" })).toContainText("Banner");
+  await expect(nav.getByRole("link", { name: "Nội dung website", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("navigation", { name: "Vị trí trang" })).toContainText("Nội dung website");
+  await expect(page.getByRole("navigation", { name: "Nội dung website", exact: true }).getByRole("link", { name: "Bộ sưu tập" })).toHaveAttribute("aria-current", "page");
+});
+
+test("trang lối tắt cũ vẫn sáng đúng mục menu mới", async ({ page }) => {
+  await login(page, "admin@glow.local");
+  for (const [path, item] of [
+    ["/admin/orders/preorders", "Danh sách đơn"],
+    ["/admin/alerts", "Tồn kho"],
+    ["/admin/inventory/quarantine", "Tồn kho"],
+  ] as const) {
+    await page.goto(path);
+    const nav = await openAdminNav(page);
+    await expect(nav.getByRole("link", { name: new RegExp(`^${item}`) }), path).toHaveAttribute("aria-current", "page");
+    await page.keyboard.press("Escape");
+  }
 });
