@@ -19,6 +19,8 @@ export type FormData = {
     variantId: string;
     lotNo: string;
     expiryDate: string;
+    /** Lô đã có sổ kho; lô chỉ có ở phiếu nhập nháp không điều chỉnh được. */
+    posted?: boolean;
     balances: { locationId: string; stockType: StockType; qty: number }[];
   }[];
   shipments: { id: string; code: string }[];
@@ -161,7 +163,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
       <div className="space-y-3">
         {lines.map((l, i) => {
           const batchOptions = data.batches.filter(
-            (b) => b.variantId === l.variantId && (type === "ADJUST" || qtyAt(b.id, l.stockType) > 0),
+            (b) => b.variantId === l.variantId && (type === "ADJUST" ? b.posted !== false : qtyAt(b.id, l.stockType) > 0),
           );
           return (
             <fieldset key={l.key} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-6" aria-label={`${t("line")} ${i + 1}`}>

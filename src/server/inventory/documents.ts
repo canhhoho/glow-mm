@@ -127,6 +127,17 @@ async function assertBatch(tx: Tx, batchId: string, variantId: string) {
 }
 
 /**
+ * Điều chỉnh chỉ áp cho lô ĐÃ có sổ kho (đã ghi nhận nhập thật). Lô chỉ thuộc phiếu nhập nháp chưa có sổ: điều chỉnh vào
+ * đó sẽ để lại lô mang giá nháp, huỷ phiếu nháp không xoá được lô, và số điều chỉnh không vào bình quân giá vốn (#4).
+ */
+async function assertAdjustableBatches(tx: Tx, batchIds: string[]) {
+  const ids = [...new Set(batchIds)];
+  if (ids.length === 0) return;
+  const bad = await tx.batch.findFirst({ where: { id: { in: ids }, ledger: { none: {} } }, select: { lotNo: true, variant: { select: { sku: true } } } });
+  if (bad) throw new DocumentError(`Lô ${bad.lotNo} (${bad.variant.sku}) chưa ghi nhận nhập kho — ghi sổ phiếu nhập trước khi điều chỉnh`);
+}
+
+/**
  * QT1b: ghi khối lượng nhập ở phiếu nhập lên biến thể **đang trống** (không ghi đè số đã có), audit `variant.weight`.
  * Ghi lúc lập phiếu (phiếu nháp chưa có chỗ lưu khối lượng; khối lượng là thuộc tính SP, không phụ thuộc phiếu được ghi sổ).
  */
@@ -286,6 +297,7 @@ export async function createDocument(raw: unknown, userId: string, transaction?:
         if (l.batchId) await assertBatch(tx, l.batchId, l.variantId);
         lines.push({ variantId: l.variantId, batchId: l.batchId ?? null, stockType: l.stockType, qty: l.qty });
       }
+      if (input.type === "ADJUST") await assertAdjustableBatches(tx, lines.flatMap((l) => (l.batchId ? [l.batchId] : [])));
     }
 
     const doc = await tx.stockDocument.create({
@@ -564,6 +576,9 @@ export async function postDocumentTx(tx: Tx, documentId: string, userId: string,
       resolved.push({ variantId: line.variantId, batchId: p.batchId, stockType: line.stockType, qty: p.qty });
     }
   }
+
+  // Kiểm lại lúc ghi sổ: phiếu điều chỉnh nháp tạo trước khi có chặn vẫn không được ghi vào lô chưa có sổ kho.
+  if (doc.type === "ADJUST") await assertAdjustableBatches(tx, resolved.map((r) => r.batchId));
 
   const moves: StockMove[] = [];
   for (const l of resolved) {

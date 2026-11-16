@@ -2,9 +2,9 @@ import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { deleteProducts } from "@/server/catalog/product-delete";
 import { createDocument, postDocument } from "@/server/inventory/documents";
-import { listVariantsForPicker } from "@/server/inventory/queries";
+import { batchesForForms, listVariantsForPicker } from "@/server/inventory/queries";
 import { createOrder } from "@/server/orders/orders";
-import { orderInput, saleFixture, unpublishTestProducts } from "./fixtures";
+import { isoDay, orderInput, saleFixture, unpublishTestProducts } from "./fixtures";
 
 /** Dữ liệu cho form phiếu kho (Xuất / Chuyển / Điều chỉnh): biến thể và lô chọn được (docs/ban-do-nghiep-vu-admin.md). */
 
@@ -37,5 +37,45 @@ describe("Biến thể chọn được ở form phiếu kho (#2)", () => {
     await move(f.mm.id, f.qc.id);
     await move(f.qc.id, f.mm.id); // về lại kho bán của SP
     await expect(createOrder(orderInput(f, 1), { userId: null })).rejects.toThrow(/không còn bán/);
+  });
+});
+
+describe("Điều chỉnh chỉ vào lô đã có sổ kho (#4)", () => {
+  it("lô chỉ có ở phiếu nhập nháp: form không liệt kê ở dạng posted, tạo + ghi sổ điều chỉnh bị từ chối; lô đã ghi sổ điều chỉnh được", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 2 }]);
+    const draft = await createDocument(
+      { type: "RECEIVE", toId: f.mm.id, lines: [{ variantId: f.variantId, lotNo: "DRAFT-ONLY", expiryDate: isoDay(400), unitCostVnd: 100_000, qty: 5 }] },
+      f.userId,
+    );
+    const batches = await batchesForForms();
+    const draftBatch = batches.find((b) => b.variantId === f.variantId && b.lotNo === "DRAFT-ONLY")!;
+    const postedBatch = batches.find((b) => b.variantId === f.variantId && b.lotNo === "A")!;
+    expect(draftBatch.posted).toBe(false);
+    expect(postedBatch.posted).toBe(true);
+
+    const adjust = (batchId: string, qty: number) =>
+      createDocument({ type: "ADJUST", toId: f.mm.id, reason: "IT điều chỉnh", lines: [{ variantId: f.variantId, batchId, qty }] }, f.userId);
+    await expect(adjust(draftBatch.id, 1)).rejects.toThrow(/chưa ghi nhận nhập kho/);
+
+    // Phiếu điều chỉnh nháp có sẵn từ trước khi có chặn: ghi sổ cũng bị từ chối, không đổi tồn.
+    const legacy = await prisma.stockDocument.create({
+      data: {
+        code: `AJ-IT-${f.tag}`,
+        type: "ADJUST",
+        status: "DRAFT",
+        toId: f.mm.id,
+        reason: "IT phiếu cũ",
+        createdById: f.userId,
+        lines: { create: [{ variantId: f.variantId, batchId: draftBatch.id, stockType: "SELLABLE", qty: 1 }] },
+      },
+    });
+    await expect(postDocument(legacy.id, f.userId)).rejects.toThrow(/chưa ghi nhận nhập kho/);
+    expect(await prisma.stockBalance.count({ where: { batchId: draftBatch.id } })).toBe(0);
+
+    // Lô đã ghi sổ: điều chỉnh bình thường; sau khi ghi sổ phiếu nhập nháp thì lô kia cũng điều chỉnh được.
+    const ok = await adjust(postedBatch.id, 1);
+    await expect(postDocument(ok.id, f.userId)).resolves.toBeTruthy();
+    await postDocument(draft.id, f.userId);
+    await expect(adjust(draftBatch.id, 1)).resolves.toBeTruthy();
   });
 });
