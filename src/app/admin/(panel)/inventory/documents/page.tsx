@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { listDocuments } from "@/server/inventory/queries";
-import { NewDocMenu } from "@/components/admin/stock-parts";
+import { LocationName, NewDocMenu } from "@/components/admin/stock-parts";
 import { Badge, DataTable, Page, PageHeader, TabNav, Td } from "@/components/admin/ui";
 import { fmtDate } from "@/lib/format";
 
@@ -13,7 +13,7 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/admin/
   const sp = await searchParams;
   // Danh sách chỉ có hai nhóm. Phiếu đã huỷ vẫn giữ để tra cứu lịch sử qua trang chi tiết.
   const status = sp.status === "DRAFT" ? "DRAFT" : "POSTED";
-  const [t, docs] = await Promise.all([getTranslations("Docs"), listDocuments({ status })]);
+  const [t, ti, docs] = await Promise.all([getTranslations("Docs"), getTranslations("Inventory"), listDocuments({ status })]);
   return (
     <Page>
       <PageHeader
@@ -40,8 +40,8 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/admin/
             <Td label={t("status")}>
               <Badge tone={STATUS_TONE[d.status]}>{t(d.status)}</Badge>
             </Td>
-            <Td label={t("from")} className="font-mono text-xs">{d.from?.code ?? "—"}</Td>
-            <Td label={t("to")} className="font-mono text-xs">{d.to?.code ?? "—"}</Td>
+            <Td label={t("from")}>{d.from ? <LocationName loc={d.from} inactiveLabel={ti("inactive")} /> : "—"}</Td>
+            <Td label={t("to")}>{d.to ? <LocationName loc={d.to} inactiveLabel={ti("inactive")} /> : "—"}</Td>
             <Td label={t("lines")} numeric>{d._count.lines}</Td>
             <Td label={t("createdAt")} className="whitespace-nowrap">{fmtDate(d.createdAt)}</Td>
           </tr>

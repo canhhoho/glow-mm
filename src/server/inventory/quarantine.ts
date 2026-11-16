@@ -42,6 +42,8 @@ export async function listQuarantine() {
       batchId: r.batchId,
       locationId: r.locationId,
       location: r.location.code,
+      locationName: r.location.name,
+      locationActive: r.location.active,
       stockType: r.stockType,
       variantId: r.batch.variantId,
       sku: r.batch.variant.sku,

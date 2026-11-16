@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { LocationName } from "@/components/admin/stock-parts";
 import { requirePagePermission } from "@/server/auth/session";
 import { computeAlerts } from "@/server/alerts/queries";
 import { Badge, DataTable, Page, PageHeader, TabNav, Td } from "@/components/admin/ui";
@@ -76,7 +77,9 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
               <Td>{product(e.sku, e.name)}</Td>
               <Td className="font-mono text-xs">{e.lotNo}</Td>
               <Td className="whitespace-nowrap">{fmtDay(e.expiryDate)}</Td>
-              <Td className="font-mono text-xs">{e.location}</Td>
+              <Td>
+                <LocationName loc={{ code: e.location, name: e.locationName, active: e.locationActive }} inactiveLabel={ti("inactive")} />
+              </Td>
               <Td>{ti(e.stockType)}</Td>
               <Td className="text-right tabular-nums">{fmtInt(e.qty)}</Td>
             </tr>

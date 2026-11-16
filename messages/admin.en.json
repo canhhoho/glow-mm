@@ -395,13 +395,6 @@
     "pageInfo": "{from}–{to} / {total}",
     "prev": "‹ Prev",
     "next": "Next ›",
-    "loc": {
-      "VN_STOCK": "VN warehouse",
-      "IN_TRANSIT": "In transit",
-      "CUSTOMS": "Customs",
-      "MM_STOCK": "MM warehouse",
-      "QUARANTINE": "Quarantine"
-    },
     "expiryDated": "Known expiry date",
     "expiryNone": "No expiry date applies",
     "expiryUnknown": "Unknown expiry · Not sellable",

@@ -395,13 +395,6 @@
     "pageInfo": "{from}–{to} / {total}",
     "prev": "‹ ယခင်",
     "next": "နောက် ›",
-    "loc": {
-      "VN_STOCK": "VN ဂိုဒေါင်",
-      "IN_TRANSIT": "လမ်းတွင်",
-      "CUSTOMS": "အကောက်ခွန်",
-      "MM_STOCK": "MM ဂိုဒေါင်",
-      "QUARANTINE": "စစ်ဆေးရန်"
-    },
     "expiryDated": "သက်တမ်းကုန်ရက် သိရှိပြီး",
     "expiryNone": "သက်တမ်းကုန်ရက် မသက်ဆိုင်",
     "expiryUnknown": "သက်တမ်းမသိသေး · မရောင်းချရ",

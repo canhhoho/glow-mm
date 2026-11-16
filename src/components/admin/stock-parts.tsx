@@ -44,6 +44,20 @@ export function NewDocMenu({ role, label, td }: { role: Role; label: string; td:
   );
 }
 
+/**
+ * Tên kho thống nhất (#7): tên thật (vd. "Kho Thắm") + mã mờ, kèm nhãn khi kho đã ngừng dùng. Không dùng nhãn LOẠI
+ * vị trí cũ (VN_STOCK/MM_STOCK…) — từ P24 mỗi kho có tên riêng. `inactiveLabel` = `Inventory.inactive`.
+ */
+export function LocationName({ loc, inactiveLabel }: { loc: { code: string; name: string; active?: boolean }; inactiveLabel: string }) {
+  return (
+    <span className="whitespace-nowrap">
+      {loc.name}
+      <span className="ml-1 font-mono text-2xs text-muted-foreground">{loc.code}</span>
+      {loc.active === false && <span className="ml-1 text-xs text-muted-foreground">({inactiveLabel})</span>}
+    </span>
+  );
+}
+
 /** URL trang Tồn kho giữ bộ lọc hiện tại; `patch` ghi đè (page về 1 nếu không chỉ định). */
 export function stockHref(f: StockFilter, view: StockView, patch: Partial<StockFilter> & { view?: StockView } = {}) {
   const next = { ...f, page: 1, view, ...patch };

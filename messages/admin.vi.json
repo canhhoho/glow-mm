@@ -395,13 +395,6 @@
     "pageInfo": "{from}–{to} / {total}",
     "prev": "‹ Trước",
     "next": "Sau ›",
-    "loc": {
-      "VN_STOCK": "Kho VN",
-      "IN_TRANSIT": "Đang vận chuyển",
-      "CUSTOMS": "Hải quan",
-      "MM_STOCK": "Kho MM",
-      "QUARANTINE": "Chờ kiểm tra"
-    },
     "expiryDated": "Đã biết hạn",
     "expiryNone": "Không áp dụng hạn sử dụng",
     "expiryUnknown": "Chưa biết hạn · Chưa được bán",

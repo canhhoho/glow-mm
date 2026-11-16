@@ -69,6 +69,8 @@ export type ExpiryAlert = {
   lotNo: string;
   expiryDate: Date | null;
   location: string;
+  locationName: string;
+  locationActive: boolean;
   stockType: "SELLABLE" | "TESTER";
   qty: number;
   level: ExpiryLevel;
@@ -79,7 +81,7 @@ export async function loadExpiryAlerts(now: Date, t: { blockDays: number; warnDa
   const rows = await prisma.stockBalance.findMany({
     where: { qty: { gt: 0 } },
     include: {
-      location: { select: { code: true } },
+      location: { select: { code: true, name: true, active: true } },
       batch: { include: { variant: { include: { product: { include: { translations: true } } } } } },
     },
     orderBy: { batch: { expiryDate: "asc" } },
@@ -95,6 +97,8 @@ export async function loadExpiryAlerts(now: Date, t: { blockDays: number; warnDa
         lotNo: r.batch.lotNo,
         expiryDate: r.batch.expiryDate,
         location: r.location.code,
+        locationName: r.location.name,
+        locationActive: r.location.active,
         stockType: r.stockType,
         qty: r.qty,
         level,
