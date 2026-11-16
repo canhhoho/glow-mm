@@ -5,7 +5,9 @@ import { createHash } from "node:crypto";
  *
  * Dấu vân tay = những gì CẦN DUYỆT (khách thấy): tên + mô tả (my, en), danh mục, thương hiệu, biến thể (SKU, nhãn,
  * giá, đang bán, combo + thành phần), tập ảnh (thêm/xoá). Không gồm (ghi thẳng, không cần duyệt): khối lượng,
- * thứ tự/alt ảnh, hoa hồng CTV, lãi cố định, giá vốn, tồn, đặt trước, kho bán, tag, ghi chú bảo quản.
+ * thứ tự/alt ảnh, lãi cố định, giá vốn, tồn, đặt trước, kho bán, tag, ghi chú bảo quản.
+ * Hoa hồng CTV cố định không nằm trong dấu vân tay nhưng VẪN cần duyệt (16/11): đi cùng giá qua bản đang sửa
+ * (`stagePrices`); `guardApproval` chặn ghi hoa hồng live của SP đã duyệt (`commissionsOf`).
  */
 export type ApprovalSnapshot = {
   categoryId: string;

@@ -13,6 +13,7 @@ import { guardApproval } from "./approval";
 import { skuPendingElsewhere, stageProductEdit } from "./change-request";
 import { findOrCreateBrand, pruneEmptyBrands } from "./brands";
 import { writeAudit } from "@/server/audit";
+import { commissionOverPrice, recordPriceChange } from "./price-write";
 
 /** Quản lý sản phẩm (admin). Giá đổi → ghi PriceHistory. Chữ Myanmar → Unicode trước khi lưu. */
 
@@ -227,9 +228,7 @@ export async function writeProduct(tx: Tx, parsed: ProductInput, userId: string,
       if (existing && existing.productId !== product.id) throw new CatalogError(`SKU ${v.sku} đã thuộc sản phẩm khác`);
       const price = v.priceMmk ?? existing?.priceMmk ?? 0;
       const commission = v.affiliateCommissionMmk !== undefined ? v.affiliateCommissionMmk : existing?.affiliateCommissionMmk ?? null;
-      if (commission != null && price > 0 && commission > price) {
-        throw new CatalogError(`Hoa hồng CTV của ${v.sku} lớn hơn giá bán`);
-      }
+      if (commissionOverPrice(price, commission)) throw new CatalogError(`Hoa hồng CTV của ${v.sku} lớn hơn giá bán`);
       // Loại mới chưa có giá thêm vào SP đang bán → tạo ở trạng thái tắt (đặt giá ở bước 3 rồi bật), không chặn lưu.
       const parkNew = !existing && price <= 0 && !!current?.published;
       const vData = {
@@ -247,15 +246,14 @@ export async function writeProduct(tx: Tx, parsed: ProductInput, userId: string,
       const saved = existing
         ? await tx.variant.update({ where: { id: existing.id }, data: vData })
         : await tx.variant.create({ data: { ...vData, productId: product.id } });
-      if (existing && existing.priceMmk !== price) {
-        await tx.priceHistory.create({
-          data: {
-            variantId: saved.id,
-            oldPriceMmk: existing.priceMmk,
-            newPriceMmk: price,
-            reason: opts.priceReason ?? "manual",
-            userId,
-          },
+      // Ghi cùng các trường khác của biến thể (đã giữ khoá catalog + dòng Product) → chỉ dùng phần ghi lịch sử chung.
+      if (existing) {
+        await recordPriceChange(tx, {
+          variantId: saved.id,
+          from: { priceMmk: existing.priceMmk, commission: existing.affiliateCommissionMmk },
+          to: { priceMmk: price, commission: saved.affiliateCommissionMmk },
+          reason: opts.priceReason ?? "manual",
+          userId,
         });
       }
       savedIds.set(v.sku, saved.id);
@@ -274,6 +272,8 @@ export async function writeProduct(tx: Tx, parsed: ProductInput, userId: string,
       }
       await tx.bundleItem.createMany({ data: v.components.map((c) => ({ bundleId, componentId: c.componentId, qty: c.qty })) });
     }
+    // R3: đổi kho SP đang là thành phần của combo khác → chặn như chuyển kho hàng loạt.
+    if (current && stockLocationId !== current.stockLocationId) await assertBundleWarehouses(tx, [product.id]);
 
     if (source?.images.length) {
       await tx.productImage.createMany({ data: source.images.map((image) => ({ ...image, productId: product.id })) });
@@ -296,6 +296,24 @@ export async function writeProduct(tx: Tx, parsed: ProductInput, userId: string,
     if (current && current.brandId !== brandId) await pruneEmptyBrands(tx, [current.brandId], userId);
     return product;
   }
+}
+
+/**
+ * Combo trừ kho từng thành phần ở kho của combo → combo và thành phần phải cùng kho bán (P24). Kiểm cả hai chiều
+ * (SP là combo, hoặc là thành phần của combo khác). Gọi sau khi ghi `stockLocationId`, trong cùng transaction —
+ * dùng chung cho form SP (`writeProduct`) và chuyển kho hàng loạt (`moveProductsToWarehouse`).
+ */
+export async function assertBundleWarehouses(tx: Tx, productIds: string[]) {
+  if (productIds.length === 0) return;
+  const links = await tx.bundleItem.findMany({
+    where: { OR: [{ bundle: { productId: { in: productIds } } }, { component: { productId: { in: productIds } } }] },
+    select: {
+      bundle: { select: { sku: true, product: { select: { stockLocationId: true } } } },
+      component: { select: { sku: true, product: { select: { stockLocationId: true } } } },
+    },
+  });
+  const bad = links.find((l) => l.bundle.product.stockLocationId !== l.component.product.stockLocationId);
+  if (bad) throw new CatalogError(`Combo ${bad.bundle.sku} và thành phần ${bad.component.sku} phải cùng kho — đổi kho cả hai cùng lúc`);
 }
 
 const bulkPublishSchema = z.object({

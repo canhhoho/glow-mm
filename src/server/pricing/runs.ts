@@ -9,7 +9,8 @@ import { getNumberSetting } from "@/server/settings";
 import type { Tx } from "@/server/inventory/ledger";
 import { variantCosts } from "./cost";
 import { guardApproval } from "@/server/catalog/approval";
-import { changeRequestsFor, effectiveCommission, effectivePrice, stagePrices } from "@/server/catalog/change-request";
+import { effectivePricingOf, stagePrices } from "@/server/catalog/change-request";
+import { commissionOverPrice, writeLivePrice } from "@/server/catalog/price-write";
 import { lockCatalog } from "@/server/catalog/products";
 import { writeAudit } from "@/server/audit";
 import { mmkPerVndFromUsd, parseScaled, priceLocalMmk, priceVndManual, priceVnImport, shippingMmk, suggestPrice } from "./formula";
@@ -241,21 +242,6 @@ async function computeLines(tx: Tx, variantIds: string[], ctx: RunCtx, sources?:
   return { lines: lines.filter((l) => l.newPriceMmk > 0), skipped };
 }
 
-/** Giá + hoa hồng HIỆU LỰC (đang chờ duyệt nếu có, nếu không là live) của các biến thể. */
-export async function effectivePricingOf(tx: Tx, variantIds: string[]) {
-  const variants = await tx.variant.findMany({
-    where: { id: { in: variantIds } },
-    select: { id: true, productId: true, priceMmk: true, affiliateCommissionMmk: true, product: { select: { approvedAt: true } } },
-  });
-  const staged = await changeRequestsFor(tx, [...new Set(variants.filter((v) => v.product.approvedAt).map((v) => v.productId))]);
-  return new Map(
-    variants.map((v) => {
-      const sp = staged.get(v.productId)?.prices[v.id];
-      return [v.id, { priceMmk: effectivePrice(sp, v.priceMmk), commission: effectiveCommission(sp, v.affiliateCommissionMmk), pending: !!sp }] as const;
-    }),
-  );
-}
-
 /**
  * Tạo bản xem trước. Có kho (P24):
  *  - VN_IMPORT (Kho Thắm): cần tỷ giá, % lãi, ship MMK/kg; biến thể thiếu vốn VND / khối lượng bị bỏ qua.
@@ -385,7 +371,7 @@ async function applyLines(tx: Tx, runId: string, lines: RunLineRow[], fresh: Map
       }
       const setsCommission = l.commissionMmk != null;
       const commission = setsCommission ? l.commissionMmk : cur.commission;
-      if (commission != null && commission > l.newPriceMmk) {
+      if (commissionOverPrice(l.newPriceMmk, commission)) {
         await skip(l, "COMMISSION_OVER_PRICE");
         continue;
       }
@@ -396,27 +382,18 @@ async function applyLines(tx: Tx, runId: string, lines: RunLineRow[], fresh: Map
         current.set(l.variantId, { priceMmk: l.newPriceMmk, commission, pending: true });
         stagedProducts.add(o.productId);
       } else {
-        const res = await tx.variant.updateMany({
-          where: { id: l.variantId, priceMmk: cur.priceMmk, affiliateCommissionMmk: cur.commission },
-          data: { priceMmk: l.newPriceMmk, ...(setsCommission && { affiliateCommissionMmk: commission }) },
+        const ok = await writeLivePrice(tx, {
+          variantId: l.variantId,
+          from: { priceMmk: cur.priceMmk, commission: cur.commission },
+          to: { priceMmk: l.newPriceMmk, commission },
+          reason: "bulk",
+          runId,
+          userId,
+          at: now,
         });
-        if (res.count !== 1) {
+        if (!ok) {
           await skip(l, "PRICE_CHANGED");
           continue;
-        }
-        if (l.newPriceMmk !== cur.priceMmk) {
-          await tx.priceHistory.create({
-            data: {
-              variantId: l.variantId,
-              oldPriceMmk: cur.priceMmk,
-              newPriceMmk: l.newPriceMmk,
-              ...(commissionChanged && { oldCommissionMmk: cur.commission, newCommissionMmk: commission }),
-              runId,
-              reason: "bulk",
-              userId,
-              createdAt: now,
-            },
-          });
         }
       }
       await tx.priceRunLine.update({ where: { id: l.id }, data: { status: "APPLIED", appliedAt: now } });

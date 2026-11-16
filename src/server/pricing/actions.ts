@@ -1,14 +1,14 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath, updateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { ZodError } from "zod";
 import { prisma } from "@/lib/db";
 import { requirePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { finishBatchReview } from "@/server/catalog/batch-review-text";
-import { CATALOG_TAG } from "@/server/catalog/category-tree";
+import { refreshPrices } from "@/server/catalog/refresh-prices";
 import type { ActionState } from "@/server/inventory/actions";
 import { applyManualVnd, applyRun, cancelRun, createRate, previewRun } from "./runs";
 
@@ -63,15 +63,6 @@ export async function previewRunAction(_prev: ActionState, formData: FormData): 
   redirect(`/admin/pricing/runs/${id}`);
 }
 
-/** Giá mới hiện ngay trên storefront (P20) + các trang admin liên quan — gọi NGAY sau khi lượt đã commit (16/11). */
-function refreshPricing(runId?: string) {
-  updateTag(CATALOG_TAG);
-  if (runId) revalidatePath(`/admin/pricing/runs/${runId}`);
-  revalidatePath("/admin/pricing");
-  revalidatePath("/admin/selling-prices");
-  revalidatePath("/admin/selling-prices/manual");
-  revalidatePath("/admin/products", "layout");
-}
 
 type ApplyOutcome = { applied: number; skipped: { sku: string; reason: string }[]; remaining: number; review: Awaited<ReturnType<typeof applyRun>>["review"] };
 
@@ -110,12 +101,12 @@ export async function applyRunAction(_prev: ActionState, formData: FormData): Pr
     const ids = formData.getAll("variantId").map(String);
     const { submit, approve } = await reviewOptions(formData, user.role);
     const res = await applyRun(runId, ids, user.id, new Date(), { submit });
-    refreshPricing(runId);
+    refreshPrices({ runId });
     ok = await outcomeText(res, runId, user.id, approve);
   } catch (e) {
     return { error: message(e) };
   }
-  refreshPricing(runId);
+  refreshPrices({ runId });
   return { ok };
 }
 
@@ -126,12 +117,12 @@ export async function applyManualVndAction(_prev: ActionState, formData: FormDat
     const user = await requirePermission("pricing:manage");
     const { submit, approve } = await reviewOptions(formData, user.role);
     const res = await applyManualVnd(JSON.parse(String(formData.get("payload") ?? "{}")), user.id, new Date(), { submit });
-    refreshPricing(res.runId);
+    refreshPrices({ runId: res.runId });
     ok = await outcomeText(res, res.runId, user.id, approve);
   } catch (e) {
     return { error: message(e) };
   }
-  refreshPricing();
+  refreshPrices();
   return { ok };
 }
 

@@ -36,6 +36,7 @@ Next.js 16 có API mới (proxy thay middleware, Cache Components bật) → đ�
 - Logic nghiệp vụ nằm ở `src/server/<domain>/`, không import Next/Vercel → test được bằng Vitest.
 - Mọi Server Action/route handler: validate input (Zod) + kiểm tra quyền phía server (`requirePermission` trong `src/server/auth/session.ts`, bảng quyền ở `roles.ts`). Middleware không phải lớp bảo mật.
 - Chuyển trạng thái đơn chỉ qua `src/server/orders/state-machine.ts`.
+- **Một nghiệp vụ = một trang chính + một hàm domain** ([docs/ban-do-nghiep-vu-admin.md](docs/ban-do-nghiep-vu-admin.md)): trước khi sửa giá/kho/đơn/hoa hồng, tra bản đồ + grep mọi đường ghi cột đó; trang/nút mới chỉ là lối tắt gọi action/hàm sẵn có, không chép form/schema/công thức; sửa đủ mọi bản lặp đã ghi ở §3 (hoặc cập nhật §3), test từng điểm vào, cập nhật bản đồ trong cùng commit.
 - Tiền là số nguyên (MMK, VND); tỷ giá là `Decimal`. Thời gian lưu UTC; hiển thị theo Asia/Yangon hoặc Asia/Ho_Chi_Minh.
 - Không viết cứng chuỗi giao diện: storefront `messages/store.{my,en,vi}.json` (mặc định `my`; unit test `messages-parity` ép cùng bộ key); admin `messages/admin.{vi,en,my}.json`.
 - Chữ Myanmar dùng Unicode. Input tìm kiếm/form đi qua `src/lib/myanmar` (phát hiện + chuyển Zawgyi → Unicode).

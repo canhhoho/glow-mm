@@ -3,7 +3,8 @@ import { prisma } from "@/lib/db";
 import { createDocument, postDocument } from "@/server/inventory/documents";
 import { batchDetail, parseStockFilter, stockByVariant, stockLots, stockSummary } from "@/server/inventory/overview";
 import { createOrder } from "@/server/orders/orders";
-import { isoDay, orderInput, saleFixture, unpublishTestProducts, type SaleFixture } from "./fixtures";
+import { blockedBatchWhere, sellableBatchWhere } from "@/server/inventory/fefo";
+import { isoDay, makeFixture, orderInput, saleFixture, unpublishTestProducts, type SaleFixture } from "./fixtures";
 
 // P9b: số liệu trang Tồn kho khớp sổ kho. Mọi truy vấn lọc theo mã fixture (q = tag) vì DB test dùng chung.
 
@@ -135,5 +136,27 @@ describe("Trang Tồn kho — số liệu khớp sổ kho", () => {
       ].sort(),
     );
     expect(await batchDetail("khong-co")).toBeNull();
+  });
+});
+
+describe("R5: lô bị chặn = phần bù của lô bán được", () => {
+  it("blockedBatchWhere (Tồn kho + badge menu) và sellableBatchWhere chia hết các lô, không trùng", async () => {
+    const f = await saleFixture([
+      { lot: "A", expiryInDays: 400, qty: 1 },
+      { lot: "C", expiryInDays: 30, qty: 1 },
+    ]);
+    await post(f, { type: "RECEIVE", toId: f.mm.id, lines: [{ variantId: f.variantId, lotNo: "U", expiryStatus: "UNKNOWN", unitCostVnd: 100, qty: 1 }] });
+    const g = await makeFixture();
+    await prisma.product.update({ where: { id: g.productId }, data: { requiresExpiry: false } });
+    const doc = await createDocument({ type: "RECEIVE", toId: g.mm.id, lines: [{ variantId: g.variantId, lotNo: "N", expiryStatus: "NONE", unitCostVnd: 100, qty: 1 }] }, g.userId);
+    await postDocument(doc.id, g.userId);
+
+    const now = new Date();
+    const lots = (where: object) =>
+      prisma.batch
+        .findMany({ where: { variantId: { in: [f.variantId, g.variantId] }, ...where }, select: { lotNo: true } })
+        .then((r) => r.map((b) => b.lotNo).sort());
+    expect(await lots(blockedBatchWhere(now, 90))).toEqual(["C", "U"]);
+    expect(await lots(sellableBatchWhere(now, 90))).toEqual(["A", "N"]);
   });
 });

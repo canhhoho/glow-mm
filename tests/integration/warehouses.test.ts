@@ -4,6 +4,7 @@ import { createDocument, postDocument } from "@/server/inventory/documents";
 import { createWarehouse, setWarehouseActive, updateWarehouse } from "@/server/inventory/warehouses";
 import { moveProductsToWarehouse } from "@/server/catalog/product-delete";
 import { saveProduct } from "@/server/catalog/products";
+import { getProductForEdit } from "@/server/catalog/admin-queries";
 import { createOrder } from "@/server/orders/orders";
 import { transitionOrder } from "@/server/orders/transitions";
 import { admin, avail, isoDay, orderInput, saleFixture, unpublishTestProducts, markApproved } from "./fixtures";
@@ -99,6 +100,31 @@ describe("Kho của sản phẩm", () => {
     );
     await expect(moveProductsToWarehouse([f.productId], f.chi.id, f.userId)).rejects.toThrow(/phải cùng kho/);
     expect(await moveProductsToWarehouse([f.productId, combo.id], f.chi.id, f.userId)).toBe(2);
+  });
+
+  /**
+   * R3 (docs/ban-do-nghiep-vu-admin.md): form SP phải chặn giống chuyển kho hàng loạt, cả khi SP là thành phần.
+   * Lỗi tái hiện 16/11/2026 (`saveProduct` chỉ kiểm khi chính SP là combo); sửa bằng `assertBundleWarehouses` dùng chung.
+   */
+  it("đổi kho qua form SP: thành phần của combo khác kho bị chặn", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 2 }]);
+    const tag = f.tag.toLowerCase();
+    const product = (slug: string, variants: Record<string, unknown>[]) =>
+      saveProduct({ slug, brandId: f.brandId, categoryId: f.categoryId, stockLocationId: f.mm.id, my: { name: "ဆက်" }, en: { name: slug }, variants }, f.userId);
+    // Thành phần tạo qua saveProduct (slug fixture có chữ hoa → form của nó không lưu lại được).
+    const part = await product(`it-part-form-${tag}`, [{ sku: `PARTF-${f.tag}`, label: "50ml", priceMmk: 1 }]);
+    const partVariant = await prisma.variant.findUniqueOrThrow({ where: { sku: `PARTF-${f.tag}` } });
+    const combo = await product(`it-combo-form-${tag}`, [
+      { sku: `SETF-${f.tag}`, label: "Set", priceMmk: 1, isBundle: true, components: [{ componentId: partVariant.id, qty: 1 }] },
+    ]);
+    // Chiều đã có kiểm tra: chính combo đổi kho khác thành phần.
+    const comboForm = (await getProductForEdit(combo.id))!;
+    await expect(saveProduct({ ...comboForm, stockLocationId: f.chi.id }, f.userId)).rejects.toThrow(/kho khác|cùng kho/);
+    // Chiều R3: thành phần đổi kho, combo ở lại kho cũ.
+    const partForm = (await getProductForEdit(part.id))!;
+    await expect(saveProduct({ ...partForm, stockLocationId: f.chi.id }, f.userId)).rejects.toThrow(/kho khác|cùng kho/);
+    const after = await prisma.product.findUniqueOrThrow({ where: { id: part.id }, select: { stockLocationId: true } });
+    expect(after.stockLocationId).toBe(f.mm.id);
   });
 });
 

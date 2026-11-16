@@ -6,7 +6,7 @@ import { receiptSources, variantCosts } from "./cost";
 import { rateDisplay } from "./formula";
 import { latestRate } from "./latest-rate";
 import { lastShipRate, listRates } from "./queries";
-import { effectivePricingOf } from "./runs";
+import { effectivePricingOf } from "@/server/catalog/change-request";
 
 /**
  * Dữ liệu trang Giá bán — chế độ THỦ CÔNG (16/11). Gom theo kho bán:

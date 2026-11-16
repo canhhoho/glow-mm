@@ -56,6 +56,15 @@ export function saleCommissionMmk(items: CommissionItem[], rateBp: number | null
   return fixed + commissionMmk(commissionBaseMmk(items.filter((i) => i.commissionPerUnitMmk == null)), rateBp);
 }
 
+/**
+ * Mức cố định MMK/cái chốt vào dòng đơn (`OrderItem.commissionPerUnitMmk`) từ hoa hồng hiện tại của biến thể:
+ * đơn không có CTV → null (không tính); biến thể không đặt mức → null (dòng theo % đơn). Dùng chung khi tạo đơn
+ * (`orders/orders.ts`) và khi gán/đổi/bỏ CTV (`affiliates.ts` `assignOrderAffiliate`) — R4.
+ */
+export function commissionPerUnitSnapshot(variantCommissionMmk: number | null | undefined, hasAffiliate: boolean): number | null {
+  return hasAffiliate ? (variantCommissionMmk ?? null) : null;
+}
+
 /** Đơn có dòng tính hoa hồng cố định theo sản phẩm (để giao diện ghi chú cạnh % của đơn). */
 export function hasFixedCommission(items: CommissionItem[]): boolean {
   return items.some((i) => i.commissionPerUnitMmk != null);

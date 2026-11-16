@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 import { normalizeForSearch, toUnicode } from "@/lib/myanmar";
 import { availableToSell, baseAvailability } from "@/server/orders/availability";
 import { getNumberSetting } from "@/server/settings";
-import { sellableCutoff } from "./fefo";
+import { blockedBatchWhere, sellableCutoff } from "./fefo";
 import { productName } from "./queries";
 import {
   LOCATION_TYPES,
@@ -78,7 +78,7 @@ function expiryWhere(e: ExpiryFilter | undefined, now: Date, t: Thresholds): Pri
   if (e === "unknown") return { expiryStatus: "UNKNOWN" };
   if (e === "none") return { expiryStatus: "NONE" };
   if (e === "near") return { expiryStatus: "DATED", expiryDate: { gte: sellableCutoff(now, t.blockDays), lt: sellableCutoff(now, t.warnDays) } };
-  if (e === "blocked") return { OR: [{ expiryStatus: "UNKNOWN" }, { expiryDate: { lt: sellableCutoff(now, t.blockDays) } }] };
+  if (e === "blocked") return blockedBatchWhere(now, t.blockDays);
   if (e === "expired") return { expiryDate: { lt: sellableCutoff(now, 0) } };
   return {};
 }

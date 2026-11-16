@@ -612,6 +612,37 @@ export async function postDocumentTx(tx: Tx, documentId: string, userId: string,
 }
 
 /**
+ * Phiếu kho do HỆ THỐNG lập theo đơn (R6): xuất khi bàn giao (ISSUE, `orders/transitions.ts`) và nhập hàng trả
+ * (RETURN, `orders/returns.ts`). Lô đã chọn sẵn (FEFO / phiếu soạn / đúng lô đã xuất); tạo nháp rồi ghi sổ ngay qua
+ * `postDocumentTx` trong transaction của đơn. Cố ý KHÔNG qua `createDocument`/`documentSchema`: form không được gắn
+ * `orderId` vào phiếu xuất (phiếu của đơn tiêu thụ chính phần giữ hàng của đơn nên bỏ qua `assertKeepsReservations`).
+ * Người gọi tự kiểm vị trí (kho bán / khu chờ kiểm tra) và quyền.
+ */
+export async function postOrderDocumentTx(
+  tx: Tx,
+  input: { type: "ISSUE" | "RETURN"; orderId: string; locationId: string; reason: string; lines: { variantId: string; batchId: string; qty: number }[] },
+  userId: string,
+  opts: { now?: Date } = {},
+) {
+  if (input.lines.length === 0) throw new DocumentError("Phiếu không có dòng");
+  if (input.lines.some((l) => !Number.isInteger(l.qty) || l.qty <= 0)) throw new DocumentError("Số lượng phải lớn hơn 0");
+  const doc = await tx.stockDocument.create({
+    data: {
+      code: newCode(PREFIX[input.type], opts.now),
+      type: input.type,
+      status: "DRAFT",
+      ...(input.type === "ISSUE" ? { fromId: input.locationId } : { toId: input.locationId }),
+      orderId: input.orderId,
+      reason: input.reason,
+      createdById: userId,
+      lines: { create: input.lines.map((l) => ({ ...l, stockType: "SELLABLE" as const })) },
+    },
+  });
+  await postDocumentTx(tx, doc.id, userId);
+  return doc;
+}
+
+/**
  * Huỷ phiếu nháp: giữ phiếu "Đã huỷ" để tra cứu, xoá lô chỉ phiếu này tạo ra (nhập lại cùng số lô được)
  * và trả lại khối lượng phiếu này đã điền (nếu chưa ai sửa khác đi).
  */

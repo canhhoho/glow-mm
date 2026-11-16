@@ -4,8 +4,7 @@ import { z } from "zod";
 import { mmTextReq, rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { can, type Role } from "@/server/auth/roles";
-import { newCode } from "@/server/codes";
-import { postDocumentTx, salesBlockDays } from "@/server/inventory/documents";
+import { postOrderDocumentTx, salesBlockDays } from "@/server/inventory/documents";
 import type { Tx } from "@/server/inventory/ledger";
 import { bundleDefs } from "./availability";
 import { OrderError } from "./errors";
@@ -74,19 +73,12 @@ export async function returnItems(orderId: string, raw: unknown, actor: { userId
         summary.push(`${item.sku}×${l.qty}`);
       }
 
-      const doc = await tx.stockDocument.create({
-        data: {
-          code: newCode("RT", now),
-          type: "RETURN",
-          status: "DRAFT",
-          toId,
-          orderId: order.id,
-          reason: `Đơn ${order.code}: ${input.reason}`,
-          createdById: actor.userId,
-          lines: { create: docLines.map((d) => ({ ...d, stockType: "SELLABLE" as const })) },
-        },
-      });
-      await postDocumentTx(tx, doc.id, actor.userId);
+      const doc = await postOrderDocumentTx(
+        tx,
+        { type: "RETURN", orderId: order.id, locationId: toId, reason: `Đơn ${order.code}: ${input.reason}`, lines: docLines },
+        actor.userId,
+        { now },
+      );
 
       const after = await tx.orderItem.findMany({ where: { orderId: order.id }, select: { qty: true, returnedQty: true } });
       const fullyReturned = after.every((i) => i.returnedQty >= i.qty);

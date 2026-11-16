@@ -4,7 +4,7 @@ import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { deleteFileIfUnused, deleteStoredKeys } from "@/server/files/public-images";
 import { assertStockLocation } from "@/server/inventory/warehouses";
-import { CatalogError } from "./products";
+import { assertBundleWarehouses, CatalogError } from "./products";
 import { pruneEmptyBrands } from "./brands";
 
 /**
@@ -113,15 +113,7 @@ export async function moveProductsToWarehouse(rawIds: unknown, rawLocationId: un
     if (rows.length === 0) return 0;
     const moved = rows.map((r) => r.id);
     await tx.product.updateMany({ where: { id: { in: moved } }, data: { stockLocationId: loc.id } });
-    const links = await tx.bundleItem.findMany({
-      where: { OR: [{ bundle: { productId: { in: moved } } }, { component: { productId: { in: moved } } }] },
-      select: {
-        bundle: { select: { sku: true, product: { select: { stockLocationId: true } } } },
-        component: { select: { sku: true, product: { select: { stockLocationId: true } } } },
-      },
-    });
-    const bad = links.find((l) => l.bundle.product.stockLocationId !== l.component.product.stockLocationId);
-    if (bad) throw new CatalogError(`Combo ${bad.bundle.sku} và thành phần ${bad.component.sku} phải cùng kho — đổi kho cả hai cùng lúc`);
+    await assertBundleWarehouses(tx, moved);
     await tx.auditLog.createMany({
       data: moved.map((entityId) => ({ userId, action: "product.move", entity: "Product", entityId, data: { locationId: loc.id } })),
     });

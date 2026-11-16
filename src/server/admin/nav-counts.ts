@@ -1,7 +1,7 @@
 import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
-import { sellableCutoff } from "@/server/inventory/fefo";
+import { blockedBatchWhere } from "@/server/inventory/fefo";
 import { getNumberSetting } from "@/server/settings";
 import type { NavCountKey } from "./nav";
 import { AWAITING_REVIEW_WHERE, labelWhere } from "@/server/catalog/approval-rules";
@@ -34,7 +34,7 @@ export async function navCounts(keys: Set<NavCountKey>, now = new Date()): Promi
   if (keys.has("blockedLots")) {
     jobs.push(
       getNumberSetting("expiry.blockDays")
-        .then((d) => distinctLots({ batch: { OR: [{ expiryStatus: "UNKNOWN" }, { expiryDate: { lt: sellableCutoff(now, d) } }] } }))
+        .then((d) => distinctLots({ batch: blockedBatchWhere(now, d) }))
         .then((n) => ["blockedLots", n]),
     );
   }
