@@ -524,7 +524,9 @@
     "editTitle": "Sửa phiếu nhập nháp",
     "updated": "Đã cập nhật phiếu nháp.",
     "inboundFee": "Phí về kho (VND/đv)",
-    "inboundFeeHint": "Vận chuyển, thuế… phân bổ mỗi đơn vị. Điền 0 nếu không phát sinh; để trống = chưa biết (lô dùng giá vốn tạm theo cước tạm tính, không có thì thiếu giá vốn)."
+    "inboundFeeHint": "Vận chuyển, thuế… phân bổ mỗi đơn vị. Điền 0 nếu không phát sinh; để trống = chưa biết (lô dùng giá vốn tạm theo cước tạm tính, không có thì thiếu giá vốn).",
+    "variantArchived": "ngừng kinh doanh",
+    "variantInactive": "đã tắt"
   },
   "Ship": {
     "title": "Chuyến hàng VN → MM",

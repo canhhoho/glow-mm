@@ -939,6 +939,8 @@
     "Docs.unitCostMmk",
     "Docs.updated",
     "Docs.usesDefault",
+    "Docs.variantArchived",
+    "Docs.variantInactive",
     "Docs.weightGrams",
     "Inventory.archived",
     "Inventory.archivedHistory",

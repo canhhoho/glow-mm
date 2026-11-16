@@ -13,7 +13,7 @@ type StockType = "SELLABLE" | "TESTER";
 
 export type FormData = {
   locations: { id: string; code: string; name: string; type: string; active: boolean }[];
-  variants: { id: string; label: string; isBundle: boolean; requiresExpiry: boolean }[];
+  variants: { id: string; label: string; isBundle: boolean; requiresExpiry: boolean; inactive?: boolean; archived?: boolean }[];
   batches: {
     id: string;
     variantId: string;
@@ -178,6 +178,7 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
                   {variants.map((v) => (
                     <option key={v.id} value={v.id}>
                       {v.label}
+                      {v.archived ? ` (${t("variantArchived")})` : v.inactive ? ` (${t("variantInactive")})` : ""}
                     </option>
                   ))}
                 </select>

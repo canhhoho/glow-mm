@@ -16,9 +16,14 @@ export async function listLocations(opts: { includeInactive?: boolean } = {}) {
   });
 }
 
+/**
+ * Biến thể chọn được ở form Xuất / Chuyển / Điều chỉnh (#2): đang dùng, HOẶC đã tắt / SP ngừng KD nhưng còn tồn —
+ * để dọn nốt tồn còn lại. `inactive` / `archived` để form gắn nhãn. Không đổi quyền bán: storefront và đơn lọc
+ * `active` + `published` + `archivedAt` riêng, nên chuyển tồn của biến thể đã tắt không làm nó bán lại.
+ */
 export async function listVariantsForPicker() {
   const variants = await prisma.variant.findMany({
-    where: { active: true },
+    where: { OR: [{ active: true }, { batches: { some: { balances: { some: { qty: { not: 0 } } } } } }] },
     orderBy: { sku: "asc" },
     include: { product: { include: { translations: true } } },
   });
@@ -27,6 +32,8 @@ export async function listVariantsForPicker() {
     sku: v.sku,
     isBundle: v.isBundle,
     requiresExpiry: v.product.requiresExpiry,
+    inactive: !v.active,
+    archived: v.product.archivedAt != null,
     label: `${v.sku} — ${productName(v.product.translations, v.product.slug)} (${v.label})`,
   }));
 }
