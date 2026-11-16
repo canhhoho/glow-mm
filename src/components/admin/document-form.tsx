@@ -12,7 +12,7 @@ type DocType = "RECEIVE" | "TRANSFER" | "ISSUE" | "ADJUST";
 type StockType = "SELLABLE" | "TESTER";
 
 export type FormData = {
-  locations: { id: string; code: string; name: string; type: string }[];
+  locations: { id: string; code: string; name: string; type: string; active: boolean }[];
   variants: { id: string; label: string; isBundle: boolean; requiresExpiry: boolean }[];
   batches: {
     id: string;
@@ -98,16 +98,21 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
     return JSON.stringify(base);
   }, [type, reason, fromId, toId, shipmentId, lines, needsFrom, needsTo]);
 
-  const locSelect = (value: string, onChange: (v: string) => void, label: string, name: string) => (
+  // Kho ĐI (xuất, chuyển) gồm cả kho ngừng dùng để dọn tồn cũ; kho ĐẾN và vị trí điều chỉnh chỉ kho đang dùng —
+  // khớp `checkLocations` ở server (kho ngừng dùng không nhận hàng / không điều chỉnh).
+  const locSelect = (value: string, onChange: (v: string) => void, label: string, name: string, direction: "from" | "to") => (
     <label className={fieldLabelClass}>
       <span className="text-muted-foreground">{label}</span>
       <select name={name} required value={value} onChange={(e) => onChange(e.target.value)} className={fieldClass}>
         <option value="">—</option>
-        {data.locations.map((l) => (
-          <option key={l.id} value={l.id}>
-            {l.code} — {l.name}
-          </option>
-        ))}
+        {data.locations
+          .filter((l) => direction === "from" || l.active)
+          .map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.code} — {l.name}
+              {l.active ? "" : ` (${ti("inactive")})`}
+            </option>
+          ))}
       </select>
     </label>
   );
@@ -126,8 +131,8 @@ export function DocumentForm({ type, data }: { type: DocType; data: FormData }) 
     <form onSubmit={submit} className="space-y-4">
       <input type="hidden" name="payload" value={payload} />
       <div className="grid gap-3 sm:grid-cols-3">
-        {needsFrom && locSelect(fromId, setFromId, t("chooseFrom"), "fromId")}
-        {needsTo && locSelect(toId, setToId, type === "ADJUST" ? t("chooseLocation") : t("chooseTo"), "toId")}
+        {needsFrom && locSelect(fromId, setFromId, t("chooseFrom"), "fromId", "from")}
+        {needsTo && locSelect(toId, setToId, type === "ADJUST" ? t("chooseLocation") : t("chooseTo"), "toId", "to")}
         {type === "RECEIVE" && (
           <label className={fieldLabelClass}>
             <span className="text-muted-foreground">{t("shipment")}</span>

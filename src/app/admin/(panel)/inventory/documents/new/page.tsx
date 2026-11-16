@@ -36,7 +36,7 @@ export default async function NewDocumentPage({ searchParams }: PageProps<"/admi
   }
   const [t, locations, variants, batches, shipments] = await Promise.all([
     getTranslations("Docs"),
-    listLocations({ includeInactive: true }), // xuất/chuyển được tồn còn ở kho đã ngừng dùng
+    listLocations({ includeInactive: true }), // kho ĐI gồm kho đã ngừng dùng (dọn tồn cũ); form tự lọc kho ĐẾN / điều chỉnh
     listVariantsForPicker(),
     batchesForForms(),
     listShipments(),
@@ -47,7 +47,7 @@ export default async function NewDocumentPage({ searchParams }: PageProps<"/admi
       <DocumentForm
         type={type as "RECEIVE" | "TRANSFER" | "ISSUE" | "ADJUST"}
         data={{
-          locations: locations.map((l) => ({ id: l.id, code: l.code, name: l.name, type: l.type })),
+          locations: locations.map((l) => ({ id: l.id, code: l.code, name: l.name, type: l.type, active: l.active })),
           variants,
           batches,
           shipments: shipments.map((s) => ({ id: s.id, code: s.code })),
