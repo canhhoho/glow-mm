@@ -4,12 +4,11 @@ import { z } from "zod";
 import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { can, type Role } from "@/server/auth/roles";
-import { postDocumentTx, salesBlockDays } from "@/server/inventory/documents";
+import { postOrderDocumentTx, salesBlockDays } from "@/server/inventory/documents";
 import { inventoryCost } from "@/server/inventory/cost";
 import { InsufficientStockError } from "@/server/inventory/fefo";
 import { getBoolSetting, getNumberSetting } from "@/server/settings";
 import type { Tx } from "@/server/inventory/ledger";
-import { newCode } from "@/server/codes";
 import { OrderError } from "./errors";
 import { allocateFefo, manifestPicks, orderNeeds } from "./picking";
 import { holdIndefinitely, releaseReservations, reserveForOrder } from "./reservations";
@@ -184,19 +183,18 @@ async function issueOrderStock(
   for (const loc of locations) {
     const own = picks.filter((p) => p.locationId === loc.id);
     if (own.length === 0) continue;
-    const doc = await tx.stockDocument.create({
-      data: {
-        code: newCode("IS", opts.now),
+    await postOrderDocumentTx(
+      tx,
+      {
         type: "ISSUE",
-        status: "DRAFT",
-        fromId: loc.id,
         orderId: order.id,
+        locationId: loc.id,
         reason: locations.length > 1 ? `Đơn ${order.code} · ${loc.name}` : `Đơn ${order.code}`,
-        createdById: userId,
-        lines: { create: own.map((p) => ({ variantId: p.variantId, batchId: p.batchId, stockType: "SELLABLE", qty: p.qty })) },
+        lines: own.map((p) => ({ variantId: p.variantId, batchId: p.batchId, qty: p.qty })),
       },
-    });
-    await postDocumentTx(tx, doc.id, userId);
+      userId,
+      { now: opts.now },
+    );
   }
 
   await tx.orderAllocation.createMany({

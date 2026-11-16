@@ -3,7 +3,7 @@ import type { Tx } from "@/server/inventory/ledger";
 
 const inventory = vi.hoisted(() => ({
   candidatesAt: vi.fn(),
-  postDocumentTx: vi.fn(),
+  postOrderDocumentTx: vi.fn(),
   bundleDefs: vi.fn(),
 }));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
@@ -27,7 +27,6 @@ function fixture(status: "COD_CONFIRMED" | "PAYMENT_CONFIRMED" | "PACKING" = "CO
     location: { findMany: vi.fn().mockResolvedValue([{ id: "warehouse", name: "Kho Thắm", sellable: true }]) },
     // P24: kho xuất lấy theo kho của SP.
     orderItem: { findMany: vi.fn().mockResolvedValue([{ id: "item", variantId: "variant", qty: 2, variant: { product: { stockLocationId: "warehouse" } } }]) },
-    stockDocument: { create: vi.fn().mockResolvedValue({ id: "issue" }) },
     batch: { findMany: vi.fn().mockResolvedValue([{ id: "batch", landedCostMmk: 4000 }]) },
     orderAllocation: { createMany: vi.fn() },
     reservation: { updateMany: vi.fn() },
@@ -50,21 +49,26 @@ describe("Bàn giao vận chuyển trong quy trình 4 bước", () => {
   it.each(["COD_CONFIRMED", "PAYMENT_CONFIRMED"] as const)("%s: xuất kho, tiêu thụ giữ hàng và lưu người bàn giao cùng bước", async (status) => {
     const { tx, handover } = fixture(status);
     await expect(handover()).resolves.toMatchObject({ status: "SHIPPING" });
-    expect(inventory.postDocumentTx).toHaveBeenCalledWith(tx, "issue", actor.userId);
-    expect(tx.stockDocument.create).toHaveBeenCalledTimes(1);
+    // R6: phiếu xuất của đơn đi qua postOrderDocumentTx (tạo + ghi sổ trong documents.ts).
+    expect(inventory.postOrderDocumentTx).toHaveBeenCalledTimes(1);
+    expect(inventory.postOrderDocumentTx).toHaveBeenCalledWith(
+      tx,
+      { type: "ISSUE", orderId: "order", locationId: "warehouse", reason: "Đơn OD-TEST", lines: [{ variantId: "variant", batchId: "batch", qty: 2 }] },
+      actor.userId,
+      { now },
+    );
     expect(tx.orderAllocation.createMany).toHaveBeenCalledWith({ data: [{ orderItemId: "item", batchId: "batch", qty: 2, unitLandedCostMmk: 4000, costStatus: "ACTUAL" }] });
     expect(tx.reservation.updateMany).toHaveBeenCalledWith({ where: { orderId: "order", status: "ACTIVE" }, data: { status: "CONSUMED" } });
     expect(tx.orderStatusHistory.create).toHaveBeenCalledWith({ data: expect.objectContaining({ fromStatus: status, toStatus: "SHIPPING", userId: actor.userId }) });
     await expect(handover()).rejects.toMatchObject({ code: "invalid_transition" });
-    expect(tx.stockDocument.create).toHaveBeenCalledTimes(1);
+    expect(inventory.postOrderDocumentTx).toHaveBeenCalledTimes(1);
     expect(tx.delivery.create).toHaveBeenCalledTimes(1);
   });
 
   it("đơn PACKING cũ chỉ tạo vận chuyển, không xuất kho lại", async () => {
     const { tx, handover } = fixture("PACKING");
     await expect(handover()).resolves.toMatchObject({ status: "SHIPPING" });
-    expect(tx.stockDocument.create).not.toHaveBeenCalled();
-    expect(inventory.postDocumentTx).not.toHaveBeenCalled();
+    expect(inventory.postOrderDocumentTx).not.toHaveBeenCalled();
     expect(tx.delivery.create).toHaveBeenCalledTimes(1);
   });
 
