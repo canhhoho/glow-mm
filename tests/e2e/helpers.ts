@@ -99,33 +99,61 @@ export async function variantSkus(page: Page): Promise<string[]> {
 }
 
 /**
- * Đặt giá TRỰC TIẾP cho các biến thể của SP đang mở (16/11): bước 3 không còn form giá; giá nhập thẳng đi qua Excel
- * (trang Giá bán thủ công của kho VND tính theo công thức, và đặt hoa hồng cố định — không dùng để trả giá seed).
- * `prices[i]` = biến thể thứ i; bỏ trống = giữ nguyên. Không "Gửi duyệt ngay". Quay lại trang SP khi xong.
+ * Đặt giá ĐÚNG MỘT CON SỐ cho các biến thể của SP đang mở — chỉ dùng trong test. Từ 16/11/2026 giá chỉ đặt ở trang Giá bán
+ * (Excel không còn cột giá; kho VND chỉ tính theo công thức, không gõ giá cuối) nên test ghi thẳng DB đúng như
+ * `stagePrices` / ghi giá live của `catalog/change-request.ts`: SP đã duyệt → bản đang sửa (`ProductChangeRequest.prices`,
+ * SP về DRAFT, khách vẫn thấy giá cũ cho đến khi duyệt qua giao diện); SP chưa duyệt → giá live.
+ * `prices[i]` = biến thể thứ i; bỏ trống = giữ nguyên. Ở lại trang SP (tải lại).
  */
 export async function setPrices(page: Page, prices: (number | string | undefined)[]) {
   const productUrl = page.url();
   const skus = await variantSkus(page);
-  const rows = prices.flatMap((p, i) => (p !== undefined ? [[skus[i], String(p)]] : []));
-  // Cột tên / thương hiệu / danh mục bắt buộc có mặt ở dòng tiêu đề (để trống với SKU có sẵn).
-  const csv = ["sku,name_en,brand,category,price_mmk", ...rows.map(([sku, price]) => `${sku},,,,${price}`)].join("\n");
-  // Mọi file đã xác nhận được ghi dấu (nhập lại đúng file bị chặn) — DB test: xoá dấu để file giống hệt lần chạy trước không bị chặn.
+  const wanted = prices.flatMap((p, i) => (p !== undefined ? [{ sku: skus[i], price: Number(p) }] : []));
   const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
   await client.connect();
   try {
-    await client.query('DELETE FROM "CatalogOpeningImport"');
+    await client.query("BEGIN");
+    const user = (await client.query('SELECT id FROM "user" WHERE email = $1', ["admin@glow.local"])).rows[0]?.id ?? "system";
+    const variants = (
+      await client.query(
+        'SELECT v.id, v.sku, v."priceMmk", v."productId", p."approvedAt", p."approvalStatus" FROM "Variant" v JOIN "Product" p ON p.id = v."productId" WHERE v.sku = ANY($1) FOR UPDATE OF p',
+        [wanted.map((w) => w.sku)],
+      )
+    ).rows as { id: string; sku: string; priceMmk: number; productId: string; approvedAt: Date | null; approvalStatus: string }[];
+    const productId = variants[0]?.productId;
+    if (!productId) throw new Error("setPrices: không tìm thấy SKU");
+    if (!variants[0].approvedAt) {
+      for (const w of wanted) await client.query('UPDATE "Variant" SET "priceMmk" = $1 WHERE sku = $2', [w.price, w.sku]);
+    } else {
+      const cr = (await client.query('SELECT prices FROM "ProductChangeRequest" WHERE "productId" = $1', [productId])).rows[0];
+      const staged: Record<string, unknown> = { ...(cr?.prices ?? {}) };
+      for (const w of wanted) {
+        const v = variants.find((x) => x.sku === w.sku)!;
+        if (w.price === v.priceMmk) delete staged[v.id];
+        else staged[v.id] = { priceMmk: w.price, baseLivePrice: v.priceMmk, reason: "e2e", runId: null, userId: user, stagedAt: new Date().toISOString() };
+      }
+      const empty = Object.keys(staged).length === 0;
+      if (cr) {
+        await client.query('UPDATE "ProductChangeRequest" SET prices = $2, "updatedAt" = now() WHERE "productId" = $1', [productId, empty ? null : JSON.stringify(staged)]);
+        await client.query('DELETE FROM "ProductChangeRequest" WHERE "productId" = $1 AND content IS NULL AND prices IS NULL AND images IS NULL', [productId]);
+      } else if (!empty) {
+        await client.query('INSERT INTO "ProductChangeRequest" ("productId", prices, "createdById", "updatedAt") VALUES ($1, $2, $3, now())', [productId, JSON.stringify(staged), user]);
+      }
+      const remaining = (await client.query('SELECT 1 FROM "ProductChangeRequest" WHERE "productId" = $1', [productId])).rowCount;
+      await client.query(
+        remaining
+          ? `UPDATE "Product" SET "approvalVersion" = "approvalVersion" + 1, "approvalStatus" = CASE WHEN "approvalStatus" = 'REJECTED' THEN "approvalStatus" ELSE 'DRAFT' END, "submittedAt" = NULL, "submittedById" = NULL WHERE id = $1`
+          : `UPDATE "Product" SET "approvalVersion" = "approvalVersion" + 1, "approvalStatus" = 'APPROVED', "submittedAt" = NULL, "submittedById" = NULL WHERE id = $1`,
+        [productId],
+      );
+    }
+    await client.query("COMMIT");
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
   } finally {
     await client.end();
   }
-  await page.goto("/admin/products/import");
-  await page.getByLabel("File Excel nhập sản phẩm", { exact: true }).setInputFiles({ name: `gia-${Date.now()}.csv`, mimeType: "text/csv", buffer: Buffer.from(csv) });
-  await page.getByRole("button", { name: "Xem trước", exact: true }).click();
-  const preview = page.getByTestId("catalog-import-preview");
-  await expect(preview).toBeVisible({ timeout: 30_000 });
-  const submit = preview.getByRole("checkbox", { name: "Gửi duyệt ngay" });
-  if (await submit.count()) await submit.uncheck();
-  await preview.getByRole("button", { name: "Xác nhận nhập", exact: true }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Đã nhập" })).toBeVisible({ timeout: 30_000 });
   await page.goto(productUrl);
 }
 

@@ -82,26 +82,22 @@ describe("Duyệt hàng loạt (P2)", () => {
   });
 });
 
-describe("Xuất Excel kèm giá (P2)", () => {
-  it("file SP hiện có có cột giá = giá đang bán; nhập lại đúng dòng đó → không thay đổi gì", async () => {
+describe("Xuất Excel SP hiện có (16/11/2026: cùng cột với mẫu, không có cột giá)", () => {
+  it("một cột tên, không có giá / hoa hồng; nhập lại đúng dòng đó → không thay đổi gì", async () => {
     const f = await makeFixture();
     await prisma.product.update({ where: { id: f.productId }, data: { slug: `it-${f.tag.toLowerCase()}` } });
     await prisma.variant.update({ where: { id: f.variantId }, data: { affiliateCommissionMmk: 500 } });
-    const rows = await readSheet(Buffer.from(await catalogTemplateFile(true, { withPricing: true })), CATALOG_SHEET);
+    const rows = await readSheet(Buffer.from(await catalogTemplateFile(true)), CATALOG_SHEET);
     const header = rows[CATALOG_HEADER_ROW - 1].map(sheetHeaderKey);
+    for (const gone of ["price_mmk", "affiliate_commission_mmk", "name_my", "name_en"]) expect(header).not.toContain(gone);
     const mine = rows.find((r) => r[header.indexOf("sku")] === `IT-${f.tag}`)!;
-    expect(Number(mine[header.indexOf("price_mmk")])).toBe(10_000);
-    expect(Number(mine[header.indexOf("affiliate_commission_mmk")])).toBe(500);
+    expect(mine[header.indexOf("name")]).toBe(`IT product ${f.tag}`);
 
     const keep = header.map((k, i) => [k, i] as const).filter(([k]) => k);
     const csv = toCsv([keep.map(([k]) => k), keep.map(([, i]) => (mine[i] == null ? "" : String(mine[i])))]);
     const preview = await previewCatalogImport({ csv });
     expect(preview.errors).toEqual([]);
     expect(preview.rows[0]).toMatchObject({ action: "same" });
-    expect(preview.counts).toMatchObject({ updatedProducts: 0, priceChanges: 0 });
-
-    // Không có quyền giá → file không có cột giá.
-    const plain = await readSheet(Buffer.from(await catalogTemplateFile(true)), CATALOG_SHEET);
-    expect(plain[CATALOG_HEADER_ROW - 1].map(sheetHeaderKey)).not.toContain("price_mmk");
+    expect(preview.counts).toMatchObject({ updatedProducts: 0 });
   });
 });

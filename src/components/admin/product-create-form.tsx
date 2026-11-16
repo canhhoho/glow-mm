@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Plus, Trash2, X } from "lucide-react";
 import { createProductAction } from "@/server/catalog/actions";
 import { Button } from "@/components/ui/button";
@@ -28,20 +28,18 @@ export type CreatePrefill = {
 };
 
 /**
- * Bước 1 "Tạo sản phẩm": chỉ tên · thương hiệu · danh mục · kho bán (khi có > 1 kho) · phân loại.
- * `kind="combo"`: thay phân loại bằng thành phần combo (cùng kho). Slug/SKU tự sinh ở server.
+ * Bước 1 "Tạo sản phẩm": tên · thương hiệu · danh mục · phân loại — cùng nhãn với form sửa và file Excel
+ * (`ProductFields.*`, `lib/product-fields.ts` `create: true`). Một tên cho mọi ngôn ngữ; kho bán gán khi nhập hàng.
+ * `kind="combo"`: thay phân loại bằng thành phần combo (combo lấy kho của thành phần). Slug/SKU tự sinh ở server.
  */
 export function ProductCreateForm({ kind, options, prefill }: { kind: "product" | "combo"; options: Options; prefill?: CreatePrefill }) {
   const t = useTranslations("Products");
+  const tf = useTranslations("ProductFields");
   const td = useTranslations("Docs");
-  const locale = useLocale();
   const [state, action, pending] = useActionState(createProductAction, undefined);
 
-  // Tên chính theo ngôn ngữ admin (my → tiếng Myanmar, còn lại → tiếng Anh); tên kia tuỳ chọn, chép theo khi để trống.
-  const primary = locale === "my" ? "nameMy" : "nameEn";
-  const other = primary === "nameMy" ? "nameEn" : "nameMy";
-  const [names, setNames] = useState({ nameMy: prefill?.nameMy ?? "", nameEn: prefill?.nameEn ?? "" });
-  const [showOther, setShowOther] = useState(!!prefill?.[other]);
+  // Một tên cho mọi ngôn ngữ (lưu vào tên tiếng Anh, server chép sang tiếng Myanmar).
+  const [name, setName] = useState(prefill?.nameEn || prefill?.nameMy || "");
   const [brandInput, setBrandInput] = useState(prefill?.brandName ?? "");
   const [categoryId, setCategoryId] = useState(prefill?.categoryId ?? "");
   const [labels, setLabels] = useState<string[]>(prefill?.labels ?? []);
@@ -68,7 +66,8 @@ export function ProductCreateForm({ kind, options, prefill }: { kind: "product" 
     () =>
       JSON.stringify({
         kind,
-        ...names,
+        nameEn: name,
+        nameMy: "",
         brandId: matchedBrand?.id,
         brandName: matchedBrand ? undefined : brandInput.trim() || undefined,
         categoryId,
@@ -78,44 +77,21 @@ export function ProductCreateForm({ kind, options, prefill }: { kind: "product" 
         components: kind === "combo" ? components.filter((c) => c.componentId) : [],
         copyFromId: prefill?.copyFromId,
       }),
-    [kind, names, matchedBrand, brandInput, categoryId, labels, draftLabel, components, prefill?.copyFromId, t],
+    [kind, name, matchedBrand, brandInput, categoryId, labels, draftLabel, components, prefill?.copyFromId, t],
   );
 
-  const langName = (key: "nameMy" | "nameEn") => t(key);
 
   return (
     <form action={action} className="max-w-2xl space-y-4 rounded-lg border p-4" data-testid="product-create-form">
       <input type="hidden" name="payload" value={payload} />
       <p className="text-sm text-muted-foreground">{t("create.intro")}</p>
 
-      <Field label={t("create.name")}>
-        <input
-          required={!names[other]}
-          value={names[primary]}
-          onChange={(e) => setNames((n) => ({ ...n, [primary]: e.target.value }))}
-          maxLength={200}
-          lang={primary === "nameMy" ? "my" : "en"}
-          className={fieldClass}
-        />
+      <Field label={tf("name.label")} hint={tf("name.hint")}>
+        <input aria-label={tf("name.label")} required value={name} onChange={(e) => setName(e.target.value)} maxLength={200} className={fieldClass} />
       </Field>
-      {showOther ? (
-        <Field label={langName(other)}>
-          <input
-            value={names[other]}
-            onChange={(e) => setNames((n) => ({ ...n, [other]: e.target.value }))}
-            maxLength={200}
-            lang={other === "nameMy" ? "my" : "en"}
-            className={fieldClass}
-          />
-        </Field>
-      ) : (
-        <button type="button" onClick={() => setShowOther(true)} className="-mt-2 text-sm text-primary underline">
-          {t("create.addOtherName", { lang: langName(other) })}
-        </button>
-      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label={t("brand")}>
+        <Field label={tf("brand.label")}>
           <input list="brand-list" value={brandInput} onChange={(e) => setBrandInput(e.target.value)} required maxLength={80} className={fieldClass} />
           <datalist id="brand-list">
             {options.brands.map((b) => (
@@ -124,7 +100,7 @@ export function ProductCreateForm({ kind, options, prefill }: { kind: "product" 
           </datalist>
           {brandInput.trim() && !matchedBrand && <span className="text-xs text-muted-foreground">{t("brandNewHint")}</span>}
         </Field>
-        <Field label={t("category")}>
+        <Field label={tf("category.label")}>
           <select required value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={fieldClass}>
             <option value="">—</option>
             {options.categories.map((c) => (
@@ -137,7 +113,7 @@ export function ProductCreateForm({ kind, options, prefill }: { kind: "product" 
       </div>
 
       {kind === "product" ? (
-        <Field label={t("create.labels")} hint={t("create.labelsHint")}>
+        <Field label={tf("variant_label.label")} hint={t("create.labelsHint")}>
           <div className="flex min-h-9 flex-wrap items-center gap-1.5 rounded-lg border border-input px-2 py-1 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
             {labels.map((l) => (
               <span key={l} className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-sm" data-testid="variant-label-chip">

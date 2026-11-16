@@ -1,71 +1,97 @@
 /**
- * File Excel nhập/cập nhật sản phẩm (một sheet, mỗi dòng một SKU, tồn tuỳ chọn).
- * Dùng chung cho: sinh file mẫu, bộ đọc file và test. Không import server.
+ * File Excel nhập/cập nhật sản phẩm (một sheet, mỗi dòng một SKU, nhập kho tuỳ chọn).
+ * Cột = `PRODUCT_FIELDS` (cùng bộ trường với form SP, `lib/product-fields.ts`); tiêu đề theo ngôn ngữ admin,
+ * bộ đọc nhận tiêu đề cả 3 ngôn ngữ + nhãn/khoá của mẫu cũ. Dùng chung cho sinh file, bộ đọc và test. Không import server.
  */
+import adminVi from "../../messages/admin.vi.json";
+import adminEn from "../../messages/admin.en.json";
+import adminMy from "../../messages/admin.my.json";
+import { PRODUCT_FIELDS, type FieldList, type FieldType, type ProductField, type ProductSection } from "./product-fields";
 
 export const CATALOG_SHEET = "Nhap hang";
-export const CATALOG_GUIDE_SHEET = "Huong dan";
 export const CATALOG_LIST_SHEET = "Danh sach";
-/** Hàng tiêu đề của bảng nhập; dữ liệu bắt đầu ngay dòng sau. */
-export const CATALOG_HEADER_ROW = 6;
+/** Hàng tiêu đề của bảng nhập (dòng đầu tiên, không còn dòng hướng dẫn — 16/11/2026); dữ liệu bắt đầu ngay dòng sau. */
+export const CATALOG_HEADER_ROW = 1;
 export const CATALOG_INPUT_ROWS = 500;
 
-export type SheetColumnType = "text" | "money" | "whole" | "positive" | "date" | "yesno";
-export type SheetList = "brands" | "categories" | "warehouses" | "yesno";
-
-export type SheetColumn = {
-  key: string;
-  label: string;
+export type SheetColumnType = FieldType;
+export type SheetList = FieldList;
+export type SheetColumn = Pick<ProductField, "key" | "type" | "width" | "required" | "list" | "collapsed" | "collapsedBlankOnly" | "wrap"> & {
+  section?: ProductSection;
   group: "product" | "stock";
-  type: SheetColumnType;
-  width: number;
-  hint: string;
-  /** Đánh dấu * trên file mẫu (bắt buộc với dòng tạo mới). */
-  required?: boolean;
-  list?: SheetList;
-  /** Khoá/nhãn cột của file mẫu cũ vẫn được nhận. */
+  /** Khoá/nhãn cột của file mẫu cũ (tiếng Việt) vẫn được nhận. */
   aliases?: string[];
 };
 
-export const CATALOG_COLUMNS: SheetColumn[] = [
-  { key: "name_my", label: "Tên Myanmar", group: "product", type: "text", width: 30, hint: "Cần ít nhất một tên (Myanmar hoặc tiếng Anh). Thiếu tên nào thì dùng tên còn lại.", aliases: ["Tên tiếng Myanmar"] },
-  { key: "name_en", label: "Tên tiếng Anh", group: "product", type: "text", width: 30, hint: "Các dòng cùng tên + thương hiệu là các biến thể của một sản phẩm." },
-  { key: "brand", label: "Thương hiệu", group: "product", type: "text", width: 22, required: true, list: "brands", hint: "Chọn trong danh sách hoặc gõ tên mới — thương hiệu mới sẽ được tạo." },
-  { key: "category", label: "Danh mục", group: "product", type: "text", width: 26, required: true, list: "categories", hint: "Chọn trong danh sách (nhận cả tên hoặc mã danh mục).", aliases: ["Mã danh mục"] },
-  { key: "variant_label", label: "Biến thể", group: "product", type: "text", width: 18, hint: "Dung tích, kích cỡ hoặc màu. Để trống nếu sản phẩm chỉ có một loại.", aliases: ["Biến thể (dung tích/màu)"] },
-  { key: "price_mmk", label: "Giá bán (MMK)", group: "product", type: "money", width: 16, hint: "Chỉ có trong file của người có quyền giá. Trống = giữ nguyên (kể cả giá đang chờ duyệt). SKU mới: điền giá thì gửi duyệt được, trống thì giá 0 (lưu nháp). SP đã duyệt: đổi giá cần duyệt lại." },
-  { key: "weight_g", label: "Khối lượng (g)", group: "product", type: "whole", width: 15, hint: "Gram, số nguyên. Kho hàng nhập Việt Nam: bắt buộc trước khi gửi duyệt / đăng bán (tính phí ship vào giá). Kho mua tại Myanmar: tuỳ chọn." },
-  { key: "affiliate_commission_mmk", label: "Hoa hồng CTV (MMK/cái)", group: "product", type: "money", width: 18, hint: "Số tiền CTV nhận cho mỗi cái bán ra. Để trống = theo % của CTV (dòng cập nhật: giữ mức cũ). SP đã duyệt: có hiệu lực cùng giá khi duyệt. Muốn bỏ mức riêng thì sửa ở trang Giá bán.", aliases: ["Hoa hồng CTV"] },
-  { key: "description_my", label: "Mô tả Myanmar", group: "product", type: "text", width: 34, hint: "Khách thấy trên trang sản phẩm (tiếng Myanmar). Nên điền; có thể xuống dòng trong một ô." },
-  { key: "description_en", label: "Mô tả tiếng Anh", group: "product", type: "text", width: 34, hint: "Khách thấy ở trang tiếng Anh — không tự lấy mô tả Myanmar, nên điền cả hai." },
-  { key: "usage_my", label: "Cách dùng Myanmar", group: "product", type: "text", width: 30, hint: "Tuỳ chọn. Hiện ở mục Cách dùng trên trang sản phẩm (tiếng Myanmar)." },
-  { key: "usage_en", label: "Cách dùng tiếng Anh", group: "product", type: "text", width: 30, hint: "Tuỳ chọn. Hiện ở trang tiếng Anh." },
-  { key: "ingredients", label: "Thành phần", group: "product", type: "text", width: 30, hint: "Tuỳ chọn. Một nội dung dùng cho mọi ngôn ngữ (thường là bảng INCI)." },
-  { key: "storage_note", label: "Bảo quản", group: "product", type: "text", width: 24, hint: "Tuỳ chọn. Ví dụ: nơi khô ráo, tránh ánh nắng." },
-  { key: "pao_months", label: "Hạn sau mở nắp (tháng)", group: "product", type: "positive", width: 16, hint: "Tuỳ chọn. Số tháng dùng được sau khi mở nắp (ký hiệu PAO, ví dụ 12). Khác với hạn sử dụng của lô." },
-  { key: "warehouse_code", label: "Kho bán", group: "product", type: "text", width: 12, list: "warehouses", hint: "Mã kho bán. Để trống = kho mặc định. Sản phẩm đã có: đổi kho trong trang sản phẩm.", aliases: ["Mã kho bán"] },
-  { key: "has_expiry", label: "Có hạn dùng", group: "product", type: "yesno", width: 13, list: "yesno", hint: "Có (mặc định) hoặc Không (túi, phụ kiện...).", aliases: ["expiry_policy", "Quản lý hạn sử dụng"] },
-  { key: "sku", label: "SKU", group: "product", type: "text", width: 20, hint: "Để trống khi tạo mới (tự sinh). Điền SKU đã có để cập nhật sản phẩm đó.", aliases: ["Mã SKU"] },
-  { key: "qty", label: "Số lượng nhập", group: "stock", type: "positive", width: 14, hint: "Tuỳ chọn. Có số lượng → tạo phiếu nhập nháp, kiểm tra rồi ghi sổ.", aliases: ["Số lượng"] },
-  { key: "expiry_date", label: "Hạn sử dụng", group: "stock", type: "date", width: 15, hint: "dd/mm/yyyy. Để trống với hàng có hạn → lô chưa biết hạn, chưa bán được đến khi cập nhật." },
-  { key: "unit_cost", label: "Giá mua/đv", group: "stock", type: "money", width: 15, hint: "Theo kho bán: VND (kho hàng nhập Việt Nam) hoặc MMK (kho mua tại Myanmar)." },
-  { key: "inbound_unit_vnd", label: "Phí đưa về kho (VND/đv)", group: "stock", type: "money", width: 20, hint: "Tuỳ chọn, chỉ kho hàng nhập Việt Nam: vận chuyển, thuế phân bổ mỗi đơn vị. Điền 0 nếu không phát sinh; để trống = chưa biết (lô chưa có giá vốn).", aliases: ["Phí đưa về kho"] },
-  { key: "lot_no", label: "Số lô", group: "stock", type: "text", width: 14, hint: "Tuỳ chọn. Để trống = tự sinh số lô." },
-];
+/** Nhãn tiếng Việt của mẫu cũ cho các cột còn dùng. */
+const OLD_LABELS: Record<string, string[]> = {
+  name: ["name_en", "Tên tiếng Anh"],
+  category: ["Mã danh mục"],
+  variant_label: ["Biến thể", "Biến thể (dung tích/màu)"],
+  sku: ["Mã SKU"],
+  warehouse_code: ["Kho bán", "Mã kho bán"],
+  qty: ["Số lượng"],
+  inbound_unit_vnd: ["Phí đưa về kho"],
+};
 
-/** Cột của mẫu cũ: không có trên mẫu mới nhưng file cũ có thì vẫn đọc. */
+export const CATALOG_COLUMNS: SheetColumn[] = PRODUCT_FIELDS.filter((f) => f.excel).map((f) => ({
+  key: f.key,
+  type: f.type,
+  width: f.width,
+  required: f.required,
+  list: f.list,
+  collapsed: f.collapsed,
+  collapsedBlankOnly: f.collapsedBlankOnly,
+  wrap: f.wrap,
+  section: f.section,
+  group: f.section === "stock" ? "stock" : "product",
+  aliases: OLD_LABELS[f.key],
+}));
+
+/**
+ * Cột của mẫu cũ: không có trên file mới nhưng file cũ có thì vẫn đọc. Tên Myanmar = tên dự phòng khi thiếu cột Tên;
+ * "Có hạn dùng" = mặc định hạn dùng của lô trống; Giá bán / Hoa hồng CTV bị bỏ qua (đặt ở trang Giá bán).
+ */
 export const LEGACY_COLUMNS: SheetColumn[] = [
-  { key: "product_slug", label: "Mã sản phẩm", group: "product", type: "text", width: 0, hint: "" },
-  { key: "mfg_date", label: "Ngày sản xuất", group: "stock", type: "date", width: 0, hint: "" },
-  { key: "stock_type", label: "Loại hàng", group: "stock", type: "text", width: 0, hint: "" },
-  { key: "expiry_status", label: "Trạng thái hạn dùng", group: "stock", type: "text", width: 0, hint: "" },
-  { key: "unit_cost_vnd", label: "Giá mua (VND/đv)", group: "stock", type: "money", width: 0, hint: "" },
-  { key: "unit_cost_mmk", label: "Giá mua (MMK/đv)", group: "stock", type: "money", width: 0, hint: "" },
-  { key: "location_code", label: "Mã kho", group: "stock", type: "text", width: 0, hint: "" },
-  { key: "selling_fee_mmk", label: "Phí bán dự kiến (MMK/đv)", group: "stock", type: "money", width: 0, hint: "" },
+  { key: "name_my", type: "text", width: 0, group: "product", aliases: ["Tên Myanmar", "Tên tiếng Myanmar"] },
+  { key: "price_mmk", type: "money", width: 0, group: "product", aliases: ["Giá bán (MMK)", "Giá bán"] },
+  { key: "affiliate_commission_mmk", type: "money", width: 0, group: "product", aliases: ["Hoa hồng CTV (MMK/cái)", "Hoa hồng CTV"] },
+  { key: "has_expiry", type: "yesno", width: 0, group: "product", aliases: ["Có hạn dùng", "expiry_policy", "Quản lý hạn sử dụng"] },
+  { key: "product_slug", type: "text", width: 0, group: "product", aliases: ["Mã sản phẩm"] },
+  { key: "mfg_date", type: "date", width: 0, group: "stock", aliases: ["Ngày sản xuất"] },
+  { key: "stock_type", type: "text", width: 0, group: "stock", aliases: ["Loại hàng"] },
+  { key: "expiry_status", type: "text", width: 0, group: "stock", aliases: ["Trạng thái hạn dùng"] },
+  { key: "unit_cost_vnd", type: "money", width: 0, group: "stock", aliases: ["Giá mua (VND/đv)"] },
+  { key: "unit_cost_mmk", type: "money", width: 0, group: "stock", aliases: ["Giá mua (MMK/đv)"] },
+  { key: "location_code", type: "text", width: 0, group: "stock", aliases: ["Mã kho"] },
+  { key: "selling_fee_mmk", type: "money", width: 0, group: "stock", aliases: ["Phí bán dự kiến (MMK/đv)"] },
 ];
 
 export const ALL_SHEET_COLUMNS = [...CATALOG_COLUMNS, ...LEGACY_COLUMNS];
+
+// ── Nhãn theo ngôn ngữ admin ──
+const MESSAGES = { vi: adminVi, en: adminEn, my: adminMy } as const;
+export type SheetLocale = keyof typeof MESSAGES;
+type FieldText = { label: string; hint: string };
+type FieldMessages = Record<string, FieldText> & {
+  sections: Record<ProductSection, string>;
+  listTitles: Record<SheetList, string>;
+  listError: string;
+};
+const fieldMessages = (locale: SheetLocale) => MESSAGES[locale].ProductFields as unknown as FieldMessages;
+
+/** Nhãn cột / nhóm / danh sách của file Excel theo ngôn ngữ admin (cùng chữ với form SP). */
+export function catalogLabels(locale: SheetLocale = "vi") {
+  const m = fieldMessages(locale);
+  return {
+    label: (key: string) => m[key]?.label ?? key,
+    hint: (key: string) => m[key]?.hint ?? "",
+    section: (s: ProductSection) => m.sections[s],
+    listTitle: (l: SheetList) => m.listTitles[l],
+    listError: m.listError,
+  };
+}
+export type CatalogLabels = ReturnType<typeof catalogLabels>;
 
 /** Có/Không → true/false; trống → undefined; giá trị lạ → null. Nhận cả DATED/NONE của mẫu cũ. */
 export function parseYesNo(value: string): boolean | undefined | null {
@@ -81,17 +107,27 @@ export function parseYesNo(value: string): boolean | undefined | null {
  * Dấu chấm/phẩy không theo nhóm 3 số (vd "1.5") giữ nguyên để báo lỗi "phải là số nguyên" thay vì đoán sai.
  */
 export function normalizeNumberText(value: string): string {
-  const v = value.replace(/[\s\u00a0]/g, "");
+  const v = value.replace(/[\s ]/g, "");
   if (/^-?\d{1,3}(?:[.,]\d{3})+$/.test(v)) return v.replace(/[.,]/g, "");
   return v;
 }
 
 const fold = (s: string) => s.normalize("NFC").toLowerCase().replace(/\*/g, "").trim();
 
-/** Tìm khoá cột theo khoá, nhãn hoặc alias; tiêu đề có thể nhiều dòng (nhãn + ghi chú). */
+/** Mọi tên được nhận của một cột: khoá, nhãn 3 ngôn ngữ (cột hiện hành), nhãn/khoá mẫu cũ. */
+const HEADER_NAMES = new Map<string, string>();
+for (const c of ALL_SHEET_COLUMNS) {
+  const labels = CATALOG_COLUMNS.includes(c) ? (Object.keys(MESSAGES) as SheetLocale[]).map((l) => fieldMessages(l)[c.key]?.label ?? "") : [];
+  for (const name of [c.key, ...labels, ...(c.aliases ?? [])]) if (name && !HEADER_NAMES.has(fold(name))) HEADER_NAMES.set(fold(name), c.key);
+}
+
+/** Tìm khoá cột theo khoá, nhãn (vi/en/my) hoặc nhãn cũ; tiêu đề có thể nhiều dòng (nhãn + ghi chú). */
 export function sheetHeaderKey(value: unknown): string {
   if (typeof value !== "string") return "";
   const parts = value.normalize("NFC").split(/\r?\n/).map(fold).filter(Boolean);
-  const hit = ALL_SHEET_COLUMNS.find((c) => [c.key, c.label, ...(c.aliases ?? [])].some((name) => parts.includes(fold(name))));
-  return hit?.key ?? "";
+  for (const p of parts) {
+    const hit = HEADER_NAMES.get(p);
+    if (hit) return hit;
+  }
+  return "";
 }

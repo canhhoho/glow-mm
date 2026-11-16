@@ -1,30 +1,25 @@
 import { strToU8, zipSync } from "fflate";
-import { BRAND_NAME } from "@/lib/brand";
 import {
   CATALOG_COLUMNS,
-  CATALOG_GUIDE_SHEET,
   CATALOG_HEADER_ROW,
   CATALOG_INPUT_ROWS,
   CATALOG_LIST_SHEET,
   CATALOG_SHEET,
+  catalogLabels,
+  type CatalogLabels,
   type SheetColumn,
+  type SheetLocale,
 } from "@/lib/catalog-sheet";
+import { PRODUCT_SECTIONS } from "@/lib/product-fields";
 
 /**
- * Sinh file Excel nhập/cập nhật sản phẩm lúc tải xuống (không dùng file tĩnh):
- * sheet nhập liệu có tiêu đề màu, ghi chú khi chọn ô, danh sách thả xuống lấy từ dữ liệu thật,
- * sheet hướng dẫn và sheet danh sách (ẩn). Tuỳ chọn điền sẵn toàn bộ SKU hiện có để sửa rồi tải lên.
+ * Sinh file Excel nhập/cập nhật sản phẩm lúc tải xuống (không dùng file tĩnh): tiêu đề cột ở dòng 1 theo ngôn ngữ admin
+ * (cùng nhãn với form SP), gợi ý hiện khi chọn ô, danh sách thả xuống lấy từ dữ liệu thật (sheet ẩn). Không còn dòng
+ * hướng dẫn / sheet hướng dẫn (16/11/2026). File mẫu trống và file SP hiện có cùng bộ cột.
  */
 
 export type TemplateLists = { brands: string[]; categories: string[]; warehouses: string[] };
 export type TemplateRow = Record<string, string | number | null | undefined>;
-
-const YES_NO = ["Có", "Không"];
-// Giá/hoa hồng đặt ở bước Giá. Các cột phụ vẫn có thể mở bằng dấu + trong Excel.
-const PRICING_COLUMNS = new Set(["price_mmk", "affiliate_commission_mmk"]);
-// Khối lượng + mô tả luôn hiện (cần để đăng bán / khách thấy); nội dung phụ và mã thu gọn.
-const EXTRA_COLUMNS = new Set(["usage_my", "usage_en", "ingredients", "storage_note", "pao_months", "has_expiry", "sku", "inbound_unit_vnd", "lot_no"]);
-const WRAP_COLUMNS = new Set(["description_my", "description_en", "usage_my", "usage_en", "ingredients", "storage_note"]);
 
 const xml = (s: string) =>
   s
@@ -57,20 +52,16 @@ function cell(ref: string, value: string | number | null | undefined, style: num
 const row = (r: number, cells: string[], height?: number) =>
   `<row r="${r}"${height ? ` ht="${height}" customHeight="1"` : ""}>${cells.join("")}</row>`;
 
-const dataStyle = (c: SheetColumn) => (c.type === "date" ? S.date : WRAP_COLUMNS.has(c.key) ? S.wrap : c.type === "text" || c.type === "yesno" ? S.text : S.number);
+const dataStyle = (c: SheetColumn) => (c.type === "date" ? S.date : c.wrap ? S.wrap : c.type === "text" ? S.text : S.number);
 
-function inputSheet(columns: SheetColumn[], lists: TemplateLists, rows: TemplateRow[]) {
+function inputSheet(columns: SheetColumn[], lists: TemplateLists, rows: TemplateRow[], t: CatalogLabels) {
   const last = CATALOG_HEADER_ROW + Math.max(CATALOG_INPUT_ROWS, rows.length + 100);
-  const firstStock = columns.findIndex((c) => c.group === "stock");
   const out: string[] = [
-    row(1, [cell("A1", `${BRAND_NAME} — Nhập / cập nhật sản phẩm`, S.title)], 24),
-    row(2, [cell("A2", "Bắt buộc (*): một tên (Myanmar hoặc tiếng Anh), Thương hiệu, Danh mục. Nên điền: Khối lượng (bắt buộc trước khi đăng bán hàng kho nhập VN) và Mô tả hai thứ tiếng.", S.note)]),
-    row(3, [cell("A3", "Mỗi dòng một biến thể; cùng tên + thương hiệu để gộp sản phẩm. Bấm dấu + phía trên cột để mở Cách dùng, Thành phần, Bảo quản, PAO, SKU… Ô trống giữ nguyên.", S.note)]),
-    row(4, [cell("A4", "Tự sinh: mã SP, SKU, số lô. Làm tiếp trên web: ảnh, ghi sổ phiếu nhập, giá bán (nếu chưa điền — trang Giá bán), gửi duyệt → duyệt → đăng bán. Cột xanh = nhập tồn (tuỳ chọn).", S.note)]),
-    row(5, [cell("A5", "SẢN PHẨM", S.group), ...(firstStock >= 0 ? [cell(`${colName(firstStock)}5`, "NHẬP TỒN (tuỳ chọn)", S.group)] : [])]),
     row(
       CATALOG_HEADER_ROW,
-      columns.map((c, i) => cell(`${colName(i)}${CATALOG_HEADER_ROW}`, c.label + (c.required ? " *" : ""), c.group === "stock" ? S.headStock : c.required ? S.headRequired : S.headOptional)),
+      columns.map((c, i) =>
+        cell(`${colName(i)}${CATALOG_HEADER_ROW}`, t.label(c.key) + (c.required ? " *" : ""), c.group === "stock" ? S.headStock : c.required ? S.headRequired : S.headOptional),
+      ),
       34,
     ),
     ...rows.map((values, r) => {
@@ -78,23 +69,26 @@ function inputSheet(columns: SheetColumn[], lists: TemplateLists, rows: Template
       return row(n, columns.map((c, i) => cell(`${colName(i)}${n}`, values[c.key], dataStyle(c))));
     }),
   ];
-  const cols = columns.map((c, i) => {
-    // SKU của file cập nhật phải luôn thấy để nhận diện đúng dòng cần sửa.
-    const hidden = EXTRA_COLUMNS.has(c.key) && !(c.key === "sku" && rows.length > 0);
-    const previous = columns[i - 1];
-    const collapsed = !hidden && previous && EXTRA_COLUMNS.has(previous.key) && !(previous.key === "sku" && rows.length > 0);
-    return `<col min="${i + 1}" max="${i + 1}" width="${c.width}" style="${dataStyle(c)}" customWidth="1"${hidden ? ' hidden="1" outlineLevel="1"' : ""}${collapsed ? ' collapsed="1"' : ""}/>`;
-  }).join("") + `<col min="${columns.length + 1}" max="${columns.length + 1}" width="3" customWidth="1" collapsed="1"/>`;
-  const listCol = { brands: "A", categories: "B", warehouses: "C", yesno: "D" } as const;
-  const listLen = { brands: lists.brands.length, categories: lists.categories.length, warehouses: lists.warehouses.length, yesno: YES_NO.length };
+  // Cột phụ thu gọn (bấm dấu + phía trên cột). SKU chỉ thu gọn ở file mẫu trống — file cập nhật cần thấy SKU.
+  const isHidden = (c: SheetColumn | undefined) => !!c?.collapsed && !(c.collapsedBlankOnly && rows.length > 0);
+  const cols =
+    columns
+      .map((c, i) => {
+        const hidden = isHidden(c);
+        const collapsed = !hidden && isHidden(columns[i - 1]);
+        return `<col min="${i + 1}" max="${i + 1}" width="${c.width}" style="${dataStyle(c)}" customWidth="1"${hidden ? ' hidden="1" outlineLevel="1"' : ""}${collapsed ? ' collapsed="1"' : ""}/>`;
+      })
+      .join("") + `<col min="${columns.length + 1}" max="${columns.length + 1}" width="3" customWidth="1" collapsed="1"/>`;
+  const listCol = { brands: "A", categories: "B", warehouses: "C" } as const;
+  const listLen = { brands: lists.brands.length, categories: lists.categories.length, warehouses: lists.warehouses.length };
   const validations = columns.map((c, i) => {
     const range = `${colName(i)}${CATALOG_HEADER_ROW + 1}:${colName(i)}${last}`;
-    const prompt = `showInputMessage="1" promptTitle="${xml(c.label.slice(0, 32))}" prompt="${xml(c.hint.slice(0, 250))}"`;
+    const prompt = `showInputMessage="1" promptTitle="${xml(t.label(c.key).slice(0, 32))}" prompt="${xml(t.hint(c.key).slice(0, 250))}"`;
     if (c.list && listLen[c.list] > 0) {
       const ref = `'${CATALOG_LIST_SHEET}'!$${listCol[c.list]}$2:$${listCol[c.list]}$${listLen[c.list] + 1}`;
       // Thương hiệu: cho gõ tên mới (không báo lỗi); các danh sách khác phải chọn đúng.
       const strict = c.list !== "brands";
-      return `<dataValidation type="list" allowBlank="1" ${prompt} showErrorMessage="${strict ? 1 : 0}" errorTitle="${xml(c.label)}" error="Chọn một giá trị trong danh sách." sqref="${range}"><formula1>${ref}</formula1></dataValidation>`;
+      return `<dataValidation type="list" allowBlank="1" ${prompt} showErrorMessage="${strict ? 1 : 0}" errorTitle="${xml(t.label(c.key).slice(0, 32))}" error="${xml(t.listError)}" sqref="${range}"><formula1>${ref}</formula1></dataValidation>`;
     }
     return `<dataValidation allowBlank="1" ${prompt} sqref="${range}"/>`;
   });
@@ -102,50 +96,11 @@ function inputSheet(columns: SheetColumn[], lists: TemplateLists, rows: Template
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetPr><outlinePr summaryRight="1"/></sheetPr><sheetViews><sheetView workbookViewId="0" tabSelected="1" showOutlineSymbols="1"><pane ySplit="${CATALOG_HEADER_ROW}" topLeftCell="A${CATALOG_HEADER_ROW + 1}" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A${CATALOG_HEADER_ROW + 1}" sqref="A${CATALOG_HEADER_ROW + 1}"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="15" outlineLevelCol="1"/><cols>${cols}</cols><sheetData>${out.join("")}</sheetData><dataValidations count="${validations.length}">${validations.join("")}</dataValidations></worksheet>`;
 }
 
-/** Cột "Khi tạo mới" của sheet hướng dẫn: bắt buộc / nên điền / tự sinh / tuỳ chọn. */
-function requirement(c: SheetColumn): string {
-  if (c.required) return "Bắt buộc";
-  if (c.key === "name_my" || c.key === "name_en") return "Bắt buộc (một trong hai tên)";
-  if (c.key === "weight_g") return "Bắt buộc trước khi đăng (kho nhập VN)";
-  if (c.key === "description_my" || c.key === "description_en") return "Nên điền";
-  if (c.key === "sku" || c.key === "lot_no") return "Để trống = tự sinh";
-  if (c.key === "price_mmk") return "Tuỳ chọn (trống = chưa có giá, lưu nháp)";
-  if (c.key === "affiliate_commission_mmk") return "Tuỳ chọn (trống = theo % CTV)";
-  if (c.key === "qty") return "Tuỳ chọn (có = tạo phiếu nhập nháp)";
-  if (c.key === "unit_cost") return "Bắt buộc nếu nhập tồn";
-  return "Tuỳ chọn";
-}
-
-function guideSheet(columns: SheetColumn[]) {
-  const rules = [
-    "Bắt buộc khi tạo mới (*): ít nhất một tên (Myanmar hoặc tiếng Anh; thiếu tên nào dùng tên còn lại), Thương hiệu (chọn hoặc gõ tên mới) và Danh mục (phải có sẵn — tạo ở trang Danh mục trước).",
-    "Nên điền ngay: Khối lượng (g) — bắt buộc trước khi gửi duyệt / đăng bán với kho hàng nhập Việt Nam; Mô tả Myanmar và tiếng Anh — trang tiếng Anh không tự lấy mô tả Myanmar.",
-    "Nhiều màu/dung tích: mỗi loại một dòng, cùng tên và thương hiệu, khác cột Biến thể. Để trống Biến thể = một loại tiêu chuẩn.",
-    "Cột thu gọn (bấm dấu + phía trên cột): Cách dùng, Thành phần, Bảo quản, Hạn sau mở nắp (PAO), Có hạn dùng, SKU, Phí đưa về kho, Số lô. Tạo mới để trống SKU.",
-    "Hệ thống tự sinh: mã sản phẩm (đường dẫn), SKU, số lô. Sản phẩm mới ở trạng thái ẨN, CHƯA DUYỆT. Điền Giá bán (MMK) thì gửi duyệt được; để trống thì giá 0, lưu nháp, đặt giá sau ở trang Giá bán.",
-    "Làm tiếp trên web để khách thấy: Ghi sổ phiếu nhập (nếu có tồn) → Giá bán (nếu chưa điền, ở trang Giá bán) → thêm Ảnh (nên có) → Gửi duyệt → Duyệt → Đăng bán. Điều kiện đăng: giá > 0, có khối lượng (kho nhập VN), kho bán hợp lệ, đã duyệt.",
-    "Cập nhật: tải file 'Danh sách sản phẩm hiện có', giữ SKU và sửa thông tin cần đổi. Ô trống = giữ nguyên (không xoá nội dung qua Excel). Không đổi kho bán / combo qua Excel. Cột Giá bán, Hoa hồng CTV chỉ có trong file của người có quyền giá; điền là đổi giá (SP đã duyệt → chờ duyệt lại, giá và hoa hồng có hiệu lực cùng lúc), để trống là giữ nguyên kể cả giá đang chờ duyệt.",
-    "Nhập tồn (cột xanh, tuỳ chọn): Số lượng + Giá mua (VND cho kho nhập Việt Nam, MMK cho kho mua tại Myanmar). Giá mua để tính vốn, không phải giá bán. Phiếu nhập là NHÁP, kiểm tra rồi Ghi sổ mới có tồn. Phí đưa về kho: điền 0 nếu không phát sinh phí; để trống = chưa biết → lô chưa có giá vốn (không bàn giao đơn được đến khi có giá vốn tạm/thực tế). Số viết 150000, 150,000 hoặc 150.000 đều được.",
-    "Hàng có hạn dùng mà để trống Hạn sử dụng → lô chưa biết hạn, chưa bán được đến khi cập nhật hạn thật. Ngày theo dd/mm/yyyy.",
-    "Luôn bấm Xem trước để kiểm tra; chỉ khi không còn lỗi mới xác nhận được.",
-  ];
-  const head = row(1, [cell("A1", "Hướng dẫn nhập / cập nhật sản phẩm", S.title)], 24);
-  const ruleRows = rules.map((r, i) => row(i + 3, [cell(`A${i + 3}`, `${i + 1}. ${r}`, S.wrap)], 44));
-  const start = rules.length + 4;
-  const table = [
-    row(start, [cell(`A${start}`, "Cột", S.guideHead), cell(`B${start}`, "Khi tạo mới", S.guideHead), cell(`C${start}`, "Hướng dẫn", S.guideHead)]),
-    ...columns.map((c, i) => row(start + 1 + i, [cell(`A${start + 1 + i}`, c.label, S.text), cell(`B${start + 1 + i}`, requirement(c), S.text), cell(`C${start + 1 + i}`, c.hint, S.wrap)], 44)),
-  ];
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetFormatPr defaultRowHeight="15"/><cols><col min="1" max="1" width="26" customWidth="1"/><col min="2" max="2" width="18" customWidth="1"/><col min="3" max="3" width="90" customWidth="1"/></cols><sheetData>${[head, ...ruleRows, ...table].join("")}</sheetData><mergeCells count="${rules.length + 1}"><mergeCell ref="A1:C1"/>${rules.map((_, i) => `<mergeCell ref="A${i + 3}:C${i + 3}"/>`).join("")}</mergeCells></worksheet>`;
-}
-
-function listSheet(lists: TemplateLists) {
+function listSheet(lists: TemplateLists, t: CatalogLabels) {
   const cols = [
-    ["Thương hiệu", lists.brands],
-    ["Danh mục", lists.categories],
-    ["Kho bán", lists.warehouses],
-    ["Có/Không", YES_NO],
+    [t.listTitle("brands"), lists.brands],
+    [t.listTitle("categories"), lists.categories],
+    [t.listTitle("warehouses"), lists.warehouses],
   ] as const;
   const height = Math.max(...cols.map(([, v]) => v.length)) + 1;
   const rows = Array.from({ length: height }, (_, r) =>
@@ -180,21 +135,18 @@ const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 </styleSheet>`;
 
 /**
- * Ghép workbook. `rows` trống = file mẫu; có dữ liệu = danh sách SP hiện có để sửa. `pricing` (P2): file SP hiện có
- * cho người có quyền giá kèm cột Giá bán + Hoa hồng CTV (sửa giá hàng loạt rồi tải lên lại; vẫn qua duyệt).
+ * Ghép workbook. `rows` trống = file mẫu; có dữ liệu = danh sách SP hiện có để sửa (cùng bộ cột).
+ * `locale`: ngôn ngữ tiêu đề / gợi ý (ngôn ngữ admin của người tải).
  */
-export function buildCatalogWorkbook(lists: TemplateLists, rows: TemplateRow[] = [], opts: { pricing?: boolean } = {}): Uint8Array {
-  // Chỉ một kho bán → bỏ cột Kho bán (luôn dùng kho đó).
-  const columns = CATALOG_COLUMNS
-    .filter((c) => (opts.pricing || !PRICING_COLUMNS.has(c.key)) && (c.key !== "warehouse_code" || lists.warehouses.length > 1))
-    .sort((a, b) => {
-      const order = (c: SheetColumn) => c.group === "product" ? EXTRA_COLUMNS.has(c.key) ? 1 : 0 : EXTRA_COLUMNS.has(c.key) ? 3 : 2;
-      return order(a) - order(b);
-    });
+export function buildCatalogWorkbook(lists: TemplateLists, rows: TemplateRow[] = [], opts: { locale?: SheetLocale } = {}): Uint8Array {
+  const t = catalogLabels(opts.locale);
+  // Chỉ một kho bán → bỏ cột Kho nhập (luôn dùng kho đó), như form không hiện ô kho. Cột theo thứ tự nhóm của form;
+  // trong mỗi nhóm cột thu gọn xếp sau.
+  const order = (c: SheetColumn) => PRODUCT_SECTIONS.indexOf(c.section ?? "main") * 2 + (c.collapsed && !c.collapsedBlankOnly ? 1 : 0);
+  const columns = CATALOG_COLUMNS.filter((c) => c.key !== "warehouse_code" || lists.warehouses.length > 1).sort((a, b) => order(a) - order(b));
   const sheets = [
-    { name: CATALOG_SHEET, body: inputSheet(columns, lists, rows) },
-    { name: CATALOG_GUIDE_SHEET, body: guideSheet(columns) },
-    { name: CATALOG_LIST_SHEET, body: listSheet(lists), hidden: true },
+    { name: CATALOG_SHEET, body: inputSheet(columns, lists, rows, t) },
+    { name: CATALOG_LIST_SHEET, body: listSheet(lists, t), hidden: true },
   ];
   const ct = "application/vnd.openxmlformats-officedocument";
   return zipSync({

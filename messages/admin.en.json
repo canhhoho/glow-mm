@@ -653,7 +653,6 @@
     "restoreDone": "Restored {count} products (still hidden — show them when you sell again).",
     "edit": "Edit",
     "saved": "Saved.",
-    "general": "General",
     "slug": "Slug (URL)",
     "brand": "Brand",
     "category": "Category",
@@ -667,7 +666,6 @@
     "SKIN_TYPE": "Skin type",
     "CONCERN": "Skin concern",
     "INGREDIENT": "Key ingredient",
-    "variants": "Variants",
     "sku": "SKU",
     "label": "Variant name (size/shade)",
     "standardVariant": "Standard",
@@ -706,7 +704,6 @@
     "imagesDown": "Down",
     "imagesDelete": "Delete image",
     "imagesDeleteConfirm": "Delete this image?",
-    "requiresExpiry": "Track expiry dates for this product",
     "paoMonths": "Period after opening (months, optional)",
     "launchCheck": "Before publishing",
     "checkImages": "Product images added",
@@ -757,12 +754,10 @@
     "nameMy": "Myanmar name",
     "nameEn": "English name",
     "brandNewHint": "New brand — it will be created when you save",
-    "descriptions": "Description",
     "descriptionMy": "Myanmar description",
     "descriptionEn": "English description",
     "addColorSize": "Add colour/size",
     "otherSettings": "Other settings (codes, warehouse, expiry)",
-    "nameHint": "One name is enough; the other language uses it until translated.",
     "affiliateCommission": "Affiliate commission (MMK/unit)",
     "affiliateCommissionHint": "Leave blank to use the affiliate’s %",
     "newCombo": "New combo",
@@ -770,8 +765,6 @@
     "create": {
       "comboTitle": "New combo",
       "intro": "Step 1/5 — basic details only. Price, images, description and visibility come in later steps on the product page.",
-      "name": "Product name",
-      "addOtherName": "+ Add {lang}",
       "labels": "Options (colour / size)",
       "labelsPlaceholder": "e.g. Red, 50ml",
       "labelsHint": "Press Enter or comma to add. Leave empty if there is only one option.",
@@ -2357,9 +2350,106 @@
       "other": "Other"
     }
   },
+  "ProductFields": {
+    "sections": {
+      "main": "Main information",
+      "variant": "Variants",
+      "content": "Description for customers",
+      "extra": "More details",
+      "stock": "Stock in (optional)"
+    },
+    "required": "Required for new products",
+    "name": {
+      "label": "Product name",
+      "hint": "One name for every language (usually the brand English/Latin name). Rows with the same name + brand are variants of one product."
+    },
+    "brand": {
+      "label": "Brand",
+      "hint": "Pick from the list or type a new name — a new brand will be created."
+    },
+    "category": {
+      "label": "Category",
+      "hint": "Pick from the list (name or category code). The category must already exist."
+    },
+    "variant_label": {
+      "label": "Variant (size/colour)",
+      "hint": "Leave blank if the product has only one variant."
+    },
+    "sku": {
+      "label": "SKU",
+      "hint": "Leave blank for new products (auto). Fill an existing SKU to update that product."
+    },
+    "weight_g": {
+      "label": "Weight (g)",
+      "hint": "Grams, whole number greater than 0. Needed before submitting Vietnam-imported goods (shipping is priced in)."
+    },
+    "description_my": {
+      "label": "Myanmar description",
+      "hint": "Shown on the Myanmar page. Line breaks inside a cell are kept."
+    },
+    "description_en": {
+      "label": "English description",
+      "hint": "Shown on the English/Vietnamese pages — not copied from the Myanmar description."
+    },
+    "usage_my": {
+      "label": "How to use (Myanmar)",
+      "hint": "Optional. Shown under How to use on the Myanmar page."
+    },
+    "usage_en": {
+      "label": "How to use (English)",
+      "hint": "Optional. Shown on the English/Vietnamese pages."
+    },
+    "ingredients": {
+      "label": "Ingredients",
+      "hint": "Optional. One text for all languages (usually the INCI list)."
+    },
+    "storage_note": {
+      "label": "Storage",
+      "hint": "Optional. E.g. keep in a dry place away from sunlight."
+    },
+    "pao_months": {
+      "label": "Period after opening (months)",
+      "hint": "Optional. Months usable after opening (PAO), separate from the lot expiry date."
+    },
+    "warehouse_code": {
+      "label": "Receiving warehouse",
+      "hint": "Warehouse that receives the goods. Not received yet: becomes the sales warehouse when posted (blank = default). Already placed: must be that warehouse."
+    },
+    "qty": {
+      "label": "Quantity in",
+      "hint": "Optional. A quantity creates a draft receipt — check it, then Post."
+    },
+    "expiry_date": {
+      "label": "Expiry date",
+      "hint": "dd/mm/yyyy. Blank = unknown (not sellable yet). Write \"No\" if the item has no expiry."
+    },
+    "unit_cost": {
+      "label": "Purchase price/unit",
+      "hint": "By receiving warehouse: VND (Vietnam import) or MMK (bought in Myanmar). Not the selling price."
+    },
+    "inbound_unit_vnd": {
+      "label": "Inbound fee (VND/unit)",
+      "hint": "Vietnam-import warehouses only. 0 = no fee; blank = unknown (lot has no cost yet)."
+    },
+    "lot_no": {
+      "label": "Lot no.",
+      "hint": "Optional. Blank = auto."
+    },
+    "priceReadonly": "Selling price and CTV commission are set on the Selling prices page.",
+    "currentPrice": "Current price",
+    "setPrice": "Set selling price",
+    "stockHint": "Receive stock (quantity, expiry, purchase price, warehouse) with a receipt.",
+    "receive": "Receive stock",
+    "listTitles": {
+      "brands": "Brand",
+      "categories": "Category",
+      "warehouses": "Receiving warehouse"
+    },
+    "listError": "Pick a value from the list."
+  },
   "CatalogImport": {
     "title": "Import / update products from Excel",
-    "help": "One file to create products, update their details and prices, and receive stock. New products start hidden; with a price they can be submitted for approval, without one they stay as drafts. Blank cells keep the current value (including a price awaiting approval). Always preview; you can confirm only when there are no errors.",
+    "help": "One file to create products, update their details and receive stock — the same fields as the product form. New products start hidden; selling prices are set later on the Selling prices page. Blank cells keep the current value. Always preview; you can confirm only when there are no errors.",
     "templateBlank": "Download blank template",
     "templateCurrent": "Download current products (to update)",
     "setupHint": "Set up first:",
@@ -2375,7 +2465,6 @@
     "colAction": "Status",
     "colProduct": "Product",
     "colSku": "SKU",
-    "colPrice": "Price (MMK)",
     "colStock": "Stock in",
     "action": {
       "create": "New",
@@ -2388,8 +2477,6 @@
     "confirmHelp": "New products are created hidden. Stock creates DRAFT receipts per sales warehouse — open them, check, then Post.",
     "confirm": "Confirm import",
     "confirmBlocked": "You cannot confirm while the file has errors. Fix the errors above, select the corrected file and click Preview again.",
-    "priceChanges": "{count} SKUs change selling price / CTV commission — price history will be recorded.",
-    "pricingForbidden": "The file changes selling prices / CTV commissions — this needs the pricing permission. Leave the price columns empty or ask someone with that permission.",
     "success": "Imported: {created} new, {updated} updated products.",
     "reviewDraft": "review and post",
     "finishProducts": "Back to products to add images and publish",
@@ -2419,17 +2506,11 @@
       "ingredients": "Ingredients",
       "storage": "Storage",
       "pao": "PAO",
-      "expiry": "Has expiry",
       "label": "Variant",
-      "weight": "Weight",
-      "price": "Price",
-      "commission": "CTV commission"
+      "weight": "Weight"
     },
     "standardLabel": "(standard)",
     "autoSku": "auto",
-    "keep": "unchanged",
-    "priceCurrent": "now {price}",
-    "priceStaged": "→ awaiting approval",
     "stockQty": "Qty {qty} · warehouse {location}",
     "stockLot": "Lot {lot}",
     "purchase": "Purchase {cost} {currency}/unit",

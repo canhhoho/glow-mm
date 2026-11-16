@@ -19,45 +19,45 @@ async function readyFixture() {
   return f;
 }
 const state = (id: string) => prisma.product.findUniqueOrThrow({ where: { id }, select: { approvalStatus: true, approvalVersion: true, published: true, approvedAt: true } });
-const price = async (f: Fixture) => (await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).priceMmk;
 async function approvePublished(f: Fixture) {
   await submitProducts({ ids: [f.productId] }, f.userId);
   await reviewProducts({ decision: "approvePublish", items: [{ id: f.productId, version: (await state(f.productId)).approvalVersion }] }, f.userId);
 }
 
 describe("Gửi duyệt ngay / Duyệt luôn sau một lượt (§6.4)", () => {
-  it("Excel: SP đang bán sửa giá → chờ duyệt cùng lượt; SP mới thiếu giá → liệt kê, lượt vẫn commit; duyệt luôn không đăng SP mới", async () => {
+  it("Excel: SP đang bán sửa tên → chờ duyệt cùng lượt; SP mới thiếu giá → liệt kê, lượt vẫn commit; duyệt luôn không đăng SP mới", async () => {
     const f = await readyFixture();
     await approvePublished(f);
     const cat = `it-${f.tag}`;
     const csv = [
-      "sku,name_en,brand,category,price_mmk,weight_g",
-      `IT-${f.tag},,,,15000,`,
-      `,New ${f.tag},IT ${f.tag},${cat},,120`,
+      "sku,name,brand,category,weight_g",
+      `IT-${f.tag},Renamed ${f.tag},,,`,
+      `,New ${f.tag},IT ${f.tag},${cat},120`,
     ].join("\n");
     const preview = await previewCatalogImport({ csv });
     expect(preview.errors).toEqual([]);
-    const res = await commitCatalogImport(preview.input, f.userId, { allowPricing: true, submit: true });
+    const res = await commitCatalogImport(preview.input, f.userId, { submit: true });
     expect(res.review?.submitted).toEqual([f.productId]);
+    const enName = async () => (await prisma.productTranslation.findUniqueOrThrow({ where: { productId_locale: { productId: f.productId, locale: "en" } } })).name;
     const fresh = await prisma.product.findFirstOrThrow({ where: { translations: { some: { name: `New ${f.tag}` } } } });
     expect(res.review?.skipped).toEqual([expect.objectContaining({ id: fresh.id, issues: expect.arrayContaining([expect.objectContaining({ code: "PRICE_ZERO" })]) })]);
     expect(await state(f.productId)).toMatchObject({ approvalStatus: "PENDING", published: true });
-    expect(await price(f)).toBe(10_000); // chưa duyệt → khách vẫn thấy giá cũ
+    expect(await enName()).not.toBe(`Renamed ${f.tag}`); // chưa duyệt → khách vẫn thấy tên cũ
     expect(await state(fresh.id)).toMatchObject({ approvalStatus: "DRAFT", published: false });
 
     const approved = await approveSubmitted([f.productId], f.userId);
     expect(approved).toMatchObject([{ id: f.productId, ok: true }]);
     expect(await state(f.productId)).toMatchObject({ approvalStatus: "APPROVED", published: true });
-    expect(await price(f)).toBe(15_000);
+    expect(await enName()).toBe(`Renamed ${f.tag}`);
     const log = await prisma.auditLog.findFirstOrThrow({ where: { entityId: f.productId, action: "product.approve" }, orderBy: { createdAt: "desc" } });
     expect(log.data).toMatchObject({ selfApproved: true });
   });
 
   it("duyệt luôn SP mới chưa từng duyệt: đã duyệt nhưng KHÔNG đăng", async () => {
     const f = await readyFixture();
-    const csv = ["sku,name_en,brand,category,price_mmk", `IT-${f.tag},Renamed ${f.tag},,,12000`].join("\n");
+    const csv = ["sku,name,brand,category", `IT-${f.tag},Renamed ${f.tag},,`].join("\n");
     const preview = await previewCatalogImport({ csv });
-    const res = await commitCatalogImport(preview.input, f.userId, { allowPricing: true, submit: true });
+    const res = await commitCatalogImport(preview.input, f.userId, { submit: true });
     expect(res.review?.submitted).toEqual([f.productId]);
     expect(await approveSubmitted(res.review!.submitted, f.userId)).toMatchObject([{ ok: true }]);
     expect(await state(f.productId)).toMatchObject({ approvalStatus: "APPROVED", published: false });

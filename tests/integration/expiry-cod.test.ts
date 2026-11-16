@@ -20,7 +20,8 @@ describe("Lô chưa biết hạn", () => {
     await resolveBatchExpiry({ batchId: batch.id, expiryDate }, f.userId);
     expect((await availableToSell(prisma, [f.variantId], opts)).get(f.variantId)).toBe(5);
     await expect(resolveBatchExpiry({ batchId: batch.id, expiryDate }, f.userId)).rejects.toThrow("Chỉ cập nhật");
-    await expect(createDocument({ type: "RECEIVE", toId: f.mm.id, lines: [{ variantId: f.variantId, lotNo: "N", expiryStatus: "NONE", unitCostVnd: 100, qty: 1 }] }, f.userId)).rejects.toThrow("yêu cầu quản lý");
+    // 16/11/2026: hạn dùng theo lô — lô "Không có hạn" nhập được cho mọi SP (không còn chặn theo cờ của SP).
+    await expect(createDocument({ type: "RECEIVE", toId: f.mm.id, lines: [{ variantId: f.variantId, lotNo: "N", expiryStatus: "NONE", unitCostVnd: 100, qty: 1 }] }, f.userId)).resolves.toBeTruthy();
   });
 });
 

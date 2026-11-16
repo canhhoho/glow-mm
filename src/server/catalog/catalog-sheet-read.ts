@@ -23,12 +23,13 @@ function dateValue(value: CellValue | Date, line: number): string {
   return iso;
 }
 
-const isHeader = (keys: string[]) => keys.includes("brand") && keys.includes("category") && (keys.includes("name_my") || keys.includes("name_en") || keys.includes("sku"));
+/** Hàng tiêu đề: có cột Tên (hoặc Tên Myanmar của mẫu cũ) hoặc SKU, và ít nhất 2 cột nhận ra được. */
+const isHeader = (keys: string[]) => ["name", "name_my", "sku"].some((k) => keys.includes(k)) && keys.filter(Boolean).length >= 2;
 
 /** Bảng ô (Excel hoặc CSV) → CSV khoá chuẩn. Bỏ qua tiêu đề/ghi chú phía trên và dòng trống. */
 export function sheetRowsToCsv(rows: (CellValue | Date | null)[][]) {
   const headerIndex = rows.slice(0, 20).findIndex((r) => isHeader(r.map(sheetHeaderKey)));
-  if (headerIndex < 0) throw new Error(`Không tìm thấy hàng tiêu đề (cần ít nhất cột Tên, Thương hiệu, Danh mục). Hãy dùng file mẫu mới, sheet "${CATALOG_SHEET}".`);
+  if (headerIndex < 0) throw new Error(`Không tìm thấy hàng tiêu đề (cần cột Tên sản phẩm hoặc SKU). Hãy dùng file mẫu mới, sheet "${CATALOG_SHEET}".`);
   const keys = rows[headerIndex].map(sheetHeaderKey);
   const used = keys.filter(Boolean);
   if (new Set(used).size !== used.length) throw new Error("File có cột trùng tên. Mỗi cột chỉ được xuất hiện một lần.");

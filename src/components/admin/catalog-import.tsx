@@ -77,8 +77,7 @@ function ImportPreview({ preview, action, pending, canApprove }: { preview: Cata
   const [filter, setFilter] = useState<Filter>("all");
   const rows = preview.rows.filter((r) => matches(r, filter));
   const blocked = preview.errors.length > 0;
-  const withPrice = preview.rows.some((r) => r.price != null);
-  const head = ["colLine", "colAction", "colProduct", "colLabel", "colSku", "colWeight", ...(withPrice ? ["colPrice"] : []), "colStock", "colNotes"];
+  const head = ["colLine", "colAction", "colProduct", "colLabel", "colSku", "colWeight", "colStock", "colNotes"];
   const counts = Object.fromEntries(FILTERS.map((f) => [f, preview.rows.filter((r) => matches(r, f)).length])) as Record<Filter, number>;
   const rc = preview.rowCounts;
   return (
@@ -91,7 +90,6 @@ function ImportPreview({ preview, action, pending, canApprove }: { preview: Cata
           {t("summaryProducts", { created: preview.counts.createdProducts, updated: preview.counts.updatedProducts, unchanged: preview.counts.unchangedProducts })}
           {preview.counts.stockLines > 0 && <> · {t("summaryStock", { stock: preview.counts.stockLines, documents: preview.documents })}</>}
         </p>
-        {preview.counts.priceChanges > 0 && <p className="text-muted-foreground" data-testid="catalog-import-price-changes">{t("priceChanges", { count: preview.counts.priceChanges })}</p>}
         {preview.rate && <p className="text-muted-foreground">{t("rateQuote", { rate: preview.rate.vndPerMmk })}</p>}
       </div>
 
@@ -128,7 +126,7 @@ function ImportPreview({ preview, action, pending, canApprove }: { preview: Cata
       </div>
 
       <DataTable numeric={[0]} head={head.map((k) => t(k))} empty={t("noRows")} tableClassName="min-w-[960px]">
-        {rows.map((r) => <PreviewRow key={r.line} r={r} withPrice={withPrice} />)}
+        {rows.map((r) => <PreviewRow key={r.line} r={r} />)}
       </DataTable>
 
       <form action={action} className="space-y-2">
@@ -149,7 +147,7 @@ function ImportPreview({ preview, action, pending, canApprove }: { preview: Cata
   );
 }
 
-function PreviewRow({ r, withPrice }: { r: ImportRowView; withPrice: boolean }) {
+function PreviewRow({ r }: { r: ImportRowView }) {
   const t = useTranslations("CatalogImport");
   const muted = "text-muted-foreground";
   const s = r.stock;
@@ -174,19 +172,6 @@ function PreviewRow({ r, withPrice }: { r: ImportRowView; withPrice: boolean }) 
       <Td className="whitespace-nowrap tabular-nums">
         {r.weight == null ? <span className={muted}>—</span> : <span className={cn(!r.weightFromFile && muted)}>{fmtInt(r.weight)}</span>}
       </Td>
-      {withPrice && (
-        <Td className="whitespace-nowrap tabular-nums">
-          {r.price == null ? (
-            <span className={muted}>{r.currentPrice == null ? "" : t("keep")}</span>
-          ) : (
-            <>
-              {fmtInt(r.price)}
-              {r.currentPrice != null && <div className={cn("text-xs", muted)}>{t("priceCurrent", { price: fmtInt(r.currentPrice) })}</div>}
-              {r.priceStaged && r.currentPrice != null && r.price !== r.currentPrice && <div className="text-xs text-warning-foreground">{t("priceStaged")}</div>}
-            </>
-          )}
-        </Td>
-      )}
       <Td className="text-xs">
         {s && (
           <div className="space-y-0.5">

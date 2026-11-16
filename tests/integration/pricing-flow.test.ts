@@ -47,34 +47,23 @@ describe("A2 Excel không xoá ngầm, không vượt quyền", () => {
     await saveProductPricing({ productId: f.productId, reason: "Tăng giá", variants: [{ id: f.variantId, priceMmk: 12_000, expectedPriceMmk: 10_000 }] }, f.userId);
     const preview = await previewCatalogImport(csv([{ sku: `IT-${f.tag}`, name_en: `Tên mới ${f.tag}` }]));
     expect(preview.errors).toEqual([]);
-    expect(preview.counts.priceChanges).toBe(0);
-    await commitCatalogImport(preview.input, f.userId, { allowPricing: false });
+    await commitCatalogImport(preview.input, f.userId);
     expect((await pending(f))[f.variantId]?.priceMmk).toBe(12_000);
     expect((await variant(f.variantId)).priceMmk).toBe(10_000);
   });
 
-  it("giá = giá đang chờ → không tính là đổi giá; giá khác → cần quyền giá", async () => {
+  it("file cũ có cột giá / hoa hồng: bỏ qua kèm lưu ý — giá đang bán và giá chờ duyệt giữ nguyên", async () => {
     const f = await ready();
     await approve(f);
     await saveProductPricing({ productId: f.productId, reason: "Tăng", variants: [{ id: f.variantId, priceMmk: 12_000, expectedPriceMmk: 10_000 }] }, f.userId);
-    expect((await previewCatalogImport(csv([{ sku: `IT-${f.tag}`, price_mmk: 12000 }]))).counts.priceChanges).toBe(0);
-    const p = await previewCatalogImport(csv([{ sku: `IT-${f.tag}`, price_mmk: 13000 }]));
-    expect(p.counts.priceChanges).toBe(1);
-    await expect(commitCatalogImport(p.input, f.userId)).rejects.toThrow("cần quyền quản lý giá");
+    const p = await previewCatalogImport(csv([{ sku: `IT-${f.tag}`, price_mmk: 15000, affiliate_commission_mmk: 1500 }]));
+    expect(p.errors).toEqual([]);
+    expect(p.warnings.join("\n")).toContain("không còn nhập qua Excel");
+    await commitCatalogImport(p.input, f.userId);
+    expect(await variant(f.variantId)).toMatchObject({ priceMmk: 10_000, affiliateCommissionMmk: null });
+    expect((await pending(f))[f.variantId]?.priceMmk).toBe(12_000);
   });
 
-  it("hoa hồng qua Excel cho SP đã duyệt chờ duyệt cùng giá, áp cùng lúc", async () => {
-    const f = await ready();
-    await approve(f);
-    const p = await previewCatalogImport(csv([{ sku: `IT-${f.tag}`, price_mmk: 15000, affiliate_commission_mmk: 1500 }]));
-    await commitCatalogImport(p.input, f.userId, { allowPricing: true });
-    expect(await variant(f.variantId)).toMatchObject({ priceMmk: 10_000, affiliateCommissionMmk: null });
-    expect((await pending(f))[f.variantId]).toMatchObject({ priceMmk: 15_000, commission: { value: 1500 } });
-    await approve(f);
-    expect(await variant(f.variantId)).toMatchObject({ priceMmk: 15_000, affiliateCommissionMmk: 1500 });
-    const h = await prisma.priceHistory.findFirstOrThrow({ where: { variantId: f.variantId }, orderBy: { createdAt: "desc" } });
-    expect(h).toMatchObject({ oldPriceMmk: 10_000, newPriceMmk: 15_000, oldCommissionMmk: null, newCommissionMmk: 1500 });
-  });
 });
 
 describe("A4 Phí đưa về kho: 0 = đã biết, trống = chưa biết", () => {

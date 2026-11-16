@@ -196,22 +196,22 @@ describe("SP đã duyệt: bản đang sửa (khách vẫn thấy bản đã duy
     expect(after.map((i) => i.id)).not.toContain(live[0].id);
   });
 
-  it("nhập Excel cập nhật SP đã duyệt: tên + giá vào bản đang sửa; gửi duyệt ngay theo lựa chọn", async () => {
+  it("nhập Excel cập nhật SP đã duyệt: tên mới vào bản đang sửa, áp khi duyệt (Excel không còn cột giá)", async () => {
     const f = await readyFixture();
     await approvePublished(f);
     const sku = `IT-${f.tag}`;
-    const csv = ["sku,name_en,brand,category,price_mmk", `${sku},Excel name,,,15000`].join("\n");
+    const csv = ["sku,name,brand,category", `${sku},Excel name,,`].join("\n");
     const preview = await previewCatalogImport({ csv });
     expect(preview.errors).toEqual([]);
-    await commitCatalogImport(preview.input, f.userId, { allowPricing: true });
+    await commitCatalogImport(preview.input, f.userId);
     expect(await enName(f)).not.toBe("Excel name");
     expect(await price(f)).toBe(10_000);
     const view = (await productEditView(f.productId))!;
-    expect(view.changes).toEqual(expect.arrayContaining([{ kind: "name", locale: "en" }, { kind: "price", sku, from: 10_000, to: 15_000 }]));
-    // Duyệt → lịch sử giá giữ lý do gốc "import:<mã file>".
+    expect(view.changes).toEqual(expect.arrayContaining([{ kind: "name", locale: "en" }]));
     await submitProducts({ ids: [f.productId] }, f.userId);
     await reviewProducts({ decision: "approve", items: [{ id: f.productId, version: await version(f) }] }, f.userId);
-    expect(await price(f)).toBe(15_000);
-    expect((await prisma.priceHistory.findFirstOrThrow({ where: { variantId: f.variantId } })).reason).toMatch(/^import:[0-9a-f]{8}$/);
+    expect(await enName(f)).toBe("Excel name");
+    expect(await price(f)).toBe(10_000);
   });
+
 });

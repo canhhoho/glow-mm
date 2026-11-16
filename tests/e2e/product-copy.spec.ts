@@ -13,7 +13,7 @@ test("sao chép từ SP cũ: điền sẵn, không chép giá, tạo SP mới v�
   const originalUrl = page.url();
   const sourceId = new URL(originalUrl).pathname.split("/").pop()!;
   await openProductEdit(page);
-  const originalName = await page.getByRole("textbox", { name: "Tên tiếng Anh", exact: true }).inputValue();
+  const originalName = await page.getByRole("textbox", { name: "Tên sản phẩm", exact: true }).inputValue();
   await openProductSettings(page);
   const originalSku = await page.getByRole("textbox", { name: "SKU", exact: true }).first().inputValue();
 
@@ -36,11 +36,11 @@ test("sao chép từ SP cũ: điền sẵn, không chép giá, tạo SP mới v�
   await openProductTab(page, "price");
   await expect(page.getByTestId("step-price-row").first()).toContainText("0");
   await openProductTab(page, "info");
-  await expect(page.getByRole("textbox", { name: "Tên tiếng Anh", exact: true })).toHaveValue(`Copy ${originalName}`);
+  await expect(page.getByRole("textbox", { name: "Tên sản phẩm", exact: true })).toHaveValue(`Copy ${originalName}`);
 
   await page.goto(originalUrl);
   await openProductEdit(page);
-  await expect(page.getByRole("textbox", { name: "Tên tiếng Anh", exact: true })).toHaveValue(originalName);
+  await expect(page.getByRole("textbox", { name: "Tên sản phẩm", exact: true })).toHaveValue(originalName);
   await openProductSettings(page);
   await expect(page.getByRole("textbox", { name: "SKU", exact: true }).first()).toHaveValue(originalSku);
 });
@@ -78,13 +78,14 @@ test("tạo SP có phân loại: mã tự sinh, giá 0, thanh 5 bước chỉ t�
   await page.screenshot({ path: "test-results/screens/product-steps.png", fullPage: true });
 });
 
-test("tạo SP chỉ với tên Myanmar (thêm tên tiếng khác) và thương hiệu gõ mới", async ({ page }) => {
+test("tạo SP: một ô tên (gõ chữ Myanmar được) và thương hiệu gõ mới", async ({ page }) => {
   const tag = Date.now();
   await login(page, "admin@glow.local");
   await page.goto("/admin/products/new");
   const form = page.getByTestId("product-create-form");
-  await form.getByRole("button", { name: "+ Thêm Tên tiếng Myanmar", exact: true }).click();
-  await form.getByRole("textbox", { name: "Tên tiếng Myanmar", exact: true }).fill(`ဆပ်ပြာ ${tag}`);
+  // Đợt 3 (16/11/2026): không còn ô tên riêng từng ngôn ngữ.
+  await expect(form.getByRole("textbox", { name: "Tên tiếng Myanmar", exact: true })).toHaveCount(0);
+  await form.getByRole("textbox", { name: "Tên sản phẩm", exact: true }).fill(`ဆပ်ပြာ ${tag}`);
   await form.getByRole("combobox", { name: "Thương hiệu", exact: true }).fill(`E2E Brand ${tag}`);
   await expect(form.getByText("Thương hiệu mới — sẽ được tạo khi lưu")).toBeVisible();
   await form.getByRole("combobox", { name: "Danh mục", exact: true }).selectOption({ index: 1 });
@@ -92,7 +93,7 @@ test("tạo SP chỉ với tên Myanmar (thêm tên tiếng khác) và thương 
   await form.getByRole("button", { name: "Tạo sản phẩm", exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/products\/[^/?]+\?created=1$/);
   await expect(page.getByRole("status").filter({ hasText: "Đã tạo sản phẩm" })).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Tên tiếng Anh", exact: true })).toHaveValue(`ဆပ်ပြာ ${tag}`);
+  await expect(page.getByRole("textbox", { name: "Tên sản phẩm", exact: true })).toHaveValue(`ဆပ်ပြာ ${tag}`);
   await expect(page.getByRole("combobox", { name: "Thương hiệu", exact: true })).toHaveValue(`E2E Brand ${tag}`);
 });
 

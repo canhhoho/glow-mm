@@ -31,7 +31,7 @@ beforeEach(() => {
   actionState.state = { preview: {
     input: { csv: "name_en,brand,category\nCream,Brand,skincare", standardLabel: "Tiêu chuẩn" },
     errors: [], warnings: [], rows: [], rate: null, general: [], documents: 0,
-    counts: { createdProducts: 1, updatedProducts: 0, unchangedProducts: 0, stockLines: 0, priceChanges: 0 },
+    counts: { createdProducts: 1, updatedProducts: 0, unchangedProducts: 0, stockLines: 0 },
     rowCounts: { create: 1, update: 0, same: 0, error: 0 },
   } };
 });
@@ -74,7 +74,7 @@ describe("Xác nhận nhập Excel", () => {
 const row = (over: Partial<ImportRowView>): ImportRowView => ({
   line: 7, action: "create", name: "Cream", nameFromFile: true, brand: "Brand", category: "Skincare",
   sku: "CREAM-1", skuAuto: true, label: "", labelFromFile: false, weight: null, weightFromFile: false,
-  changes: [], price: null, currentPrice: null, priceStaged: false, stock: null, issues: [], ...over,
+  changes: [], stock: null, issues: [], ...over,
 });
 
 describe("Bảng xem trước nhập Excel", () => {
@@ -104,15 +104,11 @@ describe("Bảng xem trước nhập Excel", () => {
     expect(html).toContain(messages.CatalogImport.standardLabel);
   });
 
-  it("cột giá chỉ hiện khi file có điền giá; SP đã duyệt ghi chờ duyệt", () => {
+  it("không còn cột giá bán (giá đặt ở trang Giá bán); dòng cập nhật ghi rõ trường đổi", () => {
     const preview = actionState.state!.preview!;
-    preview.rows = [row({})];
-    expect(render()).not.toContain(messages.CatalogImport.colPrice);
-    preview.rows = [row({ action: "update", price: 12000, currentPrice: 10000, priceStaged: true, changes: ["price"] })];
+    preview.rows = [row({ action: "update", changes: ["name", "weight"] })];
     const html = render();
-    expect(html).toContain(messages.CatalogImport.colPrice);
-    expect(html).toContain(`đang bán ${fmtInt(10000)}`);
-    expect(html).toContain(messages.CatalogImport.priceStaged);
-    expect(html).toContain("đổi: Giá bán");
+    expect(html).not.toContain("Giá bán (MMK)");
+    expect(html).toContain("đổi: Tên, Khối lượng");
   });
 });
