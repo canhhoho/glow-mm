@@ -125,7 +125,8 @@ function ImportPreview({ preview, action, pending, canApprove }: { preview: Cata
         ))}
       </div>
 
-      <DataTable numeric={[0]} head={head.map((k) => t(k))} empty={t("noRows")} tableClassName="min-w-[960px]">
+      {/* Điện thoại: mỗi dòng file một thẻ (nhãn từng ô); máy tính: bảng đủ cột. */}
+      <DataTable stack numeric={[0]} head={head.map((k) => t(k))} empty={t("noRows")} tableClassName="md:min-w-[960px]">
         {rows.map((r) => <PreviewRow key={r.line} r={r} />)}
       </DataTable>
 
@@ -153,26 +154,26 @@ function PreviewRow({ r }: { r: ImportRowView }) {
   const s = r.stock;
   return (
     <tr data-testid={`catalog-import-row-${r.line}`}>
-      <Td numeric>{r.line}</Td>
-      <Td>
+      <Td label={t("colLine")} numeric>{r.line}</Td>
+      <Td label={t("colAction")}>
         <Badge tone={ACTION_TONE[r.action]}>{t(`action.${r.action}`)}</Badge>
         {r.changes.length > 0 && (
           <div className={cn("mt-1 text-xs", muted)}>{t("changed", { fields: r.changes.map((c) => t(`field.${c}`)).join(", ") })}</div>
         )}
       </Td>
-      <Td>
+      <Td label={t("colProduct")}>
         <span className={cn(!r.nameFromFile && muted)}>{r.name || "—"}</span>
         {(r.brand || r.category) && <div className={cn("text-xs", muted)}>{[r.brand, r.category].filter(Boolean).join(" · ")}</div>}
       </Td>
-      <Td><span className={cn(!r.labelFromFile && muted)}>{r.labelFromFile ? r.label : t("standardLabel")}</span></Td>
-      <Td className="font-mono text-xs">
+      <Td label={t("colLabel")}><span className={cn(!r.labelFromFile && muted)}>{r.labelFromFile ? r.label : t("standardLabel")}</span></Td>
+      <Td label={t("colSku")} className="font-mono text-xs">
         {r.sku || "—"}
         {r.skuAuto && <div className={cn("font-sans", muted)}>{t("autoSku")}</div>}
       </Td>
-      <Td className="whitespace-nowrap tabular-nums">
+      <Td label={t("colWeight")} className="whitespace-nowrap tabular-nums">
         {r.weight == null ? <span className={muted}>—</span> : <span className={cn(!r.weightFromFile && muted)}>{fmtInt(r.weight)}</span>}
       </Td>
-      <Td className="text-xs">
+      <Td label={t("colStock")} className="text-xs">
         {s && (
           <div className="space-y-0.5">
             <div className="text-sm">{t("stockQty", { qty: fmtInt(s.qty), location: s.location })}</div>
@@ -192,7 +193,7 @@ function PreviewRow({ r }: { r: ImportRowView }) {
           </div>
         )}
       </Td>
-      <Td className="text-xs">
+      <Td label={t("colNotes")} className="text-xs">
         {r.issues.length > 0 && (
           <ul className="space-y-1">
             {r.issues.map((i, k) => (
