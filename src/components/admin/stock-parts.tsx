@@ -53,6 +53,7 @@ export function stockHref(f: StockFilter, view: StockView, patch: Partial<StockF
   if (next.expiry) sp.set("expiry", next.expiry);
   if (next.stockType) sp.set("stockType", next.stockType);
   if (next.received) sp.set("received", next.received);
+  if (next.status) sp.set("status", next.status);
   if (next.view !== "products") sp.set("view", next.view);
   if (next.page > 1) sp.set("page", String(next.page));
   const qs = sp.toString();

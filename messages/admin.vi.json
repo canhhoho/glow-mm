@@ -420,6 +420,10 @@
     "estimateSaved": "Đã lưu giá vốn tạm.",
     "notReceived": "Chưa nhập hàng ({count}) — SP mới tạo, chưa có phiếu nhập ghi sổ",
     "showReceived": "← Xem SP đã nhập hàng",
+    "archived": "Ngừng kinh doanh",
+    "archivedWithStock": "Ngừng kinh doanh còn tồn / đang giữ ({count})",
+    "archivedHistory": "Lịch sử hết tồn ({count}) — SP ngừng kinh doanh đã hết hàng",
+    "showAll": "← Về danh sách Tất cả",
     "colPhysical": "Tổng tồn"
   },
   "Docs": {
@@ -634,8 +638,8 @@
     "restore": "Khôi phục",
     "bulkDelete": "Xoá đã chọn",
     "bulkRestore": "Khôi phục đã chọn",
-    "deleteOneConfirm": "Xoá sản phẩm \"{name}\"? Nếu sản phẩm đã có tồn kho hoặc đơn hàng, hệ thống chuyển sang Ngừng kinh doanh (ẩn khỏi web, giữ lịch sử) thay vì xoá hẳn.",
-    "deleteConfirm": "Xoá {count} sản phẩm đã chọn? Sản phẩm đã có tồn kho hoặc đơn hàng sẽ chuyển sang Ngừng kinh doanh (ẩn khỏi web, giữ lịch sử) thay vì xoá hẳn.",
+    "deleteOneConfirm": "Xoá sản phẩm \"{name}\"? Nếu sản phẩm đã có tồn kho hoặc đơn hàng, hệ thống chuyển sang Ngừng kinh doanh (ẩn khỏi web, giữ lịch sử) thay vì xoá hẳn. Hàng còn tồn vẫn xem được ở Tồn kho với nhãn Ngừng kinh doanh.",
+    "deleteConfirm": "Xoá {count} sản phẩm đã chọn? Sản phẩm đã có tồn kho hoặc đơn hàng sẽ chuyển sang Ngừng kinh doanh (ẩn khỏi web, giữ lịch sử) thay vì xoá hẳn. Hàng còn tồn vẫn xem được ở Tồn kho với nhãn Ngừng kinh doanh.",
     "deleteDone": "Đã xoá {deleted} sản phẩm; {archived} sản phẩm có lịch sử kho/đơn đã chuyển sang Ngừng kinh doanh.",
     "restoreDone": "Đã khôi phục {count} sản phẩm (đang ẩn — bật hiển thị khi muốn bán lại).",
     "edit": "Sửa",

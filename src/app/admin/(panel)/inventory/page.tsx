@@ -5,6 +5,7 @@ import { Ban, Clock, FileText, Package, ShieldAlert, Wallet } from "lucide-react
 import { requirePagePermission } from "@/server/auth/session";
 import { classifyExpiry, daysLeft } from "@/server/alerts/compute";
 import {
+  countArchived,
   countNotReceived,
   EXPIRY_FILTERS,
   PAGE_SIZE,
@@ -37,7 +38,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
   const f = parseStockFilter(sp);
   const view: StockView = sp.view === "lots" ? "lots" : "products";
   const now = new Date();
-  const [t, tc, td, locale, summary, products, lots, tabs, notReceived] = await Promise.all([
+  const [t, tc, td, locale, summary, products, lots, tabs, notReceived, archived] = await Promise.all([
     getTranslations("Inventory"),
     getTranslations("Common"),
     getTranslations("Docs"),
@@ -47,6 +48,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
     view === "lots" ? stockLots(f, now) : null,
     stockTabs(),
     countNotReceived(),
+    countArchived(now),
   ]);
   // Cột theo kho bán (P24); tồn ở kho khác (kho cũ, chưa chuyển) gộp vào cột "Kho khác" nếu trang có.
   // Nhiều kho (vd. DB test) → chỉ cột của kho có hàng trong trang; tab giữ 20 kho nhiều tồn nhất + tab đang chọn.
@@ -59,7 +61,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
   const shownTabs = tabs.filter((l) => top.has(l) || l.code === f.tab);
   const th = summary.thresholds;
   const href = (patch: Partial<StockFilter> & { view?: StockView } = {}) => stockHref(f, view, patch);
-  const filtered = f.tab !== "all" || !!f.q || !!f.expiry || !!f.stockType || !!f.received;
+  const filtered = f.tab !== "all" || !!f.q || !!f.expiry || !!f.stockType || !!f.received || !!f.status;
 
   return (
     <Page>
@@ -143,6 +145,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
           {f.tab !== "all" && <input type="hidden" name="tab" value={f.tab} />}
           {view === "lots" && <input type="hidden" name="view" value="lots" />}
           {f.received && <input type="hidden" name="received" value={f.received} />}
+          {f.status && <input type="hidden" name="status" value={f.status} />}
           <SearchInput label={t("search")} defaultValue={f.q} />
           <select name="expiry" defaultValue={f.expiry ?? ""} aria-label={t("expiryFilter")} className={cn(fieldClass, "w-auto")}>
             <option value="">{t("expiryAll")}</option>
@@ -168,16 +171,29 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
         />
       </div>
 
-      {/* SP chưa từng nhập hàng không nằm trong "Tất cả" — xem riêng ở đây. */}
-      {view === "products" && (f.received === "no" || notReceived > 0) && (
+      {/* Ngoài "Tất cả": SP chưa từng nhập hàng, SP ngừng kinh doanh (bấm Xoá nhưng có lịch sử) — xem riêng ở đây. */}
+      {view === "products" && (f.received || f.status) && (
         <p className="text-sm">
-          {f.received === "no" ? (
-            <Link href={href({ received: undefined })} className="text-primary underline">
-              {t("showReceived")}
-            </Link>
-          ) : (
+          <Link href={href({ received: undefined, status: undefined })} className="text-primary underline">
+            {t(f.status ? "showAll" : "showReceived")}
+          </Link>
+        </p>
+      )}
+      {view === "products" && !f.received && !f.status && (notReceived > 0 || archived.withStock > 0 || archived.history > 0) && (
+        <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+          {notReceived > 0 && (
             <Link href={href({ received: "no", tab: "all", expiry: undefined, stockType: undefined })} className="text-primary underline" data-testid="not-received-link">
               {t("notReceived", { count: notReceived })}
+            </Link>
+          )}
+          {archived.withStock > 0 && (
+            <Link href={href({ status: "archived", tab: "all", expiry: undefined, stockType: undefined })} className="text-primary underline" data-testid="archived-link">
+              {t("archivedWithStock", { count: archived.withStock })}
+            </Link>
+          )}
+          {archived.history > 0 && (
+            <Link href={href({ status: "history", tab: "all", expiry: undefined, stockType: undefined })} className="text-primary underline" data-testid="history-link">
+              {t("archivedHistory", { count: archived.history })}
             </Link>
           )}
         </p>
@@ -202,6 +218,15 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
         );
       })()}
     </Page>
+  );
+}
+
+/** SP ngừng kinh doanh (bấm Xoá nhưng có lịch sử kho/đơn): vẫn xem tồn được, không bán. */
+function ArchivedBadge({ t }: { t: T }) {
+  return (
+    <span className="ml-1" data-testid="archived-badge">
+      <Badge tone="warning">{t("archived")}</Badge>
+    </span>
   );
 }
 
@@ -298,6 +323,7 @@ function ProductView({
   const title = (r: VariantStockRow) => (
     <>
       {r.name} {r.isBundle ? <Badge>{t("combo")}</Badge> : <span className="text-muted-foreground">({r.label})</span>}
+      {r.archived && <ArchivedBadge t={t} />}
     </>
   );
 
@@ -420,6 +446,7 @@ function LotView({ page, t, th, now }: { page: Awaited<ReturnType<typeof stockLo
           <Td className="font-mono text-xs">{r.sku}</Td>
           <Td>
             {r.name} <span className="text-muted-foreground">({r.variantLabel})</span>
+            {r.archived && <ArchivedBadge t={t} />}
           </Td>
           <Td className="font-mono text-xs">
             <Link href={`/admin/inventory/batches/${r.batchId}`} className="text-primary underline">

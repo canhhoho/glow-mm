@@ -43,6 +43,8 @@ export const stockFilterSchema = z.object({
   stockType: z.enum(["SELLABLE", "TESTER"]).optional().catch(undefined),
   /** "no" = chỉ biến thể đang dùng chưa từng nhập hàng (SP mới tạo / làm thử). */
   received: z.enum(["no"]).optional().catch(undefined),
+  /** SP ngừng kinh doanh: "archived" = còn tồn / đang giữ hàng; "history" = đã hết tồn (lịch sử). */
+  status: z.enum(["archived", "history"]).optional().catch(undefined),
   page: z.coerce.number().int().min(1).catch(1),
 });
 export type StockFilter = z.infer<typeof stockFilterSchema>;
@@ -55,6 +57,7 @@ export function parseStockFilter(sp: Record<string, string | string[] | undefine
     expiry: one("expiry"),
     stockType: one("stockType"),
     received: one("received"),
+    status: one("status"),
     page: one("page") ?? 1,
   });
 }
@@ -183,6 +186,8 @@ export type VariantStockRow = {
   imageUrl: string | null;
   isBundle: boolean;
   active: boolean;
+  /** SP ngừng kinh doanh (đã bấm Xoá nhưng có lịch sử kho/đơn). */
+  archived: boolean;
   /** null = không có dòng tồn nào (hết hàng hoặc combo). */
   cols: VariantStockCols | null;
   lotCount: number;
@@ -202,16 +207,38 @@ export const RECEIVED_VARIANT: Prisma.VariantWhereInput = {
 };
 /** Biến thể đang dùng (SP chưa ngừng kinh doanh) chưa từng nhập hàng — bộ lọc "Chưa nhập hàng". */
 export const NOT_RECEIVED_VARIANT: Prisma.VariantWhereInput = { active: true, product: { archivedAt: null }, NOT: RECEIVED_VARIANT };
+/** SP ngừng kinh doanh — bấm Xoá mà SP đã có lịch sử kho/đơn (`deleteProducts` chỉ đặt `archivedAt`, biến thể vẫn active). */
+export const ARCHIVED_VARIANT: Prisma.VariantWhereInput = { product: { archivedAt: { not: null } } };
+/** Còn dòng tồn ≠ 0 hoặc đang giữ hàng cho đơn (cùng điều kiện cột "Đang giữ"). */
+function stockOrHold(now: Date): Prisma.VariantWhereInput {
+  return {
+    OR: [
+      { batches: { some: { balances: { some: { qty: { not: 0 } } } } } },
+      { reservations: { some: { status: "ACTIVE", OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] } } },
+    ],
+  };
+}
 
 /**
  * Bảng "Theo sản phẩm": phân trang biến thể ở DB rồi nạp tồn của trang.
- * Tab "Tất cả" không lọc → biến thể đang bán ĐÃ TỪNG NHẬP HÀNG + biến thể ngừng bán còn tồn (gồm hết hàng, combo);
- * SP chưa từng nhập (mới tạo / làm thử) chỉ hiện ở bộ lọc "Chưa nhập hàng" (`received=no`).
+ * Tab "Tất cả" không lọc → biến thể đang dùng của SP đang kinh doanh ĐÃ TỪNG NHẬP HÀNG (gồm hết hàng, combo)
+ * + mọi biến thể còn tồn hoặc đang giữ hàng (kể cả SP ngừng kinh doanh — có nhãn).
+ * SP chưa từng nhập (mới tạo / làm thử) chỉ hiện ở bộ lọc "Chưa nhập hàng" (`received=no`); SP ngừng kinh doanh
+ * đã hết tồn chỉ ở "Lịch sử hết tồn" (`status=history`), còn tồn / đang giữ riêng ở `status=archived`.
  * Có lọc (tab / hạn dùng / loại tồn) → chỉ biến thể có dòng tồn khớp.
  */
 /** Số biến thể đang dùng chưa từng nhập hàng (link "Chưa nhập hàng (N)" ở trang Tồn kho). */
 export function countNotReceived() {
   return prisma.variant.count({ where: NOT_RECEIVED_VARIANT });
+}
+
+/** Số biến thể của SP ngừng kinh doanh: còn tồn / đang giữ (hiện ở "Tất cả", có nhãn) và đã hết tồn (lịch sử). */
+export async function countArchived(now = new Date()) {
+  const [withStock, history] = await Promise.all([
+    prisma.variant.count({ where: { AND: [ARCHIVED_VARIANT, stockOrHold(now)] } }),
+    prisma.variant.count({ where: { AND: [ARCHIVED_VARIANT, { NOT: stockOrHold(now) }] } }),
+  ]);
+  return { withStock, history };
 }
 
 export async function stockByVariant(f: StockFilter, now = new Date()): Promise<Page<VariantStockRow>> {
@@ -222,11 +249,15 @@ export async function stockByVariant(f: StockFilter, now = new Date()): Promise<
     : {};
   const where: Prisma.VariantWhereInput = f.received === "no"
     ? { AND: [NOT_RECEIVED_VARIANT, search] }
+    : f.status === "archived"
+    ? { AND: [ARCHIVED_VARIANT, stockOrHold(now), search] }
+    : f.status === "history"
+    ? { AND: [ARCHIVED_VARIANT, { NOT: stockOrHold(now) }, search] }
     : filtered
     ? { batches: { some: { balances: { some: balanceWhere(f, now, t) } } } }
     : {
         AND: [
-          { OR: [{ active: true, ...RECEIVED_VARIANT }, { batches: { some: { balances: { some: { qty: { not: 0 } } } } } }] },
+          { OR: [{ active: true, product: { archivedAt: null }, ...RECEIVED_VARIANT }, stockOrHold(now)] },
           search,
         ],
       };
@@ -242,6 +273,7 @@ export async function stockByVariant(f: StockFilter, now = new Date()): Promise<
         product: {
           select: {
             slug: true,
+            archivedAt: true,
             translations: { select: { locale: true, name: true } },
             images: { orderBy: { sortOrder: "asc" }, take: 1, select: { file: { select: { url: true } } } },
           },
@@ -254,7 +286,7 @@ export async function stockByVariant(f: StockFilter, now = new Date()): Promise<
 }
 
 type StockVariant = Prisma.VariantGetPayload<{
-  include: { product: { select: { slug: true; translations: { select: { locale: true; name: true } }; images: { select: { file: { select: { url: true } } } } } } };
+  include: { product: { select: { slug: true; archivedAt: true; translations: { select: { locale: true; name: true } }; images: { select: { file: { select: { url: true } } } } } } };
 }>;
 
 /** Tồn từng biến thể (cột theo kho, đang giữ, còn bán = `availableToSell`) — dùng chung cho trang Tồn kho và trang SP. */
@@ -283,6 +315,7 @@ async function variantStockRows(variants: StockVariant[], now: Date, blockDays: 
         imageUrl: v.product.images[0]?.file.url ?? null,
         isBundle: v.isBundle,
         active: v.active,
+        archived: v.product.archivedAt != null,
         cols: c,
         lotCount: c ? new Set(c.lots.filter((l) => l.qty > 0).map((l) => l.batchId)).size : 0,
         reserved: reserved.get(v.id) ?? 0,
@@ -302,6 +335,7 @@ export async function productStockRows(productId: string, now = new Date()) {
         product: {
           select: {
             slug: true,
+            archivedAt: true,
             translations: { select: { locale: true, name: true } },
             images: { orderBy: { sortOrder: "asc" }, take: 1, select: { file: { select: { url: true } } } },
           },
@@ -337,6 +371,7 @@ export async function stockLots(f: StockFilter, now = new Date()) {
       sku: r.batch.variant.sku,
       name: productName(r.batch.variant.product.translations, r.batch.variant.product.slug),
       variantLabel: r.batch.variant.label,
+      archived: r.batch.variant.product.archivedAt != null,
       lotNo: r.batch.lotNo,
       expiryDate: r.batch.expiryDate,
     expiryStatus: r.batch.expiryStatus,
