@@ -122,6 +122,22 @@ export async function setProductPublishedAction(_prev: ActionState, formData: Fo
   return { ok: "1" };
 }
 
+/** Nút "Khôi phục" trên trang một SP ngừng kinh doanh — cùng hàm domain `restoreProducts` với nút ở danh sách (không tự đăng bán). */
+export async function restoreProductAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("catalog:manage");
+    const { id } = z.object({ id: formId(40) }).parse({ id: formData.get("id") });
+    await restoreProducts([id], user.id);
+    revalidatePath(`/admin/products/${id}`);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  refreshPrices();
+  revalidatePath("/admin/products");
+  revalidatePath("/admin");
+  return { ok: "1" };
+}
+
 export type ProductBulkState =
   | {
       error?: string;

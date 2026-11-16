@@ -78,6 +78,9 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
   const tabs = MAIN_LIST_TABS.filter((k) => k !== "archived" || tabCount[k] > 0 || k === tab);
   const otherTabs = OTHER_LIST_TABS.filter((k) => k !== "rejected" || tabCount[k] > 0 || k === tab);
   const mainTab = tab !== "active" && (MAIN_LIST_TABS as readonly string[]).includes(tab);
+  // Mở chi tiết kèm `from` = danh sách hiện tại (tab, bộ lọc, trang) để nút Quay lại về đúng chỗ.
+  const listHref = href({ page: list.page });
+  const detailHref = (id: string) => `/admin/products/${id}?from=${encodeURIComponent(listHref)}`;
   const from = list.total ? (list.page - 1) * list.pageSize + 1 : 0;
   const to = Math.min(list.total, list.page * list.pageSize);
   const filtered = !!(query || brandId || categoryId || warehouseId || sell);
@@ -216,7 +219,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
                   {p.image && <Image src={p.image.url} alt={p.image.alt || p.name} fill sizes="44px" className="object-cover" />}
                 </span>
                 <span className="min-w-0">
-                  <Link href={`/admin/products/${p.id}`} className="line-clamp-2 font-medium hover:text-primary">
+                  <Link href={detailHref(p.id)} className="line-clamp-2 font-medium hover:text-primary">
                     {p.name}
                   </Link>
                   <span className="block text-xs text-muted-foreground">{p.brand}</span>
@@ -259,7 +262,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
             </Td>
             <Td label={t("colActions")} className="align-middle">
               <div className="flex flex-nowrap items-center gap-2">
-                <Link href={`/admin/products/${p.id}`} className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }))} aria-label={`${t("edit")} ${p.name}`} title={t("edit")}>
+                <Link href={detailHref(p.id)} className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }))} aria-label={`${t("edit")} ${p.name}`} title={t("edit")}>
                   <Pencil aria-hidden="true" />
                 </Link>
                 <ActionMenu trigger={<MoreHorizontal aria-hidden />} triggerClassName={buttonVariants({ variant: "outline", size: "icon-lg" })} label={t("list.rowMenu", { name: p.name })}>

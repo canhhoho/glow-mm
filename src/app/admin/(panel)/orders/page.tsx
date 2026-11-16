@@ -118,7 +118,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
               <input type="checkbox" data-bulk-id={o.id} aria-label={t("bulk.select", { code: o.code })} className={checkboxClass} />
             </Td>
             <Td>
-              <Link href={`/admin/orders/${o.id}`} className="font-mono text-xs whitespace-nowrap text-primary underline">
+              <Link href={`/admin/orders/${o.id}?from=${encodeURIComponent(pageHref(result.page))}`} className="font-mono text-xs whitespace-nowrap text-primary underline">
                 {o.code}
               </Link>
               <div className="text-xs text-muted-foreground">

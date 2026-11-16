@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Check, ChevronLeft, ChevronRight, Copy, Pencil, Plus, Trash2, TriangleAlert } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronLeft, ChevronRight, Copy, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -10,7 +10,9 @@ import type { ChangeItem } from "@/server/catalog/change-summary";
 import { changeItemText } from "@/components/admin/change-text";
 import { productEditView, productReadinessView } from "@/server/catalog/review";
 import { getProductForEdit, getProductImages, productFormOptions } from "@/server/catalog/admin-queries";
-import { discardChangesAction, reviewProductsAction, submitProductsAction, saveProductPreorderAction, deleteProductImageAction, reorderProductImageAction, setProductPublishedAction, updateProductImageAltAction } from "@/server/catalog/actions";
+import { discardChangesAction, restoreProductAction, reviewProductsAction, submitProductsAction, saveProductPreorderAction, deleteProductImageAction, reorderProductImageAction, setProductPublishedAction, updateProductImageAltAction } from "@/server/catalog/actions";
+import { productPrimaryAction } from "@/server/catalog/product-actions";
+import { isSafeInternalPath } from "@/lib/safe-path";
 import { loadProductPricing, type PriceSource } from "@/server/catalog/product-pricing";
 import { loadReadiness } from "@/server/catalog/readiness";
 import { productSteps, type Issue, type ProductStep } from "@/server/catalog/readiness-rules";
@@ -18,8 +20,8 @@ import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
 import { ProductForm } from "@/components/admin/product-form";
 import { ProductImageUpload } from "@/components/admin/product-images";
-import { ProductStepsBar, StepTitle } from "@/components/admin/product-steps";
-import { Badge, DataTable, EmptyState, fieldClass, fieldLabelClass, focusRing, LinkButton, Notice, Page, Section, Td } from "@/components/admin/ui";
+import { ProductConditions, StepTitle } from "@/components/admin/product-steps";
+import { Badge, DataTable, EmptyState, fieldClass, fieldLabelClass, LinkButton, Notice, Page, Section, TabNav, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
 import { localizedPath } from "@/lib/site";
 import { prisma } from "@/lib/db";
@@ -34,13 +36,28 @@ import { cn } from "@/lib/utils";
 import { PRODUCT_LABEL_TONE, changeTone } from "@/components/admin/status-tones";
 
 /**
- * Trang SP theo quy trình 5 bước (docs/ke-hoach-quy-trinh-san-pham.md): thanh bước ở đầu, mỗi bước một khối.
- * 1 Thông tin & nội dung (ảnh + form sửa) · 2 Nhập kho + giá vốn · 3 Giá bán · 4 Duyệt (hiện = kiểm tra mở bán D2) · 5 Đăng bán.
+ * Trang SP: đầu trang (tên, SKU, kho, trạng thái, MỘT nút chính theo trạng thái/quyền) + 4 tab theo URL
+ * (`?tab=info|stock|price|history`, chỉ tải dữ liệu của tab đang xem) + cột phải "điều kiện đăng bán" (đạt / còn thiếu,
+ * dẫn tới nơi xử lý), khối Duyệt và khối Đăng bán. Nhập hàng và đặt giá là điều kiện song song, không phải bước nối tiếp.
+ * Điều kiện dùng chung `productSteps` / readiness (docs/ke-hoach-quy-trinh-san-pham.md). SP ngừng kinh doanh: banner + Khôi phục,
+ * không có lối tắt nhập hàng / đặt giá / đăng bán. `?from=` giữ danh sách (tab, bộ lọc) để nút Quay lại về đúng chỗ.
  */
+const DETAIL_TABS = ["info", "stock", "price", "history"] as const;
+type DetailTab = (typeof DETAIL_TABS)[number];
 
 export default async function EditProductPage({ params, searchParams }: PageProps<"/admin/products/[id]">) {
   const user = await requirePagePermission("catalog:manage");
-  const [{ id }, { saved, created }] = await Promise.all([params, searchParams]);
+  const [{ id }, { saved, created, tab: rawTab, from }] = await Promise.all([params, searchParams]);
+  const tab: DetailTab = DETAIL_TABS.find((k) => k === rawTab) ?? "info";
+  // Quay lại danh sách đúng tab/bộ lọc đã mở từ đó (chỉ nhận đường dẫn nội bộ /admin/…).
+  const fromPath = typeof from === "string" && from.startsWith("/admin/") && isSafeInternalPath(from) ? from : undefined;
+  const backHref = fromPath ?? "/admin/products";
+  const tabHref = (k: DetailTab, hash = "") => {
+    const qs = new URLSearchParams();
+    if (k !== "info") qs.set("tab", k);
+    if (fromPath) qs.set("from", fromPath);
+    return `/admin/products/${id}${qs.size ? `?${qs}` : ""}${hash}`;
+  };
   const [t, td, product, images] = await Promise.all([
     getTranslations("Products"),
     getTranslations("Docs"),
@@ -91,9 +108,10 @@ export default async function EditProductPage({ params, searchParams }: PageProp
   const changeText = (c: ChangeItem) => changeItemText(t as Parameters<typeof changeItemText>[0], c);
   const pricingMode = options.warehouses.find((w) => w.id === product.stockLocationId)?.pricingMode ?? null;
   const stockNow = new Date();
+  const archived = !!approval.archivedAt;
   const [pricing, stock, ti, adjacent] = await Promise.all([
-    loadProductPricing(product.variants.map((v) => v.id), pricingMode),
-    productStockRows(product.id, stockNow),
+    tab === "price" ? loadProductPricing(product.variants.map((v) => v.id), pricingMode) : null,
+    tab === "stock" ? productStockRows(product.id, stockNow) : null,
     getTranslations("Inventory"),
     adjacentProducts(product.id),
   ]);
@@ -147,14 +165,47 @@ export default async function EditProductPage({ params, searchParams }: PageProp
     review: reviewNote,
     publish: product.published ? t("hero.notePublished") : t("hero.noteNotPublished"),
   };
-  const checks = (["create", "price", "stock"] as const).map((k) => ({ key: k, ok: step(k).state === "done" || step(k).state === "warn" }));
   const variantIds = product.variants.map((v) => v.id);
-  const [priceHistory, activity] = await Promise.all([
-    prisma.priceHistory.findMany({ where: { variantId: { in: variantIds } }, orderBy: { createdAt: "desc" }, take: 20, include: { variant: { select: { sku: true } } } }),
-    prisma.auditLog.findMany({ where: { entityId: product.id }, orderBy: { createdAt: "desc" }, take: 20 }),
-  ]);
+  // Lịch sử giá + nhật ký chỉ tải khi mở tab Lịch sử.
+  const [priceHistory, activity] = tab === "history"
+    ? await Promise.all([
+        prisma.priceHistory.findMany({ where: { variantId: { in: variantIds } }, orderBy: { createdAt: "desc" }, take: 20, include: { variant: { select: { sku: true } } } }),
+        prisma.auditLog.findMany({ where: { entityId: product.id }, orderBy: { createdAt: "desc" }, take: 20 }),
+      ])
+    : [[], []];
   const actorIds = [...new Set([...priceHistory.map((h) => h.userId), ...activity.map((a) => a.userId)].filter((x): x is string => !!x))];
-  const actors = new Map((await prisma.user.findMany({ where: { id: { in: actorIds } }, select: { id: true, name: true } })).map((u) => [u.id, u.name]));
+  const actors = new Map((actorIds.length ? await prisma.user.findMany({ where: { id: { in: actorIds } }, select: { id: true, name: true } }) : []).map((u) => [u.id, u.name]));
+
+  // Một nút chính theo trạng thái + quyền (đầu trang); các nút còn lại vẫn nằm trong khối Duyệt / Đăng bán.
+  const primaryKind = productPrimaryAction({
+    archived, published: product.published, pendingReview, approved: !!approval.approvedAt, hasChanges: !!cr,
+    ready: readiness.errors.length === 0, canManage, canApprove, canPublish, canSubmit,
+  });
+  const primaryAction = (() => {
+    switch (primaryKind) {
+      case "restore":
+        return <ActionButton action={restoreProductAction} fields={{ id: product.id }} label={t("restore")} iconOnly={false} />;
+      case "approvePublish":
+        return <ActionButton action={reviewProductsAction} fields={{ decision: "approvePublish", items: versionItems }} label={t("review.approvePublish")} confirm={t("review.approveConfirm")} iconOnly={false} />;
+      case "approveChanges":
+        return <ActionButton action={reviewProductsAction} fields={{ decision: "approve", items: versionItems }} label={t("review.approveChanges")} confirm={t("review.approveConfirm")} iconOnly={false} />;
+      case "approveOnly":
+        return <ActionButton action={reviewProductsAction} fields={{ decision: "approve", items: versionItems }} label={t("review.approveOnly")} confirm={t("review.approveConfirm")} iconOnly={false} />;
+      case "submit":
+        return <ActionButton action={submitProductsAction} fields={{ ids: product.id }} label={t("review.submit")} iconOnly={false} />;
+      case "publish":
+        return <ActionButton action={setProductPublishedAction} fields={{ id: product.id, published: "1" }} label={t("block.publishOn")} iconOnly={false} />;
+      case "edit":
+        return (
+          <Link href={tabHref("info", "#product-edit")} className={buttonVariants({ size: "lg" })}>
+            <Pencil aria-hidden /> {t("hero.edit")}
+          </Link>
+        );
+      default:
+        return null;
+    }
+  })();
+  const tabLabel: Record<DetailTab, string> = { info: t("detailTab.info"), stock: t("detailTab.stock"), price: t("detailTab.price"), history: t("detailTab.history") };
   const actionText = (a: string) => (t.has(`activity.${a.replaceAll(".", "_")}`) ? t(`activity.${a.replaceAll(".", "_")}`) : a);
 
   return (
@@ -200,7 +251,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <LinkButton href="/admin/products" icon="back" iconOnly>
+              <LinkButton href={backHref} icon="back" iconOnly>
                 {td("back")}
               </LinkButton>
               <nav aria-label={t("hero.adjacent")} className="flex items-center gap-1">
@@ -211,7 +262,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
                   ] as const
                 ).map(([k, target, Icon]) =>
                   target ? (
-                    <Link key={k} href={`/admin/products/${target}`} className={buttonVariants({ variant: "outline", size: "icon-lg" })} aria-label={t(`hero.${k}`)} title={t(`hero.${k}`)}>
+                    <Link key={k} href={`/admin/products/${target}${fromPath ? `?from=${encodeURIComponent(fromPath)}` : ""}`} className={buttonVariants({ variant: "outline", size: "icon-lg" })} aria-label={t(`hero.${k}`)} title={t(`hero.${k}`)}>
                       <Icon aria-hidden />
                     </Link>
                   ) : (
@@ -229,37 +280,25 @@ export default async function EditProductPage({ params, searchParams }: PageProp
               <Link href={`/admin/products/new?copyFrom=${product.id}`} className={buttonVariants({ variant: "outline", size: "lg" })}>
                 <Copy aria-hidden /> {t("list.duplicate")}
               </Link>
-              <a href="#product-edit" className={buttonVariants({ size: "lg" })}>
-                <Pencil aria-hidden /> {t("hero.edit")}
-              </a>
+              {primaryAction}
             </div>
           </div>
-          <div className="rounded-xl border bg-card p-4">
-            <h2 className="mb-4 font-medium">{t("hero.progress")}</h2>
-            <ProductStepsBar steps={flow.steps} current={flow.current} t={t} notes={notes} />
-          </div>
+          <p className="text-sm text-muted-foreground" data-testid="hero-note">
+            {archived ? t("archived.heroNote") : notes.review}
+          </p>
         </div>
       </div>
 
       <div className="grid items-start gap-5 xl:grid-cols-3">
         <div className="min-w-0 space-y-5 xl:col-span-2">
-          <nav aria-label={t("hero.sections")} className="sticky top-14 z-10 -mx-1 flex gap-1 overflow-x-auto bg-background/95 px-1 text-sm shadow-[inset_0_-1px_0_var(--color-border)] backdrop-blur">
-            {[
-              ["#step-create", t("hero.tabOverview")],
-              ["#product-edit", t("hero.tabVariants", { n: product.variants.length })],
-              ["#step-stock", t("hero.tabStock")],
-              ["#step-price", t("hero.tabPrice")],
-              ["#price-history", t("hero.tabPriceHistory")],
-              ["#activity", t("hero.tabActivity")],
-            ].map(([href, label]) => (
-              <a key={href} href={href} className={cn(focusRing, "border-b-2 border-transparent px-3 py-2 whitespace-nowrap text-muted-foreground hover:border-primary/40 hover:text-foreground")}>
-                {label}
-              </a>
-            ))}
-          </nav>
+          <TabNav
+            label={t("hero.sections")}
+            tabs={DETAIL_TABS.map((k) => ({ href: tabHref(k), label: tabLabel[k], active: tab === k }))}
+          />
 
-      {/* ── Bước 1: thông tin & nội dung ── */}
-      <Section id="step-create" className="scroll-mt-20" title={<StepTitle index={1} step={step("create")} t={t} />}>
+      {/* ── Tab Thông tin: ảnh + form sửa ── */}
+      {tab === "info" && (
+      <Section id="step-create" className="scroll-mt-20" title={<StepTitle step={step("create")} t={t} />}>
         {stepIssues("create").length > 0 && issueList(stepIssues("create"))}
         <section id="product-images" aria-labelledby="product-images-title" className="scroll-mt-20 rounded-lg border p-4">
           <h3 id="product-images-title" className="mb-3 font-medium">
@@ -333,17 +372,22 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           </div>
         </details>
       </Section>
+      )}
 
-      {/* ── Bước 2: nhập kho + giá vốn ── */}
+      {/* ── Tab Tồn & nhập hàng ── */}
+      {tab === "stock" && stock && (
       <Section
         id="step-stock"
         className="scroll-mt-20"
-        title={<StepTitle index={2} step={step("stock")} t={t} />}
+        title={<StepTitle step={step("stock")} t={t} />}
         actions={
           <div className="flex flex-wrap gap-2">
-            <LinkButton href={`/admin/inventory/documents/new?type=RECEIVE&product=${product.id}`} icon="new">
-              {t("block.receive")}
-            </LinkButton>
+            {/* SP ngừng kinh doanh: form nhập không mở được (0 SKU) → chỉ xem tồn; khôi phục để nhập thêm. */}
+            {!archived && (
+              <LinkButton href={`/admin/inventory/documents/new?type=RECEIVE&product=${product.id}`} icon="new">
+                {t("block.receive")}
+              </LinkButton>
+            )}
             <LinkButton href={`/admin/inventory?q=${encodeURIComponent(product.variants[0]?.sku ?? product.slug)}`}>{t("block.viewStock")}</LinkButton>
           </div>
         }
@@ -373,12 +417,14 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           <EmptyState>{ti("empty")}</EmptyState>
         )}
       </Section>
+      )}
 
-      {/* ── Bước 3: giá bán — nơi duy nhất đặt giá ngoài bảng tính giá (QT1b) ── */}
+      {/* ── Tab Giá bán — nơi đặt giá chính là trang Giá bán (QT1b) ── */}
+      {tab === "price" && pricing && (
       <Section
         id="step-price"
         className="scroll-mt-20"
-        title={<StepTitle index={3} step={step("price")} t={t} />}
+        title={<StepTitle step={step("price")} t={t} />}
       >
         <DataTable stack head={[t("sku"), t("label"), t("price"), t("priceBlock.source"), t("priceBlock.lastCost"), t("weight")]} numeric={[2]}>
           {product.variants.map((v) => {
@@ -424,7 +470,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
         </DataTable>
         {stepIssues("price").length > 0 && issueList(stepIssues("price"))}
         {/* 16/11: đặt giá ở trang Giá bán (nơi đặt giá chính: Thủ công / Tự động, chọn lô cơ sở) — không còn form riêng ở đây. */}
-        {can(user.role, "pricing:manage") && (
+        {can(user.role, "pricing:manage") && !archived && (
           <div className="flex flex-wrap items-center gap-2" data-testid="price-actions">
             <LinkButton href={`/admin/selling-prices/manual?productId=${product.id}`} variant="primary" icon="edit">{t("priceBlock.setPrice")}</LinkButton>
             <LinkButton href={`/admin/selling-prices?mode=auto&productId=${product.id}`}>{t("priceBlock.calcThis")}</LinkButton>
@@ -432,7 +478,10 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           </div>
         )}
       </Section>
+      )}
 
+          {tab === "history" && (
+          <>
           <Section id="price-history" className="scroll-mt-28" title={t("hero.tabPriceHistory")}>
             <DataTable stack dense empty={t("hero.noPriceHistory")} head={[t("list.colUpdated"), t("sku"), t("hero.priceChange"), t("hero.priceReason"), t("hero.by")]} numeric={[2]}>
               {priceHistory.map((h) => (
@@ -462,31 +511,34 @@ export default async function EditProductPage({ params, searchParams }: PageProp
               </ol>
             )}
           </Section>
+          </>
+          )}
         </div>
 
         <aside className="space-y-5 xl:sticky xl:top-16">
-          <section className="space-y-3 rounded-xl border bg-card p-4" data-testid="publish-checklist">
-            <h2 className="font-medium">{t("hero.checklist")}</h2>
-            <ul className="divide-y text-sm">
-              {checks.map((c) => (
-                <li key={c.key} className="flex items-center gap-3 py-2.5">
-                  <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-full text-primary-foreground [&_svg]:size-3.5", c.ok ? "bg-success" : "bg-destructive")} aria-hidden>
-                    {c.ok ? <Check /> : <TriangleAlert />}
-                  </span>
-                  <a href={`#step-${c.key}`} className="min-w-0 flex-1 hover:underline">
-                    <span className="block font-medium">{t(`hero.check.${c.key}`)}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {c.key === "stock" ? t("hero.checkStockHint", { n: fmtInt(stockTotal) }) : t(`hero.check.${c.key}Hint`)}
-                    </span>
-                  </a>
-                  <Badge tone={c.ok ? "success" : "danger"}>{t(c.ok ? "hero.pass" : "hero.fail")}</Badge>
-                </li>
-              ))}
-            </ul>
-          </section>
+          {archived ? (
+            <section className="space-y-3 rounded-xl border bg-card p-4" data-testid="archived-panel">
+              <h2 className="font-medium">{t("archived.title")}</h2>
+              <p className="text-sm text-muted-foreground">{t("archived.body")}</p>
+              <div className="flex flex-wrap gap-2">
+                <LinkButton href={tabHref("stock")}>{t("archived.viewStock")}</LinkButton>
+                <LinkButton href={tabHref("history")}>{t("archived.viewHistory")}</LinkButton>
+              </div>
+            </section>
+          ) : (
+            <ProductConditions
+              steps={flow.steps}
+              current={flow.current}
+              t={t}
+              notes={notes}
+              hrefs={{ create: tabHref("info"), stock: tabHref("stock"), price: tabHref("price"), review: "#step-review", publish: "#step-publish" }}
+            />
+          )}
 
-      {/* ── Bước 4: duyệt (QT2) — checklist mở bán + nút Duyệt có lưu vết; sửa nội dung/giá/ảnh sau khi duyệt → cần duyệt lại ── */}
-      <Section id="step-review" className="scroll-mt-20" title={<StepTitle index={4} step={step("review")} t={t} />} testId="launch-check">
+      {!archived && (
+      <>
+      {/* ── Duyệt (QT2) — checklist mở bán + nút Duyệt có lưu vết; sửa nội dung/giá/ảnh sau khi duyệt → cần duyệt lại ── */}
+      <Section id="step-review" className="scroll-mt-20" title={<StepTitle step={step("review")} t={t} />} testId="launch-check">
         <div className="flex flex-wrap items-center gap-2 text-sm" data-testid="approval-status" data-label={lab.label} data-change={lab.change ?? ""}>
           <Badge tone={PRODUCT_LABEL_TONE[lab.label]}>{t(`lifecycle.${lab.label}`)}</Badge>
           {lab.change && <Badge tone={changeTone(lab.change)}>{t(`change.${lab.change}`)}</Badge>}
@@ -555,8 +607,8 @@ export default async function EditProductPage({ params, searchParams }: PageProp
         <p className="text-xs text-muted-foreground">{t("approval.help")}</p>
       </Section>
 
-      {/* ── Bước 5: đăng bán ── */}
-      <Section id="step-publish" className="scroll-mt-20" title={<StepTitle index={5} step={step("publish")} t={t} />} testId="step-publish-block">
+      {/* ── Đăng bán ── */}
+      <Section id="step-publish" className="scroll-mt-20" title={<StepTitle step={step("publish")} t={t} />} testId="step-publish-block">
         <p className="text-sm">{product.published ? t("block.published") : publishState === "waiting" ? t("block.publishWaiting") : t("block.hidden")}</p>
         {canPublish && (product.published || publishState === "todo") && (
           <ActionButton
@@ -609,6 +661,8 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           </div>
         </details>
       </Section>
+      </>
+      )}
         </aside>
       </div>
     </Page>

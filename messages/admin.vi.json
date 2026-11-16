@@ -763,7 +763,7 @@
       "copyHelp": "Điền sẵn tên, thương hiệu, danh mục và phân loại. Khi tạo sẽ chép mô tả, ảnh và thiết lập; không chép giá và tồn kho."
     },
     "step": {
-      "create": "Tạo sản phẩm",
+      "create": "Thông tin sản phẩm",
       "stock": "Nhập kho + giá vốn",
       "price": "Giá bán",
       "review": "Duyệt",
@@ -776,6 +776,8 @@
       "waiting": "Chờ bước trước"
     },
     "stepsLabel": "Quy trình sản phẩm",
+    "detailTab": {"info": "Thông tin", "stock": "Tồn & nhập hàng", "price": "Giá bán", "history": "Lịch sử"},
+    "archived": {"heroNote": "Sản phẩm đã ngừng kinh doanh — khôi phục để nhập thêm hàng hoặc đặt giá.", "title": "Sản phẩm đã ngừng kinh doanh", "body": "Không nhập hàng, đặt giá hay đăng bán được khi ở trạng thái này. Bạn vẫn xem được tồn và lịch sử; khôi phục rồi mới thao tác tiếp (khôi phục không tự đăng bán).", "viewStock": "Xem tồn", "viewHistory": "Xem lịch sử"},
     "block": {
       "editInfo": "Sửa thông tin sản phẩm",
       "notReceived": "Chưa nhập hàng: {skus}",

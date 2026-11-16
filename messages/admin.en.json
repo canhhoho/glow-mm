@@ -763,7 +763,7 @@
       "copyHelp": "Prefills name, brand, category and options. Creating copies the description, images and settings; price and stock are not copied."
     },
     "step": {
-      "create": "Create product",
+      "create": "Product information",
       "stock": "Receive stock + cost",
       "price": "Selling price",
       "review": "Review",
@@ -776,6 +776,8 @@
       "waiting": "Waiting for earlier step"
     },
     "stepsLabel": "Product workflow",
+    "detailTab": {"info": "Information", "stock": "Stock & receiving", "price": "Selling price", "history": "History"},
+    "archived": {"heroNote": "This product is discontinued — restore it to receive more stock or set prices.", "title": "Discontinued product", "body": "You cannot receive stock, set prices or publish while it is discontinued. Stock and history remain viewable; restore it to continue (restoring does not publish it).", "viewStock": "View stock", "viewHistory": "View history"},
     "block": {
       "editInfo": "Edit product details",
       "notReceived": "Not received yet: {skus}",

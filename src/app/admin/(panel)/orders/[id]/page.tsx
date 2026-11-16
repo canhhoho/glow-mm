@@ -19,13 +19,16 @@ import { TransitionForm, type TransitionField } from "@/components/admin/transit
 import { Badge, checkboxClass, DataTable, fieldClass, fieldLabelClass, fieldLabelSmClass, LinkButton, Page, PageHeader, Section, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { isSafeInternalPath } from "@/lib/safe-path";
 import { vtpPreview } from "@/server/orders/vtp-data";
 import { VtpSingleInfo } from "@/components/admin/vtp-single-info";
 import { CodSettlement } from "@/components/admin/cod-settlement";
 
-export default async function OrderPage({ params }: PageProps<"/admin/orders/[id]">) {
+export default async function OrderPage({ params, searchParams }: PageProps<"/admin/orders/[id]">) {
   const user = await requirePagePermission("orders:view");
-  const { id } = await params;
+  const [{ id }, { from }] = await Promise.all([params, searchParams]);
+  // Quay lại danh sách đúng tab/bộ lọc đã mở từ đó (chỉ nhận đường dẫn nội bộ /admin/orders…).
+  const backHref = typeof from === "string" && from.startsWith("/admin/orders") && isSafeInternalPath(from) ? from : "/admin/orders";
   const canAssign = can(user.role, "orders:assign-affiliate");
   const [t, ta, order, qcLocations, affiliates, holdDays] = await Promise.all([
     getTranslations("Orders"),
@@ -70,7 +73,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
     <Page>
       <PageHeader
         title={`${t("colCode")} ${order.code}`}
-        back={{ href: "/admin/orders", label: t("back") }}
+        back={{ href: backHref, label: t("back") }}
         actions={
           <>
           {can(user.role, "orders:ship") && ["PAYMENT_CONFIRMED", "COD_CONFIRMED", "PACKING"].includes(order.status) && <LinkButton href={`/admin/orders/export?id=${order.id}`}>{t("exportVtp")}</LinkButton>}
@@ -90,6 +93,33 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
         <PaymentStatusBadge status={order.paymentStatus} />
         {order.overdue && <Badge tone="danger">{t("overdue")}</Badge>}
       </div>
+      {/* Hành động tiếp theo hợp lệ (chuyển trạng thái) nằm ngay dưới trạng thái, trước các khối thông tin. */}
+      {/* Đơn hoàn tất chỉ còn trả hàng → không hiện "Không còn thao tác nào" ngay trên form Trả hàng. */}
+      {(transitions.length > 0 || !canReturn) && (
+        <Section title={t("actions")} testId="order-actions">
+          {order.status === "AWAITING_STOCK" && <p className="text-sm text-muted-foreground" data-testid="preorder-hint">{t("preorderHint")}</p>}
+          {order.status === "PENDING" && <p className="text-sm text-muted-foreground">{t(`confirmHint.${order.paymentMethod}`)}</p>}
+          {order.status === "SHIPPING" && order.paymentMethod === "COD" && <p className="text-sm text-muted-foreground">{t("codCompleteHint")}</p>}
+          {transitions.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("noActions")}</p>
+          ) : (
+            <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
+              {transitions.map((n) => (
+                <TransitionForm
+                  key={n}
+                  orderId={order.id}
+                  transition={n}
+                  label={n === "complete" && order.paymentMethod === "COD" ? t("completeCod") : t(`t.${n}`)}
+                  fields={fieldsFor(n)}
+                  variant={n === "cancel" ? "destructive" : "default"}
+                  confirm={n === "cancel" ? t("cancelConfirm") : undefined}
+                />
+              ))}
+            </div>
+          )}
+        </Section>
+      )}
+
       {order.pick && (
         <Section title={t("bulk.pickTitle")} testId="order-pick" actions={!order.pick.consumedAt && <LinkButton href={`/admin/orders/pick-list?ids=${order.id}`}>{t("bulk.pickTitle")}</LinkButton>}>
           <p className="text-sm text-muted-foreground">{t("bulk.pickPrintedAt", { time: fmtDateTime(order.pick.printedAt) })}</p>
@@ -343,34 +373,8 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
         </dl>
       </Section>
 
-      {/* Đơn hoàn tất chỉ còn trả hàng → không hiện "Không còn thao tác nào" ngay trên form Trả hàng. */}
-      {(transitions.length > 0 || !canReturn) && (
-        <Section title={t("actions")}>
-          {order.status === "AWAITING_STOCK" && <p className="text-sm text-muted-foreground" data-testid="preorder-hint">{t("preorderHint")}</p>}
-          {order.status === "PENDING" && <p className="text-sm text-muted-foreground">{t(`confirmHint.${order.paymentMethod}`)}</p>}
-          {order.status === "SHIPPING" && order.paymentMethod === "COD" && <p className="text-sm text-muted-foreground">{t("codCompleteHint")}</p>}
-          {transitions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("noActions")}</p>
-          ) : (
-            <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
-              {transitions.map((n) => (
-                <TransitionForm
-                  key={n}
-                  orderId={order.id}
-                  transition={n}
-                  label={n === "complete" && order.paymentMethod === "COD" ? t("completeCod") : t(`t.${n}`)}
-                  fields={fieldsFor(n)}
-                  variant={n === "cancel" ? "destructive" : "default"}
-                  confirm={n === "cancel" ? t("cancelConfirm") : undefined}
-                />
-              ))}
-            </div>
-          )}
-        </Section>
-      )}
-
       {canReturn && (
-        <Section title={t("ret.title")}>
+        <Section title={t("ret.title")} collapsible testId="order-return">
           <p className="text-xs text-muted-foreground">{t("ret.hint")}</p>
           <ActionForm
             action={returnItemsAction}
@@ -428,7 +432,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
       )}
 
       {order.deliveries.length > 0 && (
-        <Section title={t("deliveries")}>
+        <Section title={t("deliveries")} collapsible defaultOpen={order.status === "SHIPPING"} testId="order-deliveries">
           <ul className="space-y-1 text-sm">
             {order.deliveries.map((d) => (
               <li key={d.id}>
@@ -441,7 +445,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
       )}
 
       {order.documents.length > 0 && can(user.role, "stock:view") && (
-        <Section title={t("documents")}>
+        <Section title={t("documents")} collapsible testId="order-documents">
           <ul className="space-y-1 text-sm">
             {order.documents.map((d) => (
               <li key={d.id}>
@@ -454,7 +458,7 @@ export default async function OrderPage({ params }: PageProps<"/admin/orders/[id
         </Section>
       )}
 
-      <Section title={t("history")}>
+      <Section title={t("history")} collapsible testId="order-history">
         <ol className="space-y-1 text-sm">
           {order.history.map((h) => (
             <li key={h.id} className="flex flex-wrap gap-2">

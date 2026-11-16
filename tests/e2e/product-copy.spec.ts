@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { login, openProductEdit, openProductSettings } from "./helpers";
+import { login, openProductEdit, openProductSettings, openProductTab } from "./helpers";
 
 // Bước 1 "Tạo sản phẩm" (QT1a): form 5 ô — tên · thương hiệu · danh mục · kho (khi > 1 kho) · phân loại. Giá đặt ở bước 3.
 
@@ -9,7 +9,7 @@ test("sao chép từ SP cũ: điền sẵn, không chép giá, tạo SP mới v�
   await login(page, "admin@glow.local");
   await page.goto(`/admin/products?q=${sourceSlug}`);
   await page.getByRole("row", { name: new RegExp(sourceSlug) }).getByRole("link", { name: /^Sửa / }).click();
-  await expect(page).toHaveURL(/\/admin\/products\/[^/?]+$/);
+  await expect(page).toHaveURL(/\/admin\/products\/[^/?]+(?:\?from=.*)?$/);
   const originalUrl = page.url();
   const sourceId = new URL(originalUrl).pathname.split("/").pop()!;
   await openProductEdit(page);
@@ -33,7 +33,9 @@ test("sao chép từ SP cũ: điền sẵn, không chép giá, tạo SP mới v�
   await form.getByRole("button", { name: "Tạo sản phẩm", exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/products\/[^/?]+\?created=1$/);
   expect(page.url().split("?")[0]).not.toBe(originalUrl.split("?")[0]);
+  await openProductTab(page, "price");
   await expect(page.getByTestId("step-price-row").first()).toContainText("0");
+  await openProductTab(page, "info");
   await expect(page.getByRole("textbox", { name: "Tên tiếng Anh", exact: true })).toHaveValue(`Copy ${originalName}`);
 
   await page.goto(originalUrl);
@@ -64,9 +66,11 @@ test("tạo SP có phân loại: mã tự sinh, giá 0, thanh 5 bước chỉ t�
   await expect(steps.getByTestId("step-stock")).toHaveAttribute("data-state", "todo");
   await expect(steps.getByRole("link", { name: /Nhập kho/ })).toHaveAttribute("aria-current", "step");
   await expect(steps.getByTestId("step-publish")).toHaveAttribute("data-state", "waiting");
+  await openProductTab(page, "price");
   await expect(page.getByTestId("step-price-row")).toHaveCount(2);
   await expect(page.getByTestId("step-publish-block")).toContainText("Hoàn thành các bước trước");
 
+  await openProductTab(page, "info");
   await openProductSettings(page);
   await expect(page.getByRole("textbox", { name: "Slug (URL)", exact: true })).toHaveValue(`tui-do-dior-${tag}`);
   const skus = page.getByRole("textbox", { name: "SKU", exact: true });
@@ -110,7 +114,9 @@ test("tạo combo bằng nút riêng: chọn thành phần cùng kho", async ({ 
   await form.getByRole("spinbutton", { name: "Số lượng 1", exact: true }).fill("2");
   await form.getByRole("button", { name: "Tạo combo", exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/products\/[^/?]+\?created=1$/, { timeout: 30_000 });
+  await openProductTab(page, "price");
   await expect(page.getByTestId("step-price-row")).toHaveCount(1);
+  await openProductTab(page, "info");
   await expect(page.getByTestId("product-edit").getByText("Thành phần combo", { exact: true }).first()).toBeVisible();
 });
 
@@ -128,11 +134,13 @@ test("QT1b/QT2: tạo SP → nhập hàng từ bước 2 (điền sẵn, khối 
   await form.getByRole("button", { name: "Tạo sản phẩm", exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/products\/[^/?]+\?created=1$/);
   const productUrl = page.url().split("?")[0];
+  await openProductTab(page, "price");
   const sku = (await page.getByTestId("step-price-row").first().locator("td").first().innerText()).trim();
   // Bước 1 không còn ô giá / hoa hồng; khối lượng nằm ở "Thiết lập khác".
   await expect(page.getByTestId("product-edit").getByRole("spinbutton", { name: /^Giá/ })).toHaveCount(0);
 
   // Bước 2: "Nhập hàng" mở phiếu nhập chỉ với SP này, chọn sẵn kho; khối lượng nhập ở phiếu.
+  await openProductTab(page, "stock");
   await page.locator("#step-stock").getByRole("link", { name: "Nhập hàng" }).click();
   await expect(page).toHaveURL(/documents\/new\?type=RECEIVE&product=/);
   await expect(page.getByTestId("receive-product-scope")).toContainText(`Flow ${tag}`);
@@ -153,6 +161,7 @@ test("QT1b/QT2: tạo SP → nhập hàng từ bước 2 (điền sẵn, khối 
   const steps = page.getByTestId("product-steps");
   await expect(steps.getByTestId("step-stock")).toHaveAttribute("data-state", /done|warn/);
   await expect(page.getByTestId("issue-NO_WEIGHT")).toHaveCount(0);
+  await openProductTab(page, "price");
   await expect(page.getByTestId("step-price-row").first()).toContainText("150 g");
   await expect(steps.getByRole("link", { name: /Giá bán/ })).toHaveAttribute("aria-current", "step");
 
@@ -174,6 +183,7 @@ test("QT1b/QT2: tạo SP → nhập hàng từ bước 2 (điền sẵn, khối 
   await expect(page.getByTestId("batch-review")).toContainText("Đã gửi duyệt 1 sản phẩm");
 
   await page.goto(productUrl);
+  await openProductTab(page, "price");
   await expect(page.getByTestId("step-price-row").first()).toContainText("Bảng tính giá");
   await expect(steps.getByTestId("step-price")).toHaveAttribute("data-state", "done");
   // §6.4: ô "Gửi duyệt ngay" bật sẵn khi áp giá → SP đủ điều kiện đã vào hàng chờ duyệt; bước 5 chờ đến khi duyệt.

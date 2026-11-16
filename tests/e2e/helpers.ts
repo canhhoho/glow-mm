@@ -70,13 +70,31 @@ export async function openProductSettings(page: Page) {
   if (!(await summary.evaluate((el) => el.parentElement?.hasAttribute("open")))) await summary.click();
 }
 
-/** Trang SP bước 3: giá ĐANG BÁN của từng biến thể (theo thứ tự trên trang). */
+/** Trang chi tiết đơn: mở khối thu gọn (`order-return` | `order-deliveries` | `order-documents` | `order-history`) nếu đang đóng. */
+export async function openOrderSection(page: Page, testId: "order-return" | "order-deliveries" | "order-documents" | "order-history") {
+  const summary = page.getByTestId(testId).filter({ visible: true }).locator("summary");
+  if (!(await summary.evaluate((el) => el.parentElement?.hasAttribute("open")))) await summary.click();
+}
+
+/** Trang SP: mở tab (info | stock | price | history) giữ nguyên các tham số khác (vd. `from`). Đã ở đúng tab thì bỏ qua. */
+export async function openProductTab(page: Page, tab: "info" | "stock" | "price" | "history") {
+  const url = new URL(page.url());
+  if ((url.searchParams.get("tab") ?? "info") === tab && !url.hash) return;
+  if (tab === "info") url.searchParams.delete("tab");
+  else url.searchParams.set("tab", tab);
+  url.hash = "";
+  await page.goto(url.toString());
+}
+
+/** Tab Giá bán của trang SP: giá ĐANG BÁN của từng biến thể (theo thứ tự trên trang). */
 export async function livePrices(page: Page): Promise<number[]> {
+  await openProductTab(page, "price");
   return (await page.getByTestId("step-price-value").filter({ visible: true }).allInnerTexts()).map((t) => Number(t.replace(/\D/g, "")));
 }
 
 /** Trang SP bước 3: SKU của từng biến thể (theo thứ tự trên trang). */
 export async function variantSkus(page: Page): Promise<string[]> {
+  await openProductTab(page, "price");
   return page.getByTestId("step-price-row").filter({ visible: true }).locator("td:first-child span.font-mono").allInnerTexts();
 }
 

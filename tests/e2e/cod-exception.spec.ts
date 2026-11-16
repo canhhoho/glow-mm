@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { login, pickAddressAdmin } from "./helpers";
+import { login, openOrderSection, pickAddressAdmin } from "./helpers";
 
 test("D4: đóng ngoại lệ COD trả toàn bộ, xem tuổi nợ và báo cáo phí", async ({ page }) => {
   test.setTimeout(120000);
@@ -25,6 +25,7 @@ test("D4: đóng ngoại lệ COD trả toàn bộ, xem tuổi nợ và báo cá
   await expect(page.getByTestId("order-status")).toContainText("Đang giao");
   await page.getByRole("button", { name: "Giao thành công · Đã thu tiền", exact: true }).click();
   await expect(page.getByTestId("order-status")).toContainText("Hoàn tất");
+  await openOrderSection(page, "order-return");
   await page.getByLabel("Trả hàng SV-SUN-50", { exact: true }).fill("1");
   const qc = page.getByLabel("Vị trí chờ kiểm tra", { exact: true });
   if (await qc.count()) await qc.selectOption((await qc.locator("option", { hasText: "MM-QC" }).getAttribute("value"))!);

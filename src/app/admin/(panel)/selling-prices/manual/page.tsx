@@ -24,7 +24,7 @@ export default async function ManualPricesPage({ searchParams }: PageProps<"/adm
   const [t, view] = await Promise.all([getTranslations("SellingPrices.manualPage"), manualPricingView({ variantIds: ids, productId })]);
   const canReview = can(user.role, "catalog:manage");
   const canApprove = can(user.role, "catalog:approve");
-  const back = productId ? `/admin/products/${productId}#step-price` : "/admin/selling-prices";
+  const back = productId ? `/admin/products/${productId}?tab=price` : "/admin/selling-prices";
 
   return (
     <Page>

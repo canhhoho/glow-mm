@@ -9,7 +9,7 @@ test("đổi giá SP đang bán → gửi duyệt → danh sách Chờ duyệt h
   await login(page, "admin@glow.local");
   await page.goto(`/admin/products?q=${SLUG}`);
   await page.getByRole("row", { name: new RegExp(SLUG) }).getByRole("link", { name: /^Sửa / }).click();
-  await expect(page).toHaveURL(/\/admin\/products\/[^/?]+$/);
+  await expect(page).toHaveURL(/\/admin\/products\/[^/?]+(?:\?from=.*)?$/);
   const productUrl = page.url();
   const [original] = await livePrices(page);
   const next = original + 100 * (1 + (Date.now() % 9));

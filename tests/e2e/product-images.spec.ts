@@ -10,7 +10,7 @@ test("admin tải ảnh sản phẩm → hiện trên trang sản phẩm → xo�
   await login(page, "admin@glow.local");
   await page.goto(`/admin/products?q=${SLUG}`);
   await page.getByRole("row", { name: new RegExp(SLUG) }).getByRole("link", { name: /^Sửa / }).click();
-  await expect(page).toHaveURL(/\/admin\/products\/[^/?]+$/);
+  await expect(page).toHaveURL(/\/admin\/products\/[^/?]+(?:\?from=.*)?$/);
   const adminUrl = page.url();
 
   const section = page.getByRole("region", { name: "Ảnh", exact: true });
