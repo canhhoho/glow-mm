@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 import { ZodError } from "zod";
 import { prisma } from "@/lib/db";
 import { requirePermission } from "@/server/auth/session";
+import { assertFeature } from "@/server/feature-guard";
 import { can } from "@/server/auth/roles";
 import { finishBatchReview } from "@/server/catalog/batch-review-text";
 import { refreshPrices } from "@/server/catalog/refresh-prices";
@@ -40,6 +41,7 @@ export async function createRateAction(_prev: ActionState, formData: FormData): 
 export async function previewRunAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   let id: string;
   try {
+    assertFeature("autoPricing");
     const user = await requirePermission("pricing:manage");
     id = (
       await previewRun(
@@ -97,6 +99,7 @@ export async function applyRunAction(_prev: ActionState, formData: FormData): Pr
   const runId = String(formData.get("runId"));
   let ok: string;
   try {
+    assertFeature("autoPricing");
     const user = await requirePermission("pricing:manage");
     const ids = formData.getAll("variantId").map(String);
     const { submit, approve } = await reviewOptions(formData, user.role);
@@ -130,6 +133,7 @@ export async function applyManualVndAction(_prev: ActionState, formData: FormDat
 export async function recomputeRunAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   let id: string;
   try {
+    assertFeature("autoPricing");
     const user = await requirePermission("pricing:manage");
     const run = await prisma.priceUpdateRun.findUnique({ where: { id: String(formData.get("runId")) }, include: { lines: { select: { variantId: true } } } });
     if (!run || run.mode !== "AUTO") throw new Error("Không tìm thấy bản tính giá");
@@ -157,6 +161,7 @@ export async function recomputeRunAction(_prev: ActionState, formData: FormData)
 export async function cancelRunAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const runId = String(formData.get("runId"));
   try {
+    assertFeature("autoPricing");
     const user = await requirePermission("pricing:manage");
     await cancelRun(runId, user.id);
   } catch (e) {

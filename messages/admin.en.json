@@ -6,7 +6,7 @@
     "title": "Selling prices",
     "automatic": "Automatic",
     "manual": "List · Manual",
-    "help": "The main place to set prices. Tick SKUs, then choose Manual (VND formula: supplier price + profit, converted, plus freight + affiliate) or Automatic (% margin price run). The price applies to the whole SKU; a lot is only the basis. Approved products: price + commission wait for approval before customers see them. Changing rates / costs never changes prices by itself.",
+    "help": "Where selling prices are set. Tick SKUs and choose Enter manually: supplier purchase price + profit, converted at the rate, plus shipping + CTV commission. The price applies to the whole SKU; a lot is only the basis. Approved products: price + commission wait for approval before customers see them. Changing the rate / purchase price never changes a price by itself.",
     "search": "Search product name or SKU",
     "filter": "Search",
     "product": "Product",
@@ -65,7 +65,7 @@
       "rateCurrent": "current",
       "oldRate": "An older rate is selected, not the current one — double-check before saving.",
       "formula": "Sell VND = supplier price + profit · Sell MMK = sell VND ÷ rate + freight + affiliate, rounded up to a multiple of {round} MMK.",
-      "profitNote": "The desired profit is only the mark-up on the supplier price — not the final profit: inbound / shipment costs, COD fees, returns and running costs are not deducted. The purchase price is the exact receipt selected, not an average.",
+      "profitNote": "Desired profit is only the amount added on top of the supplier purchase price — not the final profit: COD fees, returns and operating costs are not deducted. The purchase price is taken from the selected receipt, not averaged.",
       "colSku": "SKU",
       "colLot": "Basis lot",
       "colPurchase": "Supplier price (VND)",
@@ -84,7 +84,7 @@
       "incomplete": "Fill in profit, freight, affiliate",
       "save": "Save prices ({count} changed)",
       "saveMmk": "Save prices",
-      "mmkHelp": "MMK goods keep the existing method: enter the price, affiliate commission (blank = by %) and fixed profit (used by automatic pricing). Price changes need a reason.",
+      "mmkHelp": "MMK-purchased goods keep the old way: enter the selling price directly, CTV commission (blank = by %) and fixed profit (MMK/unit). A price change needs a reason.",
       "ctvPercent": "by affiliate %",
       "fixedProfit": "Fixed profit (MMK/unit)",
       "reason": "Reason for the price change"
@@ -849,7 +849,7 @@
       "save": "Save prices",
       "saved": "Prices saved",
       "setPrice": "Set price",
-      "whereHelp": "Prices and affiliate commission are set on the Selling prices page (manual or automatic) or via Excel.",
+      "whereHelp": "Selling price and CTV commission are set on the Selling prices page (manual entry).",
       "commission": "Affiliate: {value}"
     },
     "approval": {
@@ -1157,7 +1157,7 @@
       "invalid_form": "Order details are invalid — check the fields",
       "pick_mismatch": "The pick slip no longer matches (lot short / past cut-off or order changed) — reprint the pick slip",
       "pick_required": "Print the pick slip (Lock lots & print) before handover",
-      "cost_missing": "Cannot hand over: a lot to be shipped has no cost (neither actual nor estimated). Open the lot and use \"Estimate cost\", or allocate the shipment costs, then hand over again"
+      "cost_missing": "Cannot hand over: the lot to be issued has no cost yet. Check that the lot's receipt is posted with a purchase price and exchange rate, then hand over again"
     },
     "ret": {
       "title": "Return items",
@@ -1225,7 +1225,7 @@
       },
       "pickCostEstimated": "Estimated cost",
       "pickCostMissingLot": "No cost — cannot hand over yet",
-      "pickCostMissing": "{count} lot(s) on this list have no cost — orders using them cannot be handed over. Estimate the lot cost or allocate the shipment costs first."
+      "pickCostMissing": "{count} lots on the list have no cost yet — orders using these lots cannot be handed over. Check those lots' receipts first (purchase price + rate, posted)."
     },
     "shippingPayer": "Delivery charge payer",
     "receiverPays": "Receiver pays delivery",
@@ -1373,7 +1373,7 @@
     "noRate": "No exchange rate yet — add one first",
     "empty": "Nothing yet",
     "purchaseCost": "Purchase cost (VND)",
-    "costBasisHelp": "Selling prices use purchase cost and add freight per kg once. Actual shipment expenses determine inventory cost and profit.",
+    "costBasisHelp": "The selling price uses the original purchase price plus shipping. Lot cost = purchase price × the rate at receipt.",
     "source": "Purchase cost source",
     "sourceCombo": "Sum of components",
     "weight": "Weight (g)",
@@ -1469,7 +1469,7 @@
       "unknown": "Unknown expiry"
     },
     "note": "Stop selling below {block} days, warn below {warn} days. Sales velocity over the last {window} days, cover {cover} days after arrival. Change in Settings.",
-    "reorderHint": "Suggest = sold/day × (lead time + cover days) + safety stock − available. Goods received into the selling warehouse (including a shipment not yet marked arrived) are already in “available”; the “Stock elsewhere” column is for reference only and is not sellable until moved to the selling warehouse.",
+    "reorderHint": "Suggested order = sales/day × (lead time + days of cover) + safety stock − sellable. Goods received into the sales warehouse are already in “sellable”; the “Stock elsewhere” column is for reference only and is not sellable until moved to the sales warehouse.",
     "other": "Stock elsewhere (not counted)"
   },
   "Reports": {
@@ -1479,7 +1479,7 @@
     "apply": "Apply",
     "basis": "Revenue = goods value of orders completed in the period (by completion date, Yangon time), net of returns. Profit = revenue − cost of issued lots. Shipping fees shown separately.",
     "inventoryNow": "Figures show current stock, independent of any reporting period.",
-    "inventoryBasis": "Current stock by warehouse, slow movers and inbound shipments.",
+    "inventoryBasis": "Current stock by warehouse and slow-moving goods.",
     "revenue": "Revenue",
     "cogs": "Cost of goods",
     "profit": "Gross profit",
@@ -2228,7 +2228,7 @@
       },
       "stockMissingCost": {
         "title": "Lots with sellable stock but no cost",
-        "help": "Orders issued from these lots record Missing cost. Allocate shipment costs or estimate the cost on the lot page.",
+        "help": "Orders issued from this lot will record Missing cost. For old lots run the cost backfill script; new lots need a receipt with a purchase price and rate.",
         "value": "Stock qty"
       },
       "draftOnlyCost": {

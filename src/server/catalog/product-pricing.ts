@@ -139,7 +139,7 @@ export async function loadProductPricing(variantIds: string[], pricingMode: "VN_
       where: { variantId: { in: variantIds } },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       distinct: ["variantId"],
-      select: { variantId: true, runId: true, reason: true, createdAt: true },
+      select: { variantId: true, runId: true, reason: true, createdAt: true, run: { select: { mode: true } } },
     }),
     variantCosts(prisma, variantIds, currency, currency === "VND" ? "PURCHASE" : "LANDED"),
   ]);
@@ -154,9 +154,10 @@ export async function loadProductPricing(variantIds: string[], pricingMode: "VN_
   return new Map(
     variantIds.map((id) => {
       const h = last.get(id);
+      // Lần đặt giá thủ công (run MANUAL của trang Giá bán) là "Sửa tay", không phải bảng tính giá tự động.
       const source: PriceSource = !h
         ? { kind: "none" }
-        : h.runId
+        : h.runId && h.run?.mode !== "MANUAL"
           ? { kind: "run", runId: h.runId, at: h.createdAt }
           : h.reason === "import" || h.reason?.startsWith(IMPORT_PRICE_PREFIX)
             ? { kind: "import", at: h.createdAt }

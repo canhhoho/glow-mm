@@ -7,6 +7,7 @@ import { can } from "@/server/auth/roles";
 import { BatchReviewOptions, BatchReviewSummary } from "@/components/admin/batch-review";
 import type { BatchReviewView } from "@/server/catalog/batch-review-text";
 import { prisma } from "@/lib/db";
+import { FEATURES } from "@/lib/features";
 import { applyRunAction, cancelRunAction, recomputeRunAction } from "@/server/pricing/actions";
 import { receiptSources } from "@/server/pricing/cost";
 import { changePct } from "@/server/pricing/formula";
@@ -39,7 +40,8 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
   ]);
   if (!run) notFound();
   const now = new Date();
-  const open = run.status === "PREVIEW";
+  // Giá tự động tắt (`lib/features.ts`): bảng tính cũ chỉ để xem lại (audit) — không sửa / áp dụng / huỷ.
+  const open = run.status === "PREVIEW" && FEATURES.autoPricing;
   // D1: bản tạo trước khi có nguồn giá theo phiếu ghi sổ / fingerprint, hoặc quá hạn → không áp được nữa.
   const expired = open && (run.formulaVersion < FORMULA_VERSION || !run.expiresAt || run.expiresAt <= now);
   const editable = open && !expired;
@@ -161,7 +163,7 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
 
   return (
     <Page>
-      <PageHeader title={t("runTitle", { date: fmtDateTime(run.createdAt) })} back={{ href: "/admin/selling-prices?mode=auto", label: t("back") }} />
+      <PageHeader title={t("runTitle", { date: fmtDateTime(run.createdAt) })} back={{ href: FEATURES.autoPricing ? "/admin/selling-prices?mode=auto" : "/admin/selling-prices?mode=history", label: t("back") }} />
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <Badge tone={RUN_TONE[run.status]}>{t(`st.${run.status}`)}</Badge>
         {open && appliedCount > 0 && <span data-testid="run-partial">{t("partial", { applied: appliedCount, pending })}</span>}

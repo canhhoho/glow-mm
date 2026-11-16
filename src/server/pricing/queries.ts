@@ -135,7 +135,10 @@ export async function listPriceHistory(take = 50) {
   return prisma.priceHistory.findMany({
     orderBy: { createdAt: "desc" },
     take,
-    include: { variant: { select: { sku: true, label: true, productId: true, product: { select: { slug: true, translations: { select: { locale: true, name: true } } } } } } },
+    include: {
+      variant: { select: { sku: true, label: true, productId: true, product: { select: { slug: true, translations: { select: { locale: true, name: true } } } } } },
+      run: { select: { mode: true } },
+    },
   });
 }
 

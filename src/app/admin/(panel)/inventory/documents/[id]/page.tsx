@@ -41,7 +41,8 @@ export default async function DocumentPage({ params, searchParams }: PageProps<"
       <PageHeader
         title={`${t(doc.type)} · ${doc.code}`}
         back={{ href: "/admin/inventory/documents", label: t("back") }}
-        actions={doc.type === "RECEIVE" && doc.status === "POSTED" && can(user.role, "pricing:manage") && <LinkButton href={`/admin/selling-prices?mode=auto&receiptId=${doc.id}`}>{t("priceReceived")}</LinkButton>}
+        // "Tính giá SKU vừa nhập" → trang Giá bán thủ công cho đúng các SKU của phiếu (giá tự động đang tắt).
+        actions={doc.type === "RECEIVE" && doc.status === "POSTED" && can(user.role, "pricing:manage") && <LinkButton href={`/admin/selling-prices/manual?${new URLSearchParams([...new Set(doc.lines.map((l) => l.variantId))].map((id) => ["ids", id]))}`}>{t("priceReceived")}</LinkButton>}
       />
       {updated && <Notice tone="success">{t("updated")}</Notice>}
       {waitingPreorders > 0 && (

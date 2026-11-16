@@ -7,6 +7,7 @@ import { DocumentForm } from "@/components/admin/document-form";
 import { ReceiveBulkForm } from "@/components/admin/receive-bulk-form";
 import { lastShipRate } from "@/server/pricing/queries";
 import { Page, PageHeader } from "@/components/admin/ui";
+import { FEATURES } from "@/lib/features";
 
 const TYPES: Record<string, Permission> = {
   RECEIVE: "stock:receive",
@@ -20,7 +21,14 @@ export default async function NewDocumentPage({ searchParams }: PageProps<"/admi
   if (typeof type !== "string" || !TYPES[type]) notFound();
   await requirePagePermission(TYPES[type]);
   if (type === "RECEIVE") {
-    const [t, locations, variants, shipments, lastShip] = await Promise.all([getTranslations("Docs"), listLocations(), listVariantsForReceive(), listShipments(), lastShipRate()]);
+    // Chuyến hàng + cước tạm tính đang tắt (`lib/features.ts`): không tải danh sách chuyến / cước gần nhất.
+    const [t, locations, variants, shipments, lastShip] = await Promise.all([
+      getTranslations("Docs"),
+      listLocations(),
+      listVariantsForReceive(),
+      FEATURES.shipments ? listShipments() : Promise.resolve([]),
+      FEATURES.shipments ? lastShipRate() : Promise.resolve(null),
+    ]);
     return (
       <Page>
         <PageHeader title={`${t("new")}: ${t(type)}`} back={{ href: "/admin/inventory", label: t("back") }} />
@@ -39,7 +47,7 @@ export default async function NewDocumentPage({ searchParams }: PageProps<"/admi
     listLocations({ includeInactive: true }), // kho ĐI gồm kho đã ngừng dùng (dọn tồn cũ); form tự lọc kho ĐẾN / điều chỉnh
     listVariantsForPicker(),
     batchesForForms(),
-    listShipments(),
+    FEATURES.shipments ? listShipments() : Promise.resolve([]),
   ]);
   // "Huỷ và tạo lại" (#5): chỉ phiếu NHÁP cùng loại, không phải phiếu Nhập; sai điều kiện → form trống như thường.
   const old = typeof from === "string" && type !== "RECEIVE" ? await getDocument(from) : null;

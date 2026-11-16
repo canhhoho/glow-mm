@@ -6,7 +6,7 @@
     "title": "Giá bán",
     "automatic": "Tự động",
     "manual": "Danh sách · Thủ công",
-    "help": "Nơi đặt giá chính. Tick các SKU rồi chọn Nhập thủ công (công thức VND: giá mua NCC + lãi, đổi tỷ giá, cộng vận chuyển + CTV) hoặc Tính tự động (% lãi theo bảng tính). Giá áp dụng chung cho SKU; lô chỉ là cơ sở tính. Sản phẩm đã duyệt: giá + hoa hồng chờ duyệt rồi mới hiện cho khách. Đổi tỷ giá / giá vốn không tự đổi giá.",
+    "help": "Nơi đặt giá bán. Tick các SKU rồi chọn Nhập thủ công: giá mua NCC + lãi, đổi theo tỷ giá, cộng vận chuyển + hoa hồng CTV. Giá áp dụng chung cho SKU; lô chỉ là cơ sở tính. Sản phẩm đã duyệt: giá + hoa hồng chờ duyệt rồi mới hiện cho khách. Đổi tỷ giá / giá mua không tự đổi giá.",
     "search": "Tìm tên sản phẩm hoặc SKU",
     "filter": "Tìm kiếm",
     "product": "Sản phẩm",
@@ -65,7 +65,7 @@
       "rateCurrent": "đang dùng",
       "oldRate": "Đang chọn tỷ giá cũ, không phải tỷ giá đang dùng — kiểm tra lại trước khi lưu.",
       "formula": "Giá bán VND = giá mua NCC + lãi · Giá bán MMK = giá bán VND ÷ tỷ giá + vận chuyển + CTV, làm tròn lên bội số {round} MMK.",
-      "profitNote": "Lãi mong muốn chỉ là phần cộng thêm trên giá mua NCC — chưa phải lợi nhuận cuối: chưa trừ chi phí về kho / chuyến hàng, phí COD, hàng trả và chi phí vận hành. Giá mua lấy đúng lần nhập đã chọn, không bình quân.",
+      "profitNote": "Lãi mong muốn chỉ là phần cộng thêm trên giá mua NCC — chưa phải lợi nhuận cuối: chưa trừ phí COD, hàng trả và chi phí vận hành. Giá mua lấy đúng lần nhập đã chọn, không bình quân.",
       "colSku": "SKU",
       "colLot": "Lô cơ sở",
       "colPurchase": "Giá mua NCC (VND)",
@@ -84,7 +84,7 @@
       "incomplete": "Điền lãi, vận chuyển, CTV",
       "save": "Lưu giá ({count} SKU đổi)",
       "saveMmk": "Lưu giá",
-      "mmkHelp": "Hàng mua MMK giữ cách cũ: nhập thẳng giá bán, hoa hồng CTV (trống = theo %) và Lãi cố định (dùng cho Tính tự động). Đổi giá cần lý do.",
+      "mmkHelp": "Hàng mua MMK giữ cách cũ: nhập thẳng giá bán, hoa hồng CTV (trống = theo %) và Lãi cố định (MMK/đv). Đổi giá cần lý do.",
       "ctvPercent": "theo % CTV",
       "fixedProfit": "Lãi cố định (MMK/đv)",
       "reason": "Lý do sửa giá"
@@ -849,7 +849,7 @@
       "save": "Lưu giá",
       "saved": "Đã lưu giá",
       "setPrice": "Đặt giá",
-      "whereHelp": "Giá bán và hoa hồng CTV đặt ở trang Giá bán (Thủ công hoặc Tự động) hoặc qua Excel.",
+      "whereHelp": "Giá bán và hoa hồng CTV đặt ở trang Giá bán (nhập thủ công).",
       "commission": "CTV: {value}"
     },
     "approval": {
@@ -1157,7 +1157,7 @@
       "invalid_form": "Thông tin đơn chưa hợp lệ, kiểm tra lại các ô",
       "pick_mismatch": "Phiếu soạn không còn khớp (lô không đủ / hết hạn bán hoặc đơn đã đổi) — in lại phiếu soạn",
       "pick_required": "Cần in phiếu soạn (Chốt lô & In) trước khi bàn giao",
-      "cost_missing": "Không bàn giao được: lô sắp xuất chưa có giá vốn (cả thực tế lẫn tạm tính). Vào trang lô bấm \"Tính giá vốn tạm\", hoặc phân bổ chi phí chuyến hàng, rồi bàn giao lại"
+      "cost_missing": "Không bàn giao được: lô sắp xuất chưa có giá vốn. Kiểm tra phiếu nhập của lô đã ghi sổ, có giá mua và tỷ giá, rồi bàn giao lại"
     },
     "ret": {
       "title": "Trả hàng",
@@ -1225,7 +1225,7 @@
       },
       "pickCostEstimated": "Giá vốn tạm",
       "pickCostMissingLot": "Thiếu giá vốn — chưa bàn giao được",
-      "pickCostMissing": "{count} lô trên phiếu chưa có giá vốn — đơn dùng các lô này sẽ không bàn giao được. Vào trang lô bấm \"Tính giá vốn tạm\" hoặc phân bổ chi phí chuyến hàng trước."
+      "pickCostMissing": "{count} lô trên phiếu chưa có giá vốn — đơn dùng các lô này sẽ không bàn giao được. Kiểm tra phiếu nhập của các lô đó (giá mua + tỷ giá, đã ghi sổ) trước."
     },
     "shippingPayer": "Người trả cước giao khách",
     "receiverPays": "Người nhận trả cước",
@@ -1373,7 +1373,7 @@
     "noRate": "Chưa có tỷ giá — thêm tỷ giá trước",
     "empty": "Chưa có dữ liệu",
     "purchaseCost": "Giá mua gốc (VND)",
-    "costBasisHelp": "Giá bán dùng giá mua gốc và cộng cước theo kg một lần. Chi phí chuyến thực tế dùng cho giá vốn và lợi nhuận.",
+    "costBasisHelp": "Giá bán dùng giá mua gốc cộng vận chuyển. Giá vốn lô = giá mua × tỷ giá lúc nhập.",
     "source": "Nguồn giá mua",
     "sourceCombo": "Tổng thành phần",
     "weight": "Khối lượng (g)",
@@ -1469,7 +1469,7 @@
       "unknown": "Chưa biết hạn"
     },
     "note": "Ngừng bán khi còn < {block} ngày, cảnh báo < {warn} ngày. Tốc độ bán tính trong {window} ngày gần nhất, cần đủ hàng {cover} ngày sau khi về. Sửa ở Cài đặt.",
-    "reorderHint": "Nên đặt = bán/ngày × (thời gian về + số ngày cần đủ) + tồn an toàn − còn bán được. Hàng đã nhập vào kho bán (kể cả hàng của chuyến chưa đánh dấu đã đến) đã nằm trong “còn bán được”; cột “Tồn ở vị trí khác” chỉ để xem, chưa bán được cho tới khi chuyển về kho bán.",
+    "reorderHint": "Nên đặt = bán/ngày × (thời gian về + số ngày cần đủ) + tồn an toàn − còn bán được. Hàng đã nhập vào kho bán đã nằm trong “còn bán được”; cột “Tồn ở vị trí khác” chỉ để xem, chưa bán được cho tới khi chuyển về kho bán.",
     "other": "Tồn ở vị trí khác (chưa tính)"
   },
   "Reports": {
@@ -1479,7 +1479,7 @@
     "apply": "Xem",
     "basis": "Doanh thu = tiền hàng đơn hoàn tất trong kỳ (theo ngày hoàn tất, giờ Yangon), đã trừ hàng khách trả. Lợi nhuận = doanh thu − giá vốn lô đã xuất. Phí ship tách riêng.",
     "inventoryNow": "Số liệu tồn hiện tại, không phụ thuộc kỳ báo cáo.",
-    "inventoryBasis": "Tồn hiện tại theo kho, hàng bán chậm và chuyến hàng đang về.",
+    "inventoryBasis": "Tồn hiện tại theo kho và hàng bán chậm.",
     "revenue": "Doanh thu",
     "cogs": "Giá vốn",
     "profit": "Lợi nhuận gộp",
@@ -2228,7 +2228,7 @@
       },
       "stockMissingCost": {
         "title": "Lô có tồn bán nhưng chưa có giá vốn",
-        "help": "Đơn xuất từ lô này sẽ ghi Thiếu giá vốn. Phân bổ chi phí chuyến hoặc tính giá vốn tạm ở trang lô.",
+        "help": "Đơn xuất từ lô này sẽ ghi Thiếu giá vốn. Lô cũ chạy script bổ sung giá vốn; lô mới cần phiếu nhập có giá mua và tỷ giá.",
         "value": "SL tồn"
       },
       "draftOnlyCost": {

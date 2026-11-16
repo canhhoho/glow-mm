@@ -170,26 +170,23 @@ test("QT1b/QT2: tạo SP → nhập hàng từ bước 2 (điền sẵn, khối 
   await expect(page.getByTestId("step-price-row").first()).toContainText("150 g");
   await expect(steps.getByRole("link", { name: /Giá bán/ })).toHaveAttribute("aria-current", "step");
 
-  // Bước 3: "Tính tự động" → trang Giá bán (tự động) chỉ SP này → bảng tính giá → áp dụng.
-  await page.getByTestId("price-actions").getByRole("link", { name: "Tính tự động" }).click();
-  await expect(page).toHaveURL(/\/admin\/selling-prices\?mode=auto&productId=/);
-  await expect(page.getByTestId("pricing-product-scope")).toContainText(`Flow ${tag}`);
-  await page.getByLabel("% lãi").fill("40");
-  await page.getByLabel("Phí ship VN → MM (MMK/kg)").fill("8000");
-  await page.getByRole("button", { name: "Xem trước" }).click();
-  await expect(page).toHaveURL(/\/admin\/pricing\/runs\//, { timeout: 30_000 });
-  await expect(page.getByRole("table").getByRole("checkbox")).toHaveCount(1);
-  page.once("dialog", (d) => d.accept());
-  await expect(page.getByRole("checkbox", { name: "Gửi duyệt ngay" })).toBeChecked();
-  await page.getByRole("button", { name: "Áp dụng giá đã chọn" }).click();
-  // Hết dòng chờ → bản chuyển "Đã áp dụng", form áp dụng biến mất.
-  await expect(page.getByRole("row").filter({ hasText: sku })).toContainText("Đã áp", { timeout: 30_000 });
-  // Kết quả gửi duyệt vẫn hiện trên trang bản tính giá sau khi form áp giá biến mất.
-  await expect(page.getByTestId("batch-review")).toContainText("Đã gửi duyệt 1 sản phẩm");
+  // Bước 3: "Đặt giá" → trang Giá bán thủ công chỉ SP này → lãi + vận chuyển + CTV → lưu (giá tự động đang tắt).
+  await expect(page.getByTestId("price-actions").getByRole("link", { name: "Tính tự động" })).toHaveCount(0);
+  await page.getByTestId("price-actions").getByRole("link", { name: "Đặt giá" }).click();
+  await expect(page).toHaveURL(/\/admin\/selling-prices\/manual\?productId=/);
+  const vnd = page.getByTestId("manual-vnd");
+  const line = vnd.getByTestId("manual-row").first();
+  await expect(line).toContainText("100,000"); // giá mua NCC của lần nhập vừa ghi sổ
+  await line.getByRole("spinbutton", { name: /^Lãi mong muốn/ }).fill("40000");
+  await line.getByRole("spinbutton", { name: /^Vận chuyển/ }).fill("1200");
+  await line.getByRole("spinbutton", { name: /^CTV/ }).fill("1000");
+  await expect(vnd.getByRole("checkbox", { name: "Gửi duyệt ngay" })).toBeChecked();
+  await vnd.getByRole("button", { name: /^Lưu giá/ }).click();
+  await expect(vnd.getByText(/Đã áp dụng 1 giá/)).toBeVisible({ timeout: 30_000 });
 
   await page.goto(productUrl);
   await openProductTab(page, "price");
-  await expect(page.getByTestId("step-price-row").first()).toContainText("Bảng tính giá");
+  await expect(page.getByTestId("step-price-row").first()).toContainText("Sửa tay");
   await expect(steps.getByTestId("step-price")).toHaveAttribute("data-state", "done");
   // §6.4: ô "Gửi duyệt ngay" bật sẵn khi áp giá → SP đủ điều kiện đã vào hàng chờ duyệt; bước 5 chờ đến khi duyệt.
   await expect(page.getByTestId("approval-status")).toHaveAttribute("data-label", "PENDING");

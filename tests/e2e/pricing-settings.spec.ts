@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { login, signInAtPrompt } from "./helpers";
 
-test("admin: lưu cài đặt; tính giá mới (xem trước) rồi huỷ", async ({ page }) => {
+test("admin: lưu cài đặt; tỷ giá; giá tự động đang tắt", async ({ page }) => {
   test.setTimeout(90_000); // DB test tích luỹ nhiều biến thể: bản xem trước cần thời gian tạo và render.
   await login(page, "admin@glow.local");
 
@@ -32,29 +32,19 @@ test("admin: lưu cài đặt; tính giá mới (xem trước) rồi huỷ", asy
   await expect(page.getByRole("cell", { name: /1 USD = 4,420 MMK/ }).first()).toBeVisible();
   await page.screenshot({ path: "test-results/screens/selling-prices-rates.png", fullPage: true });
 
-  // Tab "Lịch sử giá" mở được; tab "Tự động" là nơi tạo bản tính.
+  // Tab "Lịch sử giá" mở được; giá tự động đang tắt (`lib/features.ts`) → không còn tab "Tự động", link cũ chuyển sang Thủ công.
   await page.getByRole("link", { name: "Lịch sử giá" }).click();
   await expect(page).toHaveURL(/mode=history/);
-  await page.goto("/admin/pricing?tab=runs"); // link cũ → tab Tự động
-  await expect(page).toHaveURL(/\/admin\/selling-prices\?mode=auto/);
-  // P24: kho mặc định = Kho Thắm (hàng nhập VN) → cần % lãi + phí ship theo kg.
-  await expect(page.getByRole("combobox", { name: "Kho", exact: true })).toHaveValue(/.+/);
-  await page.getByLabel("% lãi").fill("40");
-  await page.getByLabel("Phí ship VN → MM (MMK/kg)").fill("8000");
-  await page.getByRole("button", { name: "Xem trước" }).click();
-  await expect(page).toHaveURL(/\/admin\/pricing\/runs\//, { timeout: 20_000 });
-  await expect(page.getByRole("row", { name: /SV-SUN-50/ })).toBeVisible();
-  await expect(page.getByRole("checkbox", { name: "SV-SUN-50" })).toBeChecked();
-  // D1: nguồn giá mua (phiếu nhập đã ghi sổ + lô), trạng thái dòng, hạn bản xem trước.
-  await expect(page.getByRole("columnheader", { name: "Nguồn giá mua" })).toBeVisible();
-  await expect(page.getByRole("row", { name: /SV-SUN-50/ }).getByRole("link").first()).toHaveAttribute("href", /\/admin\/inventory\/documents\//);
-  await expect(page.getByRole("row", { name: /SV-SUN-50/ })).toContainText("Chờ");
-  await expect(page.getByText(/^Hết hạn /)).toBeVisible();
-  await page.screenshot({ path: "test-results/screens/pricing-run.png", fullPage: true });
-
-  await page.getByRole("button", { name: "Huỷ bản xem trước" }).click();
-  await expect(page.getByText("Đã huỷ", { exact: true }).filter({ visible: true }).first()).toBeVisible();
-  await expect(page.getByRole("button", { name: "Áp dụng giá đã chọn" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Tự động", exact: true })).toHaveCount(0);
+  await page.goto("/admin/pricing?tab=runs"); // link cũ
+  await expect(page).toHaveURL(/\/admin\/selling-prices\?mode=manual/);
+  await page.goto("/admin/selling-prices?mode=auto");
+  await expect(page).toHaveURL(/\/admin\/selling-prices\?mode=manual/);
+  // Cài đặt vẫn lưu được khi ô "hạn bản tính giá" đã ẩn (giữ giá trị bằng ô ẩn).
+  await page.goto("/admin/settings");
+  await expect(page.getByLabel("Bản xem trước giá hết hạn sau (ngày)")).toHaveCount(0);
+  await page.getByRole("button", { name: "Lưu cài đặt" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Đã lưu" })).toBeVisible();
 });
 
 test("admin tắt nhận đơn web → trang checkout báo tạm ngừng → bật lại", async ({ page }) => {

@@ -1,9 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { redirect } from "next/navigation";
 import { Calculator, CircleDollarSign, Clock, Layers, Pencil, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fmtDateTime, fmtInt } from "@/lib/format";
+import { FEATURES } from "@/lib/features";
 import { requirePagePermission } from "@/server/auth/session";
 import { PricingRunsTab } from "@/components/admin/pricing-runs-tab";
 import { PriceHistoryTab, RatesTab } from "@/components/admin/pricing-tabs";
@@ -28,6 +30,15 @@ export default async function SellingPricesPage({ searchParams }: PageProps<"/ad
   const [t, tp] = await Promise.all([getTranslations("SellingPrices"), getTranslations("Pricing")]);
   // Tab: thủ công (mặc định) · tự động · tỷ giá · lịch sử giá (gộp trang "Giá & tỷ giá" cũ, 16/11/2026).
   const mode = (["auto", "rates", "history"] as const).find((m) => m === sp.mode) ?? "manual";
+  // Giá tự động đang tắt (`lib/features.ts`): link cũ `?mode=auto` chuyển sang trang Thủ công, giữ các SKU / SP đã chọn.
+  if (mode === "auto" && !FEATURES.autoPricing) {
+    const next = new URLSearchParams();
+    const ids = many(sp.ids);
+    if (ids.length) for (const id of ids) next.append("ids", id);
+    const productId = one(sp.productId);
+    if (productId) next.set("productId", productId);
+    redirect(ids.length || productId ? `/admin/selling-prices/manual?${next}` : "/admin/selling-prices?mode=manual");
+  }
   const manual = mode === "manual";
   const q = one(sp.q)?.trim().slice(0, 200) ?? "";
   const state = SELLING_STATES.find((s) => s === sp.state);
@@ -66,13 +77,13 @@ export default async function SellingPricesPage({ searchParams }: PageProps<"/ad
       <TabNav
         label={t("title")}
         tabs={[
-          { href: "/admin/selling-prices?mode=auto", label: t("automatic"), active: mode === "auto" },
+          ...(FEATURES.autoPricing ? [{ href: "/admin/selling-prices?mode=auto", label: t("automatic"), active: mode === "auto" }] : []),
           { href: "/admin/selling-prices?mode=manual", label: t("manual"), active: manual },
           { href: "/admin/selling-prices?mode=rates", label: tp("tabRates"), active: mode === "rates" },
           { href: "/admin/selling-prices?mode=history", label: tp("tabHistory"), active: mode === "history" },
         ]}
       />
-      {mode === "auto" && <PricingRunsTab variantIds={many(sp.ids)} productId={one(sp.productId)} receiptId={one(sp.receiptId)} />}
+      {mode === "auto" && FEATURES.autoPricing && <PricingRunsTab variantIds={many(sp.ids)} productId={one(sp.productId)} receiptId={one(sp.receiptId)} />}
       {mode === "rates" && <RatesTab />}
       {mode === "history" && <PriceHistoryTab />}
       {manual && <ManualPrices q={q} state={state} warehouseId={warehouseId} page={page} size={size} href={href} />}
@@ -139,15 +150,17 @@ async function ManualPrices({
           <ClearFilters href={href({ q: null, state: null, warehouse: null, page: 1 })}>{t("clearFilters")}</ClearFilters>
         )}
       </FilterBar>
-      {/* Chọn SKU → Thủ công (trang riêng) hoặc Tự động (bảng tính giá cho đúng các SKU này). */}
+      {/* Chọn SKU → Thủ công (trang riêng). Tự động (bảng tính giá) đang tắt — `FEATURES.autoPricing`. */}
       <form id={PICK_FORM} method="get" action="/admin/selling-prices/manual" className="flex flex-wrap items-center gap-2 text-sm" data-testid="price-pick">
         <span className="text-muted-foreground">{t("pickHint")}</span>
         <Button type="submit" size="lg">
           <Pencil aria-hidden /> {t("pickManual")}
         </Button>
-        <Button type="submit" size="lg" variant="outline" name="mode" value="auto" formAction="/admin/selling-prices">
-          <Calculator aria-hidden /> {t("pickAuto")}
-        </Button>
+        {FEATURES.autoPricing && (
+          <Button type="submit" size="lg" variant="outline" name="mode" value="auto" formAction="/admin/selling-prices">
+            <Calculator aria-hidden /> {t("pickAuto")}
+          </Button>
+        )}
       </form>
       <DataTable stack empty={t("empty")} numeric={[3, 4]} head={[t("product"), t("sku"), t("warehouse"), t("price"), t("colCost"), t("colSource"), t("actions")]}>
         {rows.map((v) => (

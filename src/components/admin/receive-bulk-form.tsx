@@ -10,6 +10,7 @@ import { parseReceivePaste } from "@/lib/receive-paste";
 import { cn } from "@/lib/utils";
 import { createDocumentAction, updateDocumentAction } from "@/server/inventory/actions";
 import type { ReceiveVariant } from "@/server/inventory/queries";
+import { FEATURES } from "@/lib/features";
 
 /** Biến thể với loại tiền đã chốt (SP chưa có kho lấy theo kho nhận của phiếu). */
 type ResolvedVariant = ReceiveVariant & { currency: "VND" | "MMK" };
@@ -208,7 +209,8 @@ export function ReceiveBulkForm({
 
   const selectedRows = rows.filter((r) => selected.has(r.variantId) && inScope(byId.get(r.variantId)!));
   const filled = selectedRows.filter(hasQty);
-  const canUseShipment = (!!toLoc && toLoc.sellable && toLoc.pricingMode !== "LOCAL_MMK") || (!!toLoc && !toLoc.sellable && filled.length > 0 && filled.every((r) => byId.get(r.variantId)!.currency === "VND"));
+  // Chuyến hàng + "Cước tạm tính" đang tắt (`lib/features.ts`).
+  const canUseShipment = FEATURES.shipments && ((!!toLoc && toLoc.sellable && toLoc.pricingMode !== "LOCAL_MMK") || (!!toLoc && !toLoc.sellable && filled.length > 0 && filled.every((r) => byId.get(r.variantId)!.currency === "VND")));
   const totalQty = filled.reduce((s, r) => s + Number(r.qty), 0);
   // Tổng tiền theo loại tiền (khu chờ kiểm tra có thể nhận cả SP Kho Thắm (VND) lẫn Kho Chi (MMK)).
   const totals = filled.reduce<Record<string, number>>((m, r) => {
@@ -285,7 +287,7 @@ export function ReceiveBulkForm({
       type: "RECEIVE",
       toId,
       shipmentId: canUseShipment ? shipmentId || undefined : undefined,
-      estimatedShipMmkPerKg: variants.some((v) => inScope(v) && v.currency === "VND") ? estimatedShip : undefined,
+      estimatedShipMmkPerKg: FEATURES.shipments && variants.some((v) => inScope(v) && v.currency === "VND") ? estimatedShip : undefined,
       reason: reason || undefined,
       lines: filled.map((r) => {
         const eff = effective(r, defaults);
@@ -445,7 +447,7 @@ export function ReceiveBulkForm({
         </div>
       </fieldset>
 
-      {variants.some((v) => inScope(v) && v.currency === "VND") && (
+      {FEATURES.shipments && variants.some((v) => inScope(v) && v.currency === "VND") && (
         <label className={cn(fieldLabelClass, "max-w-xl")}>
           <span>{t("estimateShip")}</span>
           <input type="number" min={0} max={2147483647} step={1} value={estimatedShip} onChange={(e) => setEstimatedShip(e.target.value)} className={fieldClass} />

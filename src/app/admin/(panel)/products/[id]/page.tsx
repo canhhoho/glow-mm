@@ -23,6 +23,7 @@ import { ProductImageUpload } from "@/components/admin/product-images";
 import { ProductConditions, StepTitle } from "@/components/admin/product-steps";
 import { Badge, DataTable, EmptyState, fieldClass, fieldLabelClass, LinkButton, Notice, Page, Section, TabNav, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
+import { FEATURES } from "@/lib/features";
 import { localizedPath } from "@/lib/site";
 import { prisma } from "@/lib/db";
 import { getNumberSetting } from "@/server/settings";
@@ -480,11 +481,11 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           })}
         </DataTable>
         {stepIssues("price").length > 0 && issueList(stepIssues("price"))}
-        {/* 16/11: đặt giá ở trang Giá bán (nơi đặt giá chính: Thủ công / Tự động, chọn lô cơ sở) — không còn form riêng ở đây. */}
+        {/* 16/11: đặt giá ở trang Giá bán (thủ công, chọn lô cơ sở; Tự động đang tắt) — không còn form riêng ở đây. */}
         {can(user.role, "pricing:manage") && !archived && (
           <div className="flex flex-wrap items-center gap-2" data-testid="price-actions">
             <LinkButton href={`/admin/selling-prices/manual?productId=${product.id}`} variant="primary" icon="edit">{t("priceBlock.setPrice")}</LinkButton>
-            <LinkButton href={`/admin/selling-prices?mode=auto&productId=${product.id}`}>{t("priceBlock.calcThis")}</LinkButton>
+            {FEATURES.autoPricing && <LinkButton href={`/admin/selling-prices?mode=auto&productId=${product.id}`}>{t("priceBlock.calcThis")}</LinkButton>}
             <span className="text-xs text-muted-foreground">{t("priceBlock.whereHelp")}</span>
           </div>
         )}

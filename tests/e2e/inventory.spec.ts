@@ -135,8 +135,9 @@ test("phiếu nhập: dán từ Excel điền nhiều dòng, báo dòng lỗi, d
 
   await page.getByRole("checkbox", { name: `Chọn ${SKU}`, exact: true }).check();
   await page.getByRole("button", { name: "Tiếp tục nhập thông số", exact: true }).click();
-  await expect(page.getByLabel("Cước tạm tính VN → MM (MMK/kg)")).toBeVisible();
-  await page.getByLabel("Cước tạm tính VN → MM (MMK/kg)").fill("8000");
+  // Chuyến hàng + cước tạm tính đang tắt (`lib/features.ts`).
+  await expect(page.getByLabel("Cước tạm tính VN → MM (MMK/kg)")).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: "Chuyến hàng", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Dán từ Excel" }).click();
   await page.getByRole("textbox", { name: "Dán từ Excel" }).fill(
     `SKU\tSL\tLô\tHSD\tGiá\n${SKU}\t3\t${lot}\t31/12/2028\t90,000\n${SKU}\t2\t${lot}B\t\t90000\nKHONG-CO\t1\tX\t2028-01-01\t1`,

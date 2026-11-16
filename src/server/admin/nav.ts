@@ -1,4 +1,5 @@
 import { can, type Permission, type Role } from "@/server/auth/roles";
+import { featureOn, type FeatureKey } from "@/lib/features";
 
 /**
  * Menu admin (P9a): nhóm → mục, lọc theo quyền. Thuần, không import Next → test bằng Vitest.
@@ -40,7 +41,7 @@ export type NavCountKey =
  * `match` = các tiền tố đường dẫn bổ sung để mục vẫn sáng khi mở trang con/trang gộp (vd. Cảnh báo thuộc Tồn kho),
  * giữ link cũ dùng được mà không cần chuyển hướng.
  */
-export type NavItem = { href: string; key: string; permission: Permission; icon: NavIcon; count?: NavCountKey; match?: string[] };
+export type NavItem = { href: string; key: string; permission: Permission; icon: NavIcon; count?: NavCountKey; match?: string[]; /** Tính năng đang tắt (`lib/features.ts`) → mục bị ẩn khỏi menu. */ feature?: FeatureKey };
 /** `key` null = nhóm không có tiêu đề (Tổng quan). */
 export type NavGroup = { key: string | null; icon?: NavIcon; items: NavItem[] };
 
@@ -75,7 +76,7 @@ export const NAV: NavGroup[] = [
       // Chờ kiểm tra + Cảnh báo là lối tắt trong trang Tồn kho; vẫn sáng mục này khi mở các trang đó.
       { href: "/admin/inventory", key: "inventory", permission: "stock:view", icon: "box", count: "quarantineLots", match: ["/admin/alerts"] },
       { href: "/admin/inventory/documents", key: "documents", permission: "stock:view", icon: "file" },
-      { href: "/admin/shipments", key: "shipments", permission: "shipment:manage", icon: "truck" },
+      { href: "/admin/shipments", key: "shipments", permission: "shipment:manage", icon: "truck", feature: "shipments" },
     ],
   },
   {
@@ -106,7 +107,7 @@ export const NAV: NavGroup[] = [
 /** Nhóm + mục vai trò này được thấy; nhóm rỗng bị bỏ. */
 export function visibleNav(role: Role, nav: NavGroup[] = NAV): NavGroup[] {
   return nav
-    .map((g) => ({ ...g, items: g.items.filter((i) => can(role, i.permission)) }))
+    .map((g) => ({ ...g, items: g.items.filter((i) => can(role, i.permission) && (!i.feature || featureOn(i.feature))) }))
     .filter((g) => g.items.length > 0);
 }
 

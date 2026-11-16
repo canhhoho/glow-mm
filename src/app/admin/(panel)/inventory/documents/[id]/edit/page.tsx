@@ -4,6 +4,7 @@ import { requirePagePermission } from "@/server/auth/session";
 import { getDocument, listLocations, listShipments, listVariantsForReceive } from "@/server/inventory/queries";
 import { ReceiveBulkForm, type ReceiveDraft } from "@/components/admin/receive-bulk-form";
 import { Page, PageHeader } from "@/components/admin/ui";
+import { FEATURES } from "@/lib/features";
 
 const day = (d: Date | null | undefined) => (d ? d.toISOString().slice(0, 10) : "");
 
@@ -14,7 +15,12 @@ export default async function EditDocumentPage({ params }: PageProps<"/admin/inv
   const doc = await getDocument(id);
   if (!doc) notFound();
   if (doc.type !== "RECEIVE" || doc.status !== "DRAFT") redirect(`/admin/inventory/documents/${id}`);
-  const [t, locations, variants, shipments] = await Promise.all([getTranslations("Docs"), listLocations(), listVariantsForReceive({ includeIds: doc.lines.map((l) => l.variantId) }), listShipments()]);
+  const [t, locations, variants, shipments] = await Promise.all([
+    getTranslations("Docs"),
+    listLocations(),
+    listVariantsForReceive({ includeIds: doc.lines.map((l) => l.variantId) }),
+    FEATURES.shipments ? listShipments() : Promise.resolve([]),
+  ]);
   const draft: ReceiveDraft = {
     id: doc.id,
     toId: doc.toId ?? "",
