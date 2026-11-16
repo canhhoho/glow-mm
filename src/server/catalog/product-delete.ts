@@ -109,7 +109,8 @@ export async function moveProductsToWarehouse(rawIds: unknown, rawLocationId: un
     const loc = await assertStockLocation(tx, locationId).catch((e: Error) => {
       throw new CatalogError(e.message);
     });
-    const rows = await tx.product.findMany({ where: { id: { in: ids }, stockLocationId: { not: loc.id } }, select: { id: true } });
+    // SP chưa có kho (chưa nhập hàng) cũng gán được kho trước bằng thao tác này.
+    const rows = await tx.product.findMany({ where: { id: { in: ids }, OR: [{ stockLocationId: null }, { stockLocationId: { not: loc.id } }] }, select: { id: true } });
     if (rows.length === 0) return 0;
     const moved = rows.map((r) => r.id);
     await tx.product.updateMany({ where: { id: { in: moved } }, data: { stockLocationId: loc.id } });

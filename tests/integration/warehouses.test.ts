@@ -103,28 +103,56 @@ describe("Kho của sản phẩm", () => {
   });
 
   /**
-   * R3 (docs/ban-do-nghiep-vu-admin.md): form SP phải chặn giống chuyển kho hàng loạt, cả khi SP là thành phần.
-   * Lỗi tái hiện 16/11/2026 (`saveProduct` chỉ kiểm khi chính SP là combo); sửa bằng `assertBundleWarehouses` dùng chung.
+   * R3 (docs/ban-do-nghiep-vu-admin.md) — từ 16/11/2026 form SP không đổi kho nữa: `stockLocationId` gửi kèm khi sửa SP bị bỏ
+   * qua; đổi kho chỉ qua chuyển kho hàng loạt (chặn combo / thành phần lệch kho bằng `assertBundleWarehouses`).
    */
-  it("đổi kho qua form SP: thành phần của combo khác kho bị chặn", async () => {
+  it("form SP không đổi kho; combo lấy kho của thành phần, thành phần chưa nhập hàng thì chưa tạo combo được", async () => {
     const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 2 }]);
     const tag = f.tag.toLowerCase();
-    const product = (slug: string, variants: Record<string, unknown>[]) =>
-      saveProduct({ slug, brandId: f.brandId, categoryId: f.categoryId, stockLocationId: f.mm.id, my: { name: "ဆက်" }, en: { name: slug }, variants }, f.userId);
-    // Thành phần tạo qua saveProduct (slug fixture có chữ hoa → form của nó không lưu lại được).
-    const part = await product(`it-part-form-${tag}`, [{ sku: `PARTF-${f.tag}`, label: "50ml", priceMmk: 1 }]);
+    const product = (slug: string, variants: Record<string, unknown>[], extra: Record<string, unknown> = {}) =>
+      saveProduct({ slug, brandId: f.brandId, categoryId: f.categoryId, my: { name: "ဆက်" }, en: { name: slug }, variants, ...extra }, f.userId);
+    const part = await product(`it-part-form-${tag}`, [{ sku: `PARTF-${f.tag}`, label: "50ml", priceMmk: 1 }], { stockLocationId: f.mm.id });
     const partVariant = await prisma.variant.findUniqueOrThrow({ where: { sku: `PARTF-${f.tag}` } });
+    // Combo không gửi kho → lấy kho của thành phần.
     const combo = await product(`it-combo-form-${tag}`, [
       { sku: `SETF-${f.tag}`, label: "Set", priceMmk: 1, isBundle: true, components: [{ componentId: partVariant.id, qty: 1 }] },
     ]);
-    // Chiều đã có kiểm tra: chính combo đổi kho khác thành phần.
-    const comboForm = (await getProductForEdit(combo.id))!;
-    await expect(saveProduct({ ...comboForm, stockLocationId: f.chi.id }, f.userId)).rejects.toThrow(/kho khác|cùng kho/);
-    // Chiều R3: thành phần đổi kho, combo ở lại kho cũ.
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: combo.id } })).stockLocationId).toBe(f.mm.id);
+    // Sửa SP gửi kho khác → bỏ qua, kho giữ nguyên.
     const partForm = (await getProductForEdit(part.id))!;
-    await expect(saveProduct({ ...partForm, stockLocationId: f.chi.id }, f.userId)).rejects.toThrow(/kho khác|cùng kho/);
-    const after = await prisma.product.findUniqueOrThrow({ where: { id: part.id }, select: { stockLocationId: true } });
-    expect(after.stockLocationId).toBe(f.mm.id);
+    await saveProduct({ ...partForm, stockLocationId: f.chi.id }, f.userId);
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: part.id } })).stockLocationId).toBe(f.mm.id);
+    await expect(moveProductsToWarehouse([part.id], f.chi.id, f.userId)).rejects.toThrow(/phải cùng kho/);
+    // Thành phần chưa có kho (chưa nhập hàng) → chưa tạo combo được.
+    const fresh = await product(`it-fresh-${tag}`, [{ sku: `FRESH-${f.tag}`, label: "50ml", priceMmk: 1 }]);
+    expect(fresh.stockLocationId).toBeNull();
+    const freshVariant = await prisma.variant.findUniqueOrThrow({ where: { sku: `FRESH-${f.tag}` } });
+    await expect(
+      product(`it-combo-fresh-${tag}`, [{ sku: `SETX-${f.tag}`, label: "Set", priceMmk: 1, isBundle: true, components: [{ componentId: freshVariant.id, qty: 1 }] }]),
+    ).rejects.toThrow(/chưa nhập hàng/);
+  });
+
+  it("SP chưa có kho: nhập vào kho bán nào cũng được, ghi sổ thì gán kho; phiếu nháp kho khác bị chặn lúc ghi sổ", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 1 }]);
+    const tag = f.tag.toLowerCase();
+    const p = await saveProduct(
+      { slug: `it-unplaced-${tag}`, brandId: f.brandId, categoryId: f.categoryId, my: { name: "ဆက်" }, en: { name: `Unplaced ${tag}` }, variants: [{ sku: `UNP-${f.tag}`, label: "50ml", priceMmk: 0 }] },
+      f.userId,
+    );
+    expect(p.stockLocationId).toBeNull();
+    const v = await prisma.variant.findUniqueOrThrow({ where: { sku: `UNP-${f.tag}` } });
+    // Kho Chi (LOCAL_MMK) → giá mua MMK; nhập VND bị chặn vì loại tiền theo kho nhận.
+    await expect(receive(f, f.chi.id, v.id, "A", 2)).rejects.toThrow(/MMK/);
+    const toChi = await receive(f, f.chi.id, v.id, "A", 2, true);
+    const toMm = await receive(f, f.mm.id, v.id, "B", 1);
+    // Chưa ghi sổ → chưa có kho, chưa bán được.
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: p.id } })).stockLocationId).toBeNull();
+    expect((await avail(v.id)) ?? 0).toBe(0);
+    await postDocument(toChi.id, f.userId);
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: p.id } })).stockLocationId).toBe(f.chi.id);
+    expect(await avail(v.id)).toBe(2);
+    await expect(postDocument(toMm.id, f.userId)).rejects.toThrow(/thuộc CHI, không nhập vào MM/);
+    expect((await prisma.stockDocument.findUniqueOrThrow({ where: { id: toMm.id } })).status).toBe("DRAFT");
   });
 });
 

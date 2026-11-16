@@ -170,8 +170,12 @@ type DraftLine = {
   rateId?: string | null;
 };
 
-/** Kiểm vị trí đi/đến của phiếu (kho đang dùng, đúng kho của SP với hàng vào kho bán…). */
-async function checkLocations(tx: Tx, input: DocumentInput) {
+/**
+ * Kiểm vị trí đi/đến của phiếu (kho đang dùng, đúng kho của SP với hàng vào kho bán…).
+ * `assignWarehouse` (lúc ghi sổ): SP chưa có kho (chưa nhập hàng) nhận kho bán của phiếu nhập/chuyển này — khoá dòng SP
+ * trước khi kiểm để hai phiếu nháp khác kho không cùng gán.
+ */
+async function checkLocations(tx: Tx, input: DocumentInput, opts: { assignWarehouse?: boolean } = {}) {
   const fromId = "fromId" in input ? input.fromId : undefined;
   const toId = "toId" in input ? input.toId : undefined;
   if (fromId) await assertLocation(tx, fromId); // xuất/chuyển từ kho đã ngừng dùng vẫn được (dọn tồn cũ)
@@ -182,12 +186,21 @@ async function checkLocations(tx: Tx, input: DocumentInput) {
   }
   if (fromId && toId && fromId === toId) throw new DocumentError("Vị trí đi và đến phải khác nhau");
   // P24: hàng vào kho bán (nhập, chuyển) phải đúng kho của SP; điều chỉnh lô đã có ở kho thì không chặn.
+  // SP chưa có kho (chưa nhập hàng) nhập vào kho bán nào cũng được — kho được gán khi ghi sổ.
   if (to?.sellable && (input.type === "RECEIVE" || input.type === "TRANSFER")) {
+    const variantIds = input.lines.map((l) => l.variantId);
+    if (opts.assignWarehouse) {
+      const productIds = [...new Set((await tx.variant.findMany({ where: { id: { in: variantIds } }, select: { productId: true } })).map((v) => v.productId))].sort();
+      if (productIds.length) await tx.$queryRaw`SELECT "id" FROM "Product" WHERE "id" IN (${Prisma.join(productIds)}) ORDER BY "id" FOR UPDATE`;
+    }
     const wrong = await tx.variant.findFirst({
-      where: { id: { in: input.lines.map((l) => l.variantId) }, product: { stockLocationId: { not: to.id } } },
+      where: { id: { in: variantIds }, product: { stockLocationId: { not: null }, NOT: { stockLocationId: to.id } } },
       select: { sku: true, product: { select: { stockLocation: { select: { name: true } } } } },
     });
-    if (wrong) throw new DocumentError(`SKU ${wrong.sku}: sản phẩm thuộc ${wrong.product.stockLocation.name}, không nhập vào ${to.name}`);
+    if (wrong) throw new DocumentError(`SKU ${wrong.sku}: sản phẩm thuộc ${wrong.product.stockLocation?.name ?? "kho khác"}, không nhập vào ${to.name}`);
+    if (opts.assignWarehouse) {
+      await tx.product.updateMany({ where: { variants: { some: { id: { in: variantIds } } }, stockLocationId: null }, data: { stockLocationId: to.id } });
+    }
   }
   return { fromId, toId };
 }
@@ -205,6 +218,8 @@ async function buildReceiveLines(tx: Tx, input: ReceiveInput): Promise<DraftLine
       })
     ).map((v) => [v.id, v]),
   );
+  // SP chưa có kho: loại tiền theo kho nhận của phiếu (kho đó sẽ thành kho bán của SP khi ghi sổ).
+  const target = await tx.location.findUnique({ where: { id: input.toId }, select: { pricingMode: true, name: true } });
   const lotKey = (variantId: string, lotNo: string) => `${variantId}\u0000${lotNo}`;
   const wanted = new Set(input.lines.map((l) => lotKey(l.variantId, l.lotNo)));
   const batches = new Map(
@@ -220,16 +235,16 @@ async function buildReceiveLines(tx: Tx, input: ReceiveInput): Promise<DraftLine
     };
     if (variant.isBundle) fail("Không nhập kho trực tiếp cho combo — nhập từng thành phần");
     const existing = batches.get(lotKey(l.variantId, l.lotNo));
+    // 16/11/2026: hạn dùng chọn theo từng lô (Có ngày / Chưa biết hạn / Không có hạn), không theo cờ của SP.
     const expiryStatus = l.expiryStatus ?? (variant.product.requiresExpiry ? "DATED" : "NONE");
-    if (expiryStatus === "NONE" && variant.product.requiresExpiry) fail("Sản phẩm này yêu cầu quản lý hạn sử dụng");
-    if (expiryStatus !== "NONE" && !variant.product.requiresExpiry) fail("Sản phẩm này không áp dụng hạn sử dụng; chọn NONE");
     if (expiryStatus === "DATED" && !l.expiryDate) fail("Cần nhập hạn sử dụng hoặc chọn Chưa biết hạn");
     if (expiryStatus !== "DATED" && l.expiryDate) fail("Chỉ nhập ngày khi đã biết hạn sử dụng");
     if (l.mfgDate && l.expiryDate && l.mfgDate > l.expiryDate) fail("Ngày sản xuất phải trước hạn sử dụng");
     // P24: loại tiền theo kho của SP — kho mua tại Myanmar (LOCAL_MMK) nhập giá MMK, kho hàng nhập VN nhập VND.
-    const mmk = variant.product.stockLocation.pricingMode === "LOCAL_MMK";
-    if (mmk && l.unitCostMmk === undefined) fail(`${variant.product.stockLocation.name} nhập giá mua bằng MMK`);
-    if (!mmk && l.unitCostVnd === undefined) fail(`${variant.product.stockLocation.name} nhập giá mua bằng VND`);
+    const loc = variant.product.stockLocation ?? target;
+    const mmk = loc?.pricingMode === "LOCAL_MMK";
+    if (mmk && l.unitCostMmk === undefined) fail(`${loc?.name} nhập giá mua bằng MMK`);
+    if (!mmk && l.unitCostVnd === undefined) fail(`${loc?.name ?? "Kho"} nhập giá mua bằng VND`);
     if (mmk && input.shipmentId) fail("Lô giá MMK không gắn chuyến hàng VN → MM");
     if (existing && (existing.shipmentId ?? null) !== (input.shipmentId ?? null)) fail(`Lô ${l.lotNo} có chuyến hàng khác. Chọn đúng chuyến hoặc dùng thao tác gắn lô trước khi lập phiếu.`);
     const unitCostVnd = l.unitCostVnd ?? null;
@@ -552,7 +567,7 @@ export async function postDocumentTx(tx: Tx, documentId: string, userId: string,
       ...(doc.fromId && { fromId: doc.fromId }),
       ...(doc.toId && { toId: doc.toId }),
       lines: doc.lines.map((l) => ({ variantId: l.variantId })),
-    } as unknown as DocumentInput);
+    } as unknown as DocumentInput, { assignWarehouse: true });
   }
   const today = new Date();
 

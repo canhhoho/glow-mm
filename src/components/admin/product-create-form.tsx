@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 type Options = {
   brands: { id: string; name: string }[];
   categories: { id: string; name: string }[];
-  components: { id: string; label: string; stockLocationId: string; inactive?: boolean; archived?: boolean }[];
+  components: { id: string; label: string; stockLocationId: string | null; inactive?: boolean; archived?: boolean }[];
   warehouses: { id: string; name: string; code: string }[];
 };
 
@@ -23,7 +23,6 @@ export type CreatePrefill = {
   nameEn: string;
   brandName: string;
   categoryId: string;
-  stockLocationId: string;
   labels: string[];
   components: { componentId: string; qty: number }[];
 };
@@ -45,15 +44,18 @@ export function ProductCreateForm({ kind, options, prefill }: { kind: "product" 
   const [showOther, setShowOther] = useState(!!prefill?.[other]);
   const [brandInput, setBrandInput] = useState(prefill?.brandName ?? "");
   const [categoryId, setCategoryId] = useState(prefill?.categoryId ?? "");
-  const [stockLocationId, setStockLocationId] = useState(prefill?.stockLocationId ?? options.warehouses[0]?.id ?? "");
   const [labels, setLabels] = useState<string[]>(prefill?.labels ?? []);
   const [draftLabel, setDraftLabel] = useState("");
   const [components, setComponents] = useState(prefill?.components.length ? prefill.components : [{ componentId: "", qty: 1 }]);
 
   const matchedBrand = options.brands.find((b) => b.name.toLowerCase() === brandInput.trim().toLowerCase());
-  // Lựa chọn mới: cùng kho + đang dùng; thành phần đang được chọn (vd. sao chép từ combo cũ) vẫn hiện, có nhãn (#6).
+  // Kho bán chọn lúc nhập hàng (16/11/2026): combo lấy kho của thành phần → chỉ SP đã nhập hàng, cùng kho với thành phần
+  // đầu tiên; thành phần đang được chọn (vd. sao chép từ combo cũ) vẫn hiện, có nhãn (#6).
+  const comboWarehouse = options.components.find((c) => components.some((x) => x.componentId === c.id))?.stockLocationId ?? null;
   const componentOptions = options.components.filter(
-    (c) => c.stockLocationId === stockLocationId && ((!c.inactive && !c.archived) || components.some((x) => x.componentId === c.id)),
+    (c) =>
+      components.some((x) => x.componentId === c.id) ||
+      (c.stockLocationId != null && (!comboWarehouse || c.stockLocationId === comboWarehouse) && !c.inactive && !c.archived),
   );
 
   const addLabel = (raw: string) => {
@@ -70,14 +72,13 @@ export function ProductCreateForm({ kind, options, prefill }: { kind: "product" 
         brandId: matchedBrand?.id,
         brandName: matchedBrand ? undefined : brandInput.trim() || undefined,
         categoryId,
-        stockLocationId,
         // Ô phân loại còn chữ chưa nhấn Enter → vẫn tính.
         labels: kind === "product" ? [...labels, ...draftLabel.split(",").map((s) => s.trim()).filter(Boolean)] : [],
         defaultLabel: t("standardVariant"),
         components: kind === "combo" ? components.filter((c) => c.componentId) : [],
         copyFromId: prefill?.copyFromId,
       }),
-    [kind, names, matchedBrand, brandInput, categoryId, stockLocationId, labels, draftLabel, components, prefill?.copyFromId, t],
+    [kind, names, matchedBrand, brandInput, categoryId, labels, draftLabel, components, prefill?.copyFromId, t],
   );
 
   const langName = (key: "nameMy" | "nameEn") => t(key);
@@ -133,17 +134,6 @@ export function ProductCreateForm({ kind, options, prefill }: { kind: "product" 
             ))}
           </select>
         </Field>
-        {options.warehouses.length > 1 && (
-          <Field label={t("warehouse")}>
-            <select required value={stockLocationId} onChange={(e) => setStockLocationId(e.target.value)} className={fieldClass}>
-              {options.warehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name} ({w.code})
-                </option>
-              ))}
-            </select>
-          </Field>
-        )}
       </div>
 
       {kind === "product" ? (

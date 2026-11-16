@@ -100,7 +100,7 @@ export async function listProductsPage(f: ListFilter, now = new Date()) {
       ],
     }),
     ...(f.brandId && { brandId: f.brandId }),
-    ...(f.warehouseId && { stockLocationId: f.warehouseId }),
+    ...(f.warehouseId && { stockLocationId: f.warehouseId === "none" ? null : f.warehouseId }),
     ...(f.categoryId && { category: { OR: [{ id: f.categoryId }, { parentId: f.categoryId }] } }),
   };
   const candidates = await prisma.product.findMany({
@@ -170,7 +170,7 @@ export async function listProductsPage(f: ListFilter, now = new Date()) {
         name: productName(p.translations, p.slug),
         brand: p.brand.name,
         category: productName(p.category.translations, p.category.slug),
-        warehouse: p.stockLocation.name,
+        warehouse: p.stockLocation?.name ?? null,
         image: p.images[0] ? { url: p.images[0].file.url, alt: p.images[0].alt ?? "" } : null,
         updatedAt: p.updatedAt,
         label: (lab.label === "DRAFT" && missing > 0 ? "INCOMPLETE" : lab.label) as ListLabel,

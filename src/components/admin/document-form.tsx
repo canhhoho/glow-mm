@@ -231,9 +231,10 @@ export function DocumentForm({ type, data, replace }: { type: DocType; data: For
                   <label className={fieldLabelSmClass}>
                     <span className="text-muted-foreground">{t("expiryStatus")}</span>
                     <select value={l.expiryStatus} onChange={(e) => update(l.key, { expiryStatus: e.target.value as Line["expiryStatus"], expiryDate: "" })} className={fieldClass}>
-                      {variants.find((v) => v.id === l.variantId)?.requiresExpiry !== false && <option value="DATED">{ti("expiryDated")}</option>}
-                      {variants.find((v) => v.id === l.variantId)?.requiresExpiry === false && <option value="NONE">{ti("expiryNone")}</option>}
+                      {/* 16/11/2026: hạn dùng theo lô, mọi SP chọn được cả ba. */}
+                      <option value="DATED">{ti("expiryDated")}</option>
                       <option value="UNKNOWN">{ti("expiryUnknown")}</option>
+                      <option value="NONE">{ti("expiryNone")}</option>
                     </select>
                   </label>
                   <label className={fieldLabelSmClass}>

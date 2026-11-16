@@ -1,7 +1,7 @@
 import "server-only";
 import { readSheet, type CellValue } from "read-excel-file/node";
 import { parseCsv, toCsv } from "@/lib/csv";
-import { ALL_SHEET_COLUMNS, CATALOG_SHEET, normalizeNumberText, sheetHeaderKey } from "@/lib/catalog-sheet";
+import { ALL_SHEET_COLUMNS, CATALOG_SHEET, normalizeNumberText, parseYesNo, sheetHeaderKey } from "@/lib/catalog-sheet";
 
 /** Đọc file nhập/cập nhật sản phẩm (một sheet). Trả CSV khoá chuẩn + số dòng Excel để báo lỗi. */
 
@@ -12,6 +12,8 @@ const TYPES = new Map(ALL_SHEET_COLUMNS.map((c) => [c.key, c.type]));
 function dateValue(value: CellValue | Date, line: number): string {
   if (value instanceof Date && Number.isFinite(value.getTime())) return value.toISOString().slice(0, 10);
   const text = String(value).trim();
+  // Ô Hạn sử dụng ghi "Không" (hàng không có hạn: túi, phụ kiện…) → lô không hạn.
+  if (parseYesNo(text) === false) return "NONE";
   const local = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text);
   const iso = local ? `${local[3]}-${local[2].padStart(2, "0")}-${local[1].padStart(2, "0")}` : text;
   const date = new Date(`${iso}T00:00:00Z`);

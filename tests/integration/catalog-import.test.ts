@@ -60,11 +60,12 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     const result = await commitCatalogImport(preview.input, f.userId, { allowPricing: true });
     expect(result.documents).toHaveLength(2);
     const toner = await prisma.product.findFirstOrThrow({ where: { translations: { some: { name: `Toner ${f.tag}` } } }, include: { variants: { orderBy: { sku: "asc" } }, translations: true, brand: true } });
-    expect(toner).toMatchObject({ published: false, stockLocationId: f.mm.id, requiresExpiry: true, brand: { name: brand } });
+    // 16/11/2026: SP mới chưa có kho bán — kho gán khi ghi sổ phiếu nhập (bên dưới).
+    expect(toner).toMatchObject({ published: false, stockLocationId: null, brand: { name: brand } });
     expect(toner.translations.map((t) => t.name)).toEqual([`Toner ${f.tag}`, `Toner ${f.tag}`]); // tên còn thiếu chép theo
     expect(toner.variants.map((v) => [v.label, v.priceMmk])).toEqual([["100ml", 20000], ["200ml", 35000]]);
     const bag = await prisma.product.findFirstOrThrow({ where: { translations: { some: { name: `အိတ် ${f.tag}` } } } });
-    expect(bag).toMatchObject({ stockLocationId: f.chi.id, requiresExpiry: false });
+    expect(bag).toMatchObject({ stockLocationId: null });
 
     // Hai lô tự sinh của cùng SKU không trùng; lô VND chốt tỷ giá đã xem.
     const batches = await prisma.batch.findMany({ where: { variant: { productId: toner.id } }, orderBy: { lotNo: "asc" } });
@@ -75,6 +76,8 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     // Chỉ có tồn sau khi ghi sổ phiếu nháp.
     expect(await prisma.stockBalance.count({ where: { batch: { variant: { productId: toner.id } } } })).toBe(0);
     for (const d of result.documents) await postDocument(d.id, f.userId);
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: toner.id } })).stockLocationId).toBe(f.mm.id);
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: bag.id } })).stockLocationId).toBe(f.chi.id);
     expect((await prisma.batch.findFirstOrThrow({ where: { variant: { productId: toner.id }, expiryStatus: "DATED", landedCostVnd: 105000 } })).landedCostMmk).toBe(21000);
 
     // Nhập lại đúng file có tồn → chặn, không tạo thêm phiếu.
@@ -147,7 +150,11 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     expect(await errors([{ brand: "B", category: cat, price_mmk: 1, variant_label: "x" }])).toContain("ít nhất một tên");
     expect(await errors([{ name_en: `Y ${f.tag}`, brand: "B", category: "khong-co", price_mmk: 1 }])).toContain("Danh mục");
     expect(await errors([{ name_en: `Z ${f.tag}`, brand: "B", category: cat, price_mmk: 1, warehouse_code: f.chi.code, qty: 1, unit_cost: 100, inbound_unit_vnd: 50 }])).toContain("không có phí đưa về kho");
-    expect(await errors([{ name_en: `W ${f.tag}`, brand: "B", category: cat, price_mmk: 1, has_expiry: "Không", qty: 1, unit_cost: 100, expiry_date: "2028-01-01", warehouse_code: f.mm.code }])).toContain("không quản lý hạn dùng");
+    // Hạn dùng theo lô: cột "Có hạn dùng" cũ không còn chặn lô có ngày; ô Hạn sử dụng "Không" = lô không hạn.
+    expect(await errors([{ name_en: `W ${f.tag}`, brand: "B", category: cat, price_mmk: 1, has_expiry: "Không", qty: 1, unit_cost: 100, expiry_date: "2028-01-01", warehouse_code: f.mm.code }])).toBe("");
+    const none = await previewCatalogImport(sheet([{ name_en: `N ${f.tag}`, brand: "B", category: cat, qty: 1, unit_cost: 100, inbound_unit_vnd: 0, expiry_date: "Không", warehouse_code: f.mm.code }]));
+    expect(none.errors).toEqual([]);
+    expect(none.rows[0].stock).toMatchObject({ expiryStatus: "NONE", expiryDate: null });
     const combo = await prisma.variant.create({ data: { productId: f.productId, sku: `CB-${f.tag}`, label: "Set", priceMmk: 1, isBundle: true } });
     expect(await errors([{ sku: combo.sku, price_mmk: 5, brand: "", category: "" }])).toContain("combo");
 

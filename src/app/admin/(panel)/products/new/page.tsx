@@ -31,7 +31,6 @@ export default async function NewProductPage({ searchParams }: PageProps<"/admin
         nameEn: source.en.name,
         brandName: options.brands.find((b) => b.id === source.brandId)?.name ?? "",
         categoryId: source.categoryId,
-        stockLocationId: source.stockLocationId,
         // Một loại "Tiêu chuẩn" → để trống (form tự tạo lại loại chuẩn).
         labels: source.variants.length > 1 ? source.variants.filter((v) => !v.isBundle).map((v) => v.label) : [],
         components: source.variants.find((v) => v.isBundle)?.components ?? [],

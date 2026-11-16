@@ -91,7 +91,7 @@ export type SellingPriceRow = {
   productId: string;
   productName: string;
   image: string | null;
-  warehouse: string;
+  warehouse: string | null;
   pricing: VariantPricingRow | undefined;
   stale: boolean;
 };
@@ -139,7 +139,7 @@ export async function listSellingPrices(f: { q: string; warehouseId?: string; st
     },
   });
   // Nguồn giá + giá mua gần nhất theo loại tiền của kho bán (VND với kho nhập VN, MMK với kho mua tại chỗ).
-  const byMode = (mode: "VN_IMPORT" | "LOCAL_MMK") => variants.filter((v) => (v.product.stockLocation.pricingMode ?? "VN_IMPORT") === mode).map((v) => v.id);
+  const byMode = (mode: "VN_IMPORT" | "LOCAL_MMK") => variants.filter((v) => (v.product.stockLocation?.pricingMode ?? "VN_IMPORT") === mode).map((v) => v.id);
   const [vn, mmk] = await Promise.all([loadProductPricing(byMode("VN_IMPORT"), "VN_IMPORT"), loadProductPricing(byMode("LOCAL_MMK"), "LOCAL_MMK")]);
   const staleSet = new Set(stale);
   const rows: SellingPriceRow[] = variants.map((v) => {
@@ -157,11 +157,11 @@ export async function listSellingPrices(f: { q: string; warehouseId?: string; st
       effectiveMmk: p ?? v.priceMmk,
       commissionMmk: v.affiliateCommissionMmk,
       pendingCommission: sp?.commission ? sp.commission.value : undefined,
-      pricingMode: v.product.stockLocation.pricingMode ?? "VN_IMPORT",
+      pricingMode: v.product.stockLocation?.pricingMode ?? "VN_IMPORT",
       productId: v.productId,
       productName: productName(v.product.translations, v.product.slug),
       image: v.product.images[0]?.file.url ?? null,
-      warehouse: v.product.stockLocation.name,
+      warehouse: v.product.stockLocation?.name ?? null,
       pricing: vn.get(v.id) ?? mmk.get(v.id),
       stale: staleSet.has(v.id),
     };

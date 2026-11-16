@@ -14,7 +14,7 @@ type Options = {
   brands: { id: string; name: string }[];
   categories: { id: string; name: string }[];
   tags: { id: string; kind: "SKIN_TYPE" | "CONCERN" | "INGREDIENT"; name: string }[];
-  components: { id: string; label: string; stockLocationId: string; inactive?: boolean; archived?: boolean }[];
+  components: { id: string; label: string; stockLocationId: string | null; inactive?: boolean; archived?: boolean }[];
   warehouses: { id: string; code: string; name: string; pricingMode: "VN_IMPORT" | "LOCAL_MMK" | null }[];
 };
 
@@ -42,7 +42,7 @@ const EMPTY: ProductEditData = {
   slug: "",
   brandId: "",
   categoryId: "",
-  stockLocationId: "",
+  stockLocationId: null,
   fixedProfitMmk: null,
   published: false,
   requiresExpiry: true,
@@ -78,8 +78,7 @@ export function ProductForm({
   const t = useTranslations("Products");
   const td = useTranslations("Docs");
   const [state, action, pending] = useActionState(saveProductAction, undefined);
-  const [p, setP] = useState<ProductEditData>(initial ?? { ...EMPTY, stockLocationId: options.warehouses[0]?.id ?? "" });
-  const initialWarehouse = initial?.id ? initial.stockLocationId : null;
+  const [p, setP] = useState<ProductEditData>(initial ?? EMPTY);
   const [variants, setVariants] = useState<Variant[]>(
     initial?.variants.length ? initial.variants.map((v) => ({ ...v, key: ++seq })) : [blankVariant(t("standardVariant"))],
   );
@@ -239,7 +238,7 @@ export function ProductForm({
                           <option value="">—</option>
                           {/* Lựa chọn MỚI: cùng kho + đang dùng. Thành phần ĐÃ LƯU (c.componentId) luôn hiện, có nhãn nếu đã tắt / ngừng KD (#6). */}
                           {options.components
-                            .filter((o) => o.id !== v.id && (o.id === c.componentId || (o.stockLocationId === p.stockLocationId && !o.inactive && !o.archived)))
+                            .filter((o) => o.id !== v.id && (o.id === c.componentId || (o.stockLocationId != null && (p.stockLocationId == null || o.stockLocationId === p.stockLocationId) && !o.inactive && !o.archived)))
                             .map((o) => (
                               <option key={o.id} value={o.id}>
                                 {o.label}
@@ -310,17 +309,12 @@ export function ProductForm({
             </Field>
           ))}
 
-          {/* Kho bán — ẩn nếu chỉ có 1 kho */}
+          {/* Kho bán (16/11/2026): chỉ xem — gán khi ghi sổ nhập hàng đầu tiên, đổi bằng "Chuyển kho" ở danh sách SP. */}
           {!singleWh && (
             <Field label={t("warehouse")}>
-              <select required value={p.stockLocationId} onChange={(e) => set("stockLocationId", e.target.value)} className={fieldClass}>
-                {options.warehouses.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name} ({w.code})
-                  </option>
-                ))}
-              </select>
-              {initialWarehouse && p.stockLocationId !== initialWarehouse && <span className="text-xs text-warning">{t("warehouseChangeHint")}</span>}
+              <p className="text-sm" data-testid="product-warehouse">
+                {options.warehouses.find((w) => w.id === p.stockLocationId)?.name ?? <span className="text-muted-foreground">{t("warehouseNone")}</span>}
+              </p>
             </Field>
           )}
 
@@ -332,11 +326,6 @@ export function ProductForm({
             </label>
           )}
 
-          {/* Quản lý hạn sử dụng */}
-          <label className="flex items-center gap-2 text-sm sm:col-span-2">
-            <input type="checkbox" className={checkboxClass} checked={p.requiresExpiry} onChange={(e) => set("requiresExpiry", e.target.checked)} />
-            {t("requiresExpiry")}
-          </label>
         </div>
       </details>
 

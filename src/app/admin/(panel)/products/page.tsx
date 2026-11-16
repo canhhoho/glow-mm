@@ -148,6 +148,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
                       {w.name}
                     </option>
                   ))}
+                  <option value="none">{t("warehouseNoneShort")}</option>
                 </select>
               )}
               <select name="sell" defaultValue={sell ?? ""} aria-label={t("list.colSell")} className={fieldClass}>
@@ -239,7 +240,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
             </Td>
             <Td label={t("colCategory")} className="align-middle">
               {p.category}
-              <span className="block text-xs text-muted-foreground">{p.warehouse}</span>
+              <span className="block text-xs text-muted-foreground">{p.warehouse ?? t("warehouseNoneShort")}</span>
             </Td>
             <Td label={t("list.colPrice")} className="text-right whitespace-nowrap tabular-nums align-middle">
               {price(p.priceMin, p.priceMax)}

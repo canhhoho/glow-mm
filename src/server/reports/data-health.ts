@@ -85,7 +85,7 @@ async function catalogChecks(): Promise<HealthCheck[]> {
     href: productHref(v.product.id),
   });
   // Kho LOCAL_MMK không cần khối lượng để tính giá (chỉ cần cho VTP) → cảnh báo; kho VN_IMPORT/không chế độ → lỗi.
-  const isLocal = (v: (typeof weight)[number]) => v.product.stockLocation.pricingMode === "LOCAL_MMK";
+  const isLocal = (v: (typeof weight)[number]) => v.product.stockLocation?.pricingMode === "LOCAL_MMK";
   return [
     check("publishedZeroPrice", "error", zero.filter((v) => v.product.published).map((v) => variantRow(v, String(v.priceMmk)))),
     check("hiddenZeroPrice", "warning", zero.filter((v) => !v.product.published).map((v) => variantRow(v, String(v.priceMmk)))),
@@ -99,7 +99,7 @@ async function catalogChecks(): Promise<HealthCheck[]> {
     check(
       "badLocation",
       "error",
-      badLocation.map((p) => ({ id: p.id, ref: p.slug, name: productName(p.translations, p.slug), value: p.stockLocation.name, href: productHref(p.id) })),
+      badLocation.map((p) => ({ id: p.id, ref: p.slug, name: productName(p.translations, p.slug), value: p.stockLocation?.name ?? "", href: productHref(p.id) })),
     ),
   ];
 }
@@ -169,7 +169,7 @@ async function costChecks(): Promise<HealthCheck[]> {
 
   const comboRows: HealthRow[] = [];
   for (const v of bundles) {
-    const mmk = v.product.stockLocation.pricingMode === "LOCAL_MMK";
+    const mmk = v.product.stockLocation?.pricingMode === "LOCAL_MMK";
     const lacking = v.bundleItems
       .filter((i) => !i.component.batches.some((b) => (mmk ? b.unitCostMmk != null : b.unitCostVnd != null)))
       .map((i) => i.component.sku);

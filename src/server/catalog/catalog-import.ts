@@ -372,9 +372,10 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
       }
       const categoryId = categoryText ? categoryOf(categoryText) : base!.categoryId;
 
-      // Kho bán.
+      // Kho: SP đã có kho bán → tồn phải vào đúng kho đó. SP chưa có kho (mới / chưa nhập hàng) → kho nhận của các dòng
+      // nhập kho = cột Kho bán (trống = kho mặc định); kho bán của SP được gán khi ghi sổ phiếu nhập (16/11/2026).
       let locationId: string;
-      if (base) {
+      if (base?.stockLocationId) {
         locationId = base.stockLocationId;
         const current = locationById.get(locationId)?.code;
         if (warehouseText && warehouseText !== current) throw new Error(`Sản phẩm đang thuộc kho ${current ?? "khác"} — đổi kho trong trang sản phẩm, không đổi qua Excel`);
@@ -389,7 +390,9 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
         else throw new Error("Chưa có kho bán nào — tạo kho ở Cài đặt → Kho hàng");
       }
       const location = locationById.get(locationId);
-      const requiresExpiry = hasExpiry ?? base?.requiresExpiry ?? true;
+      // Hạn dùng theo lô: ô Hạn sử dụng trống = chưa biết hạn, "Không" = không có hạn. File cũ có cột "Có hạn dùng" = Không
+      // (hoặc SP cũ đánh dấu không hạn) → ô trống hiểu là không có hạn.
+      const noExpiryDefault = hasExpiry === false || (hasExpiry === undefined && base?.requiresExpiry === false);
 
       // Tên chỉ có chữ Myanmar → mã SP lấy theo thương hiệu (vd "nivea", "nivea-2") thay vì "product".
       const slugFallback = brandSlug(brand?.name ?? brandText) || "product";
@@ -491,8 +494,6 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
         autoSlug: !base && !g.key.startsWith("s:"),
         ...(brand ? { brandId: brand.id } : brandText ? { brandName: brandText } : { brandId: base!.brandId }),
         categoryId,
-        stockLocationId: locationId,
-        requiresExpiry,
         paoMonths: pao ?? base?.paoMonths ?? null,
         storageNote: legacy.storage_note || base?.storageNote || "",
         ingredientsText: legacy.ingredients || base?.ingredientsText || "",
@@ -520,7 +521,6 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
         ["ingredients", !!legacy.ingredients && legacy.ingredients !== base.ingredientsText],
         ["storage", !!legacy.storage_note && legacy.storage_note !== base.storageNote],
         ["pao", pao != null && pao !== base.paoMonths],
-        ["expiry", requiresExpiry !== base.requiresExpiry],
       ] as const).filter(([, changed]) => changed).map(([k]) => k);
       const productChanged = !base || productChanges.length > 0 || variants.some((v) => v.changed);
       if (!base) counts.createdProducts++;
@@ -574,11 +574,11 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
             if (mmk && inboundText && Number(inboundText) !== 0) throw new Error("Hàng mua bằng MMK không có phí đưa về kho VND");
             // A4 16/11: "0" = đã biết không phát sinh phí → giá vốn thực tế = giá mua; ô trống = CHƯA BIẾT (không tự coi là 0).
             const inbound: number | null = mmk ? 0 : inboundText ? num(money, inboundText, "Phí đưa về kho") : null;
-            const date = r.expiry_date?.trim() || "";
+            const dateText = r.expiry_date?.trim() || "";
+            const noExpiry = parseYesNo(dateText) === false || dateText.toUpperCase() === "NONE";
+            const date = noExpiry ? "" : dateText;
             const legacyStatus = (r.expiry_status ?? "").trim().toUpperCase();
-            const status = legacyStatus ? z.enum(["DATED", "NONE", "UNKNOWN"]).parse(legacyStatus) : date ? "DATED" : requiresExpiry ? "UNKNOWN" : "NONE";
-            if (!requiresExpiry && status !== "NONE") throw new Error("Sản phẩm không quản lý hạn dùng: để trống hạn sử dụng");
-            if (requiresExpiry && status === "NONE") throw new Error("Sản phẩm có quản lý hạn dùng: điền hạn sử dụng hoặc để trống (chưa biết hạn)");
+            const status = legacyStatus ? z.enum(["DATED", "NONE", "UNKNOWN"]).parse(legacyStatus) : noExpiry ? "NONE" : date ? "DATED" : noExpiryDefault ? "NONE" : "UNKNOWN";
             if (status === "DATED" && !date) throw new Error("Cần ngày hết hạn");
             if (status !== "DATED" && date) throw new Error("Để trống hạn sử dụng với lô chưa biết hạn / không hạn");
             const mfg = r.mfg_date?.trim() || undefined;

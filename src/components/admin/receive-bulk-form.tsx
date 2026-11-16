@@ -11,6 +11,9 @@ import { cn } from "@/lib/utils";
 import { createDocumentAction, updateDocumentAction } from "@/server/inventory/actions";
 import type { ReceiveVariant } from "@/server/inventory/queries";
 
+/** Biến thể với loại tiền đã chốt (SP chưa có kho lấy theo kho nhận của phiếu). */
+type ResolvedVariant = ReceiveVariant & { currency: "VND" | "MMK" };
+
 type StockType = "SELLABLE" | "TESTER";
 type ExpiryStatus = "DATED" | "NONE" | "UNKNOWN";
 
@@ -109,7 +112,7 @@ function initialRows(variants: ReceiveVariant[], draft?: ReceiveDraft): { rows: 
 export function ReceiveBulkForm({
   locations,
   shipments,
-  variants,
+  variants: allVariants,
   lastShip = null,
   productId,
   draft,
@@ -125,16 +128,28 @@ export function ReceiveBulkForm({
   const ti = useTranslations("Inventory");
   const [state, action, pending] = useActionState(draft ? updateDocumentAction : createDocumentAction, undefined);
   const idempotencyKey = useRef<string | null>(null);
-  const byId = useMemo(() => new Map(variants.map((v) => [v.id, v])), [variants]);
-  const bySku = useMemo(() => new Map(variants.map((v) => [v.sku, v])), [variants]);
-
-  const focus = productId ? variants.filter((v) => v.productId === productId) : [];
+  const focus = productId ? allVariants.filter((v) => v.productId === productId) : [];
   const [step, setStep] = useState<1 | 2>(draft ? 2 : 1);
   const [selected, setSelected] = useState<Set<string>>(() => new Set(draft ? draft.lines.map((l) => l.variantId) : focus.map((v) => v.id)));
   const [productFilter, setProductFilter] = useState(focus.length ? productId! : "");
   const [toId, setToId] = useState(() =>
-    draft ? draft.toId : focus.length && locations.some((l) => l.id === focus[0].stockLocationId) ? focus[0].stockLocationId : "",
+    draft
+      ? draft.toId
+      : !focus.length
+        ? ""
+        : focus[0].stockLocationId
+          ? (locations.some((l) => l.id === focus[0].stockLocationId) ? focus[0].stockLocationId : "")
+          : // SP chưa có kho: gợi ý kho bán hàng nhập VN (đổi được trước khi tiếp tục).
+            (locations.find((l) => l.sellable && l.pricingMode !== "LOCAL_MMK") ?? locations.find((l) => l.sellable))?.id ?? "",
   );
+  const toLoc = locations.find((l) => l.id === toId);
+  // SP chưa có kho (chưa nhập hàng): loại tiền theo kho nhận — kho đó thành kho bán của SP khi ghi sổ.
+  const variants = useMemo(
+    () => allVariants.map((v): ResolvedVariant => ({ ...v, currency: v.currency ?? (toLoc?.pricingMode === "LOCAL_MMK" ? "MMK" : "VND") })),
+    [allVariants, toLoc],
+  );
+  const byId = useMemo(() => new Map(variants.map((v) => [v.id, v])), [variants]);
+  const bySku = useMemo(() => new Map(variants.map((v) => [v.sku, v])), [variants]);
   /** Khối lượng (g) theo biến thể — chỉ cho biến thể chưa có khối lượng. */
   const [weights, setWeights] = useState<Record<string, string>>({});
   const [shipmentId, setShipmentId] = useState(draft?.shipmentId ?? "");
@@ -175,9 +190,8 @@ export function ReceiveBulkForm({
   );
   const remove = useCallback((key: number) => setRows((rs) => rs.filter((r) => r.key !== key)), []);
 
-  // P24: nhập vào kho bán → chỉ SP thuộc kho đó (server cũng chặn). Chưa chọn kho → chưa hiện bảng.
-  const toLoc = locations.find((l) => l.id === toId);
-  const inScope = useCallback((v: ReceiveVariant) => !!toLoc && (!toLoc.sellable || v.stockLocationId === toLoc.id), [toLoc]);
+  // P24: nhập vào kho bán → chỉ SP thuộc kho đó hoặc SP chưa có kho (server cũng chặn). Chưa chọn kho → chưa hiện bảng.
+  const inScope = useCallback((v: ReceiveVariant) => !!toLoc && (!toLoc.sellable || v.stockLocationId == null || v.stockLocationId === toLoc.id), [toLoc]);
 
   const visible = useMemo(() => {
     const needle = fold(q.trim());
@@ -216,7 +230,7 @@ export function ReceiveBulkForm({
           qty: String(p.qty),
           lotNo: p.lotNo,
           mfgDate: p.mfgDate,
-          ...(v.requiresExpiry && { expiryStatus: "DATED" as const, expiryDate: p.expiryDate }),
+          ...(p.expiryDate && { expiryStatus: "DATED" as const, expiryDate: p.expiryDate }),
           ...(p.unitCostVnd != null && { unitCost: String(p.unitCostVnd) }),
           ...(p.stockType && { stockType: p.stockType }),
         };
@@ -330,7 +344,7 @@ export function ReceiveBulkForm({
           const id = e.target.value;
           const loc = locations.find((l) => l.id === id);
           setToId(id);
-          if (loc?.sellable) setSelected((s) => new Set([...s].filter((vid) => byId.get(vid)?.stockLocationId === id)));
+          if (loc?.sellable) setSelected((s) => new Set([...s].filter((vid) => { const w = byId.get(vid)?.stockLocationId; return w == null || w === id; })));
         }} className={fieldClass}>
           <option value="">—</option>
           {locations.map((l) => <option key={l.id} value={l.id}>{l.code} — {l.name}</option>)}
@@ -577,7 +591,7 @@ const ReceiveRow = memo(function ReceiveRow({
   onRemove,
 }: {
   row: Row;
-  variant: ReceiveVariant;
+  variant: ResolvedVariant;
   defaults: Defaults;
   invalid: boolean;
   weight: string;
@@ -610,13 +624,13 @@ const ReceiveRow = memo(function ReceiveRow({
       </td>
       <td className={cn(cell, "max-md:col-span-2")}>
         <Cap>{t("expiry")}</Cap>
-        {r.expiryStatus === "NONE" ? (
-          <span className="text-xs text-muted-foreground">{ti("expiryNone")}</span>
-        ) : (
+        {/* 16/11/2026: hạn dùng chọn theo lô — Có ngày / Chưa biết hạn / Không có hạn (túi, phụ kiện…). */}
+        {(
           <div className="flex flex-wrap gap-1">
             <select aria-label={label(t("expiryStatus"))} value={r.expiryStatus} onChange={(e) => onChange(r.key, { expiryStatus: e.target.value as ExpiryStatus, expiryDate: "" })} className={cn(small, "w-auto")}>
               <option value="DATED">{ti("expiryDated")}</option>
               <option value="UNKNOWN">{ti("expiryUnknown")}</option>
+              <option value="NONE">{ti("expiryNone")}</option>
             </select>
             {r.expiryStatus === "DATED" && (
               <input aria-label={label(t("expiry"))} type="date" value={r.expiryDate || ""} title={!r.expiryDate && d.expiryDate ? d.expiryDate : undefined} onChange={(e) => onChange(r.key, { expiryDate: e.target.value })} className={cn(small, "w-36", !r.expiryDate && d.expiryDate && "text-muted-foreground")} />

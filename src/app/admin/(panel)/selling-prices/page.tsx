@@ -169,7 +169,7 @@ async function ManualPrices({
               </div>
               {v.isBundle && <Badge tone="brand">combo</Badge>}
             </Td>
-            <Td label={t("warehouse")} className="align-middle">{v.warehouse}</Td>
+            <Td label={t("warehouse")} className="align-middle">{v.warehouse ?? "—"}</Td>
             <Td label={t("price")} className="align-middle whitespace-nowrap tabular-nums md:text-right">
               <div className={v.priceMmk <= 0 ? "font-medium text-destructive" : "font-medium"}>{fmtInt(v.priceMmk)}</div>
               {v.pendingMmk != null && (

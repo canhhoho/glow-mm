@@ -60,7 +60,7 @@ export async function catalogTemplateFile(withProducts: boolean, opts: { withPri
       ingredients: tr("en")?.ingredientsText || tr("my")?.ingredientsText,
       storage_note: p.storageNote,
       pao_months: p.paoMonths,
-      warehouse_code: warehouseCode.get(p.stockLocationId),
+      warehouse_code: p.stockLocationId ? warehouseCode.get(p.stockLocationId) : undefined,
       has_expiry: p.requiresExpiry ? "Có" : "Không",
       sku: v.sku,
       ...(opts.withPricing && { price_mmk: effectivePrice(pending[v.id], v.priceMmk) || null, affiliate_commission_mmk: effectiveCommission(pending[v.id], v.affiliateCommissionMmk) }),

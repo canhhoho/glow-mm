@@ -44,6 +44,8 @@ function withoutPricing(payload: unknown): unknown {
   if (!payload || typeof payload !== "object") return payload;
   const out: Record<string, unknown> = { ...payload };
   delete out.fixedProfitMmk;
+  // Kho bán không chọn ở form (gán khi ghi sổ nhập hàng đầu tiên / chuyển kho hàng loạt).
+  delete out.stockLocationId;
   if (Array.isArray(out.variants)) {
     out.variants = out.variants.map((v: unknown) => {
       if (!v || typeof v !== "object") return v;
