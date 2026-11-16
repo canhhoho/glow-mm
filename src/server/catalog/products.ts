@@ -13,6 +13,7 @@ import { guardApproval } from "./approval";
 import { skuPendingElsewhere, stageProductEdit } from "./change-request";
 import { findOrCreateBrand, pruneEmptyBrands } from "./brands";
 import { writeAudit } from "@/server/audit";
+import { commissionOverPrice, recordPriceChange } from "./price-write";
 
 /** Quản lý sản phẩm (admin). Giá đổi → ghi PriceHistory. Chữ Myanmar → Unicode trước khi lưu. */
 
@@ -227,9 +228,7 @@ export async function writeProduct(tx: Tx, parsed: ProductInput, userId: string,
       if (existing && existing.productId !== product.id) throw new CatalogError(`SKU ${v.sku} đã thuộc sản phẩm khác`);
       const price = v.priceMmk ?? existing?.priceMmk ?? 0;
       const commission = v.affiliateCommissionMmk !== undefined ? v.affiliateCommissionMmk : existing?.affiliateCommissionMmk ?? null;
-      if (commission != null && price > 0 && commission > price) {
-        throw new CatalogError(`Hoa hồng CTV của ${v.sku} lớn hơn giá bán`);
-      }
+      if (commissionOverPrice(price, commission)) throw new CatalogError(`Hoa hồng CTV của ${v.sku} lớn hơn giá bán`);
       // Loại mới chưa có giá thêm vào SP đang bán → tạo ở trạng thái tắt (đặt giá ở bước 3 rồi bật), không chặn lưu.
       const parkNew = !existing && price <= 0 && !!current?.published;
       const vData = {
@@ -247,15 +246,14 @@ export async function writeProduct(tx: Tx, parsed: ProductInput, userId: string,
       const saved = existing
         ? await tx.variant.update({ where: { id: existing.id }, data: vData })
         : await tx.variant.create({ data: { ...vData, productId: product.id } });
-      if (existing && existing.priceMmk !== price) {
-        await tx.priceHistory.create({
-          data: {
-            variantId: saved.id,
-            oldPriceMmk: existing.priceMmk,
-            newPriceMmk: price,
-            reason: opts.priceReason ?? "manual",
-            userId,
-          },
+      // Ghi cùng các trường khác của biến thể (đã giữ khoá catalog + dòng Product) → chỉ dùng phần ghi lịch sử chung.
+      if (existing) {
+        await recordPriceChange(tx, {
+          variantId: saved.id,
+          from: { priceMmk: existing.priceMmk, commission: existing.affiliateCommissionMmk },
+          to: { priceMmk: price, commission: saved.affiliateCommissionMmk },
+          reason: opts.priceReason ?? "manual",
+          userId,
         });
       }
       savedIds.set(v.sku, saved.id);

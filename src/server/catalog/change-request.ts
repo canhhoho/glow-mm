@@ -5,6 +5,7 @@ import type { Tx } from "@/server/inventory/ledger";
 import { PRODUCT_EDIT_INCLUDE, toProductEditData, type ProductEditData } from "./admin-queries";
 import { approvalHashes, guardApproval } from "./approval";
 import { CatalogError, productSchema, writeProduct, type ProductInput } from "./products";
+import { commissionOverPrice, writeLivePrice } from "./price-write";
 
 /**
  * Bản đang sửa của SP đã duyệt (P1-A, kế hoạch admin §6). Khách luôn thấy bản live (đã duyệt); thay đổi cần duyệt
@@ -234,20 +235,32 @@ function checkCommissions(prices: Record<string, StagedPrice>, live: { id: strin
   for (const v of live) {
     const price = effectivePrice(prices[v.id], v.priceMmk);
     const commission = effectiveCommission(prices[v.id], v.affiliateCommissionMmk);
-    if (commission != null && price > 0 && commission > price) throw new CatalogError(`Hoa hồng CTV của ${v.sku} lớn hơn giá bán`);
+    if (commissionOverPrice(price, commission)) throw new CatalogError(`Hoa hồng CTV của ${v.sku} lớn hơn giá bán`);
   }
 }
 
-/** Giá + hoa hồng hiệu lực để so xung đột: trong bản đang sửa nếu có, nếu không là live. */
-export async function effectivePricing(tx: Tx, productId: string): Promise<Map<string, { priceMmk: number; commission: number | null }>> {
-  const variants = await tx.variant.findMany({ where: { productId }, select: { id: true, priceMmk: true, affiliateCommissionMmk: true } });
-  const staged = (await readChanges(tx, productId))?.prices ?? {};
-  return new Map(variants.map((v) => [v.id, { priceMmk: effectivePrice(staged[v.id], v.priceMmk), commission: effectiveCommission(staged[v.id], v.affiliateCommissionMmk) }]));
+/**
+ * Giá + hoa hồng HIỆU LỰC của các biến thể (để so xung đột / hiển thị): trong bản đang sửa nếu SP đã duyệt và có
+ * giá chờ, nếu không là live. `pending` = đang có giá/hoa hồng chờ duyệt. Một cách tính cho mọi đường (R1).
+ */
+export async function effectivePricingOf(tx: Tx, variantIds: string[]) {
+  const variants = await tx.variant.findMany({
+    where: { id: { in: variantIds } },
+    select: { id: true, productId: true, priceMmk: true, affiliateCommissionMmk: true, product: { select: { approvedAt: true } } },
+  });
+  const staged = await changeRequestsFor(tx, [...new Set(variants.filter((v) => v.product.approvedAt).map((v) => v.productId))]);
+  return new Map(
+    variants.map((v) => {
+      const sp = staged.get(v.productId)?.prices[v.id];
+      return [v.id, { priceMmk: effectivePrice(sp, v.priceMmk), commission: effectiveCommission(sp, v.affiliateCommissionMmk), pending: !!sp }] as const;
+    }),
+  );
 }
 
-/** Giá hiệu lực để so xung đột: giá trong bản đang sửa nếu có, nếu không là giá live. */
-export async function effectivePrices(tx: Tx, productId: string): Promise<Map<string, number>> {
-  return new Map([...(await effectivePricing(tx, productId))].map(([id, p]) => [id, p.priceMmk]));
+/** `effectivePricingOf` cho mọi biến thể của một SP. */
+export async function effectivePricing(tx: Tx, productId: string) {
+  const ids = (await tx.variant.findMany({ where: { productId }, select: { id: true } })).map((v) => v.id);
+  return effectivePricingOf(tx, ids);
 }
 
 /**
@@ -303,24 +316,17 @@ export async function applyChangeRequest(tx: Tx, productId: string, approverId: 
   }
   // Giá + hoa hồng có hiệu lực CÙNG LÚC (16/11): chỉ ghi khi live vẫn đúng như lúc đưa vào bản đang sửa.
   for (const [variantId, p] of Object.entries(cr.prices)) {
-    const res = await tx.variant.updateMany({
-      where: { id: variantId, productId, priceMmk: p.baseLivePrice, ...(p.commission && { affiliateCommissionMmk: p.commission.base }) },
-      data: { priceMmk: p.priceMmk, ...(p.commission && { affiliateCommissionMmk: p.commission.value }) },
+    // Bản cũ (trước 16/11) không có `commission` → không đụng hoa hồng.
+    const ok = await writeLivePrice(tx, {
+      variantId,
+      productId,
+      from: { priceMmk: p.baseLivePrice, ...(p.commission && { commission: p.commission.base }) },
+      to: { priceMmk: p.priceMmk, ...(p.commission && { commission: p.commission.value }) },
+      reason: p.reason,
+      runId: p.runId,
+      userId: p.userId,
     });
-    if (res.count !== 1) throw new CatalogError("Giá bán / hoa hồng CTV vừa bị đổi ở nơi khác — huỷ thay đổi giá rồi đặt lại");
-    if (p.priceMmk !== p.baseLivePrice) {
-      await tx.priceHistory.create({
-        data: {
-          variantId,
-          oldPriceMmk: p.baseLivePrice,
-          newPriceMmk: p.priceMmk,
-          ...(p.commission && { oldCommissionMmk: p.commission.base, newCommissionMmk: p.commission.value }),
-          reason: p.reason,
-          runId: p.runId ?? null,
-          userId: p.userId,
-        },
-      });
-    }
+    if (!ok) throw new CatalogError("Giá bán / hoa hồng CTV vừa bị đổi ở nơi khác — huỷ thay đổi giá rồi đặt lại");
   }
   checkCommissions({}, await tx.variant.findMany({ where: { productId }, select: { id: true, sku: true, priceMmk: true, affiliateCommissionMmk: true } }));
   const orphanKeys: string[] = [];

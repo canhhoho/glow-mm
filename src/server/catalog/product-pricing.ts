@@ -6,6 +6,7 @@ import { variantCosts, type CostSource } from "@/server/pricing/cost";
 import { CatalogError, lockCatalog } from "./products";
 import { effectivePricing, stagePrices } from "./change-request";
 import { guardApproval } from "./approval";
+import { commissionOverPrice, writeLivePrice } from "./price-write";
 
 /**
  * Bước 3 "Giá bán" trên trang SP (QT1b, docs/ke-hoach-quy-trinh-san-pham.md):
@@ -64,7 +65,7 @@ export async function saveProductPricing(raw: unknown, userId: string) {
       const cur = effective.get(live.id)!;
       if (entry.expectedPriceMmk !== undefined && cur.priceMmk !== entry.expectedPriceMmk) throw new CatalogError(`Giá của ${live.sku} vừa được đổi ở nơi khác — tải lại trang`);
       const commission = entry.affiliateCommissionMmk === undefined ? cur.commission : entry.affiliateCommissionMmk;
-      if (commission != null && commission > entry.priceMmk) throw new CatalogError(`Hoa hồng CTV của ${live.sku} lớn hơn giá bán`);
+      if (commissionOverPrice(entry.priceMmk, commission)) throw new CatalogError(`Hoa hồng CTV của ${live.sku} lớn hơn giá bán`);
       return { live, cur, priceMmk: entry.priceMmk, commission, priceChanged: cur.priceMmk !== entry.priceMmk, commissionChanged: cur.commission !== commission };
     });
     if (plan.some((p) => p.priceChanged) && !input.reason) throw new CatalogError("Nhập lý do sửa giá");
@@ -73,21 +74,15 @@ export async function saveProductPricing(raw: unknown, userId: string) {
     for (const p of plan) {
       if (!p.priceChanged && !p.commissionChanged) continue;
       if (!staged) {
-        // Khoá theo giá đang đọc: bảng tính giá áp xen giữa → báo lỗi thay vì ghi đè.
-        const res = await tx.variant.updateMany({ where: { id: p.live.id, priceMmk: p.live.priceMmk }, data: { priceMmk: p.priceMmk, affiliateCommissionMmk: p.commission } });
-        if (res.count !== 1) throw new CatalogError(`Giá của ${p.live.sku} vừa được đổi ở nơi khác — tải lại trang`);
-        if (p.priceChanged) {
-          await tx.priceHistory.create({
-            data: {
-              variantId: p.live.id,
-              oldPriceMmk: p.cur.priceMmk,
-              newPriceMmk: p.priceMmk,
-              ...(p.commissionChanged && { oldCommissionMmk: p.cur.commission, newCommissionMmk: p.commission }),
-              reason,
-              userId,
-            },
-          });
-        }
+        // Khoá theo giá + hoa hồng đang đọc: bảng tính giá áp xen giữa → báo lỗi thay vì ghi đè.
+        const ok = await writeLivePrice(tx, {
+          variantId: p.live.id,
+          from: { priceMmk: p.live.priceMmk, commission: p.live.affiliateCommissionMmk },
+          to: { priceMmk: p.priceMmk, commission: p.commission },
+          reason,
+          userId,
+        });
+        if (!ok) throw new CatalogError(`Giá của ${p.live.sku} vừa được đổi ở nơi khác — tải lại trang`);
       }
       changes.push({
         sku: p.live.sku,

@@ -2,7 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { productName } from "@/server/inventory/queries";
 import { postedSourceBatch, variantCosts } from "./cost";
-import { effectivePricingOf } from "./runs";
+import { effectivePricingOf } from "@/server/catalog/change-request";
 import type { SkipReason } from "./runs";
 
 /** Truy vấn cho trang /admin/pricing (chỉ đọc). */
