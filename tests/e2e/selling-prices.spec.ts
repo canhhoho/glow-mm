@@ -49,8 +49,8 @@ test("thủ công kho VND: SP mới từ Excel → ghi sổ → Đặt giá (lô
   // SP mới + tồn (phiếu nháp) qua Excel, ghi sổ.
   await page.goto("/admin/products/import");
   const csv = toCsv([
-    ["name_en", "brand", "category", "weight_g", "warehouse_code", "qty", "expiry_date", "unit_cost", "inbound_unit_vnd"],
-    [name, "Sen Việt", "skincare", "100", "THAM", "5", "2029-12-31", "100000", "0"],
+    ["name_en", "brand", "category", "weight_g", "warehouse_code", "qty", "expiry_date", "unit_cost"],
+    [name, "Sen Việt", "skincare", "100", "THAM", "5", "2029-12-31", "100000"],
   ]);
   await page.getByLabel("File Excel nhập sản phẩm", { exact: true }).setInputFiles({ name: `manual-${suffix}.csv`, mimeType: "text/csv", buffer: Buffer.from(csv) });
   await page.getByRole("button", { name: "Xem trước", exact: true }).click();

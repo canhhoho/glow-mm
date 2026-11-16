@@ -55,7 +55,6 @@ export const PRODUCT_FIELDS: ProductField[] = [
   { key: "qty", section: "stock", level: "stock", type: "positive", form: false, excel: true, width: 14 },
   { key: "expiry_date", section: "stock", level: "stock", type: "date", form: false, excel: true, width: 15 },
   { key: "unit_cost", section: "stock", level: "stock", type: "money", form: false, excel: true, width: 15 },
-  { key: "inbound_unit_vnd", section: "stock", level: "stock", type: "money", form: false, excel: true, collapsed: true, width: 18 },
   { key: "lot_no", section: "stock", level: "stock", type: "text", form: false, excel: true, collapsed: true, width: 14 },
 ];
 

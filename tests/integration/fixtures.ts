@@ -11,6 +11,8 @@ export async function makeFixture() {
     update: {},
     create: { id: "it-runner", email: "it-runner@glow.local", name: "IT", role: "ADMIN" },
   });
+  // 16/11/2026: ghi sổ phiếu nhập hàng VND cần có tỷ giá (giá vốn = giá mua × tỷ giá) → DB trống (CI) cũng phải có một tỷ giá.
+  if ((await prisma.exchangeRate.count()) === 0) await prisma.exchangeRate.create({ data: { mmkPerVnd: "0.17", createdById: user.id } });
   const brand = await prisma.brand.create({ data: { slug: `it-${tag}`, name: `IT ${tag}` } });
   const category = await prisma.category.create({ data: { slug: `it-${tag}` } });
   const loc = async (suffix: string, type: "VN_STOCK" | "MM_STOCK" | "QUARANTINE" | "IN_TRANSIT", pricingMode?: "VN_IMPORT" | "LOCAL_MMK") =>
@@ -65,8 +67,8 @@ export const isoDay = (offsetDays: number) => new Date(Date.now() + offsetDays *
 
 /**
  * Fixture bán hàng: sản phẩm đã đăng, hàng nằm ở kho MM (bán được), vùng giao hàng riêng.
- * 16/11: bàn giao bị chặn khi lô thiếu giá vốn → mặc định lô có giá vốn thực tế (giá mua × 0,17);
- * `{ cost: false }` để giữ lô THIẾU giá vốn (test kiểm cảnh báo / chặn).
+ * 16/11: bàn giao bị chặn khi lô thiếu giá vốn → mặc định lô có giá vốn thực tế (giá mua × 0,17, cố định để số liệu
+ * test ổn định dù DB có nhiều tỷ giá); `{ cost: false }` mô phỏng lô CŨ chưa có giá vốn (giá vốn xoá về null) cho test cảnh báo / chặn.
  */
 export async function saleFixture(lots: { lot: string; expiryInDays: number; qty: number; unitCostVnd?: number }[], opts: { cost?: boolean } = {}) {
   const f = await makeFixture();
@@ -90,6 +92,8 @@ export async function saleFixture(lots: { lot: string; expiryInDays: number; qty
     for (const l of lots) {
       await prisma.batch.updateMany({ where: { variantId: f.variantId, lotNo: l.lot }, data: { landedCostMmk: Math.round((l.unitCostVnd ?? 100_000) * 0.17) } });
     }
+  } else {
+    await prisma.batch.updateMany({ where: { variantId: f.variantId }, data: { landedCostMmk: null, landedCostVnd: null } });
   }
   // Thị trấn VTP có sẵn từ migration P15 (Kamaryut, Yangon West).
   return { ...f, townshipId: "tw-YGN-WYG-KMY" };

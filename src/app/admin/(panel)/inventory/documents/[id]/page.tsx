@@ -9,7 +9,6 @@ import { cancelDocumentAction, postDocumentAction } from "@/server/inventory/act
 import { ActionButton } from "@/components/admin/action-button";
 import { Badge, DataTable, LinkButton, Notice, Page, PageHeader, Section, Td } from "@/components/admin/ui";
 import { fmtDate, fmtDay, fmtInt } from "@/lib/format";
-import { rateDisplay } from "@/server/pricing/formula";
 import { cn } from "@/lib/utils";
 
 const STATUS_TONE = { DRAFT: "warning", POSTED: "success", CANCELLED: "neutral" } as const;
@@ -101,9 +100,9 @@ export default async function DocumentPage({ params, searchParams }: PageProps<"
 
       <DataTable
         stack
-        numeric={showCosts ? [4, 5, 6, 7] : [4]}
+        numeric={showCosts ? [4, 5] : [4]}
         empty={tc("noData")}
-        head={[t("variant"), t("lotNo"), t("expiry"), t("stockType"), t("qty"), ...(showCosts ? [t("costUnit"), t("costRate"), t("costInbound")] : [])]}
+        head={[t("variant"), t("lotNo"), t("expiry"), t("stockType"), t("qty"), ...(showCosts ? [t("costUnit")] : [])]}
       >
         {doc.lines.map((l) => (
           <tr key={l.id}>
@@ -115,21 +114,11 @@ export default async function DocumentPage({ params, searchParams }: PageProps<"
             <Td label={t("expiry")}>{l.batch?.expiryStatus === "NONE" ? ti("expiryNone") : l.batch?.expiryStatus === "UNKNOWN" ? ti("expiryUnknown") : fmtDay(l.batch?.expiryDate)}</Td>
             <Td label={t("stockType")}>{ti(l.stockType)}</Td>
             <Td label={t("qty")} numeric>{fmtInt(l.qty)}</Td>
+            {/* 16/11/2026: phiếu chỉ hiện giá mua — không có cột Tỷ giá / Phí về kho (tỷ giá chốt ngầm theo dòng khi ghi sổ). */}
             {showCosts && (
-              <>
-                <Td label={t("costUnit")} numeric>
-                  <span data-testid="line-cost">{l.unitCostVnd != null ? `${fmtInt(l.unitCostVnd)} VND` : l.unitCostMmk != null ? `${fmtInt(l.unitCostMmk)} MMK` : "—"}</span>
-                </Td>
-                <Td label={t("costRate")} numeric>
-                  {l.rate ? <>{rateDisplay(l.rate).vndPerMmk}<span className="block text-xs text-muted-foreground">{fmtDay(l.rate.effectiveAt)}</span></> : "—"}
-                </Td>
-                <Td label={t("costInbound")} numeric>
-                  {/* `landedCostVnd` của dòng = giá mua + phí → phí = hiệu (như trang sửa phiếu). */}
-                  {l.landedCostVnd != null && l.unitCostVnd != null ? (
-                    <span data-testid="line-inbound">{fmtInt(l.landedCostVnd - l.unitCostVnd)}</span>
-                  ) : doc.shipment ? <span className="text-xs text-muted-foreground">{t("costViaShipment")}</span> : "—"}
-                </Td>
-              </>
+              <Td label={t("costUnit")} numeric>
+                <span data-testid="line-cost">{l.unitCostVnd != null ? `${fmtInt(l.unitCostVnd)} VND` : l.unitCostMmk != null ? `${fmtInt(l.unitCostMmk)} MMK` : "—"}</span>
+              </Td>
             )}
           </tr>
         ))}

@@ -34,9 +34,8 @@ export default async function EditDocumentPage({ params }: PageProps<"/admin/inv
       expiryStatus: l.batch?.expiryStatus ?? "DATED",
       expiryDate: day(l.batch?.expiryDate),
       mfgDate: day(l.batch?.mfgDate),
-      // A3 16/11: giá mua + phí về kho của CHÍNH dòng phiếu (không phải bình quân của lô); phí trống = chưa biết.
+      // Giá mua của CHÍNH dòng phiếu (không phải bình quân của lô). Không còn phí về kho (16/11/2026).
       unitCost: String(l.unitCostMmk ?? l.unitCostVnd ?? l.batch?.unitCostMmk ?? l.batch?.unitCostVnd ?? ""),
-      inbound: l.unitCostVnd != null && l.landedCostVnd != null ? String(l.landedCostVnd - l.unitCostVnd) : "",
       stockType: l.stockType,
     })),
   };

@@ -74,7 +74,7 @@ test("mẫu một sheet: tạo SP hai biến thể kèm tồn + nội dung → x
       name, brand: "Sen Việt", category: "skincare", variant_label: "50 ml", weight_g: 90,
       description_my: "Excel ဖြင့် ထည့်သွင်းသည်။", description_en: "Imported through the Excel browser flow.",
       usage_my: "နေ့စဉ် လိမ်းပါ။", usage_en: "Apply every morning.", ingredients: "Aqua, Zinc Oxide", storage_note: "Keep below 30°C", pao_months: 12,
-      warehouse_code: "THAM", qty: "3", expiry_date: "31/03/2028", unit_cost: "100.000", inbound_unit_vnd: 5000,
+      warehouse_code: "THAM", qty: "3", expiry_date: "31/03/2028", unit_cost: "100.000",
     },
     { name, brand: "Sen Việt", category: "skincare", variant_label: "100 ml", weight_g: 140, warehouse_code: "THAM" },
   ]);

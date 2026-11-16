@@ -32,6 +32,8 @@ async function scenario() {
     post(f, { type: "RECEIVE", toId, lines: [{ variantId: v, lotNo, expiryDate: isoDay(days), unitCostVnd: 100_000, qty, stockType }] });
   await receive(f.mm.id, "A", 400, 2, "TESTER");
   await receive(f.vn.id, "D", 500, 8);
+  // 16/11/2026: ghi sổ tự có giá vốn → mô phỏng LÔ CŨ thiếu giá vốn (B, C từ `cost: false`; D xoá giá vốn ở đây).
+  await prisma.batch.updateMany({ where: { variantId: v, lotNo: "D" }, data: { landedCostMmk: null } });
   const lot = async (lotNo: string) => prisma.batch.findUniqueOrThrow({ where: { variantId_lotNo: { variantId: v, lotNo } } });
   const [a, c, d] = [await lot("A"), await lot("C"), await lot("D")];
   await post(f, { type: "TRANSFER", fromId: f.vn.id, toId: f.transit.id, lines: [{ variantId: v, batchId: d.id, qty: 3 }] });
@@ -204,7 +206,7 @@ describe("SP ngừng kinh doanh ở trang Tồn kho (bấm Xoá nhưng có lịc
 
   it("lọc cost=missing chỉ giữ lô thiếu hoàn toàn giá vốn; số ngoại lệ Tổng quan khớp ô tổng", async () => {
     const { f, a, c, d } = await scenario();
-    // Lô A có giá vốn thực tế (1.000 MMK); B, C, D chưa phân bổ → thiếu giá vốn. Tester A cùng lô A nên không tính.
+    // Lô A có giá vốn thực tế (1.000 MMK); B, C, D (lô cũ) thiếu giá vốn. Tester A cùng lô A nên không tính.
     const missing = await stockLots(filter(f.tag, { cost: "missing" }));
     const lotIds = new Set(missing.rows.map((r) => r.batchId));
     expect(lotIds.has(a.id)).toBe(false);

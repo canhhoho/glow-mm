@@ -72,7 +72,7 @@ describe("File Excel nhập/cập nhật sản phẩm (một sheet)", () => {
     expect(keys).toEqual([
       "name", "brand", "category", "variant_label", "sku", "weight_g", "description_my", "description_en",
       "usage_my", "usage_en", "ingredients", "storage_note", "pao_months",
-      "warehouse_code", "qty", "expiry_date", "unit_cost", "inbound_unit_vnd", "lot_no",
+      "warehouse_code", "qty", "expiry_date", "unit_cost", "lot_no",
     ]);
   });
 

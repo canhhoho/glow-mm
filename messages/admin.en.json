@@ -2427,10 +2427,6 @@
       "label": "Purchase price/unit",
       "hint": "By receiving warehouse: VND (Vietnam import) or MMK (bought in Myanmar). Not the selling price."
     },
-    "inbound_unit_vnd": {
-      "label": "Inbound fee (VND/unit)",
-      "hint": "Vietnam-import warehouses only. 0 = no fee; blank = unknown (lot has no cost yet)."
-    },
     "lot_no": {
       "label": "Lot no.",
       "hint": "Optional. Blank = auto."

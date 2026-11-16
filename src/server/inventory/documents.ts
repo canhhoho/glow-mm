@@ -11,7 +11,6 @@ import { lockVariants } from "@/server/orders/reservations";
 import { applyMoves, type StockMove, type Tx } from "./ledger";
 import { lotCost, lotCostMmk, type ReceiptCostLine } from "./lot-cost";
 import { guardApproval } from "@/server/catalog/approval";
-import { shippingMmk } from "@/server/pricing/formula";
 import { latestRate } from "@/server/pricing/latest-rate";
 
 /**
@@ -45,15 +44,11 @@ export const receiveSchema = z.object({
           /** P24: giá mua VND (kho hàng nhập VN) hoặc MMK (kho mua tại Myanmar) — đúng một. */
           unitCostVnd: optionalMoney,
           unitCostMmk: optionalMoney,
-          landedCostVnd: optionalMoney,
           qty,
           stockType,
         })
-        .refine((l) => (l.unitCostVnd === undefined) !== (l.unitCostMmk === undefined), { message: "Nhập giá mua bằng VND hoặc MMK", path: ["unitCostVnd"] })
-        .refine((l) => l.landedCostVnd === undefined || (l.unitCostVnd !== undefined && l.landedCostVnd >= l.unitCostVnd), {
-          message: "Giá vốn về kho không thể thấp hơn giá mua",
-          path: ["landedCostVnd"],
-        }),
+        // 16/11/2026: không còn "phí đưa về kho" trên phiếu (phí vận chuyển nằm trong giá bán); payload cũ gửi `landedCostVnd` thì bị bỏ qua.
+        .refine((l) => (l.unitCostVnd === undefined) !== (l.unitCostMmk === undefined), { message: "Nhập giá mua bằng VND hoặc MMK", path: ["unitCostVnd"] }),
     )
     .min(1)
     .max(500),
@@ -162,10 +157,9 @@ type DraftLine = {
   batchId: string | null;
   stockType: StockType;
   qty: number;
-  /** P1-C: giá mua / giá vốn về kho của chính lần nhập này (dòng NHẬP). */
+  /** P1-C: giá mua của chính lần nhập này (dòng NHẬP). */
   unitCostVnd?: number | null;
   unitCostMmk?: number | null;
-  landedCostVnd?: number | null;
   /** Tỷ giá đã chốt của dòng (giữ khi sửa phiếu nháp không đổi giá — A3). */
   rateId?: string | null;
 };
@@ -263,7 +257,6 @@ async function buildReceiveLines(tx: Tx, input: ReceiveInput): Promise<DraftLine
           lotNo: l.lotNo,
           expiryDate: l.expiryDate,
           expiryStatus,
-          landedCostVnd: l.landedCostVnd,
           mfgDate: l.mfgDate,
           unitCostVnd,
           unitCostMmk,
@@ -280,7 +273,6 @@ async function buildReceiveLines(tx: Tx, input: ReceiveInput): Promise<DraftLine
       qty: l.qty,
       unitCostVnd,
       unitCostMmk,
-      landedCostVnd: input.shipmentId ? null : (l.landedCostVnd ?? null),
     });
   }
   return lines;
@@ -484,18 +476,20 @@ export async function postDocument(documentId: string, userId: string) {
  * `blockDays`: ngưỡng hạn dùng khi tự chọn lô — xuất nội bộ 0, bán hàng dùng `salesBlockDays()`.
  */
 /**
- * P1-C (D11) — sau khi ghi sổ phiếu NHẬP: giá vốn mỗi lô chạm tới = bình quân theo SL đã nhập của MỌI dòng NHẬP đã ghi sổ
- * của lô (`lot-cost.ts`). Một lần nhập → giữ đúng giá dòng như trước. Lô thuộc chuyến hàng: giá vốn về kho do phân bổ chuyến
- * quyết định (phân bổ báo "cũ" khi SL đổi) nên không đụng ở đây. Giá vốn tạm tính được tính lại theo giá bình quân mới.
+ * Giá vốn lô (16/11/2026) = GIÁ MUA × TỶ GIÁ lúc nhập — phí vận chuyển đã nằm trong giá bán nên không cộng phí về kho.
+ * Sau khi ghi sổ phiếu NHẬP: mỗi lô chạm tới = bình quân theo SL đã nhập của MỌI dòng NHẬP đã ghi sổ của lô
+ * (`lot-cost.ts`, P1-C D11). Lô giá MMK: giá vốn = giá mua. Lô giá VND: giá vốn MMK = giá mua bình quân đổi theo tỷ giá đã
+ * ghim trên từng dòng (đổi từng dòng nếu các lần nhập khác tỷ giá) → lưu vào `Batch.landedCostMmk` (nghĩa: "giá vốn MMK của
+ * lô"; cột giữ tên cũ). Lô thuộc chuyến hàng (dữ liệu cũ, tính năng đang tắt): giá vốn do phân bổ chuyến quyết định, không đụng.
  */
-async function refreshReceivedLots(tx: Tx, doc: { id: string; estimatedShipMmkPerKg: number | null }, batchIds: string[]) {
+async function refreshReceivedLots(tx: Tx, doc: { id: string }, batchIds: string[]) {
   const ids = [...new Set(batchIds)].sort();
   if (ids.length === 0) return;
   const rate = await latestRate(tx);
   // Tỷ giá riêng của lần nhập này (Excel đã ghim tỷ giá người dùng xem thì giữ nguyên).
   if (rate) await tx.stockDocumentLine.updateMany({ where: { documentId: doc.id, rateId: null, unitCostVnd: { not: null } }, data: { rateId: rate.id } });
   await tx.$queryRaw`SELECT "id" FROM "Batch" WHERE "id" IN (${Prisma.join(ids)}) ORDER BY "id" FOR UPDATE`;
-  const batches = await tx.batch.findMany({ where: { id: { in: ids } }, include: { rate: true, variant: { select: { weightGrams: true } } } });
+  const batches = await tx.batch.findMany({ where: { id: { in: ids } }, include: { rate: true } });
   const posted = await tx.stockDocumentLine.findMany({
     where: { batchId: { in: ids }, qty: { gt: 0 }, document: { type: "RECEIVE", status: "POSTED" } },
     include: { rate: true },
@@ -504,46 +498,23 @@ async function refreshReceivedLots(tx: Tx, doc: { id: string; estimatedShipMmkPe
   for (const b of batches) {
     const lines: ReceiptCostLine[] = posted
       .filter((l) => l.batchId === b.id && (l.unitCostVnd != null || l.unitCostMmk != null))
-      .map((l) => ({ qty: l.qty, unitCostVnd: l.unitCostVnd, unitCostMmk: l.unitCostMmk, landedCostVnd: l.landedCostVnd, rateId: l.rateId, rate: l.rate }));
+      .map((l) => ({ qty: l.qty, unitCostVnd: l.unitCostVnd, unitCostMmk: l.unitCostMmk, landedCostVnd: null, rateId: l.rateId, rate: l.rate }));
     if (lines.length === 0) continue;
     const cost = lotCost(lines);
     const data: Prisma.BatchUncheckedUpdateInput = {};
-    if (cost.unitCostVnd != null) data.unitCostVnd = cost.unitCostVnd;
     if (cost.unitCostMmk != null) {
       data.unitCostMmk = cost.unitCostMmk;
       data.landedCostMmk = cost.unitCostMmk; // lô mua tại Myanmar: giá vốn MMK = giá mua
     }
-    const batchRateId = b.rateId ?? lines.find((l) => l.rateId)?.rateId ?? null;
-    if (batchRateId && b.rateId == null && cost.unitCostVnd != null) data.rateId = batchRateId;
-    const fallbackRate = b.rate ?? rate;
-    let landedVnd = b.landedCostVnd;
-    let landedMmk = b.landedCostMmk;
-    if (cost.unitCostVnd != null && b.shipmentId == null) {
-      if (cost.landedCostVnd != null) {
-        // Giá vốn về kho nhập tay (Excel `inbound_unit_vnd`): bình quân theo SL, đổi sang MMK theo tỷ giá từng lần nhập.
-        landedVnd = cost.landedCostVnd;
-        landedMmk = lotCostMmk(lines.map((l) => ({ ...l, unitCostVnd: l.landedCostVnd })), cost.landedCostVnd, fallbackRate);
-        data.landedCostVnd = landedVnd;
-        if (landedMmk != null) data.landedCostMmk = landedMmk;
-      } else if (b.landedCostVnd != null) {
-        // Có lần nhập sau không kèm giá vốn về kho → chưa đủ dữ liệu, bỏ giá vốn cũ (sẽ dùng giá tạm tính).
-        landedVnd = null;
-        landedMmk = null;
-        data.landedCostVnd = null;
-        data.landedCostMmk = null;
-      }
-    }
-    // Giá vốn tạm tính (chỉ khi chưa có giá vốn thực tế): tính lại theo giá bình quân mới.
-    const shipPerKg = doc.estimatedShipMmkPerKg ?? b.estimatedShipMmkPerKg;
-    const weight = b.variant.weightGrams ?? b.estimatedWeightGrams;
-    if (cost.unitCostVnd != null && landedVnd == null && landedMmk == null && shipPerKg != null && weight != null && weight > 0 && (doc.estimatedShipMmkPerKg != null || b.estimatedCostMmk != null)) {
-      const mmk = lotCostMmk(lines, cost.unitCostVnd, fallbackRate);
-      if (mmk != null) {
-        const estimate = mmk + shippingMmk(shipPerKg, weight);
-        if (!Number.isSafeInteger(estimate) || estimate > 2_147_483_647) throw new DocumentError(`Lô ${b.lotNo}: giá vốn tạm tính vượt giới hạn`);
-        data.estimatedCostMmk = estimate;
-        data.estimatedShipMmkPerKg = shipPerKg;
-        data.estimatedWeightGrams = weight;
+    if (cost.unitCostVnd != null) {
+      data.unitCostVnd = cost.unitCostVnd;
+      const batchRateId = b.rateId ?? lines.find((l) => l.rateId)?.rateId ?? null;
+      if (batchRateId && b.rateId == null) data.rateId = batchRateId;
+      if (b.shipmentId == null) {
+        const mmk = lotCostMmk(lines, cost.unitCostVnd, b.rate ?? rate);
+        if (mmk == null) throw new DocumentError(`Lô ${b.lotNo}: cần thiết lập tỷ giá trước khi ghi sổ phiếu nhập hàng VND`);
+        data.landedCostMmk = mmk;
+        data.landedCostVnd = null; // phí về kho cũ (nếu có) không còn tính — giá vốn = giá mua × tỷ giá
       }
     }
     if (Object.keys(data).length) await tx.batch.update({ where: { id: b.id }, data });
@@ -559,6 +530,10 @@ export async function postDocumentTx(tx: Tx, documentId: string, userId: string,
   if (claimed.count !== 1) throw new DocumentError("Phiếu không ở trạng thái nháp");
 
   const doc = await tx.stockDocument.findUniqueOrThrow({ where: { id: documentId }, include: { lines: true } });
+  // Giá vốn lô VND = giá mua × tỷ giá lúc nhập → chưa có tỷ giá nào (và dòng chưa ghim tỷ giá) thì chặn, không sinh lô thiếu giá vốn.
+  if (doc.type === "RECEIVE" && doc.lines.some((l) => l.unitCostVnd != null && !l.rateId) && !(await latestRate(tx))) {
+    throw new DocumentError("Cần thiết lập tỷ giá đang có hiệu lực (Giá bán → Tỷ giá) trước khi ghi sổ phiếu nhập hàng VND");
+  }
   if (doc.type === "RECEIVE" && doc.shipmentId) await tx.$queryRaw`SELECT id FROM "InboundShipment" WHERE id = ${doc.shipmentId} FOR UPDATE`;
   // P1-B (M3): phiếu thủ công có thể nằm nháp lâu — kiểm lại kho (đã ngừng dùng?) và kho của SP lúc ghi sổ.
   if (!doc.orderId) {

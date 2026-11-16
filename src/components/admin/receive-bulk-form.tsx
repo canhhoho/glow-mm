@@ -31,7 +31,6 @@ type Row = {
   /** Giá mua theo loại tiền của kho SP (VND hoặc MMK, P24). */
   unitCost: string;
   /** Phí đưa về kho VND/đv (chỉ hàng VND): "" = chưa biết, "0" = đã biết không phát sinh (A3/A4 16/11). */
-  inbound: string;
   /** "" = theo giá trị chung. */
   stockType: StockType | "";
 };
@@ -49,7 +48,6 @@ const newRow = (v: ReceiveVariant, key: number, split = false): Row => ({
   expiryDate: "",
   mfgDate: "",
   unitCost: v.lastCost == null ? "" : String(v.lastCost),
-  inbound: "",
   stockType: "",
 });
 
@@ -68,8 +66,7 @@ function effective(r: Row, d: Defaults) {
 
 function rowInvalid(r: Row, d: Defaults) {
   const e = effective(r, d);
-  const badInbound = r.inbound.trim() !== "" && !(Number.isInteger(Number(r.inbound)) && Number(r.inbound) >= 0);
-  return !Number.isInteger(Number(r.qty)) || !e.lotNo || r.unitCost.trim() === "" || Number(r.unitCost) < 0 || badInbound || (r.expiryStatus === "DATED" && !e.expiryDate);
+  return !Number.isInteger(Number(r.qty)) || !e.lotNo || r.unitCost.trim() === "" || Number(r.unitCost) < 0 || (r.expiryStatus === "DATED" && !e.expiryDate);
 }
 
 type Location = { id: string; code: string; name: string; sellable: boolean; pricingMode: "VN_IMPORT" | "LOCAL_MMK" | null };
@@ -81,7 +78,7 @@ export type ReceiveDraft = {
   shipmentId: string;
   reason: string;
   estimatedShip: string;
-  lines: { variantId: string; qty: string; lotNo: string; expiryStatus: ExpiryStatus; expiryDate: string; mfgDate: string; unitCost: string; inbound: string; stockType: StockType }[];
+  lines: { variantId: string; qty: string; lotNo: string; expiryStatus: ExpiryStatus; expiryDate: string; mfgDate: string; unitCost: string; stockType: StockType }[];
 };
 
 /** Dòng ban đầu: mỗi biến thể một dòng trống; phiếu nháp đang sửa → điền dòng đầu, thêm dòng tách cho lô thứ 2…. */
@@ -95,7 +92,7 @@ function initialRows(variants: ReceiveVariant[], draft?: ReceiveDraft): { rows: 
   for (const l of draft.lines) {
     const i = index.get(l.variantId);
     if (i === undefined) continue; // biến thể đã ngừng dùng — bỏ qua
-    const patch = { qty: l.qty, lotNo: l.lotNo, expiryStatus: l.expiryStatus, expiryDate: l.expiryDate, mfgDate: l.mfgDate, unitCost: l.unitCost, inbound: l.inbound, stockType: l.stockType };
+    const patch = { qty: l.qty, lotNo: l.lotNo, expiryStatus: l.expiryStatus, expiryDate: l.expiryDate, mfgDate: l.mfgDate, unitCost: l.unitCost, stockType: l.stockType };
     if (!seen.has(l.variantId)) {
       seen.add(l.variantId);
       rows[i] = { ...rows[i], ...patch };
@@ -299,11 +296,7 @@ export function ReceiveBulkForm({
           mfgDate: eff.mfgDate || undefined,
           ...(byId.get(r.variantId)!.currency === "MMK"
             ? { unitCostMmk: r.unitCost.trim() }
-            : {
-                unitCostVnd: r.unitCost.trim(),
-                // Phí về kho đã biết (kể cả 0) → giá vốn thực tế = giá mua + phí; trống = chưa biết, không gửi.
-                ...(r.inbound.trim() !== "" && { landedCostVnd: String(Number(r.unitCost) + Number(r.inbound)) }),
-              }),
+            : { unitCostVnd: r.unitCost.trim() }), // không còn phí về kho: giá vốn lô = giá mua × tỷ giá lúc ghi sổ
           qty: r.qty,
           stockType: eff.stockType,
         };
@@ -648,20 +641,6 @@ const ReceiveRow = memo(function ReceiveRow({
       <td className={cell}>
         <Cap>{costLabel}</Cap>
         <input aria-label={label(costLabel)} type="number" min={0} step={1} inputMode="numeric" value={r.unitCost} onChange={(e) => onChange(r.key, { unitCost: e.target.value })} className={cn(small, "w-28")} />
-        {v.currency === "VND" && (
-          <input
-            aria-label={label(t("inboundFee"))}
-            title={t("inboundFeeHint")}
-            placeholder={t("inboundFee")}
-            type="number"
-            min={0}
-            step={1}
-            inputMode="numeric"
-            value={r.inbound}
-            onChange={(e) => onChange(r.key, { inbound: e.target.value })}
-            className={cn(small, "mt-1 w-28")}
-          />
-        )}
       </td>
       <td className={cell}>
         <Cap>{t("stockType")}</Cap>

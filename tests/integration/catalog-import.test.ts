@@ -35,10 +35,13 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     expect(preview.counts).toEqual({ createdProducts: 2, updatedProducts: 0, unchangedProducts: 0, stockLines: 4 });
     expect(preview.input.rateId).toBe(rate.id);
     expect(preview.rows.map((r) => r.action)).toEqual(["create", "create", "create", "create"]);
-    expect(preview.rows[0].stock).toMatchObject({ qty: 5, expiryStatus: "DATED", costMmk: 21000, location: f.mm.code, currency: "VND", unitCost: 100000, inboundVnd: 5000, lotAuto: true });
+    expect(preview.rows[0].stock).toMatchObject({ qty: 5, expiryStatus: "DATED", costMmk: 20000, location: f.mm.code, currency: "VND", unitCost: 100000, lotAuto: true }); // giá vốn = giá mua × tỷ giá (0,2), không có phí về kho
     expect(preview.rows[0]).toMatchObject({ name: `Toner ${f.tag}`, nameFromFile: true, label: "100ml", labelFromFile: true, weight: 120, skuAuto: true });
-    // Dòng này có cột Giá bán kiểu cũ → chỉ một lưu ý "bỏ qua giá", không có lỗi.
-    expect(preview.rows[0].issues).toEqual([{ level: "warning", text: expect.stringContaining("không còn nhập qua Excel") }]);
+    // Dòng này có cột Giá bán + Phí đưa về kho kiểu cũ → chỉ hai lưu ý "bỏ qua", không có lỗi.
+    expect(preview.rows[0].issues).toEqual([
+      { level: "warning", text: expect.stringContaining("không còn nhập qua Excel") },
+      { level: "warning", text: expect.stringContaining("Phí đưa về kho không còn dùng") },
+    ]);
     expect(preview.rowCounts).toEqual({ create: 4, update: 0, same: 0, error: 0 });
     expect(preview.documents).toBe(2);
     expect(preview.rate?.vndPerMmk).toBeTruthy();
@@ -46,13 +49,11 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     expect(preview.warnings.join("\n")).toContain("chưa có hạn sử dụng");
     // 16/11/2026: cột Giá bán của file cũ bị bỏ qua (giá đặt ở trang Giá bán) — một lưu ý.
     expect(preview.warnings.filter((w) => w.includes("không còn nhập qua Excel"))).toHaveLength(1);
-    // A4 16/11: để trống Phí đưa về kho = chưa biết → xem trước không hiện giá vốn, có cảnh báo (không coi là 0).
-    expect(preview.rows[1].stock).toMatchObject({ costMmk: null, inboundVnd: null, unitCost: 180000 });
-    expect(preview.rows[1].issues.map((i) => i.text).join(" | ")).toContain("để trống Phí đưa về kho");
-    // Lưu ý lặp gộp một dòng tóm tắt.
-    expect(preview.warnings.filter((w) => w.includes("để trống Phí đưa về kho"))).toHaveLength(1);
-    expect(preview.warnings.join("\n")).toContain("để trống Phí đưa về kho");
-    expect(preview.rows[3].stock).toMatchObject({ expiryStatus: "NONE", costMmk: 30000, location: f.chi.code, currency: "MMK", unitCost: 30000, inboundVnd: null });
+    // Giá vốn xem trước của mọi dòng VND = giá mua × tỷ giá; không còn cảnh báo "thiếu phí về kho".
+    expect(preview.rows[1].stock).toMatchObject({ costMmk: 36000, unitCost: 180000 });
+    expect(preview.warnings.join("\n")).not.toContain("Phí đưa về kho → lô CHƯA CÓ giá vốn");
+    expect(preview.warnings.filter((w) => w.includes("Phí đưa về kho không còn dùng"))).toHaveLength(1);
+    expect(preview.rows[3].stock).toMatchObject({ expiryStatus: "NONE", costMmk: 30000, location: f.chi.code, currency: "MMK", unitCost: 30000 });
     expect(await prisma.brand.count({ where: { name: brand } })).toBe(0); // xem trước không ghi
 
     const result = await commitCatalogImport(preview.input, f.userId);
@@ -76,7 +77,7 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     for (const d of result.documents) await postDocument(d.id, f.userId);
     expect((await prisma.product.findUniqueOrThrow({ where: { id: toner.id } })).stockLocationId).toBe(f.mm.id);
     expect((await prisma.product.findUniqueOrThrow({ where: { id: bag.id } })).stockLocationId).toBe(f.chi.id);
-    expect((await prisma.batch.findFirstOrThrow({ where: { variant: { productId: toner.id }, expiryStatus: "DATED", landedCostVnd: 105000 } })).landedCostMmk).toBe(21000);
+    expect((await prisma.batch.findFirstOrThrow({ where: { variant: { productId: toner.id }, expiryStatus: "DATED", unitCostVnd: 100000 } })).landedCostMmk).toBe(20000); // giá mua × tỷ giá đã chốt (0,2)
 
     // Nhập lại đúng file có tồn → chặn, không tạo thêm phiếu.
     await expect(commitCatalogImport(preview.input, f.userId)).rejects.toThrow(/đã được nhập lúc|đã có|SKU/);
@@ -157,10 +158,9 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     expect(await errors([{ name_en: `X ${f.tag}`, brand: "B", category: cat }])).toBe("");
     expect(await errors([{ brand: "B", category: cat, price_mmk: 1, variant_label: "x" }])).toContain("Chưa điền tên sản phẩm");
     expect(await errors([{ name_en: `Y ${f.tag}`, brand: "B", category: "khong-co", price_mmk: 1 }])).toContain("Danh mục");
-    expect(await errors([{ name_en: `Z ${f.tag}`, brand: "B", category: cat, price_mmk: 1, warehouse_code: f.chi.code, qty: 1, unit_cost: 100, inbound_unit_vnd: 50 }])).toContain("không có phí đưa về kho");
     // Hạn dùng theo lô: cột "Có hạn dùng" cũ không còn chặn lô có ngày; ô Hạn sử dụng "Không" = lô không hạn.
     expect(await errors([{ name_en: `W ${f.tag}`, brand: "B", category: cat, price_mmk: 1, has_expiry: "Không", qty: 1, unit_cost: 100, expiry_date: "2028-01-01", warehouse_code: f.mm.code }])).toBe("");
-    const none = await previewCatalogImport(sheet([{ name_en: `N ${f.tag}`, brand: "B", category: cat, qty: 1, unit_cost: 100, inbound_unit_vnd: 0, expiry_date: "Không", warehouse_code: f.mm.code }]));
+    const none = await previewCatalogImport(sheet([{ name_en: `N ${f.tag}`, brand: "B", category: cat, qty: 1, unit_cost: 100, expiry_date: "Không", warehouse_code: f.mm.code }]));
     expect(none.errors).toEqual([]);
     expect(none.rows[0].stock).toMatchObject({ expiryStatus: "NONE", expiryDate: null });
     const combo = await prisma.variant.create({ data: { productId: f.productId, sku: `CB-${f.tag}`, label: "Set", priceMmk: 1, isBundle: true } });

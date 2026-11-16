@@ -74,9 +74,7 @@ export type ImportRowView = {
     /** Giá mua đúng như file: VND (kho nhập VN) hoặc MMK (kho mua tại Myanmar). */
     currency: "VND" | "MMK";
     unitCost: number;
-    /** Phí đưa về kho VND/đv; null = để trống (chưa biết). */
-    inboundVnd: number | null;
-    /** Giá vốn MMK/đv của dòng này (quy đổi theo tỷ giá đang dùng); null = chưa có giá vốn. */
+    /** Giá vốn MMK/đv của dòng này = giá mua × tỷ giá đang dùng (lô MMK: = giá mua); null = chưa có tỷ giá. */
     costMmk: number | null;
   } | null;
   issues: ImportIssue[];
@@ -86,7 +84,7 @@ type StockPlan = {
   sku: string;
   locationId: string;
   vnd: boolean;
-  line: { lotNo: string; expiryDate?: string; expiryStatus: "DATED" | "NONE" | "UNKNOWN"; mfgDate?: string; unitCostVnd?: number; unitCostMmk?: number; landedCostVnd?: number; qty: number; stockType: "SELLABLE" | "TESTER" };
+  line: { lotNo: string; expiryDate?: string; expiryStatus: "DATED" | "NONE" | "UNKNOWN"; mfgDate?: string; unitCostVnd?: number; unitCostMmk?: number; qty: number; stockType: "SELLABLE" | "TESTER" };
 };
 
 export type CatalogImportPreview = {
@@ -123,8 +121,6 @@ const fold = (s: string) => toUnicode(s).normalize("NFC").trim().replace(/\s+/g,
 const clean = (s: string) => toUnicode(s).normalize("NFC").replace(/[ \t\u00a0]+/g, " ").replace(/ *\n */g, "\n").trim();
 const errorText = (e: unknown) => (e instanceof z.ZodError ? e.issues.map((i) => i.message).join("; ") : (e as Error).message);
 const isoDay = (d: Date) => d.toISOString().slice(2, 10).replaceAll("-", "");
-const NO_LANDED =
-  'để trống Phí đưa về kho → lô CHƯA CÓ giá vốn (không tự coi là 0). Điền 0 nếu không phát sinh phí; hoặc nhập "Cước tạm tính" ở phiếu nháp trước khi ghi sổ để có giá vốn tạm. Thiếu giá vốn sẽ không bàn giao đơn được.';
 const NO_EXPIRY = "lô chưa có hạn sử dụng → chưa bán được đến khi cập nhật hạn.";
 
 type Row = Record<string, string> & { __line: string };
@@ -519,7 +515,7 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
             weight: v.weightGrams,
             changes: [...productChanges, ...v.changes],
           } satisfies Partial<ImportRowView>);
-          const stockCells = ["qty", "expiry_date", "unit_cost", "unit_cost_vnd", "unit_cost_mmk", "inbound_unit_vnd", "lot_no"].some((k) => (r[k] ?? "").trim());
+          const stockCells = ["qty", "expiry_date", "unit_cost", "unit_cost_vnd", "unit_cost_mmk", "lot_no"].some((k) => (r[k] ?? "").trim());
           if (!stockCells) continue;
           try {
             if (!r.qty?.trim()) throw new Error("Có thông tin tồn nhưng chưa điền Số lượng nhập");
@@ -533,10 +529,6 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
             if (!costText) throw new Error(mmk ? `Chưa điền giá mua (MMK/đv) — kho ${location?.code} mua tại Myanmar` : `Chưa điền giá mua (VND/đv) — kho ${location?.code} nhập từ Việt Nam`);
             if (mmk ? r.unit_cost_vnd : r.unit_cost_mmk) throw new Error(mmk ? `Kho ${location?.code} nhập giá mua MMK, để trống cột VND` : `Kho ${location?.code} nhập giá mua VND, để trống cột MMK`);
             const purchase = num(money, costText, "Giá mua");
-            const inboundText = normalizeNumberText(r.inbound_unit_vnd ?? "");
-            if (mmk && inboundText && Number(inboundText) !== 0) throw new Error("Hàng mua bằng MMK không có phí đưa về kho VND");
-            // A4 16/11: "0" = đã biết không phát sinh phí → giá vốn thực tế = giá mua; ô trống = CHƯA BIẾT (không tự coi là 0).
-            const inbound: number | null = mmk ? 0 : inboundText ? num(money, inboundText, "Phí đưa về kho") : null;
             const dateText = r.expiry_date?.trim() || "";
             const noExpiry = parseYesNo(dateText) === false || dateText.toUpperCase() === "NONE";
             const date = noExpiry ? "" : dateText;
@@ -552,7 +544,7 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
             const previous = seen.get(key);
             if (previous) {
               if (`${previous.stock_type || "SELLABLE"}`.toUpperCase() === stockType) throw new Error(`Trùng SKU và số lô ${lotNo} — gộp số lượng thành một dòng`);
-              if (["expiry_date", "mfg_date", "unit_cost", "unit_cost_vnd", "unit_cost_mmk", "inbound_unit_vnd"].some((k) => (previous[k] || "") !== (r[k] || ""))) throw new Error(`Cùng SKU và lô ${lotNo} phải có cùng hạn, ngày sản xuất và giá mua`);
+              if (["expiry_date", "mfg_date", "unit_cost", "unit_cost_vnd", "unit_cost_mmk"].some((k) => (previous[k] || "") !== (r[k] || ""))) throw new Error(`Cùng SKU và lô ${lotNo} phải có cùng hạn, ngày sản xuất và giá mua`);
             }
             seen.set(key, r);
             // Lô đã có của SKU: cùng quy tắc với phiếu nhập (createDocument) → báo ngay ở bước xem trước.
@@ -566,16 +558,15 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
             }
             if (status === "DATED" && date < today) warn(r.__line, `lô ${lotNo} đã hết hạn (${date}) → không bán được.`, true);
             else if (status === "DATED" && date < blockFrom) warn(r.__line, `lô ${lotNo} còn dưới ${blockDays} ngày hạn dùng (${date}) → bị chặn bán.`, true);
-            // Xem trước chỉ hiện giá vốn sẽ thực sự được ghi (thực tế); chưa biết phí → để trống + cảnh báo.
-            const costMmk = mmk ? purchase : inbound != null && rate ? money.parse(vndToMmk(purchase + inbound, rate)) : null;
-            if (!mmk && inbound == null) warnEach(r.__line, NO_LANDED);
+            // Giá vốn = giá mua × tỷ giá đang dùng (tỷ giá được chốt cho các lô nhập lần này); không còn phí về kho.
+            const costMmk = mmk ? purchase : rate ? money.parse(vndToMmk(purchase, rate)) : null;
             if (!mmk) needsRate = true;
             if (status === "UNKNOWN") warnEach(r.__line, NO_EXPIRY);
             stock.push({
               sku: v.sku,
               locationId: target.id,
               vnd: !mmk,
-              line: { lotNo, expiryDate: date || undefined, expiryStatus: status, mfgDate: mfg, ...(mmk ? { unitCostMmk: purchase } : { unitCostVnd: purchase, ...(inbound != null ? { landedCostVnd: purchase + inbound } : {}) }), qty, stockType },
+              line: { lotNo, expiryDate: date || undefined, expiryStatus: status, mfgDate: mfg, ...(mmk ? { unitCostMmk: purchase } : { unitCostVnd: purchase }), qty, stockType },
             });
             view.stock = {
               qty,
@@ -586,7 +577,6 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
               expiryStatus: status,
               currency: mmk ? "MMK" : "VND",
               unitCost: purchase,
-              inboundVnd: mmk ? null : inbound,
               costMmk,
             };
             counts.stockLines++;
@@ -606,6 +596,9 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
   // File cũ còn cột Giá bán / Hoa hồng CTV: bỏ qua (giá chỉ đặt ở trang Giá bán — 16/11/2026).
   const pricedRows = rows.filter((r) => (r.price_mmk ?? "").trim() || (r.affiliate_commission_mmk ?? "").trim());
   if (pricedRows.length) warn(pricedRows, "cột Giá bán / Hoa hồng CTV không còn nhập qua Excel — đã bỏ qua. Đặt giá ở trang Giá bán.");
+  // File cũ còn cột "Phí đưa về kho": không còn dùng (giá vốn = giá mua × tỷ giá) — bỏ qua kèm một lưu ý.
+  const feeRows = rows.filter((r) => (r.inbound_unit_vnd ?? "").trim());
+  if (feeRows.length) warn(feeRows, "cột Phí đưa về kho không còn dùng (giá vốn lô = giá mua × tỷ giá) — đã bỏ qua.");
   const rowList = [...views.values()].sort((a, b) => a.line - b.line);
   for (const view of rowList) {
     view.issues = rowIssues.get(view.line) ?? [];

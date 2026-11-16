@@ -1261,8 +1261,6 @@
     "ProductFields.description_my.label",
     "ProductFields.expiry_date.hint",
     "ProductFields.expiry_date.label",
-    "ProductFields.inbound_unit_vnd.hint",
-    "ProductFields.inbound_unit_vnd.label",
     "ProductFields.ingredients.hint",
     "ProductFields.ingredients.label",
     "ProductFields.listError",

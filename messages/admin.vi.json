@@ -2427,10 +2427,6 @@
       "label": "Giá mua/đv",
       "hint": "Theo kho nhập: VND (kho hàng nhập Việt Nam) hoặc MMK (kho mua tại Myanmar). Không phải giá bán."
     },
-    "inbound_unit_vnd": {
-      "label": "Phí đưa về kho (VND/đv)",
-      "hint": "Chỉ kho hàng nhập Việt Nam. 0 = không phát sinh; trống = chưa biết (lô chưa có giá vốn)."
-    },
     "lot_no": {
       "label": "Số lô",
       "hint": "Tuỳ chọn. Trống = tự sinh."

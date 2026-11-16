@@ -31,7 +31,6 @@ const OLD_LABELS: Record<string, string[]> = {
   sku: ["Mã SKU"],
   warehouse_code: ["Kho bán", "Mã kho bán"],
   qty: ["Số lượng"],
-  inbound_unit_vnd: ["Phí đưa về kho"],
 };
 
 export const CATALOG_COLUMNS: SheetColumn[] = PRODUCT_FIELDS.filter((f) => f.excel).map((f) => ({
@@ -57,6 +56,8 @@ export const LEGACY_COLUMNS: SheetColumn[] = [
   { key: "price_mmk", type: "money", width: 0, group: "product", aliases: ["Giá bán (MMK)", "Giá bán"] },
   { key: "affiliate_commission_mmk", type: "money", width: 0, group: "product", aliases: ["Hoa hồng CTV (MMK/cái)", "Hoa hồng CTV"] },
   { key: "has_expiry", type: "yesno", width: 0, group: "product", aliases: ["Có hạn dùng", "expiry_policy", "Quản lý hạn sử dụng"] },
+  // Phí đưa về kho đã bỏ (16/11/2026): file cũ còn cột này vẫn đọc được, nhập bỏ qua kèm lưu ý.
+  { key: "inbound_unit_vnd", type: "money", width: 0, group: "stock", aliases: ["Phí đưa về kho (VND/đv)", "Phí đưa về kho", "Inbound fee (VND/unit)", "ဂိုဒေါင်ရောက်စရိတ် (VND/ခု)"] },
   { key: "product_slug", type: "text", width: 0, group: "product", aliases: ["Mã sản phẩm"] },
   { key: "mfg_date", type: "date", width: 0, group: "stock", aliases: ["Ngày sản xuất"] },
   { key: "stock_type", type: "text", width: 0, group: "stock", aliases: ["Loại hàng"] },

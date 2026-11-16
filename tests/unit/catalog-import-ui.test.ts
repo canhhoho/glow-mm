@@ -97,7 +97,7 @@ describe("Bảng xem trước nhập Excel", () => {
   it("chỉ thông tin SP: không có cột nhập kho, lưu ý về lô ẩn (lỗi nhập kho vẫn hiện); ô trống ghi rõ tự sinh / tiêu chuẩn", () => {
     const preview = actionState.state!.preview!;
     preview.rows = [row({
-      stock: { qty: 5, lotNo: "NK261116", lotAuto: true, location: "TH", expiryDate: "2028-03-31", expiryStatus: "DATED", currency: "VND", unitCost: 150000, inboundVnd: null, costMmk: null },
+      stock: { qty: 5, lotNo: "NK261116", lotAuto: true, location: "TH", expiryDate: "2028-03-31", expiryStatus: "DATED", currency: "VND", unitCost: 150000, costMmk: null },
       issues: [{ level: "warning", text: "lô chưa có hạn sử dụng", stock: true }, { level: "error", text: "Chưa điền giá mua" }, { level: "warning", text: "đã có sản phẩm cùng tên" }],
     })];
     const html = render();
