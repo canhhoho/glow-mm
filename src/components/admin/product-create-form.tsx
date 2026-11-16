@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 type Options = {
   brands: { id: string; name: string }[];
   categories: { id: string; name: string }[];
-  components: { id: string; label: string; stockLocationId: string }[];
+  components: { id: string; label: string; stockLocationId: string; inactive?: boolean; archived?: boolean }[];
   warehouses: { id: string; name: string; code: string }[];
 };
 
@@ -51,7 +51,10 @@ export function ProductCreateForm({ kind, options, prefill }: { kind: "product" 
   const [components, setComponents] = useState(prefill?.components.length ? prefill.components : [{ componentId: "", qty: 1 }]);
 
   const matchedBrand = options.brands.find((b) => b.name.toLowerCase() === brandInput.trim().toLowerCase());
-  const componentOptions = options.components.filter((c) => c.stockLocationId === stockLocationId);
+  // Lựa chọn mới: cùng kho + đang dùng; thành phần đang được chọn (vd. sao chép từ combo cũ) vẫn hiện, có nhãn (#6).
+  const componentOptions = options.components.filter(
+    (c) => c.stockLocationId === stockLocationId && ((!c.inactive && !c.archived) || components.some((x) => x.componentId === c.id)),
+  );
 
   const addLabel = (raw: string) => {
     const parts = raw.split(",").map((s) => s.trim()).filter(Boolean);
@@ -190,6 +193,7 @@ export function ProductCreateForm({ kind, options, prefill }: { kind: "product" 
                 {componentOptions.map((o) => (
                   <option key={o.id} value={o.id}>
                     {o.label}
+                    {o.archived ? ` (${td("variantArchived")})` : o.inactive ? ` (${td("variantInactive")})` : ""}
                   </option>
                 ))}
               </select>

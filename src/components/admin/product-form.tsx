@@ -14,7 +14,7 @@ type Options = {
   brands: { id: string; name: string }[];
   categories: { id: string; name: string }[];
   tags: { id: string; kind: "SKIN_TYPE" | "CONCERN" | "INGREDIENT"; name: string }[];
-  components: { id: string; label: string; stockLocationId: string }[];
+  components: { id: string; label: string; stockLocationId: string; inactive?: boolean; archived?: boolean }[];
   warehouses: { id: string; code: string; name: string; pricingMode: "VN_IMPORT" | "LOCAL_MMK" | null }[];
 };
 
@@ -237,11 +237,13 @@ export function ProductForm({
                           className={fieldClass}
                         >
                           <option value="">—</option>
+                          {/* Lựa chọn MỚI: cùng kho + đang dùng. Thành phần ĐÃ LƯU (c.componentId) luôn hiện, có nhãn nếu đã tắt / ngừng KD (#6). */}
                           {options.components
-                            .filter((o) => o.id !== v.id && (o.stockLocationId === p.stockLocationId || o.id === c.componentId))
+                            .filter((o) => o.id !== v.id && (o.id === c.componentId || (o.stockLocationId === p.stockLocationId && !o.inactive && !o.archived)))
                             .map((o) => (
                               <option key={o.id} value={o.id}>
                                 {o.label}
+                                {o.archived ? ` (${td("variantArchived")})` : o.inactive ? ` (${td("variantInactive")})` : ""}
                               </option>
                             ))}
                         </select>

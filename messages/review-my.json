@@ -1457,6 +1457,7 @@
     "Products.readiness.blockedSave",
     "Products.readiness.error",
     "Products.readiness.issue.BAD_LOCATION",
+    "Products.readiness.issue.COMPONENT_INACTIVE",
     "Products.readiness.issue.CONTENT_INCOMPLETE",
     "Products.readiness.issue.COST_ESTIMATED",
     "Products.readiness.issue.COST_MISSING",

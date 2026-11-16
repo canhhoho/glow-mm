@@ -722,7 +722,8 @@
         "STOCK_OTHER_WAREHOUSE": "Có tồn ở kho bán khác — chuyển kho để bán",
         "PRICE_STALE": "Có phiếu nhập mới sau lần đặt giá gần nhất — nên tính lại giá",
         "NOT_APPROVED": "Chưa duyệt (bước 4)",
-        "RATE_NEWER": "Có tỷ giá mới hơn lần đổi giá gần nhất — nên tính lại giá"
+        "RATE_NEWER": "Có tỷ giá mới hơn lần đổi giá gần nhất — nên tính lại giá",
+        "COMPONENT_INACTIVE": "Combo có thành phần đã tắt hoặc ngừng kinh doanh"
       },
       "blockedSave": "Chưa bật hiển thị / lưu được:",
       "blockedBulk": "{count} sản phẩm chưa bật được vì còn lỗi:",

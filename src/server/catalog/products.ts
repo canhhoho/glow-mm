@@ -261,14 +261,20 @@ export async function writeProduct(tx: Tx, parsed: ProductInput, userId: string,
 
     for (const v of input.variants) {
       const bundleId = savedIds.get(v.sku)!;
+      // Thành phần đang có trước lần lưu này: được giữ dù đã tắt / ngừng KD (không làm vỡ cấu hình combo cũ).
+      const before = new Set((await tx.bundleItem.findMany({ where: { bundleId }, select: { componentId: true } })).map((b) => b.componentId));
       await tx.bundleItem.deleteMany({ where: { bundleId } });
       if (!v.isBundle) continue;
       if (v.components.length === 0) throw new CatalogError(`Combo ${v.sku} cần ít nhất 1 thành phần`);
       for (const c of v.components) {
-        const comp = await tx.variant.findUnique({ where: { id: c.componentId }, include: { product: { select: { stockLocationId: true } } } });
+        const comp = await tx.variant.findUnique({ where: { id: c.componentId }, include: { product: { select: { stockLocationId: true, archivedAt: true } } } });
         if (!comp || comp.isBundle || comp.id === bundleId) throw new CatalogError(`Thành phần combo ${v.sku} không hợp lệ`);
         // Combo trừ kho từng thành phần ở kho của combo → thành phần phải cùng kho (P24).
         if (comp.product.stockLocationId !== product.stockLocationId) throw new CatalogError(`Thành phần ${comp.sku} của combo ${v.sku} thuộc kho khác`);
+        // #6: thành phần MỚI thêm phải đang dùng; thành phần đã có (before) giữ nguyên dù đã tắt — readiness COMPONENT_INACTIVE chặn mở bán.
+        if (!before.has(comp.id) && (!comp.active || comp.product.archivedAt)) {
+          throw new CatalogError(`Thành phần ${comp.sku} của combo ${v.sku} đã tắt hoặc ngừng kinh doanh — chọn thành phần đang dùng`);
+        }
       }
       await tx.bundleItem.createMany({ data: v.components.map((c) => ({ bundleId, componentId: c.componentId, qty: c.qty })) });
     }

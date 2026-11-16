@@ -17,6 +17,20 @@ const base = (over: Partial<ReadinessInput> = {}): ReadinessInput => ({
 });
 const codes = (issues: { code: string }[]) => issues.map((i) => i.code);
 
+describe("COMPONENT_INACTIVE (#6)", () => {
+  const combo = (inactiveComponent: boolean) =>
+    base({ variants: [{ id: "c1", sku: "SET", active: true, priceMmk: 20_000, weightGrams: 200, isBundle: true, componentWeights: [100], inactiveComponent }], available: new Map([["c1", 5]]) });
+
+  it("combo có thành phần đã tắt / ngừng KD → lỗi chặn MỞ BÁN, nhưng không chặn LƯU combo đang hiển thị", () => {
+    expect(evaluateReadiness(combo(false)).errors).toEqual([]);
+    const r = evaluateReadiness(combo(true));
+    expect(r.errors).toEqual([{ code: "COMPONENT_INACTIVE", skus: ["SET"] }]);
+    expect(publishBlockers(r, { approved: true }).map((i) => i.code)).toEqual(["COMPONENT_INACTIVE"]);
+    expect(blockingErrors(r, false).map((i) => i.code)).toEqual(["COMPONENT_INACTIVE"]); // SP đang ẩn: chặn khi bật
+    expect(blockingErrors(r, true)).toEqual([]); // SP đang hiển thị: vẫn lưu được, không tự ẩn
+  });
+});
+
 describe("evaluateReadiness (D2)", () => {
   it("SP đủ dữ liệu → không lỗi, không cảnh báo", () => {
     expect(evaluateReadiness(base())).toEqual({ errors: [], warnings: [] });

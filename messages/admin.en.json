@@ -722,7 +722,8 @@
         "STOCK_OTHER_WAREHOUSE": "Stock sits in another sales warehouse — transfer it to sell",
         "PRICE_STALE": "Stock was received after the last price change — recalculate the price",
         "NOT_APPROVED": "Not approved (step 4)",
-        "RATE_NEWER": "A newer exchange rate exists than the last price change — consider recalculating"
+        "RATE_NEWER": "A newer exchange rate exists than the last price change — consider recalculating",
+        "COMPONENT_INACTIVE": "Combo has a turned-off or discontinued component"
       },
       "blockedSave": "Cannot publish / save:",
       "blockedBulk": "{count} products were not published because of errors:",
