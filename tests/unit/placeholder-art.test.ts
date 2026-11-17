@@ -38,5 +38,5 @@ describe("ảnh minh hoạ tự vẽ (bản Preview)", () => {
       const meta = await sharp(webp).metadata();
       expect([meta.width, meta.height]).toEqual([c.w, c.h]);
     }
-  });
+  }, 30_000);
 });

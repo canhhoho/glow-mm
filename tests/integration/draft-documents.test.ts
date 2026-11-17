@@ -79,6 +79,16 @@ describe("Phiếu nháp", () => {
     expect((await prisma.product.findUniqueOrThrow({ where: { id: g.productId } })).archivedAt).not.toBeNull();
   });
 
+  it("xoá SP: chỉ nằm trong phiếu nhập NHÁP (chưa nhập kho) → xoá hẳn, xoá luôn dòng/lô/phiếu nháp rỗng", async () => {
+    const f = await makeFixture();
+    const doc = await createDocument(receive(f, "D1", 100_000), f.userId);
+
+    expect(await deleteProducts([f.productId], f.userId)).toEqual({ deleted: 1, archived: 0 });
+    expect(await prisma.product.findUnique({ where: { id: f.productId } })).toBeNull();
+    expect(await prisma.batch.count({ where: { variantId: f.variantId } })).toBe(0);
+    expect(await prisma.stockDocument.findUnique({ where: { id: doc.id } })).toBeNull(); // phiếu nháp không còn dòng
+  });
+
   it("Tồn kho 'Tất cả' ẩn SP chưa từng nhập; bộ lọc 'Chưa nhập hàng' liệt kê nó", async () => {
     const f = await makeFixture();
     const sku = (await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).sku;

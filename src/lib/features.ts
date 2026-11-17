@@ -5,12 +5,14 @@
  *
  * - `autoPricing`: module giá tự động (bảng tính giá `previewRun`/`applyRun`, "Tính tự động"). Giá bán chỉ đặt thủ công.
  * - `shipments`: chuyến hàng (phân bổ chi phí về kho, cước tạm tính, giá vốn tạm). Giá vốn lô = giá mua × tỷ giá.
+ * - `expiry`: quản lý hạn sử dụng (chặn bán theo ngưỡng, phân loại cận date/hết hạn, bắt buộc nhập hạn). Tắt = full hạn sử dụng, không chặn bán.
  *
  * Thuần (không import Next/Prisma) → dùng được ở component client và Vitest.
  */
 export const FEATURES = {
   autoPricing: false,
   shipments: false,
+  expiry: false,
 } as const;
 
 export type FeatureKey = keyof typeof FEATURES;

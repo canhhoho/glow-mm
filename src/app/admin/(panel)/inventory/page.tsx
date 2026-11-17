@@ -24,6 +24,7 @@ import { ExpiryTag, NewDocMenu, stockHref, type StockView } from "@/components/a
 import { Badge, ClearFilters, DataTable, EmptyState, fieldClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, PageNumbers, SearchInput, Segmented, StatCard, TabNav, Td } from "@/components/admin/ui";
 import { fmtDay, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { FEATURES } from "@/lib/features";
 
 type T = Awaited<ReturnType<typeof getTranslations>>;
 
@@ -105,30 +106,34 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
           <StatCard icon={<ShieldAlert />} tone="neutral" value={fmtInt(summary.byLocationType.QUARANTINE)} label={t("statQuarantine")} href="/admin/inventory/quarantine" />
           <Hint>{t("statQuarantineHint")}</Hint>
         </div>
-        <div>
-          <StatCard
-            icon={<Clock />}
-            tone="warning"
-            value={t("lotsN", { n: summary.near.lots })}
-            label={t("statNear", { days: th.warnDays })}
-            href={href({ tab: "all", expiry: "near", stockType: undefined, q: undefined })}
-            active={f.expiry === "near"}
-            testId="tile-near"
-          />
-          <Hint>{t("unitsN", { n: summary.near.units })}</Hint>
-        </div>
-        <div>
-          <StatCard
-            icon={<Ban />}
-            tone="danger"
-            value={t("lotsN", { n: summary.blocked.lots })}
-            label={t("statBlocked", { days: th.blockDays })}
-            href={href({ tab: "all", expiry: "blocked", stockType: undefined, q: undefined })}
-            active={f.expiry === "blocked"}
-            testId="tile-blocked"
-          />
-          <Hint>{t("unitsN", { n: summary.blocked.units })}</Hint>
-        </div>
+        {FEATURES.expiry && (
+          <>
+            <div>
+              <StatCard
+                icon={<Clock />}
+                tone="warning"
+                value={t("lotsN", { n: summary.near.lots })}
+                label={t("statNear", { days: th.warnDays })}
+                href={href({ tab: "all", expiry: "near", stockType: undefined, q: undefined })}
+                active={f.expiry === "near"}
+                testId="tile-near"
+              />
+              <Hint>{t("unitsN", { n: summary.near.units })}</Hint>
+            </div>
+            <div>
+              <StatCard
+                icon={<Ban />}
+                tone="danger"
+                value={t("lotsN", { n: summary.blocked.lots })}
+                label={t("statBlocked", { days: th.blockDays })}
+                href={href({ tab: "all", expiry: "blocked", stockType: undefined, q: undefined })}
+                active={f.expiry === "blocked"}
+                testId="tile-blocked"
+              />
+              <Hint>{t("unitsN", { n: summary.blocked.units })}</Hint>
+            </div>
+          </>
+        )}
       </div>
 
       <TabNav
@@ -154,14 +159,16 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
           {f.status && <input type="hidden" name="status" value={f.status} />}
           {f.cost && <input type="hidden" name="cost" value={f.cost} />}
           <SearchInput label={t("search")} defaultValue={f.q} />
-          <select name="expiry" defaultValue={f.expiry ?? ""} aria-label={t("expiryFilter")} className={cn(fieldClass, "w-auto")}>
-            <option value="">{t("expiryAll")}</option>
-            {EXPIRY_FILTERS.map((e) => (
-              <option key={e} value={e}>
-                {t(`ex.${e}`)}
-              </option>
-            ))}
-          </select>
+          {FEATURES.expiry && (
+            <select name="expiry" defaultValue={f.expiry ?? ""} aria-label={t("expiryFilter")} className={cn(fieldClass, "w-auto")}>
+              <option value="">{t("expiryAll")}</option>
+              {EXPIRY_FILTERS.map((e) => (
+                <option key={e} value={e}>
+                  {t(`ex.${e}`)}
+                </option>
+              ))}
+            </select>
+          )}
           <select name="stockType" defaultValue={f.stockType ?? ""} aria-label={t("stockTypeFilter")} className={cn(fieldClass, "w-auto")}>
             <option value="">{t("stockTypeAll")}</option>
             <option value="SELLABLE">{t("SELLABLE")}</option>

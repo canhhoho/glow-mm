@@ -3,6 +3,7 @@ import { inventoryCost, MISSING_COST_BATCH } from "./cost";
 import { z } from "zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { FEATURES } from "@/lib/features";
 import { normalizeForSearch, toUnicode } from "@/lib/myanmar";
 import { availableToSell, baseAvailability } from "@/server/orders/availability";
 import { getNumberSetting } from "@/server/settings";
@@ -81,6 +82,7 @@ function batchSearch(q: string): Prisma.BatchWhereInput {
 }
 
 function expiryWhere(e: ExpiryFilter | undefined, now: Date, t: Thresholds): Prisma.BatchWhereInput {
+  if (!FEATURES.expiry) return {};
   if (e === "unknown") return { expiryStatus: "UNKNOWN" };
   if (e === "none") return { expiryStatus: "NONE" };
   if (e === "near") return { expiryStatus: "DATED", expiryDate: { gte: sellableCutoff(now, t.blockDays), lt: sellableCutoff(now, t.warnDays) } };

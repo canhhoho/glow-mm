@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import pg from "pg";
 import { toCsv } from "../../src/lib/csv";
-import { priceVndManual } from "../../src/server/pricing/formula";
+import { convertVndToMmk, priceVndManual } from "../../src/server/pricing/formula";
 import { login, openProductTab } from "./helpers";
 
 // 16/11: trang Giá bán là nơi đặt giá chính — chọn SKU → Thủ công (công thức VND) / Tự động.
@@ -16,26 +16,26 @@ async function db<T>(fn: (c: pg.Client) => Promise<T>) {
   }
 }
 
-test("danh sách: tìm SKU, hiện giá + hoa hồng, chọn SKU → Nhập thủ công chỉ SKU đó; giá tự động đang tắt", async ({ page }) => {
+test("danh sách: sửa giá trực tiếp, chọn kho và không cần bước nhập thủ công", async ({ page }) => {
+  test.setTimeout(90_000);
   await login(page, "admin@glow.local");
-  await page.goto("/admin/selling-prices");
+  await page.goto("/admin/selling-prices?q=SV-SUN-50");
   await expect(page.getByRole("heading", { name: "Giá bán", exact: true })).toBeVisible();
+  const warehouse = page.getByRole("combobox", { name: "Kho", exact: true });
+  const options = await warehouse.locator("option").allTextContents();
+  const tham = options.find((name) => /Thắm/i.test(name));
+  expect(tham).toBeTruthy();
+  await warehouse.selectOption({ label: tham! });
+  await expect(page).toHaveURL(/warehouse=/);
+  await expect(page.getByTestId("manual-mmk")).toHaveCount(0);
   await page.getByRole("searchbox").fill("SV-SUN-50");
   await page.getByRole("button", { name: "Lọc", exact: true }).click();
-  const row = page.getByTestId("selling-price-row").filter({ hasText: "SV-SUN-50" }).first();
-  await expect(row.getByTestId("selling-commission")).toContainText("CTV:");
-  await row.getByRole("checkbox").check();
-  await page.screenshot({ path: "test-results/screens/selling-prices-list.png", fullPage: true });
-  // Giá tự động tắt (`lib/features.ts`): không còn nút / tab "Tự động".
-  await expect(page.getByTestId("price-pick").getByRole("button", { name: "Tính tự động" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Tự động", exact: true })).toHaveCount(0);
-  await page.getByTestId("price-pick").getByRole("button", { name: "Nhập thủ công" }).click();
-  await expect(page).toHaveURL(/\/admin\/selling-prices\/manual\?.*ids=/);
   await expect(page.getByTestId("manual-row")).toHaveCount(1);
-  // Link cũ ?mode=auto (kèm SKU đã chọn) chuyển sang trang Thủ công giữ nguyên lựa chọn.
-  const ids = new URL(page.url()).searchParams.getAll("ids");
-  await page.goto(`/admin/selling-prices?mode=auto&ids=${ids[0]}`);
-  await expect(page).toHaveURL(new RegExp(`/admin/selling-prices/manual\\?ids=${ids[0]}`));
+  await expect(page.getByRole("button", { name: "Nhập thủ công" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Tự động", exact: true })).toHaveCount(0);
+  await expect(page.getByTestId("manual-formula")).toHaveCount(0);
+  await page.getByTestId("manual-row").getByRole("button", { name: "Sửa giá" }).click();
+  await expect(page.getByRole("spinbutton", { name: /^Lãi/ })).toBeEditable();
   await page.goto("/admin/selling-prices?mode=auto");
   await expect(page).toHaveURL(/\/admin\/selling-prices\?mode=manual/);
 });
@@ -71,10 +71,11 @@ test("thủ công kho VND: SP mới từ Excel → ghi sổ → Đặt giá (lô
   await page.getByTestId("price-actions").getByRole("link", { name: "Đặt giá" }).click();
   await expect(page).toHaveURL(/\/admin\/selling-prices\/manual\?productId=/);
   const vnd = page.getByTestId("manual-vnd");
-  await expect(vnd.getByTestId("manual-formula")).toContainText("Giá bán VND = giá mua NCC + lãi");
+  await expect(vnd.getByTestId("manual-formula")).toHaveCount(0);
   const line = vnd.getByTestId("manual-row").first();
   await expect(line).toContainText("100,000"); // giá mua NCC của lần nhập
-  await line.getByRole("spinbutton", { name: /^Lãi mong muốn/ }).fill("50000");
+  await line.getByRole("button", { name: "Sửa giá" }).click();
+  await line.getByRole("spinbutton", { name: /^Lãi/ }).fill("50000");
   await line.getByRole("spinbutton", { name: /^Vận chuyển/ }).fill("800");
   await line.getByRole("spinbutton", { name: /^CTV/ }).fill("2000");
 
@@ -87,7 +88,7 @@ test("thủ công kho VND: SP mới từ Excel → ghi sổ → Đặt giá (lô
   const expected = priceVndManual({ mmkPerVnd: rate.mmkPerVnd, mmkPerUsd: rate.mmkPerUsd, vndPerUsd: rate.vndPerUsd, purchaseVnd: 100_000, profitVnd: 50_000, shipMmk: 800, commissionMmk: 2_000, roundTo });
   const shown = expected.toLocaleString("en-US");
   await expect(line.getByTestId("manual-final")).toHaveText(shown);
-  await expect(line).toContainText("150,000"); // giá bán VND
+  await expect(line.getByRole("cell", { name: convertVndToMmk(150_000, rate)!.toLocaleString("en-US") })).toBeVisible();
   await page.screenshot({ path: "test-results/screens/selling-prices-manual.png", fullPage: true });
 
   await vnd.getByRole("checkbox", { name: "Gửi duyệt ngay" }).uncheck();

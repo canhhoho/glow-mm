@@ -6,6 +6,8 @@
  *  - Không đủ hàng → InsufficientStockError (không xuất một phần).
  */
 
+import { FEATURES } from "@/lib/features";
+
 export type FefoCandidate = {
   batchId: string;
   expiryDate: Date | null;
@@ -37,11 +39,13 @@ export function sellableCutoff(today: Date, blockDays: number): Date {
 }
 
 export function isBatchUsable(expiryDate: Date | null, today: Date, blockDays: number, status: "DATED" | "NONE" | "UNKNOWN" = "DATED"): boolean {
+  if (!FEATURES.expiry) return true;
   return status === "NONE" || (status === "DATED" && expiryDate != null && expiryDate.getTime() >= sellableCutoff(today, blockDays).getTime());
 }
 
 /** Shared by availability and storefront: unknown dates never become sellable. */
 export function sellableBatchWhere(today: Date, blockDays: number) {
+  if (!FEATURES.expiry) return {};
   return { OR: [{ expiryStatus: "NONE" as const }, { expiryStatus: "DATED" as const, expiryDate: { gte: sellableCutoff(today, blockDays) } }] };
 }
 
@@ -51,6 +55,7 @@ export function sellableBatchWhere(today: Date, blockDays: number) {
  * ở Tồn kho và badge "lô bị chặn" ở menu (R5).
  */
 export function blockedBatchWhere(today: Date, blockDays: number) {
+  if (!FEATURES.expiry) return { id: "__none__" as const };
   return { OR: [{ expiryStatus: "UNKNOWN" as const }, { expiryDate: { lt: sellableCutoff(today, blockDays) } }] };
 }
 

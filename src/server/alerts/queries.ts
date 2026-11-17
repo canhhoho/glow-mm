@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { productName } from "@/server/inventory/queries";
 import { baseAvailability } from "@/server/orders/availability";
 import { getNumberSetting } from "@/server/settings";
+import { FEATURES } from "@/lib/features";
 import { classifyExpiry, lowStock, reorderList, type ExpiryLevel, type VariantStock } from "./compute";
 
 const DAY_MS = 86_400_000;
@@ -78,6 +79,7 @@ export type ExpiryAlert = {
 
 /** Lô còn tồn ở bất kỳ vị trí nào mà đã hết hạn / bị khoá bán / cận date. */
 export async function loadExpiryAlerts(now: Date, t: { blockDays: number; warnDays: number }): Promise<ExpiryAlert[]> {
+  if (!FEATURES.expiry) return [];
   const rows = await prisma.stockBalance.findMany({
     where: { qty: { gt: 0 } },
     include: {

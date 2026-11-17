@@ -4,15 +4,17 @@ import { requirePagePermission } from "@/server/auth/session";
 import { computeAlerts } from "@/server/alerts/queries";
 import { Badge, DataTable, Page, PageHeader, TabNav, Td } from "@/components/admin/ui";
 import { fmtDay, fmtInt } from "@/lib/format";
+import { FEATURES } from "@/lib/features";
 
-const TABS = ["low", "expiry", "reorder"] as const;
-type Tab = (typeof TABS)[number];
+const ALL_TABS = ["low", "expiry", "reorder"] as const;
+type Tab = (typeof ALL_TABS)[number];
 const LEVEL_TONE = { expired: "danger", unknown: "warning", blocked: "danger", near: "warning" } as const;
 
 export default async function AlertsPage({ searchParams }: PageProps<"/admin/alerts">) {
   await requirePagePermission("stock:view");
+  const tabs = (FEATURES.expiry ? ALL_TABS : ["low", "reorder"]) as readonly Tab[];
   const { tab: rawTab } = await searchParams;
-  const tab: Tab = TABS.includes(rawTab as Tab) ? (rawTab as Tab) : "low";
+  const tab: Tab = tabs.includes(rawTab as Tab) ? (rawTab as Tab) : "low";
   const [t, ti, alerts] = await Promise.all([getTranslations("Alerts"), getTranslations("Inventory"), computeAlerts()]);
   const { counts, settings } = alerts;
   const tabCount: Record<Tab, number> = {
@@ -40,7 +42,7 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
       />
       <TabNav
         label={t("title")}
-        tabs={TABS.map((k) => ({
+        tabs={tabs.map((k) => ({
           href: `/admin/alerts?tab=${k}`,
           active: k === tab,
           label: tabLabel[k],

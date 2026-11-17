@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import pg from "pg";
 import { login, signInAtPrompt } from "./helpers";
 
 test("admin: lưu cài đặt; tỷ giá; giá tự động đang tắt", async ({ page }) => {
@@ -7,17 +8,21 @@ test("admin: lưu cài đặt; tỷ giá; giá tự động đang tắt", async 
 
   // Lưu cài đặt giữ nguyên giá trị (không làm đổi hành vi các test khác).
   await page.goto("/admin/settings");
-  await expect(page.getByLabel("Ngừng bán khi còn hạn dưới (ngày)")).toHaveValue("90");
+  // Hạn dùng đang tắt (`FEATURES.expiry`, 17/11/2026): không hiện nhóm hạn dùng, nhưng lưu cài đặt vẫn giữ nguyên ngưỡng hạn đã có (ô ẩn gửi giá trị cũ).
+  await expect(page.getByLabel("Ngừng bán khi còn hạn dưới (ngày)")).toHaveCount(0);
+  const expirySettings = async () => {
+    const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
+    await client.connect();
+    try {
+      return (await client.query(`SELECT key, value FROM "Setting" WHERE key IN ('expiry.blockDays', 'expiry.warnDays') ORDER BY key`)).rows;
+    } finally {
+      await client.end();
+    }
+  };
+  const before = await expirySettings();
   await page.getByRole("button", { name: "Lưu cài đặt" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Đã lưu" })).toBeVisible();
-
-  // Ràng buộc: cảnh báo cận date phải ≥ ngừng bán.
-  await page.getByLabel("Cảnh báo cận date dưới (ngày)").fill("10");
-  await page.getByRole("button", { name: "Lưu cài đặt" }).click();
-  const warnError = page.getByRole("alert").filter({ hasText: "Ngưỡng cảnh báo phải ≥ ngưỡng ngừng bán" });
-  await expect(warnError).toBeVisible();
-  await expect(warnError).not.toContainText("expiry."); // không lộ tên key kỹ thuật
-  await expect(page.getByLabel("Cảnh báo cận date dưới (ngày)")).toHaveValue("10"); // lỗi → giữ số vừa nhập
+  expect(await expirySettings()).toEqual(before);
 
   await page.screenshot({ path: "test-results/screens/settings.png", fullPage: true });
   // Đường dẫn cũ "Giá & tỷ giá" chuyển sang tab Tỷ giá của trang Giá bán (gộp 16/11).

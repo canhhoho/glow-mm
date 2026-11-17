@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+// Kiểm quy tắc hạn dùng → chạy với cờ hạn dùng BẬT (production đang tắt, 17/11/2026; hành vi tắt: expiry-off.test.ts).
+vi.mock("@/lib/features", async (orig) => (await import("../support/expiry-on")).expiryOn(orig));
 import { prisma } from "@/lib/db";
 import { cancelDocument, createDocument, postDocument } from "@/server/inventory/documents";
 import { addShipmentCost, allocateShipment, createShipment } from "@/server/inventory/shipments";

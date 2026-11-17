@@ -1,6 +1,6 @@
 # Hướng dẫn vận hành web Admin — T&C Cosmetics
 
-Tài liệu dành cho người **không biết lập trình** vận hành web quản trị (đường dẫn `/admin`). Viết dựa trên chức năng thực tế có trong hệ thống tại ngày 15/11/2026; phần giá (mục 6, 7, 9, 10.6) cập nhật 16/11/2026 theo luồng giá mới. Hướng dẫn riêng cho cộng tác viên: [huong-dan-cong-ctv.md](huong-dan-cong-ctv.md).
+Tài liệu dành cho người **không biết lập trình** vận hành web quản trị (đường dẫn `/admin`). Viết dựa trên chức năng thực tế có trong hệ thống tại ngày 15/11/2026; phần giá (mục 6, 7, 9, 10.6) cập nhật 16/11/2026 theo luồng giá mới; mục 4.3, 5.8, 7.2–7.4 cập nhật 17/11/2026. Hướng dẫn riêng cho cộng tác viên: [huong-dan-cong-ctv.md](huong-dan-cong-ctv.md).
 
 ## Mục lục
 
@@ -224,6 +224,8 @@ Theo tài liệu thiết kế của dự án, hai kho đang dùng là Kho Thắm
 
 ### 4.3. Lô và hạn sử dụng
 
+> **Từ 17/11/2026 quản lý hạn sử dụng đang TẮT.** Hệ thống **không chặn bán theo hạn** (kể cả lô đã quá hạn — cần tự kiểm hàng trước khi giao), form nhập kho không còn ô hạn dùng, trang Cảnh báo không còn tab Hạn dùng, Cấu hình cửa hàng không còn nhóm hạn dùng. Phần dưới đây chỉ áp dụng khi tính năng được bật lại.
+
 Hàng nhập về được ghi theo **lô** (số lô, hạn dùng, giá mua). Ba tình trạng hạn:
 
 | Tình trạng | Trên màn hình | Bán được? |
@@ -411,7 +413,7 @@ Xử lý đơn đặt trước: [mục 10.9](#109-đơn-đặt-trước).
 ### 5.8. Xoá, khôi phục, đổi kho, ẩn/hiện
 
 **Xoá** — ở danh sách: menu ⋯ của dòng → **Xoá**, hoặc tick nhiều dòng → **Xoá đã chọn**.
-- Sản phẩm **chưa từng có lịch sử** (không lô, không phiếu kho ngoài nháp đã huỷ, không giữ hàng, không đơn, không phải thành phần combo khác) → **xoá hẳn** cùng ảnh và lịch sử giá ⛔.
+- Sản phẩm **chưa nhập kho** (không có phiếu kho **đã ghi sổ**, không giữ hàng, không đơn, không phải thành phần combo khác) → **xoá hẳn** cùng ảnh và lịch sử giá ⛔. Sản phẩm đang nằm trong **phiếu nhập nháp** cũng xoá hẳn được: dòng của sản phẩm đó bị gỡ khỏi phiếu nháp (phiếu không còn dòng nào thì bị xoá).
 - Có lịch sử → chuyển sang **Ngừng kinh doanh** (ẩn khỏi web, giữ lịch sử). Hệ thống báo "Đã xoá {deleted} sản phẩm; {archived} sản phẩm có lịch sử kho/đơn đã chuyển sang Ngừng kinh doanh."
 - **Khôi phục:** tab **Ngừng kinh doanh** → tick → **Khôi phục đã chọn** (hoặc **Khôi phục** ở dòng). Sản phẩm khôi phục **đang ẩn**; bật hiển thị khi muốn bán lại. Sản phẩm ngừng kinh doanh không bật hiển thị và không cập nhật bằng Excel được cho đến khi khôi phục.
 
@@ -548,6 +550,8 @@ Kết quả: tỷ giá mới nhất thành **Đang dùng**. ⛔ **Tỷ giá ch�
 Tỷ giá được chốt vào lô lúc **ghi sổ phiếu nhập** (phiếu tay) hoặc lúc **xác nhận Excel**; sửa phiếu nháp mà không đổi giá mua thì giữ tỷ giá đã chốt. Lỗi: "Tỷ giá USD→MMK phải > 0, tối đa 2 chữ số thập phân".
 
 ### 7.2. Trang Giá bán (danh sách)
+
+> **Cập nhật 17/11/2026:** trang Giá bán **sửa giá ngay trong bảng** — chọn kho ở ô **Kho** (bảng tự lọc), bấm **Sửa giá** ở dòng cần đổi, điền lãi / vận chuyển / CTV rồi **Lưu giá** (chỉ các dòng đã bấm Sửa giá được lưu). Cột **Giá mua + lãi (MMK)** là (giá mua + lãi VND) ÷ tỷ giá, chưa cộng vận chuyển và CTV. Kho hàng mua MMK không còn ô **Lãi cố định**. Mô tả "tick SKU → Nhập thủ công" bên dưới là cách cũ, vẫn dùng được qua trang `/admin/selling-prices/manual`.
 
 **Sản phẩm › Giá bán**, thẻ **Danh sách · Thủ công**. Mỗi SKU hiện:
 - giá **đang bán**, giá **chờ duyệt** (nếu có), **CTV: …** (hoa hồng đang áp dụng, "theo %" nếu chưa đặt) và hoa hồng chờ duyệt;

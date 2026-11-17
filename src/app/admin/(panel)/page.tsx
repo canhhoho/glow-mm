@@ -16,6 +16,7 @@ import { LineChart } from "@/components/admin/charts";
 import { cn } from "@/lib/utils";
 import { PRODUCT_LABEL_TONE } from "@/components/admin/status-tones";
 import { fmtDateTime, fmtInt } from "@/lib/format";
+import { FEATURES } from "@/lib/features";
 import { catalogTasks, DASHBOARD_RANGES, productActivity, recentProducts, recentReceipts } from "@/server/reports/catalog-dashboard";
 
 /**
@@ -156,14 +157,16 @@ async function Exceptions({ showStock, showCatalog }: { showStock: boolean; show
       {alerts && stockEx && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Stat label={t("lowStock")} value={alerts.counts.lowStock} href="/admin/alerts?tab=low" tone={tone(alerts.counts.lowStock)} testId="alert-low" />
-          <Stat
-            label={t("expiry")}
-            value={`${alerts.counts.expired} / ${alerts.counts.blocked} / ${alerts.counts.near}`}
-            href="/admin/alerts?tab=expiry"
-            tone={tone(alerts.counts.expired + alerts.counts.blocked, "danger")}
-          />
+          {FEATURES.expiry && (
+            <Stat
+              label={t("expiry")}
+              value={`${alerts.counts.expired} / ${alerts.counts.blocked} / ${alerts.counts.near}`}
+              href="/admin/alerts?tab=expiry"
+              tone={tone(alerts.counts.expired + alerts.counts.blocked, "danger")}
+            />
+          )}
           <Stat label={t("reorder")} value={alerts.counts.reorder} href="/admin/alerts?tab=reorder" tone={tone(alerts.counts.reorder)} />
-          {alerts.counts.unknown > 0 && <Stat label={t("unknownExpiry")} value={alerts.counts.unknown} href="/admin/inventory?view=lots&expiry=unknown" tone="warning" />}
+          {FEATURES.expiry && alerts.counts.unknown > 0 && <Stat label={t("unknownExpiry")} value={alerts.counts.unknown} href="/admin/inventory?view=lots&expiry=unknown" tone="warning" />}
           {stockEx.quarantineUnits > 0 && <Stat label={t("quarantine")} value={fmtInt(stockEx.quarantineUnits)} href="/admin/inventory/quarantine" tone="warning" hint={t("units")} testId="exc-quarantine" />}
           {stockEx.missingCostUnits > 0 && <Stat label={t("missingCost")} value={fmtInt(stockEx.missingCostUnits)} href="/admin/inventory?cost=missing" tone="warning" hint={t("units")} testId="exc-missing-cost" />}
         </div>

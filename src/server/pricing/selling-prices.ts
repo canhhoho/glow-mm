@@ -70,7 +70,7 @@ export async function sellingPriceStats() {
 }
 
 export async function sellingPriceWarehouses() {
-  return prisma.location.findMany({ where: { sellable: true, products: { some: { archivedAt: null } } }, orderBy: { name: "asc" }, select: { id: true, name: true } });
+  return prisma.location.findMany({ where: { sellable: true, active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } });
 }
 
 export type SellingPriceRow = {

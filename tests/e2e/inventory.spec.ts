@@ -26,7 +26,7 @@ test("quản lý kho: nhận → chuyển chờ kiểm tra → xuất, tồn kh�
   await page.getByLabel("Áp kho này cho tất cả").selectOption({ label: "THAM — Kho Thắm" });
   await page.getByLabel(`Số lượng ${SKU}`, { exact: true }).fill("10");
   await page.getByLabel(`Số lô ${SKU}`, { exact: true }).fill(lot);
-  await page.getByLabel(`Hạn dùng ${SKU}`, { exact: true }).fill("2028-12-31");
+  await expect(page.getByLabel(`Hạn dùng ${SKU}`, { exact: true })).toHaveCount(0); // Hạn dùng đang tắt (`FEATURES.expiry`, 17/11/2026): form nhập không có ô hạn
   await page.getByLabel(`Giá mua/đv (VND) ${SKU}`, { exact: true }).fill("90000");
   await postAndExpect(page);
 
@@ -35,7 +35,7 @@ test("quản lý kho: nhận → chuyển chờ kiểm tra → xuất, tồn kh�
   await page.getByLabel("Chọn vị trí xuất").selectOption({ label: "THAM — Kho Thắm" });
   await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "MM-QC — Chờ kiểm tra" });
   await page.getByLabel("Biến thể").selectOption({ label: VARIANT });
-  await page.getByLabel("Lô").selectOption({ label: `${lot} · 2028-12-31 · 10` });
+  await page.getByLabel("Lô").selectOption({ label: `${lot} · 10` }); // lô không hạn: nhãn chỉ có số lô · tồn
   await page.getByLabel("Số lượng").fill("4");
   await postAndExpect(page);
 
@@ -44,7 +44,7 @@ test("quản lý kho: nhận → chuyển chờ kiểm tra → xuất, tồn kh�
   await page.getByLabel("Chọn vị trí xuất").selectOption({ label: "THAM — Kho Thắm" });
   await page.getByLabel("Lý do / ghi chú").fill("Hàng hỏng khi vận chuyển");
   await page.getByLabel("Biến thể").selectOption({ label: VARIANT });
-  await page.getByLabel("Lô").selectOption({ label: `${lot} · 2028-12-31 · 6` });
+  await page.getByLabel("Lô").selectOption({ label: `${lot} · 6` });
   await page.getByLabel("Số lượng").fill("1");
   await postAndExpect(page);
 
@@ -126,7 +126,7 @@ test("phiếu kho: lỗi server giữ lựa chọn; ghi sổ cần xác nhận; 
   await expect(page.locator(`a[href="${newPath}"]`)).toHaveCount(0);
 });
 
-test("phiếu nhập: dán từ Excel điền nhiều dòng, báo dòng lỗi, dòng thiếu hạn bị chặn", async ({ page }) => {
+test("phiếu nhập: dán từ Excel điền nhiều dòng, báo dòng lỗi; không cần hạn dùng", async ({ page }) => {
   test.setTimeout(60_000);
   const lot = `PX${Date.now().toString(36).toUpperCase()}`;
   await login(page, "kho@glow.local");
@@ -147,12 +147,7 @@ test("phiếu nhập: dán từ Excel điền nhiều dòng, báo dòng lỗi, d
   await expect(page.getByText('Dòng 4: không có SKU "KHONG-CO"')).toBeVisible();
   await expect(page.getByText(/^2 dòng · tổng SL 5/)).toBeVisible();
 
-  // Dòng lô thứ 2 thiếu hạn dùng → chặn ở client, không gửi.
-  await page.getByRole("button", { name: "Lưu nháp" }).click();
-  await expect(page.getByRole("alert").filter({ hasText: "1 dòng thiếu" })).toBeVisible();
-  await expect(page).toHaveURL(/type=RECEIVE$/);
-
-  await page.getByLabel(`Hạn dùng ${SKU}`, { exact: true }).nth(1).fill("2029-06-30");
+  // Hạn dùng đang tắt (`FEATURES.expiry`, 17/11/2026): dòng không có hạn vẫn lưu được.
   await page.getByRole("button", { name: "Lưu nháp" }).click();
   await expect(page).toHaveURL(/\/admin\/inventory\/documents\/(?!new(?:\?|$))[^/?]+$/);
   await expect(page.getByText(lot, { exact: true }).filter({ visible: true })).toBeVisible();

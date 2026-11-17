@@ -72,7 +72,6 @@ test("khách đặt trước SP hết hàng → admin thấy ở danh sách ch�
     await page.getByLabel("Áp kho này cho tất cả").selectOption({ label: "THAM — Kho Thắm" });
     await page.getByLabel(`Số lượng ${SKU}`, { exact: true }).fill("1");
     await page.getByLabel(`Số lô ${SKU}`, { exact: true }).fill(lot);
-    await page.getByLabel(`Hạn dùng ${SKU}`, { exact: true }).fill("2029-12-31");
     await page.getByLabel(`Giá mua/đv (VND) ${SKU}`, { exact: true }).fill("85000");
     await page.getByRole("button", { name: "Lưu nháp" }).click();
     await expect(page).toHaveURL(/\/admin\/inventory\/documents\/(?!new(?:\?|$))[^/?]+$/, { timeout: 30_000 });

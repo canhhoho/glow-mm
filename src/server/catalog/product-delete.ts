@@ -9,9 +9,10 @@ import { pruneEmptyBrands } from "./brands";
 
 /**
  * Xoá sản phẩm khỏi danh mục admin.
- * - Chưa có lịch sử (lô, phiếu kho, giữ hàng, đơn, không là thành phần combo SP khác) → xoá hẳn (kèm biến thể, ảnh, lịch sử giá).
- *   Phiếu nháp ĐÃ HUỶ không tính là lịch sử (chưa từng vào sổ kho): dòng của chúng + lô chưa dùng bị xoá theo,
- *   phiếu huỷ không còn dòng nào cũng xoá → SP làm thử xoá hẳn được.
+ * - Chưa nhập kho / chưa có lịch sử (lô đã ghi sổ, phiếu đã ghi sổ, giữ hàng, đơn, không là thành phần combo SP khác)
+ *   → xoá hẳn (kèm biến thể, ảnh, lịch sử giá).
+ *   Phiếu NHÁP hoặc ĐÃ HUỶ không tính là lịch sử (chưa từng vào sổ kho): dòng của chúng + lô chưa dùng bị xoá theo,
+ *   phiếu nháp/huỷ không còn dòng nào cũng xoá → SP chưa nhập kho xoá hẳn được.
  * - Đã có lịch sử → NGỪNG KINH DOANH (`archivedAt`, ẩn khỏi web): sổ kho/đơn ghi thêm, không xoá được.
  */
 
@@ -34,19 +35,20 @@ export async function deleteProducts(rawIds: unknown, userId: string): Promise<D
     const used = new Set<string>();
     const mark = (rows: { variantId: string }[]) => rows.forEach((r) => used.add(productOf.get(r.variantId)!));
     const where = { variantId: { in: variantIds } };
-    const notCancelled = { document: { status: { not: "CANCELLED" as const } } };
-    // Lô có sổ kho / tồn / dòng phiếu chưa huỷ / phân bổ đơn / phiếu soạn = lịch sử thật.
+    // Chỉ phiếu ĐÃ GHI SỔ mới là lịch sử; phiếu nháp / đã huỷ = chưa nhập kho → vẫn xoá hẳn được.
+    const posted = { document: { status: "POSTED" as const } };
+    // Lô có sổ kho / tồn / dòng phiếu đã ghi sổ / phân bổ đơn / phiếu soạn = lịch sử thật.
     mark(
       await tx.batch.findMany({
         where: {
           ...where,
-          OR: [{ ledger: { some: {} } }, { balances: { some: {} } }, { documentLines: { some: notCancelled } }, { allocations: { some: {} } }, { pickLines: { some: {} } }],
+          OR: [{ ledger: { some: {} } }, { balances: { some: {} } }, { documentLines: { some: posted } }, { allocations: { some: {} } }, { pickLines: { some: {} } }],
         },
         select: { variantId: true },
         distinct: ["variantId"],
       }),
     );
-    mark(await tx.stockDocumentLine.findMany({ where: { ...where, ...notCancelled }, select: { variantId: true }, distinct: ["variantId"] }));
+    mark(await tx.stockDocumentLine.findMany({ where: { ...where, ...posted }, select: { variantId: true }, distinct: ["variantId"] }));
     mark(await tx.reservation.findMany({ where, select: { variantId: true }, distinct: ["variantId"] }));
     mark(await tx.orderItem.findMany({ where, select: { variantId: true }, distinct: ["variantId"] }));
     const componentOf = await tx.bundleItem.findMany({
@@ -74,11 +76,14 @@ export async function deleteProducts(rawIds: unknown, userId: string): Promise<D
       await tx.bundleItem.deleteMany({ where: { OR: [{ bundleId: { in: delVariants } }, { componentId: { in: delVariants } }] } });
       await tx.priceHistory.deleteMany({ where: { variantId: { in: delVariants } } });
       await tx.priceRunLine.deleteMany({ where: { variantId: { in: delVariants } } });
-      // Phiếu nháp đã huỷ: xoá dòng của các biến thể này, lô chưa dùng, rồi phiếu huỷ không còn dòng nào.
-      const cancelledDocs = await tx.stockDocumentLine.findMany({ where: { variantId: { in: delVariants } }, select: { documentId: true }, distinct: ["documentId"] });
-      await tx.stockDocumentLine.deleteMany({ where: { variantId: { in: delVariants }, document: { status: "CANCELLED" } } });
+      // Phiếu nháp / đã huỷ (chưa ghi sổ): xoá dòng của các biến thể này, lô chưa dùng, rồi phiếu không còn dòng nào.
+      const unpostedDocs = await tx.stockDocumentLine.findMany({ where: { variantId: { in: delVariants } }, select: { documentId: true }, distinct: ["documentId"] });
+      const unposted = { status: { in: ["DRAFT" as const, "CANCELLED" as const] } };
+      await tx.stockDocumentLine.deleteMany({ where: { variantId: { in: delVariants }, document: unposted } });
       await tx.batch.deleteMany({ where: { variantId: { in: delVariants } } });
-      await tx.stockDocument.deleteMany({ where: { id: { in: cancelledDocs.map((d) => d.documentId) }, status: "CANCELLED", lines: { none: {} } } });
+      await tx.stockDocument.deleteMany({
+        where: { id: { in: unpostedDocs.map((d) => d.documentId) }, ...unposted, lines: { none: {} }, ledger: { none: {} }, priceRunLines: { none: {} } },
+      });
       await tx.variant.deleteMany({ where: { id: { in: delVariants } } });
       // Bản dịch, tag, ảnh, đánh giá, mục bộ sưu tập xoá theo cascade.
       await tx.product.deleteMany({ where: { id: { in: toDelete } } });

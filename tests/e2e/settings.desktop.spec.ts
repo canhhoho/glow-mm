@@ -14,18 +14,10 @@ test("cài đặt: thẻ tài khoản, lưu/kiểm tra dữ liệu và bố cụ
   await expect(page).toHaveURL(/\/admin\/customer-accounts$/);
   await page.goto("/admin/settings");
 
-  const block = page.getByLabel("Ngừng bán khi còn hạn dưới (ngày)");
-  const warn = page.getByLabel("Cảnh báo cận date dưới (ngày)");
-  const originalWarn = await warn.inputValue();
-  const threshold = Number(await block.inputValue());
+  // Hạn dùng đang tắt (`FEATURES.expiry`, 17/11/2026): nhóm hạn dùng ẩn; lưu cài đặt vẫn chạy (kiểm giữ ngưỡng ở pricing-settings.spec).
+  await expect(page.getByLabel("Cảnh báo cận date dưới (ngày)")).toHaveCount(0);
   await page.getByRole("button", { name: "Lưu cài đặt", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: "Đã lưu" })).toBeVisible();
-  await warn.fill(String(threshold - 1));
-  await page.getByRole("button", { name: "Lưu cài đặt", exact: true }).click();
-  await expect(page.getByRole("alert").filter({ hasText: "Ngưỡng cảnh báo phải ≥ ngưỡng ngừng bán" })).toBeVisible();
-  await expect(warn).toHaveValue(String(threshold - 1));
-  await page.goto("/admin/settings");
-  await expect(warn).toHaveValue(originalWarn);
   const payment = page.getByLabel("Hướng dẫn chuyển khoản (hiện cho khách)");
   const paymentBox = await payment.boundingBox();
   const saveBox = await page.getByRole("button", { name: "Lưu cài đặt", exact: true }).boundingBox();

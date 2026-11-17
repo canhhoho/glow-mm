@@ -78,7 +78,10 @@ export default async function SettingsPage() {
               </label>
               <p className="text-xs leading-relaxed text-muted-foreground">{t("requirePickHint")}</p>
             </fieldset>
-            {GROUPS.map((g) => (
+            {/* Hạn dùng tắt (`FEATURES.expiry`): không hiện nhóm nhưng vẫn gửi giá trị cũ bằng ô ẩn — action lưu cài đặt đọc đủ mọi
+                khoá số, thiếu khoá sẽ lưu sai / báo lỗi. */}
+            {!FEATURES.expiry && GROUPS.filter((g) => g.title === "expiry").flatMap((g) => g.keys).map((k) => <input key={k} type="hidden" name={k} value={settings.numbers[k]} />)}
+            {GROUPS.filter((g) => FEATURES.expiry || g.title !== "expiry").map((g) => (
               <fieldset key={g.title} className="space-y-4 rounded-xl border bg-card p-4">
                 <legend className="inline-flex items-center gap-2 px-1 text-sm font-medium"><g.icon className="size-4 text-primary" aria-hidden />{t(g.title)}</legend>
                 {g.keys.map((k) =>

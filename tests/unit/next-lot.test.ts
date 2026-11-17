@@ -26,8 +26,8 @@ describe("nextLotForCustomer", () => {
   it("chỉ có lô không hạn → lô nhận trước", () => {
     expect(nextLotForCustomer([lot("N2", 3, null, "2026-05-01"), lot("N1", 3, null, "2026-02-01")], 0, opts)?.batchId).toBe("N1");
   });
-  it("lô cận hạn (dưới ngưỡng bán) không tính; giữ ≥ tồn → null", () => {
-    expect(nextLotForCustomer([lot("OLD", 9, "2026-12-01"), lot("A", 2, "2027-12-31")], 0, opts)?.batchId).toBe("A");
+  it("không chặn lô cận hạn khi FEATURES.expiry = false; giữ ≥ tồn → null", () => {
+    expect(nextLotForCustomer([lot("OLD", 9, "2026-12-01"), lot("A", 2, "2027-12-31")], 0, opts)?.batchId).toBe("OLD");
     expect(nextLotForCustomer([lot("A", 2, "2027-12-31")], 2, opts)).toBeNull();
   });
 });

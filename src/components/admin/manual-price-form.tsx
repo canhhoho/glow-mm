@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Calculator } from "lucide-react";
+import { Calculator, Pencil } from "lucide-react";
 import { ActionForm } from "@/components/admin/action-form";
 import { BatchReviewOptions } from "@/components/admin/batch-review";
 import { Badge, DataTable, Td, fieldClass, fieldLabelClass } from "@/components/admin/ui";
+import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
 import { fmtDate, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,7 @@ export function ManualVndForm({
   canApprove: boolean;
 }) {
   const t = useTranslations("SellingPrices.manualPage");
+  const [editing, setEditing] = useState<string[]>([]);
   const [rateId, setRateId] = useState(currentRateId ?? rates[0]?.id ?? "");
   const [state, setState] = useState<Record<string, RowState>>(() =>
     Object.fromEntries(
@@ -77,7 +79,7 @@ export function ManualVndForm({
     [rows, state, rate, roundTo],
   );
   const lines = computed
-    .filter((c) => c.ready)
+    .filter((c) => c.ready && editing.includes(c.r.variantId))
     .map((c) => ({
       variantId: c.r.variantId,
       ...(c.r.isBundle ? {} : { sourceLineId: c.st.sourceLineId }),
@@ -88,7 +90,7 @@ export function ManualVndForm({
       expectedCommissionMmk: c.r.commission ?? "",
     }));
   const payload = JSON.stringify({ locationId: location.id, rateId, lines });
-  const changedCount = computed.filter((c) => c.changed).length;
+  const changedCount = computed.filter((c) => c.changed && editing.includes(c.r.variantId)).length;
 
   return (
     <ActionForm action={applyManualVndAction} submitLabel={t("save", { count: changedCount })} icon={<Calculator aria-hidden />} className="space-y-4">
@@ -105,19 +107,17 @@ export function ManualVndForm({
             ))}
           </select>
         </label>
-        <p className="text-sm text-muted-foreground" data-testid="manual-formula">{t("formula", { round: fmtInt(roundTo) })}</p>
       </div>
       {rate && !rate.current && <Notice tone="warning">{t("oldRate")}</Notice>}
-      <Notice tone="info">{t("profitNote")}</Notice>
       <DataTable
         stack
         dense
         tableClassName="[&_th]:whitespace-normal [&_th]:align-bottom"
-        numeric={[2, 4, 7]}
-        head={[t("colSku"), t("colLot"), t("colPurchase"), t("colProfit"), t("colSellVnd"), t("colShip"), t("colCtv"), t("colFinal")]}
+        numeric={[1, 3, 6]}
+        head={[t("colSku"), t("colPurchase"), t("colProfit"), t("colSellMmk"), t("colShip"), t("colCtv"), t("colFinal"), t("colActions")]}
       >
         {computed.map((c) => (
-          <tr key={c.r.variantId} data-testid="manual-row" className={cn(c.changed && "bg-primary/5")}>
+          <tr key={c.r.variantId} data-testid="manual-row" className={cn(c.changed && editing.includes(c.r.variantId) && "bg-primary/5")}>
             <Td className="min-w-36 align-top">
               <div className="font-mono text-xs">{c.r.sku}</div>
               <div className="text-xs">
@@ -125,7 +125,8 @@ export function ManualVndForm({
               </div>
               {c.r.isBundle && <Badge tone="brand">combo</Badge>}
             </Td>
-            <Td label={t("colLot")} className="align-top">
+            <Td label={t("colPurchase")} className="align-top">
+              <div className="tabular-nums">{c.purchase != null ? fmtInt(c.purchase) : "—"}</div>
               {c.r.isBundle ? (
                 <span className="text-xs text-muted-foreground">{t("comboLot")}</span>
               ) : c.r.sources.length === 0 ? (
@@ -133,6 +134,7 @@ export function ManualVndForm({
               ) : (
                 <select
                   aria-label={`${t("colLot")} ${c.r.sku}`}
+                  disabled={!editing.includes(c.r.variantId)}
                   value={c.st.sourceLineId}
                   onChange={(e) => set(c.r.variantId, { sourceLineId: e.target.value })}
                   className={cn(fieldClass, "w-auto max-w-44 text-xs")}
@@ -145,25 +147,30 @@ export function ManualVndForm({
                 </select>
               )}
             </Td>
-            <Td label={t("colPurchase")} className="align-top tabular-nums md:text-right">{c.purchase != null ? fmtInt(c.purchase) : "—"}</Td>
             <Td label={t("colProfit")} className="align-top">
-              <input aria-label={`${t("colProfit")} ${c.r.sku}`} type="number" min={0} step={1} inputMode="numeric" value={c.st.profit} onChange={(e) => set(c.r.variantId, { profit: e.target.value })} className={cn(fieldClass, "w-24")} />
+              <input id={`profit-${c.r.variantId}`} aria-label={`${t("colProfit")} ${c.r.sku}`} readOnly={!editing.includes(c.r.variantId)} required={editing.includes(c.r.variantId)} type="number" min={0} step={1} inputMode="numeric" value={c.st.profit} onChange={(e) => set(c.r.variantId, { profit: e.target.value })} className={cn(fieldClass, "w-24")} />
             </Td>
-            <Td label={t("colSellVnd")} className="align-top tabular-nums md:text-right">
-              {c.sellVnd != null ? fmtInt(c.sellVnd) : "—"}
-              {c.sellMmk != null && <div className="text-xs text-muted-foreground">≈ {fmtInt(c.sellMmk)} MMK</div>}
+            {/* (giá mua + lãi VND) ÷ tỷ giá, chưa cộng vận chuyển / CTV — không phải giá mua MMK. */}
+            <Td label={t("colSellMmk")} className="align-top tabular-nums md:text-right">
+              {c.sellMmk != null ? fmtInt(c.sellMmk) : "—"}
             </Td>
             <Td label={t("colShip")} className="align-top">
-              <input aria-label={`${t("colShip")} ${c.r.sku}`} type="number" min={0} step={1} inputMode="numeric" value={c.st.ship} onChange={(e) => set(c.r.variantId, { ship: e.target.value })} className={cn(fieldClass, "w-20")} />
+              <input aria-label={`${t("colShip")} ${c.r.sku}`} readOnly={!editing.includes(c.r.variantId)} required={editing.includes(c.r.variantId)} type="number" min={0} step={1} inputMode="numeric" value={c.st.ship} onChange={(e) => set(c.r.variantId, { ship: e.target.value })} className={cn(fieldClass, "w-20")} />
             </Td>
             <Td label={t("colCtv")} className="align-top">
-              <input aria-label={`${t("colCtv")} ${c.r.sku}`} type="number" min={0} step={1} inputMode="numeric" value={c.st.ctv} onChange={(e) => set(c.r.variantId, { ctv: e.target.value })} className={cn(fieldClass, "w-20")} />
+              <input aria-label={`${t("colCtv")} ${c.r.sku}`} readOnly={!editing.includes(c.r.variantId)} required={editing.includes(c.r.variantId)} type="number" min={0} step={1} inputMode="numeric" value={c.st.ctv} onChange={(e) => set(c.r.variantId, { ctv: e.target.value })} className={cn(fieldClass, "w-20")} />
             </Td>
             <Td label={t("colFinal")} className="align-top whitespace-nowrap tabular-nums md:text-right">
-              <div className="text-base font-semibold" data-testid="manual-final">{c.price != null ? fmtInt(c.price) : "—"}</div>
+              <div className="text-base font-semibold" data-testid="manual-final">{editing.includes(c.r.variantId) ? (c.price != null ? fmtInt(c.price) : "—") : fmtInt(c.r.price)}</div>
               <div className="text-xs text-muted-foreground">{t("live", { price: fmtInt(c.r.livePrice) })}</div>
               {c.r.pending && <div className="text-xs text-warning">{t("pending", { price: fmtInt(c.r.price) })}</div>}
               {!c.ready && <div className="text-xs text-muted-foreground">{t("incomplete")}</div>}
+            </Td>
+            <Td label={t("colActions")} className="align-top">
+              <Button type="button" variant="outline" onClick={() => {
+                setEditing((ids) => ids.includes(c.r.variantId) ? ids : [...ids, c.r.variantId]);
+                document.getElementById(`profit-${c.r.variantId}`)?.focus();
+              }}><Pencil aria-hidden />{t("editPrice")}</Button>
             </Td>
           </tr>
         ))}

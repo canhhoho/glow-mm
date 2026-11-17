@@ -149,7 +149,6 @@ test("QT1b/QT2: tạo SP → nhập hàng từ bước 2 (điền sẵn, khối 
   await expect(page.getByLabel(`Kho ${sku}`, { exact: true })).toHaveValue(/.+/); // gợi ý kho bán hàng nhập VN, đổi được ở đây
   await page.getByLabel(`Số lượng ${sku}`, { exact: true }).fill("5");
   await page.getByLabel(`Số lô ${sku}`, { exact: true }).fill(`F${tag}`);
-  await page.getByLabel(`Hạn dùng ${sku}`, { exact: true }).fill("2029-12-31");
   await page.getByLabel(`Giá mua/đv (VND) ${sku}`, { exact: true }).fill("100000");
   await page.getByLabel(`Khối lượng (g) ${sku}`, { exact: true }).fill("150");
   await page.getByRole("button", { name: "Lưu nháp" }).click();
@@ -177,7 +176,8 @@ test("QT1b/QT2: tạo SP → nhập hàng từ bước 2 (điền sẵn, khối 
   const vnd = page.getByTestId("manual-vnd");
   const line = vnd.getByTestId("manual-row").first();
   await expect(line).toContainText("100,000"); // giá mua NCC của lần nhập vừa ghi sổ
-  await line.getByRole("spinbutton", { name: /^Lãi mong muốn/ }).fill("40000");
+  await line.getByRole("button", { name: "Sửa giá" }).click(); // 17/11/2026: chỉ dòng bấm "Sửa giá" mới sửa/lưu
+  await line.getByRole("spinbutton", { name: /^Lãi/ }).fill("40000");
   await line.getByRole("spinbutton", { name: /^Vận chuyển/ }).fill("1200");
   await line.getByRole("spinbutton", { name: /^CTV/ }).fill("1000");
   await expect(vnd.getByRole("checkbox", { name: "Gửi duyệt ngay" })).toBeChecked();
