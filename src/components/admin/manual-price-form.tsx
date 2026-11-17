@@ -11,7 +11,7 @@ import { Notice } from "@/components/ui/notice";
 import { fmtDate, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { applyManualVndAction } from "@/server/pricing/actions";
-import { convertVndToMmk, priceVndManual } from "@/server/pricing/formula";
+import { priceVndManual } from "@/server/pricing/formula";
 import type { ManualRate, ManualRow } from "@/server/pricing/manual";
 
 type RowState = { sourceLineId: string; profit: string; ship: string; ctv: string };
@@ -71,10 +71,8 @@ export function ManualVndForm({
         const ship = whole(st.ship);
         const ctv = whole(st.ctv);
         const ready = rate != null && purchase != null && profit != null && ship != null && ctv != null;
-        const sellVnd = purchase != null && profit != null ? purchase + profit : null;
-        const sellMmk = rate && sellVnd != null ? convertVndToMmk(sellVnd, rate) : null;
         const price = ready ? priceVndManual({ ...rate!, purchaseVnd: purchase!, profitVnd: profit!, shipMmk: ship!, commissionMmk: ctv!, roundTo }) : null;
-        return { r, st, purchase, sellVnd, sellMmk, price, ready, changed: ready && (price !== r.price || ctv !== r.commission) };
+        return { r, st, purchase, price, ready, changed: ready && (price !== r.price || ctv !== r.commission) };
       }),
     [rows, state, rate, roundTo],
   );
@@ -109,73 +107,124 @@ export function ManualVndForm({
         </label>
       </div>
       {rate && !rate.current && <Notice tone="warning">{t("oldRate")}</Notice>}
+      {/* Hướng dẫn dài (công thức, ý nghĩa lãi, lô nguồn) gom vào phần mở rộng — bảng chỉ còn cột cần thao tác. */}
+      <details className="text-sm text-muted-foreground" data-testid="manual-help">
+        <summary className="cursor-pointer select-none">{t("howTo")}</summary>
+        <p className="mt-1">{t("formula", { round: fmtInt(roundTo) })}</p>
+        <p className="mt-1">{t("profitNote")}</p>
+      </details>
       <DataTable
         stack
         dense
-        tableClassName="[&_th]:whitespace-normal [&_th]:align-bottom"
-        numeric={[1, 3, 6]}
-        head={[t("colSku"), t("colPurchase"), t("colProfit"), t("colSellMmk"), t("colShip"), t("colCtv"), t("colFinal"), t("colActions")]}
+        tableClassName="md:table-fixed [&_th]:whitespace-normal [&_th]:align-bottom"
+        numeric={[1, 2, 3, 4, 5]}
+        head={[t("colProduct"), t("colPurchase"), t("colProfit"), t("colShip"), t("colCtv"), t("colFinal"), <span key="act" className="sr-only md:not-sr-only">{t("colActions")}</span>]}
       >
-        {computed.map((c) => (
-          <tr key={c.r.variantId} data-testid="manual-row" className={cn(c.changed && editing.includes(c.r.variantId) && "bg-primary/5")}>
-            <Td className="min-w-36 align-top">
-              <div className="font-mono text-xs">{c.r.sku}</div>
-              <div className="text-xs">
-                {c.r.productName} <span className="text-muted-foreground">({c.r.label})</span>
-              </div>
-              {c.r.isBundle && <Badge tone="brand">combo</Badge>}
-            </Td>
-            <Td label={t("colPurchase")} className="align-top">
-              <div className="tabular-nums">{c.purchase != null ? fmtInt(c.purchase) : "—"}</div>
-              {c.r.isBundle ? (
-                <span className="text-xs text-muted-foreground">{t("comboLot")}</span>
-              ) : c.r.sources.length === 0 ? (
-                <span className="text-xs text-destructive">{t("noSource")}</span>
-              ) : (
-                <select
-                  aria-label={`${t("colLot")} ${c.r.sku}`}
-                  disabled={!editing.includes(c.r.variantId)}
-                  value={c.st.sourceLineId}
-                  onChange={(e) => set(c.r.variantId, { sourceLineId: e.target.value })}
-                  className={cn(fieldClass, "w-auto max-w-44 text-xs")}
+        {computed.map((c) => {
+          const id = c.r.variantId;
+          const editable = editing.includes(id);
+          const label = c.r.label && !c.r.standardLabel ? c.r.label : null;
+          // Lý do chưa tính được giá (chỉ khi đang sửa) — hiện "—" thay vì 0.
+          const missing = !rate ? t("missingRate") : c.purchase == null ? t("missingPurchase") : t("incomplete");
+          const num = (key: "profit" | "ship" | "ctv", name: string, extra?: { id?: string }) => {
+            // Chỉ báo lỗi khi đã gõ mà sai; ô trống thì lý do "Điền lãi, vận chuyển, CTV" hiện ở cột Giá bán.
+            const invalid = editable && c.st[key].trim() !== "" && whole(c.st[key]) == null;
+            return (
+              <>
+                <input
+                  {...extra}
+                  aria-label={`${name} ${c.r.sku}`}
+                  aria-invalid={invalid || undefined}
+                  aria-describedby={invalid ? `${key}-err-${id}` : undefined}
+                  readOnly={!editable}
+                  required={editable}
+                  type="number"
+                  min={0}
+                  step={1}
+                  inputMode="numeric"
+                  value={c.st[key]}
+                  onChange={(e) => set(id, { [key]: e.target.value })}
+                  className={cn(fieldClass, "text-right tabular-nums md:w-full", !editable && "bg-muted/40", invalid && "border-destructive")}
+                />
+                {invalid && <span id={`${key}-err-${id}`} className="mt-0.5 block text-xs text-destructive">{t("fieldInvalid")}</span>}
+              </>
+            );
+          };
+          return (
+            <tr key={id} data-testid="manual-row" className={cn(c.changed && editable && "bg-primary/5")}>
+              <Td className="md:w-[31%]">
+                <span className="block font-medium break-words">{c.r.productName}</span>
+                <span className="block text-xs break-all text-muted-foreground">
+                  <span className="font-mono">{c.r.sku}</span>
+                  {label && <> · {label}</>}
+                </span>
+                {c.r.isBundle && <Badge tone="brand">combo</Badge>}
+              </Td>
+              <Td label={t("colPurchase")} numeric className="md:w-[19%]">
+                <div className="tabular-nums">{c.purchase != null ? fmtInt(c.purchase) : "—"}</div>
+                {c.r.isBundle ? (
+                  <span className="block text-xs text-muted-foreground">{t("comboLot")}</span>
+                ) : c.r.sources.length === 0 ? (
+                  <span className="block text-xs text-destructive">{t("noSource")}</span>
+                ) : (
+                  <select
+                    aria-label={`${t("colLot")} ${c.r.sku}`}
+                    title={t("colLot")}
+                    disabled={!editable}
+                    value={c.st.sourceLineId}
+                    onChange={(e) => set(id, { sourceLineId: e.target.value })}
+                    className={cn(fieldClass, "mt-1 w-full text-xs")}
+                  >
+                    {c.r.sources.map((s) => (
+                      <option key={s.lineId} value={s.lineId}>
+                        {t("lotOption", { lot: s.lotNo, doc: s.documentCode, date: s.postedAt ? fmtDate(new Date(s.postedAt)) : "—", price: fmtInt(s.unitCostVnd) })}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </Td>
+              <Td label={t("colProfit")} numeric>{num("profit", t("colProfit"), { id: `profit-${id}` })}</Td>
+              <Td label={t("colShip")} numeric>{num("ship", t("colShip"))}</Td>
+              <Td label={t("colCtv")} numeric>{num("ctv", t("colCtv"))}</Td>
+              <Td label={t("colFinal")} numeric className="md:w-[12%]">
+                {editable ? (
+                  <>
+                    <div className="text-base font-semibold tabular-nums" data-testid="manual-final">{c.price != null ? fmtInt(c.price) : "—"}</div>
+                    {!c.ready && <div className="text-xs text-muted-foreground">{missing}</div>}
+                  </>
+                ) : (
+                  <>
+                    <div className="text-base font-semibold tabular-nums" data-testid="manual-final">{c.r.price > 0 ? fmtInt(c.r.price) : "—"}</div>
+                    {c.r.price <= 0 && <div className="text-xs text-muted-foreground">{t("noPrice")}</div>}
+                  </>
+                )}
+                {c.r.livePrice > 0 && c.r.livePrice !== (editable ? c.price : c.r.price) && (
+                  <div className="text-xs text-muted-foreground">{t("live", { price: fmtInt(c.r.livePrice) })}</div>
+                )}
+                {c.r.pending && <div className="text-xs text-warning">{t("pending", { price: fmtInt(c.r.price) })}</div>}
+              </Td>
+              <Td label={t("colActions")} className="md:w-16">
+                <Button
+                  type="button"
+                  size="icon-lg"
+                  variant={editable ? "secondary" : "outline"}
+                  aria-label={`${t("editPrice")} ${c.r.sku}`}
+                  aria-pressed={editable}
+                  title={t("editPrice")}
+                  onClick={() => {
+                    setEditing((ids) => (ids.includes(id) ? ids : [...ids, id]));
+                    // Ô lãi vừa bỏ readOnly ở lần render sau → focus sau khi React cập nhật.
+                    requestAnimationFrame(() => document.getElementById(`profit-${id}`)?.focus());
+                  }}
                 >
-                  {c.r.sources.map((s) => (
-                    <option key={s.lineId} value={s.lineId}>
-                      {t("lotOption", { lot: s.lotNo, doc: s.documentCode, date: s.postedAt ? fmtDate(new Date(s.postedAt)) : "—", price: fmtInt(s.unitCostVnd) })}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </Td>
-            <Td label={t("colProfit")} className="align-top">
-              <input id={`profit-${c.r.variantId}`} aria-label={`${t("colProfit")} ${c.r.sku}`} readOnly={!editing.includes(c.r.variantId)} required={editing.includes(c.r.variantId)} type="number" min={0} step={1} inputMode="numeric" value={c.st.profit} onChange={(e) => set(c.r.variantId, { profit: e.target.value })} className={cn(fieldClass, "w-24")} />
-            </Td>
-            {/* (giá mua + lãi VND) ÷ tỷ giá, chưa cộng vận chuyển / CTV — không phải giá mua MMK. */}
-            <Td label={t("colSellMmk")} className="align-top tabular-nums md:text-right">
-              {c.sellMmk != null ? fmtInt(c.sellMmk) : "—"}
-            </Td>
-            <Td label={t("colShip")} className="align-top">
-              <input aria-label={`${t("colShip")} ${c.r.sku}`} readOnly={!editing.includes(c.r.variantId)} required={editing.includes(c.r.variantId)} type="number" min={0} step={1} inputMode="numeric" value={c.st.ship} onChange={(e) => set(c.r.variantId, { ship: e.target.value })} className={cn(fieldClass, "w-20")} />
-            </Td>
-            <Td label={t("colCtv")} className="align-top">
-              <input aria-label={`${t("colCtv")} ${c.r.sku}`} readOnly={!editing.includes(c.r.variantId)} required={editing.includes(c.r.variantId)} type="number" min={0} step={1} inputMode="numeric" value={c.st.ctv} onChange={(e) => set(c.r.variantId, { ctv: e.target.value })} className={cn(fieldClass, "w-20")} />
-            </Td>
-            <Td label={t("colFinal")} className="align-top whitespace-nowrap tabular-nums md:text-right">
-              <div className="text-base font-semibold" data-testid="manual-final">{editing.includes(c.r.variantId) ? (c.price != null ? fmtInt(c.price) : "—") : fmtInt(c.r.price)}</div>
-              <div className="text-xs text-muted-foreground">{t("live", { price: fmtInt(c.r.livePrice) })}</div>
-              {c.r.pending && <div className="text-xs text-warning">{t("pending", { price: fmtInt(c.r.price) })}</div>}
-              {!c.ready && <div className="text-xs text-muted-foreground">{t("incomplete")}</div>}
-            </Td>
-            <Td label={t("colActions")} className="align-top">
-              <Button type="button" variant="outline" onClick={() => {
-                setEditing((ids) => ids.includes(c.r.variantId) ? ids : [...ids, c.r.variantId]);
-                document.getElementById(`profit-${c.r.variantId}`)?.focus();
-              }}><Pencil aria-hidden />{t("editPrice")}</Button>
-            </Td>
-          </tr>
-        ))}
+                  <Pencil aria-hidden className="size-4" />
+                </Button>
+              </Td>
+            </tr>
+          );
+        })}
       </DataTable>
-      {canReview && <BatchReviewOptions canApprove={canApprove} />}
+      {canReview && <BatchReviewOptions canApprove={canApprove} compact />}
     </ActionForm>
   );
 }

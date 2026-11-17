@@ -192,7 +192,7 @@ async function Exceptions({ showStock, showCatalog }: { showStock: boolean; show
 
 function Card({ title, action, children, className, testId }: { title: string; action?: React.ReactNode; children: React.ReactNode; className?: string; testId?: string }) {
   return (
-    <section className={cn("space-y-3 rounded-xl border bg-card p-4", className)} data-testid={testId}>
+    <section className={cn("min-w-0 space-y-3 rounded-xl border bg-card p-4", className)} data-testid={testId}>
       <div className="flex items-center justify-between gap-2">
         <h2 className="font-medium">{title}</h2>
         {action}
@@ -229,7 +229,7 @@ async function RecentActivity({ days, showStock }: { days: number; showStock: bo
               >
                 {receipts.map((r) => (
                   <tr key={r.id}>
-                    <Td><Link href={`/admin/inventory/documents/${r.id}`} className="font-mono text-xs hover:text-primary">{r.code}</Link></Td>
+                    <Td><Link href={`/admin/inventory/documents/${r.id}`} className="font-mono text-xs whitespace-nowrap hover:text-primary">{r.code}</Link></Td>
                     <Td className="whitespace-nowrap text-muted-foreground tabular-nums">{fmtDateTime(r.at)}</Td>
                     <Td>{r.location}</Td>
                     <Td numeric>{fmtInt(r.skus)}</Td>

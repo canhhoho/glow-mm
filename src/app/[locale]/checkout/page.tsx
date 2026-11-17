@@ -78,7 +78,7 @@ async function CheckoutContent({ params }: PageProps<"/[locale]/checkout">) {
           {cart.lines.map((l) => (
             <li key={l.variantId} className="flex justify-between gap-3">
               <span>
-                {l.name} · {l.label} × {l.qty}
+                {l.name}{!l.standard && ` · ${l.label}`} × {l.qty}
                 {l.preorder && <span className="text-xs text-muted-foreground"> · {t("preorderTag")}</span>}
               </span>
               <span className="whitespace-nowrap">{formatMmk(l.priceMmk * l.qty, locale)}</span>

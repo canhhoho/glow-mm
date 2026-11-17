@@ -8,8 +8,8 @@ async function newCodOrder(page: Page, phone: string, name: string) {
   await page.getByLabel("Tên người nhận").fill(name);
   await pickAddressAdmin(page);
   await page.getByLabel("Địa chỉ").fill("No. 5, Insein Rd");
-  const option = page.getByLabel("Biến thể").locator("option", { hasText: VARIANT });
-  await page.getByLabel("Biến thể").selectOption((await option.getAttribute("value"))!);
+  const option = page.getByLabel("SKU / Phân loại").locator("option", { hasText: VARIANT });
+  await page.getByLabel("SKU / Phân loại").selectOption((await option.getAttribute("value"))!);
   await page.getByLabel("SL", { exact: true }).fill("1");
   await page.getByRole("button", { name: "Tạo đơn" }).click();
   await expect(page).toHaveURL(/\/admin\/orders\/(?!new$)[^/?]+$/);

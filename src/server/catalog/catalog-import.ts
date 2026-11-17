@@ -20,9 +20,7 @@ import { saveProduct } from "./products";
 import { IMPORT_PRICE_PREFIX } from "./product-pricing";
 import { brandSlug } from "./brands";
 import { MAX_SHEET_ROWS } from "./catalog-sheet-read";
-import adminVi from "../../../messages/admin.vi.json";
-import adminEn from "../../../messages/admin.en.json";
-import adminMy from "../../../messages/admin.my.json";
+import { isStandardVariantLabel } from "@/lib/variant-label";
 
 /**
  * Nhập/cập nhật sản phẩm từ một sheet (mỗi dòng một SKU, tồn tuỳ chọn).
@@ -114,8 +112,6 @@ const num = (schema: typeof money, text: string, what: string) => {
   if (!r.success) throw new Error(`${what} "${text}" ${r.error.issues[0]?.message ?? "không hợp lệ"}`);
   return r.data;
 };
-/** Nhãn "một loại tiêu chuẩn" ở mọi ngôn ngữ admin — dòng không ghi biến thể khớp đúng biến thể chuẩn dù người nhập dùng ngôn ngữ nào. */
-const STANDARD_LABELS = [adminVi, adminEn, adminMy].map((m) => m.Products.standardVariant);
 const skuSchema = z.string().trim().min(1).max(40).regex(/^[A-Za-z0-9._-]+$/, "SKU chỉ gồm chữ, số, . _ -");
 const fold = (s: string) => toUnicode(s).normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase();
 /** Ô chữ: Zawgyi → Unicode, NFC, gộp khoảng trắng trong dòng (giữ xuống dòng của mô tả). */
@@ -406,7 +402,8 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
         const sku = vKey.startsWith("sku:") ? vKey.slice(4) : "";
         // Dòng không SKU của SP có sẵn: khớp biến thể cùng tên (nếu đúng một) thay vì tạo biến thể trùng tên.
         const standard = vKey === `label:${fold(input.standardLabel)}`;
-        const isStandard = (l: string) => STANDARD_LABELS.some((s) => fold(s) === fold(l));
+        // Nhãn "một loại tiêu chuẩn" ở mọi ngôn ngữ admin — dòng không ghi phân loại khớp đúng loại chuẩn dù người nhập dùng ngôn ngữ nào.
+        const isStandard = isStandardVariantLabel;
         const byLabel = !sku ? baseVariants.filter((v) => !v.isBundle && (`label:${fold(v.label)}` === vKey || (standard && isStandard(v.label)))) : [];
         const current = sku ? baseVariants.find((v) => v.sku === sku) : byLabel.length === 1 ? byLabel[0] : undefined;
         if (sku && !current) {

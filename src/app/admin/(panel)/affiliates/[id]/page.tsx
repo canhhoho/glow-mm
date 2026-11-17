@@ -69,7 +69,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
             ["inviteLink", `${siteUrl()}/ctv/join?inv=${a.code}`, "invite-link"],
           ] as const
         ).map(([key, link, testId]) => (
-          <div key={key} className="space-y-1">
+          <div key={key} className="min-w-0 space-y-1">
             <dt className="text-xs text-muted-foreground">{t(key)}</dt>
             <dd className="flex items-center gap-2">
               <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1.5 text-xs" data-testid={testId}>

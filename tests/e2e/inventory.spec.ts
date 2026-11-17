@@ -34,7 +34,7 @@ test("quản lý kho: nhận → chuyển chờ kiểm tra → xuất, tồn kh�
   await page.goto("/admin/inventory/documents/new?type=TRANSFER");
   await page.getByLabel("Chọn vị trí xuất").selectOption({ label: "THAM — Kho Thắm" });
   await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "MM-QC — Chờ kiểm tra" });
-  await page.getByLabel("Biến thể").selectOption({ label: VARIANT });
+  await page.getByLabel("SKU / Phân loại").selectOption({ label: VARIANT });
   await page.getByLabel("Lô").selectOption({ label: `${lot} · 10` }); // lô không hạn: nhãn chỉ có số lô · tồn
   await page.getByLabel("Số lượng").fill("4");
   await postAndExpect(page);
@@ -43,7 +43,7 @@ test("quản lý kho: nhận → chuyển chờ kiểm tra → xuất, tồn kh�
   await page.goto("/admin/inventory/documents/new?type=ISSUE");
   await page.getByLabel("Chọn vị trí xuất").selectOption({ label: "THAM — Kho Thắm" });
   await page.getByLabel("Lý do / ghi chú").fill("Hàng hỏng khi vận chuyển");
-  await page.getByLabel("Biến thể").selectOption({ label: VARIANT });
+  await page.getByLabel("SKU / Phân loại").selectOption({ label: VARIANT });
   await page.getByLabel("Lô").selectOption({ label: `${lot} · 6` });
   await page.getByLabel("Số lượng").fill("1");
   await postAndExpect(page);
@@ -73,12 +73,12 @@ test("phiếu kho: lỗi server giữ lựa chọn; ghi sổ cần xác nhận; 
   const from = page.getByLabel("Chọn vị trí xuất");
   await from.selectOption({ label: "THAM — Kho Thắm" });
   await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "THAM — Kho Thắm" });
-  await page.getByLabel("Biến thể").selectOption({ label: VARIANT });
+  await page.getByLabel("SKU / Phân loại").selectOption({ label: VARIANT });
   await page.getByLabel("Số lượng").fill("1");
   await page.getByRole("button", { name: "Lưu nháp" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "khác nhau" })).toBeVisible({ timeout: 20_000 });
   await expect(from.locator("option:checked")).toHaveText("THAM — Kho Thắm");
-  await expect(page.getByLabel("Biến thể").locator("option:checked")).toHaveText(VARIANT);
+  await expect(page.getByLabel("SKU / Phân loại").locator("option:checked")).toHaveText(VARIANT);
 
   await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "MM-QC — Chờ kiểm tra" });
   await page.getByRole("button", { name: "Lưu nháp" }).click();
@@ -103,7 +103,7 @@ test("phiếu kho: lỗi server giữ lựa chọn; ghi sổ cần xác nhận; 
   await page.getByRole("link", { name: "Huỷ và tạo lại" }).click();
   await expect(page).toHaveURL(/type=TRANSFER&from=/, { timeout: 20_000 });
   await expect(page.getByTestId("replacing-note")).toBeVisible();
-  await expect(page.getByLabel("Biến thể").locator("option:checked")).toHaveText(VARIANT);
+  await expect(page.getByLabel("SKU / Phân loại").locator("option:checked")).toHaveText(VARIANT);
   await expect(page.getByLabel("Số lượng")).toHaveValue("1");
   await page.getByLabel("Số lượng").fill("2");
   await page.getByRole("button", { name: "Lưu nháp" }).click();
@@ -168,7 +168,7 @@ test("form chuyển kho: đổi kho xuất thì bỏ chọn lô không còn hàn
   await page.goto("/admin/inventory/documents/new?type=TRANSFER");
   const from = page.getByLabel("Chọn vị trí xuất");
   await from.selectOption({ label: "THAM — Kho Thắm" });
-  await page.getByLabel("Biến thể").selectOption({ label: VARIANT });
+  await page.getByLabel("SKU / Phân loại").selectOption({ label: VARIANT });
   const batch = page.locator('select[name="batch-0"]');
   expect(await batch.locator("option").count()).toBeGreaterThan(1); // có lô còn hàng ở Kho Thắm
   await batch.selectOption({ index: 1 });

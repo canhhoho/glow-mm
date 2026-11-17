@@ -323,15 +323,16 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ad
       <Section title={t("items")}>
         <DataTable
           stack
-          numeric={[2, 3, 4, 5]}
-          head={[t("sku"), t("product"), t("qty"), t("ret.returned"), t("unitPrice"), t("lineTotal"), t("lots")]}
+          numeric={[1, 2, 3, 4]}
+          head={[t("product"), t("qty"), t("ret.returned"), t("unitPrice"), t("lineTotal"), t("lots")]}
         >
           {order.items.map((i) => (
             <tr key={i.id}>
-              <Td label={t("sku")} className="font-mono text-xs">
-                {i.sku}
+              {/* Chuẩn bảng SP: tên (snapshot lúc đặt) là dòng chính, SKU dòng phụ. */}
+              <Td className="md:w-[38%]">
+                <span className="block font-medium break-words">{i.name}</span>
+                <span className="block font-mono text-xs break-all text-muted-foreground">{i.sku}</span>
               </Td>
-              <Td className="max-md:font-medium">{i.name}</Td>
               <Td label={t("qty")} numeric>
                 {fmtInt(i.qty)}
               </Td>

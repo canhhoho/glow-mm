@@ -277,7 +277,7 @@ export async function stagePrices(tx: Tx, productId: string, entries: PriceEntry
   const now = new Date();
   for (const e of entries) {
     const v = live.get(e.variantId);
-    if (!v) throw new CatalogError("Biến thể không thuộc sản phẩm này");
+    if (!v) throw new CatalogError("Phân loại không thuộc sản phẩm này");
     if (mergeStaged(prices, v, e, userId, now)) changed = true;
   }
   if (!changed) return;

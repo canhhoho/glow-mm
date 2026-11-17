@@ -9,7 +9,7 @@ test("D4: đóng ngoại lệ COD trả toàn bộ, xem tuổi nợ và báo cá
   await page.getByLabel("SĐT", { exact: true }).fill("0978123456");
   await pickAddressAdmin(page);
   await page.getByLabel("Địa chỉ", { exact: true }).fill("No. 12, Pyay Road");
-  const variant = page.getByRole("combobox", { name: "Biến thể", exact: true });
+  const variant = page.getByRole("combobox", { name: "SKU / Phân loại", exact: true });
   const variantOption = variant.locator("option", { hasText: "SV-SUN-50 — Sunscreen SPF50 PA++++ (50ml)" });
   await variant.selectOption((await variantOption.getAttribute("value"))!);
   await page.getByRole("button", { name: "Tạo đơn", exact: true }).click();

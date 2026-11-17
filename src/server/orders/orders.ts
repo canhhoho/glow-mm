@@ -1,4 +1,5 @@
 import "server-only";
+import { isStandardVariantLabel } from "@/lib/variant-label";
 import { STORE_PRODUCT } from "@/server/catalog/store-visibility";
 import { z } from "zod";
 import { localeSchema, mmText, phone2Schema, phoneSchema, rawId } from "@/lib/schemas";
@@ -217,7 +218,8 @@ async function priceLines(tx: Tx, items: { variantId: string; qty: number }[], l
     return {
       variantId: v.id,
       sku: v.sku,
-      name: `${tr?.name ?? v.sku} — ${v.label}`,
+      // Snapshot cho khách: không chép nhãn hệ thống "Tiêu chuẩn" (tiếng của admin) vào tên dòng; đơn cũ giữ nguyên.
+      name: isStandardVariantLabel(v.label) ? (tr?.name ?? v.sku) : `${tr?.name ?? v.sku} — ${v.label}`,
       qty: i.qty,
       unitPriceMmk: v.priceMmk,
       affiliateCommissionMmk: v.affiliateCommissionMmk,

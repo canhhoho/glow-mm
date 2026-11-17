@@ -34,8 +34,8 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/admin/
       <Stat label={t("step.completed")} value={fmtInt(report.total.completed)} />
       <Stat label={t("conversion")} value={report.conversionPct == null ? "—" : `${report.conversionPct}%`} />
     </div>
-    <DataTable numeric={[1, 2, 3, 4]} empty={t("empty")} head={[t("stepLabel"), t("all"), t("mobile"), t("desktop"), t("unknown")]}>
-      {FUNNEL_KEYS.map((key) => <tr key={key}><Td>{t(`step.${key}`)}</Td><Td numeric>{fmtInt(report.total[key])}</Td><Td numeric>{fmtInt(report.groups.mobile[key])}</Td><Td numeric>{fmtInt(report.groups.desktop[key])}</Td><Td numeric>{fmtInt(report.groups.unknown[key])}</Td></tr>)}
+    <DataTable stack numeric={[1, 2, 3, 4]} empty={t("empty")} head={[t("stepLabel"), t("all"), t("mobile"), t("desktop"), t("unknown")]}>
+      {FUNNEL_KEYS.map((key) => <tr key={key}><Td className="max-md:font-medium">{t(`step.${key}`)}</Td><Td label={t("all")} numeric>{fmtInt(report.total[key])}</Td><Td label={t("mobile")} numeric>{fmtInt(report.groups.mobile[key])}</Td><Td label={t("desktop")} numeric>{fmtInt(report.groups.desktop[key])}</Td><Td label={t("unknown")} numeric>{fmtInt(report.groups.unknown[key])}</Td></tr>)}
     </DataTable>
     <Section title={t("vitals")}>
       <p className="text-sm text-muted-foreground">{t("vitalsHelp")}</p>

@@ -23,9 +23,11 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
     reorder: counts.reorder,
   };
   const tabLabel: Record<Tab, string> = { low: t("tabLow"), expiry: t("tabExpiry"), reorder: t("tabReorder") };
+  // Chuẩn bảng SP: tên là dòng chính, SKU dòng phụ (xuống dòng khi dài).
   const product = (sku: string, name: string) => (
     <>
-      <span className="font-mono text-xs">{sku}</span> {name}
+      <span className="block font-medium break-words">{name}</span>
+      <span className="block font-mono text-xs break-all text-muted-foreground">{sku}</span>
     </>
   );
 
@@ -52,13 +54,13 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
       />
 
       {tab === "low" && (
-        <DataTable empty={t("empty")} numeric={[1, 2, 3]} head={[t("product"), t("available"), t("threshold"), t("other")]}>
+        <DataTable stack empty={t("empty")} numeric={[1, 2, 3]} head={[t("product"), t("available"), t("threshold"), t("other")]}>
           {alerts.lowStock.map((v) => (
             <tr key={v.variantId} data-testid="alert-row">
               <Td>{product(v.sku, v.name)}</Td>
-              <Td className="text-right font-medium tabular-nums">{fmtInt(v.available)}</Td>
-              <Td className="text-right tabular-nums">{fmtInt(v.lowStockAt)}</Td>
-              <Td className="text-right tabular-nums text-muted-foreground">{v.otherQty > 0 ? fmtInt(v.otherQty) : "—"}</Td>
+              <Td label={t("available")} numeric className="font-medium">{fmtInt(v.available)}</Td>
+              <Td label={t("threshold")} numeric>{fmtInt(v.lowStockAt)}</Td>
+              <Td label={t("other")} numeric className="text-muted-foreground">{v.otherQty > 0 ? fmtInt(v.otherQty) : "—"}</Td>
             </tr>
           ))}
         </DataTable>
@@ -66,6 +68,7 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
 
       {tab === "expiry" && (
         <DataTable
+          stack
           empty={t("empty")}
           numeric={[6]}
           head={[t("level"), t("product"), t("lot"), t("expiry"), t("location"), <span key="st" className="sr-only">{ti("stockTypeFilter")}</span>, t("qty")]}
@@ -76,13 +79,13 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
                 <Badge tone={LEVEL_TONE[e.level]}>{t(`lv.${e.level}`)}</Badge>
               </Td>
               <Td>{product(e.sku, e.name)}</Td>
-              <Td className="font-mono text-xs">{e.lotNo}</Td>
-              <Td className="whitespace-nowrap">{fmtDay(e.expiryDate)}</Td>
-              <Td>
+              <Td label={t("lot")} className="font-mono text-xs">{e.lotNo}</Td>
+              <Td label={t("expiry")} className="whitespace-nowrap">{fmtDay(e.expiryDate)}</Td>
+              <Td label={t("location")}>
                 <LocationName loc={{ code: e.location, name: e.locationName, active: e.locationActive }} inactiveLabel={ti("inactive")} />
               </Td>
-              <Td>{ti(e.stockType)}</Td>
-              <Td className="text-right tabular-nums">{fmtInt(e.qty)}</Td>
+              <Td label={ti("stockTypeFilter")}>{ti(e.stockType)}</Td>
+              <Td label={t("qty")} numeric>{fmtInt(e.qty)}</Td>
             </tr>
           ))}
         </DataTable>
@@ -92,6 +95,7 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
         <>
           <p className="text-xs text-muted-foreground">{t("reorderHint")}</p>
           <DataTable
+            stack
             empty={t("empty")}
             numeric={[1, 2, 3, 4, 5, 6]}
             head={[
@@ -107,12 +111,12 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
             {alerts.reorder.map((r) => (
               <tr key={r.variantId} data-testid="alert-row">
                 <Td>{product(r.sku, r.name)}</Td>
-                <Td className="text-right tabular-nums">{r.dailySales}</Td>
-                <Td className="text-right tabular-nums">{fmtInt(r.available)}</Td>
-                <Td className="text-right tabular-nums text-muted-foreground">{r.otherQty > 0 ? fmtInt(r.otherQty) : "—"}</Td>
-                <Td className="text-right tabular-nums">{r.coverDaysLeft ?? "—"}</Td>
-                <Td className="text-right tabular-nums">{r.leadTimeDays}</Td>
-                <Td className="text-right font-medium tabular-nums">{fmtInt(r.suggestQty)}</Td>
+                <Td label={t("dailySales")} numeric>{r.dailySales}</Td>
+                <Td label={t("available")} numeric>{fmtInt(r.available)}</Td>
+                <Td label={t("other")} numeric className="text-muted-foreground">{r.otherQty > 0 ? fmtInt(r.otherQty) : "—"}</Td>
+                <Td label={t("coverDays")} numeric>{r.coverDaysLeft ?? "—"}</Td>
+                <Td label={t("leadTime")} numeric>{r.leadTimeDays}</Td>
+                <Td label={t("suggest")} numeric className="font-medium">{fmtInt(r.suggestQty)}</Td>
               </tr>
             ))}
           </DataTable>

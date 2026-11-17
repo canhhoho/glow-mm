@@ -6,8 +6,9 @@ import type { BatchReviewView } from "@/server/catalog/batch-review-text";
  * §6.4 — hai ô ở form xác nhận lượt nhập Excel / áp bảng tính giá: "Gửi duyệt ngay" (bật sẵn) và
  * "Duyệt luôn" (chỉ người có quyền duyệt, tắt sẵn, không tự đăng SP mới). Server kiểm lại quyền.
  */
-export function BatchReviewOptions({ canApprove }: { canApprove: boolean }) {
+export function BatchReviewOptions({ canApprove, compact = false }: { canApprove: boolean; compact?: boolean }) {
   const t = useTranslations("BatchReview");
+  // `compact` (trang Đặt giá): gợi ý ngắn cạnh ô, giải thích đầy đủ trong phần mở rộng — cùng ô, cùng hành vi.
   return (
     <fieldset className="space-y-1.5 text-sm">
       <legend className="sr-only">{t("legend")}</legend>
@@ -15,7 +16,7 @@ export function BatchReviewOptions({ canApprove }: { canApprove: boolean }) {
         <input type="checkbox" name="submitNow" defaultChecked className="mt-0.5 size-4 accent-primary" />
         <span>
           {t("submitNow")}
-          <span className="block text-xs text-muted-foreground">{t("submitNowHint")}</span>
+          <span className="block text-xs text-muted-foreground">{compact ? t("submitNowShort") : t("submitNowHint")}</span>
         </span>
       </label>
       {canApprove && (
@@ -23,9 +24,16 @@ export function BatchReviewOptions({ canApprove }: { canApprove: boolean }) {
           <input type="checkbox" name="approveNow" className="mt-0.5 size-4 accent-primary" />
           <span>
             {t("approveNow")}
-            <span className="block text-xs text-muted-foreground">{t("approveNowHint")}</span>
+            <span className="block text-xs text-muted-foreground">{compact ? t("approveNowShort") : t("approveNowHint")}</span>
           </span>
         </label>
+      )}
+      {compact && (
+        <details className="text-xs text-muted-foreground">
+          <summary className="cursor-pointer select-none">{t("explain")}</summary>
+          <p className="mt-1">{t("submitNow")}: {t("submitNowHint")}</p>
+          {canApprove && <p className="mt-1">{t("approveNow")}: {t("approveNowHint")}</p>}
+        </details>
       )}
     </fieldset>
   );

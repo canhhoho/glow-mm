@@ -61,7 +61,7 @@ export async function saveProductPricing(raw: unknown, userId: string) {
     const reason = `${MANUAL_PRICE_PREFIX}${input.reason}`;
     const plan = input.variants.map((entry) => {
       const live = product.variants.find((v) => v.id === entry.id);
-      if (!live) throw new CatalogError("Biến thể không thuộc sản phẩm này");
+      if (!live) throw new CatalogError("Phân loại không thuộc sản phẩm này");
       const cur = effective.get(live.id)!;
       if (entry.expectedPriceMmk !== undefined && cur.priceMmk !== entry.expectedPriceMmk) throw new CatalogError(`Giá của ${live.sku} vừa được đổi ở nơi khác — tải lại trang`);
       const commission = entry.affiliateCommissionMmk === undefined ? cur.commission : entry.affiliateCommissionMmk;

@@ -43,12 +43,12 @@ export default async function InventoryReportPage() {
           </DataTable>
         </Section>
         <Section title={t("slow", { days: slow.days })}>
-          <DataTable empty={t("empty")} numeric={[1]} head={[tc("sku"), t("available")]}>
+          <DataTable empty={t("empty")} numeric={[1]} head={[tc("product"), t("available")]}>
             {slow.items.slice(0, 20).map((v) => (
               <tr key={v.variantId}>
                 <Td>
-                  <span className="font-mono text-xs">{v.sku}</span>
-                  <div className="text-xs text-muted-foreground">{v.name}</div>
+                  <span className="block break-words">{v.name}</span>
+                  <span className="block font-mono text-xs break-all text-muted-foreground">{v.sku}</span>
                 </Td>
                 <Td numeric>{fmtInt(v.available)}</Td>
               </tr>

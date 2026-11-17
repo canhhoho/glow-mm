@@ -36,8 +36,8 @@ test("admin: tạo CTV, gán vào đơn, đơn hoàn tất rồi ghi nhận chi 
   await page.getByLabel("Tên người nhận").fill("Ma Aye");
   await pickAddressAdmin(page);
   await page.getByLabel("Địa chỉ").fill("No. 5, Pansodan St");
-  const option = page.getByLabel("Biến thể").locator("option", { hasText: VARIANT });
-  await page.getByLabel("Biến thể").selectOption((await option.getAttribute("value"))!);
+  const option = page.getByLabel("SKU / Phân loại").locator("option", { hasText: VARIANT });
+  await page.getByLabel("SKU / Phân loại").selectOption((await option.getAttribute("value"))!);
   await page.getByLabel("SL", { exact: true }).fill("1");
   await page.getByLabel("CTV (không bắt buộc)").selectOption({ label: `${code} — CTV ${code}` });
   await page.getByRole("button", { name: "Tạo đơn" }).click();

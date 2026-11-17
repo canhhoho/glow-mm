@@ -120,7 +120,7 @@ async function assertLocation(tx: Tx, locationId: string) {
 
 async function assertBatch(tx: Tx, batchId: string, variantId: string) {
   const b = await tx.batch.findUnique({ where: { id: batchId } });
-  if (!b || b.variantId !== variantId) throw new DocumentError("Lô không thuộc biến thể đã chọn");
+  if (!b || b.variantId !== variantId) throw new DocumentError("Lô không thuộc phân loại đã chọn");
 }
 
 /**
@@ -225,7 +225,7 @@ async function buildReceiveLines(tx: Tx, input: ReceiveInput): Promise<DraftLine
   );
   for (const l of input.lines) {
     const variant = variants.get(l.variantId);
-    if (!variant) throw new DocumentError("Biến thể không tồn tại");
+    if (!variant) throw new DocumentError("Phân loại không tồn tại");
     const fail = (msg: string): never => {
       throw new DocumentError(`SKU ${variant.sku}: ${msg}`);
     };

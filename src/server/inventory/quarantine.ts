@@ -1,4 +1,5 @@
 import "server-only";
+import { variantDisplayName } from "@/lib/variant-label";
 import { z } from "zod";
 import { mmTextReq, rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
@@ -47,7 +48,7 @@ export async function listQuarantine() {
       stockType: r.stockType,
       variantId: r.batch.variantId,
       sku: r.batch.variant.sku,
-      name: `${productName(r.batch.variant.product.translations, r.batch.variant.product.slug)} (${r.batch.variant.label})`,
+      name: variantDisplayName(productName(r.batch.variant.product.translations, r.batch.variant.product.slug), r.batch.variant.label),
       lotNo: r.batch.lotNo,
       expiryDate: r.batch.expiryDate,
       expiryStatus: r.batch.expiryStatus,

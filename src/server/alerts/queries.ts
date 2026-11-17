@@ -1,4 +1,5 @@
 import "server-only";
+import { variantDisplayName } from "@/lib/variant-label";
 import { prisma } from "@/lib/db";
 import { productName } from "@/server/inventory/queries";
 import { baseAvailability } from "@/server/orders/availability";
@@ -52,7 +53,7 @@ export async function loadVariantStock(now: Date, opts: { blockDays: number; sal
     (v): VariantStock => ({
       variantId: v.id,
       sku: v.sku,
-      name: `${productName(v.product.translations, v.product.slug)} (${v.label})`,
+      name: variantDisplayName(productName(v.product.translations, v.product.slug), v.label),
       lowStockAt: v.lowStockAt,
       safetyStock: v.safetyStock,
       leadTimeDays: v.leadTimeDays,
@@ -95,7 +96,7 @@ export async function loadExpiryAlerts(now: Date, t: { blockDays: number; warnDa
       {
         batchId: r.batchId,
         sku: r.batch.variant.sku,
-        name: `${productName(r.batch.variant.product.translations, r.batch.variant.product.slug)} (${r.batch.variant.label})`,
+        name: variantDisplayName(productName(r.batch.variant.product.translations, r.batch.variant.product.slug), r.batch.variant.label),
         lotNo: r.batch.lotNo,
         expiryDate: r.batch.expiryDate,
         location: r.location.code,

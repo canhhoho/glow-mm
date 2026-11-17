@@ -33,7 +33,8 @@ const variantSchema = z.object({
   label: z.string().trim().min(1).max(60),
   /** Bỏ qua (undefined) = giữ giá đang có; biến thể mới = 0 (QT1b: giá đặt ở bước 3 — khối "Giá bán" / bảng tính giá). */
   priceMmk: z.coerce.number().int().min(0).optional(),
-  weightGrams: z.coerce.number().int().min(0).optional().nullable(),
+  // Gram, nguyên ≥ 1 (khớp form/Excel). 0 hoặc trống = chưa có khối lượng → lưu null (cả hệ thống coi 0 là thiếu).
+  weightGrams: z.preprocess((v) => (v === "" || v === 0 || v === "0" ? null : v), z.coerce.number().int().min(1).nullable()).optional(),
   /** Hoa hồng CTV cố định MMK/cái; null = theo % của CTV. Bỏ qua (undefined) = giữ giá trị cũ. */
   affiliateCommissionMmk: z.preprocess((v) => (v === "" ? null : v), z.coerce.number().int().min(0).max(1_000_000_000).nullable()).optional(),
   lowStockAt: z.coerce.number().int().min(0).default(5),

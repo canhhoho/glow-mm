@@ -52,7 +52,7 @@ async function MmkProductForm({ rows }: { rows: ManualRow[] }) {
             <Td>
               <input type="hidden" name="variantId" value={r.variantId} />
               <input type="hidden" name="expectedPriceMmk" value={r.price} />
-              <span className="font-mono text-xs">{r.sku}</span> <span className="text-xs text-muted-foreground">({r.label})</span>
+              <span className="font-mono text-xs">{r.sku}</span>{!r.standardLabel && <span className="text-xs text-muted-foreground"> · {r.label}</span>}
               {r.pending && <div className="text-xs text-warning">{t("pending", { price: fmtInt(r.price) })}</div>}
             </Td>
             <Td label={t("colPurchaseMmk")} className="tabular-nums">{r.sources[0]?.unitCostMmk != null ? `${fmtInt(r.sources[0].unitCostMmk)} MMK` : "—"}</Td>

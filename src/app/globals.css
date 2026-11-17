@@ -140,3 +140,28 @@
     line-height: 1.8;
   }
 }
+/*
+ * Admin: mọi <details>/<summary> chưa tự định kiểu (không có class `list-none`) dùng chung mũi tên "›" xoay khi mở,
+ * giống khối thu gọn `Section` — thay cho tam giác mặc định của trình duyệt (mỗi trình duyệt một kiểu). Chỉ trong khung admin.
+ */
+[data-admin-shell] details > summary:not(.list-none) {
+  list-style: none;
+}
+[data-admin-shell] details > summary:not(.list-none)::-webkit-details-marker {
+  display: none;
+}
+[data-admin-shell] details > summary:not(.list-none)::before {
+  content: "";
+  display: inline-block;
+  width: 0.4em;
+  height: 0.4em;
+  margin: 0 0.6em 0.12em 0.1em;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  opacity: 0.55;
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+}
+[data-admin-shell] details[open] > summary:not(.list-none)::before {
+  transform: rotate(45deg);
+}

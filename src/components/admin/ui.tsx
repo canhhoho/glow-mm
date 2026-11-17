@@ -186,7 +186,7 @@ export function Section({
 }) {
   if (collapsible && title) {
     return (
-      <section id={id} className={cn("rounded-xl border bg-card p-4", className)} data-testid={testId} aria-label={typeof title === "string" ? title : undefined}>
+      <section id={id} className={cn("min-w-0 rounded-xl border bg-card p-4", className)} data-testid={testId} aria-label={typeof title === "string" ? title : undefined}>
         <details open={defaultOpen} className="group/section">
           <summary className={cn("flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 rounded-md font-medium [&::-webkit-details-marker]:hidden", focusRing)}>
             <span className="flex items-center gap-1.5">
@@ -202,7 +202,7 @@ export function Section({
   }
   return (
     // Tiêu đề chữ → section có tên (role region) để trình đọc màn hình/E2E tìm theo tên khối.
-    <section id={id} className={cn("space-y-3 rounded-xl border bg-card p-4", className)} data-testid={testId} aria-label={typeof title === "string" ? title : undefined}>
+    <section id={id} className={cn("min-w-0 space-y-3 rounded-xl border bg-card p-4", className)} data-testid={testId} aria-label={typeof title === "string" ? title : undefined}>
       {(title || actions) && (
         <div className="flex flex-wrap items-center justify-between gap-2">
           {title && <h2 className="font-medium">{title}</h2>}
@@ -245,13 +245,16 @@ export function DataTable({
   tableClassName?: string;
 }) {
   const hasRows = Array.isArray(children) ? children.length > 0 : !!children;
+  // min-w-0: bảng nằm trong grid/flex vẫn tự cuộn ngang, không kéo giãn khối cha (gây tràn trang trên điện thoại).
   return (
-    <div className={cn("relative overflow-x-auto rounded-xl border bg-card", className)}>
+    <div className={cn("relative min-w-0 overflow-x-auto rounded-xl border bg-card", className)}>
       <table className={cn("w-full text-sm", stack && STACK, dense && DENSE, tableClassName)}>
         <thead className={cn("bg-muted/50 text-left text-xs text-muted-foreground", stack && "max-md:hidden")}>
           <tr>
             {head.map((h, i) => (
-              <th key={i} className={cn("px-3 py-2 font-medium whitespace-nowrap", numeric.includes(i) && "text-right")}>
+              // Tiêu đề chữ được xuống dòng khi thiếu chỗ (căn đáy cho thẳng hàng) — tránh tiêu đề dài kéo bảng tràn khung;
+              // tiêu đề cột số giữ một dòng, căn phải như số.
+              <th key={i} className={cn("px-3 py-2 align-bottom font-medium", numeric.includes(i) ? "text-right whitespace-nowrap" : "text-balance")}>
                 {h}
               </th>
             ))}

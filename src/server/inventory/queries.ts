@@ -1,4 +1,5 @@
 import "server-only";
+import { variantDisplayName } from "@/lib/variant-label";
 import { prisma } from "@/lib/db";
 import { balanceKey, previewDocument, type PreviewDoc } from "./document-preview";
 import { receiptSourceLine } from "@/server/pricing/cost";
@@ -35,7 +36,7 @@ export async function listVariantsForPicker() {
     requiresExpiry: v.product.requiresExpiry,
     inactive: !v.active,
     archived: v.product.archivedAt != null,
-    label: `${v.sku} — ${productName(v.product.translations, v.product.slug)} (${v.label})`,
+    label: `${v.sku} — ${variantDisplayName(productName(v.product.translations, v.product.slug), v.label)}`,
   }));
 }
 
