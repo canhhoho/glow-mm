@@ -45,7 +45,7 @@ export default async function PickListPage({ searchParams }: PageProps<"/admin/o
           <h2 className="font-semibold">
             {g.location.name} · {t("bulk.pickTotal", { qty: fmtInt(g.totalQty) })}
           </h2>
-          <table className="w-full border-collapse">
+          <div className="overflow-x-auto print:overflow-visible"><table className="w-full border-collapse">
             <thead>
               <tr className="text-left text-xs">
                 <th className={`${cell} w-8`}>✓</th>
@@ -61,7 +61,7 @@ export default async function PickListPage({ searchParams }: PageProps<"/admin/o
                 l.lots.map((lot, i) => (
                   <tr key={`${l.variantId}|${lot.batchId ?? "-"}`} data-testid="pick-line">
                     <td className={cell} />
-                    <td className={`${cell} font-mono text-xs`}>{i === 0 ? l.sku : ""}</td>
+                    <td className={`${cell} font-mono text-xs whitespace-nowrap`}>{i === 0 ? l.sku : ""}</td>
                     <td className={cell}>{i === 0 ? l.name : ""}</td>
                     <td className={`${cell} text-xs`} data-testid="pick-lot">
                       {lot.lotNo ? (
@@ -76,24 +76,24 @@ export default async function PickListPage({ searchParams }: PageProps<"/admin/o
                       )}
                     </td>
                     <td className={`${cell} text-right text-base font-bold tabular-nums`}>{lot.qty}</td>
-                    <td className={`${cell} font-mono text-xs`}>{lot.orders.map((o) => `${o.code}×${o.qty}`).join(", ")}</td>
+                    <td className={`${cell} font-mono text-xs`}>{lot.orders.map((o, k) => <span key={o.code} className="whitespace-nowrap">{k > 0 && ", "}{o.code}×{o.qty}</span>)}</td>
                   </tr>
                 )),
               )}
             </tbody>
-          </table>
+          </table></div>
         </section>
       ))}
 
       <section className="space-y-1 break-before-page">
         <h2 className="font-semibold">{t("bulk.packTitle")}</h2>
-        <table className="w-full border-collapse">
+        <div className="overflow-x-auto print:overflow-visible"><table className="w-full border-collapse">
           <tbody>
             {orders.map((o) => (
               <tr key={o.id} className="break-inside-avoid align-top" data-testid="pack-order">
                 <td className={`${cell} w-8`} />
                 <td className={`${cell} text-xs whitespace-nowrap`}>
-                  <span className="font-mono">{o.code}</span>
+                  <span className="font-mono whitespace-nowrap">{o.code}</span>
                   <div>{t(`status.${o.status}`)}</div>
                   <div className="text-muted-foreground" data-testid="pick-plan">
                     {o.plan === "PLANNED" ? (o.pick && !o.pick.consumedAt ? t("bulk.pickPrintedAt", { time: fmtDateTime(o.pick.printedAt) }) : t("bulk.pickPlan.PLANNED")) : t(`bulk.pickPlan.${o.plan}`)}
@@ -103,14 +103,14 @@ export default async function PickListPage({ searchParams }: PageProps<"/admin/o
                 <td className={cell}>
                   {o.items.map((i) => (
                     <div key={i.id}>
-                      <span className="font-mono text-xs">{i.sku}</span> {i.name} × <b>{i.qty}</b>
+                      <span className="font-mono text-xs whitespace-nowrap">{i.sku}</span> {i.name} × <b>{i.qty}</b>
                     </div>
                   ))}
                 </td>
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </section>
     </div>
   );

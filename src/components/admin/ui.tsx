@@ -351,7 +351,8 @@ export function Stat({
 }) {
   const body = (
     <>
-      <div className="truncate text-sm text-muted-foreground">{label}</div>
+      {/* Như StatCard: nhãn xuống dòng (tối đa 2), không cắt "…" giữa nghĩa. */}
+      <div className="line-clamp-2 text-sm leading-snug break-words text-muted-foreground" title={label}>{label}</div>
       <div
         className={cn(
           "text-xl leading-tight font-semibold tabular-nums",
@@ -415,7 +416,8 @@ export function StatCard({
       )}
       <span className="min-w-0">
         <span className="block text-xl leading-tight font-semibold tabular-nums">{value}</span>
-        <span className="block truncate text-sm text-muted-foreground">{label}</span>
+        {/* Nhãn xuống dòng (tối đa 2), không cắt "…" — nhãn dài như "Hàng trả (giảm doanh thu)" vẫn đọc đủ; title cho nhãn dài hơn. */}
+        <span className="line-clamp-2 text-sm leading-snug break-words text-muted-foreground" title={label}>{label}</span>
       </span>
     </>
   );

@@ -15,7 +15,7 @@ import { getRun } from "@/server/pricing/queries";
 import { FORMULA_VERSION } from "@/server/pricing/runs";
 import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
-import { Badge, DataTable, Notice, Page, PageHeader, StatCard, Td } from "@/components/admin/ui";
+import { Badge, DataTable, Notice, Page, PageHeader, StatCard, Td, fieldClass } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import { fmtDate, fmtDateTime, fmtInt } from "@/lib/format";
 import { convertVndToMmk, rateDisplay } from "@/server/pricing/formula";
@@ -58,11 +58,16 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
   const RECOMPUTE = "recompute-form";
   const skipLabel = (r: string | null) => (r && (SKIP_REASONS as readonly string[]).includes(r) ? t(`skipReason.${r as (typeof SKIP_REASONS)[number]}`) : null);
 
+  // Chuẩn bảng admin: ô SP = tên + SKU dòng phụ; dạng thẻ trên điện thoại; cột "Chọn" chỉ khi bản còn mở.
+  const numHeads = 1 + (extra ? 1 : 0) + (vn ? 1 : 0); // vốn, [lãi/ship], [khối lượng]
+  const first = editable ? 2 : 1;
+  const numeric = [...Array.from({ length: numHeads }, (_, i) => first + i), first + numHeads + 1, first + numHeads + 2, first + numHeads + 3, first + numHeads + 4];
   const table = (
     <DataTable
+      stack
+      numeric={numeric}
       head={[
-        editable ? t("select") : <span key="sel" className="sr-only">{t("select")}</span>,
-        t("sku"),
+        ...(editable ? [t("select")] : []),
         t("product"),
         mmk ? t("costMmk") : vn ? t("purchaseCost") : t("cost"),
         ...(extra ? [extra] : []),
@@ -84,14 +89,14 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
         const risks = priceRisks({ oldPriceMmk: l.oldPriceMmk, priceMmk: l.newPriceMmk, costMmk, shipMmk: l.shipMmk ?? 0, commissionBp, fixedCommissionMmk: l.fixedCommissionMmk, uplineBp });
         return (
           <tr key={l.variantId} className={cn(stale && "bg-warning-subtle")} data-testid="run-line">
-            <Td>
-              {editable && pendingLine && (
-                <input type="checkbox" name="variantId" value={l.variantId} defaultChecked={!stale} aria-label={l.sku} />
-              )}
-            </Td>
-            <Td className="font-mono text-xs">{l.sku}</Td>
-            <Td>
-              {l.name}
+            {editable && (
+              <Td label={t("select")} className="w-10">
+                {pendingLine && <input type="checkbox" name="variantId" value={l.variantId} defaultChecked={!stale} aria-label={l.sku} className="size-4" />}
+              </Td>
+            )}
+            <Td className="min-w-48">
+              <span className="block font-medium break-words">{l.name}</span>
+              <span className="block font-mono text-xs whitespace-nowrap text-muted-foreground">{l.sku}</span>
               {stale && <div className="text-xs text-warning">{t("changedSince")}</div>}
               {risks.lowMargin && (
                 <p className="text-xs text-warning">
@@ -102,15 +107,15 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
               )}
               {risks.largeChange && <p className="text-xs text-warning">{t("largeChangeWarning")}</p>}
             </Td>
-            <Td className="text-right tabular-nums">{fmtInt(mmk ? l.costMmk : l.costVnd)}</Td>
-            {extra && <Td className="text-right tabular-nums">{fmtInt(mmk ? l.profitMmk : l.shipMmk)}</Td>}
+            <Td label={mmk ? t("costMmk") : vn ? t("purchaseCost") : t("cost")} numeric>{fmtInt(mmk ? l.costMmk : l.costVnd)}</Td>
+            {extra && <Td label={String(extra)} numeric>{fmtInt(mmk ? l.profitMmk : l.shipMmk)}</Td>}
             {vn && (
-              <Td className="text-right tabular-nums">
+              <Td label={t("weight")} numeric>
                 {fmtInt(l.weightGrams)}
                 {l.weightFromComponents && <div className="text-xs text-muted-foreground">{t("weightFromComponents")}</div>}
               </Td>
             )}
-            <Td className="text-xs">
+            <Td label={t("source")} className="text-xs">
               {l.source ? (
                 <>
                   <Link href={`/admin/inventory/documents/${l.source.document.id}`} className="font-mono text-primary underline">
@@ -134,7 +139,7 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
                   name={`source:${l.variantId}`}
                   defaultValue={l.sourceLineId ?? ""}
                   aria-label={`${t("basisLot")} ${l.sku}`}
-                  className="mt-1 block max-w-56 rounded border bg-background px-1 py-0.5 text-xs"
+                  className={cn(fieldClass, "mt-1 block max-w-56 text-xs")}
                 >
                   <option value="">{t("basisLatest")}</option>
                   {lineSources.map((s: (typeof lineSources)[number]) => (
@@ -145,13 +150,13 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
                 </select>
               )}
             </Td>
-            <Td className="text-right tabular-nums">{fmtInt(l.oldPriceMmk)}</Td>
-            <Td className="text-right tabular-nums text-warning">{l.pendingPriceMmk != null ? fmtInt(l.pendingPriceMmk) : "—"}</Td>
-            <Td className="text-right font-medium tabular-nums">{fmtInt(l.newPriceMmk)}</Td>
-            <Td className={cn("text-right tabular-nums", pct != null && Math.abs(pct) >= BIG_CHANGE && "font-medium text-destructive")}>
+            <Td label={t("oldPrice")} numeric>{fmtInt(l.oldPriceMmk)}</Td>
+            <Td label={t("pendingPrice")} numeric className="text-warning">{l.pendingPriceMmk != null ? fmtInt(l.pendingPriceMmk) : "—"}</Td>
+            <Td label={t("newPrice")} numeric className="font-medium">{fmtInt(l.newPriceMmk)}</Td>
+            <Td label={t("change")} numeric className={cn(pct != null && Math.abs(pct) >= BIG_CHANGE && "font-medium text-destructive")}>
               {pct == null ? "—" : `${pct > 0 ? "+" : ""}${pct}%`}
             </Td>
-            <Td>
+            <Td label={t("status")}>
               <Badge tone={LINE_TONE[l.status]}>{t(`lineStatus.${l.status}`)}</Badge>
               {skipLabel(l.skipReason) && <div className="text-xs text-muted-foreground">{skipLabel(l.skipReason)}</div>}
             </Td>
