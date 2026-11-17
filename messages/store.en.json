@@ -44,6 +44,7 @@
     "description": "Description",
     "storage": "Storage",
     "bundle": "Set",
+    "standardVariant": "Standard",
     "buyNow": "Buy now",
     "related": "More in this category",
     "paoTitle": "Period after opening",

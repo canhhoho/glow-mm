@@ -11,6 +11,7 @@ import { nextLotForCustomer, sellableBatchWhere, type FefoCandidate } from "@/se
 import { availableToSell } from "@/server/orders/availability";
 import { preorderCapacity } from "@/server/orders/preorder";
 import { pick } from "./queries";
+import { isStandardVariantLabel } from "@/lib/variant-label";
 
 /** Truy vấn cho storefront (chỉ sản phẩm đã đăng, biến thể đang bán). Tồn = khả dụng để bán (đã trừ giữ hàng). */
 
@@ -217,7 +218,8 @@ export async function loadProductContent(slug: string, locale: string) {
     category: { slug: p.category.slug, name: pick(p.category.translations, locale)?.name ?? p.category.slug },
     images: p.images.map((i) => ({ url: i.file.url, alt: i.alt })),
     tags: p.tags.map((t) => pick(t.tag.translations, locale)?.name ?? t.tag.slug),
-    variants: p.variants.map((v) => ({ id: v.id, label: v.label, priceMmk: v.priceMmk, isBundle: v.isBundle })),
+    // `standard`: nhãn hệ thống "Tiêu chuẩn" (lưu theo ngôn ngữ admin) — trang khách dịch hoặc ẩn, không hiện nguyên văn.
+    variants: p.variants.map((v) => ({ id: v.id, label: v.label, standard: isStandardVariantLabel(v.label), priceMmk: v.priceMmk, isBundle: v.isBundle })),
   };
 }
 export type ProductContent = NonNullable<Awaited<ReturnType<typeof loadProductContent>>>;
@@ -309,6 +311,7 @@ export async function getCartDetails(lines: CartLine[], locale: string) {
         slug: v.product.slug,
         name: pick(v.product.translations, locale)?.name ?? v.product.slug,
         label: v.label,
+        standard: isStandardVariantLabel(v.label),
         priceMmk: v.priceMmk,
         qty: l.qty,
         available,

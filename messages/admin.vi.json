@@ -458,6 +458,16 @@
     "previewDelta": "Thay đổi",
     "previewAfter": "Dự kiến",
     "previewHelp": "Số dự kiến tính từ tồn hiện tại (cộng mọi lô của sản phẩm tại vị trí đó) và có thể khác nếu có giao dịch khác trước lúc ghi sổ; hệ thống kiểm tra lại khi ghi sổ.",
+    "product": "Sản phẩm",
+    "receiveLocation": "Kho nhập",
+    "receiveQty": "Số lượng nhập",
+    "stockChange": "Tồn hiện tại → Dự kiến",
+    "expiryShort": {
+      "unknown": "Chưa biết",
+      "none": "Không áp dụng"
+    },
+    "expiryLegend": "Hạn dùng — Chưa biết: lô chưa ghi hạn (khi bật quản lý hạn sẽ chưa bán được). Không áp dụng: hàng không có hạn sử dụng.",
+    "stockScope": "Tồn hiện tại → Dự kiến tính theo SKU và loại tồn tại kho {location}, cộng mọi lô; nhiều lô cùng SKU chỉ tính một lần.",
     "postConfirmSummary": "Ghi sổ phiếu {code}: {lines} dòng, tăng {inc}, giảm {dec}. Tồn kho sẽ thay đổi và không hoàn tác được.",
     "costUnit": "Giá mua/đv",
     "costRate": "Tỷ giá (VND cho 1 MMK)",

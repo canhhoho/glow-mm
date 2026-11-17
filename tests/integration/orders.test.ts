@@ -40,6 +40,17 @@ describe("Tạo đơn + giữ hàng", () => {
     expect(await avail(f.variantId)).toBe(7);
   });
 
+  it("tên dòng đơn: phân loại do người dùng đặt được ghi kèm; nhãn hệ thống \"Tiêu chuẩn\" không chép vào (khách EN/MY)", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 10 }]);
+    const named = await createOrder(orderInput(f, 1), { userId: null });
+    expect((await prisma.orderItem.findFirstOrThrow({ where: { orderId: named.id } })).name).toMatch(/ — 50ml$/);
+    await prisma.variant.update({ where: { id: f.variantId }, data: { label: "Tiêu chuẩn" } });
+    const standard = await createOrder(orderInput(f, 1), { userId: null });
+    const item = await prisma.orderItem.findFirstOrThrow({ where: { orderId: standard.id } });
+    expect(item.name).not.toContain("Tiêu chuẩn");
+    expect(item.name).not.toContain(" — ");
+  });
+
   it("địa chỉ VTP không hợp lệ / thị trấn hoặc cấp trên bị tắt → invalid_zone; SĐT phụ sai → invalid_phone", async () => {
     const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
     await expect(createOrder(orderInput(f, 1, { townshipId: "tw-khong-co" }), { userId: null })).rejects.toMatchObject({

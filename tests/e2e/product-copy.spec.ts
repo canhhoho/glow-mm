@@ -214,4 +214,23 @@ test("QT1b/QT2: tạo SP → nhập hàng từ bước 2 (điền sẵn, khối 
   await expect(steps.getByTestId("step-review")).toHaveAttribute("data-state", "done");
   await expect(steps.getByTestId("step-publish")).toHaveAttribute("data-state", "todo");
   await expect(page.getByTestId("step-publish-block").getByRole("button", { name: "Bật hiển thị trên web" })).toBeVisible();
+
+  // SP một loại (nhãn hệ thống "Tiêu chuẩn" do admin tạo): web khách không hiện chữ tiếng Việt này, không bắt chọn loại.
+  await page.getByTestId("step-publish-block").getByRole("button", { name: "Bật hiển thị trên web" }).click();
+  await expect(page.getByTestId("step-publish-block")).toContainText("Đang hiển thị trên web", { timeout: 15_000 });
+  const slug = `flow-${tag}`;
+  for (const path of [`/en/p/${slug}`, `/p/${slug}`, `/vi/p/${slug}`]) {
+    await page.goto(path);
+    const main = page.getByRole("main");
+    await expect(main.getByRole("heading", { level: 1 })).toHaveText(`Flow ${tag}`);
+    await expect(main.getByTestId("single-variant")).toBeVisible();
+    await expect(main.getByRole("radio")).toHaveCount(0);
+    await expect(main).not.toContainText("Tiêu chuẩn");
+  }
+  await page.screenshot({ path: "test-results/screens/storefront-single-variant-vi.png", fullPage: true });
+  await page.goto(`/en/p/${slug}`);
+  await page.getByRole("button", { name: "Add to cart" }).click();
+  await page.goto("/en/cart");
+  await expect(page.getByRole("main")).toContainText(`Flow ${tag}`);
+  await expect(page.getByRole("main")).not.toContainText("Tiêu chuẩn");
 });

@@ -92,6 +92,27 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
   const buyable = (v: (typeof p.variants)[number]) => v.available > 0 || v.preorder > 0;
   const firstAvailable = p.variants.find((v) => v.available > 0) ?? p.variants.find(buyable);
   const onlyPreorder = !!firstAvailable && firstAvailable.available <= 0;
+  // Tên phân loại + tình trạng hàng. Nhãn hệ thống "Tiêu chuẩn" (lưu theo ngôn ngữ admin) dịch theo ngôn ngữ khách.
+  const variantText = (v: (typeof p.variants)[number], showLabel: boolean) => (
+    <span className="flex-1">
+      {(showLabel || v.isBundle) && (
+        <span className="block">
+          {showLabel && (v.standard ? t("standardVariant") : v.label)} {v.isBundle && <span className="text-xs text-brand-2">· {t("bundle")}</span>}
+        </span>
+      )}
+      <span className="block text-xs text-muted-foreground">
+        {v.available <= 0
+          ? v.preorder > 0
+            ? t("preorderAvailable")
+            : t("outOfStock")
+          : v.available <= LOW_STOCK
+            ? t("lowStock", { count: v.available })
+            : t("inStock")}
+        {v.expiry?.kind === "DATED" && ` · ${t("expiry")}: ${fmtDay(v.expiry.date)}`}
+        {v.expiry?.kind === "NONE" && ` · ${t("expiryNone")}`}
+      </span>
+    </span>
+  );
   const minPrice = Math.min(...p.variants.map((v) => v.priceMmk));
   const sections = [
     { key: "description", title: t("description"), body: p.description },
@@ -155,41 +176,35 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
 
           <form action={addToCartAction} className="space-y-3" data-analytics-add-cart>
             <input type="hidden" name="locale" value={locale} />
-            <fieldset className="space-y-2">
-              <legend className="mb-1 text-sm">{t("variant")}</legend>
-              {p.variants.map((v) => (
-                <label
-                  key={v.id}
-                  className="flex min-h-11 items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 has-checked:border-brand has-disabled:opacity-50"
-                >
-                  <input
-                    type="radio"
-                    name="variantId"
-                    value={v.id}
-                    required
-                    disabled={!buyable(v)}
-                    defaultChecked={v.id === firstAvailable?.id}
-                  />
-                  <span className="flex-1">
-                    <span className="block">
-                      {v.label} {v.isBundle && <span className="text-xs text-brand-2">· {t("bundle")}</span>}
-                    </span>
-                    <span className="block text-xs text-muted-foreground">
-                      {v.available <= 0
-                        ? v.preorder > 0
-                          ? t("preorderAvailable")
-                          : t("outOfStock")
-                        : v.available <= LOW_STOCK
-                          ? t("lowStock", { count: v.available })
-                          : t("inStock")}
-                      {v.expiry?.kind === "DATED" && ` · ${t("expiry")}: ${fmtDay(v.expiry.date)}`}
-                      {v.expiry?.kind === "NONE" && ` · ${t("expiryNone")}`}
-                    </span>
-                  </span>
-                  <span className="font-medium text-brand">{formatMmk(v.priceMmk, locale)}</span>
-                </label>
-              ))}
-            </fieldset>
+            {p.variants.length === 1 ? (
+              // Một loại: không bắt khách chọn. Nhãn hệ thống "Tiêu chuẩn" ẩn; tên người dùng đặt (vd "50ml") vẫn hiện.
+              <div className="flex min-h-11 items-center gap-3 rounded-lg border border-border bg-card px-3 py-2" data-testid="single-variant">
+                {buyable(p.variants[0]) && <input type="hidden" name="variantId" value={p.variants[0].id} />}
+                {variantText(p.variants[0], !p.variants[0].standard)}
+                <span className="font-medium text-brand">{formatMmk(p.variants[0].priceMmk, locale)}</span>
+              </div>
+            ) : (
+              <fieldset className="space-y-2">
+                <legend className="mb-1 text-sm">{t("variant")}</legend>
+                {p.variants.map((v) => (
+                  <label
+                    key={v.id}
+                    className="flex min-h-11 items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 has-checked:border-brand has-disabled:opacity-50"
+                  >
+                    <input
+                      type="radio"
+                      name="variantId"
+                      value={v.id}
+                      required
+                      disabled={!buyable(v)}
+                      defaultChecked={v.id === firstAvailable?.id}
+                    />
+                    {variantText(v, true)}
+                    <span className="font-medium text-brand">{formatMmk(v.priceMmk, locale)}</span>
+                  </label>
+                ))}
+              </fieldset>
+            )}
             {p.variants.some((v) => v.expiry) && <p className="text-xs text-muted-foreground">{t("expiryNote")}</p>}
             {p.variants.some((v) => v.available <= 0 && v.preorder > 0) && (
               <p className="rounded-lg bg-secondary px-3 py-2 text-xs text-secondary-foreground" data-testid="preorder-note">

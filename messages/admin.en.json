@@ -458,6 +458,16 @@
     "previewDelta": "Change",
     "previewAfter": "Expected",
     "previewHelp": "Expected figures use current stock (all lots of the product at that location) and may differ if other transactions happen before posting; the system re-checks when posting.",
+    "product": "Product",
+    "receiveLocation": "Receiving warehouse",
+    "receiveQty": "Qty received",
+    "stockChange": "Current → Expected stock",
+    "expiryShort": {
+      "unknown": "Unknown",
+      "none": "Not applicable"
+    },
+    "expiryLegend": "Expiry — Unknown: the lot has no expiry recorded (not sellable once expiry tracking is on). Not applicable: the item has no expiry date.",
+    "stockScope": "Current → Expected stock is per SKU and stock type at {location}, summing all lots; several lots of one SKU are counted once.",
     "postConfirmSummary": "Post document {code}: {lines} lines, +{inc}, -{dec}. Stock will change and cannot be undone.",
     "costUnit": "Purchase price/unit",
     "costRate": "Rate (VND per 1 MMK)",

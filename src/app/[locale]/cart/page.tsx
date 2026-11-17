@@ -59,7 +59,7 @@ async function CartContent({ params }: PageProps<"/[locale]/cart">) {
           >
             <div className="flex justify-between gap-3">
               <Link href={`/p/${l.slug}`} className="text-sm">
-                {l.name} <span className="text-muted-foreground">· {l.label}</span>
+                {l.name} {!l.standard && <span className="text-muted-foreground">· {l.label}</span>}
               </Link>
               <span className="font-medium whitespace-nowrap">{formatMmk(l.priceMmk * l.qty, locale)}</span>
             </div>
@@ -87,7 +87,7 @@ async function CartContent({ params }: PageProps<"/[locale]/cart">) {
                   max={99}
                   defaultValue={l.qty}
                   inputMode="numeric"
-                  aria-label={`${l.name} ${l.label}`}
+                  aria-label={l.standard ? l.name : `${l.name} ${l.label}`}
                   className={cn(storeField, "w-20")}
                 />
                 <button type="submit" className={outlineButton}><Save aria-hidden className="size-4 shrink-0" /> {t("update")}</button>
