@@ -88,7 +88,8 @@ test("thủ công kho VND: SP mới từ Excel → ghi sổ → Đặt giá (lô
   const expected = priceVndManual({ mmkPerVnd: rate.mmkPerVnd, mmkPerUsd: rate.mmkPerUsd, vndPerUsd: rate.vndPerUsd, purchaseVnd: 100_000, profitVnd: 50_000, shipMmk: 800, commissionMmk: 2_000, roundTo });
   const shown = expected.toLocaleString("en-US");
   await expect(line.getByTestId("manual-final")).toHaveText(shown);
-  await expect(line.getByRole("cell", { name: convertVndToMmk(150_000, rate)!.toLocaleString("en-US") })).toBeVisible();
+  // Cột trung gian "Giá mua + lãi (MMK)" đã bỏ khỏi giao diện; giá bán vẫn đúng công thức độc lập ở trên.
+  await expect(line).not.toContainText(convertVndToMmk(150_000, rate)!.toLocaleString("en-US"));
   await page.screenshot({ path: "test-results/screens/selling-prices-manual.png", fullPage: true });
 
   await vnd.getByRole("checkbox", { name: "Gửi duyệt ngay" }).uncheck();

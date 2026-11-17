@@ -1,4 +1,5 @@
 import "server-only";
+import { isStandardVariantLabel } from "@/lib/variant-label";
 import { prisma } from "@/lib/db";
 import { productName } from "@/server/inventory/queries";
 import { getNumberSetting } from "@/server/settings";
@@ -22,6 +23,8 @@ export type ManualRow = {
   productName: string;
   sku: string;
   label: string;
+  /** Nhãn hệ thống "một loại tiêu chuẩn" — giao diện không hiện như tên phân loại (tính ở server: client không tải bảng chuỗi). */
+  standardLabel: boolean;
   active: boolean;
   isBundle: boolean;
   livePrice: number;
@@ -111,6 +114,7 @@ export async function manualPricingView(f: { variantIds?: string[]; productId?: 
       productName: productName(v.product.translations, v.product.slug),
       sku: v.sku,
       label: v.label,
+      standardLabel: isStandardVariantLabel(v.label),
       active: v.active,
       isBundle: v.isBundle,
       livePrice: v.priceMmk,
