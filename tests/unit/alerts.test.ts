@@ -18,15 +18,12 @@ const v = (over: Partial<VariantStock>): VariantStock => ({
   ...over,
 });
 
-describe("Hạn dùng", () => {
-  it("phân loại theo số ngày còn lại", () => {
+describe("Hạn dùng (tắt = null)", () => {
+  it("classifyExpiry luôn trả null khi FEATURES.expiry = false; daysLeft vẫn tính ngày", () => {
     expect(daysLeft(day("2026-10-15"), now)).toBe(0);
-    expect(classifyExpiry(day("2026-10-14"), now, T)).toBe("expired");
-    expect(classifyExpiry(day("2026-10-15"), now, T)).toBe("blocked");
-    expect(classifyExpiry(day("2027-01-12"), now, T)).toBe("blocked"); // còn 89 ngày
-    expect(classifyExpiry(day("2027-01-13"), now, T)).toBe("near"); // còn 90 ngày → bán được
-    expect(classifyExpiry(day("2027-04-12"), now, T)).toBe("near"); // còn 179 ngày
-    expect(classifyExpiry(day("2027-04-13"), now, T)).toBe(null); // còn 180 ngày
+    expect(classifyExpiry(day("2026-10-14"), now, T)).toBeNull();
+    expect(classifyExpiry(day("2026-10-15"), now, T)).toBeNull();
+    expect(classifyExpiry(day("2027-01-12"), now, T)).toBeNull();
   });
 });
 

@@ -2,6 +2,8 @@ import "server-only";
 import { z } from "zod";
 import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
+import { FEATURES } from "@/lib/features";
+import { assertFeature } from "@/server/feature-guard";
 import { Prisma, type DocType, type StockType } from "@/generated/prisma/client";
 import { newCode } from "@/server/codes";
 import { getNumberSetting } from "@/server/settings";
@@ -231,10 +233,14 @@ async function buildReceiveLines(tx: Tx, input: ReceiveInput): Promise<DraftLine
     if (variant.isBundle) fail("Không nhập kho trực tiếp cho combo — nhập từng thành phần");
     const existing = batches.get(lotKey(l.variantId, l.lotNo));
     // 16/11/2026: hạn dùng chọn theo từng lô (Có ngày / Chưa biết hạn / Không có hạn), không theo cờ của SP.
-    const expiryStatus = l.expiryStatus ?? (variant.product.requiresExpiry ? "DATED" : "NONE");
-    if (expiryStatus === "DATED" && !l.expiryDate) fail("Cần nhập hạn sử dụng hoặc chọn Chưa biết hạn");
-    if (expiryStatus !== "DATED" && l.expiryDate) fail("Chỉ nhập ngày khi đã biết hạn sử dụng");
-    if (l.mfgDate && l.expiryDate && l.mfgDate > l.expiryDate) fail("Ngày sản xuất phải trước hạn sử dụng");
+    const expiryStatus = !FEATURES.expiry
+      ? (l.expiryDate ? "DATED" : "NONE")
+      : l.expiryStatus ?? (variant.product.requiresExpiry ? "DATED" : "NONE");
+    if (FEATURES.expiry) {
+      if (expiryStatus === "DATED" && !l.expiryDate) fail("Cần nhập hạn sử dụng hoặc chọn Chưa biết hạn");
+      if (expiryStatus !== "DATED" && l.expiryDate) fail("Chỉ nhập ngày khi đã biết hạn sử dụng");
+      if (l.mfgDate && l.expiryDate && l.mfgDate > l.expiryDate) fail("Ngày sản xuất phải trước hạn sử dụng");
+    }
     // P24: loại tiền theo kho của SP — kho mua tại Myanmar (LOCAL_MMK) nhập giá MMK, kho hàng nhập VN nhập VND.
     const loc = variant.product.stockLocation ?? target;
     const mmk = loc?.pricingMode === "LOCAL_MMK";
@@ -247,7 +253,7 @@ async function buildReceiveLines(tx: Tx, input: ReceiveInput): Promise<DraftLine
     // P1-C (D11): nhập lại cùng lô được phép với GIÁ khác (giá vốn lô = bình quân theo SL đã nhập, tính lại khi ghi sổ);
     // hạn dùng phải giữ nguyên (FEFO theo lô) và một lô chỉ có một loại tiền.
     if (existing && (existing.unitCostVnd == null) !== (unitCostVnd == null)) fail(`Lô ${l.lotNo} đã có giá mua bằng loại tiền khác (VND / MMK)`);
-    if (existing && (existing.expiryDate?.getTime() !== l.expiryDate?.getTime() || existing.expiryStatus !== expiryStatus)) {
+    if (FEATURES.expiry && existing && (existing.expiryDate?.getTime() !== l.expiryDate?.getTime() || existing.expiryStatus !== expiryStatus)) {
       fail(`Lô ${l.lotNo} đã có với hạn dùng khác`);
     }
     const batch =
@@ -675,7 +681,7 @@ export async function postDocumentTx(tx: Tx, documentId: string, userId: string,
   }
   // P1-B (M3): không chuyển lô hết hạn / chưa biết hạn VÀO kho bán (chọn lô tay bỏ qua FEFO). Xuất huỷ hoặc chuyển
   // sang khu chờ kiểm tra vẫn được.
-  if (doc.type === "TRANSFER" && doc.toId) {
+  if (FEATURES.expiry && doc.type === "TRANSFER" && doc.toId) {
     const to = await tx.location.findUnique({ where: { id: doc.toId }, select: { sellable: true, name: true } });
     if (to?.sellable) {
       const bad = await tx.batch.findFirst({
@@ -802,11 +808,13 @@ async function revertDraftWeights(tx: Tx, documentId: string, userId: string) {
 
 /** Ngưỡng hạn dùng cho bán hàng (dùng ở P2). */
 export async function salesBlockDays() {
+  if (!FEATURES.expiry) return 0;
   return getNumberSetting("expiry.blockDays");
 }
 
 /** Resolve an unknown date after checking packaging; posted stock ledger stays intact. */
 export async function resolveBatchExpiry(raw: unknown, userId: string) {
+  assertFeature("expiry");
   const input = z.object({ batchId: rawId, expiryDate: z.iso.date() }).parse(raw);
   return prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT "id" FROM "Batch" WHERE "id" = ${input.batchId} FOR UPDATE`;

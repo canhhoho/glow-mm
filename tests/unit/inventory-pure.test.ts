@@ -6,34 +6,32 @@ import { bundleAvailability, expandBundles } from "@/server/inventory/bundle";
 const d = (s: string) => new Date(`${s}T00:00:00Z`);
 const today = d("2026-10-15");
 
-describe("FEFO", () => {
+describe("FEFO (FEATURES.expiry = false: full hạn dùng, không chặn xuất)", () => {
   const batches = [
     { batchId: "late", expiryDate: d("2028-03-31"), available: 60 },
     { batchId: "early", expiryDate: d("2027-01-15"), available: 20 },
-    { batchId: "blocked", expiryDate: d("2026-12-31"), available: 10 }, // còn 77 ngày < 90
+    { batchId: "blocked", expiryDate: d("2026-12-31"), available: 10 },
     { batchId: "expired", expiryDate: d("2026-10-01"), available: 5 },
   ];
 
-  it("xuất lô hết hạn sớm nhất trước", () => {
-    expect(pickFefo(batches, 15, { today, blockDays: 90 })).toEqual([{ batchId: "early", qty: 15 }]);
+  it("xuất theo thứ tự hạn dùng mà không chặn lô nào", () => {
+    expect(pickFefo(batches, 15, { today, blockDays: 90 })).toEqual([
+      { batchId: "expired", qty: 5 },
+      { batchId: "blocked", qty: 10 },
+    ]);
   });
 
   it("tràn sang lô kế tiếp khi lô đầu không đủ", () => {
     expect(pickFefo(batches, 30, { today, blockDays: 90 })).toEqual([
-      { batchId: "early", qty: 20 },
-      { batchId: "late", qty: 10 },
-    ]);
-  });
-
-  it("bỏ qua lô dưới ngưỡng hạn dùng và lô đã hết hạn", () => {
-    expect(() => pickFefo(batches, 81, { today, blockDays: 90 })).toThrow(InsufficientStockError);
-  });
-
-  it("blockDays = 0 (xuất huỷ) vẫn dùng lô cận hạn nhưng không dùng lô đã hết hạn", () => {
-    expect(pickFefo(batches, 12, { today, blockDays: 0 })).toEqual([
+      { batchId: "expired", qty: 5 },
       { batchId: "blocked", qty: 10 },
-      { batchId: "early", qty: 2 },
+      { batchId: "early", qty: 15 },
     ]);
+  });
+
+  it("toàn bộ 95 đơn vị đều bán được (không bị chặn bởi hạn dùng)", () => {
+    expect(pickFefo(batches, 95, { today, blockDays: 90 })).toHaveLength(4);
+    expect(() => pickFefo(batches, 96, { today, blockDays: 90 })).toThrow(InsufficientStockError);
   });
 
   it("cùng hạn → lô nhận trước xuất trước", () => {
@@ -52,9 +50,9 @@ describe("FEFO", () => {
     expect(() => pickFefo(batches, 1.5, { today, blockDays: 90 })).toThrow();
   });
 
-  it("ngưỡng hạn dùng tính theo ngày", () => {
-    expect(isBatchUsable(d("2027-01-13"), today, 90)).toBe(true); // đúng 90 ngày
-    expect(isBatchUsable(d("2027-01-12"), today, 90)).toBe(false);
+  it("mọi lô đều khả dụng khi tắt hạn dùng (isBatchUsable luôn true)", () => {
+    expect(isBatchUsable(d("2027-01-13"), today, 90)).toBe(true);
+    expect(isBatchUsable(d("2027-01-12"), today, 90)).toBe(true);
   });
 });
 

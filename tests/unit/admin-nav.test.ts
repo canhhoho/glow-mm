@@ -96,13 +96,13 @@ describe("menu admin", () => {
     expect(activeHref("/admin/account", entries)).toBeNull();
   });
 
-  it("mốc ngừng bán (badge Cảnh báo) khớp classifyExpiry", () => {
+  it("mốc ngừng bán (badge Cảnh báo) khớp classifyExpiry khi tắt hạn dùng", () => {
     const now = new Date("2026-10-19T20:30:00Z");
     const t = { blockDays: 90, warnDays: 180 };
     const cut = sellableCutoff(now, t.blockDays);
     const dayBefore = new Date(cut.getTime() - 86_400_000);
-    expect(classifyExpiry(dayBefore, now, t)).toBe("blocked");
-    expect(classifyExpiry(cut, now, t)).toBe("near");
-    expect(classifyExpiry(new Date("2026-10-18T00:00:00Z"), now, t)).toBe("expired");
+    expect(classifyExpiry(dayBefore, now, t)).toBeNull();
+    expect(classifyExpiry(cut, now, t)).toBeNull();
+    expect(classifyExpiry(new Date("2026-10-18T00:00:00Z"), now, t)).toBeNull();
   });
 });

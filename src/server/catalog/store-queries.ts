@@ -2,6 +2,7 @@ import "server-only";
 import { STORE_PRODUCT } from "@/server/catalog/store-visibility";
 import { cache } from "react";
 import { prisma } from "@/lib/db";
+import { FEATURES } from "@/lib/features";
 import { Prisma } from "@/generated/prisma/client";
 import { normalizeForSearch, searchVariants } from "@/lib/myanmar";
 import type { CartLine } from "@/server/cart/cart";
@@ -258,6 +259,7 @@ export async function withProductStock(content: ProductContent, now = new Date()
   }
   // Lô của cái tiếp theo khách đặt — bỏ qua phần đã giữ cho đơn khác (D9).
   const expiryOf = (variantId: string): StoreExpiry => {
+    if (!FEATURES.expiry) return null;
     const next = nextLotForCustomer(byVariant.get(variantId) ?? [], reserved.get(variantId) ?? 0, { today: now, blockDays });
     if (!next) return null;
     return next.expiryStatus === "NONE" ? { kind: "NONE" } : next.expiryDate ? { kind: "DATED", date: next.expiryDate } : null;

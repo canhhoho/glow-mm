@@ -8,6 +8,8 @@
  *    khác (`otherQty`: kho cũ, kho bán khác) chỉ để xem, không tính vào gợi ý.
  */
 
+import { FEATURES } from "@/lib/features";
+
 const DAY_MS = 86_400_000;
 
 export type ExpiryLevel = "expired" | "blocked" | "near" | "unknown";
@@ -25,6 +27,7 @@ export function classifyExpiry(
   t: { blockDays: number; warnDays: number },
   status: "DATED" | "NONE" | "UNKNOWN" = "DATED",
 ): ExpiryLevel | null {
+  if (!FEATURES.expiry) return null;
   if (status === "NONE") return null;
   if (status === "UNKNOWN" || !expiryDate) return "unknown";
   const left = daysLeft(expiryDate, now);

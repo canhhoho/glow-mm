@@ -1,6 +1,7 @@
 import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { FEATURES } from "@/lib/features";
 import { blockedBatchWhere } from "@/server/inventory/fefo";
 import { getNumberSetting } from "@/server/settings";
 import type { NavCountKey } from "./nav";
@@ -30,11 +31,15 @@ export async function navCounts(keys: Set<NavCountKey>, now = new Date()): Promi
     jobs.push(distinctLots({ location: { type: "QUARANTINE" } }).then((n) => ["quarantineLots", n]));
   }
   if (keys.has("blockedLots")) {
-    jobs.push(
-      getNumberSetting("expiry.blockDays")
-        .then((d) => distinctLots({ batch: blockedBatchWhere(now, d) }))
-        .then((n) => ["blockedLots", n]),
-    );
+    if (!FEATURES.expiry) {
+      jobs.push(Promise.resolve(["blockedLots", 0]));
+    } else {
+      jobs.push(
+        getNumberSetting("expiry.blockDays")
+          .then((d) => distinctLots({ batch: blockedBatchWhere(now, d) }))
+          .then((n) => ["blockedLots", n]),
+      );
+    }
   }
   if (keys.has("pendingApplications")) {
     jobs.push(prisma.affiliateApplication.count({ where: { status: "PENDING" } }).then((n) => ["pendingApplications", n]));

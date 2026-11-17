@@ -8,6 +8,7 @@ import { fieldClass, fieldLabelClass, fieldLabelSmClass, Notice } from "@/compon
 import { createDocumentAction } from "@/server/inventory/actions";
 import { batchQtyAt, batchSelectable, keepValidBatches } from "@/server/inventory/document-form-rules";
 import { cn } from "@/lib/utils";
+import { FEATURES } from "@/lib/features";
 
 type DocType = "RECEIVE" | "TRANSFER" | "ISSUE" | "ADJUST";
 type StockType = "SELLABLE" | "TESTER";
@@ -57,7 +58,7 @@ const blank = (): Line => ({
   batchId: "",
   lotNo: "",
   expiryDate: "",
-  expiryStatus: "DATED",
+  expiryStatus: FEATURES.expiry ? "DATED" : "NONE",
   mfgDate: "",
   unitCostVnd: "",
   qty: "",
@@ -212,7 +213,7 @@ export function DocumentForm({ type, data, replace }: { type: DocType; data: For
                 <select
                   required
                   value={l.variantId}
-                  onChange={(e) => update(l.key, { variantId: e.target.value, batchId: "", expiryDate: "", expiryStatus: variants.find((v) => v.id === e.target.value)?.requiresExpiry === false ? "NONE" : "DATED" })}
+                  onChange={(e) => update(l.key, { variantId: e.target.value, batchId: "", expiryDate: "", expiryStatus: !FEATURES.expiry ? "NONE" : variants.find((v) => v.id === e.target.value)?.requiresExpiry === false ? "NONE" : "DATED" })}
                   className={fieldClass}
                   name={`variant-${i}`}
                 >
@@ -228,27 +229,33 @@ export function DocumentForm({ type, data, replace }: { type: DocType; data: For
 
               {type === "RECEIVE" ? (
                 <>
-                  <label className={fieldLabelSmClass}>
-                    <span className="text-muted-foreground">{t("expiryStatus")}</span>
-                    <select value={l.expiryStatus} onChange={(e) => update(l.key, { expiryStatus: e.target.value as Line["expiryStatus"], expiryDate: "" })} className={fieldClass}>
-                      {/* 16/11/2026: hạn dùng theo lô, mọi SP chọn được cả ba. */}
-                      <option value="DATED">{ti("expiryDated")}</option>
-                      <option value="UNKNOWN">{ti("expiryUnknown")}</option>
-                      <option value="NONE">{ti("expiryNone")}</option>
-                    </select>
-                  </label>
+                  {FEATURES.expiry && (
+                    <label className={fieldLabelSmClass}>
+                      <span className="text-muted-foreground">{t("expiryStatus")}</span>
+                      <select value={l.expiryStatus} onChange={(e) => update(l.key, { expiryStatus: e.target.value as Line["expiryStatus"], expiryDate: "" })} className={fieldClass}>
+                        {/* 16/11/2026: hạn dùng theo lô, mọi SP chọn được cả ba. */}
+                        <option value="DATED">{ti("expiryDated")}</option>
+                        <option value="UNKNOWN">{ti("expiryUnknown")}</option>
+                        <option value="NONE">{ti("expiryNone")}</option>
+                      </select>
+                    </label>
+                  )}
                   <label className={fieldLabelSmClass}>
                     <span className="text-muted-foreground">{t("lotNo")}</span>
                     <input required name={`lot-${i}`} value={l.lotNo} onChange={(e) => update(l.key, { lotNo: e.target.value })} className={fieldClass} />
                   </label>
-                  <label className={fieldLabelSmClass}>
-                    <span className="text-muted-foreground">{t("expiry")}</span>
-                    <input required={l.expiryStatus === "DATED"} disabled={l.expiryStatus !== "DATED"} type="date" name={`expiry-${i}`} value={l.expiryDate} onChange={(e) => update(l.key, { expiryDate: e.target.value })} className={fieldClass} />
-                  </label>
-                  <label className={fieldLabelSmClass}>
-                    <span className="text-muted-foreground">{t("mfg")}</span>
-                    <input type="date" name={`mfg-${i}`} value={l.mfgDate} onChange={(e) => update(l.key, { mfgDate: e.target.value })} className={fieldClass} />
-                  </label>
+                  {FEATURES.expiry && (
+                    <label className={fieldLabelSmClass}>
+                      <span className="text-muted-foreground">{t("expiry")}</span>
+                      <input required={l.expiryStatus === "DATED"} disabled={l.expiryStatus !== "DATED"} type="date" name={`expiry-${i}`} value={l.expiryDate} onChange={(e) => update(l.key, { expiryDate: e.target.value })} className={fieldClass} />
+                    </label>
+                  )}
+                  {FEATURES.expiry && (
+                    <label className={fieldLabelSmClass}>
+                      <span className="text-muted-foreground">{t("mfg")}</span>
+                      <input type="date" name={`mfg-${i}`} value={l.mfgDate} onChange={(e) => update(l.key, { mfgDate: e.target.value })} className={fieldClass} />
+                    </label>
+                  )}
                   <label className={fieldLabelSmClass}>
                     <span className="text-muted-foreground">{t("unitCost")}</span>
                     <input required type="number" min={0} step={1} inputMode="numeric" name={`cost-${i}`} value={l.unitCostVnd} onChange={(e) => update(l.key, { unitCostVnd: e.target.value })} className={fieldClass} />

@@ -22,13 +22,13 @@ function row(p: Partial<BalanceRow> & Pick<BalanceRow, "locationType" | "qty">):
   };
 }
 
-describe("summarizeStock — ô số tổng trang Tồn kho", () => {
-  it("bán được = SELLABLE tại vị trí bán, lô còn hạn ≥ blockDays (cận hạn vẫn tính)", () => {
+describe("summarizeStock — ô số tổng trang Tồn kho (FEATURES.expiry = false)", () => {
+  it("bán được = SELLABLE tại vị trí bán, không bị trừ bởi hạn dùng", () => {
     const s = summarizeStock(
       [
         row({ locationType: "MM_STOCK", qty: 10 }),
-        row({ locationType: "MM_STOCK", qty: 4, expiryDate: inDays(120) }), // cận hạn
-        row({ locationType: "MM_STOCK", qty: 3, expiryDate: inDays(30) }), // ngừng bán
+        row({ locationType: "MM_STOCK", qty: 4, expiryDate: inDays(120) }),
+        row({ locationType: "MM_STOCK", qty: 3, expiryDate: inDays(30) }),
         row({ locationType: "MM_STOCK", qty: 2, stockType: "TESTER" }),
         row({ locationType: "VN_STOCK", qty: 50, variantId: "v2" }),
         row({ locationType: "QUARANTINE", qty: 1, variantId: "v3" }),
@@ -36,14 +36,14 @@ describe("summarizeStock — ô số tổng trang Tồn kho", () => {
       now,
       t,
     );
-    expect(s.sellableUnits).toBe(14);
+    expect(s.sellableUnits).toBe(17);
     expect(s.sellableVariants).toBe(1);
-    expect(s.near).toEqual({ units: 4, lots: 1 });
-    expect(s.blocked).toEqual({ units: 3, lots: 1 });
+    expect(s.near).toEqual({ units: 0, lots: 0 });
+    expect(s.blocked).toEqual({ units: 0, lots: 0 });
     expect(s.byLocationType).toEqual({ VN_STOCK: 50, IN_TRANSIT: 0, CUSTOMS: 0, MM_STOCK: 19, QUARANTINE: 1 });
   });
 
-  it("hết hạn tính vào ngừng bán; khu chờ kiểm tra và tester không tính cận hạn/ngừng bán", () => {
+  it("không phân loại cận hạn hay ngừng bán khi tắt hạn dùng", () => {
     const s = summarizeStock(
       [
         row({ locationType: "MM_STOCK", qty: 5, expiryDate: inDays(-1) }),
@@ -53,9 +53,9 @@ describe("summarizeStock — ô số tổng trang Tồn kho", () => {
       now,
       t,
     );
-    expect(s.blocked).toEqual({ units: 5, lots: 1 });
+    expect(s.blocked).toEqual({ units: 0, lots: 0 });
     expect(s.near).toEqual({ units: 0, lots: 0 });
-    expect(s.sellableUnits).toBe(0);
+    expect(s.sellableUnits).toBe(5);
   });
 
   it("đang vận chuyển + hải quan đếm SL và số lô khác nhau", () => {

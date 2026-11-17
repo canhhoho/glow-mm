@@ -3,6 +3,7 @@ import { changedBefore, submitTouched } from "./review";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { FEATURES } from "@/lib/features";
 import { parseCsvObjects } from "@/lib/csv";
 import { toUnicode } from "@/lib/myanmar";
 import { normalizeNumberText, parseYesNo, sheetHeaderKey } from "@/lib/catalog-sheet";
@@ -530,14 +531,16 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
             if (mmk ? r.unit_cost_vnd : r.unit_cost_mmk) throw new Error(mmk ? `Kho ${location?.code} nhập giá mua MMK, để trống cột VND` : `Kho ${location?.code} nhập giá mua VND, để trống cột MMK`);
             const purchase = num(money, costText, "Giá mua");
             const dateText = r.expiry_date?.trim() || "";
-            const noExpiry = parseYesNo(dateText) === false || dateText.toUpperCase() === "NONE";
+            const noExpiry = !FEATURES.expiry || parseYesNo(dateText) === false || dateText.toUpperCase() === "NONE";
             const date = noExpiry ? "" : dateText;
             const legacyStatus = (r.expiry_status ?? "").trim().toUpperCase();
-            const status = legacyStatus ? z.enum(["DATED", "NONE", "UNKNOWN"]).parse(legacyStatus) : noExpiry ? "NONE" : date ? "DATED" : noExpiryDefault ? "NONE" : "UNKNOWN";
-            if (status === "DATED" && !date) throw new Error("Cần ngày hết hạn");
-            if (status !== "DATED" && date) throw new Error("Để trống hạn sử dụng với lô chưa biết hạn / không hạn");
+            const status = !FEATURES.expiry
+              ? (date ? "DATED" : "NONE")
+              : legacyStatus ? z.enum(["DATED", "NONE", "UNKNOWN"]).parse(legacyStatus) : noExpiry ? "NONE" : date ? "DATED" : noExpiryDefault ? "NONE" : "UNKNOWN";
+            if (FEATURES.expiry && status === "DATED" && !date) throw new Error("Cần ngày hết hạn");
+            if (FEATURES.expiry && status !== "DATED" && date) throw new Error("Để trống hạn sử dụng với lô chưa biết hạn / không hạn");
             const mfg = r.mfg_date?.trim() || undefined;
-            if (mfg && date && mfg > date) throw new Error("Ngày sản xuất sau hạn sử dụng");
+            if (FEATURES.expiry && mfg && date && mfg > date) throw new Error("Ngày sản xuất sau hạn sử dụng");
             const stockType = z.enum(["SELLABLE", "TESTER"]).parse((r.stock_type || "SELLABLE").trim().toUpperCase());
             const lotNo = z.string().trim().min(1).max(50).parse(r.lot_no?.trim() || autoLot(v.sku));
             const key = `${v.sku}\u0000${lotNo}`;
@@ -552,16 +555,16 @@ async function buildPlan(raw: unknown, db: Tx): Promise<Plan> {
             if (lot) {
               if (lot.shipmentId) throw new Error(`Lô ${lotNo} của SKU ${v.sku} thuộc chuyến hàng — nhập thêm qua phiếu nhập của chuyến, không qua Excel`);
               if ((lot.unitCostVnd == null) === !mmk) throw new Error(`Lô ${lotNo} của SKU ${v.sku} đã có giá mua bằng loại tiền khác`);
-              if (lot.expiryStatus !== status || (lot.expiryDate?.toISOString().slice(0, 10) ?? "") !== date) {
+              if (FEATURES.expiry && (lot.expiryStatus !== status || (lot.expiryDate?.toISOString().slice(0, 10) ?? "") !== date)) {
                 throw new Error(`Lô ${lotNo} của SKU ${v.sku} đã có với hạn dùng khác (${lot.expiryDate ? lot.expiryDate.toISOString().slice(0, 10) : lot.expiryStatus}) — đổi số lô hoặc sửa hạn cho khớp`);
               }
             }
-            if (status === "DATED" && date < today) warn(r.__line, `lô ${lotNo} đã hết hạn (${date}) → không bán được.`, true);
-            else if (status === "DATED" && date < blockFrom) warn(r.__line, `lô ${lotNo} còn dưới ${blockDays} ngày hạn dùng (${date}) → bị chặn bán.`, true);
+            if (FEATURES.expiry && status === "DATED" && date < today) warn(r.__line, `lô ${lotNo} đã hết hạn (${date}) → không bán được.`, true);
+            else if (FEATURES.expiry && status === "DATED" && date < blockFrom) warn(r.__line, `lô ${lotNo} còn dưới ${blockDays} ngày hạn dùng (${date}) → bị chặn bán.`, true);
             // Giá vốn = giá mua × tỷ giá đang dùng (tỷ giá được chốt cho các lô nhập lần này); không còn phí về kho.
             const costMmk = mmk ? purchase : rate ? money.parse(vndToMmk(purchase, rate)) : null;
             if (!mmk) needsRate = true;
-            if (status === "UNKNOWN") warnEach(r.__line, NO_EXPIRY);
+            if (FEATURES.expiry && status === "UNKNOWN") warnEach(r.__line, NO_EXPIRY);
             stock.push({
               sku: v.sku,
               locationId: target.id,

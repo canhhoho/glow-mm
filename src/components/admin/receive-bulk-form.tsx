@@ -40,7 +40,7 @@ const newRow = (v: ReceiveVariant, key: number, split = false): Row => ({
   split,
   qty: "",
   lotNo: "",
-  expiryStatus: v.requiresExpiry ? "DATED" : "NONE",
+  expiryStatus: !FEATURES.expiry ? "NONE" : v.requiresExpiry ? "DATED" : "NONE",
   expiryDate: "",
   mfgDate: "",
   unitCost: v.lastCost == null ? "" : String(v.lastCost),
@@ -62,7 +62,13 @@ function effective(r: Row, d: Defaults) {
 
 function rowInvalid(r: Row, d: Defaults) {
   const e = effective(r, d);
-  return !Number.isInteger(Number(r.qty)) || !e.lotNo || r.unitCost.trim() === "" || Number(r.unitCost) < 0 || (r.expiryStatus === "DATED" && !e.expiryDate);
+  return (
+    !Number.isInteger(Number(r.qty)) ||
+    !e.lotNo ||
+    r.unitCost.trim() === "" ||
+    Number(r.unitCost) < 0 ||
+    (FEATURES.expiry && r.expiryStatus === "DATED" && !e.expiryDate)
+  );
 }
 
 type Location = { id: string; code: string; name: string; sellable: boolean; pricingMode: "VN_IMPORT" | "LOCAL_MMK" | null };
@@ -434,14 +440,18 @@ export function ReceiveBulkForm({
             <span className="text-muted-foreground">{t("defaultLot")}</span>
             <input value={defaults.lotNo} maxLength={50} onChange={(e) => setDefaults((d) => ({ ...d, lotNo: e.target.value }))} className={fieldClass} />
           </label>
-          <label className={fieldLabelSmClass}>
-            <span className="text-muted-foreground">{t("defaultExpiry")}</span>
-            <input type="date" value={defaults.expiryDate} onChange={(e) => setDefaults((d) => ({ ...d, expiryDate: e.target.value }))} className={fieldClass} />
-          </label>
-          <label className={fieldLabelSmClass}>
-            <span className="text-muted-foreground">{t("defaultMfg")}</span>
-            <input type="date" value={defaults.mfgDate} onChange={(e) => setDefaults((d) => ({ ...d, mfgDate: e.target.value }))} className={fieldClass} />
-          </label>
+          {FEATURES.expiry && (
+            <>
+              <label className={fieldLabelSmClass}>
+                <span className="text-muted-foreground">{t("defaultExpiry")}</span>
+                <input type="date" value={defaults.expiryDate} onChange={(e) => setDefaults((d) => ({ ...d, expiryDate: e.target.value }))} className={fieldClass} />
+              </label>
+              <label className={fieldLabelSmClass}>
+                <span className="text-muted-foreground">{t("defaultMfg")}</span>
+                <input type="date" value={defaults.mfgDate} onChange={(e) => setDefaults((d) => ({ ...d, mfgDate: e.target.value }))} className={fieldClass} />
+              </label>
+            </>
+          )}
           <label className={fieldLabelSmClass}>
             <span className="text-muted-foreground">{t("defaultStockType")}</span>
             <select value={defaults.stockType} onChange={(e) => setDefaults((d) => ({ ...d, stockType: e.target.value as StockType }))} className={fieldClass}>
@@ -525,8 +535,8 @@ export function ReceiveBulkForm({
               <th className="px-2 py-2 font-medium">{t("warehouse")}</th>
               <th className="w-24 px-2 py-2 font-medium">{t("qty")}</th>
               <th className="px-2 py-2 font-medium">{t("lotNo")}</th>
-              <th className="px-2 py-2 font-medium">{t("expiry")}</th>
-              <th className="px-2 py-2 font-medium">{t("mfg")}</th>
+              {FEATURES.expiry && <th className="px-2 py-2 font-medium">{t("expiry")}</th>}
+              {FEATURES.expiry && <th className="px-2 py-2 font-medium">{t("mfg")}</th>}
               <th className="px-2 py-2 font-medium">{costHeader}</th>
               <th className="px-2 py-2 font-medium">{t("stockType")}</th>
               <th className="px-2 py-2 font-medium">{t("weightGrams")}</th>
@@ -653,27 +663,31 @@ const ReceiveRow = memo(function ReceiveRow({
         <Cap>{t("lotNo")}</Cap>
         <input aria-label={label(t("lotNo"))} value={r.lotNo} maxLength={50} placeholder={d.lotNo} onChange={(e) => onChange(r.key, { lotNo: e.target.value })} className={cn(small, "min-w-24")} />
       </td>
-      <td className={cn(cell, "max-md:col-span-2")}>
-        <Cap>{t("expiry")}</Cap>
-        {/* 16/11/2026: hạn dùng chọn theo lô — Có ngày / Chưa biết hạn / Không có hạn (túi, phụ kiện…). */}
-        {(
-          <div className="flex flex-wrap gap-1">
-            <select aria-label={label(t("expiryStatus"))} value={r.expiryStatus} onChange={(e) => onChange(r.key, { expiryStatus: e.target.value as ExpiryStatus, expiryDate: "" })} className={cn(small, "w-auto")}>
-              <option value="DATED">{ti("expiryDated")}</option>
-              <option value="UNKNOWN">{ti("expiryUnknown")}</option>
-              <option value="NONE">{ti("expiryNone")}</option>
-            </select>
-            {r.expiryStatus === "DATED" && (
-              <input aria-label={label(t("expiry"))} type="date" value={r.expiryDate || ""} title={!r.expiryDate && d.expiryDate ? d.expiryDate : undefined} onChange={(e) => onChange(r.key, { expiryDate: e.target.value })} className={cn(small, "w-36", !r.expiryDate && d.expiryDate && "text-muted-foreground")} />
-            )}
-          </div>
-        )}
-        {r.expiryStatus === "DATED" && !r.expiryDate && d.expiryDate && <div className="text-[11px] text-muted-foreground">{t("usesDefault", { value: d.expiryDate })}</div>}
-      </td>
-      <td className={cell}>
-        <Cap>{t("mfg")}</Cap>
-        <input aria-label={label(t("mfg"))} type="date" value={r.mfgDate} onChange={(e) => onChange(r.key, { mfgDate: e.target.value })} className={cn(small, "w-36 max-w-full")} />
-      </td>
+      {FEATURES.expiry && (
+        <td className={cn(cell, "max-md:col-span-2")}>
+          <Cap>{t("expiry")}</Cap>
+          {/* 16/11/2026: hạn dùng chọn theo lô — Có ngày / Chưa biết hạn / Không có hạn (túi, phụ kiện…). */}
+          {(
+            <div className="flex flex-wrap gap-1">
+              <select aria-label={label(t("expiryStatus"))} value={r.expiryStatus} onChange={(e) => onChange(r.key, { expiryStatus: e.target.value as ExpiryStatus, expiryDate: "" })} className={cn(small, "w-auto")}>
+                <option value="DATED">{ti("expiryDated")}</option>
+                <option value="UNKNOWN">{ti("expiryUnknown")}</option>
+                <option value="NONE">{ti("expiryNone")}</option>
+              </select>
+              {r.expiryStatus === "DATED" && (
+                <input aria-label={label(t("expiry"))} type="date" value={r.expiryDate || ""} title={!r.expiryDate && d.expiryDate ? d.expiryDate : undefined} onChange={(e) => onChange(r.key, { expiryDate: e.target.value })} className={cn(small, "w-36", !r.expiryDate && d.expiryDate && "text-muted-foreground")} />
+              )}
+            </div>
+          )}
+          {r.expiryStatus === "DATED" && !r.expiryDate && d.expiryDate && <div className="text-[11px] text-muted-foreground">{t("usesDefault", { value: d.expiryDate })}</div>}
+        </td>
+      )}
+      {FEATURES.expiry && (
+        <td className={cell}>
+          <Cap>{t("mfg")}</Cap>
+          <input aria-label={label(t("mfg"))} type="date" value={r.mfgDate} onChange={(e) => onChange(r.key, { mfgDate: e.target.value })} className={cn(small, "w-36 max-w-full")} />
+        </td>
+      )}
       <td className={cell}>
         <Cap>{costLabel}</Cap>
         <input aria-label={label(costLabel)} type="number" min={0} step={1} inputMode="numeric" value={r.unitCost} onChange={(e) => onChange(r.key, { unitCost: e.target.value })} className={cn(small, "w-28")} />
