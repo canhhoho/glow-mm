@@ -7,7 +7,6 @@ import { availableToSell } from "@/server/orders/availability";
 import { preorderCapacity } from "@/server/orders/preorder";
 import { AWAITING_REVIEW_WHERE, deriveLabel, labelWhere, type ChangeLabel, type ProductLabel } from "./approval-rules";
 import { loadReadiness, loadReadinessErrors } from "./readiness";
-import { changeRequestsFor } from "./change-request";
 
 /**
  * Danh sách SP admin có phân trang (P3, ảnh thiết kế "Sản phẩm"). Tab = trạng thái hiển thị (cùng quy tắc nhãn §4.2);
@@ -135,8 +134,8 @@ export async function listProductsPage(f: ListFilter, now = new Date()) {
       brand: { select: { name: true } },
       category: { select: { slug: true, translations: { select: { locale: true, name: true } } } },
       stockLocation: { select: { name: true } },
-      translations: { select: { locale: true, name: true } },
-      variants: { orderBy: { sku: "asc" }, select: { id: true, sku: true, label: true, priceMmk: true, isBundle: true, active: true } },
+      translations: { select: { locale: true, name: true, description: true } },
+      variants: { orderBy: { sku: "asc" }, select: { id: true, sku: true, label: true, isBundle: true, active: true } },
       images: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }], take: 1, select: { alt: true, file: { select: { url: true } } } },
       changeRequest: { select: { productId: true } },
     },
@@ -144,9 +143,6 @@ export async function listProductsPage(f: ListFilter, now = new Date()) {
   const byId = new Map(rows.map((r) => [r.id, r]));
   const ordered = pageIds.map((id) => byId.get(id)!).filter(Boolean);
   const readiness = await loadReadiness(prisma, ordered.filter((p) => !p.approvedAt && !p.archivedAt).map((p) => p.id), now);
-  const stock = await stockOf(candidates.filter((c) => pageIds.includes(c.id)), now);
-  // Giá chờ duyệt (SP đã duyệt có bản đang sửa) — hiện cạnh giá đang bán.
-  const staged = await changeRequestsFor(prisma, ordered.filter((p) => p.approvedAt && p.changeRequest).map((p) => p.id));
 
   return {
     total,
@@ -156,18 +152,11 @@ export async function listProductsPage(f: ListFilter, now = new Date()) {
     rows: ordered.map((p) => {
       const lab = deriveLabel({ ...p, hasChanges: !!p.changeRequest });
       const missing = readiness.get(p.id)?.errors.length ?? 0;
-      const active = p.variants.filter((v) => v.active);
-      const prices = active.map((v) => v.priceMmk).filter((x) => x > 0);
-      const stagedPrices = staged.get(p.id)?.prices ?? {};
-      const pending = active.flatMap((v) => {
-        const x = stagedPrices[v.id]?.priceMmk;
-        return x != null && x > 0 && x !== v.priceMmk ? [x] : [];
-      });
-      const s = stock.get(p.id) ?? { stock: null, sell: "out" as SellMode };
       return {
         id: p.id,
         slug: p.slug,
         name: productName(p.translations, p.slug),
+        description: plainDescription(p.translations),
         brand: p.brand.name,
         category: productName(p.category.translations, p.category.slug),
         warehouse: p.stockLocation?.name ?? null,
@@ -182,17 +171,23 @@ export async function listProductsPage(f: ListFilter, now = new Date()) {
         approvalVersion: p.approvalVersion,
         hasChanges: !!p.changeRequest,
         variants: p.variants.map((v) => ({ sku: v.sku, label: v.label, isBundle: v.isBundle, active: v.active })),
-        priceMin: prices.length ? Math.min(...prices) : null,
-        priceMax: prices.length ? Math.max(...prices) : null,
-        pendingMin: pending.length ? Math.min(...pending) : null,
-        pendingMax: pending.length ? Math.max(...pending) : null,
-        stock: s.stock,
-        sell: s.sell,
       };
     }),
   };
 }
 export type ProductListRow = Awaited<ReturnType<typeof listProductsPage>>["rows"][number];
+
+/** Mô tả ngắn cho cột danh sách: cùng ngôn ngữ với tên (ưu tiên en), bỏ thẻ HTML / ký hiệu markdown, gộp khoảng trắng. */
+function plainDescription(translations: { locale: string; description: string | null }[]): string | null {
+  const raw = (translations.find((t) => t.locale === "en" && t.description) ?? translations.find((t) => t.description))?.description;
+  if (!raw) return null;
+  const text = raw
+    .replace(/<[^>]*>/g, " ")
+    .replace(/[#*_`>~]+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return text ? text.slice(0, 300) : null;
+}
 
 /**
  * P3b — SP trước / sau theo thứ tự mặc định của danh sách (mới cập nhật trước, chưa ngừng KD).

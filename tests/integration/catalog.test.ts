@@ -2,7 +2,7 @@ import Rabbit from "rabbit-node";
 import { describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { saveProduct, setProductsPublished } from "@/server/catalog/products";
-import { createDocument } from "@/server/inventory/documents";
+import { createDocument, postDocument } from "@/server/inventory/documents";
 import { listProductsAdmin } from "@/server/catalog/admin-queries";
 import { deleteProducts, restoreProducts } from "@/server/catalog/product-delete";
 import { makeFixture, markApproved } from "./fixtures";
@@ -81,10 +81,11 @@ describe("Sản phẩm", () => {
       { ...base(f, `del-${f.tag.toLowerCase()}`), id: clean.id, variants: [{ sku: `DEL-${f.tag}`, label: "x", priceMmk: 2, weightGrams: 100 }] },
       f.userId,
     ); // có lịch sử giá — vẫn xoá được
-    await createDocument(
+    const received = await createDocument(
       { type: "RECEIVE", toId: f.vn.id, lines: [{ variantId: f.variantId, lotNo: "L", expiryDate: "2029-01-01", unitCostVnd: 1, qty: 1 }] },
       f.userId,
-    ); // SP của fixture có lô (phiếu nháp) → không xoá hẳn
+    );
+    await postDocument(received.id, f.userId); // SP của fixture đã nhập kho (phiếu ghi sổ) → không xoá hẳn
 
     expect(await deleteProducts([clean.id, f.productId], f.userId)).toEqual({ deleted: 1, archived: 1 });
     expect(await prisma.product.findUnique({ where: { id: clean.id } })).toBeNull();
@@ -210,8 +211,9 @@ describe("Thương hiệu tự xoá khi không còn SP (không có trang Thươn
     expect(await deleteProducts([p.id], f.userId)).toEqual({ deleted: 1, archived: 0 });
     expect(await brandOf(tmp)).toBeNull();
 
-    // SP fixture có phiếu nhập nháp (lịch sử) → chỉ ngừng kinh doanh, thương hiệu fixture vẫn còn.
-    await createDocument({ type: "RECEIVE", toId: f.mm.id, lines: [{ variantId: f.variantId, lotNo: "H", expiryDate: "2029-01-01", unitCostVnd: 1, qty: 1 }] }, f.userId);
+    // SP fixture đã nhập kho (phiếu ghi sổ = lịch sử) → chỉ ngừng kinh doanh, thương hiệu fixture vẫn còn.
+    const doc = await createDocument({ type: "RECEIVE", toId: f.mm.id, lines: [{ variantId: f.variantId, lotNo: "H", expiryDate: "2029-01-01", unitCostVnd: 1, qty: 1 }] }, f.userId);
+    await postDocument(doc.id, f.userId);
     expect(await deleteProducts([f.productId], f.userId)).toEqual({ deleted: 0, archived: 1 });
     expect(await prisma.brand.findUnique({ where: { id: f.brandId } })).not.toBeNull();
   });

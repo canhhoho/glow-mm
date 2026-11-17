@@ -6,7 +6,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { productFilterOptions } from "@/server/catalog/admin-queries";
-import { listProductsPage, MAIN_LIST_TABS, OTHER_LIST_TABS, PAGE_SIZES, parseListTab, SELL_MODES, type ListTab, type SellMode } from "@/server/catalog/product-list";
+import { listProductsPage, MAIN_LIST_TABS, OTHER_LIST_TABS, PAGE_SIZES, parseListTab, SELL_MODES, type ListTab } from "@/server/catalog/product-list";
 import { changeSummaries } from "@/server/catalog/review";
 import { catalogStats } from "@/server/catalog/stats";
 import type { ChangeItem } from "@/server/catalog/change-summary";
@@ -22,11 +22,10 @@ import { PRODUCT_LABEL_TONE, changeTone } from "@/components/admin/status-tones"
 
 const str = (v: string | string[] | undefined) => (typeof v === "string" && v ? v : undefined);
 
-const SELL_TONE: Record<SellMode, "success" | "brand" | "danger"> = { instock: "success", preorder: "brand", out: "danger" };
 
 /**
  * Danh sách sản phẩm (P3 — thiết kế "Sản phẩm"): ô số → tab trạng thái → bộ lọc + Nhập/Xuất Excel + Thêm SP →
- * bảng (ảnh, SKU, giá, tồn bán được, điều kiện bán, trạng thái, cập nhật) → phân trang. Thao tác hàng loạt giữ nguyên.
+ * bảng (ảnh, SKU, biến thể, mô tả, danh mục, trạng thái, cập nhật) → phân trang. Thao tác hàng loạt giữ nguyên.
  */
 export default async function ProductsPage({ searchParams }: PageProps<"/admin/products">) {
   const user = await requirePagePermission("catalog:manage");
@@ -84,7 +83,6 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
   const from = list.total ? (list.page - 1) * list.pageSize + 1 : 0;
   const to = Math.min(list.total, list.page * list.pageSize);
   const filtered = !!(query || brandId || categoryId || warehouseId || sell);
-  const price = (min: number | null, max: number | null) => (min == null ? "—" : min === max ? fmtInt(min) : `${fmtInt(min)} – ${fmtInt(max)}`);
 
   return (
     <Page>
@@ -195,15 +193,13 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
       <DataTable
         stack
         empty={t("empty")}
-        numeric={[4, 5]}
         head={[
           <span key="sel" className="sr-only">{t("colSelect")}</span>,
           t("list.colProduct"),
           t("list.colSku"),
+          t("list.colVariant"),
+          t("list.colDescription"),
           t("colCategory"),
-          t("list.colPrice"),
-          t("list.colStock"),
-          t("list.colSell"),
           t("colStatus"),
           t("list.colUpdated"),
           t("colActions"),
@@ -233,28 +229,23 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
                 </span>
               </div>
             </Td>
+            {/* Mặc định mỗi SP một biến thể: hiện SKU / tên biến thể của biến thể đầu, SP nhiều biến thể ghi thêm "+n loại khác". */}
             <Td label={t("list.colSku")} className="align-middle">
-              <span className="font-mono text-xs">{p.variants[0]?.sku ?? "—"}</span>
-              {p.variants.length > 1 && <span className="block text-xs text-muted-foreground">{t("list.moreVariants", { n: p.variants.length - 1 })}</span>}
+              <span className="font-mono text-xs whitespace-nowrap">{p.variants[0]?.sku ?? "—"}</span>
               {p.variants.length === 1 && p.variants[0].isBundle && <Badge tone="brand">combo</Badge>}
+            </Td>
+            <Td label={t("list.colVariant")} className="align-middle">
+              <span className="text-sm">{p.variants[0]?.label || "—"}</span>
+              {p.variants.length > 1 && <span className="block text-xs text-muted-foreground">{t("list.moreVariants", { n: p.variants.length - 1 })}</span>}
+            </Td>
+            <Td label={t("list.colDescription")} className="align-middle">
+              <p className="line-clamp-2 max-w-72 min-w-48 text-xs text-muted-foreground" title={p.description ?? undefined}>
+                {p.description ?? "—"}
+              </p>
             </Td>
             <Td label={t("colCategory")} className="align-middle">
               {p.category}
               <span className="block text-xs text-muted-foreground">{p.warehouse ?? t("warehouseNoneShort")}</span>
-            </Td>
-            <Td label={t("list.colPrice")} className="text-right whitespace-nowrap tabular-nums align-middle">
-              {price(p.priceMin, p.priceMax)}
-              {p.pendingMin != null && (
-                <div className="text-xs whitespace-nowrap text-warning-foreground" data-testid="list-price-pending">
-                  {t("list.pricePending", { price: price(p.pendingMin, p.pendingMax) })}
-                </div>
-              )}
-            </Td>
-            <Td label={t("list.colStock")} className={cn("text-right tabular-nums align-middle", p.stock === 0 && "font-medium text-destructive")}>
-              {p.stock == null ? "—" : fmtInt(p.stock)}
-            </Td>
-            <Td label={t("list.colSell")} className="align-middle">
-              {!p.archived && <Badge tone={SELL_TONE[p.sell]}>{t(`sell.${p.sell}`)}</Badge>}
             </Td>
             <Td label={t("colStatus")} className="align-middle">
               <div className="flex flex-col items-start gap-1" data-testid="product-readiness" data-label={p.label}>
