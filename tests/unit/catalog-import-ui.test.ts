@@ -115,6 +115,8 @@ describe("Bảng xem trước nhập Excel", () => {
     preview.rows = [row({ action: "update", changes: ["name", "weight"] })];
     const html = render();
     expect(html).not.toContain("Giá bán (MMK)");
-    expect(html).toContain("đổi: Tên, Khối lượng");
+    // Nhãn trường đổi dùng chung ProductFields (cùng tên với form sửa / tiêu đề Excel).
+    expect(html).toContain("đổi: Tên sản phẩm, Khối lượng (g)");
+    expect(html).toContain(">Phân loại (dung tích/màu)</th>");
   });
 });

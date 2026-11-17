@@ -136,7 +136,7 @@ export function ProductCreateForm({ kind, options, prefill }: { kind: "product" 
               }}
               onBlur={() => draftLabel.trim() && addLabel(draftLabel)}
               placeholder={labels.length ? "" : t("create.labelsPlaceholder")}
-              aria-label={t("create.labels")}
+              aria-label={tf("variant_label.label")}
               maxLength={60}
               className="h-7 min-w-32 flex-1 bg-transparent text-sm outline-none"
             />

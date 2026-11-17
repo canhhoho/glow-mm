@@ -217,7 +217,7 @@ Theo tài liệu thiết kế của dự án, hai kho đang dùng là Kho Thắm
 
 ### 4.2. Sản phẩm, biến thể, SKU, combo, tester
 
-- **Sản phẩm** có một hoặc nhiều **biến thể** (màu, dung tích). Mỗi biến thể có **SKU** (mã nội bộ) riêng. Không chia loại thì hệ thống tạo biến thể **"Tiêu chuẩn"**.
+- **Sản phẩm** có một hoặc nhiều **biến thể** (màu, dung tích) — trên form, trang sản phẩm, danh sách và file Excel đều ghi là **Phân loại (dung tích/màu)**. Mỗi biến thể có **SKU** (mã nội bộ) riêng. Không chia loại thì hệ thống tạo biến thể **"Tiêu chuẩn"**.
 - Giá, tồn kho, khối lượng tính **theo biến thể**. Biến thể đã lưu **không xoá được**, chỉ tắt (bỏ chọn **Đang dùng**).
 - **Combo** gồm các sản phẩm khác (cùng kho). Tồn combo tính từ thành phần; khi bán, hệ thống trừ kho **từng thành phần**. Không nhập kho trực tiếp cho combo.
 - **Tester/quà** là loại tồn riêng (**Loại tồn** = "Tester/quà"). Tester **không bao giờ bán được**.
@@ -296,7 +296,7 @@ Chỉ **Quản trị viên** làm các việc trong mục này.
    - **Thương hiệu** — chọn trong danh sách hoặc gõ tên mới (hiện "Thương hiệu mới — sẽ được tạo khi lưu").
    - **Danh mục** — bắt buộc.
    - **Kho** — chỉ hiện khi có nhiều hơn một kho bán.
-   - **Phân loại (màu / dung tích)** — gõ từng loại, bấm Enter hoặc dấu phẩy để thêm (ví dụ "Đỏ", "50ml"). Để trống nếu chỉ có một loại → hệ thống tạo "Tiêu chuẩn".
+   - **Phân loại (dung tích/màu)** — gõ từng loại, bấm Enter hoặc dấu phẩy để thêm (ví dụ "Đỏ", "50ml"). Để trống nếu chỉ có một loại → hệ thống tạo "Tiêu chuẩn".
 3. Bấm **Tạo sản phẩm**.
 
 **Sao chép từ sản phẩm cũ:** mở khối **Sao chép từ sản phẩm cũ**, chọn **Sản phẩm nguồn**, bấm **Nạp thông tin** (điền sẵn tên, thương hiệu, danh mục, phân loại). Hoặc bấm **Nhân bản** ở trang một sản phẩm. Khi tạo, hệ thống chép mô tả, ảnh và thiết lập; **không chép giá, hoa hồng CTV, lãi cố định và tồn kho**.
@@ -348,7 +348,7 @@ Khối **Kiểm tra điều kiện đăng bán** bên cạnh có ba dòng, mỗi
 
 - **Thông tin chung:** **Tên tiếng Myanmar**, **Tên tiếng Anh**, **Thương hiệu**, **Danh mục**.
 - **Mô tả:** **Mô tả tiếng Myanmar**, **Mô tả tiếng Anh**. Trang tiếng Anh **không** tự lấy mô tả tiếng Myanmar.
-- **Biến thể:** mỗi biến thể có **Tên biến thể (dung tích/màu)** và ô **Đang dùng**. Bấm **Thêm màu/dung tích** để thêm; biến thể mới có giá 0, và nếu sản phẩm đang bán thì biến thể mới **được tạo ở trạng thái tắt**.
+- **Phân loại:** mỗi dòng có ô **Phân loại (dung tích/màu)** và ô **Đang dùng**. Bấm **Thêm phân loại** để thêm; biến thể mới có giá 0, và nếu sản phẩm đang bán thì biến thể mới **được tạo ở trạng thái tắt**.
 - **Thiết lập khác (mã, kho, hạn dùng)** (khối đóng sẵn, bấm để mở):
   - **Slug (URL)** — **khoá sau lần đăng bán đầu tiên** (đường dẫn khách đã dùng).
   - **SKU** từng biến thể — tự điền, sửa được; trùng thì hệ thống tự thêm hậu tố khi lưu. Chỉ gồm chữ, số và `. _ -`.
@@ -452,7 +452,7 @@ Dấu * = bắt buộc khi tạo sản phẩm mới.
 | Tên Myanmar / Tên tiếng Anh | Cần ít nhất một tên. Các dòng **cùng tên + cùng thương hiệu** được gộp thành các biến thể của một sản phẩm |
 | Thương hiệu * | Chọn hoặc gõ tên mới (tự tạo thương hiệu) |
 | Danh mục * | Tên hoặc mã danh mục — danh mục phải có sẵn |
-| Biến thể | Màu/dung tích. Trống = "Tiêu chuẩn" |
+| Phân loại (dung tích/màu) | Màu/dung tích. Trống = "Tiêu chuẩn" |
 | Giá bán (MMK) | 💰 Điền = đặt giá (> 0) cho SKU có sẵn **và SKU mới**; **trống = giữ nguyên** (kể cả giá đang chờ duyệt). SKU mới để trống → giá 0, lưu nháp. Cần quyền quản lý giá |
 | Khối lượng (g) | Số nguyên gam. Kho Hàng nhập VN bắt buộc có trước khi gửi duyệt/đăng |
 | Hoa hồng CTV (MMK/cái) | 💰 Số tiền cố định/cái. Trống = giữ nguyên (SKU mới: theo % CTV). SP đã duyệt: chờ duyệt **cùng giá**. Không xoá được qua Excel |

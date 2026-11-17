@@ -156,7 +156,7 @@ export function ProductForm({
           </Field>
         </div>
         <Field label={`${tf("brand.label")} *`}>
-          <input aria-label={tf("brand.label")} list="brand-list" value={brandInput} onChange={(e) => setBrandInput(e.target.value)} className={fieldClass} required />
+          <input aria-label={tf("brand.label")} list="brand-list" value={brandInput} onChange={(e) => setBrandInput(e.target.value)} maxLength={80} className={fieldClass} required />
           <datalist id="brand-list">
             {options.brands.map((b) => (
               <option key={b.id} value={b.name} />
@@ -182,7 +182,7 @@ export function ProductForm({
         {variants.map((v, index) => (
           <fieldset key={v.key} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-3" data-testid="product-variant-row">
             <Field label={tf("variant_label.label")}>
-              <input aria-label={tf("variant_label.label")} required value={v.label} onChange={(e) => setVar(v.key, { label: e.target.value })} className={fieldClass} />
+              <input aria-label={tf("variant_label.label")} required value={v.label} onChange={(e) => setVar(v.key, { label: e.target.value })} maxLength={60} className={fieldClass} />
             </Field>
             <Field label={tf("sku.label")}>
               <input aria-label={tf("sku.label")} value={v.sku || suggestVariantSku(slug, index)} onChange={(e) => setVar(v.key, { sku: e.target.value })} maxLength={40} className={fieldClass} />

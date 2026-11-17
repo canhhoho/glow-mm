@@ -53,7 +53,7 @@ test("tạo SP có phân loại: mã tự sinh, giá 0, thanh 5 bước chỉ t�
   await form.getByRole("textbox", { name: "Tên sản phẩm", exact: true }).fill(`Túi Đỏ Dior ${tag}`);
   await form.getByRole("combobox", { name: "Thương hiệu", exact: true }).fill(`E2E Brand ${tag}`);
   await form.getByRole("combobox", { name: "Danh mục", exact: true }).selectOption({ index: 1 });
-  const labels = form.getByRole("textbox", { name: "Phân loại (màu / dung tích)", exact: true });
+  const labels = form.getByRole("textbox", { name: "Phân loại (dung tích/màu)", exact: true });
   await labels.fill("Đỏ");
   await labels.press("Enter");
   await labels.fill("Hồng,");
@@ -68,6 +68,8 @@ test("tạo SP có phân loại: mã tự sinh, giá 0, thanh 5 bước chỉ t�
   await expect(steps.getByTestId("step-publish")).toHaveAttribute("data-state", "waiting");
   await openProductTab(page, "price");
   await expect(page.getByTestId("step-price-row")).toHaveCount(2);
+  // Cùng nhãn "Phân loại (dung tích/màu)" ở tab giá, form sửa và danh sách (dữ liệu tạo → lưu → hiển thị khớp).
+  await expect(page.locator(`td[data-label="Phân loại (dung tích/màu)"]`)).toHaveText(["Đỏ", "Hồng"]);
   await expect(page.getByTestId("step-publish-block")).toContainText("Hoàn thành các bước trước");
 
   await openProductTab(page, "info");
@@ -75,7 +77,18 @@ test("tạo SP có phân loại: mã tự sinh, giá 0, thanh 5 bước chỉ t�
   await expect(page.getByRole("textbox", { name: "Slug (URL)", exact: true })).toHaveValue(`tui-do-dior-${tag}`);
   const skus = page.getByRole("textbox", { name: "SKU", exact: true });
   await expect(skus.nth(0)).toHaveValue(new RegExp(`^TUI-DO-DIOR-${tag}-0[12]$`));
+  const variantLabels = page.getByRole("textbox", { name: "Phân loại (dung tích/màu)", exact: true });
+  await expect(variantLabels).toHaveCount(2);
+  await expect(variantLabels.nth(0)).toHaveValue("Đỏ");
+  await expect(variantLabels.nth(1)).toHaveValue("Hồng");
+  await expect(page.getByRole("button", { name: "Thêm phân loại", exact: true })).toBeVisible();
   await page.screenshot({ path: "test-results/screens/product-steps.png", fullPage: true });
+
+  await page.goto(`/admin/products?q=${tag}`);
+  const listCell = page.locator(`td[data-label="Phân loại (dung tích/màu)"]`);
+  await expect(listCell).toHaveCount(1);
+  await expect(listCell).toContainText("+1 phân loại khác");
+  await page.screenshot({ path: "test-results/screens/product-list-variant.png", fullPage: true });
 });
 
 test("tạo SP: một ô tên (gõ chữ Myanmar được) và thương hiệu gõ mới", async ({ page }) => {
@@ -95,6 +108,10 @@ test("tạo SP: một ô tên (gõ chữ Myanmar được) và thương hiệu g
   await expect(page.getByRole("status").filter({ hasText: "Đã tạo sản phẩm" })).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Tên sản phẩm", exact: true })).toHaveValue(`ဆပ်ပြာ ${tag}`);
   await expect(page.getByRole("combobox", { name: "Thương hiệu", exact: true })).toHaveValue(`E2E Brand ${tag}`);
+  // Một phân loại: để trống ô phân loại khi tạo → một dòng "Tiêu chuẩn".
+  const variantLabels = page.getByRole("textbox", { name: "Phân loại (dung tích/màu)", exact: true });
+  await expect(variantLabels).toHaveCount(1);
+  await expect(variantLabels).toHaveValue("Tiêu chuẩn");
 });
 
 test("tạo combo bằng nút riêng: chọn thành phần cùng kho", async ({ page }) => {
@@ -110,7 +127,7 @@ test("tạo combo bằng nút riêng: chọn thành phần cùng kho", async ({ 
   await form.getByRole("textbox", { name: "Tên sản phẩm", exact: true }).fill(`Bộ E2E ${tag}`);
   await form.getByRole("combobox", { name: "Thương hiệu", exact: true }).fill(`E2E Brand ${tag}`);
   await form.getByRole("combobox", { name: "Danh mục", exact: true }).selectOption({ index: 1 });
-  await expect(form.getByRole("textbox", { name: "Phân loại (màu / dung tích)" })).toHaveCount(0);
+  await expect(form.getByRole("textbox", { name: "Phân loại (dung tích/màu)" })).toHaveCount(0);
   await form.getByRole("combobox", { name: "Thành phần combo 1", exact: true }).selectOption({ index: 1 });
   await form.getByRole("spinbutton", { name: "Số lượng 1", exact: true }).fill("2");
   await form.getByRole("button", { name: "Tạo combo", exact: true }).click();

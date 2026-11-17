@@ -38,9 +38,10 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
   const sell = SELL_MODES.find((s) => s === sp.sell);
   const page = Number(str(sp.page)) || 1;
   const pageSize = Number(str(sp.size)) || undefined;
-  const [t, tc, list, options, stats] = await Promise.all([
+  const [t, tc, tf, list, options, stats] = await Promise.all([
     getTranslations("Products"),
     getTranslations("Common"),
+    getTranslations("ProductFields"),
     listProductsPage({ tab, q: query, brandId, categoryId, warehouseId, sell, page, pageSize }),
     productFilterOptions(),
     catalogStats(),
@@ -197,7 +198,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
           <span key="sel" className="sr-only">{t("colSelect")}</span>,
           t("list.colProduct"),
           t("list.colSku"),
-          t("list.colVariant"),
+          tf("variant_label.label"),
           t("list.colDescription"),
           t("colCategory"),
           t("colStatus"),
@@ -229,12 +230,12 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
                 </span>
               </div>
             </Td>
-            {/* Mặc định mỗi SP một biến thể: hiện SKU / tên biến thể của biến thể đầu, SP nhiều biến thể ghi thêm "+n loại khác". */}
+            {/* Mặc định mỗi SP một phân loại: hiện SKU / phân loại đầu tiên, SP nhiều phân loại ghi thêm "+n phân loại khác". */}
             <Td label={t("list.colSku")} className="align-middle">
               <span className="font-mono text-xs whitespace-nowrap">{p.variants[0]?.sku ?? "—"}</span>
               {p.variants.length === 1 && p.variants[0].isBundle && <Badge tone="brand">combo</Badge>}
             </Td>
-            <Td label={t("list.colVariant")} className="align-middle">
+            <Td label={tf("variant_label.label")} className="align-middle">
               <span className="text-sm">{p.variants[0]?.label || "—"}</span>
               {p.variants.length > 1 && <span className="block text-xs text-muted-foreground">{t("list.moreVariants", { n: p.variants.length - 1 })}</span>}
             </Td>

@@ -59,9 +59,10 @@ export default async function EditProductPage({ params, searchParams }: PageProp
     if (fromPath) qs.set("from", fromPath);
     return `/admin/products/${id}${qs.size ? `?${qs}` : ""}${hash}`;
   };
-  const [t, td, product, images] = await Promise.all([
+  const [t, td, tf, product, images] = await Promise.all([
     getTranslations("Products"),
     getTranslations("Docs"),
+    getTranslations("ProductFields"),
     getProductForEdit(id),
     getProductImages(id),
   ]);
@@ -433,7 +434,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
         className="scroll-mt-20"
         title={<StepTitle step={step("price")} t={t} />}
       >
-        <DataTable stack head={[t("sku"), t("label"), t("price"), t("priceBlock.source"), t("priceBlock.lastCost"), t("weight")]} numeric={[2]}>
+        <DataTable stack head={[tf("sku.label"), tf("variant_label.label"), t("price"), t("priceBlock.source"), t("priceBlock.lastCost"), tf("weight_g.label")]} numeric={[2]}>
           {product.variants.map((v) => {
             const row = pricing.get(v.id);
             return (
@@ -442,7 +443,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
                   <span className="font-mono">{v.sku}</span>
                   {!v.active && <span className="ml-1 text-muted-foreground">({t("priceBlock.inactive")})</span>}
                 </Td>
-                <Td label={t("label")}>{v.label}</Td>
+                <Td label={tf("variant_label.label")}>{v.label}</Td>
                 <Td label={t("price")} className={v.priceMmk > 0 ? "text-right tabular-nums" : "text-right text-destructive tabular-nums"}>
                   <span data-testid="step-price-value">{fmtInt(v.priceMmk)}</span>
                   {cr?.prices[v.id] && (
@@ -475,7 +476,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
                     </div>
                   )}
                 </Td>
-                <Td label={t("weight")} className="text-xs tabular-nums">{v.weightGrams ? `${fmtInt(v.weightGrams)} g` : "—"}</Td>
+                <Td label={tf("weight_g.label")} className="text-xs tabular-nums">{v.weightGrams ? `${fmtInt(v.weightGrams)} g` : "—"}</Td>
               </tr>
             );
           })}

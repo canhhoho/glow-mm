@@ -5,7 +5,7 @@ import { Check, Download, Eye } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { catalogImportAction } from "@/server/catalog/actions";
-import type { CatalogImportPreview, ImportIssue, ImportRowView } from "@/server/catalog/catalog-import";
+import type { CatalogImportPreview, ImportChange, ImportIssue, ImportRowView } from "@/server/catalog/catalog-import";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { FileField } from "@/components/admin/file-field";
 import { Badge, DataTable, Notice, Td } from "@/components/admin/ui";
@@ -19,6 +19,20 @@ type Filter = (typeof FILTERS)[number];
 
 /** Trang này chỉ nói về thông tin SP: lưu ý về lô nhập kho (hạn dùng, giá vốn) xem ở phiếu nhập nháp; lỗi thì luôn hiện. */
 const shownIssues = (r: ImportRowView): ImportIssue[] => r.issues.filter((i) => i.level === "error" || !i.stock);
+
+/**
+ * Nhãn cột / trường đổi dùng chung `ProductFields` (cùng tên với form và tiêu đề Excel). Riêng mô tả, cách dùng
+ * (gộp hai ngôn ngữ trong một thay đổi) dùng `CatalogImport.field.*`.
+ */
+type ProductFieldKey = "name" | "brand" | "category" | "ingredients" | "storage_note" | "pao_months" | "expiry_date" | "variant_label" | "sku" | "weight_g";
+const CHANGE_FIELD: Record<Exclude<ImportChange, "description" | "usage">, ProductFieldKey> = {
+  name: "name", brand: "brand", category: "category", ingredients: "ingredients", storage: "storage_note", pao: "pao_months", expiry: "expiry_date", label: "variant_label", weight: "weight_g",
+};
+function useChangeLabel() {
+  const t = useTranslations("CatalogImport");
+  const tf = useTranslations("ProductFields");
+  return (c: ImportChange) => (c === "description" || c === "usage" ? t(`field.${c}`) : tf(`${CHANGE_FIELD[c]}.label`));
+}
 const matches = (r: ImportRowView, f: Filter) =>
   f === "all" ? true : f === "warning" ? shownIssues(r).some((i) => i.level === "warning") : r.action === f;
 
@@ -71,10 +85,11 @@ export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) 
 
 function ImportPreview({ preview, action, pending, canApprove }: { preview: CatalogImportPreview; action: (formData: FormData) => void; pending: boolean; canApprove: boolean }) {
   const t = useTranslations("CatalogImport");
+  const tf = useTranslations("ProductFields");
   const [filter, setFilter] = useState<Filter>("all");
   const rows = preview.rows.filter((r) => matches(r, filter));
   const blocked = preview.errors.length > 0;
-  const head = ["colLine", "colAction", "colProduct", "colLabel", "colSku", "colWeight", "colNotes"];
+  const head = [t("colLine"), t("colAction"), t("colProduct"), tf("variant_label.label"), tf("sku.label"), tf("weight_g.label"), t("colNotes")];
   const counts = Object.fromEntries(FILTERS.map((f) => [f, preview.rows.filter((r) => matches(r, f)).length])) as Record<Filter, number>;
   const rc = preview.rowCounts;
   return (
@@ -101,7 +116,7 @@ function ImportPreview({ preview, action, pending, canApprove }: { preview: Cata
       )}
 
       {/* Điện thoại: mỗi dòng file một thẻ (nhãn từng ô); máy tính: bảng. Chỉ thông tin SP — nhập kho xem ở phiếu nháp. */}
-      <DataTable stack numeric={[0]} head={head.map((k) => t(k))} empty={t("noRows")}>
+      <DataTable stack numeric={[0]} head={head} empty={t("noRows")}>
         {rows.map((r) => <PreviewRow key={r.line} r={r} />)}
       </DataTable>
 
@@ -125,6 +140,8 @@ function ImportPreview({ preview, action, pending, canApprove }: { preview: Cata
 
 function PreviewRow({ r }: { r: ImportRowView }) {
   const t = useTranslations("CatalogImport");
+  const tf = useTranslations("ProductFields");
+  const changeLabel = useChangeLabel();
   const muted = "text-muted-foreground";
   const issues = shownIssues(r);
   return (
@@ -133,19 +150,19 @@ function PreviewRow({ r }: { r: ImportRowView }) {
       <Td label={t("colAction")}>
         <Badge tone={ACTION_TONE[r.action]}>{t(`action.${r.action}`)}</Badge>
         {r.changes.length > 0 && (
-          <div className={cn("mt-1 text-xs", muted)}>{t("changed", { fields: r.changes.map((c) => t(`field.${c}`)).join(", ") })}</div>
+          <div className={cn("mt-1 text-xs", muted)}>{t("changed", { fields: r.changes.map(changeLabel).join(", ") })}</div>
         )}
       </Td>
       <Td label={t("colProduct")}>
         <span className={cn(!r.nameFromFile && muted)}>{r.name || "—"}</span>
         {(r.brand || r.category) && <div className={cn("text-xs", muted)}>{[r.brand, r.category].filter(Boolean).join(" · ")}</div>}
       </Td>
-      <Td label={t("colLabel")}><span className={cn(!r.labelFromFile && muted)}>{r.labelFromFile ? r.label : t("standardLabel")}</span></Td>
-      <Td label={t("colSku")} className="text-xs">
+      <Td label={tf("variant_label.label")}><span className={cn(!r.labelFromFile && muted)}>{r.labelFromFile ? r.label : t("standardLabel")}</span></Td>
+      <Td label={tf("sku.label")} className="text-xs">
         <span className="font-mono">{r.sku || "—"}</span>
         {r.skuAuto && <span className={muted}> · {t("autoSku")}</span>}
       </Td>
-      <Td label={t("colWeight")} className="whitespace-nowrap tabular-nums">
+      <Td label={tf("weight_g.label")} className="whitespace-nowrap tabular-nums">
         {r.weight == null ? <span className={muted}>—</span> : <span className={cn(!r.weightFromFile && muted)}>{fmtInt(r.weight)}</span>}
       </Td>
       <Td label={t("colNotes")} className={cn("text-xs", issues.length === 0 && "max-md:hidden")}>
