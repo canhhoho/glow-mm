@@ -71,7 +71,7 @@ export async function RatesTab() {
 export async function PriceHistoryTab() {
   const [t, history] = await Promise.all([getTranslations("Pricing"), listPriceHistory()]);
   const source = (h: (typeof history)[number]) =>
-    h.runId ? (
+    h.runId && h.run?.mode !== "MANUAL" ? (
       <Link href={`/admin/pricing/runs/${h.runId}`}>
         <Badge tone="brand">{t("srcRun")}</Badge>
       </Link>

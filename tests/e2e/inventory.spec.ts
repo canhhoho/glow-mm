@@ -20,10 +20,10 @@ test("quản lý kho: nhận → chuyển chờ kiểm tra → xuất, tồn kh�
 
   // 1) Nhập 10 vào Kho Thắm — kho của SP (bảng nhập nhanh: lọc SKU, điền dòng)
   await page.goto("/admin/inventory/documents/new?type=RECEIVE");
-  await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "THAM — Kho Thắm" });
   await page.getByLabel("Tìm SKU, tên sản phẩm").fill(SKU);
   await page.getByRole("checkbox", { name: `Chọn ${SKU}`, exact: true }).check();
   await page.getByRole("button", { name: "Tiếp tục nhập thông số", exact: true }).click();
+  await page.getByLabel("Áp kho này cho tất cả").selectOption({ label: "THAM — Kho Thắm" });
   await page.getByLabel(`Số lượng ${SKU}`, { exact: true }).fill("10");
   await page.getByLabel(`Số lô ${SKU}`, { exact: true }).fill(lot);
   await page.getByLabel(`Hạn dùng ${SKU}`, { exact: true }).fill("2028-12-31");
@@ -131,12 +131,13 @@ test("phiếu nhập: dán từ Excel điền nhiều dòng, báo dòng lỗi, d
   const lot = `PX${Date.now().toString(36).toUpperCase()}`;
   await login(page, "kho@glow.local");
   await page.goto("/admin/inventory/documents/new?type=RECEIVE");
-  await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "THAM — Kho Thắm" });
 
   await page.getByRole("checkbox", { name: `Chọn ${SKU}`, exact: true }).check();
   await page.getByRole("button", { name: "Tiếp tục nhập thông số", exact: true }).click();
-  await expect(page.getByLabel("Cước tạm tính VN → MM (MMK/kg)")).toBeVisible();
-  await page.getByLabel("Cước tạm tính VN → MM (MMK/kg)").fill("8000");
+  await page.getByLabel("Áp kho này cho tất cả").selectOption({ label: "THAM — Kho Thắm" });
+  // Chuyến hàng + cước tạm tính đang tắt (`lib/features.ts`).
+  await expect(page.getByLabel("Cước tạm tính VN → MM (MMK/kg)")).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: "Chuyến hàng", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Dán từ Excel" }).click();
   await page.getByRole("textbox", { name: "Dán từ Excel" }).fill(
     `SKU\tSL\tLô\tHSD\tGiá\n${SKU}\t3\t${lot}\t31/12/2028\t90,000\n${SKU}\t2\t${lot}B\t\t90000\nKHONG-CO\t1\tX\t2028-01-01\t1`,

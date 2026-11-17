@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { FEATURES } from "@/lib/features";
 import { requirePagePermission } from "@/server/auth/session";
 
 /**
@@ -6,7 +7,7 @@ import { requirePagePermission } from "@/server/auth/session";
  * `/admin/selling-prices`. Giữ đường dẫn để link / bookmark cũ vẫn mở đúng tab. Trang bản tính `/admin/pricing/runs/[id]`
  * không đổi.
  */
-const MODE: Record<string, string> = { rates: "rates", history: "history", runs: "auto" };
+const MODE: Record<string, string> = { rates: "rates", history: "history", runs: FEATURES.autoPricing ? "auto" : "manual" };
 
 export default async function PricingPage({ searchParams }: PageProps<"/admin/pricing">) {
   await requirePagePermission("pricing:manage");

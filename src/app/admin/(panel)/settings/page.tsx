@@ -9,6 +9,7 @@ import { saveSettingsAction } from "@/server/settings-actions";
 import { ActionForm } from "@/components/admin/action-form";
 import { fieldClass, fieldLabelClass, focusRing, Page, PageHeader } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
+import { FEATURES } from "@/lib/features";
 
 const GROUPS: { title: string; icon: LucideIcon; keys: NumericSettingKey[] }[] = [
   { title: "expiry", icon: Clock, keys: ["expiry.blockDays", "expiry.warnDays"] },
@@ -80,7 +81,11 @@ export default async function SettingsPage() {
             {GROUPS.map((g) => (
               <fieldset key={g.title} className="space-y-4 rounded-xl border bg-card p-4">
                 <legend className="inline-flex items-center gap-2 px-1 text-sm font-medium"><g.icon className="size-4 text-primary" aria-hidden />{t(g.title)}</legend>
-                {g.keys.map((k) => (
+                {g.keys.map((k) =>
+                  // Giá tự động tắt: ô "hạn bản tính giá" chỉ còn là ô ẩn giữ giá trị (action lưu cài đặt đọc đủ mọi khoá số).
+                  k === "pricing.previewDays" && !FEATURES.autoPricing ? (
+                    <input key={k} type="hidden" name={k} value={settings.numbers[k]} />
+                  ) : (
                   <label key={k} className={fieldLabelClass}>
                     <span className="text-muted-foreground">{t(`keys.${k}`)}</span>
                     {PERCENT_SETTING_KEYS.includes(k) ? (
@@ -99,7 +104,8 @@ export default async function SettingsPage() {
                       <input name={k} type="number" min={0} step={1} required defaultValue={settings.numbers[k]} className={cn(fieldClass, "tabular-nums")} />
                     )}
                   </label>
-                ))}
+                  ),
+                )}
               </fieldset>
             ))}
             <fieldset className="space-y-3 rounded-xl border bg-card p-4 lg:col-span-2 2xl:col-span-3">

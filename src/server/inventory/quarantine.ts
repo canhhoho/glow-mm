@@ -53,7 +53,7 @@ export async function listQuarantine() {
       expiryStatus: r.batch.expiryStatus,
       qty: r.qty,
       /** Kho bán của SP — nơi nhập lại sau kiểm tra (P24). */
-      warehouse: r.batch.variant.product.stockLocation.name,
+      warehouse: r.batch.variant.product.stockLocation?.name ?? null,
       orders: [...orders].map(([id, code]) => ({ id, code })),
     };
   });
@@ -95,6 +95,7 @@ export async function restockFromQuarantine(raw: unknown, userId: string) {
     include: { variant: { select: { product: { select: { stockLocationId: true } } } } },
   });
   const toId = input.toId ?? batch.variant.product.stockLocationId;
+  if (!toId) throw new DocumentError("Sản phẩm chưa có kho bán — chọn kho nhập lại");
   const to = await prisma.location.findUnique({ where: { id: toId } });
   if (!to?.sellable) throw new DocumentError("Phải nhập lại vào vị trí bán được");
   return createAndPost(

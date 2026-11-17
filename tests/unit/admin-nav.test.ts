@@ -5,6 +5,7 @@ import { sellableCutoff } from "@/server/inventory/fefo";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { can, ROLES } from "@/server/auth/roles";
+import { FEATURES } from "@/lib/features";
 
 const hrefs = NAV.flatMap((g) => g.items.map((i) => i.href));
 const entries = NAV.flatMap((g) => g.items.map((i) => ({ href: i.href, match: i.match })));
@@ -22,7 +23,10 @@ describe("menu admin", () => {
     const stock = staff.find((g) => g.key === "groupStock")!.items.map((i) => i.key);
     expect(stock).toEqual(["inventory", "documents"]); // không có Chuyến hàng; Chờ kiểm tra/Cảnh báo là lối tắt trong Tồn kho
     const wh = visibleNav("WAREHOUSE_MANAGER").flatMap((g) => g.items.map((i) => i.key));
-    expect(wh).toContain("shipments");
+    // Chuyến hàng đang tắt (`lib/features.ts`) → không có trong menu dù có quyền; bật cờ thì mục hiện lại.
+    expect(FEATURES.shipments).toBe(false);
+    expect(wh).not.toContain("shipments");
+    expect(visibleNav("WAREHOUSE_MANAGER", NAV.map((g) => ({ ...g, items: g.items.map((i) => ({ ...i, feature: undefined })) }))).flatMap((g) => g.items.map((i) => i.key))).toContain("shipments");
     expect(wh).not.toContain("reviews");
     expect(wh).not.toContain("users");
   });
@@ -30,7 +34,7 @@ describe("menu admin", () => {
   it("mọi mục chỉ hiển thị với đúng quyền, kể cả mục lồng trong Cài đặt", () => {
     for (const role of ROLES) {
       const shown = visibleNav(role).flatMap(g => g.items).map(i => i.href);
-      expect(shown.sort()).toEqual(NAV.flatMap(g => g.items).filter(i => can(role, i.permission)).map(i => i.href).sort());
+      expect(shown.sort()).toEqual(NAV.flatMap(g => g.items).filter(i => can(role, i.permission) && (!i.feature || FEATURES[i.feature])).map(i => i.href).sort());
     }
     // Hồ sơ/đăng ký/hoa hồng CTV, nhân viên/khách, banner/bộ sưu tập là tab của một mục, không phải mục menu riêng.
     const all = visibleNav("ADMIN").flatMap(g => g.items).map(i => i.href);

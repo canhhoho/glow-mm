@@ -4,6 +4,7 @@ const auth = vi.hoisted(() => ({ getStaffUser: vi.fn() }));
 const template = vi.hoisted(() => ({ catalogTemplateFile: vi.fn() }));
 vi.mock("@/server/auth/session", () => auth);
 vi.mock("@/server/catalog/catalog-template", () => template);
+vi.mock("next-intl/server", () => ({ getLocale: vi.fn(async () => "en") }));
 import { GET } from "@/app/api/templates/[name]/route";
 
 const download = (name: string) => GET(new Request(`http://localhost/api/templates/${name}`), { params: Promise.resolve({ name }) });
@@ -22,10 +23,10 @@ describe("Tải file Excel nhập/cập nhật sản phẩm", () => {
     expect([...new Uint8Array(await blank.arrayBuffer())]).toEqual([1]);
     const current = await download("catalog-current.xlsx");
     expect(current.headers.get("Content-Disposition")).toMatch(/san-pham-hien-co-\d{8}\.xlsx/);
-    // P2: ADMIN có quyền giá → file SP hiện có kèm cột giá.
-    expect(template.catalogTemplateFile).toHaveBeenLastCalledWith(true, { withPricing: true });
+    // 16/11/2026: không còn cột giá; tiêu đề theo ngôn ngữ admin của người tải.
+    expect(template.catalogTemplateFile).toHaveBeenLastCalledWith(true, { locale: "en" });
     await download("catalog.xlsx");
-    expect(template.catalogTemplateFile).toHaveBeenLastCalledWith(false);
+    expect(template.catalogTemplateFile).toHaveBeenLastCalledWith(false, { locale: "en" });
   });
 
   it("cần đăng nhập + quyền sản phẩm; tên file lạ / mẫu cũ → 404", async () => {

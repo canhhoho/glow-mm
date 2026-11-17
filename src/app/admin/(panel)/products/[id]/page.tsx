@@ -23,6 +23,7 @@ import { ProductImageUpload } from "@/components/admin/product-images";
 import { ProductConditions, StepTitle } from "@/components/admin/product-steps";
 import { Badge, DataTable, EmptyState, fieldClass, fieldLabelClass, LinkButton, Notice, Page, Section, TabNav, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtDay, fmtInt } from "@/lib/format";
+import { FEATURES } from "@/lib/features";
 import { localizedPath } from "@/lib/site";
 import { prisma } from "@/lib/db";
 import { getNumberSetting } from "@/server/settings";
@@ -153,7 +154,13 @@ export default async function EditProductPage({ params, searchParams }: PageProp
   const plain = active.filter((v) => !v.isBundle);
   const stockTotal = (plain.length ? plain : active).reduce((sum, v) => sum + Math.max(0, avail.get(v.id) ?? 0), 0);
   const prices = active.map((v) => v.priceMmk).filter((x) => x > 0);
-  const priceText = prices.length ? (Math.min(...prices) === Math.max(...prices) ? fmtInt(prices[0]) : `${fmtInt(Math.min(...prices))} – ${fmtInt(Math.max(...prices))}`) : null;
+  const range = (xs: number[]) => (Math.min(...xs) === Math.max(...xs) ? fmtInt(xs[0]) : `${fmtInt(Math.min(...xs))} – ${fmtInt(Math.max(...xs))}`);
+  const priceText = prices.length ? range(prices) : null;
+  // Giá đang chờ duyệt (khác giá đang bán) — ghi kèm để không nhầm là giá đã áp dụng.
+  const pendingPrices = active.flatMap((v) => {
+    const staged = cr?.prices[v.id]?.priceMmk;
+    return staged != null && staged > 0 && staged !== v.priceMmk ? [staged] : [];
+  });
   const brandName = options.brands.find((b) => b.id === product.brandId)?.name ?? view.draftBrandName ?? "—";
   const categoryName = options.categories.find((c) => c.id === product.categoryId)?.name ?? "—";
   const warehouseName = options.warehouses.find((w) => w.id === product.stockLocationId)?.name ?? "—";
@@ -161,7 +168,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
   const notes: Partial<Record<ProductStep, string>> = {
     create: step("create").state === "todo" ? t("hero.noteCreateMissing") : t("hero.noteCreateOk"),
     stock: t("hero.noteStock", { n: fmtInt(stockTotal) }),
-    price: priceText ? t("hero.notePrice", { price: priceText }) : t("hero.notePriceMissing"),
+    price: [priceText ? t("hero.notePrice", { price: priceText }) : t("hero.notePriceMissing"), ...(pendingPrices.length ? [t("hero.notePricePending", { price: range(pendingPrices) })] : [])].join(" · "),
     review: reviewNote,
     publish: product.published ? t("hero.notePublished") : t("hero.noteNotPublished"),
   };
@@ -462,6 +469,11 @@ export default async function EditProductPage({ params, searchParams }: PageProp
                   ) : (
                     "—"
                   )}
+                  {row?.draft && (
+                    <div className="text-warning-foreground" data-testid="price-draft-receipt">
+                      <Link href={`/admin/inventory/documents/${row.draft.documentId}`} className="underline">{t("priceBlock.draftReceipt", { code: row.draft.code })}</Link>
+                    </div>
+                  )}
                 </Td>
                 <Td label={t("weight")} className="text-xs tabular-nums">{v.weightGrams ? `${fmtInt(v.weightGrams)} g` : "—"}</Td>
               </tr>
@@ -469,11 +481,11 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           })}
         </DataTable>
         {stepIssues("price").length > 0 && issueList(stepIssues("price"))}
-        {/* 16/11: đặt giá ở trang Giá bán (nơi đặt giá chính: Thủ công / Tự động, chọn lô cơ sở) — không còn form riêng ở đây. */}
+        {/* 16/11: đặt giá ở trang Giá bán (thủ công, chọn lô cơ sở; Tự động đang tắt) — không còn form riêng ở đây. */}
         {can(user.role, "pricing:manage") && !archived && (
           <div className="flex flex-wrap items-center gap-2" data-testid="price-actions">
             <LinkButton href={`/admin/selling-prices/manual?productId=${product.id}`} variant="primary" icon="edit">{t("priceBlock.setPrice")}</LinkButton>
-            <LinkButton href={`/admin/selling-prices?mode=auto&productId=${product.id}`}>{t("priceBlock.calcThis")}</LinkButton>
+            {FEATURES.autoPricing && <LinkButton href={`/admin/selling-prices?mode=auto&productId=${product.id}`}>{t("priceBlock.calcThis")}</LinkButton>}
             <span className="text-xs text-muted-foreground">{t("priceBlock.whereHelp")}</span>
           </div>
         )}

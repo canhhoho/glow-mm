@@ -247,6 +247,7 @@ model TagTranslation {
 }
 
 model Product {
+  /// Không còn dùng (16/11/2026): hạn dùng chọn theo từng lô ở phiếu nhập. Giữ cột, chỉ làm mặc định gợi ý trên form nhập.
   requiresExpiry   Boolean               @default(true)
   /// Period after opening; separate from batch expiry.
   paoMonths        Int?
@@ -257,8 +258,9 @@ model Product {
   categoryId       String
   category         Category              @relation(fields: [categoryId], references: [id])
   /// Kho bán của SP (P24): nhận hàng, tồn bán, xuất đơn và cách tính giá đều theo kho này.
-  stockLocationId  String
-  stockLocation    Location              @relation(fields: [stockLocationId], references: [id])
+  /// NULL = chưa nhập hàng: gán khi ghi sổ dòng nhập/chuyển đầu tiên vào một kho bán (16/11/2026).
+  stockLocationId  String?
+  stockLocation    Location?             @relation(fields: [stockLocationId], references: [id], onDelete: Restrict)
   /// Lãi cố định MMK/đơn vị — kho LOCAL_MMK: giá = vốn MMK + lãi này (P24).
   fixedProfitMmk   Int?
   storageNote      String?

@@ -44,6 +44,8 @@ function withoutPricing(payload: unknown): unknown {
   if (!payload || typeof payload !== "object") return payload;
   const out: Record<string, unknown> = { ...payload };
   delete out.fixedProfitMmk;
+  // Kho bán không chọn ở form (gán khi ghi sổ nhập hàng đầu tiên / chuyển kho hàng loạt).
+  delete out.stockLocationId;
   if (Array.isArray(out.variants)) {
     out.variants = out.variants.map((v: unknown) => {
       if (!v || typeof v !== "object") return v;
@@ -362,12 +364,11 @@ export async function catalogImportAction(_prev: CatalogImportState, formData: F
       const input = catalogImportInputSchema.parse(JSON.parse(z.string().max(6_000_000).parse(formData.get("payload"))));
       const check = await previewCatalogImport(input);
       if (check.counts.stockLines > 0) await requirePermission("stock:receive");
-      // P0-C2: đổi giá bán / hoa hồng CTV qua Excel cần quyền giá — kiểm lại trong transaction xác nhận.
       // §6.4: "Gửi duyệt ngay" (form bật sẵn) chạy cùng transaction; "Duyệt luôn" chỉ người có quyền duyệt, chạy sau commit.
       const submit = formData.get("submitNow") === "on";
       const approve = submit && formData.get("approveNow") === "on";
       if (approve) await requirePermission("catalog:approve");
-      const { review, ...result } = await commitCatalogImport(input, user.id, { allowPricing: can(user.role, "pricing:manage"), submit });
+      const { review, ...result } = await commitCatalogImport(input, user.id, { submit });
       // 16/11: xoá cache ngay sau commit (trước bước duyệt luôn) — bước sau lỗi thì web vẫn không giữ giá cũ.
       refreshPrices();
       const reviewView = review ? await finishBatchReview(review, user.id, approve) : undefined;
@@ -379,7 +380,6 @@ export async function catalogImportAction(_prev: CatalogImportState, formData: F
     const standardLabel = (await getTranslations("Products"))("standardVariant");
     const preview = await previewCatalogImport({ csv: file.csv, lines: file.lines, standardLabel });
     if (preview.counts.stockLines > 0) await requirePermission("stock:receive");
-    if (preview.counts.priceChanges > 0 && !can(user.role, "pricing:manage")) return { error: (await getTranslations("CatalogImport"))("pricingForbidden") };
     return { preview };
   } catch (e) {
     return { error: message(e) };

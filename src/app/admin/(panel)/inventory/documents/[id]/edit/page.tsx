@@ -4,6 +4,7 @@ import { requirePagePermission } from "@/server/auth/session";
 import { getDocument, listLocations, listShipments, listVariantsForReceive } from "@/server/inventory/queries";
 import { ReceiveBulkForm, type ReceiveDraft } from "@/components/admin/receive-bulk-form";
 import { Page, PageHeader } from "@/components/admin/ui";
+import { FEATURES } from "@/lib/features";
 
 const day = (d: Date | null | undefined) => (d ? d.toISOString().slice(0, 10) : "");
 
@@ -14,23 +15,27 @@ export default async function EditDocumentPage({ params }: PageProps<"/admin/inv
   const doc = await getDocument(id);
   if (!doc) notFound();
   if (doc.type !== "RECEIVE" || doc.status !== "DRAFT") redirect(`/admin/inventory/documents/${id}`);
-  const [t, locations, variants, shipments] = await Promise.all([getTranslations("Docs"), listLocations(), listVariantsForReceive({ includeIds: doc.lines.map((l) => l.variantId) }), listShipments()]);
+  const [t, locations, variants, shipments] = await Promise.all([
+    getTranslations("Docs"),
+    listLocations(),
+    listVariantsForReceive({ includeIds: doc.lines.map((l) => l.variantId) }),
+    FEATURES.shipments ? listShipments() : Promise.resolve([]),
+  ]);
   const draft: ReceiveDraft = {
     id: doc.id,
-    toId: doc.toId ?? "",
     shipmentId: doc.shipmentId ?? "",
     reason: doc.reason ?? "",
     estimatedShip: doc.estimatedShipMmkPerKg == null ? "" : String(doc.estimatedShipMmkPerKg),
     lines: doc.lines.map((l) => ({
       variantId: l.variantId,
+      toId: doc.toId ?? "", // kho của dòng (phiếu cũ: kho của phiếu); sửa ở bước 2, lưu thì server tách theo kho
       qty: String(l.qty),
       lotNo: l.batch?.lotNo ?? "",
       expiryStatus: l.batch?.expiryStatus ?? "DATED",
       expiryDate: day(l.batch?.expiryDate),
       mfgDate: day(l.batch?.mfgDate),
-      // A3 16/11: giá mua + phí về kho của CHÍNH dòng phiếu (không phải bình quân của lô); phí trống = chưa biết.
+      // Giá mua của CHÍNH dòng phiếu (không phải bình quân của lô). Không còn phí về kho (16/11/2026).
       unitCost: String(l.unitCostMmk ?? l.unitCostVnd ?? l.batch?.unitCostMmk ?? l.batch?.unitCostVnd ?? ""),
-      inbound: l.unitCostVnd != null && l.landedCostVnd != null ? String(l.landedCostVnd - l.unitCostVnd) : "",
       stockType: l.stockType,
     })),
   };

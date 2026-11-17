@@ -24,6 +24,7 @@
     "test:int": "vitest run -c vitest.integration.config.mts",
     "perf": "node scripts/lighthouse.mjs",
     "data:check": "tsx scripts/data-checks.ts",
+    "db:backfill-lot-cost": "tsx --conditions=react-server scripts/backfill-lot-cost.ts",
     "perf:bulk-review": "tsx --conditions=react-server scripts/perf-bulk-review.ts",
     "i18n:export": "tsx scripts/i18n-export.ts",
     "i18n:import": "tsx scripts/i18n-import.ts"

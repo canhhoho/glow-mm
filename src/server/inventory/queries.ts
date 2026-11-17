@@ -68,8 +68,9 @@ export async function listVariantsForReceive(opts: { includeIds?: string[] } = {
   const vnd = new Map(lastVnd.map((b) => [b.variantId, b.unitCostVnd]));
   const mmk = new Map(lastMmk.map((b) => [b.variantId, b.unitCostMmk]));
   return variants.map((v) => {
-    // P24: loại tiền giá mua theo kho của SP (kho mua tại Myanmar → MMK).
-    const currency = v.product.stockLocation.pricingMode === "LOCAL_MMK" ? ("MMK" as const) : ("VND" as const);
+    // P24: loại tiền giá mua theo kho của SP (kho mua tại Myanmar → MMK). SP chưa có kho → null, form lấy theo kho nhận.
+    const loc = v.product.stockLocation;
+    const currency = !loc ? null : loc.pricingMode === "LOCAL_MMK" ? ("MMK" as const) : ("VND" as const);
     return {
       id: v.id,
       sku: v.sku,
@@ -82,7 +83,7 @@ export async function listVariantsForReceive(opts: { includeIds?: string[] } = {
       weightGrams: v.weightGrams,
       requiresExpiry: v.product.requiresExpiry,
       currency,
-      lastCost: (currency === "MMK" ? mmk.get(v.id) : vnd.get(v.id)) ?? null,
+      lastCost: (currency === "MMK" ? mmk.get(v.id) : currency === "VND" ? vnd.get(v.id) : undefined) ?? null,
     };
   });
 }

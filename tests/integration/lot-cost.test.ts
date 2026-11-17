@@ -47,7 +47,7 @@ describe("Nhập lại cùng lô khác giá (không dùng chuyến hàng)", () =
     expect((await prisma.stockDocument.findUniqueOrThrow({ where: { id: draft.id } })).status).toBe("DRAFT");
   });
 
-  it("giá vốn về kho nhập tay: bình quân theo SL; thiếu ở một lần nhập → bỏ giá vốn về kho, dùng giá tạm tính", async () => {
+  it("giá vốn lô = giá mua × tỷ giá lúc ghi sổ (không phí về kho): payload cũ gửi phí về kho bị bỏ qua", async () => {
     const f = await makeFixture();
     const rate = await prisma.exchangeRate.create({ data: { mmkPerVnd: "0.2", createdById: f.userId } });
     const pinned = async (line: Record<string, unknown>) => {
@@ -55,12 +55,45 @@ describe("Nhập lại cùng lô khác giá (không dùng chuyến hàng)", () =
       await prisma.stockDocumentLine.updateMany({ where: { documentId: doc.id }, data: { rateId: rate.id } });
       await postDocument(doc.id, f.userId);
     };
+    // `landedCostVnd` (phí về kho) không còn trong phiếu: payload cũ vẫn nhận nhưng bỏ qua.
     await pinned({ qty: 10, unitCostVnd: 100_000, landedCostVnd: 110_000 });
+    expect(await batchOf(f)).toMatchObject({ unitCostVnd: 100_000, landedCostVnd: null, landedCostMmk: 20_000 });
+    expect((await prisma.stockDocumentLine.findFirstOrThrow({ where: { batchId: (await batchOf(f)).id } })).landedCostVnd).toBeNull();
+    await pinned({ qty: 10, unitCostVnd: 120_000 });
+    expect(await batchOf(f)).toMatchObject({ unitCostVnd: 110_000, landedCostMmk: 22_000 }); // (10×100.000 + 10×120.000)/20 × 0,2
+  });
+
+  it("lô cũ đã có giá vốn gồm phí: giữ nguyên cho tới khi lô nhận thêm một phiếu nhập — khi đó tính lại theo giá mua × tỷ giá", async () => {
+    const f = await makeFixture();
+    const rate = await prisma.exchangeRate.create({ data: { mmkPerVnd: "0.2", createdById: f.userId } });
+    await post(f, { qty: 10, unitCostVnd: 100_000 });
+    // Mô phỏng dữ liệu cũ: giá vốn từng gồm phí về kho.
+    await prisma.batch.updateMany({ where: { variantId: f.variantId, lotNo: "A" }, data: { landedCostVnd: 110_000, landedCostMmk: 22_000 } });
     expect(await batchOf(f)).toMatchObject({ landedCostVnd: 110_000, landedCostMmk: 22_000 });
-    await pinned({ qty: 10, unitCostVnd: 120_000, landedCostVnd: 150_000 });
-    expect(await batchOf(f)).toMatchObject({ unitCostVnd: 110_000, landedCostVnd: 130_000, landedCostMmk: 26_000 });
-    await post(f, { qty: 10, unitCostVnd: 100_000 }); // lần này không có giá vốn về kho
-    expect(await batchOf(f)).toMatchObject({ landedCostVnd: null, landedCostMmk: null });
+    await recv(f, { qty: 5, unitCostVnd: 100_000 }); // phiếu nháp chưa ghi sổ không đụng
+    expect(await batchOf(f)).toMatchObject({ landedCostMmk: 22_000 });
+    const doc = await recv(f, { qty: 5, unitCostVnd: 100_000 });
+    await prisma.stockDocumentLine.updateMany({ where: { documentId: doc.id }, data: { rateId: rate.id } });
+    await postDocument(doc.id, f.userId);
+    expect(await batchOf(f)).toMatchObject({ landedCostVnd: null, landedCostMmk: expect.any(Number) });
+  });
+
+  it("ghi sổ phiếu nhập hàng VND khi chưa có tỷ giá nào → bị chặn, phiếu vẫn nháp, không sinh lô thiếu giá vốn", async () => {
+    const f = await makeFixture();
+    const doc = await recv(f, { qty: 3, unitCostVnd: 100_000 });
+    // Đẩy mọi tỷ giá ra tương lai (latestRate bỏ qua tỷ giá chưa hiệu lực) rồi trả lại.
+    const rates = await prisma.exchangeRate.findMany({ select: { id: true, effectiveAt: true } });
+    const future = new Date(Date.now() + 365 * 86_400_000);
+    await prisma.exchangeRate.updateMany({ data: { effectiveAt: future } });
+    try {
+      await expect(postDocument(doc.id, f.userId)).rejects.toThrow("tỷ giá");
+      expect((await prisma.stockDocument.findUniqueOrThrow({ where: { id: doc.id } })).status).toBe("DRAFT");
+      expect(await prisma.stockBalance.count({ where: { batch: { variantId: f.variantId } } })).toBe(0);
+    } finally {
+      for (const r of rates) await prisma.exchangeRate.update({ where: { id: r.id }, data: { effectiveAt: r.effectiveAt } });
+    }
+    await postDocument(doc.id, f.userId); // có tỷ giá lại → ghi sổ được, lô có giá vốn
+    expect((await batchOf(f)).landedCostMmk).not.toBeNull();
   });
 
   it("hai lần nhập khác tỷ giá: giá vốn MMK đổi từng lần theo tỷ giá của nó", async () => {
@@ -70,7 +103,7 @@ describe("Nhập lại cùng lô khác giá (không dùng chuyến hàng)", () =
       prisma.exchangeRate.create({ data: { mmkPerVnd: "0.18", createdById: f.userId } }),
     ]);
     const pinned = async (rate: { id: string }, qty: number) => {
-      const doc = await recv(f, { qty, unitCostVnd: 100_000, landedCostVnd: 100_000 });
+      const doc = await recv(f, { qty, unitCostVnd: 100_000 });
       await prisma.stockDocumentLine.updateMany({ where: { documentId: doc.id }, data: { rateId: rate.id } });
       await postDocument(doc.id, f.userId);
     };

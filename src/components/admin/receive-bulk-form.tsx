@@ -10,6 +10,7 @@ import { parseReceivePaste } from "@/lib/receive-paste";
 import { cn } from "@/lib/utils";
 import { createDocumentAction, updateDocumentAction } from "@/server/inventory/actions";
 import type { ReceiveVariant } from "@/server/inventory/queries";
+import { FEATURES } from "@/lib/features";
 
 type StockType = "SELLABLE" | "TESTER";
 type ExpiryStatus = "DATED" | "NONE" | "UNKNOWN";
@@ -26,8 +27,6 @@ type Row = {
   mfgDate: string;
   /** Giá mua theo loại tiền của kho SP (VND hoặc MMK, P24). */
   unitCost: string;
-  /** Phí đưa về kho VND/đv (chỉ hàng VND): "" = chưa biết, "0" = đã biết không phát sinh (A3/A4 16/11). */
-  inbound: string;
   /** "" = theo giá trị chung. */
   stockType: StockType | "";
 };
@@ -45,7 +44,6 @@ const newRow = (v: ReceiveVariant, key: number, split = false): Row => ({
   expiryDate: "",
   mfgDate: "",
   unitCost: v.lastCost == null ? "" : String(v.lastCost),
-  inbound: "",
   stockType: "",
 });
 
@@ -64,20 +62,24 @@ function effective(r: Row, d: Defaults) {
 
 function rowInvalid(r: Row, d: Defaults) {
   const e = effective(r, d);
-  const badInbound = r.inbound.trim() !== "" && !(Number.isInteger(Number(r.inbound)) && Number(r.inbound) >= 0);
-  return !Number.isInteger(Number(r.qty)) || !e.lotNo || r.unitCost.trim() === "" || Number(r.unitCost) < 0 || badInbound || (r.expiryStatus === "DATED" && !e.expiryDate);
+  return !Number.isInteger(Number(r.qty)) || !e.lotNo || r.unitCost.trim() === "" || Number(r.unitCost) < 0 || (r.expiryStatus === "DATED" && !e.expiryDate);
 }
 
 type Location = { id: string; code: string; name: string; sellable: boolean; pricingMode: "VN_IMPORT" | "LOCAL_MMK" | null };
 
-/** Phiếu nhập nháp đang sửa: thông tin chung + dòng (mỗi dòng một lô của một biến thể). */
+/**
+ * Kho nhận cho một sản phẩm (P24): SP đã có kho bán → chỉ kho đó; SP chưa có kho → mọi kho. Vị trí không bán (Chờ kiểm tra,
+ * hàng đang về…) nhận được mọi SP. Server kiểm lại (`checkLocations`).
+ */
+const optionsFor = (v: ReceiveVariant, locations: Location[]) => locations.filter((l) => !l.sellable || v.stockLocationId == null || l.id === v.stockLocationId);
+
+/** Phiếu nhập nháp đang sửa: thông tin chung + dòng (mỗi dòng một lô của một biến thể, kèm kho của dòng). */
 export type ReceiveDraft = {
   id: string;
-  toId: string;
   shipmentId: string;
   reason: string;
   estimatedShip: string;
-  lines: { variantId: string; qty: string; lotNo: string; expiryStatus: ExpiryStatus; expiryDate: string; mfgDate: string; unitCost: string; inbound: string; stockType: StockType }[];
+  lines: { variantId: string; toId: string; qty: string; lotNo: string; expiryStatus: ExpiryStatus; expiryDate: string; mfgDate: string; unitCost: string; stockType: StockType }[];
 };
 
 /** Dòng ban đầu: mỗi biến thể một dòng trống; phiếu nháp đang sửa → điền dòng đầu, thêm dòng tách cho lô thứ 2…. */
@@ -91,7 +93,7 @@ function initialRows(variants: ReceiveVariant[], draft?: ReceiveDraft): { rows: 
   for (const l of draft.lines) {
     const i = index.get(l.variantId);
     if (i === undefined) continue; // biến thể đã ngừng dùng — bỏ qua
-    const patch = { qty: l.qty, lotNo: l.lotNo, expiryStatus: l.expiryStatus, expiryDate: l.expiryDate, mfgDate: l.mfgDate, unitCost: l.unitCost, inbound: l.inbound, stockType: l.stockType };
+    const patch = { qty: l.qty, lotNo: l.lotNo, expiryStatus: l.expiryStatus, expiryDate: l.expiryDate, mfgDate: l.mfgDate, unitCost: l.unitCost, stockType: l.stockType };
     if (!seen.has(l.variantId)) {
       seen.add(l.variantId);
       rows[i] = { ...rows[i], ...patch };
@@ -101,15 +103,17 @@ function initialRows(variants: ReceiveVariant[], draft?: ReceiveDraft): { rows: 
 }
 
 /**
- * Phiếu nhập hai bước: chọn SKU, sau đó nhập thông số; giữ dữ liệu khi quay lại lựa chọn.
- * `productId` (QT1b, nút "Nhập hàng" ở bước 2 trang SP): chọn sẵn các biến thể của SP + kho của SP.
- * `draft`: sửa phiếu nháp — mở thẳng bước 2 với dòng đã lưu; "Lưu nháp" cập nhật đúng phiếu đó.
- * Mỗi lần mở form một khoá chống trùng: bấm lưu 2 lần / gửi lại không tạo phiếu thứ hai.
+ * Phiếu nhập hai bước (16/11/2026): bước 1 chọn sản phẩm (SKU); bước 2 điền kho / số lượng / hạn dùng / giá mua / số lô cho
+ * từng sản phẩm; giữ dữ liệu khi quay lại bước 1. **Kho chọn theo từng sản phẩm** (SP đã có kho → cố định); lưu thì server tự
+ * tách mỗi kho một phiếu nháp. Không có tỷ giá / phí về kho trên phiếu (tỷ giá chốt lúc ghi sổ).
+ * `productId` (QT1b, nút "Nhập hàng" ở bước 2 trang SP): chọn sẵn các biến thể của SP.
+ * `draft`: sửa phiếu nháp — mở bước 1 với dòng của phiếu đã tích sẵn; "Lưu nháp" cập nhật đúng phiếu đó.
+ * Mỗi lần mở form một khoá chống trùng: bấm lưu 2 lần / gửi lại không tạo phiếu thứ hai (khoá dẫn xuất theo kho khi tách).
  */
 export function ReceiveBulkForm({
   locations,
   shipments,
-  variants,
+  variants: allVariants,
   lastShip = null,
   productId,
   draft,
@@ -125,16 +129,33 @@ export function ReceiveBulkForm({
   const ti = useTranslations("Inventory");
   const [state, action, pending] = useActionState(draft ? updateDocumentAction : createDocumentAction, undefined);
   const idempotencyKey = useRef<string | null>(null);
-  const byId = useMemo(() => new Map(variants.map((v) => [v.id, v])), [variants]);
-  const bySku = useMemo(() => new Map(variants.map((v) => [v.sku, v])), [variants]);
-
-  const focus = productId ? variants.filter((v) => v.productId === productId) : [];
-  const [step, setStep] = useState<1 | 2>(draft ? 2 : 1);
+  const focus = productId ? allVariants.filter((v) => v.productId === productId) : [];
+  const [step, setStep] = useState<1 | 2>(1);
   const [selected, setSelected] = useState<Set<string>>(() => new Set(draft ? draft.lines.map((l) => l.variantId) : focus.map((v) => v.id)));
   const [productFilter, setProductFilter] = useState(focus.length ? productId! : "");
-  const [toId, setToId] = useState(() =>
-    draft ? draft.toId : focus.length && locations.some((l) => l.id === focus[0].stockLocationId) ? focus[0].stockLocationId : "",
+  const variants = allVariants;
+  const locById = useMemo(() => new Map(locations.map((l) => [l.id, l])), [locations]);
+  /** Kho nhận theo SẢN PHẨM (mọi biến thể / lô của SP cùng kho). "" = chưa chọn. */
+  const [warehouse, setWarehouse] = useState<Record<string, string>>(() => {
+    const out: Record<string, string> = {};
+    for (const v of allVariants) if (out[v.productId] === undefined) out[v.productId] = v.stockLocationId && locations.some((l) => l.id === v.stockLocationId) ? v.stockLocationId : "";
+    for (const l of draft?.lines ?? []) {
+      const v = allVariants.find((x) => x.id === l.variantId);
+      if (v && optionsFor(v, locations).some((o) => o.id === l.toId)) out[v.productId] = l.toId;
+    }
+    // QT1b: SP chưa có kho → gợi ý kho bán hàng nhập VN (đổi được ở bước 2).
+    if (!draft && focus.length && !out[focus[0].productId]) out[focus[0].productId] = (locations.find((l) => l.sellable && l.pricingMode !== "LOCAL_MMK") ?? locations.find((l) => l.sellable))?.id ?? "";
+    return out;
+  });
+  const warehouseOf = useCallback((v: ReceiveVariant) => warehouse[v.productId] ?? "", [warehouse]);
+  /** Loại tiền giá mua theo kho của SP; SP chưa có kho → theo kho nhận đã chọn (kho đó thành kho bán khi ghi sổ). */
+  const currencyOf = useCallback(
+    (v: ReceiveVariant): "VND" | "MMK" => v.currency ?? (locById.get(warehouseOf(v))?.pricingMode === "LOCAL_MMK" ? "MMK" : "VND"),
+    [locById, warehouseOf],
   );
+  const byId = useMemo(() => new Map(variants.map((v) => [v.id, v])), [variants]);
+  const bySku = useMemo(() => new Map(variants.map((v) => [v.sku, v])), [variants]);
+  const optionsByProduct = useMemo(() => new Map(variants.map((v) => [v.productId, optionsFor(v, locations)])), [variants, locations]);
   /** Khối lượng (g) theo biến thể — chỉ cho biến thể chưa có khối lượng. */
   const [weights, setWeights] = useState<Record<string, string>>({});
   const [shipmentId, setShipmentId] = useState(draft?.shipmentId ?? "");
@@ -175,37 +196,51 @@ export function ReceiveBulkForm({
   );
   const remove = useCallback((key: number) => setRows((rs) => rs.filter((r) => r.key !== key)), []);
 
-  // P24: nhập vào kho bán → chỉ SP thuộc kho đó (server cũng chặn). Chưa chọn kho → chưa hiện bảng.
-  const toLoc = locations.find((l) => l.id === toId);
-  const inScope = useCallback((v: ReceiveVariant) => !!toLoc && (!toLoc.sellable || v.stockLocationId === toLoc.id), [toLoc]);
-
   const visible = useMemo(() => {
     const needle = fold(q.trim());
     return rows.filter((r) => {
       if (onlyFilled && !hasQty(r)) return false;
       const v = byId.get(r.variantId)!;
-      if (!inScope(v)) return false;
       if (!selected.has(v.id)) return false;
       if (brand && v.brand !== brand) return false;
       if (productFilter && v.productId !== productFilter) return false;
       return !needle || fold(`${v.sku} ${v.name} ${v.label} ${v.brand}`).includes(needle);
     });
-  }, [rows, q, brand, onlyFilled, byId, inScope, productFilter, selected]);
+  }, [rows, q, brand, onlyFilled, byId, productFilter, selected]);
 
-  const selectedRows = rows.filter((r) => selected.has(r.variantId) && inScope(byId.get(r.variantId)!));
+  const selectedRows = rows.filter((r) => selected.has(r.variantId) && byId.has(r.variantId));
   const filled = selectedRows.filter(hasQty);
-  const canUseShipment = (!!toLoc && toLoc.sellable && toLoc.pricingMode !== "LOCAL_MMK") || (!!toLoc && !toLoc.sellable && filled.length > 0 && filled.every((r) => byId.get(r.variantId)!.currency === "VND"));
+  // Chuyến hàng + "Cước tạm tính" đang tắt (`lib/features.ts`): chỉ hàng VND.
+  const canUseShipment = FEATURES.shipments && filled.length > 0 && filled.every((r) => currencyOf(byId.get(r.variantId)!) === "VND");
   const totalQty = filled.reduce((s, r) => s + Number(r.qty), 0);
-  // Tổng tiền theo loại tiền (khu chờ kiểm tra có thể nhận cả SP Kho Thắm (VND) lẫn Kho Chi (MMK)).
+  // Tổng tiền theo loại tiền (một phiếu có thể gồm SP Kho Thắm (VND) lẫn Kho Chi (MMK)).
   const totals = filled.reduce<Record<string, number>>((m, r) => {
-    const c = byId.get(r.variantId)!.currency;
+    const c = currencyOf(byId.get(r.variantId)!);
     m[c] = (m[c] ?? 0) + Number(r.qty) * (Number(r.unitCost) || 0);
     return m;
   }, {});
   const money = Object.entries(totals).map(([c, v]) => `${fmtInt(v)} ${c}`).join(" + ") || "0";
+  const currencies = new Set(selectedRows.map((r) => currencyOf(byId.get(r.variantId)!)));
+  const costHeader = currencies.size === 1 ? (currencies.has("MMK") ? t("unitCostMmk") : t("unitCost")) : t("unitCostAny");
+  /** Số phiếu nháp sẽ tạo (mỗi kho một phiếu). */
+  const docCount = new Set(filled.map((r) => warehouseOf(byId.get(r.variantId)!)).filter(Boolean)).size;
+  const setProductWarehouse = useCallback((productId: string, id: string) => setWarehouse((w) => ({ ...w, [productId]: id })), []);
+  /** "Áp kho này cho tất cả": chỉ SP được phép nhận vào kho đó (SP đã có kho khác thì giữ nguyên). */
+  const applyWarehouseToAll = (id: string) => {
+    if (!id) return;
+    setWarehouse((w) => {
+      const next = { ...w };
+      for (const r of selectedRows) {
+        const v = byId.get(r.variantId)!;
+        if (optionsByProduct.get(v.productId)?.some((o) => o.id === id)) next[v.productId] = id;
+      }
+      return next;
+    });
+    setInvalid(new Set());
+  };
 
   const applyPaste = () => {
-    const scoped = variants.filter((v) => inScope(v) && selected.has(v.id)).map((v) => v.sku);
+    const scoped = variants.filter((v) => selected.has(v.id)).map((v) => v.sku);
     const known = new Set(variants.map((v) => v.sku.toUpperCase()));
     const { rows: pasted, errors } = parseReceivePaste(pasteText, scoped);
     setRows((rs) => {
@@ -216,7 +251,7 @@ export function ReceiveBulkForm({
           qty: String(p.qty),
           lotNo: p.lotNo,
           mfgDate: p.mfgDate,
-          ...(v.requiresExpiry && { expiryStatus: "DATED" as const, expiryDate: p.expiryDate }),
+          ...(p.expiryDate && { expiryStatus: "DATED" as const, expiryDate: p.expiryDate }),
           ...(p.unitCostVnd != null && { unitCost: String(p.unitCostVnd) }),
           ...(p.stockType && { stockType: p.stockType }),
         };
@@ -234,11 +269,9 @@ export function ReceiveBulkForm({
     setPasteMsg({
       filled: pasted.length,
       errors: errors.map((e) =>
-        // SKU có nhưng thuộc kho khác → báo rõ thay vì "không có SKU".
+        // SKU có nhưng chưa được chọn ở bước 1 → báo rõ thay vì "không có SKU".
         e.code === "sku" && known.has((e.value ?? "").toUpperCase())
-          ? bySku.get((e.value ?? "").toUpperCase()) && inScope(bySku.get((e.value ?? "").toUpperCase())!)
-            ? t("receivePasteNotSelected", { line: e.line, value: e.value ?? "" })
-            : t("pasteErr.otherWarehouse", { line: e.line, value: e.value ?? "", warehouse: toLoc?.name ?? "" })
+          ? t("receivePasteNotSelected", { line: e.line, value: e.value ?? "" })
           : t(`pasteErr.${e.code}`, { line: e.line, value: e.value ?? "" }),
       ),
     });
@@ -257,10 +290,11 @@ export function ReceiveBulkForm({
     e.preventDefault();
     setClientError("");
     if (filled.length === 0) return setClientError(t("noLines"));
-    const bad = selectedRows.filter((r) => (!r.split && !hasQty(r)) || (hasQty(r) && rowInvalid(r, defaults)));
+    const noWarehouse = filled.filter((r) => !warehouseOf(byId.get(r.variantId)!));
+    const bad = selectedRows.filter((r) => (!r.split && !hasQty(r)) || (hasQty(r) && rowInvalid(r, defaults)) || noWarehouse.includes(r));
     if (bad.length) {
       setInvalid(new Set(bad.map((r) => r.key)));
-      setClientError(t("lineMissing", { count: bad.length }));
+      setClientError(noWarehouse.length === bad.length ? t("warehouseMissing", { count: noWarehouse.length }) : t("lineMissing", { count: bad.length }));
       setOnlyFilled(false);
       setQ("");
       setBrand("");
@@ -269,25 +303,22 @@ export function ReceiveBulkForm({
     }
     const payload = {
       type: "RECEIVE",
-      toId,
       shipmentId: canUseShipment ? shipmentId || undefined : undefined,
-      estimatedShipMmkPerKg: variants.some((v) => inScope(v) && v.currency === "VND") ? estimatedShip : undefined,
+      estimatedShipMmkPerKg: FEATURES.shipments && currencies.has("VND") ? estimatedShip : undefined,
       reason: reason || undefined,
       lines: filled.map((r) => {
         const eff = effective(r, defaults);
+        const v = byId.get(r.variantId)!;
         return {
           variantId: r.variantId,
+          toId: warehouseOf(v), // kho của sản phẩm — server tách phiếu theo kho
           lotNo: eff.lotNo,
           expiryStatus: r.expiryStatus,
           expiryDate: eff.expiryDate || undefined,
           mfgDate: eff.mfgDate || undefined,
-          ...(byId.get(r.variantId)!.currency === "MMK"
+          ...(currencyOf(v) === "MMK"
             ? { unitCostMmk: r.unitCost.trim() }
-            : {
-                unitCostVnd: r.unitCost.trim(),
-                // Phí về kho đã biết (kể cả 0) → giá vốn thực tế = giá mua + phí; trống = chưa biết, không gửi.
-                ...(r.inbound.trim() !== "" && { landedCostVnd: String(Number(r.unitCost) + Number(r.inbound)) }),
-              }),
+            : { unitCostVnd: r.unitCost.trim() }), // không còn phí về kho: giá vốn lô = giá mua × tỷ giá lúc ghi sổ
           qty: r.qty,
           stockType: eff.stockType,
         };
@@ -296,10 +327,11 @@ export function ReceiveBulkForm({
         .filter((id) => !byId.get(id)!.weightGrams && Number(weights[id]) > 0)
         .map((id) => ({ variantId: id, weightGrams: weights[id] })),
     };
-    // Khoá chống trùng sinh một lần cho form này (gửi lại sau lỗi dùng lại khoá — server trả phiếu đã tạo nếu có).
+    // Khoá chống trùng sinh một lần cho form này (gửi lại sau lỗi dùng lại khoá — server trả phiếu đã tạo nếu có; sửa nháp
+    // đã tách kho thì các phiếu mới dùng khoá dẫn xuất theo kho).
     idempotencyKey.current ??= crypto.randomUUID();
     const fd = new FormData();
-    fd.set("payload", JSON.stringify(draft ? payload : { ...payload, idempotencyKey: idempotencyKey.current }));
+    fd.set("payload", JSON.stringify({ ...payload, idempotencyKey: idempotencyKey.current }));
     if (draft) fd.set("id", draft.id);
     startTransition(() => action(fd));
   };
@@ -314,28 +346,16 @@ export function ReceiveBulkForm({
 
   if (step === 1) {
     const needle = fold(q.trim());
-    const choices = variants.filter((v) => (!toLoc || inScope(v)) && (!brand || v.brand === brand) && (!productFilter || v.productId === productFilter) && (!needle || fold(`${v.sku} ${v.name} ${v.label} ${v.brand}`).includes(needle)));
+    const choices = variants.filter((v) => (!brand || v.brand === brand) && (!productFilter || v.productId === productFilter) && (!needle || fold(`${v.sku} ${v.name} ${v.label} ${v.brand}`).includes(needle)));
     const toggle = (id: string, checked: boolean) => setSelected((s) => {
       const next = new Set(s);
       if (checked) next.add(id); else next.delete(id);
       return next;
     });
-    const count = variants.filter((v) => selected.has(v.id) && (!toLoc || inScope(v))).length;
+    const count = variants.filter((v) => selected.has(v.id)).length;
     return <div className="space-y-4" data-testid="receive-selection">
       <h2 className="font-medium">{t("receiveSelectStep")}</h2>
       <p className="text-sm text-muted-foreground">{t("receiveSelectHelp")}</p>
-      <label className={cn(fieldLabelClass, "max-w-xl")}>
-        <span>{t("chooseTo")}</span>
-        <select value={toId} onChange={(e) => {
-          const id = e.target.value;
-          const loc = locations.find((l) => l.id === id);
-          setToId(id);
-          if (loc?.sellable) setSelected((s) => new Set([...s].filter((vid) => byId.get(vid)?.stockLocationId === id)));
-        }} className={fieldClass}>
-          <option value="">—</option>
-          {locations.map((l) => <option key={l.id} value={l.id}>{l.code} — {l.name}</option>)}
-        </select>
-      </label>
       {productFilter && focus.length > 0 && <div className="flex flex-wrap items-center gap-2 text-sm" data-testid="receive-product-scope">
         <span>{t("productScope", { name: focus[0].name })}</span>
         <Button type="button" variant="outline" size="lg" onClick={() => setProductFilter("")}>{t("showAllProducts")}</Button>
@@ -351,21 +371,21 @@ export function ReceiveBulkForm({
       </div>
       <div className="overflow-x-auto rounded-xl border bg-card">
         <table className="w-full text-left text-sm">
-          <thead className="bg-muted/50 text-left text-xs text-muted-foreground"><tr><th className="px-3 py-2 font-medium">{t("receiveChoose")}</th><th className="px-3 py-2 font-medium">{t("variant")}</th><th className="px-3 py-2 font-medium">{t("filterBrand")}</th></tr></thead>
+          <thead className="bg-muted/50 text-left text-xs text-muted-foreground"><tr><th className="px-3 py-2 font-medium">{t("receiveChoose")}</th><th className="px-3 py-2 font-medium">{t("variant")}</th><th className="px-3 py-2 font-medium">{t("filterBrand")}</th><th className="px-3 py-2 font-medium">{t("warehouse")}</th></tr></thead>
           <tbody className="divide-y">
             {choices.map((v) => <tr key={v.id} className={cn(selected.has(v.id) && "bg-primary/5")}>
               <td className="px-3 py-2"><input id={`receive-pick-${v.id}`} type="checkbox" aria-label={`${t("receiveChoose")} ${v.sku}`} checked={selected.has(v.id)} onChange={(e) => toggle(v.id, e.target.checked)} className="size-4 accent-primary" /></td>
               <td className="px-3 py-2"><label htmlFor={`receive-pick-${v.id}`} className="block cursor-pointer"><span className="font-mono text-xs">{v.sku}</span><span className="block">{v.name} <span className="text-muted-foreground">({v.label})</span></span></label></td>
               <td className="px-3 py-2">{v.brand}</td>
+              <td className="px-3 py-2">{v.stockLocationId ? (locById.get(v.stockLocationId)?.name ?? "—") : <span className="text-muted-foreground">{t("noWarehouseYet")}</span>}</td>
             </tr>)}
-            {!choices.length && <tr><td colSpan={3} className="p-6 text-center text-muted-foreground">{t("noMatch")}</td></tr>}
+            {!choices.length && <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">{t("noMatch")}</td></tr>}
           </tbody>
         </table>
       </div>
       <div className="sticky bottom-0 flex flex-wrap items-center gap-3 border-t bg-background py-3">
         <span role="status" className="text-sm">{t("receiveSelectedCount", { count })}</span>
-        <Button type="button" size="lg" disabled={!toLoc || !count} onClick={() => { setQ(""); setBrand(""); setProductFilter(""); setOnlyFilled(false); setStep(2); }}>{t("receiveNext")}</Button>
-        {!toLoc && <p className="text-sm text-muted-foreground">{t("chooseWarehouseFirst")}</p>}
+        <Button type="button" size="lg" disabled={!count} onClick={() => { setQ(""); setBrand(""); setProductFilter(""); setOnlyFilled(false); setStep(2); }}>{t("receiveNext")}</Button>
       </div>
     </div>;
   }
@@ -378,8 +398,9 @@ export function ReceiveBulkForm({
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
         <label className={fieldLabelClass}>
-          <span className="text-muted-foreground">{t("chooseTo")}</span>
-          <select required disabled value={toId} className={fieldClass}>
+          <span className="text-muted-foreground">{t("applyWarehouse")}</span>
+          {/* Hành động tiện: điền kho cho mọi sản phẩm đã chọn (SP đã có kho bán khác thì giữ nguyên). Kho từng SP chọn ở cột Kho. */}
+          <select aria-label={t("applyWarehouse")} value="" onChange={(e) => applyWarehouseToAll(e.target.value)} className={fieldClass}>
             <option value="">—</option>
             {locations.map((l) => (
               <option key={l.id} value={l.id}>
@@ -431,7 +452,7 @@ export function ReceiveBulkForm({
         </div>
       </fieldset>
 
-      {variants.some((v) => inScope(v) && v.currency === "VND") && (
+      {FEATURES.shipments && currencies.has("VND") && (
         <label className={cn(fieldLabelClass, "max-w-xl")}>
           <span>{t("estimateShip")}</span>
           <input type="number" min={0} max={2147483647} step={1} value={estimatedShip} onChange={(e) => setEstimatedShip(e.target.value)} className={fieldClass} />
@@ -501,11 +522,12 @@ export function ReceiveBulkForm({
           <thead className="bg-muted/50 text-left text-xs text-muted-foreground max-md:hidden">
             <tr>
               <th className="px-2 py-2 font-medium">{t("variant")}</th>
+              <th className="px-2 py-2 font-medium">{t("warehouse")}</th>
               <th className="w-24 px-2 py-2 font-medium">{t("qty")}</th>
               <th className="px-2 py-2 font-medium">{t("lotNo")}</th>
               <th className="px-2 py-2 font-medium">{t("expiry")}</th>
               <th className="px-2 py-2 font-medium">{t("mfg")}</th>
-              <th className="px-2 py-2 font-medium">{toLoc?.pricingMode === "LOCAL_MMK" ? t("unitCostMmk") : toLoc && !toLoc.sellable ? t("unitCostAny") : t("unitCost")}</th>
+              <th className="px-2 py-2 font-medium">{costHeader}</th>
               <th className="px-2 py-2 font-medium">{t("stockType")}</th>
               <th className="px-2 py-2 font-medium">{t("weightGrams")}</th>
               <th className="px-2 py-2" />
@@ -514,8 +536,8 @@ export function ReceiveBulkForm({
           <tbody className="divide-y">
             {visible.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">
-                  {toLoc ? t("noMatch") : t("chooseWarehouseFirst")}
+                <td colSpan={10} className="px-3 py-6 text-center text-muted-foreground">
+                  {t("noMatch")}
                 </td>
               </tr>
             ) : (
@@ -524,6 +546,10 @@ export function ReceiveBulkForm({
                   key={r.key}
                   row={r}
                   variant={byId.get(r.variantId)!}
+                  currency={currencyOf(byId.get(r.variantId)!)}
+                  warehouse={warehouseOf(byId.get(r.variantId)!)}
+                  options={optionsByProduct.get(byId.get(r.variantId)!.productId) ?? []}
+                  onWarehouse={setProductWarehouse}
                   defaults={defaults}
                   invalid={invalid.has(r.key)}
                   weight={weights[r.variantId] ?? ""}
@@ -543,6 +569,7 @@ export function ReceiveBulkForm({
         <span className="text-sm text-muted-foreground" aria-live="polite">
           {t("summary", { lines: filled.length, qty: fmtInt(totalQty), money })}
         </span>
+        {docCount > 1 && <span className="text-sm font-medium" data-testid="receive-split-preview">{t("splitPreview", { count: docCount })}</span>}
         {(clientError || state?.error) && (
           <p role="alert" className="w-full text-sm text-destructive">
             {t("error")}: {clientError || state?.error}
@@ -568,6 +595,10 @@ function Cap({ children }: { children: React.ReactNode }) {
 const ReceiveRow = memo(function ReceiveRow({
   row: r,
   variant: v,
+  currency,
+  warehouse,
+  options,
+  onWarehouse,
   defaults: d,
   invalid,
   weight,
@@ -578,6 +609,10 @@ const ReceiveRow = memo(function ReceiveRow({
 }: {
   row: Row;
   variant: ReceiveVariant;
+  currency: "VND" | "MMK";
+  warehouse: string;
+  options: Location[];
+  onWarehouse: (productId: string, id: string) => void;
   defaults: Defaults;
   invalid: boolean;
   weight: string;
@@ -590,7 +625,9 @@ const ReceiveRow = memo(function ReceiveRow({
   const ti = useTranslations("Inventory");
   const filled = hasQty(r);
   const label = (field: string) => `${field} ${v.sku}`;
-  const costLabel = v.currency === "MMK" ? t("unitCostMmk") : t("unitCost");
+  const costLabel = currency === "MMK" ? t("unitCostMmk") : t("unitCost");
+  // SP đã có kho bán và chỉ còn một lựa chọn → cố định (hiện tên kho, không đổi được).
+  const fixed = options.length <= 1 && v.stockLocationId != null;
   return (
     <tr id={`rcv-${r.key}`} className={cn(filled && "bg-primary/5", invalid && "bg-destructive/10")}>
       <td className={cn(cell, "min-w-48 max-md:col-span-2")}>
@@ -599,6 +636,14 @@ const ReceiveRow = memo(function ReceiveRow({
           {v.name} <span className="text-muted-foreground">({v.label})</span>
         </div>
         {r.split && <div className="text-xs text-muted-foreground">{t("splitLot")}</div>}
+      </td>
+      <td className={cn(cell, "min-w-36 max-md:col-span-2")}>
+        <Cap>{t("warehouse")}</Cap>
+        {/* Kho theo sản phẩm: các dòng/lô của cùng SP luôn cùng kho. */}
+        <select aria-label={label(t("warehouse"))} value={warehouse} disabled={fixed} title={fixed ? t("warehouseFixedHint") : undefined} onChange={(e) => onWarehouse(v.productId, e.target.value)} className={cn(small, "w-full min-w-32")}>
+          <option value="">—</option>
+          {options.map((l) => <option key={l.id} value={l.id}>{l.code} — {l.name}</option>)}
+        </select>
       </td>
       <td className={cell}>
         <Cap>{t("qty")}</Cap>
@@ -610,13 +655,13 @@ const ReceiveRow = memo(function ReceiveRow({
       </td>
       <td className={cn(cell, "max-md:col-span-2")}>
         <Cap>{t("expiry")}</Cap>
-        {r.expiryStatus === "NONE" ? (
-          <span className="text-xs text-muted-foreground">{ti("expiryNone")}</span>
-        ) : (
+        {/* 16/11/2026: hạn dùng chọn theo lô — Có ngày / Chưa biết hạn / Không có hạn (túi, phụ kiện…). */}
+        {(
           <div className="flex flex-wrap gap-1">
             <select aria-label={label(t("expiryStatus"))} value={r.expiryStatus} onChange={(e) => onChange(r.key, { expiryStatus: e.target.value as ExpiryStatus, expiryDate: "" })} className={cn(small, "w-auto")}>
               <option value="DATED">{ti("expiryDated")}</option>
               <option value="UNKNOWN">{ti("expiryUnknown")}</option>
+              <option value="NONE">{ti("expiryNone")}</option>
             </select>
             {r.expiryStatus === "DATED" && (
               <input aria-label={label(t("expiry"))} type="date" value={r.expiryDate || ""} title={!r.expiryDate && d.expiryDate ? d.expiryDate : undefined} onChange={(e) => onChange(r.key, { expiryDate: e.target.value })} className={cn(small, "w-36", !r.expiryDate && d.expiryDate && "text-muted-foreground")} />
@@ -632,20 +677,6 @@ const ReceiveRow = memo(function ReceiveRow({
       <td className={cell}>
         <Cap>{costLabel}</Cap>
         <input aria-label={label(costLabel)} type="number" min={0} step={1} inputMode="numeric" value={r.unitCost} onChange={(e) => onChange(r.key, { unitCost: e.target.value })} className={cn(small, "w-28")} />
-        {v.currency === "VND" && (
-          <input
-            aria-label={label(t("inboundFee"))}
-            title={t("inboundFeeHint")}
-            placeholder={t("inboundFee")}
-            type="number"
-            min={0}
-            step={1}
-            inputMode="numeric"
-            value={r.inbound}
-            onChange={(e) => onChange(r.key, { inbound: e.target.value })}
-            className={cn(small, "mt-1 w-28")}
-          />
-        )}
       </td>
       <td className={cell}>
         <Cap>{t("stockType")}</Cap>

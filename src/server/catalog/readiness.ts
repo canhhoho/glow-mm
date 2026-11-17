@@ -126,7 +126,7 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
         otherWarehouseSkus: skusWhere(mine, (b) => b.locationId !== p.stockLocationId),
         staleSkus,
         rateNewerSkus:
-          p.stockLocation.pricingMode === "VN_IMPORT"
+          p.stockLocation?.pricingMode === "VN_IMPORT"
             ? p.variants
                 .filter((v) => v.active && v.priceMmk > 0 && (lastPriceChange.get(v.id) ?? 0) > 0 && lastPriceChange.get(v.id)! < rateAt)
                 .map((v) => v.sku)

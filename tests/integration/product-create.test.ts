@@ -29,6 +29,8 @@ describe("Bước 1: tạo sản phẩm tối giản (QT1a)", () => {
       include: { variants: { orderBy: { sku: "asc" } }, translations: true, brand: true },
     });
     expect(saved.published).toBe(false);
+    // 16/11/2026: kho bán chọn lúc nhập hàng — tạo SP không gán kho (kể cả khi gửi kèm).
+    expect(saved.stockLocationId).toBeNull();
     expect(saved.slug).toBe(`lip-tint-${f.tag.toLowerCase()}`);
     expect(saved.brand.name).toBe(`IT new brand ${f.tag}`);
     expect(saved.variants.map((v) => [v.label, v.priceMmk])).toEqual([["Đỏ", 0], ["Hồng", 0]]);
@@ -67,7 +69,7 @@ describe("Bước 1: tạo sản phẩm tối giản (QT1a)", () => {
     expect((await stepsOf(copy.id)).r.notReceivedSkus).toHaveLength(1);
   });
 
-  it("tạo combo: thành phần cùng kho; khác kho bị chặn", async () => {
+  it("tạo combo: lấy kho của thành phần; thành phần khác kho nhau bị chặn", async () => {
     const f = await makeFixture();
     const combo = await createProduct(
       { kind: "combo", nameEn: `Set ${f.tag}`, brandId: f.brandId, categoryId: f.categoryId, stockLocationId: f.mm.id, defaultLabel: "Tiêu chuẩn", components: [{ componentId: f.variantId, qty: 2 }] },
@@ -76,10 +78,15 @@ describe("Bước 1: tạo sản phẩm tối giản (QT1a)", () => {
     const v = await prisma.variant.findFirstOrThrow({ where: { productId: combo.id }, include: { bundleItems: true } });
     expect(v.isBundle).toBe(true);
     expect(v.bundleItems.map((b) => [b.componentId, b.qty])).toEqual([[f.variantId, 2]]);
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: combo.id } })).stockLocationId).toBe(f.mm.id);
 
+    const other = await prisma.product.create({
+      data: { slug: `it-other-${f.tag.toLowerCase()}`, brandId: f.brandId, categoryId: f.categoryId, stockLocationId: f.chi.id, variants: { create: { sku: `OTH-${f.tag}`, label: "x", priceMmk: 1 } } },
+      include: { variants: true },
+    });
     await expect(
       createProduct(
-        { kind: "combo", nameEn: `Bad set ${f.tag}`, brandId: f.brandId, categoryId: f.categoryId, stockLocationId: f.chi.id, defaultLabel: "Tiêu chuẩn", components: [{ componentId: f.variantId, qty: 1 }] },
+        { kind: "combo", nameEn: `Bad set ${f.tag}`, brandId: f.brandId, categoryId: f.categoryId, defaultLabel: "Tiêu chuẩn", components: [{ componentId: f.variantId, qty: 1 }, { componentId: other.variants[0].id, qty: 1 }] },
         f.userId,
       ),
     ).rejects.toThrow(/kho khác/);

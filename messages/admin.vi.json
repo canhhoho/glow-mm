@@ -6,7 +6,7 @@
     "title": "Giá bán",
     "automatic": "Tự động",
     "manual": "Danh sách · Thủ công",
-    "help": "Nơi đặt giá chính. Tick các SKU rồi chọn Nhập thủ công (công thức VND: giá mua NCC + lãi, đổi tỷ giá, cộng vận chuyển + CTV) hoặc Tính tự động (% lãi theo bảng tính). Giá áp dụng chung cho SKU; lô chỉ là cơ sở tính. Sản phẩm đã duyệt: giá + hoa hồng chờ duyệt rồi mới hiện cho khách. Đổi tỷ giá / giá vốn không tự đổi giá.",
+    "help": "Nơi đặt giá bán. Tick các SKU rồi chọn Nhập thủ công: giá mua NCC + lãi, đổi theo tỷ giá, cộng vận chuyển + hoa hồng CTV. Giá áp dụng chung cho SKU; lô chỉ là cơ sở tính. Sản phẩm đã duyệt: giá + hoa hồng chờ duyệt rồi mới hiện cho khách. Đổi tỷ giá / giá mua không tự đổi giá.",
     "search": "Tìm tên sản phẩm hoặc SKU",
     "filter": "Tìm kiếm",
     "product": "Sản phẩm",
@@ -34,10 +34,11 @@
     "stateAll": "Mọi tình trạng",
     "allWarehouses": "Mọi kho",
     "clearFilters": "Xoá lọc",
-    "colCost": "Giá mua gần nhất",
+    "colCost": "Giá mua gần nhất (chưa gồm phí về kho)",
     "colSource": "Nguồn giá",
     "pendingPrice": "Chờ duyệt: {price}",
     "staleBadge": "Đầu vào mới — nên tính lại",
+    "draftReceipt": "Phiếu nháp {code} chưa ghi sổ",
     "showing": "Hiển thị {from}–{to} trên {total} SKU",
     "pageSize": "Hiển thị:",
     "pickHint": "Với các SKU đã tick:",
@@ -54,6 +55,7 @@
       "back": "Giá bán",
       "empty": "Chưa chọn SKU nào — quay lại trang Giá bán và tick các SKU cần đặt giá.",
       "truncated": "Chỉ hiện 200 SKU đầu tiên — chọn ít SKU hơn.",
+      "unplaced": "Chưa đặt giá được cho SP chưa nhập hàng (chưa có kho bán): {skus}. Nhập hàng và ghi sổ phiếu trước.",
       "groupVnd": "{name} — hàng nhập VN (công thức VND)",
       "groupMmk": "{name} — hàng mua MMK",
       "noRate": "Chưa có tỷ giá — thêm tỷ giá trước.",
@@ -63,7 +65,7 @@
       "rateCurrent": "đang dùng",
       "oldRate": "Đang chọn tỷ giá cũ, không phải tỷ giá đang dùng — kiểm tra lại trước khi lưu.",
       "formula": "Giá bán VND = giá mua NCC + lãi · Giá bán MMK = giá bán VND ÷ tỷ giá + vận chuyển + CTV, làm tròn lên bội số {round} MMK.",
-      "profitNote": "Lãi mong muốn chỉ là phần cộng thêm trên giá mua NCC — chưa phải lợi nhuận cuối: chưa trừ chi phí về kho / chuyến hàng, phí COD, hàng trả và chi phí vận hành. Giá mua lấy đúng lần nhập đã chọn, không bình quân.",
+      "profitNote": "Lãi mong muốn chỉ là phần cộng thêm trên giá mua NCC — chưa phải lợi nhuận cuối: chưa trừ phí COD, hàng trả và chi phí vận hành. Giá mua lấy đúng lần nhập đã chọn, không bình quân.",
       "colSku": "SKU",
       "colLot": "Lô cơ sở",
       "colPurchase": "Giá mua NCC (VND)",
@@ -72,7 +74,7 @@
       "colShip": "Vận chuyển (MMK/sp)",
       "colCtv": "CTV (MMK/sp)",
       "colFinal": "Giá bán cuối (MMK)",
-      "colLastCost": "Giá mua gần nhất",
+      "colLastCost": "Giá mua gần nhất (chưa gồm phí về kho)",
       "colPrice": "Giá bán (MMK)",
       "lotOption": "Lô {lot} · {doc} · {date} · {price} VND",
       "comboLot": "Combo: tổng giá mua gần nhất của thành phần",
@@ -82,7 +84,7 @@
       "incomplete": "Điền lãi, vận chuyển, CTV",
       "save": "Lưu giá ({count} SKU đổi)",
       "saveMmk": "Lưu giá",
-      "mmkHelp": "Hàng mua MMK giữ cách cũ: nhập thẳng giá bán, hoa hồng CTV (trống = theo %) và Lãi cố định (dùng cho Tính tự động). Đổi giá cần lý do.",
+      "mmkHelp": "Hàng mua MMK giữ cách cũ: nhập thẳng giá bán, hoa hồng CTV (trống = theo %) và Lãi cố định (MMK/đv). Đổi giá cần lý do.",
       "ctvPercent": "theo % CTV",
       "fixedProfit": "Lãi cố định (MMK/đv)",
       "reason": "Lý do sửa giá"
@@ -321,7 +323,7 @@
     "colLocation": "Vị trí",
     "colType": "Loại tồn",
     "colQty": "SL",
-    "colCost": "Giá vốn (MMK)",
+    "colCost": "Giá vốn lô (MMK/đv, bình quân)",
     "empty": "Chưa có tồn kho.",
     "SELLABLE": "Bán được",
     "TESTER": "Tester/quà",
@@ -372,7 +374,7 @@
     "colAvailable": "Còn bán được",
     "colEarliest": "Lô hết hạn sớm nhất",
     "colValue": "Giá trị (MMK)",
-    "colUnitCost": "Giá vốn/đv",
+    "colUnitCost": "Giá vốn/đv (MMK)",
     "combo": "combo",
     "comboHint": "tồn theo thành phần",
     "daysLeft": "còn {n} ngày",
@@ -411,7 +413,7 @@
   "Docs": {
     "receiveSelectStep": "Bước 1 — Chọn sản phẩm nhập kho",
     "receiveDetailsStep": "Bước 2 — Nhập thông số nhập kho",
-    "receiveSelectHelp": "Chọn kho nhận và đánh dấu các sản phẩm nhập trong đợt này. Mỗi biến thể/SKU là một dòng riêng.",
+    "receiveSelectHelp": "Đánh dấu các sản phẩm nhập trong đợt này. Kho nhận chọn cho từng sản phẩm ở bước sau; lưu nháp sẽ tự tách phiếu theo kho.",
     "receiveChoose": "Chọn",
     "receiveSelectAll": "Chọn tất cả kết quả",
     "receiveClearSelection": "Bỏ chọn tất cả",
@@ -454,7 +456,7 @@
     "previewHelp": "Số dự kiến tính từ tồn hiện tại (cộng mọi lô của sản phẩm tại vị trí đó) và có thể khác nếu có giao dịch khác trước lúc ghi sổ; hệ thống kiểm tra lại khi ghi sổ.",
     "postConfirmSummary": "Ghi sổ phiếu {code}: {lines} dòng, tăng {inc}, giảm {dec}. Tồn kho sẽ thay đổi và không hoàn tác được.",
     "costUnit": "Giá mua/đv",
-    "costRate": "Tỷ giá (MMK/VND)",
+    "costRate": "Tỷ giá (VND cho 1 MMK)",
     "costInbound": "Phí về kho/đv (VND)",
     "costViaShipment": "Theo chuyến hàng",
     "lotsCleared": "Đã bỏ chọn lô ở {count} dòng vì lô đó không còn hàng ở kho này — chọn lại lô hoặc để hệ thống tự chọn theo FEFO.",
@@ -508,6 +510,13 @@
     },
     "noMatch": "Không có sản phẩm khớp bộ lọc.",
     "chooseWarehouseFirst": "Chọn kho nhận để hiện các sản phẩm thuộc kho đó.",
+    "splitNotice": "Đã tách thành {n} phiếu nháp theo kho nhận.",
+    "splitPreview": "Sẽ tách thành {count} phiếu nháp theo kho",
+    "warehouseFixedHint": "Kho bán của sản phẩm (đã chốt, không đổi)",
+    "warehouseMissing": "Chọn kho cho {count} dòng",
+    "applyWarehouse": "Áp kho này cho tất cả",
+    "noWarehouseYet": "Chưa nhập hàng",
+    "warehouse": "Kho",
     "summary": "{lines} dòng · tổng SL {qty} · {money}",
     "unitCostMmk": "Giá mua/đv (MMK)",
     "unitCostAny": "Giá mua/đv (VND hoặc MMK theo kho của SP)",
@@ -615,6 +624,8 @@
     "fixedProfitMmk": "Lãi cố định (MMK/đơn vị)",
     "fixedProfitHint": "Kho mua tại Myanmar: giá bán = giá mua MMK lô mới nhất + số này (tính ở trang Giá bán).",
     "warehouseChangeHint": "Đổi kho: hàng còn ở kho cũ chỉ bán lại sau khi tạo phiếu chuyển kho sang kho mới.",
+    "warehouseNone": "Chưa nhập hàng — kho bán được chọn khi nhập hàng lần đầu",
+    "warehouseNoneShort": "Chưa nhập hàng",
     "moveTo": "Chuyển sang kho",
     "bulkMove": "Đổi kho",
     "moveConfirm": "Đổi kho cho {count} sản phẩm đã chọn? Hàng còn ở kho cũ cần tạo phiếu chuyển kho sang kho mới để bán tiếp.",
@@ -649,7 +660,6 @@
     "restoreDone": "Đã khôi phục {count} sản phẩm (đang ẩn — bật hiển thị khi muốn bán lại).",
     "edit": "Sửa",
     "saved": "Đã lưu.",
-    "general": "Thông tin chung",
     "slug": "Slug (URL)",
     "brand": "Thương hiệu",
     "category": "Danh mục",
@@ -663,7 +673,6 @@
     "SKIN_TYPE": "Loại da",
     "CONCERN": "Vấn đề da",
     "INGREDIENT": "Thành phần nổi bật",
-    "variants": "Biến thể",
     "sku": "SKU",
     "label": "Tên biến thể (dung tích/màu)",
     "standardVariant": "Tiêu chuẩn",
@@ -702,7 +711,6 @@
     "imagesDown": "Xuống",
     "imagesDelete": "Xoá ảnh",
     "imagesDeleteConfirm": "Xoá ảnh này?",
-    "requiresExpiry": "Quản lý hạn sử dụng cho sản phẩm này",
     "paoMonths": "Hạn sau mở nắp (tháng, nếu có)",
     "launchCheck": "Kiểm tra trước khi mở bán",
     "checkImages": "Có ảnh sản phẩm",
@@ -720,6 +728,7 @@
       "issue": {
         "NO_ACTIVE_VARIANT": "Không có biến thể đang dùng",
         "BAD_LOCATION": "Kho bán đã ngừng hoặc không phải kho bán",
+        "NO_WAREHOUSE": "Chưa nhập hàng — kho bán được gán khi ghi sổ phiếu nhập đầu tiên",
         "PRICE_ZERO": "Giá bán ≤ 0",
         "NO_WEIGHT": "Thiếu khối lượng (cần cho cước/kg)",
         "NO_IMAGE": "Chưa có ảnh",
@@ -752,12 +761,10 @@
     "nameMy": "Tên tiếng Myanmar",
     "nameEn": "Tên tiếng Anh",
     "brandNewHint": "Thương hiệu mới — sẽ được tạo khi lưu",
-    "descriptions": "Mô tả",
     "descriptionMy": "Mô tả tiếng Myanmar",
     "descriptionEn": "Mô tả tiếng Anh",
     "addColorSize": "Thêm màu/dung tích",
     "otherSettings": "Thiết lập khác (mã, kho, hạn dùng)",
-    "nameHint": "Chỉ cần điền một tên; tên còn lại tự lấy theo tên này.",
     "affiliateCommission": "Hoa hồng CTV (MMK/cái)",
     "affiliateCommissionHint": "Để trống = tính theo % của CTV",
     "newCombo": "Tạo combo",
@@ -765,8 +772,6 @@
     "create": {
       "comboTitle": "Tạo combo",
       "intro": "Bước 1/5 — chỉ cần thông tin cơ bản. Giá, ảnh, mô tả và hiển thị làm ở các bước sau trên trang sản phẩm.",
-      "name": "Tên sản phẩm",
-      "addOtherName": "+ Thêm {lang}",
       "labels": "Phân loại (màu / dung tích)",
       "labelsPlaceholder": "VD: Đỏ, 50ml",
       "labelsHint": "Nhấn Enter hoặc dấu phẩy để thêm. Để trống nếu chỉ có một loại.",
@@ -823,6 +828,7 @@
       "colSell": "Điều kiện bán",
       "colUpdated": "Cập nhật",
       "moreVariants": "+{n} loại khác",
+      "pricePending": "chờ duyệt: {price}",
       "missing": "Thiếu {n} mục",
       "importExcel": "Nhập Excel",
       "exportExcel": "Xuất Excel",
@@ -841,7 +847,8 @@
       "sourceManual": "Sửa tay",
       "sourceImport": "Excel",
       "sourceNone": "Chưa có lịch sử",
-      "lastCost": "Giá mua gần nhất",
+      "lastCost": "Giá mua gần nhất (chưa gồm phí về kho)",
+      "draftReceipt": "Phiếu nháp {code} chưa ghi sổ",
       "inactive": "đang tắt",
       "manual": "Sửa giá tay",
       "manualHelp": "Giá phải lớn hơn 0. Đổi giá cần ghi lý do (lưu vào lịch sử giá).",
@@ -849,7 +856,7 @@
       "save": "Lưu giá",
       "saved": "Đã lưu giá",
       "setPrice": "Đặt giá",
-      "whereHelp": "Giá bán và hoa hồng CTV đặt ở trang Giá bán (Thủ công hoặc Tự động) hoặc qua Excel.",
+      "whereHelp": "Giá bán và hoa hồng CTV đặt ở trang Giá bán (nhập thủ công).",
       "commission": "CTV: {value}"
     },
     "approval": {
@@ -962,8 +969,9 @@
       "noteCreateOk": "Đã có thông tin cơ bản",
       "noteCreateMissing": "Còn thiếu thông tin",
       "noteStock": "Tồn: {n}",
-      "notePrice": "Giá bán: {price}",
+      "notePrice": "Giá bán: {price} MMK",
       "notePriceMissing": "Chưa có giá bán",
+      "notePricePending": "chờ duyệt: {price} MMK",
       "notePending": "Chờ quản lý duyệt",
       "noteRejected": "Bị từ chối",
       "noteApproved": "Đã duyệt",
@@ -1156,7 +1164,7 @@
       "invalid_form": "Thông tin đơn chưa hợp lệ, kiểm tra lại các ô",
       "pick_mismatch": "Phiếu soạn không còn khớp (lô không đủ / hết hạn bán hoặc đơn đã đổi) — in lại phiếu soạn",
       "pick_required": "Cần in phiếu soạn (Chốt lô & In) trước khi bàn giao",
-      "cost_missing": "Không bàn giao được: lô sắp xuất chưa có giá vốn (cả thực tế lẫn tạm tính). Vào trang lô bấm \"Tính giá vốn tạm\", hoặc phân bổ chi phí chuyến hàng, rồi bàn giao lại"
+      "cost_missing": "Không bàn giao được: lô sắp xuất chưa có giá vốn. Kiểm tra phiếu nhập của lô đã ghi sổ, có giá mua và tỷ giá, rồi bàn giao lại"
     },
     "ret": {
       "title": "Trả hàng",
@@ -1224,7 +1232,7 @@
       },
       "pickCostEstimated": "Giá vốn tạm",
       "pickCostMissingLot": "Thiếu giá vốn — chưa bàn giao được",
-      "pickCostMissing": "{count} lô trên phiếu chưa có giá vốn — đơn dùng các lô này sẽ không bàn giao được. Vào trang lô bấm \"Tính giá vốn tạm\" hoặc phân bổ chi phí chuyến hàng trước."
+      "pickCostMissing": "{count} lô trên phiếu chưa có giá vốn — đơn dùng các lô này sẽ không bàn giao được. Kiểm tra phiếu nhập của các lô đó (giá mua + tỷ giá, đã ghi sổ) trước."
     },
     "shippingPayer": "Người trả cước giao khách",
     "receiverPays": "Người nhận trả cước",
@@ -1372,7 +1380,7 @@
     "noRate": "Chưa có tỷ giá — thêm tỷ giá trước",
     "empty": "Chưa có dữ liệu",
     "purchaseCost": "Giá mua gốc (VND)",
-    "costBasisHelp": "Giá bán dùng giá mua gốc và cộng cước theo kg một lần. Chi phí chuyến thực tế dùng cho giá vốn và lợi nhuận.",
+    "costBasisHelp": "Giá bán dùng giá mua gốc cộng vận chuyển. Giá vốn lô = giá mua × tỷ giá lúc nhập.",
     "source": "Nguồn giá mua",
     "sourceCombo": "Tổng thành phần",
     "weight": "Khối lượng (g)",
@@ -1468,7 +1476,7 @@
       "unknown": "Chưa biết hạn"
     },
     "note": "Ngừng bán khi còn < {block} ngày, cảnh báo < {warn} ngày. Tốc độ bán tính trong {window} ngày gần nhất, cần đủ hàng {cover} ngày sau khi về. Sửa ở Cài đặt.",
-    "reorderHint": "Nên đặt = bán/ngày × (thời gian về + số ngày cần đủ) + tồn an toàn − còn bán được. Hàng đã nhập vào kho bán (kể cả hàng của chuyến chưa đánh dấu đã đến) đã nằm trong “còn bán được”; cột “Tồn ở vị trí khác” chỉ để xem, chưa bán được cho tới khi chuyển về kho bán.",
+    "reorderHint": "Nên đặt = bán/ngày × (thời gian về + số ngày cần đủ) + tồn an toàn − còn bán được. Hàng đã nhập vào kho bán đã nằm trong “còn bán được”; cột “Tồn ở vị trí khác” chỉ để xem, chưa bán được cho tới khi chuyển về kho bán.",
     "other": "Tồn ở vị trí khác (chưa tính)"
   },
   "Reports": {
@@ -1478,7 +1486,7 @@
     "apply": "Xem",
     "basis": "Doanh thu = tiền hàng đơn hoàn tất trong kỳ (theo ngày hoàn tất, giờ Yangon), đã trừ hàng khách trả. Lợi nhuận = doanh thu − giá vốn lô đã xuất. Phí ship tách riêng.",
     "inventoryNow": "Số liệu tồn hiện tại, không phụ thuộc kỳ báo cáo.",
-    "inventoryBasis": "Tồn hiện tại theo kho, hàng bán chậm và chuyến hàng đang về.",
+    "inventoryBasis": "Tồn hiện tại theo kho và hàng bán chậm.",
     "revenue": "Doanh thu",
     "cogs": "Giá vốn",
     "profit": "Lợi nhuận gộp",
@@ -2227,7 +2235,7 @@
       },
       "stockMissingCost": {
         "title": "Lô có tồn bán nhưng chưa có giá vốn",
-        "help": "Đơn xuất từ lô này sẽ ghi Thiếu giá vốn. Phân bổ chi phí chuyến hoặc tính giá vốn tạm ở trang lô.",
+        "help": "Đơn xuất từ lô này sẽ ghi Thiếu giá vốn. Lô cũ chạy script bổ sung giá vốn; lô mới cần phiếu nhập có giá mua và tỷ giá.",
         "value": "SL tồn"
       },
       "draftOnlyCost": {
@@ -2349,43 +2357,153 @@
       "other": "Khác"
     }
   },
+  "ProductFields": {
+    "sections": {
+      "main": "Thông tin chính",
+      "variant": "Phân loại",
+      "content": "Mô tả cho khách",
+      "extra": "Chi tiết thêm",
+      "stock": "Nhập kho (tuỳ chọn)"
+    },
+    "required": "Bắt buộc khi tạo mới",
+    "name": {
+      "label": "Tên sản phẩm",
+      "hint": "Một tên dùng cho mọi ngôn ngữ (thường là tên tiếng Anh/Latin của hãng). Các dòng cùng tên + thương hiệu là các phân loại của một sản phẩm."
+    },
+    "brand": {
+      "label": "Thương hiệu",
+      "hint": "Chọn trong danh sách hoặc gõ tên mới — thương hiệu mới sẽ được tạo."
+    },
+    "category": {
+      "label": "Danh mục",
+      "hint": "Chọn trong danh sách (nhận cả tên hoặc mã danh mục). Danh mục phải có sẵn."
+    },
+    "variant_label": {
+      "label": "Phân loại (dung tích/màu)",
+      "hint": "Để trống nếu sản phẩm chỉ có một loại."
+    },
+    "sku": {
+      "label": "SKU",
+      "hint": "Để trống khi tạo mới (tự sinh). Điền SKU đã có để cập nhật sản phẩm đó."
+    },
+    "weight_g": {
+      "label": "Khối lượng (g)",
+      "hint": "Gram, số nguyên lớn hơn 0. Cần trước khi gửi duyệt với hàng nhập Việt Nam (tính phí ship vào giá)."
+    },
+    "description_my": {
+      "label": "Mô tả Myanmar",
+      "hint": "Khách thấy ở trang tiếng Myanmar. Có thể xuống dòng trong một ô."
+    },
+    "description_en": {
+      "label": "Mô tả tiếng Anh",
+      "hint": "Khách thấy ở trang tiếng Anh/Việt — không tự lấy mô tả Myanmar."
+    },
+    "usage_my": {
+      "label": "Cách dùng Myanmar",
+      "hint": "Tuỳ chọn. Hiện ở mục Cách dùng trên trang tiếng Myanmar."
+    },
+    "usage_en": {
+      "label": "Cách dùng tiếng Anh",
+      "hint": "Tuỳ chọn. Hiện ở trang tiếng Anh/Việt."
+    },
+    "ingredients": {
+      "label": "Thành phần",
+      "hint": "Tuỳ chọn. Một nội dung cho mọi ngôn ngữ (thường là bảng INCI)."
+    },
+    "storage_note": {
+      "label": "Bảo quản",
+      "hint": "Tuỳ chọn. Ví dụ: nơi khô ráo, tránh ánh nắng."
+    },
+    "pao_months": {
+      "label": "Hạn sau mở nắp (tháng)",
+      "hint": "Tuỳ chọn. Số tháng dùng được sau khi mở nắp (PAO), khác hạn sử dụng của lô."
+    },
+    "warehouse_code": {
+      "label": "Kho nhập",
+      "hint": "Kho nhận hàng. SP chưa nhập hàng: kho này thành kho bán khi ghi sổ (trống = kho mặc định). SP đã có kho: phải đúng kho đó."
+    },
+    "qty": {
+      "label": "Số lượng nhập",
+      "hint": "Tuỳ chọn. Có số lượng → tạo phiếu nhập nháp, kiểm tra rồi Ghi sổ."
+    },
+    "expiry_date": {
+      "label": "Hạn sử dụng",
+      "hint": "dd/mm/yyyy. Trống = chưa biết hạn (chưa bán được). Ghi \"Không\" nếu hàng không có hạn."
+    },
+    "unit_cost": {
+      "label": "Giá mua/đv",
+      "hint": "Theo kho nhập: VND (kho hàng nhập Việt Nam) hoặc MMK (kho mua tại Myanmar). Không phải giá bán."
+    },
+    "lot_no": {
+      "label": "Số lô",
+      "hint": "Tuỳ chọn. Trống = tự sinh."
+    },
+    "priceReadonly": "Giá bán và hoa hồng CTV đặt ở trang Giá bán.",
+    "currentPrice": "Giá đang bán",
+    "setPrice": "Đặt giá bán",
+    "stockHint": "Nhập hàng (số lượng, hạn dùng, giá mua, kho) làm ở Phiếu nhập.",
+    "receive": "Nhập hàng",
+    "listTitles": {
+      "brands": "Thương hiệu",
+      "categories": "Danh mục",
+      "warehouses": "Kho nhập"
+    },
+    "listError": "Chọn một giá trị trong danh sách."
+  },
   "CatalogImport": {
     "title": "Nhập / cập nhật sản phẩm bằng Excel",
-    "help": "Một file cho cả tạo sản phẩm mới, cập nhật thông tin, giá bán và nhập tồn. Sản phẩm mới vào trạng thái ẩn; có giá bán thì gửi duyệt được, chưa có giá thì lưu nháp. Ô trống = giữ nguyên (kể cả giá đang chờ duyệt). Luôn xem trước, không còn lỗi mới xác nhận được.",
+    "help": "Tải file mẫu, điền thông tin sản phẩm rồi tải lên. Ô trống = giữ nguyên; giá bán đặt ở trang Giá bán.",
     "templateBlank": "Tải file mẫu trống",
     "templateCurrent": "Tải danh sách sản phẩm hiện có (để cập nhật)",
-    "setupHint": "Cần có trước:",
-    "categories": "Danh mục",
-    "warehouses": "Kho bán",
-    "rates": "Tỷ giá (khi nhập tồn hàng VND)",
     "file": "File Excel nhập sản phẩm",
     "preview": "Xem trước",
-    "summary": "{created} SP mới · {updated} SP cập nhật · {unchanged} SP không đổi · {stock} dòng nhập tồn",
-    "rateQuote": "Tỷ giá tính giá vốn: 1 VND = {rate} MMK (chốt cho các lô nhập lần này)",
-    "errorsTitle": "Cần sửa trong file trước khi nhập:",
-    "warningsTitle": "Lưu ý:",
     "colLine": "Dòng",
-    "colAction": "Thao tác",
+    "colAction": "Trạng thái",
     "colProduct": "Sản phẩm",
     "colSku": "SKU",
-    "colPrice": "Giá bán",
-    "colStock": "Nhập tồn",
-    "colCost": "Giá vốn (MMK/đv)",
     "action": {
+      "create": "Tạo mới",
+      "update": "Cập nhật",
+      "same": "Không đổi",
+      "error": "Lỗi"
+    },
+    "confirmHelp": "Sản phẩm mới được tạo ở trạng thái ẩn.",
+    "confirm": "Xác nhận nhập",
+    "confirmBlocked": "Chưa thể xác nhận vì file còn lỗi. Sửa các lỗi phía trên, chọn lại file rồi bấm Xem trước.",
+    "success": "Đã nhập: {created} SP mới, {updated} SP cập nhật.",
+    "reviewDraft": "kiểm tra và ghi sổ",
+    "finishProducts": "Về danh sách sản phẩm để thêm ảnh và bật hiển thị",
+    "summaryRows": "{total} dòng: {create} tạo mới · {update} cập nhật · {same} không đổi · {error} lỗi",
+    "filterLabel": "Lọc dòng",
+    "filter": {
+      "all": "Tất cả",
+      "error": "Lỗi",
+      "warning": "Có lưu ý",
       "create": "Tạo mới",
       "update": "Cập nhật",
       "same": "Không đổi"
     },
-    "expiryUnknown": "chưa biết hạn — chưa bán được",
-    "expiryNone": "không hạn dùng",
-    "confirmHelp": "Sản phẩm mới được tạo ở trạng thái ẩn. Tồn tạo phiếu nhập NHÁP theo kho bán — mở phiếu kiểm tra rồi Ghi sổ.",
-    "confirm": "Xác nhận nhập",
-    "confirmBlocked": "Chưa thể xác nhận vì file còn lỗi. Sửa các lỗi phía trên, chọn lại file rồi bấm Xem trước.",
-    "priceChanges": "{count} SKU đổi giá bán / hoa hồng CTV — sẽ ghi lịch sử giá.",
-    "pricingForbidden": "File có đổi giá bán / hoa hồng CTV — cần quyền quản lý giá. Để trống các cột giá hoặc nhờ người có quyền nhập.",
-    "success": "Đã nhập: {created} SP mới, {updated} SP cập nhật.",
-    "reviewDraft": "kiểm tra và ghi sổ",
-    "finishProducts": "Về danh sách sản phẩm để thêm ảnh và bật hiển thị"
+    "colLabel": "Phân loại",
+    "colWeight": "Khối lượng (g)",
+    "colNotes": "Ghi chú",
+    "changed": "đổi: {fields}",
+    "field": {
+      "name": "Tên",
+      "brand": "Thương hiệu",
+      "category": "Danh mục",
+      "description": "Mô tả",
+      "usage": "Cách dùng",
+      "ingredients": "Thành phần",
+      "storage": "Bảo quản",
+      "pao": "Hạn sau mở nắp",
+      "label": "Phân loại",
+      "weight": "Khối lượng"
+    },
+    "standardLabel": "(tiêu chuẩn)",
+    "autoSku": "tự sinh",
+    "showErrors": "Xem các dòng lỗi",
+    "noRows": "Không có dòng nào khớp bộ lọc.",
+    "draftNote": "Phiếu nhập đang là NHÁP — tồn kho và giá vốn chỉ có sau khi mở phiếu và Ghi sổ."
   },
   "Preorders": {
     "title": "Đơn đặt trước",

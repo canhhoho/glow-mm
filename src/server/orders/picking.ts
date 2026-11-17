@@ -36,6 +36,8 @@ export async function orderNeeds(tx: Tx, orderId: string): Promise<Need[]> {
   const defs = await bundleDefs(tx, items.map((i) => i.variantId));
   return items.flatMap((i) => {
     const locationId = i.variant.product.stockLocationId;
+    // SP chưa có kho bán (chưa nhập hàng) → không có tồn để xuất.
+    if (!locationId) throw Object.assign(new InsufficientStockError(i.qty, 0), { variantId: i.variantId });
     const def = defs.get(i.variantId);
     return def
       ? def.map((c) => ({ orderItemId: i.id, variantId: c.componentId, qty: c.qty * i.qty, locationId }))

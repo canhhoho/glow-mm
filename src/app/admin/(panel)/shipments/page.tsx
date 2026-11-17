@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
+import { requireFeature } from "@/server/feature-guard";
 import { listShipments } from "@/server/inventory/queries";
 import { DataTable, Page, PageHeader, Section, Td } from "@/components/admin/ui";
 import { ShipmentCreateForm } from "@/components/admin/shipment-forms";
 import { fmtDay, fmtInt } from "@/lib/format";
 
 export default async function ShipmentsPage() {
+  // Chuyến hàng đang tắt (`lib/features.ts`): link / bookmark cũ chuyển về Tồn kho.
+  requireFeature("shipments", { redirectTo: "/admin/inventory" });
   await requirePagePermission("shipment:manage");
   const [t, shipments] = await Promise.all([getTranslations("Ship"), listShipments()]);
   return (

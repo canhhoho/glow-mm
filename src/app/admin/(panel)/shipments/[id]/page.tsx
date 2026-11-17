@@ -2,6 +2,7 @@ import { PackageCheck, Trash2 } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
+import { requireFeature } from "@/server/feature-guard";
 import { getShipment } from "@/server/inventory/queries";
 import { markArrivedAction, removeShipmentCostAction } from "@/server/inventory/actions";
 import { ActionButton } from "@/components/admin/action-button";
@@ -15,6 +16,7 @@ import { rateDisplay } from "@/server/pricing/formula";
 import { buttonVariants } from "@/components/ui/button-variants";
 
 export default async function ShipmentPage({ params }: PageProps<"/admin/shipments/[id]">) {
+  requireFeature("shipments", { redirectTo: "/admin/inventory" });
   await requirePagePermission("shipment:manage");
   const { id } = await params;
   const [t, td, tc, s] = await Promise.all([getTranslations("Ship"), getTranslations("Docs"), getTranslations("Common"), getShipment(id)]);

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { inventoryCost } from "@/server/inventory/cost";
 import { productName } from "@/server/inventory/queries";
 import { postedReceiveBatch } from "@/server/pricing/cost";
+import { FEATURES } from "@/lib/features";
 
 /**
  * D0 — "Sức khoẻ dữ liệu": báo cáo CHỈ ĐỌC các chỗ dữ liệu sai/thiếu để người phụ trách sửa tay, và mốc thời gian
@@ -85,7 +86,7 @@ async function catalogChecks(): Promise<HealthCheck[]> {
     href: productHref(v.product.id),
   });
   // Kho LOCAL_MMK không cần khối lượng để tính giá (chỉ cần cho VTP) → cảnh báo; kho VN_IMPORT/không chế độ → lỗi.
-  const isLocal = (v: (typeof weight)[number]) => v.product.stockLocation.pricingMode === "LOCAL_MMK";
+  const isLocal = (v: (typeof weight)[number]) => v.product.stockLocation?.pricingMode === "LOCAL_MMK";
   return [
     check("publishedZeroPrice", "error", zero.filter((v) => v.product.published).map((v) => variantRow(v, String(v.priceMmk)))),
     check("hiddenZeroPrice", "warning", zero.filter((v) => !v.product.published).map((v) => variantRow(v, String(v.priceMmk)))),
@@ -99,7 +100,7 @@ async function catalogChecks(): Promise<HealthCheck[]> {
     check(
       "badLocation",
       "error",
-      badLocation.map((p) => ({ id: p.id, ref: p.slug, name: productName(p.translations, p.slug), value: p.stockLocation.name, href: productHref(p.id) })),
+      badLocation.map((p) => ({ id: p.id, ref: p.slug, name: productName(p.translations, p.slug), value: p.stockLocation?.name ?? "", href: productHref(p.id) })),
     ),
   ];
 }
@@ -169,7 +170,7 @@ async function costChecks(): Promise<HealthCheck[]> {
 
   const comboRows: HealthRow[] = [];
   for (const v of bundles) {
-    const mmk = v.product.stockLocation.pricingMode === "LOCAL_MMK";
+    const mmk = v.product.stockLocation?.pricingMode === "LOCAL_MMK";
     const lacking = v.bundleItems
       .filter((i) => !i.component.batches.some((b) => (mmk ? b.unitCostMmk != null : b.unitCostVnd != null)))
       .map((i) => i.component.sku);
@@ -180,14 +181,18 @@ async function costChecks(): Promise<HealthCheck[]> {
 
   // Run có cước/kg đã áp dụng trước bản sửa: có thể đã cộng cước hai lần — liệt kê để người duyệt xem lại, không tự sửa.
   const fixedAt = fix[0]?.finished_at ?? null;
-  const oldRuns = await prisma.priceUpdateRun.findMany({
-    where: { status: "APPLIED", shipMmkPerKg: { not: null }, ...(fixedAt && { appliedAt: { lt: fixedAt } }) },
-    orderBy: { appliedAt: "desc" },
-    select: { id: true, appliedAt: true, shipMmkPerKg: true, location: { select: { name: true } }, _count: { select: { history: true } } },
-  });
+  // Giá tự động đang tắt (`lib/features.ts`) → bỏ kiểm tra này (bảng tính cũ chỉ xem lại).
+  const oldRuns = !FEATURES.autoPricing
+    ? []
+    : await prisma.priceUpdateRun.findMany({
+        where: { status: "APPLIED", shipMmkPerKg: { not: null }, ...(fixedAt && { appliedAt: { lt: fixedAt } }) },
+        orderBy: { appliedAt: "desc" },
+        select: { id: true, appliedAt: true, shipMmkPerKg: true, location: { select: { name: true } }, _count: { select: { history: true } } },
+      });
 
   // Lô dùng lại ở phiếu nhập (đã ghi sổ) thuộc chuyến khác với chuyến của lô → chi phí chuyến phân bổ sai chỗ.
-  const mismatch = await prisma.$queryRaw<{ id: string; lotNo: string; sku: string; docCode: string }[]>`
+  // Chuyến hàng đang tắt → bỏ kiểm tra này.
+  const mismatch = !FEATURES.shipments ? [] : await prisma.$queryRaw<{ id: string; lotNo: string; sku: string; docCode: string }[]>`
     SELECT DISTINCT b."id", b."lotNo", v."sku", d."code" AS "docCode"
     FROM "StockDocumentLine" l
     JOIN "StockDocument" d ON d."id" = l."documentId"
@@ -209,22 +214,30 @@ async function costChecks(): Promise<HealthCheck[]> {
       draftOnly.map((v) => ({ id: v.id, ref: v.sku, name: productName(v.product.translations, v.product.slug), href: productHref(v.product.id) })),
     ),
     check("comboMissingCost", "warning", comboRows),
-    check(
-      "oldShipRuns",
-      "warning",
-      oldRuns.map((r) => ({
-        id: r.id,
-        ref: r.appliedAt ? r.appliedAt.toISOString().slice(0, 10) : r.id,
-        name: r.location?.name ?? undefined,
-        value: String(r._count.history),
-        href: `/admin/pricing/runs/${r.id}`,
-      })),
-    ),
-    check(
-      "lotShipmentMismatch",
-      "warning",
-      mismatch.map((m) => ({ id: `${m.id}:${m.docCode}`, ref: `${m.sku} · ${m.lotNo}`, value: m.docCode, href: `/admin/inventory/batches/${m.id}` })),
-    ),
+    ...(FEATURES.autoPricing
+      ? [
+          check(
+            "oldShipRuns",
+            "warning",
+            oldRuns.map((r) => ({
+              id: r.id,
+              ref: r.appliedAt ? r.appliedAt.toISOString().slice(0, 10) : r.id,
+              name: r.location?.name ?? undefined,
+              value: String(r._count.history),
+              href: `/admin/pricing/runs/${r.id}`,
+            })),
+          ),
+        ]
+      : []),
+    ...(FEATURES.shipments
+      ? [
+          check(
+            "lotShipmentMismatch",
+            "warning",
+            mismatch.map((m) => ({ id: `${m.id}:${m.docCode}`, ref: `${m.sku} · ${m.lotNo}`, value: m.docCode, href: `/admin/inventory/batches/${m.id}` })),
+          ),
+        ]
+      : []),
   ];
 }
 

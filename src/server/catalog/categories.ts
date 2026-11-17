@@ -82,13 +82,13 @@ export async function listCategoriesAdmin(q?: string, now = new Date()) {
       },
     },
   });
-  const ids = rows.flatMap((r) => r.products.filter((p) => p.stockLocation.active && p.stockLocation.sellable).flatMap((p) => p.variants.map((v) => v.id)));
+  const ids = rows.flatMap((r) => r.products.filter((p) => p.stockLocation?.active && p.stockLocation.sellable).flatMap((p) => p.variants.map((v) => v.id)));
   const available = ids.length
     ? await availableToSell(prisma, ids, { now, blockDays: await salesBlockDays() })
     : new Map<string, number>();
   const counts = new Map(rows.map((r) => [r.id, {
     managedProducts: r.products.length,
-    inStockProducts: r.products.filter((p) => p.stockLocation.active && p.stockLocation.sellable && p.variants.some((v) => (available.get(v.id) ?? 0) > 0)).length,
+    inStockProducts: r.products.filter((p) => p.stockLocation?.active && p.stockLocation.sellable && p.variants.some((v) => (available.get(v.id) ?? 0) > 0)).length,
   }]));
   // Gốc trước, con nằm ngay dưới cha.
   const children = new Map<string, typeof rows>();

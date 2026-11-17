@@ -57,7 +57,7 @@ export async function PricingRunsTab({ receiptId, productId, variantIds }: { rec
           key={receiptId ?? productId ?? (picked.length ? picked.map((v) => v.id).join(",") : "all")}
           receiptId={receiptId}
           variantIds={product?.variants.map((v) => v.id) ?? (picked.length ? picked.map((v) => v.id) : undefined)}
-          initialLocationId={receipt?.lines[0]?.variant.product.stockLocationId ?? product?.stockLocationId ?? picked[0]?.product.stockLocationId}
+          initialLocationId={receipt?.lines[0]?.variant.product.stockLocationId ?? product?.stockLocationId ?? picked[0]?.product.stockLocationId ?? undefined}
           warehouses={options.warehouses}
           rates={rates.map((r) => ({ id: r.id, label: `1 MMK = ${rateDisplay(r).vndPerMmk} VND · ${fmtDate(r.effectiveAt)}` }))}
           categories={options.categories}

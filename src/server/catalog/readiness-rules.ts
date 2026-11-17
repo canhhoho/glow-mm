@@ -12,7 +12,7 @@
  * COMPONENT_INACTIVE (#6): combo đang dùng có thành phần đã tắt / thuộc SP ngừng kinh doanh — combo vẫn bán được nếu thành
  * phần còn tồn, nên chặn BẬT hiển thị; KHÔNG thuộc `ALWAYS_BLOCKING` → combo đang hiển thị vẫn lưu được, không tự ẩn.
  */
-export const ERROR_CODES = ["NO_ACTIVE_VARIANT", "BAD_LOCATION", "PRICE_ZERO", "NO_WEIGHT", "COMPONENT_INACTIVE", "NOT_APPROVED"] as const;
+export const ERROR_CODES = ["NO_ACTIVE_VARIANT", "BAD_LOCATION", "NO_WAREHOUSE", "PRICE_ZERO", "NO_WEIGHT", "COMPONENT_INACTIVE", "NOT_APPROVED"] as const;
 export const WARNING_CODES = [
   "NO_IMAGE",
   "CONTENT_INCOMPLETE",
@@ -34,7 +34,8 @@ export type Issue = { code: IssueCode; skus?: string[] };
 export const ALWAYS_BLOCKING: readonly ErrorCode[] = ["NO_ACTIVE_VARIANT", "PRICE_ZERO"];
 
 export type ReadinessInput = {
-  location: { active: boolean; sellable: boolean; pricingMode: "VN_IMPORT" | "LOCAL_MMK" | null };
+  /** null = SP chưa có kho bán (chưa nhập hàng — kho gán khi ghi sổ nhập đầu tiên). */
+  location: { active: boolean; sellable: boolean; pricingMode: "VN_IMPORT" | "LOCAL_MMK" | null } | null;
   imageCount: number;
   /** Mô tả + cách dùng theo ngôn ngữ nhập liệu (my, en). */
   content: { description: string | null; usage: string | null }[];
@@ -74,11 +75,11 @@ export function evaluateReadiness(p: ReadinessInput): Readiness {
     (v.weightGrams ?? 0) > 0 ||
     (v.isBundle && !!v.componentWeights?.length && v.componentWeights.every((w) => (w ?? 0) > 0));
   const noWeight = active.filter((v) => !hasWeight(v)).map((v) => v.sku);
-  const localMode = p.location.pricingMode === "LOCAL_MMK";
+  const localMode = p.location?.pricingMode === "LOCAL_MMK";
 
   const errors: Issue[] = [
     ...(active.length === 0 ? [{ code: "NO_ACTIVE_VARIANT" as const }] : []),
-    ...(!p.location.active || !p.location.sellable ? [{ code: "BAD_LOCATION" as const }] : []),
+    ...(!p.location ? [{ code: "NO_WAREHOUSE" as const }] : !p.location.active || !p.location.sellable ? [{ code: "BAD_LOCATION" as const }] : []),
     ...withSkus("PRICE_ZERO", active.filter((v) => v.priceMmk <= 0).map((v) => v.sku)),
     // Kho hàng nhập VN: công thức giá cần khối lượng (combo chưa khai báo → cộng thành phần).
     ...(localMode ? [] : withSkus("NO_WEIGHT", noWeight)),
@@ -132,6 +133,7 @@ export type StepView = { key: ProductStep; state: StepState; issues: Issue[] };
 const STEP_OF: Record<IssueCode, ProductStep> = {
   NO_ACTIVE_VARIANT: "create",
   BAD_LOCATION: "create",
+  NO_WAREHOUSE: "stock",
   NO_IMAGE: "create",
   CONTENT_INCOMPLETE: "create",
   COMPONENT_INACTIVE: "create",

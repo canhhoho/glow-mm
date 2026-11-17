@@ -94,8 +94,14 @@ export async function manualPricingView(f: { variantIds?: string[]; productId?: 
   ]);
   const last = new Map(lastManual.map((l) => [l.variantId, l]));
   const groups = new Map<string, ManualGroup>();
+  // SP chưa có kho bán (chưa nhập hàng): chưa có cách tính giá (VND hay MMK) → liệt kê riêng, không đặt giá.
+  const unplaced: string[] = [];
   for (const v of variants) {
     const loc = v.product.stockLocation;
+    if (!loc) {
+      unplaced.push(v.sku);
+      continue;
+    }
     const g = groups.get(loc.id) ?? { location: { id: loc.id, code: loc.code, name: loc.name, pricingMode: loc.pricingMode ?? "VN_IMPORT" }, rows: [] };
     const e = eff.get(v.id)!;
     const weight = v.weightGrams && v.weightGrams > 0 ? v.weightGrams : v.isBundle && v.bundleItems.every((b) => (b.component.weightGrams ?? 0) > 0) ? v.bundleItems.reduce((s, b) => s + b.component.weightGrams! * b.qty, 0) : null;
@@ -141,5 +147,5 @@ export async function manualPricingView(f: { variantIds?: string[]; productId?: 
       effectiveAt: r.effectiveAt.toISOString(),
       current: r.id === current?.id,
     }));
-  return { groups: [...groups.values()], rates: rateRows, currentRateId: current?.id ?? null, roundTo, truncated: variants.length >= MAX_ROWS };
+  return { groups: [...groups.values()], unplaced, rates: rateRows, currentRateId: current?.id ?? null, roundTo, truncated: variants.length >= MAX_ROWS };
 }

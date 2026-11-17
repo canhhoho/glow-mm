@@ -24,7 +24,6 @@ export const createProductSchema = z
     brandId: optionalId,
     brandName: z.string().trim().max(80).optional(),
     categoryId: rawId,
-    stockLocationId: optionalId,
     /** Phân loại (màu/dung tích); rỗng = một loại chuẩn với nhãn `defaultLabel`. */
     labels: z.array(z.string().trim().min(1).max(60)).max(30).default([]),
     defaultLabel: z.string().trim().min(1).max(60),
@@ -73,7 +72,6 @@ export async function createProduct(raw: unknown, userId: string) {
   return saveProduct(
     {
       // Nội dung chép từ SP nguồn (mô tả, cách dùng, thành phần, bảo quản, tag, hạn dùng); trống nếu tạo mới.
-      requiresExpiry: draft?.requiresExpiry ?? true,
       paoMonths: draft?.paoMonths ?? null,
       storageNote: draft?.storageNote ?? "",
       ingredientsText: draft?.ingredientsText ?? "",
@@ -85,7 +83,6 @@ export async function createProduct(raw: unknown, userId: string) {
       brandId: input.brandId,
       brandName: input.brandId ? undefined : input.brandName,
       categoryId: input.categoryId,
-      stockLocationId: input.stockLocationId,
       fixedProfitMmk: null,
       copyFromId: input.copyFromId,
       variants,

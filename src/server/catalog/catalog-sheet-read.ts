@@ -1,7 +1,7 @@
 import "server-only";
 import { readSheet, type CellValue } from "read-excel-file/node";
 import { parseCsv, toCsv } from "@/lib/csv";
-import { ALL_SHEET_COLUMNS, CATALOG_SHEET, normalizeNumberText, sheetHeaderKey } from "@/lib/catalog-sheet";
+import { ALL_SHEET_COLUMNS, CATALOG_SHEET, normalizeNumberText, parseYesNo, sheetHeaderKey } from "@/lib/catalog-sheet";
 
 /** Đọc file nhập/cập nhật sản phẩm (một sheet). Trả CSV khoá chuẩn + số dòng Excel để báo lỗi. */
 
@@ -12,6 +12,8 @@ const TYPES = new Map(ALL_SHEET_COLUMNS.map((c) => [c.key, c.type]));
 function dateValue(value: CellValue | Date, line: number): string {
   if (value instanceof Date && Number.isFinite(value.getTime())) return value.toISOString().slice(0, 10);
   const text = String(value).trim();
+  // Ô Hạn sử dụng ghi "Không" (hàng không có hạn: túi, phụ kiện…) → lô không hạn.
+  if (parseYesNo(text) === false) return "NONE";
   const local = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text);
   const iso = local ? `${local[3]}-${local[2].padStart(2, "0")}-${local[1].padStart(2, "0")}` : text;
   const date = new Date(`${iso}T00:00:00Z`);
@@ -21,12 +23,13 @@ function dateValue(value: CellValue | Date, line: number): string {
   return iso;
 }
 
-const isHeader = (keys: string[]) => keys.includes("brand") && keys.includes("category") && (keys.includes("name_my") || keys.includes("name_en") || keys.includes("sku"));
+/** Hàng tiêu đề: có cột Tên (hoặc Tên Myanmar của mẫu cũ) hoặc SKU, và ít nhất 2 cột nhận ra được. */
+const isHeader = (keys: string[]) => ["name", "name_my", "sku"].some((k) => keys.includes(k)) && keys.filter(Boolean).length >= 2;
 
 /** Bảng ô (Excel hoặc CSV) → CSV khoá chuẩn. Bỏ qua tiêu đề/ghi chú phía trên và dòng trống. */
 export function sheetRowsToCsv(rows: (CellValue | Date | null)[][]) {
   const headerIndex = rows.slice(0, 20).findIndex((r) => isHeader(r.map(sheetHeaderKey)));
-  if (headerIndex < 0) throw new Error(`Không tìm thấy hàng tiêu đề (cần ít nhất cột Tên, Thương hiệu, Danh mục). Hãy dùng file mẫu mới, sheet "${CATALOG_SHEET}".`);
+  if (headerIndex < 0) throw new Error(`Không tìm thấy hàng tiêu đề (cần cột Tên sản phẩm hoặc SKU). Hãy dùng file mẫu mới, sheet "${CATALOG_SHEET}".`);
   const keys = rows[headerIndex].map(sheetHeaderKey);
   const used = keys.filter(Boolean);
   if (new Set(used).size !== used.length) throw new Error("File có cột trùng tên. Mỗi cột chỉ được xuất hiện một lần.");

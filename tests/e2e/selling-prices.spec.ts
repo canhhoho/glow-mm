@@ -16,7 +16,7 @@ async function db<T>(fn: (c: pg.Client) => Promise<T>) {
   }
 }
 
-test("danh sách: tìm SKU, hiện giá + hoa hồng, chọn SKU → Tính tự động chỉ SKU đó", async ({ page }) => {
+test("danh sách: tìm SKU, hiện giá + hoa hồng, chọn SKU → Nhập thủ công chỉ SKU đó; giá tự động đang tắt", async ({ page }) => {
   await login(page, "admin@glow.local");
   await page.goto("/admin/selling-prices");
   await expect(page.getByRole("heading", { name: "Giá bán", exact: true })).toBeVisible();
@@ -26,10 +26,18 @@ test("danh sách: tìm SKU, hiện giá + hoa hồng, chọn SKU → Tính tự 
   await expect(row.getByTestId("selling-commission")).toContainText("CTV:");
   await row.getByRole("checkbox").check();
   await page.screenshot({ path: "test-results/screens/selling-prices-list.png", fullPage: true });
-  await page.getByTestId("price-pick").getByRole("button", { name: "Tính tự động" }).click();
-  await expect(page).toHaveURL(/\/admin\/selling-prices\?.*mode=auto/);
-  await expect(page.getByTestId("pricing-picked-scope")).toContainText("Chỉ tính 1 SKU");
-  await expect(page.getByRole("heading", { name: "Tính giá mới (xem trước)", exact: true })).toBeVisible();
+  // Giá tự động tắt (`lib/features.ts`): không còn nút / tab "Tự động".
+  await expect(page.getByTestId("price-pick").getByRole("button", { name: "Tính tự động" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Tự động", exact: true })).toHaveCount(0);
+  await page.getByTestId("price-pick").getByRole("button", { name: "Nhập thủ công" }).click();
+  await expect(page).toHaveURL(/\/admin\/selling-prices\/manual\?.*ids=/);
+  await expect(page.getByTestId("manual-row")).toHaveCount(1);
+  // Link cũ ?mode=auto (kèm SKU đã chọn) chuyển sang trang Thủ công giữ nguyên lựa chọn.
+  const ids = new URL(page.url()).searchParams.getAll("ids");
+  await page.goto(`/admin/selling-prices?mode=auto&ids=${ids[0]}`);
+  await expect(page).toHaveURL(new RegExp(`/admin/selling-prices/manual\\?ids=${ids[0]}`));
+  await page.goto("/admin/selling-prices?mode=auto");
+  await expect(page).toHaveURL(/\/admin\/selling-prices\?mode=manual/);
 });
 
 test("thủ công kho VND: SP mới từ Excel → ghi sổ → Đặt giá (lô, lãi, vận chuyển, CTV) → duyệt & đăng → khách thấy đúng giá", async ({ page }) => {
@@ -41,8 +49,8 @@ test("thủ công kho VND: SP mới từ Excel → ghi sổ → Đặt giá (lô
   // SP mới + tồn (phiếu nháp) qua Excel, ghi sổ.
   await page.goto("/admin/products/import");
   const csv = toCsv([
-    ["name_en", "brand", "category", "weight_g", "warehouse_code", "qty", "expiry_date", "unit_cost", "inbound_unit_vnd"],
-    [name, "Sen Việt", "skincare", "100", "THAM", "5", "2029-12-31", "100000", "0"],
+    ["name_en", "brand", "category", "weight_g", "warehouse_code", "qty", "expiry_date", "unit_cost"],
+    [name, "Sen Việt", "skincare", "100", "THAM", "5", "2029-12-31", "100000"],
   ]);
   await page.getByLabel("File Excel nhập sản phẩm", { exact: true }).setInputFiles({ name: `manual-${suffix}.csv`, mimeType: "text/csv", buffer: Buffer.from(csv) });
   await page.getByRole("button", { name: "Xem trước", exact: true }).click();

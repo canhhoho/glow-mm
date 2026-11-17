@@ -47,54 +47,44 @@ describe("A2 Excel không xoá ngầm, không vượt quyền", () => {
     await saveProductPricing({ productId: f.productId, reason: "Tăng giá", variants: [{ id: f.variantId, priceMmk: 12_000, expectedPriceMmk: 10_000 }] }, f.userId);
     const preview = await previewCatalogImport(csv([{ sku: `IT-${f.tag}`, name_en: `Tên mới ${f.tag}` }]));
     expect(preview.errors).toEqual([]);
-    expect(preview.counts.priceChanges).toBe(0);
-    await commitCatalogImport(preview.input, f.userId, { allowPricing: false });
+    await commitCatalogImport(preview.input, f.userId);
     expect((await pending(f))[f.variantId]?.priceMmk).toBe(12_000);
     expect((await variant(f.variantId)).priceMmk).toBe(10_000);
   });
 
-  it("giá = giá đang chờ → không tính là đổi giá; giá khác → cần quyền giá", async () => {
+  it("file cũ có cột giá / hoa hồng: bỏ qua kèm lưu ý — giá đang bán và giá chờ duyệt giữ nguyên", async () => {
     const f = await ready();
     await approve(f);
     await saveProductPricing({ productId: f.productId, reason: "Tăng", variants: [{ id: f.variantId, priceMmk: 12_000, expectedPriceMmk: 10_000 }] }, f.userId);
-    expect((await previewCatalogImport(csv([{ sku: `IT-${f.tag}`, price_mmk: 12000 }]))).counts.priceChanges).toBe(0);
-    const p = await previewCatalogImport(csv([{ sku: `IT-${f.tag}`, price_mmk: 13000 }]));
-    expect(p.counts.priceChanges).toBe(1);
-    await expect(commitCatalogImport(p.input, f.userId)).rejects.toThrow("cần quyền quản lý giá");
+    const p = await previewCatalogImport(csv([{ sku: `IT-${f.tag}`, price_mmk: 15000, affiliate_commission_mmk: 1500 }]));
+    expect(p.errors).toEqual([]);
+    expect(p.warnings.join("\n")).toContain("không còn nhập qua Excel");
+    await commitCatalogImport(p.input, f.userId);
+    expect(await variant(f.variantId)).toMatchObject({ priceMmk: 10_000, affiliateCommissionMmk: null });
+    expect((await pending(f))[f.variantId]?.priceMmk).toBe(12_000);
   });
 
-  it("hoa hồng qua Excel cho SP đã duyệt chờ duyệt cùng giá, áp cùng lúc", async () => {
-    const f = await ready();
-    await approve(f);
-    const p = await previewCatalogImport(csv([{ sku: `IT-${f.tag}`, price_mmk: 15000, affiliate_commission_mmk: 1500 }]));
-    await commitCatalogImport(p.input, f.userId, { allowPricing: true });
-    expect(await variant(f.variantId)).toMatchObject({ priceMmk: 10_000, affiliateCommissionMmk: null });
-    expect((await pending(f))[f.variantId]).toMatchObject({ priceMmk: 15_000, commission: { value: 1500 } });
-    await approve(f);
-    expect(await variant(f.variantId)).toMatchObject({ priceMmk: 15_000, affiliateCommissionMmk: 1500 });
-    const h = await prisma.priceHistory.findFirstOrThrow({ where: { variantId: f.variantId }, orderBy: { createdAt: "desc" } });
-    expect(h).toMatchObject({ oldPriceMmk: 10_000, newPriceMmk: 15_000, oldCommissionMmk: null, newCommissionMmk: 1500 });
-  });
 });
 
-describe("A4 Phí đưa về kho: 0 = đã biết, trống = chưa biết", () => {
-  it("xem trước khớp kết quả ghi sổ", async () => {
+describe("A4 Giá vốn lô nhập Excel = giá mua × tỷ giá (không còn phí về kho)", () => {
+  it("xem trước khớp kết quả ghi sổ; cột Phí đưa về kho của file cũ bị bỏ qua", async () => {
     const f = await makeFixture();
     await createRate({ mmkPerUsd: "4420", vndPerUsd: "26000" }, f.userId);
     const sku = `IT-${f.tag}`;
     const p = await previewCatalogImport(
       csv([
-        { sku, qty: 2, expiry_date: "2029-12-31", unit_cost: 100000, inbound_unit_vnd: 0, lot_no: "Z0" },
+        { sku, qty: 2, expiry_date: "2029-12-31", unit_cost: 100000, inbound_unit_vnd: 5000, lot_no: "Z0" },
         { sku, qty: 2, expiry_date: "2029-12-31", unit_cost: 100000, lot_no: "ZB" },
       ]),
     );
-    expect(p.rows.map((r) => r.stock?.costMmk)).toEqual([17_000, null]);
+    expect(p.rows.map((r) => r.stock?.costMmk)).toEqual([17_000, 17_000]); // 100.000 × 0,17, phí 5.000 của file cũ không tính
+    expect(p.warnings.join("\n")).toContain("Phí đưa về kho không còn dùng");
     const r = await commitCatalogImport(p.input, f.userId);
     await postDocument(r.documents[0].id, f.userId);
     const lots = await prisma.batch.findMany({ where: { variantId: f.variantId }, orderBy: { lotNo: "asc" } });
     expect(lots.map((b) => [b.lotNo, inventoryCost(b).costStatus, inventoryCost(b).unitCostMmk])).toEqual([
       ["Z0", "ACTUAL", 17_000],
-      ["ZB", "MISSING", null],
+      ["ZB", "ACTUAL", 17_000],
     ]);
   });
 });
@@ -162,13 +152,13 @@ describe("Thủ công kho VND", () => {
 });
 
 describe("A3 Sửa phiếu nhập nháp giữ dữ liệu", () => {
-  it("lưu lại không đổi → giữ giá mua, phí về kho, tỷ giá đã chốt từ Excel; đổi giá → chốt lại khi ghi sổ", async () => {
+  it("lưu lại không đổi → giữ giá mua + tỷ giá đã chốt từ Excel; đổi giá → chốt lại khi ghi sổ", async () => {
     const f = await makeFixture();
     const rate = await createRate({ mmkPerUsd: "4420", vndPerUsd: "26000" }, f.userId);
     const sku = `IT-${f.tag}`;
     const p = await previewCatalogImport(
       csv([
-        { sku, qty: 2, expiry_date: "2029-12-31", unit_cost: 100000, inbound_unit_vnd: 5000, lot_no: "E5" },
+        { sku, qty: 2, expiry_date: "2029-12-31", unit_cost: 100000, lot_no: "E5" },
         { sku, qty: 1, expiry_date: "2029-12-31", unit_cost: 90000, lot_no: "E9" },
       ]),
     );
@@ -181,10 +171,10 @@ describe("A3 Sửa phiếu nhập nháp giữ dữ liệu", () => {
         rate: l.rateId === rate.id,
       }));
     expect(await lines()).toEqual([
-      { lot: "E5", unitCostVnd: 100_000, landedCostVnd: 105_000, rate: true },
+      { lot: "E5", unitCostVnd: 100_000, landedCostVnd: null, rate: true },
       { lot: "E9", unitCostVnd: 90_000, landedCostVnd: null, rate: true },
     ]);
-    // Payload giống form sửa: giá + phí của chính dòng (E5), đổi giá E9.
+    // Payload giống form sửa: giá của chính dòng (E5), đổi giá E9 (đã có tỷ giá mới hơn).
     await createRate({ mmkPerUsd: "4680", vndPerUsd: "26000" }, f.userId);
     await updateReceiveDraft(
       docId,
@@ -192,19 +182,21 @@ describe("A3 Sửa phiếu nhập nháp giữ dữ liệu", () => {
         type: "RECEIVE",
         toId: f.mm.id,
         lines: [
-          { variantId: f.variantId, lotNo: "E5", expiryStatus: "DATED", expiryDate: "2029-12-31", unitCostVnd: "100000", landedCostVnd: "105000", qty: 2 },
+          { variantId: f.variantId, lotNo: "E5", expiryStatus: "DATED", expiryDate: "2029-12-31", unitCostVnd: "100000", qty: 2 },
           { variantId: f.variantId, lotNo: "E9", expiryStatus: "DATED", expiryDate: "2029-12-31", unitCostVnd: "95000", qty: 1 },
         ],
       },
       f.userId,
     );
     expect(await lines()).toEqual([
-      { lot: "E5", unitCostVnd: 100_000, landedCostVnd: 105_000, rate: true },
+      { lot: "E5", unitCostVnd: 100_000, landedCostVnd: null, rate: true },
       { lot: "E9", unitCostVnd: 95_000, landedCostVnd: null, rate: false },
     ]);
     await postDocument(docId, f.userId);
     const e5 = await prisma.batch.findFirstOrThrow({ where: { variantId: f.variantId, lotNo: "E5" } });
-    expect(inventoryCost(e5)).toMatchObject({ costStatus: "ACTUAL", unitCostMmk: 17_850 }); // 105.000 × 0,17 (tỷ giá đã chốt)
+    expect(inventoryCost(e5)).toMatchObject({ costStatus: "ACTUAL", unitCostMmk: 17_000 }); // 100.000 × 0,17 (tỷ giá đã chốt)
+    const e9 = await prisma.batch.findFirstOrThrow({ where: { variantId: f.variantId, lotNo: "E9" } });
+    expect(inventoryCost(e9)).toMatchObject({ costStatus: "ACTUAL", unitCostMmk: 17_100 }); // 95.000 × 0,18 (tỷ giá mới chốt lúc ghi sổ)
   });
 });
 

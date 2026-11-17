@@ -14,6 +14,7 @@ import { resolveBatchExpiryAction, estimateBatchCostAction } from "@/server/inve
 import { lastShipRate } from "@/server/pricing/queries";
 import { can } from "@/server/auth/roles";
 import { inventoryCost } from "@/server/inventory/cost";
+import { FEATURES } from "@/lib/features";
 
 /** Lịch sử lô (P9c): thông tin lô, tồn hiện tại theo vị trí, các dòng sổ kho kèm tồn luỹ kế. */
 export default async function BatchPage({ params }: PageProps<"/admin/inventory/batches/[id]">) {
@@ -26,7 +27,7 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
     getTranslations("Inventory"),
     getTranslations("Docs"),
     getTranslations("Common"),
-    lastShipRate(),
+    FEATURES.shipments ? lastShipRate() : Promise.resolve(null),
   ]);
   if (!detail) notFound();
   const { batch, entries } = detail;
@@ -50,16 +51,24 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
       [ti("estimateWeight"), fmtInt(batch.estimatedWeightGrams)],
     ] as [string, React.ReactNode][]) : []),
     ...(batch.unitCostMmk == null ? ([[t("rate"), batch.rate ? rateDisplay(batch.rate).vndPerMmk : "—"]] as [string, React.ReactNode][]) : []),
-    [
-      t("shipment"),
-      batch.shipment ? (
-        <Link key="s" href={`/admin/shipments/${batch.shipment.id}`} className="font-mono text-primary underline">
-          {batch.shipment.code}
-        </Link>
-      ) : (
-        "—"
-      ),
-    ],
+    ...(FEATURES.shipments || batch.shipment
+      ? ([
+          [
+            t("shipment"),
+            batch.shipment ? (
+              FEATURES.shipments ? (
+                <Link key="s" href={`/admin/shipments/${batch.shipment.id}`} className="font-mono text-primary underline">
+                  {batch.shipment.code}
+                </Link>
+              ) : (
+                <span key="s" className="font-mono">{batch.shipment.code}</span>
+              )
+            ) : (
+              "—"
+            ),
+          ],
+        ] as [string, React.ReactNode][])
+      : []),
     [t("createdAt"), fmtDateTime(batch.createdAt)],
   ];
 
@@ -89,7 +98,7 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
           </div>
         ))}
       </dl>
-      {batch.unitCostVnd != null && batch.landedCostVnd == null && batch.landedCostMmk == null && can(user.role, "stock:receive") && (
+      {FEATURES.shipments && batch.unitCostVnd != null && batch.landedCostVnd == null && batch.landedCostMmk == null && can(user.role, "stock:receive") && (
         <ActionForm action={estimateBatchCostAction} submitLabel={ti("estimateAction")} okText={ti("estimateSaved")} className="space-y-3 rounded-xl border bg-card p-4" icon={<Calculator aria-hidden />}>
           <input type="hidden" name="batchId" value={batch.id} />
           <p className="text-sm text-muted-foreground">{ti("estimateExistingHelp")}</p>

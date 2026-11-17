@@ -29,7 +29,10 @@ export default async function ManualPricesPage({ searchParams }: PageProps<"/adm
   return (
     <Page>
       <PageHeader title={t("title")} description={t("subtitle")} back={{ href: back, label: t("back") }} />
-      {view.groups.length === 0 && <Notice tone="info">{t("empty")}</Notice>}
+      {view.groups.length === 0 && view.unplaced.length === 0 && <Notice tone="info">{t("empty")}</Notice>}
+      {view.unplaced.length > 0 && (
+        <Notice tone="warning" data-testid="manual-unplaced">{t("unplaced", { skus: view.unplaced.join(", ") })}</Notice>
+      )}
       {view.truncated && <Notice tone="warning">{t("truncated")}</Notice>}
       {view.groups.map((g) =>
         g.location.pricingMode === "VN_IMPORT" ? (

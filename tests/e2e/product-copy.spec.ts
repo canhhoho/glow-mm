@@ -13,7 +13,7 @@ test("sao chép từ SP cũ: điền sẵn, không chép giá, tạo SP mới v�
   const originalUrl = page.url();
   const sourceId = new URL(originalUrl).pathname.split("/").pop()!;
   await openProductEdit(page);
-  const originalName = await page.getByRole("textbox", { name: "Tên tiếng Anh", exact: true }).inputValue();
+  const originalName = await page.getByRole("textbox", { name: "Tên sản phẩm", exact: true }).inputValue();
   await openProductSettings(page);
   const originalSku = await page.getByRole("textbox", { name: "SKU", exact: true }).first().inputValue();
 
@@ -36,11 +36,11 @@ test("sao chép từ SP cũ: điền sẵn, không chép giá, tạo SP mới v�
   await openProductTab(page, "price");
   await expect(page.getByTestId("step-price-row").first()).toContainText("0");
   await openProductTab(page, "info");
-  await expect(page.getByRole("textbox", { name: "Tên tiếng Anh", exact: true })).toHaveValue(`Copy ${originalName}`);
+  await expect(page.getByRole("textbox", { name: "Tên sản phẩm", exact: true })).toHaveValue(`Copy ${originalName}`);
 
   await page.goto(originalUrl);
   await openProductEdit(page);
-  await expect(page.getByRole("textbox", { name: "Tên tiếng Anh", exact: true })).toHaveValue(originalName);
+  await expect(page.getByRole("textbox", { name: "Tên sản phẩm", exact: true })).toHaveValue(originalName);
   await openProductSettings(page);
   await expect(page.getByRole("textbox", { name: "SKU", exact: true }).first()).toHaveValue(originalSku);
 });
@@ -78,13 +78,14 @@ test("tạo SP có phân loại: mã tự sinh, giá 0, thanh 5 bước chỉ t�
   await page.screenshot({ path: "test-results/screens/product-steps.png", fullPage: true });
 });
 
-test("tạo SP chỉ với tên Myanmar (thêm tên tiếng khác) và thương hiệu gõ mới", async ({ page }) => {
+test("tạo SP: một ô tên (gõ chữ Myanmar được) và thương hiệu gõ mới", async ({ page }) => {
   const tag = Date.now();
   await login(page, "admin@glow.local");
   await page.goto("/admin/products/new");
   const form = page.getByTestId("product-create-form");
-  await form.getByRole("button", { name: "+ Thêm Tên tiếng Myanmar", exact: true }).click();
-  await form.getByRole("textbox", { name: "Tên tiếng Myanmar", exact: true }).fill(`ဆပ်ပြာ ${tag}`);
+  // Đợt 3 (16/11/2026): không còn ô tên riêng từng ngôn ngữ.
+  await expect(form.getByRole("textbox", { name: "Tên tiếng Myanmar", exact: true })).toHaveCount(0);
+  await form.getByRole("textbox", { name: "Tên sản phẩm", exact: true }).fill(`ဆပ်ပြာ ${tag}`);
   await form.getByRole("combobox", { name: "Thương hiệu", exact: true }).fill(`E2E Brand ${tag}`);
   await expect(form.getByText("Thương hiệu mới — sẽ được tạo khi lưu")).toBeVisible();
   await form.getByRole("combobox", { name: "Danh mục", exact: true }).selectOption({ index: 1 });
@@ -92,7 +93,7 @@ test("tạo SP chỉ với tên Myanmar (thêm tên tiếng khác) và thương 
   await form.getByRole("button", { name: "Tạo sản phẩm", exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/products\/[^/?]+\?created=1$/);
   await expect(page.getByRole("status").filter({ hasText: "Đã tạo sản phẩm" })).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Tên tiếng Anh", exact: true })).toHaveValue(`ဆပ်ပြာ ${tag}`);
+  await expect(page.getByRole("textbox", { name: "Tên sản phẩm", exact: true })).toHaveValue(`ဆပ်ပြာ ${tag}`);
   await expect(page.getByRole("combobox", { name: "Thương hiệu", exact: true })).toHaveValue(`E2E Brand ${tag}`);
 });
 
@@ -144,8 +145,8 @@ test("QT1b/QT2: tạo SP → nhập hàng từ bước 2 (điền sẵn, khối 
   await page.locator("#step-stock").getByRole("link", { name: "Nhập hàng" }).click();
   await expect(page).toHaveURL(/documents\/new\?type=RECEIVE&product=/);
   await expect(page.getByTestId("receive-product-scope")).toContainText(`Flow ${tag}`);
-  await expect(page.getByLabel("Chọn vị trí nhận")).toHaveValue(/.+/);
   await page.getByRole("button", { name: "Tiếp tục nhập thông số", exact: true }).click();
+  await expect(page.getByLabel(`Kho ${sku}`, { exact: true })).toHaveValue(/.+/); // gợi ý kho bán hàng nhập VN, đổi được ở đây
   await page.getByLabel(`Số lượng ${sku}`, { exact: true }).fill("5");
   await page.getByLabel(`Số lô ${sku}`, { exact: true }).fill(`F${tag}`);
   await page.getByLabel(`Hạn dùng ${sku}`, { exact: true }).fill("2029-12-31");
@@ -169,26 +170,23 @@ test("QT1b/QT2: tạo SP → nhập hàng từ bước 2 (điền sẵn, khối 
   await expect(page.getByTestId("step-price-row").first()).toContainText("150 g");
   await expect(steps.getByRole("link", { name: /Giá bán/ })).toHaveAttribute("aria-current", "step");
 
-  // Bước 3: "Tính tự động" → trang Giá bán (tự động) chỉ SP này → bảng tính giá → áp dụng.
-  await page.getByTestId("price-actions").getByRole("link", { name: "Tính tự động" }).click();
-  await expect(page).toHaveURL(/\/admin\/selling-prices\?mode=auto&productId=/);
-  await expect(page.getByTestId("pricing-product-scope")).toContainText(`Flow ${tag}`);
-  await page.getByLabel("% lãi").fill("40");
-  await page.getByLabel("Phí ship VN → MM (MMK/kg)").fill("8000");
-  await page.getByRole("button", { name: "Xem trước" }).click();
-  await expect(page).toHaveURL(/\/admin\/pricing\/runs\//, { timeout: 30_000 });
-  await expect(page.getByRole("table").getByRole("checkbox")).toHaveCount(1);
-  page.once("dialog", (d) => d.accept());
-  await expect(page.getByRole("checkbox", { name: "Gửi duyệt ngay" })).toBeChecked();
-  await page.getByRole("button", { name: "Áp dụng giá đã chọn" }).click();
-  // Hết dòng chờ → bản chuyển "Đã áp dụng", form áp dụng biến mất.
-  await expect(page.getByRole("row").filter({ hasText: sku })).toContainText("Đã áp", { timeout: 30_000 });
-  // Kết quả gửi duyệt vẫn hiện trên trang bản tính giá sau khi form áp giá biến mất.
-  await expect(page.getByTestId("batch-review")).toContainText("Đã gửi duyệt 1 sản phẩm");
+  // Bước 3: "Đặt giá" → trang Giá bán thủ công chỉ SP này → lãi + vận chuyển + CTV → lưu (giá tự động đang tắt).
+  await expect(page.getByTestId("price-actions").getByRole("link", { name: "Tính tự động" })).toHaveCount(0);
+  await page.getByTestId("price-actions").getByRole("link", { name: "Đặt giá" }).click();
+  await expect(page).toHaveURL(/\/admin\/selling-prices\/manual\?productId=/);
+  const vnd = page.getByTestId("manual-vnd");
+  const line = vnd.getByTestId("manual-row").first();
+  await expect(line).toContainText("100,000"); // giá mua NCC của lần nhập vừa ghi sổ
+  await line.getByRole("spinbutton", { name: /^Lãi mong muốn/ }).fill("40000");
+  await line.getByRole("spinbutton", { name: /^Vận chuyển/ }).fill("1200");
+  await line.getByRole("spinbutton", { name: /^CTV/ }).fill("1000");
+  await expect(vnd.getByRole("checkbox", { name: "Gửi duyệt ngay" })).toBeChecked();
+  await vnd.getByRole("button", { name: /^Lưu giá/ }).click();
+  await expect(vnd.getByText(/Đã áp dụng 1 giá/)).toBeVisible({ timeout: 30_000 });
 
   await page.goto(productUrl);
   await openProductTab(page, "price");
-  await expect(page.getByTestId("step-price-row").first()).toContainText("Bảng tính giá");
+  await expect(page.getByTestId("step-price-row").first()).toContainText("Sửa tay");
   await expect(steps.getByTestId("step-price")).toHaveAttribute("data-state", "done");
   // §6.4: ô "Gửi duyệt ngay" bật sẵn khi áp giá → SP đủ điều kiện đã vào hàng chờ duyệt; bước 5 chờ đến khi duyệt.
   await expect(page.getByTestId("approval-status")).toHaveAttribute("data-label", "PENDING");

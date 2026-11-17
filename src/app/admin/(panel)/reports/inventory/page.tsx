@@ -4,6 +4,7 @@ import { inboundShipments, slowMovers, stockByLocation } from "@/server/reports/
 import { DataTable, Notice, Page, PageHeader, Section, Td } from "@/components/admin/ui";
 import { ReportsTabs } from "@/components/admin/reports-tabs";
 import { fmtDay, fmtInt } from "@/lib/format";
+import { FEATURES } from "@/lib/features";
 
 /**
  * Báo cáo tồn kho: số liệu TỒN HIỆN TẠI (không theo kỳ) — tồn theo kho, hàng bán chậm, chuyến hàng đang về.
@@ -16,7 +17,8 @@ export default async function InventoryReportPage() {
     getTranslations("Common"),
     getTranslations("Nav"),
     slowMovers(),
-    inboundShipments(),
+    // Chuyến hàng đang tắt (`lib/features.ts`): không tải / không hiện khối "chuyến hàng đang về".
+    FEATURES.shipments ? inboundShipments() : Promise.resolve([]),
     stockByLocation(),
   ]);
 
@@ -55,6 +57,7 @@ export default async function InventoryReportPage() {
         </Section>
       </div>
 
+      {FEATURES.shipments && (
       <Section title={t("inbound")}>
         <p className="text-xs text-muted-foreground">{t("inboundHint")}</p>
         <DataTable empty={t("empty")} numeric={[2, 3]} head={[t("shipment"), t("departed"), t("batches"), t("costs")]}>
@@ -68,6 +71,7 @@ export default async function InventoryReportPage() {
           ))}
         </DataTable>
       </Section>
+      )}
     </Page>
   );
 }

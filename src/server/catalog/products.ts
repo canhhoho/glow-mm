@@ -4,8 +4,8 @@ import { rawId, slugSchema } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { normalizeForSearch, toUnicode } from "@/lib/myanmar";
 import { resolveProductIdentifiers } from "@/lib/product-identifiers";
-import { assertStockLocation, defaultStockLocationId } from "@/server/inventory/warehouses";
 import type { Tx } from "@/server/inventory/ledger";
+import { assertStockLocation } from "@/server/inventory/warehouses";
 import { productName } from "@/server/inventory/queries";
 import { loadReadiness, ReadinessError } from "./readiness";
 import { blockingErrors, publishBlockers, type Issue } from "./readiness-rules";
@@ -52,9 +52,11 @@ export const productSchema = z.object({
   brandId: rawId.optional(),
   brandName: z.string().trim().max(80).optional(),
   categoryId: rawId,
-  /** Kho bán (P24). Bỏ trống: SP mới → kho mặc định; SP đang có → giữ kho cũ. */
+  // Kho bán không chọn ở form (16/11/2026): gán khi ghi sổ nhập hàng đầu tiên; combo theo kho thành phần; đổi kho bằng
+  // thao tác chuyển kho hàng loạt. `stockLocationId` chỉ còn cho mã gọi trực tiếp (seed/test) khi TẠO SP — SP đã có thì bỏ qua.
   stockLocationId: z.preprocess((v) => (v === "" || v == null ? undefined : v), rawId.optional()),
-  requiresExpiry: z.boolean().default(true),
+  // `requiresExpiry` bỏ khỏi form (hạn dùng chọn theo lô) — giữ giá trị cũ khi không gửi.
+  requiresExpiry: z.boolean().optional(),
   paoMonths: z.preprocess((v) => v === "" || v == null ? null : v, z.coerce.number().int().min(1).max(120).nullable()).optional(),
   /** Lãi cố định MMK/đơn vị — kho mua tại Myanmar (P24). Bỏ qua (undefined) = giữ giá trị cũ. */
   fixedProfitMmk: z.preprocess((v) => (v === "" ? null : v), z.coerce.number().int().min(0).max(1_000_000_000).nullable()).optional(),
@@ -164,11 +166,17 @@ export async function writeProduct(tx: Tx, parsed: ProductInput, userId: string,
       if (owner && owner.id !== v.id && (owner.productId !== input.id || v.id)) throw new CatalogError(`SKU ${v.sku} đã được dùng`);
       if (!owner && (await skuPendingElsewhere(tx, v.sku, input.id))) throw new CatalogError(`SKU ${v.sku} đang chờ duyệt ở sản phẩm khác`);
     }
-    // Đổi kho được cả khi còn tồn: hàng ở kho cũ chỉ bán lại sau khi tạo phiếu chuyển sang kho mới.
-    const stockLocationId = input.stockLocationId ?? current?.stockLocationId ?? (await defaultStockLocationId(tx));
-    if (stockLocationId !== current?.stockLocationId) {
+    // Kho bán: giữ kho đang có; SP mới chưa có kho (gán khi ghi sổ nhập hàng đầu tiên); combo lấy kho của thành phần.
+    const componentIds = input.variants.flatMap((v) => (v.isBundle ? v.components.map((c) => c.componentId) : []));
+    const componentWarehouses = componentIds.length
+      ? await tx.variant.findMany({ where: { id: { in: componentIds } }, select: { sku: true, product: { select: { stockLocationId: true } } } })
+      : [];
+    const unplaced = componentWarehouses.find((c) => c.product.stockLocationId == null);
+    if (unplaced) throw new CatalogError(`Thành phần ${unplaced.sku} chưa nhập hàng (chưa có kho bán) — nhập hàng thành phần trước khi tạo combo`);
+    const stockLocationId = current ? current.stockLocationId : (input.stockLocationId ?? componentWarehouses[0]?.product.stockLocationId ?? null);
+    if (!current && input.stockLocationId) {
       try {
-        await assertStockLocation(tx, stockLocationId);
+        await assertStockLocation(tx, input.stockLocationId);
       } catch (e) {
         throw new CatalogError(e instanceof Error ? e.message : String(e));
       }
@@ -188,7 +196,7 @@ export async function writeProduct(tx: Tx, parsed: ProductInput, userId: string,
       stockLocationId,
       ...(input.fixedProfitMmk !== undefined && { fixedProfitMmk: input.fixedProfitMmk }),
       // P0-H1: `published` không ghi ở đây — bật/tắt hiển thị chỉ qua `setProductsPublished` (cổng mở bán + audit).
-      requiresExpiry: input.requiresExpiry,
+      ...(input.requiresExpiry !== undefined && { requiresExpiry: input.requiresExpiry }),
       paoMonths: input.paoMonths,
       storageNote: input.storageNote || null,
     };
@@ -278,8 +286,6 @@ export async function writeProduct(tx: Tx, parsed: ProductInput, userId: string,
       }
       await tx.bundleItem.createMany({ data: v.components.map((c) => ({ bundleId, componentId: c.componentId, qty: c.qty })) });
     }
-    // R3: đổi kho SP đang là thành phần của combo khác → chặn như chuyển kho hàng loạt.
-    if (current && stockLocationId !== current.stockLocationId) await assertBundleWarehouses(tx, [product.id]);
 
     if (source?.images.length) {
       await tx.productImage.createMany({ data: source.images.map((image) => ({ ...image, productId: product.id })) });

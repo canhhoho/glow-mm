@@ -7,7 +7,9 @@ import { estimateBatchCost } from "./estimate";
 import type { DocType } from "@/generated/prisma/client";
 import { requirePermission } from "@/server/auth/session";
 import type { Permission } from "@/server/auth/roles";
-import { cancelDocument, createDocument, postDocument, replaceDraftDocument, resolveBatchExpiry, updateReceiveDraft } from "./documents";
+import { assertFeature } from "@/server/feature-guard";
+import { FEATURES } from "@/lib/features";
+import { cancelDocument, createDocument, postDocument, replaceDraftDocument, resolveBatchExpiry, saveReceiveDrafts } from "./documents";
 import { discardFromQuarantine, restockFromQuarantine } from "./quarantine";
 import { createWarehouse, setWarehouseActive, updateWarehouse } from "./warehouses";
 import {
@@ -23,6 +25,7 @@ export type ActionState = { error?: string; ok?: string } | undefined;
 
 export async function estimateBatchCostAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   try {
+    assertFeature("shipments");
     const user = await requirePermission("stock:receive");
     await estimateBatchCost(Object.fromEntries(formData), user.id);
     revalidatePath("/admin/inventory");
@@ -99,22 +102,44 @@ export async function setWarehouseActiveAction(_prev: ActionState, formData: For
   return { ok: "saved" };
 }
 
+/** Chuyến hàng đang tắt (`lib/features.ts`): bỏ `shipmentId` + "Cước tạm tính" khỏi payload phiếu nhập (JSON từ client). */
+function withoutShipmentFields<T>(payload: T): T {
+  if (FEATURES.shipments || !payload || typeof payload !== "object") return payload;
+  const rest = { ...(payload as Record<string, unknown>) };
+  delete rest.shipmentId;
+  delete rest.estimatedShipMmkPerKg;
+  return rest as T;
+}
+
 /** payload = JSON của phiếu (từ form nhiều dòng). */
+/** Phiếu nhập tách nhiều kho → về danh sách nháp kèm thông báo; một phiếu → vào chi tiết phiếu. */
+function receiveRedirect(docs: { id: string }[], suffix = ""): string {
+  return docs.length > 1 ? `/admin/inventory/documents?status=DRAFT&split=${docs.length}` : `/admin/inventory/documents/${docs[0].id}${suffix}`;
+}
+
 export async function createDocumentAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  let id: string;
+  let target: string;
   try {
-    const payload = JSON.parse(String(formData.get("payload") ?? "{}"));
+    const payload = withoutShipmentFields(JSON.parse(String(formData.get("payload") ?? "{}")));
     const type = payload?.type as DocType;
     if (!DOC_PERMISSION[type]) return { error: "Loại phiếu không hợp lệ" };
     const user = await requirePermission(DOC_PERMISSION[type]);
     // "Huỷ và tạo lại" phiếu nháp (#5): `replacesId` trong payload → tạo phiếu mới + huỷ phiếu cũ cùng một giao dịch.
     const replacesId = typeof payload?.replacesId === "string" ? payload.replacesId : undefined;
-    id = (replacesId ? await replaceDraftDocument(replacesId, payload, user.id) : await createDocument(payload, user.id)).id;
-    if (replacesId) revalidatePath("/admin/inventory/documents");
+    if (type === "RECEIVE" && !replacesId) {
+      // Mỗi dòng có kho riêng → tự tách mỗi kho một phiếu nháp (một transaction).
+      const { documents } = await saveReceiveDrafts(payload, user.id);
+      revalidatePath("/admin/inventory/documents");
+      target = receiveRedirect(documents);
+    } else {
+      const doc = replacesId ? await replaceDraftDocument(replacesId, payload, user.id) : await createDocument(payload, user.id);
+      if (replacesId) revalidatePath("/admin/inventory/documents");
+      target = `/admin/inventory/documents/${doc.id}`;
+    }
   } catch (e) {
     return { error: message(e) };
   }
-  redirect(`/admin/inventory/documents/${id}`);
+  redirect(target);
 }
 
 async function permissionForDoc(documentId: string): Promise<Permission> {
@@ -154,15 +179,17 @@ export async function cancelDocumentAction(_prev: ActionState, formData: FormDat
 /** Sửa phiếu NHẬP đang nháp (form nhập nhiều SP, `payload` như lúc tạo + `id`). */
 export async function updateDocumentAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const id = String(formData.get("id") ?? "");
+  let target: string;
   try {
     const user = await requirePermission("stock:receive");
-    await updateReceiveDraft(id, JSON.parse(String(formData.get("payload") ?? "{}")), user.id);
+    const { documents } = await saveReceiveDrafts(withoutShipmentFields(JSON.parse(String(formData.get("payload") ?? "{}"))), user.id, { documentId: id });
+    target = receiveRedirect(documents, "?updated=1");
   } catch (e) {
     return { error: message(e) };
   }
   revalidatePath(`/admin/inventory/documents/${id}`);
   revalidatePath("/admin/inventory/documents");
-  redirect(`/admin/inventory/documents/${id}?updated=1`);
+  redirect(target);
 }
 
 // ── Chuyến hàng ──
@@ -170,6 +197,7 @@ export async function updateDocumentAction(_prev: ActionState, formData: FormDat
 export async function createShipmentAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   let id: string;
   try {
+    assertFeature("shipments");
     await requirePermission("shipment:manage");
     id = (
       await createShipment({
@@ -188,6 +216,7 @@ export async function createShipmentAction(_prev: ActionState, formData: FormDat
 export async function addShipmentCostAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const shipmentId = String(formData.get("shipmentId"));
   try {
+    assertFeature("shipments");
     await requirePermission("shipment:manage");
     await addShipmentCost({
       shipmentId,
@@ -203,6 +232,7 @@ export async function addShipmentCostAction(_prev: ActionState, formData: FormDa
 }
 
 export async function removeShipmentCostAction(formData: FormData) {
+  assertFeature("shipments");
   await requirePermission("shipment:manage");
   const shipmentId = String(formData.get("shipmentId"));
   await removeShipmentCost(String(formData.get("costId")));
@@ -212,6 +242,7 @@ export async function removeShipmentCostAction(formData: FormData) {
 export async function allocateShipmentAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const shipmentId = String(formData.get("shipmentId"));
   try {
+    assertFeature("shipments");
     const user = await requirePermission("shipment:manage");
     const method = formData.get("allocationMethod");
     if (method !== "BY_VALUE" && method !== "BY_QTY" && method !== "BY_WEIGHT") throw new Error("Cách phân bổ không hợp lệ");
@@ -229,6 +260,7 @@ export async function allocateShipmentAction(_prev: ActionState, formData: FormD
 export async function attachBatchAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const shipmentId = String(formData.get("shipmentId"));
   try {
+    assertFeature("shipments");
     const user = await requirePermission("shipment:manage");
     await attachBatchToShipment({ shipmentId, batchId: formData.get("batchId") }, user.id);
   } catch (e) { return { error: message(e) }; }
@@ -271,6 +303,7 @@ export async function discardAction(_prev: ActionState, formData: FormData): Pro
 export async function markArrivedAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const shipmentId = String(formData.get("shipmentId"));
   try {
+    assertFeature("shipments");
     const user = await requirePermission("shipment:manage");
     await markShipmentArrived(shipmentId, user.id);
   } catch (e) {

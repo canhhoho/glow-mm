@@ -1,17 +1,26 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Check, Download, Eye } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { catalogImportAction } from "@/server/catalog/actions";
+import type { CatalogImportPreview, ImportIssue, ImportRowView } from "@/server/catalog/catalog-import";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { FileField } from "@/components/admin/file-field";
 import { Badge, DataTable, Notice, Td } from "@/components/admin/ui";
 import { fmtInt } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { BatchReviewOptions, BatchReviewSummary } from "@/components/admin/batch-review";
 
-const ACTION_TONE = { create: "brand", update: "warning", same: "neutral" } as const;
+const ACTION_TONE = { create: "brand", update: "warning", same: "neutral", error: "danger" } as const;
+const FILTERS = ["all", "error", "warning", "create", "update", "same"] as const;
+type Filter = (typeof FILTERS)[number];
+
+/** Trang này chỉ nói về thông tin SP: lưu ý về lô nhập kho (hạn dùng, giá vốn) xem ở phiếu nhập nháp; lỗi thì luôn hiện. */
+const shownIssues = (r: ImportRowView): ImportIssue[] => r.issues.filter((i) => i.level === "error" || !i.stock);
+const matches = (r: ImportRowView, f: Filter) =>
+  f === "all" ? true : f === "warning" ? shownIssues(r).some((i) => i.level === "warning") : r.action === f;
 
 /** Một luồng cho tạo mới + cập nhật + nhập tồn: tải mẫu → chọn file → xem trước → xác nhận. */
 export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) {
@@ -28,11 +37,6 @@ export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) 
         <a className={buttonVariants({ variant: "outline", size: "lg" })} href="/api/templates/catalog.xlsx"><Download aria-hidden />{t("templateBlank")}</a>
         <a className={buttonVariants({ variant: "outline", size: "lg" })} href="/api/templates/catalog-current.xlsx"><Download aria-hidden />{t("templateCurrent")}</a>
       </div>
-      <p className="text-sm text-muted-foreground">
-        {t("setupHint")} <Link className="text-primary underline" href="/admin/categories">{t("categories")}</Link> ·{" "}
-        <Link className="text-primary underline" href="/admin/settings/warehouses">{t("warehouses")}</Link> ·{" "}
-        <Link className="text-primary underline" href="/admin/selling-prices?mode=rates">{t("rates")}</Link>
-      </p>
       <form action={action} className="flex flex-wrap items-end gap-3">
         <input type="hidden" name="step" value="preview" />
         <FileField name="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required aria-label={t("file")} className="max-w-72" />
@@ -40,77 +44,119 @@ export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) 
       </form>
       {state?.error && <Notice tone="danger" className="whitespace-pre-line">{state.error}</Notice>}
 
-      {preview && (
-        <div className="space-y-3" data-testid="catalog-import-preview">
-          <p className="text-sm font-medium">
-            {t("summary", { created: preview.counts.createdProducts, updated: preview.counts.updatedProducts, unchanged: preview.counts.unchangedProducts, stock: preview.counts.stockLines })}
-          </p>
-          {preview.counts.priceChanges > 0 && <p className="text-sm text-muted-foreground" data-testid="catalog-import-price-changes">{t("priceChanges", { count: preview.counts.priceChanges })}</p>}
-          {preview.rate && <p className="text-sm text-muted-foreground">{t("rateQuote", { rate: preview.rate })}</p>}
-          {preview.errors.length > 0 && (
-            <Notice tone="danger" className="p-4">
-              <p className="font-medium">{t("errorsTitle")}</p>
-              <ul className="mt-1 list-disc space-y-1 pl-5">{preview.errors.map((e, i) => <li key={i} className="whitespace-pre-line">{e}</li>)}</ul>
-            </Notice>
-          )}
-          {preview.warnings.length > 0 && (
-            <Notice tone="warning" className="p-4">
-              <p className="font-medium">{t("warningsTitle")}</p>
-              <ul className="mt-1 list-disc space-y-1 pl-5">{preview.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
-            </Notice>
-          )}
-          <form action={action} className="space-y-2">
-            <input type="hidden" name="step" value="confirm" />
-            <input type="hidden" name="payload" value={JSON.stringify(preview.input)} />
-            <BatchReviewOptions canApprove={canApprove} />
-            <Button type="submit" size="lg" disabled={pending || preview.errors.length > 0} aria-describedby="catalog-import-confirm-help"><Check aria-hidden />{t("confirm")}</Button>
-            <p id="catalog-import-confirm-help" className="text-sm text-muted-foreground">
-              {t(preview.errors.length > 0 ? "confirmBlocked" : "confirmHelp")}
-            </p>
-          </form>
-          <DataTable numeric={[0, 4, 6]} head={["colLine", "colAction", "colProduct", "colSku", "colPrice", "colStock", "colCost"].map((k) => t(k))}>
-            {preview.rows.map((r, i) => (
-              <tr key={i}>
-                <Td numeric>{r.line}</Td>
-                <Td><Badge tone={ACTION_TONE[r.action]}>{t(`action.${r.action}`)}</Badge></Td>
-                <Td>{r.name}<div className="text-xs text-muted-foreground">{r.label}</div></Td>
-                <Td className="font-mono text-xs">{r.sku}</Td>
-                <Td numeric className="whitespace-nowrap">
-                  {r.oldPrice != null && r.oldPrice !== r.price && <span className="text-muted-foreground line-through">{fmtInt(r.oldPrice)}</span>} {r.price == null ? <span className="text-muted-foreground">—</span> : fmtInt(r.price)}
-                </Td>
-                <Td>
-                  {r.stock && (
-                    <>
-                      {fmtInt(r.stock.qty)} · {r.stock.lotNo} · {r.stock.location}
-                      <div className={`text-xs ${r.stock.expiryStatus === "UNKNOWN" ? "text-destructive" : "text-muted-foreground"}`}>
-                        {r.stock.expiryDate ?? t(r.stock.expiryStatus === "NONE" ? "expiryNone" : "expiryUnknown")}
-                      </div>
-                    </>
-                  )}
-                </Td>
-                <Td numeric>{r.stock ? fmtInt(r.stock.costMmk) : ""}</Td>
-              </tr>
-            ))}
-          </DataTable>
-        </div>
-      )}
+      {preview && <ImportPreview preview={preview} action={action} pending={pending} canApprove={canApprove} />}
 
       {state?.result && (
         <Notice tone="success" className="space-y-2 p-4">
           <p>{t("success", { created: state.result.createdProducts, updated: state.result.updatedProducts })}</p>
           {state.result.documents.length > 0 && (
-            <ul className="space-y-1">
-              {state.result.documents.map((d) => (
-                <li key={d.id}>
-                  <Link className="text-primary underline" href={`/admin/inventory/documents/${d.id}`}>{d.code} · {t("reviewDraft")}</Link>
-                </li>
-              ))}
-            </ul>
+            <>
+              <p data-testid="catalog-import-draft-note">{t("draftNote")}</p>
+              <ul className="space-y-1">
+                {state.result.documents.map((d) => (
+                  <li key={d.id}>
+                    <Link className="text-primary underline" href={`/admin/inventory/documents/${d.id}`}>{d.code} · {t("reviewDraft")}</Link>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
           {state.review && <BatchReviewSummary review={state.review} />}
           <Link href="/admin/products" className="text-primary underline">{t("finishProducts")}</Link>
         </Notice>
       )}
     </section>
+  );
+}
+
+function ImportPreview({ preview, action, pending, canApprove }: { preview: CatalogImportPreview; action: (formData: FormData) => void; pending: boolean; canApprove: boolean }) {
+  const t = useTranslations("CatalogImport");
+  const [filter, setFilter] = useState<Filter>("all");
+  const rows = preview.rows.filter((r) => matches(r, filter));
+  const blocked = preview.errors.length > 0;
+  const head = ["colLine", "colAction", "colProduct", "colLabel", "colSku", "colWeight", "colNotes"];
+  const counts = Object.fromEntries(FILTERS.map((f) => [f, preview.rows.filter((r) => matches(r, f)).length])) as Record<Filter, number>;
+  const rc = preview.rowCounts;
+  return (
+    <div className="space-y-3" data-testid="catalog-import-preview">
+      <p className="text-sm font-medium" data-testid="catalog-import-summary">
+        {t("summaryRows", { total: preview.rows.length, create: rc.create, update: rc.update, same: rc.same, error: rc.error })}
+      </p>
+
+      {preview.general.length > 0 && (
+        <Notice tone="danger" className="p-4">
+          <ul className="list-disc space-y-1 pl-5">{preview.general.map((e, i) => <li key={i}>{e}</li>)}</ul>
+        </Notice>
+      )}
+
+      {/* Bộ lọc chỉ hiện khi file có nhiều loại dòng. */}
+      {FILTERS.filter((f) => f !== "all" && counts[f] > 0).length > 1 && (
+        <div className="flex flex-wrap gap-2" role="group" aria-label={t("filterLabel")}>
+          {FILTERS.filter((f) => f === "all" || counts[f] > 0).map((f) => (
+            <Button key={f} type="button" size="sm" variant={filter === f ? "secondary" : "ghost"} aria-pressed={filter === f} onClick={() => setFilter(f)}>
+              {t(`filter.${f}`)} ({counts[f]})
+            </Button>
+          ))}
+        </div>
+      )}
+
+      {/* Điện thoại: mỗi dòng file một thẻ (nhãn từng ô); máy tính: bảng. Chỉ thông tin SP — nhập kho xem ở phiếu nháp. */}
+      <DataTable stack numeric={[0]} head={head.map((k) => t(k))} empty={t("noRows")}>
+        {rows.map((r) => <PreviewRow key={r.line} r={r} />)}
+      </DataTable>
+
+      <form action={action} className="space-y-2">
+        <input type="hidden" name="step" value="confirm" />
+        <input type="hidden" name="payload" value={JSON.stringify(preview.input)} />
+        <BatchReviewOptions canApprove={canApprove} />
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="submit" size="lg" disabled={pending || blocked} aria-describedby="catalog-import-confirm-help"><Check aria-hidden />{t("confirm")}</Button>
+          {blocked && rc.error > 0 && (
+            <Button type="button" variant="link" onClick={() => setFilter("error")}>{t("showErrors")}</Button>
+          )}
+        </div>
+        <p id="catalog-import-confirm-help" className="text-sm text-muted-foreground">
+          {t(blocked ? "confirmBlocked" : "confirmHelp")}
+        </p>
+      </form>
+    </div>
+  );
+}
+
+function PreviewRow({ r }: { r: ImportRowView }) {
+  const t = useTranslations("CatalogImport");
+  const muted = "text-muted-foreground";
+  const issues = shownIssues(r);
+  return (
+    <tr data-testid={`catalog-import-row-${r.line}`}>
+      <Td label={t("colLine")} numeric>{r.line}</Td>
+      <Td label={t("colAction")}>
+        <Badge tone={ACTION_TONE[r.action]}>{t(`action.${r.action}`)}</Badge>
+        {r.changes.length > 0 && (
+          <div className={cn("mt-1 text-xs", muted)}>{t("changed", { fields: r.changes.map((c) => t(`field.${c}`)).join(", ") })}</div>
+        )}
+      </Td>
+      <Td label={t("colProduct")}>
+        <span className={cn(!r.nameFromFile && muted)}>{r.name || "—"}</span>
+        {(r.brand || r.category) && <div className={cn("text-xs", muted)}>{[r.brand, r.category].filter(Boolean).join(" · ")}</div>}
+      </Td>
+      <Td label={t("colLabel")}><span className={cn(!r.labelFromFile && muted)}>{r.labelFromFile ? r.label : t("standardLabel")}</span></Td>
+      <Td label={t("colSku")} className="text-xs">
+        <span className="font-mono">{r.sku || "—"}</span>
+        {r.skuAuto && <span className={muted}> · {t("autoSku")}</span>}
+      </Td>
+      <Td label={t("colWeight")} className="whitespace-nowrap tabular-nums">
+        {r.weight == null ? <span className={muted}>—</span> : <span className={cn(!r.weightFromFile && muted)}>{fmtInt(r.weight)}</span>}
+      </Td>
+      <Td label={t("colNotes")} className={cn("text-xs", issues.length === 0 && "max-md:hidden")}>
+        {issues.length > 0 && (
+          <ul className="space-y-1">
+            {issues.map((i, k) => (
+              <li key={k} className={i.level === "error" ? "text-destructive" : "text-warning-foreground"}>{i.text}</li>
+            ))}
+          </ul>
+        )}
+      </Td>
+    </tr>
   );
 }

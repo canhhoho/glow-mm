@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
+import { can } from "@/server/auth/roles";
 import { listDocuments } from "@/server/inventory/queries";
 import { LocationName, NewDocMenu } from "@/components/admin/stock-parts";
 import { Badge, DataTable, Page, PageHeader, TabNav, Td } from "@/components/admin/ui";
@@ -13,6 +14,7 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/admin/
   const sp = await searchParams;
   // Danh sách chỉ có hai nhóm. Phiếu đã huỷ vẫn giữ để tra cứu lịch sử qua trang chi tiết.
   const status = sp.status === "DRAFT" ? "DRAFT" : "POSTED";
+  const split = Math.min(20, Math.max(0, Number(typeof sp.split === "string" ? sp.split : 0) || 0)); // thông báo "đã tách thành N phiếu"
   const [t, ti, docs] = await Promise.all([getTranslations("Docs"), getTranslations("Inventory"), listDocuments({ status })]);
   return (
     <Page>
@@ -20,6 +22,7 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/admin/
         title={t("title")}
         actions={<NewDocMenu role={user.role} label={t("new")} td={t} />}
       />
+      {split > 1 && status === "DRAFT" && <p role="status" data-testid="receive-split-notice" className="rounded-md bg-success-muted px-3 py-2 text-sm text-success">{t("splitNotice", { n: split })}</p>}
       <TabNav label={t("status")} tabs={(["POSTED", "DRAFT"] as const).map((s) => ({
         href: `/admin/inventory/documents?status=${s}`, active: status === s, label: t(s),
       }))} />
@@ -32,7 +35,8 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/admin/
         {docs.map((d) => (
           <tr key={d.id}>
             <Td>
-              <Link href={`/admin/inventory/documents/${d.id}`} className="font-mono text-xs text-primary underline">
+              {/* Phiếu nhập nháp: người có quyền nhập kho mở thẳng form sửa (chọn SP → điền kho/số lượng/hạn); người khác xem chi tiết. */}
+              <Link href={d.type === "RECEIVE" && d.status === "DRAFT" && can(user.role, "stock:receive") ? `/admin/inventory/documents/${d.id}/edit` : `/admin/inventory/documents/${d.id}`} className="font-mono text-xs text-primary underline">
                 {d.code}
               </Link>
             </Td>

@@ -40,7 +40,8 @@ export default async function DocumentPage({ params, searchParams }: PageProps<"
       <PageHeader
         title={`${t(doc.type)} · ${doc.code}`}
         back={{ href: "/admin/inventory/documents", label: t("back") }}
-        actions={doc.type === "RECEIVE" && doc.status === "POSTED" && can(user.role, "pricing:manage") && <LinkButton href={`/admin/selling-prices?mode=auto&receiptId=${doc.id}`}>{t("priceReceived")}</LinkButton>}
+        // "Tính giá SKU vừa nhập" → trang Giá bán thủ công cho đúng các SKU của phiếu (giá tự động đang tắt).
+        actions={doc.type === "RECEIVE" && doc.status === "POSTED" && can(user.role, "pricing:manage") && <LinkButton href={`/admin/selling-prices/manual?${new URLSearchParams([...new Set(doc.lines.map((l) => l.variantId))].map((id) => ["ids", id]))}`}>{t("priceReceived")}</LinkButton>}
       />
       {updated && <Notice tone="success">{t("updated")}</Notice>}
       {waitingPreorders > 0 && (
@@ -99,9 +100,9 @@ export default async function DocumentPage({ params, searchParams }: PageProps<"
 
       <DataTable
         stack
-        numeric={showCosts ? [4, 5, 6, 7] : [4]}
+        numeric={showCosts ? [4, 5] : [4]}
         empty={tc("noData")}
-        head={[t("variant"), t("lotNo"), t("expiry"), t("stockType"), t("qty"), ...(showCosts ? [t("costUnit"), t("costRate"), t("costInbound")] : [])]}
+        head={[t("variant"), t("lotNo"), t("expiry"), t("stockType"), t("qty"), ...(showCosts ? [t("costUnit")] : [])]}
       >
         {doc.lines.map((l) => (
           <tr key={l.id}>
@@ -113,18 +114,11 @@ export default async function DocumentPage({ params, searchParams }: PageProps<"
             <Td label={t("expiry")}>{l.batch?.expiryStatus === "NONE" ? ti("expiryNone") : l.batch?.expiryStatus === "UNKNOWN" ? ti("expiryUnknown") : fmtDay(l.batch?.expiryDate)}</Td>
             <Td label={t("stockType")}>{ti(l.stockType)}</Td>
             <Td label={t("qty")} numeric>{fmtInt(l.qty)}</Td>
+            {/* 16/11/2026: phiếu chỉ hiện giá mua — không có cột Tỷ giá / Phí về kho (tỷ giá chốt ngầm theo dòng khi ghi sổ). */}
             {showCosts && (
-              <>
-                <Td label={t("costUnit")} numeric>
-                  <span data-testid="line-cost">{l.unitCostVnd != null ? `${fmtInt(l.unitCostVnd)} VND` : l.unitCostMmk != null ? `${fmtInt(l.unitCostMmk)} MMK` : "—"}</span>
-                </Td>
-                <Td label={t("costRate")} numeric>
-                  {l.rate ? <>{l.rate.mmkPerVnd.toString()}<span className="block text-xs text-muted-foreground">{fmtDay(l.rate.effectiveAt)}</span></> : "—"}
-                </Td>
-                <Td label={t("costInbound")} numeric>
-                  {l.landedCostVnd != null ? fmtInt(l.landedCostVnd) : doc.shipment ? <span className="text-xs text-muted-foreground">{t("costViaShipment")}</span> : "—"}
-                </Td>
-              </>
+              <Td label={t("costUnit")} numeric>
+                <span data-testid="line-cost">{l.unitCostVnd != null ? `${fmtInt(l.unitCostVnd)} VND` : l.unitCostMmk != null ? `${fmtInt(l.unitCostMmk)} MMK` : "—"}</span>
+              </Td>
             )}
           </tr>
         ))}
