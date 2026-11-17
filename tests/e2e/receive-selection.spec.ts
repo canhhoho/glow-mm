@@ -8,8 +8,9 @@ test("phiếu nhập hai bước: giữ dữ liệu khi quay lại, bỏ chọn 
   const picker = page.getByTestId("receive-selection");
   await expect(picker.getByRole("checkbox").first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Tiếp tục nhập thông số" })).toBeDisabled();
-  await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "THAM — Kho Thắm" });
-  const checkboxes = picker.getByRole("checkbox");
+  // Bước 1 không còn chọn kho: danh sách có đủ SP mọi kho, cột Kho cho biết kho của từng SP.
+  await expect(page.getByLabel("Chọn vị trí nhận")).toHaveCount(0);
+  const checkboxes = picker.getByRole("row").filter({ hasText: "Kho Thắm" }).getByRole("checkbox");
   const first = await checkboxes.nth(0).getAttribute("aria-label");
   const second = await checkboxes.nth(1).getAttribute("aria-label");
   const sku1 = first!.replace(/^Chọn /, "");
@@ -17,6 +18,7 @@ test("phiếu nhập hai bước: giữ dữ liệu khi quay lại, bỏ chọn 
   await checkboxes.nth(0).check();
   await checkboxes.nth(1).check();
   await page.getByRole("button", { name: "Tiếp tục nhập thông số" }).click();
+  await expect(page.getByLabel(`Kho ${sku1}`, { exact: true })).toHaveValue(/.+/); // SP đã có kho → kho cố định
   await expect(page.getByLabel(`Số lượng ${sku1}`, { exact: true })).toBeVisible();
   await expect(page.getByLabel(`Số lượng ${sku2}`, { exact: true })).toBeVisible();
   await page.getByLabel(`Số lượng ${sku1}`, { exact: true }).fill("3");

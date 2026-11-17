@@ -12,9 +12,9 @@ async function ensureLots(page: Page, min: number) {
   const tag = Date.now().toString(36).toUpperCase();
   const rows = Array.from({ length: min - total }, (_, i) => ["SV-SUN-50", "1", `PG${tag}-${i}`, "31/12/2029", "1000"].join("\t")).join("\n");
   await page.goto("/admin/inventory/documents/new?type=RECEIVE");
-  await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "MM-QC — Chờ kiểm tra" });
   await page.getByRole("checkbox", { name: "Chọn SV-SUN-50", exact: true }).check();
   await page.getByRole("button", { name: "Tiếp tục nhập thông số", exact: true }).click();
+  await page.getByLabel("Áp kho này cho tất cả").selectOption({ label: "MM-QC — Chờ kiểm tra" });
   await page.getByRole("button", { name: "Dán từ Excel" }).click();
   await page.getByRole("textbox", { name: "Dán từ Excel" }).fill(rows);
   await page.getByRole("button", { name: "Điền vào bảng" }).click();

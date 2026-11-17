@@ -12,6 +12,7 @@ import { applyMoves, type StockMove, type Tx } from "./ledger";
 import { lotCost, lotCostMmk, type ReceiptCostLine } from "./lot-cost";
 import { guardApproval } from "@/server/catalog/approval";
 import { latestRate } from "@/server/pricing/latest-rate";
+import { splitReceivePayload } from "./receive-split";
 
 /**
  * Phiếu kho: tạo NHÁP → GHI SỔ (POSTED, sinh ledger) hoặc HUỶ (chỉ khi còn nháp).
@@ -278,6 +279,25 @@ async function buildReceiveLines(tx: Tx, input: ReceiveInput): Promise<DraftLine
   return lines;
 }
 
+/** Tỷ giá đã chốt của dòng phiếu nháp cũ, khoá `variantId|lotNo|stockType|giá mua VND` (A3 16/11). */
+type LockedRates = Map<string, string>;
+const rateKey = (variantId: string, lotNo: string, stockType: string, unitCostVnd: number) => `${variantId}|${lotNo}|${stockType}|${unitCostVnd}`;
+
+/** Dòng không đổi (cùng biến thể, lô, loại tồn, giá mua) giữ tỷ giá đã chốt; dòng đổi giá thì chốt lại lúc ghi sổ. */
+function pinRates(lines: DraftLine[], input: ReceiveInput, locked?: LockedRates): DraftLine[] {
+  if (!locked || locked.size === 0) return lines;
+  return lines.map((l, i) => {
+    const src = input.lines[i];
+    const rateId = src.unitCostVnd != null ? locked.get(rateKey(src.variantId, src.lotNo, src.stockType, src.unitCostVnd)) : undefined;
+    return rateId ? { ...l, rateId } : l;
+  });
+}
+
+async function readLockedRates(tx: Tx, documentId: string): Promise<LockedRates> {
+  const before = await tx.stockDocumentLine.findMany({ where: { documentId }, select: { variantId: true, stockType: true, unitCostVnd: true, rateId: true, batch: { select: { lotNo: true } } } });
+  return new Map(before.flatMap((l) => (l.rateId && l.unitCostVnd != null && l.batch ? [[rateKey(l.variantId, l.batch.lotNo, l.stockType, l.unitCostVnd), l.rateId] as const] : [])));
+}
+
 const idempotencyKeySchema = z.string().trim().min(8).max(100).optional();
 const idempotencyKeyOf = (raw: unknown) =>
   idempotencyKeySchema.parse(raw && typeof raw === "object" ? (raw as { idempotencyKey?: unknown }).idempotencyKey : undefined);
@@ -286,7 +306,7 @@ const idempotencyKeyOf = (raw: unknown) =>
  * Tạo phiếu NHÁP. RECEIVE tạo (hoặc dùng lại) lô theo (biến thể, số lô).
  * `idempotencyKey` (mỗi lần mở form một khoá): gửi lại cùng form (bấm 2 lần, mạng chậm) → trả phiếu đã tạo, không tạo thêm.
  */
-export async function createDocument(raw: unknown, userId: string, transaction?: Tx) {
+export async function createDocument(raw: unknown, userId: string, transaction?: Tx, opts: { lockedRate?: LockedRates } = {}) {
   const input = documentSchema.parse(raw);
   const idempotencyKey = idempotencyKeyOf(raw);
   const db = transaction ?? prisma;
@@ -298,7 +318,7 @@ export async function createDocument(raw: unknown, userId: string, transaction?:
   const run = async (tx: Tx) => {
     const { fromId, toId } = await checkLocations(tx, input);
     const lines: DraftLine[] = [];
-    if (input.type === "RECEIVE") lines.push(...(await buildReceiveLines(tx, input)));
+    if (input.type === "RECEIVE") lines.push(...pinRates(await buildReceiveLines(tx, input), input, opts.lockedRate));
     else {
       for (const l of input.lines) {
         if (l.batchId) await assertBatch(tx, l.batchId, l.variantId);
@@ -369,40 +389,103 @@ export async function releaseDraftBatches(tx: Tx, documentId: string) {
  */
 export async function updateReceiveDraft(documentId: string, raw: unknown, userId: string) {
   const input = receiveSchema.parse(raw);
-  return prisma.$transaction(
-    async (tx) => {
-      await tx.$queryRaw`SELECT "id" FROM "StockDocument" WHERE "id" = ${documentId} FOR UPDATE`;
-      const doc = await tx.stockDocument.findUnique({ where: { id: documentId }, select: { id: true, type: true, status: true } });
-      if (!doc) throw new DocumentError("Không tìm thấy phiếu");
-      if (doc.type !== "RECEIVE" || doc.status !== "DRAFT") throw new DocumentError("Chỉ sửa được phiếu nhập đang nháp");
-      const { toId } = await checkLocations(tx, input);
-      // A3 16/11: dòng không đổi (cùng biến thể, lô, loại tồn, giá mua) giữ tỷ giá đã chốt (vd nhập Excel); dòng đổi giá
-      // thì chốt lại lúc ghi sổ. Giá mua + phí về kho lấy từ form (trang sửa điền giá của chính dòng).
-      const before = await tx.stockDocumentLine.findMany({ where: { documentId: doc.id }, select: { variantId: true, stockType: true, unitCostVnd: true, rateId: true, batch: { select: { lotNo: true } } } });
-      const lockedRate = new Map(before.flatMap((l) => (l.rateId && l.unitCostVnd != null && l.batch ? [[`${l.variantId}|${l.batch.lotNo}|${l.stockType}|${l.unitCostVnd}`, l.rateId] as const] : [])));
-      await releaseDraftBatches(tx, doc.id);
-      await tx.stockDocumentLine.deleteMany({ where: { documentId: doc.id } });
-      const lines = (await buildReceiveLines(tx, input)).map((l, i) => {
-        const src = input.lines[i];
-        const rateId = src.unitCostVnd != null ? lockedRate.get(`${src.variantId}|${src.lotNo}|${src.stockType}|${src.unitCostVnd}`) : undefined;
-        return rateId ? { ...l, rateId } : l;
-      });
-      const updated = await tx.stockDocument.update({
-        where: { id: doc.id },
-        data: {
-          toId,
-          shipmentId: input.shipmentId ?? null,
-          reason: input.reason ?? null,
-          estimatedShipMmkPerKg: input.estimatedShipMmkPerKg ?? null,
-          lines: { create: lines },
-        },
-      });
-      if (input.weights?.length) await fillWeights(tx, input.weights, new Set(lines.map((l) => l.variantId)), doc.id, userId);
-      await tx.auditLog.create({ data: { userId, action: "stock.update", entity: "StockDocument", entityId: doc.id, data: { lines: lines.length } } });
-      return updated;
+  return prisma.$transaction((tx) => updateReceiveDraftTx(tx, documentId, input, userId), { maxWait: 10_000, timeout: 30_000 });
+}
+
+async function lockDraftReceive(tx: Tx, documentId: string) {
+  await tx.$queryRaw`SELECT "id" FROM "StockDocument" WHERE "id" = ${documentId} FOR UPDATE`;
+  const doc = await tx.stockDocument.findUnique({ where: { id: documentId }, select: { id: true, type: true, status: true, toId: true } });
+  if (!doc) throw new DocumentError("Không tìm thấy phiếu");
+  if (doc.type !== "RECEIVE" || doc.status !== "DRAFT") throw new DocumentError("Chỉ sửa được phiếu nhập đang nháp");
+  return doc;
+}
+
+async function updateReceiveDraftTx(tx: Tx, documentId: string, input: ReceiveInput, userId: string, lockedRate?: LockedRates) {
+  const doc = await lockDraftReceive(tx, documentId);
+  const { toId } = await checkLocations(tx, input);
+  // A3 16/11: dòng không đổi (cùng biến thể, lô, loại tồn, giá mua) giữ tỷ giá đã chốt (vd nhập Excel); dòng đổi giá
+  // thì chốt lại lúc ghi sổ. Giá mua lấy từ form (trang sửa điền giá của chính dòng).
+  const locked = lockedRate ?? (await readLockedRates(tx, doc.id));
+  await releaseDraftBatches(tx, doc.id);
+  await tx.stockDocumentLine.deleteMany({ where: { documentId: doc.id } });
+  const lines = pinRates(await buildReceiveLines(tx, input), input, locked);
+  const updated = await tx.stockDocument.update({
+    where: { id: doc.id },
+    data: {
+      toId,
+      shipmentId: input.shipmentId ?? null,
+      reason: input.reason ?? null,
+      estimatedShipMmkPerKg: input.estimatedShipMmkPerKg ?? null,
+      lines: { create: lines },
     },
-    { maxWait: 10_000, timeout: 30_000 },
-  );
+  });
+  if (input.weights?.length) await fillWeights(tx, input.weights, new Set(lines.map((l) => l.variantId)), doc.id, userId);
+  await tx.auditLog.create({ data: { userId, action: "stock.update", entity: "StockDocument", entityId: doc.id, data: { lines: lines.length } } });
+  return updated;
+}
+
+/** Một SP chỉ thuộc một kho bán: không nhập cùng SP vào hai kho bán khác nhau trong một lần lưu (vị trí không bán thì được). */
+async function assertOneSellableWarehousePerProduct(tx: Tx, inputs: ReceiveInput[]) {
+  if (inputs.length < 2) return;
+  const variantIds = [...new Set(inputs.flatMap((i) => i.lines.map((l) => l.variantId)))];
+  const variants = new Map((await tx.variant.findMany({ where: { id: { in: variantIds } }, select: { id: true, sku: true, productId: true } })).map((v) => [v.id, v]));
+  const sellable = new Set((await tx.location.findMany({ where: { id: { in: inputs.map((i) => i.toId) }, sellable: true }, select: { id: true } })).map((l) => l.id));
+  const seen = new Map<string, string>();
+  for (const input of inputs) {
+    if (!sellable.has(input.toId)) continue;
+    for (const l of input.lines) {
+      const v = variants.get(l.variantId);
+      if (!v) continue;
+      const prev = seen.get(v.productId);
+      if (prev && prev !== input.toId) throw new DocumentError(`SKU ${v.sku}: một sản phẩm chỉ thuộc một kho bán, không nhập vào hai kho`);
+      seen.set(v.productId, input.toId);
+    }
+  }
+}
+
+/**
+ * Lưu phiếu NHẬP nháp từ form nhiều sản phẩm (16/11/2026): mỗi dòng có kho riêng (`lines[].toId`), server **tự tách mỗi kho một
+ * phiếu nháp** trong MỘT transaction (lỗi ở đâu cũng không để lại phiếu dở).
+ * - Tạo mới: mỗi kho một phiếu (`createDocument`), khoá chống trùng dẫn xuất `${key}:${toId}` khi tách nhiều kho.
+ * - Sửa (`documentId`): phiếu gốc giữ nhóm cùng kho với nó (không có thì nhóm đầu, đổi kho) → không bao giờ rỗng, mã/URL không đổi;
+ *   nhóm còn lại thành phiếu mới (lý do kế thừa). Tỷ giá đã chốt của dòng không đổi được giữ ở mọi phiếu.
+ * Khối lượng chỉ ghi qua một phiếu. Trả danh sách phiếu (phiếu gốc đứng đầu khi sửa).
+ */
+export async function saveReceiveDrafts(raw: unknown, userId: string, opts: { documentId?: string } = {}) {
+  const groups = splitReceivePayload(raw);
+  const keys = groups.flatMap((g) => (typeof g.payload.idempotencyKey === "string" ? [g.payload.idempotencyKey] : []));
+  try {
+    const documents = await prisma.$transaction(
+      async (tx) => {
+        const inputs = groups.map((g) => receiveSchema.parse(g.payload));
+        await assertOneSellableWarehousePerProduct(tx, inputs);
+        let originIdx = -1;
+        let lockedRate: LockedRates | undefined;
+        if (opts.documentId) {
+          const doc = await lockDraftReceive(tx, opts.documentId);
+          lockedRate = await readLockedRates(tx, doc.id);
+          originIdx = Math.max(0, groups.findIndex((g) => g.toId === doc.toId));
+        }
+        const out: { index: number; doc: Awaited<ReturnType<typeof createDocument>> }[] = [];
+        // Phiếu gốc xử lý trước: nó giải phóng lô nháp của mình trước khi các nhóm khác dựng lô.
+        if (opts.documentId) out.push({ index: originIdx, doc: await updateReceiveDraftTx(tx, opts.documentId, inputs[originIdx], userId, lockedRate) });
+        for (let i = 0; i < groups.length; i++) {
+          if (i === originIdx) continue;
+          out.push({ index: i, doc: await createDocument(groups[i].payload, userId, tx, { lockedRate }) });
+        }
+        return opts.documentId ? out.map((o) => o.doc) : out.sort((a, b) => a.index - b.index).map((o) => o.doc);
+      },
+      { maxWait: 10_000, timeout: 30_000 },
+    );
+    return { documents, split: documents.length > 1 };
+  } catch (e) {
+    // Hai request cùng khoá chạy song song: request thua trả các phiếu đã tạo.
+    if (keys.length && e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      const existing = await prisma.stockDocument.findMany({ where: { idempotencyKey: { in: keys } }, orderBy: { createdAt: "asc" } });
+      if (existing.length === keys.length) return { documents: existing, split: existing.length > 1 };
+    }
+    throw e;
+  }
 }
 
 /** Tồn khả dụng theo lô của một biến thể tại một vị trí (dùng cho FEFO). */

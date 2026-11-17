@@ -145,8 +145,8 @@ test("QT1b/QT2: tạo SP → nhập hàng từ bước 2 (điền sẵn, khối 
   await page.locator("#step-stock").getByRole("link", { name: "Nhập hàng" }).click();
   await expect(page).toHaveURL(/documents\/new\?type=RECEIVE&product=/);
   await expect(page.getByTestId("receive-product-scope")).toContainText(`Flow ${tag}`);
-  await expect(page.getByLabel("Chọn vị trí nhận")).toHaveValue(/.+/);
   await page.getByRole("button", { name: "Tiếp tục nhập thông số", exact: true }).click();
+  await expect(page.getByLabel(`Kho ${sku}`, { exact: true })).toHaveValue(/.+/); // gợi ý kho bán hàng nhập VN, đổi được ở đây
   await page.getByLabel(`Số lượng ${sku}`, { exact: true }).fill("5");
   await page.getByLabel(`Số lô ${sku}`, { exact: true }).fill(`F${tag}`);
   await page.getByLabel(`Hạn dùng ${sku}`, { exact: true }).fill("2029-12-31");

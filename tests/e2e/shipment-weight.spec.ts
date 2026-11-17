@@ -13,9 +13,9 @@ test("chuyến hàng đang tắt: không có mục menu, link cũ chuyển về 
   await expect(page).toHaveURL(/\/admin\/inventory$/);
 
   await page.goto("/admin/inventory/documents/new?type=RECEIVE");
-  await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "THAM — Kho Thắm" });
   await page.getByRole("checkbox", { name: "Chọn SV-SUN-50", exact: true }).check();
   await page.getByRole("button", { name: "Tiếp tục nhập thông số", exact: true }).click();
+  await page.getByLabel("Áp kho này cho tất cả").selectOption({ label: "THAM — Kho Thắm" });
   await expect(page.getByRole("combobox", { name: "Chuyến hàng", exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Cước tạm tính VN → MM (MMK/kg)")).toHaveCount(0);
 });

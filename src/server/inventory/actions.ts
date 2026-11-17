@@ -9,7 +9,7 @@ import { requirePermission } from "@/server/auth/session";
 import type { Permission } from "@/server/auth/roles";
 import { assertFeature } from "@/server/feature-guard";
 import { FEATURES } from "@/lib/features";
-import { cancelDocument, createDocument, postDocument, replaceDraftDocument, resolveBatchExpiry, updateReceiveDraft } from "./documents";
+import { cancelDocument, createDocument, postDocument, replaceDraftDocument, resolveBatchExpiry, saveReceiveDrafts } from "./documents";
 import { discardFromQuarantine, restockFromQuarantine } from "./quarantine";
 import { createWarehouse, setWarehouseActive, updateWarehouse } from "./warehouses";
 import {
@@ -112,8 +112,13 @@ function withoutShipmentFields<T>(payload: T): T {
 }
 
 /** payload = JSON của phiếu (từ form nhiều dòng). */
+/** Phiếu nhập tách nhiều kho → về danh sách nháp kèm thông báo; một phiếu → vào chi tiết phiếu. */
+function receiveRedirect(docs: { id: string }[], suffix = ""): string {
+  return docs.length > 1 ? `/admin/inventory/documents?status=DRAFT&split=${docs.length}` : `/admin/inventory/documents/${docs[0].id}${suffix}`;
+}
+
 export async function createDocumentAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  let id: string;
+  let target: string;
   try {
     const payload = withoutShipmentFields(JSON.parse(String(formData.get("payload") ?? "{}")));
     const type = payload?.type as DocType;
@@ -121,12 +126,20 @@ export async function createDocumentAction(_prev: ActionState, formData: FormDat
     const user = await requirePermission(DOC_PERMISSION[type]);
     // "Huỷ và tạo lại" phiếu nháp (#5): `replacesId` trong payload → tạo phiếu mới + huỷ phiếu cũ cùng một giao dịch.
     const replacesId = typeof payload?.replacesId === "string" ? payload.replacesId : undefined;
-    id = (replacesId ? await replaceDraftDocument(replacesId, payload, user.id) : await createDocument(payload, user.id)).id;
-    if (replacesId) revalidatePath("/admin/inventory/documents");
+    if (type === "RECEIVE" && !replacesId) {
+      // Mỗi dòng có kho riêng → tự tách mỗi kho một phiếu nháp (một transaction).
+      const { documents } = await saveReceiveDrafts(payload, user.id);
+      revalidatePath("/admin/inventory/documents");
+      target = receiveRedirect(documents);
+    } else {
+      const doc = replacesId ? await replaceDraftDocument(replacesId, payload, user.id) : await createDocument(payload, user.id);
+      if (replacesId) revalidatePath("/admin/inventory/documents");
+      target = `/admin/inventory/documents/${doc.id}`;
+    }
   } catch (e) {
     return { error: message(e) };
   }
-  redirect(`/admin/inventory/documents/${id}`);
+  redirect(target);
 }
 
 async function permissionForDoc(documentId: string): Promise<Permission> {
@@ -166,15 +179,17 @@ export async function cancelDocumentAction(_prev: ActionState, formData: FormDat
 /** Sửa phiếu NHẬP đang nháp (form nhập nhiều SP, `payload` như lúc tạo + `id`). */
 export async function updateDocumentAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const id = String(formData.get("id") ?? "");
+  let target: string;
   try {
     const user = await requirePermission("stock:receive");
-    await updateReceiveDraft(id, withoutShipmentFields(JSON.parse(String(formData.get("payload") ?? "{}"))), user.id);
+    const { documents } = await saveReceiveDrafts(withoutShipmentFields(JSON.parse(String(formData.get("payload") ?? "{}"))), user.id, { documentId: id });
+    target = receiveRedirect(documents, "?updated=1");
   } catch (e) {
     return { error: message(e) };
   }
   revalidatePath(`/admin/inventory/documents/${id}`);
   revalidatePath("/admin/inventory/documents");
-  redirect(`/admin/inventory/documents/${id}?updated=1`);
+  redirect(target);
 }
 
 // ── Chuyến hàng ──

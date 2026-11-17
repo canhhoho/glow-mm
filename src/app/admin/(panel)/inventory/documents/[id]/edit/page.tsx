@@ -23,12 +23,12 @@ export default async function EditDocumentPage({ params }: PageProps<"/admin/inv
   ]);
   const draft: ReceiveDraft = {
     id: doc.id,
-    toId: doc.toId ?? "",
     shipmentId: doc.shipmentId ?? "",
     reason: doc.reason ?? "",
     estimatedShip: doc.estimatedShipMmkPerKg == null ? "" : String(doc.estimatedShipMmkPerKg),
     lines: doc.lines.map((l) => ({
       variantId: l.variantId,
+      toId: doc.toId ?? "", // kho của dòng (phiếu cũ: kho của phiếu); sửa ở bước 2, lưu thì server tách theo kho
       qty: String(l.qty),
       lotNo: l.batch?.lotNo ?? "",
       expiryStatus: l.batch?.expiryStatus ?? "DATED",
