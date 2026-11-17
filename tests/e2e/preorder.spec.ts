@@ -37,8 +37,8 @@ test("khách đặt trước SP hết hàng → admin thấy ở danh sách ch�
   try {
     // Thẻ ở trang danh mục + trang SP: "Pre-order" thay "Out of stock".
     await page.goto(`/en/p/${SLUG}`);
-    const options = page.getByRole("group", { name: "Option" });
-    await expect(options.getByText("Out of stock · pre-order available")).toBeVisible();
+    // SP một loại: không có ô chọn, hiện tình trạng hàng trong khối giá (17/11/2026).
+    await expect(page.getByTestId("single-variant").getByText("Out of stock · pre-order available")).toBeVisible();
     await expect(page.getByTestId("preorder-note")).toBeVisible();
     await page.getByRole("button", { name: "Pre-order", exact: true }).click();
 

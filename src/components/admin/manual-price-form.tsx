@@ -127,7 +127,8 @@ export function ManualVndForm({
           // Lý do chưa tính được giá (chỉ khi đang sửa) — hiện "—" thay vì 0.
           const missing = !rate ? t("missingRate") : c.purchase == null ? t("missingPurchase") : t("incomplete");
           const num = (key: "profit" | "ship" | "ctv", name: string, extra?: { id?: string }) => {
-            const invalid = editable && whole(c.st[key]) == null;
+            // Chỉ báo lỗi khi đã gõ mà sai; ô trống thì lý do "Điền lãi, vận chuyển, CTV" hiện ở cột Giá bán.
+            const invalid = editable && c.st[key].trim() !== "" && whole(c.st[key]) == null;
             return (
               <>
                 <input

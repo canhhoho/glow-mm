@@ -230,7 +230,7 @@ test("QT1b/QT2: tạo SP → nhập hàng từ bước 2 (điền sẵn, khối 
   await page.screenshot({ path: "test-results/screens/storefront-single-variant-vi.png", fullPage: true });
   await page.goto(`/en/p/${slug}`);
   await page.getByRole("button", { name: "Add to cart" }).click();
-  await page.goto("/en/cart");
+  await expect(page).toHaveURL(/\/en\/cart$/); // thêm giỏ xong tự chuyển sang giỏ
   await expect(page.getByRole("main")).toContainText(`Flow ${tag}`);
   await expect(page.getByRole("main")).not.toContainText("Tiêu chuẩn");
 });
