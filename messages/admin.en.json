@@ -6,7 +6,7 @@
     "title": "Selling prices",
     "automatic": "Automatic",
     "manual": "List · Manual",
-    "help": "Where selling prices are set. Tick SKUs and choose Enter manually: supplier purchase price + profit, converted at the rate, plus shipping + CTV commission. The price applies to the whole SKU; a lot is only the basis. Approved products: price + commission wait for approval before customers see them. Changing the rate / purchase price never changes a price by itself.",
+    "help": "Select a warehouse and edit prices directly in the table. Approved products: prices and CTV commissions wait for approval.",
     "search": "Search product name or SKU",
     "filter": "Search",
     "product": "Product",
@@ -50,6 +50,9 @@
     "commissionPercent": "by %",
     "pendingCommission": "pending: {value}",
     "manualPage": {
+      "editPrice": "Edit price",
+      "colActions": "Actions",
+      "colPurchaseMmk": "Purchase price (MMK)",
       "title": "Set prices manually",
       "subtitle": "The price applies to the whole SKU (the lot is only the basis). Approved products: price + affiliate commission wait for approval and take effect together.",
       "back": "Selling prices",
@@ -84,7 +87,7 @@
       "incomplete": "Fill in profit, freight, affiliate",
       "save": "Save prices ({count} changed)",
       "saveMmk": "Save prices",
-      "mmkHelp": "MMK-purchased goods keep the old way: enter the selling price directly, CTV commission (blank = by %) and fixed profit (MMK/unit). A price change needs a reason.",
+      "mmkHelp": "Enter CTV commission and selling price in MMK; give a reason when changing a price.",
       "ctvPercent": "by affiliate %",
       "fixedProfit": "Fixed profit (MMK/unit)",
       "reason": "Reason for the price change"
