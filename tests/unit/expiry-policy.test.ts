@@ -15,9 +15,8 @@ describe("Expiry policies (FEATURES.expiry = false: full hạn dùng, không ch�
       { batchId: "none-first", available: 3, expiryStatus: "NONE", expiryDate: null, receivedAt: new Date("2026-01-01") },
       { batchId: "dated", available: 2, expiryStatus: "DATED", expiryDate: new Date("2028-01-01") },
     ], 6, { today: now, blockDays: 90 });
-    // Lô dated lên trước, rồi tới các lô theo FIFO (receivedAt)
-    expect(picks).toHaveLength(2);
-    expect(picks[0]).toEqual({ batchId: "dated", qty: 2 });
+    // Lô có ngày lên trước; lô chưa biết hạn (không có ngày nhận) xếp như lô không hạn và bán được khi cờ tắt.
+    expect(picks).toEqual([{ batchId: "dated", qty: 2 }, { batchId: "unknown", qty: 4 }]);
   });
   it("stock overview không bị chặn bởi hạn dùng, toàn bộ tồn vị trí bán đều khả dụng", () => {
     const base: BalanceRow = { variantId: "v", batchId: "b", lotNo: "B", expiryDate: null, landedCostMmk: 100, locationId: "l", locationCode: "MM", locationType: "MM_STOCK", sellable: true, stockType: "SELLABLE", qty: 5 };

@@ -23,13 +23,14 @@ export async function ManualPricingSheet({ view, canReview, canApprove }: { view
                 {t("noRate")} <LinkButton href="/admin/selling-prices?mode=rates">{t("addRate")}</LinkButton>
               </Notice>
             )}
-            <ManualVndForm key={JSON.stringify([g.rows, view.currentRateId, view.roundTo])} location={g.location} rows={g.rows} rates={view.rates} currentRateId={view.currentRateId} roundTo={view.roundTo} canReview={canReview} canApprove={canApprove} />
+            {/* key theo tập SKU (không theo giá): lưu xong giá đổi thì form KHÔNG dựng lại → giữ thông báo "Đã áp dụng…"; đổi trang/bộ lọc/tỷ giá thì dựng lại. */}
+            <ManualVndForm key={`${g.location.id}|${g.rows.map((r) => r.variantId).join(",")}|${view.currentRateId}|${view.roundTo}`} location={g.location} rows={g.rows} rates={view.rates} currentRateId={view.currentRateId} roundTo={view.roundTo} canReview={canReview} canApprove={canApprove} />
           </Section>
         ) : (
           <Section key={g.location.id} title={t("groupMmk", { name: g.location.name })} testId="manual-mmk">
             <p className="text-sm text-muted-foreground">{t("mmkHelp")}</p>
             {[...new Set(g.rows.map((r) => r.productId))].map((pid) => (
-              <MmkProductForm key={JSON.stringify(g.rows.filter((r) => r.productId === pid))} rows={g.rows.filter((r) => r.productId === pid)} />
+              <MmkProductForm key={`${pid}|${g.rows.filter((r) => r.productId === pid).map((r) => r.variantId).join(",")}`} rows={g.rows.filter((r) => r.productId === pid)} />
             ))}
           </Section>
         ),

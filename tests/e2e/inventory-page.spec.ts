@@ -30,7 +30,7 @@ async function ensureLots(page: Page, min: number) {
 test("thủ kho: tìm SP → xem lô → lịch sử lô khớp tồn", async ({ page }) => {
   await login(page, "kho@glow.local");
   await page.goto("/admin/inventory?q=SV-SUN-50");
-  await expect(page.getByTestId("tile-near")).toBeVisible();
+  await expect(page.getByTestId("tile-near")).toHaveCount(0); // Hạn dùng đang tắt (`FEATURES.expiry`, 17/11/2026): không còn ô cận hạn / ngừng bán
   const card = page.getByTestId("stock-card").filter({ hasText: "SV-SUN-50" });
   await expect(card).toHaveCount(1);
 
@@ -54,13 +54,12 @@ test("ô số tổng + bộ lọc giữ trên URL; theo lô có phân trang", as
   await login(page, "kho@glow.local");
   await ensureLots(page, 30);
   await page.goto("/admin/inventory");
-  await page.getByTestId("tile-blocked").click();
-  await expect(page).toHaveURL(/expiry=blocked/);
-  await expect(page.getByRole("combobox", { name: "Lọc theo hạn dùng" })).toHaveValue("blocked");
+  // Hạn dùng đang tắt (`FEATURES.expiry`, 17/11/2026): không còn ô ngừng bán và bộ lọc hạn dùng.
+  await expect(page.getByTestId("tile-blocked")).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: "Lọc theo hạn dùng" })).toHaveCount(0);
 
   await page.getByRole("combobox", { name: "Lọc theo loại tồn" }).selectOption("SELLABLE");
   await page.getByRole("button", { name: "Lọc", exact: true }).click();
-  await expect(page).toHaveURL(/expiry=blocked/);
   await expect(page).toHaveURL(/stockType=SELLABLE/);
 
   await page.getByRole("link", { name: "Xoá lọc" }).click();
@@ -90,6 +89,6 @@ test("nút Tạo phiếu chỉ hiện loại phiếu có quyền", async ({ page
 
   await login(page, "donhang@glow.local");
   await page.goto("/admin/inventory");
-  await expect(page.getByTestId("tile-near")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.getByText("Tạo phiếu")).toHaveCount(0);
 });

@@ -6,7 +6,7 @@ test("Giá bán (desktop): bảng theo kho và quy đổi ngầm ngay trên danh
   await login(page, "admin@glow.local");
   await page.goto("/admin/selling-prices?q=SV-SUN-50");
   const vnd = page.getByTestId("manual-vnd");
-  for (const name of ["Giá mua (VNĐ)", "Lãi (VNĐ)", "Giá mua (MMK)", "Vận chuyển (MMK)", "CTV (MMK)", "Giá bán (MMK)", "Thao tác"]) {
+  for (const name of ["Giá mua (VNĐ)", "Lãi (VNĐ)", "Giá mua + lãi (MMK)", "Vận chuyển (MMK)", "CTV (MMK)", "Giá bán (MMK)", "Thao tác"]) {
     await expect(vnd.getByRole("columnheader", { name, exact: true })).toBeVisible();
   }
   await expect(page.getByTestId("price-pick")).toHaveCount(0);

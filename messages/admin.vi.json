@@ -53,6 +53,7 @@
       "editPrice": "Sửa giá",
       "colActions": "Thao tác",
       "colPurchaseMmk": "Giá mua (MMK)",
+      "colSellMmk": "Giá mua + lãi (MMK)",
       "title": "Đặt giá thủ công",
       "subtitle": "Giá áp dụng chung cho SKU (lô chỉ là cơ sở tính). Sản phẩm đã duyệt: giá + hoa hồng CTV vào chờ duyệt và có hiệu lực cùng lúc khi duyệt.",
       "back": "Giá bán",

@@ -3,7 +3,6 @@ import { z } from "zod";
 import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
 import { FEATURES } from "@/lib/features";
-import { assertFeature } from "@/server/feature-guard";
 import { Prisma, type DocType, type StockType } from "@/generated/prisma/client";
 import { newCode } from "@/server/codes";
 import { getNumberSetting } from "@/server/settings";
@@ -814,7 +813,6 @@ export async function salesBlockDays() {
 
 /** Resolve an unknown date after checking packaging; posted stock ledger stays intact. */
 export async function resolveBatchExpiry(raw: unknown, userId: string) {
-  assertFeature("expiry");
   const input = z.object({ batchId: rawId, expiryDate: z.iso.date() }).parse(raw);
   return prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT "id" FROM "Batch" WHERE "id" = ${input.batchId} FOR UPDATE`;

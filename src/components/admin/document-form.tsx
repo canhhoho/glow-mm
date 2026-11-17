@@ -274,7 +274,8 @@ export function DocumentForm({ type, data, replace }: { type: DocType; data: For
                     <option value="">{type === "ADJUST" ? "—" : t("autoFefo")}</option>
                     {batchOptions.map((b) => (
                       <option key={b.id} value={b.id}>
-                        {b.lotNo} · {b.expiryDate} · {qtyAt(b.id, l.stockType)}
+                        {/* Lô không hạn: bỏ phần hạn trống, nhãn = "số lô · tồn". */}
+                        {[b.lotNo, ...(b.expiryDate ? [b.expiryDate] : []), qtyAt(b.id, l.stockType)].join(" · ")}
                       </option>
                     ))}
                   </select>

@@ -114,7 +114,7 @@ export function ManualVndForm({
         dense
         tableClassName="[&_th]:whitespace-normal [&_th]:align-bottom"
         numeric={[1, 3, 6]}
-        head={[t("colSku"), t("colPurchase"), t("colProfit"), t("colPurchaseMmk"), t("colShip"), t("colCtv"), t("colFinal"), t("colActions")]}
+        head={[t("colSku"), t("colPurchase"), t("colProfit"), t("colSellMmk"), t("colShip"), t("colCtv"), t("colFinal"), t("colActions")]}
       >
         {computed.map((c) => (
           <tr key={c.r.variantId} data-testid="manual-row" className={cn(c.changed && editing.includes(c.r.variantId) && "bg-primary/5")}>
@@ -150,7 +150,8 @@ export function ManualVndForm({
             <Td label={t("colProfit")} className="align-top">
               <input id={`profit-${c.r.variantId}`} aria-label={`${t("colProfit")} ${c.r.sku}`} readOnly={!editing.includes(c.r.variantId)} required={editing.includes(c.r.variantId)} type="number" min={0} step={1} inputMode="numeric" value={c.st.profit} onChange={(e) => set(c.r.variantId, { profit: e.target.value })} className={cn(fieldClass, "w-24")} />
             </Td>
-            <Td label={t("colPurchaseMmk")} className="align-top tabular-nums md:text-right">
+            {/* (giá mua + lãi VND) ÷ tỷ giá, chưa cộng vận chuyển / CTV — không phải giá mua MMK. */}
+            <Td label={t("colSellMmk")} className="align-top tabular-nums md:text-right">
               {c.sellMmk != null ? fmtInt(c.sellMmk) : "—"}
             </Td>
             <Td label={t("colShip")} className="align-top">

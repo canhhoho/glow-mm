@@ -54,10 +54,10 @@ Tài khoản seed: `admin@` / `kho@` / `donhang@glow.local` (admin), `ctv@glow.l
 
 **Kho (ưu tiên cao nhất):**
 - Tồn kho chỉ đổi qua `StockDocument` → `StockLedger` (chỉ ghi thêm) + `StockBalance` trong **cùng transaction**, khoá `SELECT … FOR UPDATE`; DB chặn tồn âm và sửa/xoá ledger. Không bao giờ sửa số lượng trực tiếp.
-- Xuất theo FEFO; không bán lô dưới ngưỡng hạn dùng (mặc định 90 ngày). Hạn dùng theo **lô** (`DATED`/`NONE`/`UNKNOWN`). Mọi truy vấn khả dụng dùng cùng điều kiện hạn.
+- Xuất theo FEFO. **Hạn dùng — cờ `FEATURES.expiry = false` (17/11/2026): TẮT hoàn toàn.** FEFO/khả dụng không chặn theo hạn (kể cả lô đã hết hạn), form nhập/phiếu kho không có ô hạn (lô mới = không hạn; có ngày nếu dán/Excel có ngày), ẩn tab/ô cảnh báo hạn và cài đặt hạn, Excel bỏ qua kiểm hạn. Khi bật lại: không bán lô dưới ngưỡng (mặc định 90 ngày), hạn theo **lô** (`DATED`/`NONE`/`UNKNOWN`). Mọi truy vấn khả dụng dùng chung `inventory/fefo.ts` (`isBatchUsable`/`sellableBatchWhere`/`blockedBatchWhere`). Cờ này **đổi hành vi nghiệp vụ** nên hàm thuần `fefo.ts`/`alerts/compute.ts` có kiểm cờ (ngoại lệ có chủ ý); chặn thao tác "Xác nhận hạn" nằm ở action (`resolveBatchExpiryAction`), không trong hàm domain (seed/script import `documents.ts` ngoài Next). Test quy tắc khi bật: `vi.mock("@/lib/features", …)` với `tests/support/expiry-on.ts`; hành vi tắt: `tests/integration/expiry-off.test.ts`.
 - **Giá vốn lô = giá mua × tỷ giá lúc ghi sổ**; không còn phí đưa về kho. Ghi sổ phiếu nhập VND khi chưa có tỷ giá → chặn.
 - Mỗi SP thuộc đúng **một kho bán**, gán khi ghi sổ phiếu nhập/chuyển đầu tiên. Phiếu nhập nháp: mỗi SP một kho, lưu thì tự tách mỗi kho một phiếu (`saveReceiveDrafts`).
-- Cờ tính năng `lib/features.ts`: `autoPricing=false`, `shipments=false` — đang **tắt** (ẩn UI + chặn action, giữ code/bảng); giá bán chỉ đặt **thủ công** ở trang Giá bán. Bật lại bằng đổi cờ.
+- Cờ tính năng `lib/features.ts`: `autoPricing=false`, `shipments=false`, `expiry=false` — đang **tắt** (ẩn UI + chặn action, giữ code/bảng); giá bán chỉ đặt **thủ công** ở trang Giá bán. Bật lại bằng đổi cờ.
 
 **Code:**
 - Logic nghiệp vụ ở `src/server/<domain>/`, không import Next/Vercel (test được bằng Vitest). Luồng ghi: form → `actions.ts` ("use server") → `requirePermission` → hàm domain (tự parse Zod). Mọi action/route handler phải validate Zod + kiểm quyền phía server (middleware/proxy không phải lớp bảo mật).

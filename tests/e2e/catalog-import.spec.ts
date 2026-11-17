@@ -147,9 +147,11 @@ test("mẫu một sheet: tạo SP hai biến thể kèm tồn + nội dung → x
   await expect(main.getByRole("heading", { level: 1 })).toHaveText(name);
   await expect(main).toContainText("Sen Việt");
   await expect(main).toContainText("27,000");
-  for (const text of ["50 ml", "100 ml", "Imported through the Excel browser flow.", "Apply every morning.", "Aqua, Zinc Oxide", "Keep below 30°C", "Use within 12 months after opening", "2028-03-31"]) {
+  for (const text of ["50 ml", "100 ml", "Imported through the Excel browser flow.", "Apply every morning.", "Aqua, Zinc Oxide", "Keep below 30°C", "Use within 12 months after opening"]) {
     await expect(main).toContainText(text);
   }
+  // Hạn dùng đang tắt (`FEATURES.expiry`, 17/11/2026): trang SP không hiện hạn của lô khách sẽ nhận.
+  await expect(main).not.toContainText("2028-03-31");
   await page.screenshot({ path: "test-results/screens/catalog-import-storefront-en.png", fullPage: true });
   // Một tên cho mọi ngôn ngữ: trang tiếng Myanmar dùng cùng tên; mô tả/cách dùng Myanmar vẫn riêng.
   await page.goto(`/p/${slug}`);

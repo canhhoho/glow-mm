@@ -53,6 +53,7 @@
       "editPrice": "Edit price",
       "colActions": "Actions",
       "colPurchaseMmk": "Purchase price (MMK)",
+      "colSellMmk": "Purchase + profit (MMK)",
       "title": "Set prices manually",
       "subtitle": "The price applies to the whole SKU (the lot is only the basis). Approved products: price + affiliate commission wait for approval and take effect together.",
       "back": "Selling prices",

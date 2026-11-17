@@ -8,7 +8,6 @@ const SKU = "SV-SUN-50";
 async function fillLine(page: Page, qty: string, lot: string, cost: string) {
   await page.getByLabel(`Số lượng ${SKU}`, { exact: true }).filter({ visible: true }).fill(qty);
   await page.getByLabel(`Số lô ${SKU}`, { exact: true }).filter({ visible: true }).fill(lot);
-  await page.getByLabel(`Hạn dùng ${SKU}`, { exact: true }).fill("2029-12-31");
   await page.getByLabel(`Giá mua/đv (VND) ${SKU}`, { exact: true }).fill(cost);
 }
 

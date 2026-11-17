@@ -37,6 +37,8 @@ export async function estimateBatchCostAction(_prev: ActionState, formData: Form
 
 export async function resolveBatchExpiryAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   try {
+    // Cờ chặn ở action (không trong hàm domain: documents.ts còn được seed/script chạy ngoài Next import).
+    assertFeature("expiry");
     const user = await requirePermission("stock:receive");
     await resolveBatchExpiry(Object.fromEntries(formData), user.id);
     revalidatePath("/admin/inventory");
