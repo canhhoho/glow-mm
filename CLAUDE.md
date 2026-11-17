@@ -21,7 +21,7 @@ Web bán mỹ phẩm B2C **T&C Cosmetics** (tên cũ Glow VN) nhập từ Việt
 - **Báo cáo test** luôn đủ 4 dòng: Đạt / Lỗi / Bỏ qua / Không chạy (kèm lý do); phần chỉ suy luận ghi rõ "chưa chạy".
 
 ## Cần được phép (không tự làm)
-- Push/merge `main`, gắn tag release, deploy, SSH tới server (Claude **không** deploy). Push `dev`/mở PR chỉ khi người dùng yêu cầu.
+- Push/merge `main` (**= deploy production tự động**, xem bên dưới), gắn tag release, deploy, SSH tới server (Claude **không** deploy). Push `dev`/mở PR chỉ khi người dùng yêu cầu.
 - Xoá/reset dữ liệu vận hành: `npm run db:reset`, `prisma migrate reset` (Prisma cũng chặn khi AI chạy), migration phá huỷ, dọn `backups/`, `storage/`.
 - Sửa `docker-compose.prod.yml`, `Dockerfile`, `ops/*`, `.github/workflows/*`, cấu hình Nginx.
 - In/commit secret hoặc nội dung `.env*`. Test chỉ dùng giá trị `.env.test`.
@@ -72,7 +72,7 @@ Tài khoản seed: `admin@` / `kho@` / `donhang@glow.local` (admin), `ctv@glow.l
 - Component/layout dùng chung (`src/components/*`, layout, `globals.css`, `messages/*`, `proxy.ts`, `lib/csp.ts`): grep nơi import → chạy spec mọi trang bị ảnh hưởng (mobile + desktop nếu có).
 - **Đổi UI → xem trực quan** (preview/screenshot hoặc spec có kiểm hiển thị), không chỉ dựa vào type/lint.
 - **Full E2E** (`npm test`; hoặc job `e2e` CI chạy tay/PR vào `main`/hằng tuần) bắt buộc trước khi merge `main`/phát hành và cho thay đổi rủi ro cao: kho/ledger/FEFO, state-machine đơn, checkout, auth/RBAC/rate limit, migration Prisma, CSP/proxy, env. **Full E2E xanh ở local (DB trắng, mobile + desktop, báo cáo 4 dòng) được coi là đạt — không đợi thêm job `e2e` của CI.**
-- Không có staging; người dùng tự deploy từ tag `release-YYYYMMDD-HHMM` rồi chạy smoke. Tag chỉ gắn lên commit `main` đã có full E2E xanh (local hoặc CI) và job `check` của CI xanh. Rollback = deploy lại tag trước.
+- Không có staging. **Deploy tự động (17/11/2026):** push `main` → CI `check` + `e2e` xanh → job `release` gắn tag `release-YYYYMMDD-HHMM` (UTC) → job `deploy` trên runner self-hosted gọi wrapper root `ops/tandc-deploy` → `ops/deploy.sh --yes` (backup khi có migration, health, smoke). Không tự rollback; rollback = Actions → CI → Run workflow `rollback_tag` (runbook PHẦN 4). Sửa `ops/tandc-deploy`/`ops/sudoers-tandc-deploy` phải cài lại tay trên server.
 
 ## Git
 - Làm việc trên `dev`; `main` chỉ chứa code đã test; merge `main` khi `check` xanh và đã có full E2E xanh (mục trên). Commit sau mỗi bước hoàn thành, kèm dòng `Co-Authored-By` theo hướng dẫn của hệ thống.

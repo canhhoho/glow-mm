@@ -37,6 +37,9 @@ services:
     build:
       context: .
       target: migrator
+      args:
+        # Mirror Alpine tuỳ chọn cho stage deps (dùng chung với app). Trống = CDN mặc định.
+        ALPINE_MIRROR: ${ALPINE_MIRROR:-}
     environment:
       DATABASE_URL: postgresql://glow:${POSTGRES_PASSWORD:?Cần đặt POSTGRES_PASSWORD}@db:5432/glow
     depends_on:
@@ -56,6 +59,7 @@ services:
         NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY:-}
         # Git SHA của bản build (Coolify cung cấp SOURCE_COMMIT [CẦN XÁC MINH]) → client cũ tự tải lại khi có bản mới.
         NEXT_DEPLOYMENT_ID: ${SOURCE_COMMIT:-}
+        ALPINE_MIRROR: ${ALPINE_MIRROR:-}
     restart: unless-stopped
     env_file:
       - path: .env.prod

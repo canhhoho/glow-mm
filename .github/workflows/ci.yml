@@ -1,23 +1,36 @@
 name: CI
 
-# check: lint + typecheck + unit + integration — mọi push dev và mọi PR.
-# e2e (full Playwright): chỉ PR vào main, chạy tay (Actions → CI → Run workflow) và lịch hằng tuần.
+# check: lint + typecheck + unit + integration — mọi push dev/main và mọi PR.
+# e2e (full Playwright): push main, PR vào main, chạy tay và lịch hằng tuần.
+# Push main: check + e2e xanh → release (gắn tag release-YYYYMMDD-HHMM, giờ UTC) → deploy lên server Myanmar
+#   bằng runner self-hosted; runner chỉ gọi wrapper root /usr/local/sbin/tandc-deploy (→ ops/deploy.sh).
+# Rollback tay: Actions → CI → Run workflow (nhánh main) → nhập rollback_tag → chỉ chạy job rollback.
 on:
   pull_request:
     branches: [main, dev]
   push:
-    branches: [dev]
+    branches: [dev, main]
   workflow_dispatch:
+    inputs:
+      rollback_tag:
+        description: "Deploy lại tag release-YYYYMMDD-HHMM lên production (để trống = chỉ chạy CI)"
+        required: false
+        default: ""
   schedule:
     # Chủ nhật 20:00 UTC (= thứ Hai 02:30 Yangon). Chạy trên nhánh mặc định của repo.
     - cron: "0 20 * * 0"
 
+# main: không huỷ run đang chạy (có thể đang deploy) — run mới xếp hàng chờ.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
 
 jobs:
   check:
+    if: ${{ !inputs.rollback_tag }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
@@ -51,6 +64,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'schedule' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'pull_request' && github.base_ref == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -83,3 +97,66 @@ jobs:
           name: playwright-report
           path: playwright-report
           retention-days: 7
+
+  # Gắn tag release lên đúng commit vừa qua check + e2e (commit đã có tag release thì dùng lại).
+  release:
+    needs: [check, e2e]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: tag
+        run: |
+          set -euo pipefail
+          re='^release-[0-9]{8}-[0-9]{4}$'
+          tag="$(git tag --points-at "$GITHUB_SHA" -l 'release-*' | grep -E "$re" | sort | tail -n 1 || true)"
+          if [ -z "$tag" ]; then
+            tag="release-$(date -u +%Y%m%d-%H%M)"
+            if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+              echo "::error::Tag $tag đã có ở commit khác — chạy lại job sau 1 phút."; exit 1
+            fi
+            git tag "$tag" "$GITHUB_SHA"
+            git push origin "refs/tags/$tag"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Release: $tag → $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+
+  # Deploy production. KHÔNG thêm checkout hay chạy code repo trong job này: runner chỉ gọi wrapper;
+  # wrapper kiểm tag thuộc origin/main + trỏ đúng SHA rồi chạy ops/deploy.sh (backup khi có migration, health, smoke).
+  deploy:
+    needs: release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, tandc-production]
+    timeout-minutes: 45
+    concurrency:
+      group: deploy-tandc-production
+      cancel-in-progress: false
+    steps:
+      - name: Deploy ${{ needs.release.outputs.tag }}
+        env:
+          TAG: ${{ needs.release.outputs.tag }}
+        run: sudo -n /usr/local/sbin/tandc-deploy "$TAG" "$GITHUB_SHA"
+
+  # Rollback / deploy lại một tag đã có (chạy tay từ nhánh main). Vẫn bị chặn nếu DB mới hơn bản đích.
+  rollback:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' &&
+      inputs.rollback_tag != ''
+    runs-on: [self-hosted, tandc-production]
+    timeout-minutes: 45
+    concurrency:
+      group: deploy-tandc-production
+      cancel-in-progress: false
+    steps:
+      - name: Rollback ${{ inputs.rollback_tag }}
+        env:
+          TAG: ${{ inputs.rollback_tag }}
+        run: sudo -n /usr/local/sbin/tandc-deploy "$TAG"

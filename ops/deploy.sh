@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deploy HOẶC rollback tandcstore.com về một tag release-* (người dùng chạy tay trên server, quyền root).
+# Deploy HOẶC rollback tandcstore.com về một tag release-* (quyền root: CI gọi qua ops/tandc-deploy, hoặc chạy tay trên server).
 #   bash /var/www/tandc/ops/deploy.sh                    # bản release mới nhất
 #   bash /var/www/tandc/ops/deploy.sh release-20261108-2230   # một bản cụ thể (rollback = tag trước)
 #   bash /var/www/tandc/ops/deploy.sh --list             # các bản có sẵn + lịch sử deploy
@@ -51,8 +51,9 @@ cd "$APP_DIR" || die "Không có thư mục $APP_DIR"
 git rev-parse --git-dir >/dev/null 2>&1 || die "$APP_DIR không phải git repo"
 
 # Không deploy khi có deploy khác đang chạy (flock có trên Linux; thiếu thì bỏ qua).
+# Khoá nằm trong .git (chỉ chủ repo ghi được), không ở /tmp: user khác tạo trước file trong /tmp sẽ chặn được deploy.
 if command -v flock >/dev/null 2>&1; then
-  exec 9>"/tmp/glow-deploy-$COMPOSE_PROJECT.lock"
+  exec 9>"$(git rev-parse --absolute-git-dir)/glow-deploy-$COMPOSE_PROJECT.lock"
   flock -n 9 || die "Đang có một lần deploy khác chạy"
 fi
 

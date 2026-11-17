@@ -6,7 +6,12 @@ ARG NODE_VERSION=24.12.0
 # ── deps: cài toàn bộ dependency (cần cho build + prisma) ──
 FROM node:${NODE_VERSION}-alpine AS deps
 WORKDIR /app
-RUN apk add --no-cache libc6-compat
+# Mirror Alpine tuỳ chọn (server Myanmar: ALPINE_MIRROR=https://mirror.kku.ac.th/alpine trong .env.prod). Trống = CDN mặc định.
+ARG ALPINE_MIRROR=
+RUN if [ -n "$ALPINE_MIRROR" ]; then \
+      sed -i "s|https://dl-cdn.alpinelinux.org/alpine|${ALPINE_MIRROR%/}|g" /etc/apk/repositories; \
+    fi \
+ && apk add --no-cache libc6-compat
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
 COPY prisma.config.ts ./

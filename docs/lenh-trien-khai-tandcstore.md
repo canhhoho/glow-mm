@@ -519,6 +519,41 @@ docker compose -p tandc ps -a; docker logs tandc-app-1 --since 24h 2>&1 | grep -
 
 # PHẦN 4 — Cập nhật web khi Claude báo có bản mới
 
+> **Từ 17/11/2026: deploy tự động.** Push/merge `main` → CI (`check` + `e2e`) xanh → job `release` gắn tag `release-YYYYMMDD-HHMM` (giờ UTC) → job `deploy` trên runner `tandc-myanmar` gọi `sudo -n /usr/local/sbin/tandc-deploy <tag> <sha>` → `ops/deploy.sh --yes` (sao lưu nếu có migration, build, migrate, chờ healthy, smoke). CI lỗi → không có tag, không deploy. Theo dõi ở GitHub → Actions → CI.
+> - **Deploy lỗi:** web thường vẫn chạy bản cũ (build lỗi) hoặc log job in lệnh quay lại. Gửi Claude log job `deploy`.
+> - **Quay lại bản trước (không cần SSH):** Actions → CI → *Run workflow* → nhánh `main` → `rollback_tag` = tag trước (xem danh sách tag trên GitHub). Nếu job báo *"Quay về bản cũ hơn database"* → dừng, gửi Claude (không có cờ bỏ qua qua CI).
+> - **An toàn:** runner (user `github-runner`) không có docker/sudo, chỉ được gọi đúng wrapper `ops/tandc-deploy` (cài bằng copy, root 755) theo `ops/sudoers-tandc-deploy`; wrapper chỉ nhận tag `release-*` thuộc lịch sử `origin/main` và trỏ đúng SHA CI đã test, chạy deploy.sh với môi trường sạch. Job deploy không checkout code.
+> - **Cài một lần trên server** (thứ tự: backup → mirror → wrapper → thử quyền): xem mục 4.0 bên dưới. Khi đổi `ops/tandc-deploy` hoặc `ops/sudoers-tandc-deploy` phải cài lại bằng tay (cố ý).
+> - Các bước làm tay bên dưới vẫn dùng được làm dự phòng.
+
+### 4.0 Cài deploy tự động (một lần, root trên server)
+🖥️ Lấy file từ nhánh đã push (không đổi thư mục mã nguồn), cài backup local + lịch chạy:
+```bash
+cd /var/www/tandc && git fetch --quiet origin && R=origin/main   # lần đầu: R=origin/dev
+mkdir -p /opt/glow && chmod 700 /opt/glow
+git show $R:ops/backup.sh > /opt/glow/backup.sh && git show $R:ops/restore.sh > /opt/glow/restore.sh && chmod 700 /opt/glow/*.sh
+[ -f /opt/glow/cron.env ] || { CS=$(grep ^CRON_SECRET= .env.prod | cut -d= -f2-); printf 'CRON_SECRET=%s\nDB_CONTAINER=tandc-db-1\nUPLOADS_VOLUME=tandc_uploads\n' "$CS" > /opt/glow/cron.env; }
+chmod 600 /opt/glow/cron.env && touch /var/log/glow-backup.log /var/log/glow-cron.log
+bash -c 'set -a; . /opt/glow/cron.env; /opt/glow/backup.sh' && ls -l /var/backups/glow
+```
+✅ `Backup OK (local) …`. Lịch chạy: thêm dòng backup (và các job cron khác nếu chưa có) từ `ops/cron.example` vào `crontab -e` của root. Backup local **không** chống hỏng ổ — làm off-site (mục 13) sau.
+
+🖥️ Mirror Alpine vào `.env.prod`, cất bản sửa tay Dockerfile rồi trả Dockerfile về bản git (container đang chạy không bị ảnh hưởng):
+```bash
+cd /var/www/tandc && grep -q '^ALPINE_MIRROR=' .env.prod || echo 'ALPINE_MIRROR=https://mirror.kku.ac.th/alpine' >> .env.prod
+git diff -- Dockerfile > /root/dockerfile-mirror.patch && git checkout -- Dockerfile && git status --short --untracked-files=no
+```
+✅ Lệnh cuối không in gì.
+
+🖥️ Cài wrapper + sudoers, kiểm cú pháp và quyền:
+```bash
+cd /var/www/tandc && T=$(mktemp -d) && git show $R:ops/tandc-deploy > $T/w && install -o root -g root -m 755 $T/w /usr/local/sbin/tandc-deploy
+git show $R:ops/sudoers-tandc-deploy > $T/s && visudo -cf $T/s && install -o root -g root -m 440 $T/s /etc/sudoers.d/tandc-deploy; rm -rf "$T"
+visudo -c && sudo -l -U github-runner
+sudo -u github-runner sudo -n /usr/local/sbin/tandc-deploy 'bad; id'; echo "exit=$?"   # cần: tag không hợp lệ, exit=2
+sudo -u github-runner sudo -n /bin/true; echo "exit=$?"                                 # cần: bị từ chối, exit≠0
+```
+
 **Riêng đợt tối ưu quy trình 05/11/2026:** chỉ cập nhật khi bản phát hành đã được duyệt và CI xanh. Có các migration mới: `20261105090000_estimated_inventory_cost`, `20261105120000_d1_price_provenance`, `20261105150000_d3_order_pick`, `20261105180000_d4_cod_shipping_payer`, `20261105190000_d5_analytics_events`, `20261105200000_d8_weight_allocation`. Sao lưu và xác nhận khôi phục được trước khi cập nhật. Container migrate chạy `prisma migrate deploy`, không reset database. Giữ `orders.requirePickList` theo quyết định vận hành; chính sách chi CTV hiện tại giữ nguyên.
 
 Sau cập nhật: đăng nhập admin kiểm trang COD, Báo cáo → Hành vi mua hàng và Sức khỏe dữ liệu; tải mốc JSON D0, lưu kèm commit/thời điểm. Kiểm cron `cleanup`, log `analytics.write_failed`, đặt thử một đơn rồi hủy qua nghiệp vụ. Cấu hình analytics theo `.env.example`, không đưa khóa bí mật vào log. Theo dõi mốc D0 và phễu sau 2–4 tuần; guest COD chỉ xem xét sau ít nhất hai tuần dữ liệu D5 thật. Không quay lui bằng cách drop bảng/cột hoặc phục hồi đè lên giao dịch mới.

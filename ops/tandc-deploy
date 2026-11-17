@@ -1,0 +1,43 @@
+#!/bin/bash
+# Wrapper root DUY NHẤT mà runner GitHub (user github-runner) được phép gọi qua sudo:
+#   sudo -n /usr/local/sbin/tandc-deploy release-YYYYMMDD-HHMM [<sha 40 ký tự>]
+# Cài bằng cách COPY (không symlink) — repo đổi không tự nâng quyền:
+#   install -o root -g root -m 755 /var/www/tandc/ops/tandc-deploy /usr/local/sbin/tandc-deploy
+# Sudoers: ops/sudoers-tandc-deploy. Không nhận biến môi trường từ người gọi (chạy deploy.sh bằng env -i).
+# Kiểm: đúng 1 tag hợp lệ (+ SHA tuỳ chọn), quyền file an toàn, tag có trên origin, commit của tag
+# nằm trong origin/main, trỏ đúng SHA CI đã test. Không truyền --allow-older-schema (rollback qua schema → người làm tay).
+set -euo pipefail
+umask 077
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export LC_ALL=C
+APP_DIR=/var/www/tandc
+TAG_RE='^release-[0-9]{8}-[0-9]{4}$'
+
+die() { printf '⛔ tandc-deploy: %s\n' "$*" >&2; exit 2; }
+
+[ "$(id -u)" = 0 ] || die "phải chạy qua sudo"
+[ $# -ge 1 ] && [ $# -le 2 ] || die "cách dùng: tandc-deploy <release-YYYYMMDD-HHMM> [<sha40>]"
+tag="$1"; sha="${2:-}"
+[[ "$tag" =~ $TAG_RE ]] || die "tag không hợp lệ"
+[ -z "$sha" ] || [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || die "SHA không hợp lệ"
+
+# Quyền file: mọi thứ root chạy phải thuộc root và không ai khác ghi được.
+safe() { # $1 = đường dẫn
+  local o m
+  o="$(stat -c '%u' "$1")" m="$(stat -c '%a' "$1")"
+  [ "$o" = 0 ] || die "$1 không thuộc root"
+  (( (8#$m & 8#022) == 0 )) || die "$1 cho group/other ghi ($m)"
+}
+safe "$0"; safe "$APP_DIR"; safe "$APP_DIR/.git"; safe "$APP_DIR/ops"
+safe "$APP_DIR/ops/deploy.sh"; safe "$APP_DIR/ops/smoke.sh"
+
+cd "$APP_DIR"
+git fetch --quiet origin "+refs/heads/main:refs/remotes/origin/main" || die "git fetch main lỗi"
+git fetch --quiet origin "refs/tags/$tag:refs/tags/$tag" || die "không lấy được tag $tag từ origin (tag cục bộ khác origin?)"
+commit="$(git rev-parse -q --verify "refs/tags/$tag^{commit}")" || die "không có tag $tag"
+git merge-base --is-ancestor "$commit" refs/remotes/origin/main || die "$tag không thuộc lịch sử origin/main"
+[ -z "$sha" ] || [ "$commit" = "$sha" ] || die "$tag trỏ $commit, khác SHA CI đã test $sha"
+
+echo "tandc-deploy: $tag ($commit) — gọi ops/deploy.sh"
+exec env -i PATH="$PATH" HOME=/root LANG=C.UTF-8 LC_ALL=C.UTF-8 TERM=dumb \
+  /bin/bash "$APP_DIR/ops/deploy.sh" "$tag" --yes

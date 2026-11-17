@@ -1,0 +1,6 @@
+# /etc/sudoers.d/tandc-deploy — runner GitHub chỉ được chạy ĐÚNG wrapper này bằng root, không gì khác.
+# Cài (trên server, root): install -o root -g root -m 440 /var/www/tandc/ops/sudoers-tandc-deploy /etc/sudoers.d/tandc-deploy
+#                          visudo -cf /etc/sudoers.d/tandc-deploy
+# env_reset + secure_path lấy từ /etc/sudoers mặc định của Ubuntu; wrapper tự kiểm tham số và quyền file.
+Defaults!/usr/local/sbin/tandc-deploy env_reset, !setenv
+github-runner ALL=(root) NOPASSWD: /usr/local/sbin/tandc-deploy

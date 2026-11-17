@@ -14,5 +14,5 @@
 30 23 * * * set -a && . /opt/glow/cron.env && curl -fsS -m 120 -o /dev/null -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/compute-alerts 2>> /var/log/glow-cron.log
 # Dọn bộ đếm rate limit cũ, phiên/mã xác minh hết hạn — 21:00 UTC = 03:30 Yangon
 0 21 * * * set -a && . /opt/glow/cron.env && curl -fsS -m 120 -o /dev/null -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/cleanup 2>> /var/log/glow-cron.log
-# Backup DB + upload ra off-site — 20:00 UTC = 02:30 Yangon
+# Backup DB + upload (local; off-site khi cron.env có AGE_RECIPIENT + RCLONE_REMOTE) — 20:00 UTC = 02:30 Yangon
 0 20 * * * set -a && . /opt/glow/cron.env && /opt/glow/backup.sh >> /var/log/glow-backup.log 2>&1
