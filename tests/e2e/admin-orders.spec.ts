@@ -19,8 +19,8 @@ test("đơn thủ công (Facebook, COD): tạo → xác nhận → bàn giao (FE
   await page.getByLabel("Tên người nhận").fill("Ma Hla Hla");
   await pickAddressAdmin(page);
   await page.getByLabel("Địa chỉ").fill("No. 12, Bo Aung Kyaw St");
-  const option = page.getByLabel("Biến thể").locator("option", { hasText: VARIANT });
-  await page.getByLabel("Biến thể").selectOption((await option.getAttribute("value"))!);
+  const option = page.getByLabel("SKU / Phân loại").locator("option", { hasText: VARIANT });
+  await page.getByLabel("SKU / Phân loại").selectOption((await option.getAttribute("value"))!);
   await page.getByLabel("SL", { exact: true }).fill("1");
   await page.getByRole("button", { name: "Tạo đơn" }).click();
 
@@ -141,8 +141,8 @@ test("huỷ đơn thủ công nhả hàng; lỗi hiển thị khi đặt quá t�
   await pickAddressAdmin(page);
   await page.getByLabel("Địa chỉ").fill("Hlaing Township");
   // ML-LIP-02 chỉ có 4 cái trong seed và không test nào bán → luôn vượt tồn được, không phụ thuộc lần chạy trước.
-  const option = page.getByLabel("Biến thể").locator("option", { hasText: "ML-LIP-02" });
-  await page.getByLabel("Biến thể").selectOption((await option.getAttribute("value"))!);
+  const option = page.getByLabel("SKU / Phân loại").locator("option", { hasText: "ML-LIP-02" });
+  await page.getByLabel("SKU / Phân loại").selectOption((await option.getAttribute("value"))!);
 
   // Vượt tồn: bỏ giới hạn max của ô số lượng để kiểm tra lỗi từ server.
   await page.getByLabel("SL", { exact: true }).evaluate((el) => el.removeAttribute("max"));

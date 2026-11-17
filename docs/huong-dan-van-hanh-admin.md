@@ -331,7 +331,7 @@ Khối **Kiểm tra điều kiện đăng bán** bên cạnh có ba dòng, mỗi
 **Lỗi (chặn gửi duyệt, duyệt và bật hiển thị):**
 | Nội dung | Cách sửa |
 |---|---|
-| "Không có biến thể đang dùng" | Bật ít nhất một biến thể (**Đang dùng**) |
+| "Không có phân loại đang dùng" | Bật ít nhất một phân loại (**Đang dùng**) |
 | "Kho bán đã ngừng hoặc không phải kho bán" | Đổi kho sản phẩm ([5.8](#58-xoá-khôi-phục-đổi-kho-ẩnhiện)) |
 | "Giá bán ≤ 0" | Đặt giá ở bước 3 |
 | "Thiếu khối lượng (cần cho cước/kg)" | Chỉ với kho **Hàng nhập VN**: điền **Khối lượng (g)** (ở phiếu nhập hoặc **Thiết lập khác**) |
@@ -405,7 +405,7 @@ Với sản phẩm **đã duyệt**, thêm/xoá ảnh được giữ lại chờ
 
 Khối **Đặt trước khi hết hàng** (đang nhận / đã tắt):
 - Mặc định **bật**: sản phẩm hết hàng vẫn cho **khách đặt trên web** (đơn vào trạng thái **Chờ hàng về**, không giữ hàng). Tắt bằng cách bỏ chọn **Cho đặt trước khi hết hàng** → **Lưu đặt trước**.
-- **Hạn mức (cái)** từng biến thể: để trống thì dùng ô **Hạn mức đặt trước mặc định mỗi biến thể (cái, 0 = không nhận)** ở Cấu hình cửa hàng (mặc định 20; **0 = không nhận**). Trang sản phẩm hiện "Đang chờ hàng: {n} cái".
+- **Hạn mức (cái)** từng biến thể: để trống thì dùng ô **Hạn mức đặt trước mặc định mỗi phân loại (cái, 0 = không nhận)** ở Cấu hình cửa hàng (mặc định 20; **0 = không nhận**). Trang sản phẩm hiện "Đang chờ hàng: {n} cái".
 - Chỉ đơn **khách tự đặt trên web** mới thành đặt trước. Đơn do nhân viên/CTV tạo mà thiếu hàng sẽ báo "Không đủ hàng". Combo không đặt trước được.
 
 Xử lý đơn đặt trước: [mục 10.9](#109-đơn-đặt-trước).
@@ -558,7 +558,7 @@ Tỷ giá được chốt vào lô lúc **ghi sổ phiếu nhập** (phiếu tay
 - **nguồn giá** (bảng tính / Excel / sửa tay + ngày), **giá mua gần nhất** (lần nhập đã ghi sổ, hàng bán được, đúng kho bán);
 - nhãn **Đầu vào mới — nên tính lại**.
 
-Thẻ lọc: **Chưa có giá** (biến thể đang dùng), **Giá chờ duyệt**, **Giá cũ hơn phiếu nhập**. Nút **Đặt giá** ở từng dòng mở trang thủ công cho SKU đó; tick nhiều dòng rồi bấm **Nhập thủ công** hoặc **Tính tự động** ở thanh phía trên bảng.
+Thẻ lọc: **Chưa có giá** (phân loại đang dùng), **Giá chờ duyệt**, **Giá cũ hơn phiếu nhập**. Nút **Đặt giá** ở từng dòng mở trang thủ công cho SKU đó; tick nhiều dòng rồi bấm **Nhập thủ công** hoặc **Tính tự động** ở thanh phía trên bảng.
 
 ### 7.3. Thủ công — kho hàng nhập VN (công thức VND)
 
@@ -808,7 +808,7 @@ Trang danh sách **Đơn hàng › Danh sách đơn** có bộ lọc (kể cả 
 1. **Đơn hàng › Danh sách đơn › Tạo đơn**.
 2. (Tuỳ chọn) gõ SĐT ở **Tìm khách theo SĐT** → **Tìm**: hiện "Khách cũ: {tên} · {n} đơn" hoặc "Khách mới".
 3. Điền: **Kênh đặt** (Facebook, Viber, Điện thoại, Website), **Phương thức thanh toán** (COD hoặc Chuyển khoản), **CTV (không bắt buộc)**, **Người trả cước giao khách**, **Tên người nhận**, **SĐT**, **SĐT phụ (không bắt buộc)**, địa chỉ chọn lần lượt **Vùng / Bang** → **Huyện** → **Thị trấn**, **Địa chỉ**, **Ghi chú**.
-4. Thêm sản phẩm: chọn **Biến thể** (hiện giá và **Còn bán được**), nhập **SL**, bấm **+ Thêm sản phẩm** nếu có nhiều dòng.
+4. Thêm sản phẩm: chọn **SKU / Phân loại** (hiện giá và **Còn bán được**), nhập **SL**, bấm **+ Thêm sản phẩm** nếu có nhiều dòng.
 5. Xem **Ước tính (server tính lại khi lưu)** rồi bấm **Tạo đơn**.
 
 **Kết quả**
@@ -1107,7 +1107,7 @@ Chỉ **Quản trị viên**.
 | | **Cảnh báo cận date dưới (ngày)** | 180 | Hiện cảnh báo "Cận date". Phải ≥ ngưỡng ngừng bán, nếu không: "Ngưỡng cảnh báo phải ≥ ngưỡng ngừng bán" |
 | **Đơn hàng** | **Giữ hàng chờ chuyển khoản (giờ)** | 24 (1–168) | Quá giờ → tự huỷ đơn chuyển khoản |
 | | **Tự huỷ COD chưa xác nhận sau (giờ)** | 24 (1–168) | Quá giờ → tự huỷ đơn COD |
-| | **Hạn mức đặt trước mặc định mỗi biến thể (cái, 0 = không nhận)** | 20 | Số lượng đặt trước tối đa; 0 = tắt đặt trước |
+| | **Hạn mức đặt trước mặc định mỗi phân loại (cái, 0 = không nhận)** | 20 | Số lượng đặt trước tối đa; 0 = tắt đặt trước |
 | **Giá** | **Làm tròn giá lên bội số (MMK)** | 100 | 💰 Dùng khi tính giá |
 | | **Bản xem trước giá hết hạn sau (ngày)** | 3 | Bảng tính giá cũ hơn phải làm lại |
 | **Gợi ý đặt hàng** | **Số ngày bán cần đủ hàng sau khi về** | 30 | Cho gợi ý ở **Cảnh báo** |

@@ -194,7 +194,7 @@ export function ProductForm({
                 type="number"
                 min={1}
                 inputMode="numeric"
-                value={v.weightGrams ?? ""}
+                value={v.weightGrams || ""} // 0 cũ = chưa có khối lượng
                 onChange={(e) => setVar(v.key, { weightGrams: e.target.value ? Number(e.target.value) : null })}
                 className={fieldClass}
               />

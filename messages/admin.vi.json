@@ -10,7 +10,7 @@
     "search": "Tìm tên sản phẩm hoặc SKU",
     "filter": "Tìm kiếm",
     "product": "Sản phẩm",
-    "sku": "SKU / Biến thể",
+    "sku": "SKU / Phân loại",
     "warehouse": "Kho",
     "price": "Giá bán (MMK)",
     "actions": "Thao tác",
@@ -473,7 +473,7 @@
     "chooseTo": "Chọn vị trí nhận",
     "chooseLocation": "Chọn vị trí",
     "next": "Tiếp",
-    "variant": "Biến thể",
+    "variant": "SKU / Phân loại",
     "batch": "Lô",
     "autoFefo": "Tự chọn theo FEFO",
     "lotNo": "Số lô",
@@ -716,7 +716,7 @@
     "paoMonths": "Hạn sau mở nắp (tháng, nếu có)",
     "launchCheck": "Kiểm tra trước khi mở bán",
     "checkImages": "Có ảnh sản phẩm",
-    "checkPrice": "Biến thể đang dùng có giá bán lớn hơn 0",
+    "checkPrice": "Phân loại đang dùng có giá bán lớn hơn 0",
     "checkStock": "Có hàng khả dụng tại kho bán",
     "readiness": {
       "error": "Lỗi",
@@ -728,7 +728,7 @@
         "INCOMPLETE": "Cần hoàn thiện"
       },
       "issue": {
-        "NO_ACTIVE_VARIANT": "Không có biến thể đang dùng",
+        "NO_ACTIVE_VARIANT": "Không có phân loại đang dùng",
         "BAD_LOCATION": "Kho bán đã ngừng hoặc không phải kho bán",
         "NO_WAREHOUSE": "Chưa nhập hàng — kho bán được gán khi ghi sổ phiếu nhập đầu tiên",
         "PRICE_ZERO": "Giá bán ≤ 0",
@@ -1138,7 +1138,7 @@
     "channelLabel": "Kênh đặt",
     "addLine": "+ Thêm sản phẩm",
     "remove": "Xoá",
-    "variant": "Biến thể",
+    "variant": "SKU / Phân loại",
     "available": "Còn bán được",
     "estimate": "Ước tính (server tính lại khi lưu)",
     "freeShip": "Miễn phí",
@@ -1308,7 +1308,7 @@
         "requirePickList": "Bắt buộc in phiếu soạn (chốt lô) trước khi bàn giao"
       },
       "preorder": {
-        "defaultLimit": "Hạn mức đặt trước mặc định mỗi biến thể (cái, 0 = không nhận)"
+        "defaultLimit": "Hạn mức đặt trước mặc định mỗi phân loại (cái, 0 = không nhận)"
       }
     },
     "save": "Lưu cài đặt",
@@ -1404,7 +1404,7 @@
       "INPUT_CHANGED": "đầu vào đổi",
       "COMMISSION_OVER_PRICE": "hoa hồng > giá"
     },
-    "skippedTitle": "Không tính được {count} biến thể",
+    "skippedTitle": "Không tính được {count} phân loại",
     "skippedReason": {
       "NO_COST": "Thiếu giá mua đã ghi sổ",
       "NO_WEIGHT": "Thiếu khối lượng",
@@ -1419,8 +1419,8 @@
     "lowMarginWarning": "Lãi minh họa sau cước và hoa hồng {rate}%: {profit} MMK (≤ 5% giá bán). Chưa trừ phí bán khác; tỷ lệ CTV thực tế có thể khác.",
     "largeChangeWarning": "Giá thay đổi từ 20% — kiểm tra trước khi áp dụng.",
     "lowMarginWarningFixed": "Lãi minh họa sau cước, hoa hồng CTV {fixed} MMK/cái và tầng trên {rate}%: {profit} MMK (≤ 5% giá bán). Chưa trừ phí bán khác.",
-    "productScope": "Chỉ tính các biến thể đang bán của sản phẩm {name}.",
-    "productInvalid": "Sản phẩm không tồn tại hoặc không còn biến thể đang bán.",
+    "productScope": "Chỉ tính các phân loại đang bán của sản phẩm {name}.",
+    "productInvalid": "Sản phẩm không tồn tại hoặc không còn phân loại đang bán.",
     "historySource": "Nguồn",
     "srcRun": "Bảng tính giá",
     "srcImport": "Excel",
@@ -1574,7 +1574,7 @@
     "colProducts": "Số SP",
     "colManagedProducts": "Sản phẩm đang quản lý",
     "colInStockProducts": "Sản phẩm còn hàng",
-    "countsHelp": "Danh mục cha tính cả sản phẩm trong các danh mục con. Đang quản lý: không gồm sản phẩm ngừng kinh doanh. Còn hàng: có ít nhất một biến thể đang dùng còn tồn khả dụng tại kho bán sau khi trừ giữ hàng và kiểm tra hạn dùng. Mỗi sản phẩm đếm một lần, gồm cả sản phẩm đang ẩn.",
+    "countsHelp": "Danh mục cha tính cả sản phẩm trong các danh mục con. Đang quản lý: không gồm sản phẩm ngừng kinh doanh. Còn hàng: có ít nhất một phân loại đang dùng còn tồn khả dụng tại kho bán sau khi trừ giữ hàng và kiểm tra hạn dùng. Mỗi sản phẩm đếm một lần, gồm cả sản phẩm đang ẩn.",
     "nameMy": "Tên (Myanmar)",
     "nameEn": "Tên (English)",
     "parent": "Danh mục cha",
@@ -2220,12 +2220,12 @@
         "value": "Trạng thái"
       },
       "missingWeight": {
-        "title": "Biến thể kho hàng nhập VN thiếu khối lượng",
-        "help": "Công thức giá cần khối lượng để tính cước/kg; khi tính giá biến thể này bị bỏ qua.",
+        "title": "Phân loại (SKU) kho hàng nhập VN thiếu khối lượng",
+        "help": "Công thức giá cần khối lượng để tính cước/kg; khi tính giá, phân loại này bị bỏ qua.",
         "value": ""
       },
       "missingWeightLocal": {
-        "title": "Biến thể kho mua MMK thiếu khối lượng",
+        "title": "Phân loại (SKU) kho mua MMK thiếu khối lượng",
         "help": "Không ảnh hưởng giá; cần khi gửi VTP.",
         "value": ""
       },
@@ -2240,7 +2240,7 @@
         "value": "SL tồn"
       },
       "draftOnlyCost": {
-        "title": "Biến thể chỉ có lô từ phiếu nhập nháp/huỷ",
+        "title": "Phân loại (SKU) chỉ có lô từ phiếu nhập nháp/huỷ",
         "help": "Chưa có giá mua đã ghi sổ nên tính giá bỏ qua. Ghi sổ phiếu nhập thật.",
         "value": ""
       },

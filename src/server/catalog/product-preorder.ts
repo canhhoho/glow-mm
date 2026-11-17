@@ -26,7 +26,7 @@ export async function saveProductPreorder(raw: unknown, userId: string) {
     const changes: { sku: string; from: number | null; to: number | null }[] = [];
     for (const l of input.limits) {
       const v = current.get(l.id);
-      if (!v) throw new CatalogError("Biến thể không thuộc sản phẩm này");
+      if (!v) throw new CatalogError("Phân loại không thuộc sản phẩm này");
       if (v.preorderLimit === l.limit) continue;
       await tx.variant.update({ where: { id: v.id }, data: { preorderLimit: l.limit } });
       changes.push({ sku: v.sku, from: v.preorderLimit, to: l.limit });

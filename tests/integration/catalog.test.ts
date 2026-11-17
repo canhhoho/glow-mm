@@ -34,6 +34,19 @@ describe("Sản phẩm", () => {
     expect(my.name).toBe("နေကာခရင်မ်");
   });
 
+  it("khối lượng: 0/trống lưu thành chưa có (null), số âm/lẻ bị từ chối", async () => {
+    const f = await makeFixture();
+    const slug = `w-${f.tag.toLowerCase()}`;
+    const p = await saveProduct({ ...base(f, slug), variants: [{ sku: `W-${f.tag}`, label: "50ml", priceMmk: 1, weightGrams: 0 }] }, f.userId);
+    const v = await prisma.variant.findUniqueOrThrow({ where: { sku: `W-${f.tag}` } });
+    expect(v.weightGrams).toBeNull();
+    await saveProduct({ ...base(f, slug), id: p.id, variants: [{ id: v.id, sku: v.sku, label: "50ml", weightGrams: "150" }] }, f.userId);
+    expect((await prisma.variant.findUniqueOrThrow({ where: { id: v.id } })).weightGrams).toBe(150);
+    for (const bad of [-5, 1.5]) {
+      await expect(saveProduct({ ...base(f, slug), id: p.id, variants: [{ id: v.id, sku: v.sku, label: "50ml", weightGrams: bad }] }, f.userId)).rejects.toThrow();
+    }
+  });
+
   it("combo phải có thành phần hợp lệ (không phải chính nó / combo khác)", async () => {
     const f = await makeFixture();
     await expect(

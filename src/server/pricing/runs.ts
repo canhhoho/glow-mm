@@ -286,7 +286,7 @@ export async function previewRun(raw: unknown, userId: string, now = new Date())
       };
       const sources = input.sources ? new Map(Object.entries(input.sources)) : undefined;
       const { lines, skipped } = await computeLines(tx, ids.map((v) => v.id), ctx, sources);
-      if (lines.length === 0) throw new PricingError("Không có biến thể nào đủ dữ liệu để tính giá (xem danh sách thiếu vốn / khối lượng / lãi)");
+      if (lines.length === 0) throw new PricingError("Không có phân loại nào đủ dữ liệu để tính giá (xem danh sách thiếu vốn / khối lượng / lãi)");
       // 16/11: so với giá HIỆU LỰC (giá chờ duyệt nếu có) — được thay giá chờ bằng kết quả mới.
       const eff = await effectivePricingOf(tx, lines.map((l) => l.variantId));
       for (const l of lines) {
@@ -423,7 +423,7 @@ async function applyLines(tx: Tx, runId: string, lines: RunLineRow[], fresh: Map
  * `submit` (§6.4 "Gửi duyệt ngay"): gửi duyệt các SP có dòng vừa áp, cùng transaction. Mặc định tắt.
  */
 export async function applyRun(runId: string, variantIds: string[], userId: string, now = new Date(), opts: { submit?: boolean } = {}) {
-  if (variantIds.length === 0) throw new PricingError("Chưa chọn biến thể nào");
+  if (variantIds.length === 0) throw new PricingError("Chưa chọn phân loại nào");
   return prisma.$transaction(
     async (tx) => {
       await tx.$queryRaw`SELECT "id" FROM "PriceUpdateRun" WHERE "id" = ${runId} FOR UPDATE`;
@@ -504,7 +504,7 @@ export async function applyManualVnd(raw: unknown, userId: string, now = new Dat
       const computed: ComputedLine[] = [];
       for (const l of input.lines) {
         const v = byId.get(l.variantId);
-        if (!v || v.product.archivedAt) throw new PricingError("Biến thể không tồn tại hoặc đã ngừng kinh doanh");
+        if (!v || v.product.archivedAt) throw new PricingError("Phân loại không tồn tại hoặc đã ngừng kinh doanh");
         if (v.product.stockLocationId !== location.id) throw new PricingError(`${v.sku} không thuộc kho ${location.code}`);
         const cost = costs.get(l.variantId);
         if (!cost) throw new PricingError(`${v.sku}: chưa có giá mua từ phiếu nhập đã ghi sổ (hoặc lần nhập đã chọn không hợp lệ)`);
