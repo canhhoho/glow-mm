@@ -1,6 +1,6 @@
 # Bản đồ nghiệp vụ Admin & quy trình thay đổi
 
-Ngày khảo sát: 16/11/2026 (nhánh `dev`, commit `477136a`). Chỉ khảo sát và đề xuất — **chưa sửa code**.
+Khảo sát gốc 16/11/2026 (commit `477136a`); bảng được cập nhật cùng commit mỗi khi nghiệp vụ đổi (mới nhất: 16–17/11/2026 — cờ tắt giá tự động/chuyến hàng, giá vốn = giá mua × tỷ giá, phiếu nhập tách theo kho). Khi bảng lệch code, code đã kiểm chứng đúng hơn — sửa bảng.
 Mục đích: mỗi nghiệp vụ có **một nơi quản lý chính** và **một hàm xử lý domain**; các trang khác chỉ là lối tắt.
 Trước khi sửa một nghiệp vụ trong bảng dưới, đọc dòng tương ứng và làm theo [§4 Quy trình thay đổi](#4-quy-trình-thay-đổi).
 
