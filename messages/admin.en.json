@@ -317,7 +317,8 @@
     "ratingOf": "{n} of 5 stars",
     "noData": "No data yet.",
     "details": "Details",
-    "sku": "SKU"
+    "sku": "SKU",
+    "product": "Product"
   },
   "Inventory": {
     "title": "Stock",
@@ -543,7 +544,7 @@
     "lineMissing": "{count} rows are missing lot no., expiry or unit cost (highlighted)",
     "splitLot": "Another lot",
     "splitLotHelp": "Add another row for the same product with a different lot",
-    "addLot": "+ Lot",
+    "addLot": "Lot",
     "usesDefault": "Shared: {value}",
     "byDefault": "Shared ({value})",
     "estimateShip": "Estimated VN → MM freight (MMK/kg)",
@@ -1151,7 +1152,7 @@
     "chooseZone": "Choose zone",
     "paymentMethod": "Payment method",
     "channelLabel": "Channel",
-    "addLine": "+ Add item",
+    "addLine": "Add item",
     "remove": "Remove",
     "variant": "Variant",
     "available": "Available",

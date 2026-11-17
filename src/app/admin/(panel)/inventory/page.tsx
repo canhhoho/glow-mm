@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { isStandardVariantLabel } from "@/lib/variant-label";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Ban, Bell, Clock, FileText, Package, ShieldAlert, Wallet } from "lucide-react";
@@ -338,10 +339,11 @@ function ProductView({
     t("colValue"),
   ];
   const sub = (r: VariantStockRow) =>
-    r.isBundle ? `${r.sku} · ${t("comboHint")}` : `${r.sku} · ${r.label} · ${t("lotsN", { n: r.lotCount })}`;
+    r.isBundle ? `${r.sku} · ${t("comboHint")}` : [r.sku, isStandardVariantLabel(r.label) ? null : r.label, t("lotsN", { n: r.lotCount })].filter(Boolean).join(" · ");
   const title = (r: VariantStockRow) => (
     <>
-      {r.name} {r.isBundle ? <Badge>{t("combo")}</Badge> : <span className="text-muted-foreground">({r.label})</span>}
+      {/* Phân loại nằm ở dòng phụ (cùng SKU) — không lặp "(60ml)" sau tên. */}
+      {r.name} {r.isBundle && <Badge>{t("combo")}</Badge>}
       {r.archived && <ArchivedBadge t={t} />}
     </>
   );

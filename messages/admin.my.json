@@ -317,7 +317,8 @@
     "ratingOf": "ကြယ် ၅ ပွင့်တွင် {n} ပွင့်",
     "noData": "ဒေတာ မရှိသေးပါ။",
     "details": "အသေးစိတ်",
-    "sku": "SKU"
+    "sku": "SKU",
+    "product": "ကုန်ပစ္စည်း"
   },
   "Inventory": {
     "title": "လက်ကျန်ပစ္စည်း",
@@ -543,7 +544,7 @@
     "lineMissing": "တန်း {count} ခုတွင် လော့နံပါတ်၊ သက်တမ်း သို့မဟုတ် ဝယ်စျေး မပါပါ (အနီရောင်)",
     "splitLot": "အခြားလော့",
     "splitLotHelp": "တူညီသောကုန်ပစ္စည်းအတွက် လော့နံပါတ်ကွဲသော တန်းတစ်ခု ထပ်ထည့်ရန်",
-    "addLot": "+ လော့",
+    "addLot": "လော့",
     "usesDefault": "ဘုံ: {value}",
     "byDefault": "ဘုံ ({value})",
     "estimateShip": "VN → MM ခန့်မှန်းပို့ဆောင်ခ (MMK/kg)",
@@ -1151,7 +1152,7 @@
     "chooseZone": "ဒေသရွေးပါ",
     "paymentMethod": "ငွေပေးချေနည်း",
     "channelLabel": "ချန်နယ်",
-    "addLine": "+ ပစ္စည်းထည့်",
+    "addLine": "ပစ္စည်းထည့်",
     "remove": "ဖယ်ရှား",
     "variant": "အမျိုးအစား",
     "available": "ရောင်းနိုင်",

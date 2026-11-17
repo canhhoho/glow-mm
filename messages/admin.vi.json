@@ -317,7 +317,8 @@
     "ratingOf": "{n}/5 sao",
     "noData": "Chưa có dữ liệu.",
     "details": "Chi tiết",
-    "sku": "SKU"
+    "sku": "SKU",
+    "product": "Sản phẩm"
   },
   "Inventory": {
     "title": "Tồn kho",
@@ -543,7 +544,7 @@
     "lineMissing": "{count} dòng thiếu số lô, hạn dùng hoặc giá mua (tô đỏ)",
     "splitLot": "Lô khác",
     "splitLotHelp": "Thêm một dòng cho cùng sản phẩm với số lô khác",
-    "addLot": "+ Lô",
+    "addLot": "Lô",
     "usesDefault": "Dùng chung: {value}",
     "byDefault": "Chung ({value})",
     "estimateShip": "Cước tạm tính VN → MM (MMK/kg)",
@@ -1151,7 +1152,7 @@
     "chooseZone": "Chọn khu vực",
     "paymentMethod": "Phương thức thanh toán",
     "channelLabel": "Kênh đặt",
-    "addLine": "+ Thêm sản phẩm",
+    "addLine": "Thêm sản phẩm",
     "remove": "Xoá",
     "variant": "SKU / Phân loại",
     "available": "Còn bán được",

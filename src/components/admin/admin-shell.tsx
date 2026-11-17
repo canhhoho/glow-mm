@@ -133,7 +133,7 @@ export function AdminShell({
   const item = group?.items.find((i) => i.href === current);
 
   return (
-    <div className="min-h-dvh lg:flex">
+    <div className="min-h-dvh lg:flex" data-admin-shell>
       {open && (
         <button
           type="button"
@@ -161,7 +161,8 @@ export function AdminShell({
             type="button"
             onClick={close}
             aria-label={labels.close}
-            className="ml-auto rounded-md p-1.5 text-muted-foreground hover:bg-muted lg:hidden"
+            title={labels.close}
+            className="ml-auto inline-flex size-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted lg:hidden"
           >
             <X className="size-5" aria-hidden />
           </button>
@@ -194,9 +195,10 @@ export function AdminShell({
             type="button"
             onClick={() => setOpenedAt(pathname)}
             aria-label={labels.menu}
+            title={labels.menu}
             aria-expanded={open}
             aria-controls="admin-nav"
-            className="-ml-1 rounded-md p-1.5 hover:bg-muted lg:hidden"
+            className="-ml-1 inline-flex size-11 items-center justify-center rounded-md hover:bg-muted lg:hidden"
           >
             <Menu className="size-5" aria-hidden />
           </button>

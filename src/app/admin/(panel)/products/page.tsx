@@ -212,7 +212,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
               <BulkCheckbox id={p.id} label={t("selectProduct", { name: p.name })} version={p.approvalVersion} />
             </Td>
             <Td className="align-middle">
-              <div className="flex min-w-56 items-center gap-3">
+              <div className="flex min-w-52 items-center gap-3">
                 <span className="relative size-11 shrink-0 overflow-hidden rounded-lg border bg-muted">
                   {p.image && <Image src={p.image.url} alt={p.image.alt || p.name} fill sizes="44px" className="object-cover" />}
                 </span>
@@ -240,11 +240,11 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
               {p.variants.length > 1 && <span className="block text-xs text-muted-foreground">{t("list.moreVariants", { n: p.variants.length - 1 })}</span>}
             </Td>
             <Td label={t("list.colDescription")} className="align-middle">
-              <p className="line-clamp-2 max-w-72 min-w-48 text-xs text-muted-foreground" title={p.description ?? undefined}>
+              <p className="line-clamp-2 max-w-52 min-w-36 text-xs text-muted-foreground" title={p.description ?? undefined}>
                 {p.description ?? "—"}
               </p>
             </Td>
-            <Td label={t("colCategory")} className="align-middle">
+            <Td label={t("colCategory")} className="min-w-28 align-middle">
               {p.category}
               <span className="block text-xs text-muted-foreground">{p.warehouse ?? t("warehouseNoneShort")}</span>
             </Td>

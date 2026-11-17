@@ -1,3 +1,4 @@
+import { variantDisplayName } from "@/lib/variant-label";
 import { Calculator } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -79,7 +80,7 @@ export default async function BatchPage({ params }: PageProps<"/admin/inventory/
         back={{ href: `/admin/inventory?q=${encodeURIComponent(batch.lotNo)}&view=lots`, label: ti("title") }}
         description={
           <>
-            {detail.name} ({batch.variant.label}) · <span className="font-mono">{batch.variant.sku}</span>
+            {variantDisplayName(detail.name, batch.variant.label)} · <span className="font-mono">{batch.variant.sku}</span>
             {batch.variant.product.archivedAt && (
               <>
                 {" "}

@@ -97,16 +97,16 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
       </Section>
 
       <Section title={t("top")}>
-        <DataTable empty={t("empty")} numeric={[1, 2, 3]} head={[tc("sku"), t("units"), t("revenue"), t("profit")]}>
+        <DataTable stack empty={t("empty")} numeric={[1, 2, 3]} head={[tc("product"), t("units"), t("revenue"), t("profit")]}>
           {report.topProducts.map((p) => (
             <tr key={p.sku}>
               <Td>
-                <span className="font-mono text-xs">{p.sku}</span>
-                <div className="text-xs text-muted-foreground">{p.name}</div>
+                <span className="block font-medium break-words">{p.name}</span>
+                <span className="block font-mono text-xs break-all text-muted-foreground">{p.sku}</span>
               </Td>
-              <Td numeric>{fmtInt(p.units)}</Td>
-              <Td numeric>{fmtInt(p.revenue)}</Td>
-              <Td numeric>{fmtInt(p.profit)}</Td>
+              <Td label={t("units")} numeric>{fmtInt(p.units)}</Td>
+              <Td label={t("revenue")} numeric>{fmtInt(p.revenue)}</Td>
+              <Td label={t("profit")} numeric>{fmtInt(p.profit)}</Td>
             </tr>
           ))}
         </DataTable>

@@ -1,4 +1,5 @@
 import "server-only";
+import { variantDisplayName } from "@/lib/variant-label";
 import { prisma } from "@/lib/db";
 import { loadAddressCatalog } from "@/server/locations/locations";
 import type { OrderChannel, OrderStatus, PaymentMethod, Prisma } from "@/generated/prisma/client";
@@ -118,7 +119,7 @@ export async function orderFormOptions(locale: string, now = new Date()) {
     catalog,
     variants: variants.map((v) => ({
       id: v.id,
-      label: `${v.sku} — ${productName(v.product.translations, v.product.slug)} (${v.label})`,
+      label: `${v.sku} — ${variantDisplayName(productName(v.product.translations, v.product.slug), v.label)}`,
       priceMmk: v.priceMmk,
       available: avail.get(v.id) ?? 0,
     })),

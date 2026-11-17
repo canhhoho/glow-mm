@@ -1,4 +1,5 @@
 import "server-only";
+import { variantDisplayName } from "@/lib/variant-label";
 import { prisma } from "@/lib/db";
 import { productName } from "@/server/inventory/queries";
 import { postedSourceBatch, variantCosts } from "./cost";
@@ -48,7 +49,7 @@ export async function getRun(id: string) {
     lines: run.lines.map((l) => ({
       variantId: l.variantId,
       sku: l.variant.sku,
-      name: `${productName(l.variant.product.translations, l.variant.product.slug)} (${l.variant.label})`,
+      name: variantDisplayName(productName(l.variant.product.translations, l.variant.product.slug), l.variant.label),
       costVnd: l.costVnd,
       costMmk: l.costMmk,
       shipMmk: l.shipMmk,

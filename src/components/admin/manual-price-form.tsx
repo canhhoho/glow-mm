@@ -152,7 +152,7 @@ export function ManualVndForm({
           };
           return (
             <tr key={id} data-testid="manual-row" className={cn(c.changed && editable && "bg-primary/5")}>
-              <Td className="md:w-[26%]">
+              <Td className="md:w-[31%]">
                 <span className="block font-medium break-words">{c.r.productName}</span>
                 <span className="block text-xs break-all text-muted-foreground">
                   <span className="font-mono">{c.r.sku}</span>
@@ -186,7 +186,7 @@ export function ManualVndForm({
               <Td label={t("colProfit")} numeric>{num("profit", t("colProfit"), { id: `profit-${id}` })}</Td>
               <Td label={t("colShip")} numeric>{num("ship", t("colShip"))}</Td>
               <Td label={t("colCtv")} numeric>{num("ctv", t("colCtv"))}</Td>
-              <Td label={t("colFinal")} numeric className="md:w-[14%]">
+              <Td label={t("colFinal")} numeric className="md:w-[12%]">
                 {editable ? (
                   <>
                     <div className="text-base font-semibold tabular-nums" data-testid="manual-final">{c.price != null ? fmtInt(c.price) : "—"}</div>

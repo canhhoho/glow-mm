@@ -101,13 +101,13 @@ export default async function DataHealthPage({ searchParams }: PageProps<"/admin
         }
       >
         <p className="text-xs text-muted-foreground">{t("baseline.help")}</p>
-        <DataTable head={[t("baseline.step"), t("baseline.n"), t("baseline.p50"), t("baseline.p90")]} numeric={[1, 2, 3]}>
+        <DataTable stack head={[t("baseline.step"), t("baseline.n"), t("baseline.p50"), t("baseline.p90")]} numeric={[1, 2, 3]}>
           {flowRows.map(([label, p]) => (
             <tr key={label}>
-              <Td>{label}</Td>
-              <Td numeric>{fmtInt(p.n)}</Td>
-              <Td numeric>{fmtHours(p.p50)}</Td>
-              <Td numeric>{fmtHours(p.p90)}</Td>
+              <Td className="max-md:font-medium">{label}</Td>
+              <Td label={t("baseline.n")} numeric>{fmtInt(p.n)}</Td>
+              <Td label={t("baseline.p50")} numeric>{fmtHours(p.p50)}</Td>
+              <Td label={t("baseline.p90")} numeric>{fmtHours(p.p90)}</Td>
             </tr>
           ))}
         </DataTable>

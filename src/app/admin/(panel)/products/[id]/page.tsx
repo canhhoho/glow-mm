@@ -439,7 +439,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
             const row = pricing.get(v.id);
             return (
               <tr key={v.id} data-testid="step-price-row">
-                <Td className="text-xs break-all">
+                <Td className="text-xs whitespace-nowrap">
                   <span className="font-mono">{v.sku}</span>
                   {!v.active && <span className="ml-1 text-muted-foreground">({t("priceBlock.inactive")})</span>}
                 </Td>

@@ -11,7 +11,7 @@ import { ActionButton } from "@/components/admin/action-button";
 import { Badge, DataTable, LinkButton, Notice, Page, PageHeader, Section, Td } from "@/components/admin/ui";
 import { fmtDate, fmtDay, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { isStandardVariantLabel } from "@/lib/variant-label";
+import { isStandardVariantLabel, variantDisplayName } from "@/lib/variant-label";
 
 const STATUS_TONE = { DRAFT: "warning", POSTED: "success", CANCELLED: "neutral" } as const;
 /** Phiếu nháp không có trang sửa (trừ Nhập) → "Huỷ và tạo lại" mở form tạo điền sẵn; cần đúng quyền tạo loại phiếu đó (#5). */
@@ -32,7 +32,7 @@ export default async function DocumentPage({ params, searchParams }: PageProps<"
     ? await loadDocumentPreview({ type: doc.type, fromId: doc.fromId, toId: doc.toId, lines: doc.lines.map((l) => ({ variantId: l.variantId, qty: l.qty, stockType: l.stockType })) })
     : null;
   const locationName = new Map([doc.from, doc.to].filter((x): x is NonNullable<typeof doc.from> => !!x).map((x) => [x.id, `${x.code} — ${x.name}`]));
-  const variantLabel = new Map(doc.lines.map((l) => [l.variantId, `${l.variant.sku} · ${productName(l.variant.product.translations, l.variant.product.slug)} (${l.variant.label})`]));
+  const variantLabel = new Map(doc.lines.map((l) => [l.variantId, `${l.variant.sku} · ${variantDisplayName(productName(l.variant.product.translations, l.variant.product.slug), l.variant.label)}`]));
   // Giá mua / tỷ giá / phí về kho của từng lần nhập: chỉ người có quyền xem giá (cùng quyền đặt giá).
   const showCosts = doc.type === "RECEIVE" && can(user.role, "pricing:manage");
   const picked = doc.status === "DRAFT" && ["ISSUE", "TRANSFER"].includes(doc.type) && doc.fromId ? await prisma.orderPickLine.findMany({ where: { locationId: doc.fromId, variantId: { in: doc.lines.map(l=>l.variantId) }, pick: { consumedAt: null, order: { status: { in: ["COD_CONFIRMED", "PAYMENT_CONFIRMED"] } } } }, select: { pick: { select: { order: { select: { code: true } } } } }, take: 50 }) : [];
@@ -142,7 +142,7 @@ export default async function DocumentPage({ params, searchParams }: PageProps<"
             const label = g.variant.label && !isStandardVariantLabel(g.variant.label) ? g.variant.label : null;
             return (
               <tr key={`${g.variant.id}|${g.stockType}`} data-testid="receive-row">
-                <Td className="md:w-[34%]">
+                <Td className="md:w-[42%]">
                   <span className="block font-medium break-words">{productName(g.variant.product.translations, g.variant.product.slug)}</span>
                   <span className="block text-xs break-all text-muted-foreground">
                     <span className="font-mono">{g.variant.sku}</span>
@@ -208,7 +208,7 @@ export default async function DocumentPage({ params, searchParams }: PageProps<"
           <tr key={l.id}>
             <Td>
               <span className="font-mono text-xs">{l.variant.sku}</span>{" "}
-              {productName(l.variant.product.translations, l.variant.product.slug)} ({l.variant.label})
+              {variantDisplayName(productName(l.variant.product.translations, l.variant.product.slug), l.variant.label)}
             </Td>
             <Td label={t("lotNo")} className="font-mono text-xs">{l.batch?.lotNo ?? t("autoFefo")}</Td>
             <Td label={t("expiry")}>{l.batch?.expiryStatus === "NONE" ? ti("expiryNone") : l.batch?.expiryStatus === "UNKNOWN" ? ti("expiryUnknown") : fmtDay(l.batch?.expiryDate)}</Td>
