@@ -544,7 +544,7 @@ Chọn giờ ít khách (vd 22:00 Yangon). Ngừng ghi khoảng **30–60 phút*
 
 # PHẦN D — Cập nhật hằng ngày (sau khi đã chuyển)
 
-Claude làm trên nhánh `dev` → CI đầy đủ (gồm E2E) xanh → merge `main` → gắn tag `release-YYYYMMDD-HHMM`. **Chỉ deploy tag `release-*`** — tag chỉ có khi mọi kiểm tra bắt buộc đã qua. Bạn cập nhật server (thủ công):
+Claude làm trên nhánh `dev` → merge `main` → CI đầy đủ (gồm E2E) xanh → CI tự gắn tag `release-YYYYMMDD-HHMM` và **tự deploy** (từ 17/11/2026, xem `docs/lenh-trien-khai-tandcstore.md` PHẦN 4). **Chỉ deploy tag `release-*`** — tag chỉ có khi mọi kiểm tra bắt buộc đã qua. Cập nhật thủ công (dự phòng):
 
 ```bash
 ssh vcm_aio@10.201.42.65

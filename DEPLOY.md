@@ -12,7 +12,7 @@ Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong bi�
 | DB | Neon Singapore (2 DB: preview, main) | PostgreSQL 17 trong Docker |
 | File | Vercel Blob (`STORAGE_DRIVER=vercel-blob`) | Ổ đĩa/volume (`STORAGE_DRIVER=local`) |
 | Cron | Vercel Cron (`vercel.json`) | crontab trên host (`ops/cron.example`) |
-| Deploy từ | `main` → Production, nhánh khác → Preview | tag `release-YYYYMMDD-HHMM` trên `main` (CI đầy đủ xanh), người dùng chạy tay `ops/deploy.sh` → tự smoke `ops/smoke.sh`; rollback = deploy tag trước (runbook F.13) |
+| Deploy từ | `main` → Production, nhánh khác → Preview | push `main` → CI xanh → tag `release-YYYYMMDD-HHMM` tự gắn → runner self-hosted chạy `ops/deploy.sh` (qua `ops/tandc-deploy`) → smoke; rollback = Run workflow `rollback_tag` hoặc chạy tay (runbook `docs/lenh-trien-khai-tandcstore.md` PHẦN 4) |
 
 > Các mục ghi **[CẦN XÁC MINH]** là giao diện/chính sách của dịch vụ bên ngoài có thể đã đổi. Kiểm tra tài liệu chính thức trước khi làm.
 
