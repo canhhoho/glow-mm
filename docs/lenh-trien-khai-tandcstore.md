@@ -520,6 +520,7 @@ docker compose -p tandc ps -a; docker logs tandc-app-1 --since 24h 2>&1 | grep -
 # PHẦN 4 — Cập nhật web khi Claude báo có bản mới
 
 > **Từ 17/11/2026: deploy tự động.** Push/merge `main` → CI (`check` + `e2e`) xanh → job `release` gắn tag `release-YYYYMMDD-HHMM` (giờ UTC) → job `deploy` trên runner `tandc-myanmar` gọi `sudo -n /usr/local/sbin/tandc-deploy <tag> <sha>` → `ops/deploy.sh --yes` (sao lưu nếu có migration, build, migrate, chờ healthy, smoke). CI lỗi → không có tag, không deploy. Theo dõi ở GitHub → Actions → CI.
+> - **Từ 18/11/2026:** merge PR (kiểu "Create a merge commit") khi CI của PR đã xanh → CI trên `main` không chạy lại `check`/`e2e`, chỉ gắn tag + deploy (~3 phút; job `changes` ghi link lần chạy PR đã dùng). `main` có commit khác ngoài PR / squash / rebase → chạy đầy đủ. Chỉ sửa tài liệu → không deploy.
 > - **Deploy lỗi:** web thường vẫn chạy bản cũ (build lỗi) hoặc log job in lệnh quay lại. Gửi Claude log job `deploy`.
 > - **Quay lại bản trước (không cần SSH):** Actions → CI → *Run workflow* → nhánh `main` → `rollback_tag` = tag trước (xem danh sách tag trên GitHub). Nếu job báo *"Quay về bản cũ hơn database"* → dừng, gửi Claude (không có cờ bỏ qua qua CI).
 > - **An toàn:** runner (user `github-runner`) không có docker/sudo, chỉ được gọi đúng wrapper `ops/tandc-deploy` (cài bằng copy, root 755) theo `ops/sudoers-tandc-deploy`; wrapper chỉ nhận tag `release-*` thuộc lịch sử `origin/main` và trỏ đúng SHA CI đã test, chạy deploy.sh với môi trường sạch. Job deploy không checkout code.
