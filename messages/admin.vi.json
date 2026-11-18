@@ -1783,14 +1783,14 @@
     "code": "Mã giới thiệu",
     "codeHint": "4–12 ký tự A–Z, 0–9. Đổi mã thì link cũ ngừng tính.",
     "percent": "Hoa hồng (%)",
-    "percentHint": "Đổi % chỉ áp dụng cho đơn mới; đơn cũ giữ % lúc đặt.",
+    "percentHint": "Hoa hồng bán hàng tính theo mức MMK/cái nhập ở trang Giá bán (SP để trống = không có hoa hồng). Ô dưới chỉ là % tầng trên.",
     "payoutInfo": "Thông tin nhận tiền",
     "payoutInfoHint": "Ngân hàng / KBZPay / Wave… (chỉ admin thấy)",
     "tempPassword": "Mật khẩu tạm",
     "tempPasswordHint": "Tối thiểu {min} ký tự. CTV tự đổi sau khi đăng nhập.",
     "colCtv": "CTV",
     "colCode": "Mã",
-    "colPercent": "%",
+    "colPercent": "% tầng trên",
     "colMonthSales": "Doanh số tháng này",
     "colPending": "Chờ",
     "colPayable": "Đến hạn",
@@ -1937,7 +1937,8 @@
       "upline": "% tầng trên"
     },
     "cancelledLocked": "Đơn đã huỷ — không đổi CTV được.",
-    "fixedPerProduct": "có SP tính hoa hồng cố định"
+    "fixedPerProduct": "có SP tính hoa hồng cố định",
+    "byPriceList": "theo hoa hồng ở Giá bán"
   },
   "Ctv": {
     "metaTitle": "Cổng CTV — T&C Cosmetics",
@@ -1960,6 +1961,7 @@
     "copy": "Sao chép",
     "copied": "Đã chép",
     "rate": "Hoa hồng {percent}%",
+    "rateByProduct": "Hoa hồng theo từng sản phẩm (mức cố định ở bảng giá)",
     "recent": "Đơn gần đây",
     "seeAll": "Xem tất cả",
     "back": "← Đơn của tôi",

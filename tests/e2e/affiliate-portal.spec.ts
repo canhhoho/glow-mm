@@ -41,7 +41,9 @@ test("khách mở link CTV rồi đặt hàng → đơn hiện trong cổng CTV 
   await expect(row).toContainText("Link giới thiệu");
   await expect(row).toContainText("Chờ");
   await row.click();
-  await expect(page.getByTestId("ctv-order-commission")).toContainText("10%");
+  // 18/11/2026: hoa hồng theo mức ở Giá bán (Sunscreen mẫu 2 500 MMK/cái), không còn %.
+  await expect(page.getByTestId("ctv-order-commission")).toContainText("2,500 MMK");
+  await expect(page.getByTestId("ctv-order-commission")).toContainText("theo hoa hồng ở Giá bán");
 });
 
 test("CTV đăng nhập storefront bằng tài khoản CTV → đơn đặt trên web tính cho chính CTV (bỏ qua link của người khác)", async ({ page }) => {
@@ -65,7 +67,9 @@ test("CTV đăng nhập storefront bằng tài khoản CTV → đơn đặt trê
   const row = page.getByTestId("ctv-order").filter({ hasText: code });
   await expect(row).toContainText("CTV tự lên đơn");
   await row.click();
-  await expect(page.getByTestId("ctv-order-commission")).toContainText("10%");
+  // 18/11/2026: hoa hồng theo mức ở Giá bán (Sunscreen mẫu 2 500 MMK/cái), không còn %.
+  await expect(page.getByTestId("ctv-order-commission")).toContainText("2,500 MMK");
+  await expect(page.getByTestId("ctv-order-commission")).toContainText("theo hoa hồng ở Giá bán");
 });
 
 test("CTV tự lên đơn cho khách; không xem được đơn không phải của mình", async ({ page }) => {

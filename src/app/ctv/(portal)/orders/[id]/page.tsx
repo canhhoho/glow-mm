@@ -63,7 +63,13 @@ export default async function CtvOrderPage({ params, searchParams }: PageProps<"
           <dt className="text-muted-foreground">{ta("colCommission")}</dt>
           <dd className="flex flex-wrap items-center gap-2" data-testid="ctv-order-commission">
             <span className="font-medium tabular-nums">{fmtInt(order.commission.commissionMmk)} MMK</span>
-            <span className="text-xs text-muted-foreground">({bpToPercent(order.commissionRateBp ?? 0)}%{hasFixedCommission(order.items) && ` · ${ta("fixedPerProduct")}`})</span>
+            <span className="text-xs text-muted-foreground">
+              (
+              {order.commissionRateBp != null
+                ? `${bpToPercent(order.commissionRateBp)}%${hasFixedCommission(order.items) ? ` · ${ta("fixedPerProduct")}` : ""}`
+                : ta("byPriceList")}
+              )
+            </span>
             <CommissionBadge state={order.commission.state} />
           </dd>
         </dl>

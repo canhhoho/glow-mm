@@ -1547,6 +1547,8 @@
     "Products.block.warehouseLabel",
     "Products.block.warehouseAssign",
     "Products.block.warehouseAssigned",
+    "Affiliates.byPriceList",
+    "Ctv.rateByProduct",
     "Products.readiness.issue.NO_WEIGHT",
     "Products.readiness.issue.NO_WEIGHT_LOCAL",
     "Products.readiness.issue.OUT_OF_STOCK",

@@ -61,11 +61,9 @@ export default async function AffiliatesPage({ searchParams }: PageProps<"/admin
               {!a.active && <Badge tone="danger">{t("locked")}</Badge>}
             </Td>
             <Td label={t("colCode")} className="font-mono text-xs">{a.code}</Td>
+            {/* 18/11/2026: hoa hồng bán hàng theo mức ở Giá bán → cột chỉ còn % tầng trên riêng (trống = % chung). */}
             <Td label={t("colPercent")} className="tabular-nums">
-              {bpToPercent(a.commissionRateBp)}%
-              {a.uplineRateBp != null && (
-                <div className="text-xs text-muted-foreground">{t("uplineShort", { percent: bpToPercent(a.uplineRateBp) })}</div>
-              )}
+              {a.uplineRateBp != null ? `${bpToPercent(a.uplineRateBp)}%` : <span className="text-muted-foreground">—</span>}
             </Td>
             <Td label={t("colMonthSales")} className="text-right tabular-nums whitespace-nowrap">
               {fmtInt(a.summary.monthSalesMmk)}

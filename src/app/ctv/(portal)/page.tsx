@@ -3,7 +3,6 @@ import { getTranslations } from "next-intl/server";
 import { fmtInt } from "@/lib/format";
 import { siteUrl } from "@/lib/site";
 import { requireAffiliate } from "@/server/auth/session";
-import { bpToPercent } from "@/server/affiliates/commission";
 import { affiliateOrders, getAffiliate } from "@/server/affiliates/affiliates";
 import { getNumberSetting } from "@/server/settings";
 import { PageHeader, Stat } from "@/components/admin/ui";
@@ -33,7 +32,7 @@ export default async function CtvHomePage() {
           <h2 className="font-medium">{t("refLink")}</h2>
           <span className="text-sm text-muted-foreground">
             {ta("code")}: <span className="font-mono text-foreground">{user.code}</span> ·{" "}
-            {t("rate", { percent: bpToPercent(a!.commissionRateBp) })}
+            {t("rateByProduct")}
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2">

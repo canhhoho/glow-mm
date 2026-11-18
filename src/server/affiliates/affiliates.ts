@@ -17,6 +17,7 @@ import { uplineSnapshot } from "./upline";
 import {
   commissionBaseMmk,
   commissionPerUnitSnapshot,
+  saleRateSnapshotBp,
   effectiveUplineRateBp,
   payoutLines,
   percentToBp,
@@ -59,6 +60,11 @@ export class AffiliateError extends Error {
 const text = mmText;
 /** % hoa hồng bán hàng, tối đa 2 chữ số thập phân (vd 12.5). */
 export const commissionPercentSchema = z.coerce.number().min(0).max(50).multipleOf(0.01);
+/**
+ * % bán hàng trên hồ sơ CTV — từ 18/11/2026 không còn dùng để tính (hoa hồng theo mức ở Giá bán), form không gửi:
+ * trống = tạo mới 0 / sửa giữ nguyên. Giữ cột cho dữ liệu cũ.
+ */
+const profilePercentSchema = z.preprocess((v) => (v === "" || v == null ? undefined : v), commissionPercentSchema.optional());
 
 /** % hưởng từ tuyến dưới (P13) — trống = dùng % chung trong Cài đặt. */
 export const uplinePercentSchema = z
@@ -72,8 +78,7 @@ const profileSchema = z.object({
   name: text(100).pipe(z.string().min(1)),
   phone: phoneSchema,
   code: z.string(),
-  /** % hoa hồng, tối đa 2 chữ số thập phân (vd 12.5). */
-  commissionPercent: commissionPercentSchema,
+  commissionPercent: profilePercentSchema,
   uplinePercent: uplinePercentSchema,
   payoutInfo: text(500).optional(),
 });
@@ -98,7 +103,7 @@ export function parseProfile<T extends z.ZodType<z.infer<typeof profileSchema>>>
     ...input,
     code,
     phone,
-    commissionRateBp: percentToBp(input.commissionPercent),
+    commissionRateBp: input.commissionPercent == null ? undefined : percentToBp(input.commissionPercent),
     uplineRateBp: input.uplinePercent == null ? null : percentToBp(input.uplinePercent),
     payoutInfo: input.payoutInfo || null,
   };
@@ -123,7 +128,8 @@ export type NewAffiliate = {
   email: string;
   phone: string;
   code: string;
-  commissionRateBp: number;
+  /** Không còn dùng để tính (18/11/2026) — trống = 0. */
+  commissionRateBp?: number;
   uplineRateBp?: number | null;
   payoutInfo: string | null;
   parentId: string | null;
@@ -153,7 +159,7 @@ export async function insertAffiliate(tx: Tx, input: NewAffiliate, actorId: stri
       userId,
       code: input.code,
       phone: input.phone,
-      commissionRateBp: input.commissionRateBp,
+      commissionRateBp: input.commissionRateBp ?? 0,
       uplineRateBp: input.uplineRateBp ?? null,
       payoutInfo: input.payoutInfo,
       parentId: input.parentId,
@@ -515,7 +521,7 @@ export async function affiliateOptions() {
 
 // ── Gán CTV cho đơn ──
 
-/** Gán / đổi / bỏ CTV (nguồn STAFF, chốt % hiện tại). Đơn đã có dòng chi trả hoặc đã huỷ thì không đổi được. */
+/** Gán / đổi / bỏ CTV (nguồn STAFF; hoa hồng bán hàng chốt lại theo mức ở Giá bán, % tầng trên hiện tại). Đơn đã có dòng chi trả hoặc đã huỷ thì không đổi được. */
 export async function assignOrderAffiliate(
   orderId: string,
   affiliateId: string | null,
@@ -543,7 +549,7 @@ export async function assignOrderAffiliate(
       data = {
         affiliateId: a.id,
         affiliateSource: "STAFF",
-        commissionRateBp: a.commissionRateBp,
+        commissionRateBp: saleRateSnapshotBp(),
         ...(await uplineSnapshot(tx, a.parentId)),
       };
     }
@@ -569,7 +575,8 @@ export async function assignOrderAffiliate(
 // ── Chỉnh % trên từng đơn (P13) ──
 
 const orderRatesSchema = z.object({
-  commissionPercent: commissionPercentSchema,
+  // Chỉ đơn cũ còn chốt % bán hàng mới có ô này (18/11/2026: hoa hồng bán hàng theo mức ở Giá bán).
+  commissionPercent: z.preprocess((v) => (v === "" || v == null ? undefined : v), commissionPercentSchema.optional()),
   uplinePercent: uplinePercentSchema,
 });
 
@@ -587,7 +594,8 @@ export async function setOrderCommissionRates(orderId: string, raw: unknown, act
     if (order._count.payoutLines > 0) throw new AffiliateError("order_paid", "Đơn đã chi trả hoa hồng — không chỉnh % được");
     if (order.status === "CANCELLED") throw new AffiliateError("order_cancelled", "Đơn đã huỷ — không chỉnh % được");
     const data = {
-      commissionRateBp: percentToBp(input.commissionPercent),
+      // Đơn mới không có % bán hàng (null) → giữ null; chỉ đơn cũ đã chốt % mới chỉnh được.
+      commissionRateBp: order.commissionRateBp != null && input.commissionPercent != null ? percentToBp(input.commissionPercent) : order.commissionRateBp,
       // Đơn không có cấp trên → bỏ qua % tầng trên; có cấp trên mà để trống → giữ nguyên.
       uplineRateBp: order.uplineAffiliateId && input.uplinePercent != null ? percentToBp(input.uplinePercent) : order.uplineRateBp,
     };

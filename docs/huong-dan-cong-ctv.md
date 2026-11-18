@@ -51,7 +51,7 @@ Trên máy tính là thanh trên cùng; trên điện thoại là thanh ở **cu
 
 | Mục | Dùng để |
 |---|---|
-| **Tổng quan** | Xem link giới thiệu, % hoa hồng, đơn gần đây |
+| **Tổng quan** | Xem link giới thiệu, đơn gần đây |
 | **Đơn của tôi** | Danh sách và chi tiết đơn tính cho bạn |
 | **Tạo đơn** | Tạo đơn cho khách ("Tạo đơn cho khách") |
 | **Tuyến dưới** | Mời CTV mới, xem tổng số của nhóm |
@@ -70,7 +70,7 @@ Bạn **chỉ thấy dữ liệu của chính mình**. Cổng CTV không vào đ
 - Gửi link **một sản phẩm** cũng được: thêm `?ref={mã của bạn}` vào cuối link.
 - **Mã giới thiệu** là mã cửa hàng cấp cho bạn. Nếu cửa hàng đổi mã thì link cũ **ngừng tính**.
 - Bạn cũng có thể tự đăng nhập trang web bán hàng bằng chính tài khoản CTV; đơn đặt khi đang đăng nhập tự gắn cho bạn.
-- **Hoa hồng {x}%** hiển thị ở Tổng quan là tỷ lệ áp dụng cho bạn (có thể có sản phẩm tính số tiền cố định, xem [mục 6](#6-hoa-hồng-và-thanh-toán)).
+- Hoa hồng tính **theo từng sản phẩm** (số tiền cố định cửa hàng đặt cho sản phẩm đó), xem [mục 6](#6-hoa-hồng-và-thanh-toán).
 
 ---
 
@@ -111,11 +111,11 @@ Bạn **chỉ xem**, không sửa/huỷ đơn được. Cần đổi gì, báo c
 
 **Cách tính (thông tin 💰)**
 - Cơ sở = **tiền hàng khách thực giữ** (đã trừ hàng trả). **Phí ship không tính.**
-- Hoa hồng của bạn = số tiền cố định theo sản phẩm (nếu sản phẩm đó có) + **% hoa hồng** × tiền hàng các sản phẩm còn lại.
+- Hoa hồng của bạn = **số tiền cố định của từng sản phẩm × số lượng** khách giữ. Sản phẩm cửa hàng chưa đặt hoa hồng thì không có hoa hồng.
 - Khách trả hàng thì hoa hồng của đơn đó **giảm tương ứng**.
-- % và số tiền cố định được **chốt vào đơn lúc đơn tạo**; cửa hàng đổi % sau đó chỉ áp cho đơn mới.
+- Số tiền được **chốt vào đơn lúc đơn tạo**; cửa hàng đổi mức sau đó chỉ áp cho đơn mới.
 
-**Ví dụ (số giả định):** đơn 2 sản phẩm: A 50.000 × 1 (sản phẩm này hoa hồng cố định 5.000), B 30.000 × 2 = 60.000; % của bạn là 10% → hoa hồng = 5.000 + 10% × 60.000 = **11.000 MMK**.
+**Ví dụ (số giả định):** đơn 2 sản phẩm: A × 1 (hoa hồng 5.000/cái), B × 2 (hoa hồng 3.000/cái) → hoa hồng = 5.000 + 2 × 3.000 = **11.000 MMK**.
 
 **Ba trạng thái**
 | Trạng thái | Nghĩa |

@@ -24,7 +24,6 @@ test("admin: tạo CTV, gán vào đơn, đơn hoàn tất rồi ghi nhận chi 
   await page.getByLabel("Email đăng nhập").fill(`${code.toLowerCase()}@ctv.glow.local`);
   await page.getByLabel("Số điện thoại").fill("09 7812 0000");
   await page.getByLabel("Mã giới thiệu").fill(code);
-  await page.getByLabel("Hoa hồng (%)").fill("10");
   await page.getByLabel("Mật khẩu tạm").fill("ctv-mat-khau-12");
   await page.getByRole("button", { name: "Tạo CTV" }).click();
   await expect(page).toHaveURL(/\/admin\/affiliates\/[^/?]+\?created=1$/);
@@ -92,7 +91,6 @@ test("admin: sửa CTV từ danh sách, hủy xác nhận rồi xóa tài khoả
   await page.getByLabel("Email đăng nhập").fill(`${code.toLowerCase()}@ctv.glow.local`);
   await page.getByLabel("Số điện thoại").fill("09 7812 0000");
   await page.getByLabel("Mã giới thiệu").fill(code);
-  await page.getByLabel("Hoa hồng (%)").fill("10");
   await page.getByLabel("Mật khẩu tạm").fill("ctv-mat-khau-12");
   await page.getByRole("button", { name: "Tạo CTV", exact: true }).click();
   await expect(page).toHaveURL(/\?created=1$/);
@@ -126,7 +124,6 @@ test("admin: khóa CTV từ danh sách → CTV không đăng nhập được; m�
   await page.getByLabel("Email đăng nhập").fill(email);
   await page.getByLabel("Số điện thoại").fill("09 7812 0000");
   await page.getByLabel("Mã giới thiệu").fill(code);
-  await page.getByLabel("Hoa hồng (%)").fill("10");
   await page.getByLabel("Mật khẩu tạm").fill(password);
   await page.getByRole("button", { name: "Tạo CTV", exact: true }).click();
   await expect(page).toHaveURL(/\?created=1$/);

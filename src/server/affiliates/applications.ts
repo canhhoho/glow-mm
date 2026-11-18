@@ -118,7 +118,7 @@ export const pendingApplicationsCount = () => prisma.affiliateApplication.count(
 
 const approveSchema = z.object({
   code: z.string(),
-  commissionPercent: commissionPercentSchema,
+  commissionPercent: z.preprocess((v) => (v === "" || v == null ? undefined : v), commissionPercentSchema.optional()),
   payoutInfo: mmText(500).optional(),
 });
 

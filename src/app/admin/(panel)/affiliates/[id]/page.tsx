@@ -232,7 +232,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
                 <div className="flex flex-col items-end gap-1 max-md:items-start">
                   <span>
                     {fmtInt(o.commission.commissionMmk)}
-                    <span className="ml-1 text-xs text-muted-foreground">({bpToPercent(o.commissionRateBp ?? 0)}%)</span>
+                    {o.commissionRateBp != null && <span className="ml-1 text-xs text-muted-foreground">({bpToPercent(o.commissionRateBp)}%)</span>}
                   </span>
                   <CommissionBadge state={o.commission.state} />
                 </div>
@@ -316,7 +316,6 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
                 email: a.user.email,
                 phone: a.phone,
                 code: a.code,
-                commissionPercent: bpToPercent(a.commissionRateBp),
                 uplinePercent: a.uplineRateBp == null ? null : bpToPercent(a.uplineRateBp),
                 payoutInfo: a.payoutInfo,
               }}

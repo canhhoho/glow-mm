@@ -1783,14 +1783,14 @@
     "code": "Referral code",
     "codeHint": "4–12 characters A–Z, 0–9. Changing it stops the old link from counting.",
     "percent": "Commission (%)",
-    "percentHint": "A new % applies to new orders only; existing orders keep their %.",
+    "percentHint": "Sales commission is the MMK/unit amount set on the Selling prices page (blank = no commission). The field below is only the upline %.",
     "payoutInfo": "Payout details",
     "payoutInfoHint": "Bank / KBZPay / Wave… (admins only)",
     "tempPassword": "Temporary password",
     "tempPasswordHint": "At least {min} characters. The affiliate changes it after signing in.",
     "colCtv": "Affiliate",
     "colCode": "Code",
-    "colPercent": "%",
+    "colPercent": "Upline %",
     "colMonthSales": "Sales this month",
     "colPending": "Pending",
     "colPayable": "Payable",
@@ -1937,7 +1937,8 @@
       "upline": "Upline %"
     },
     "cancelledLocked": "Order cancelled — affiliate can't be changed.",
-    "fixedPerProduct": "some products have a fixed commission"
+    "fixedPerProduct": "some products have a fixed commission",
+    "byPriceList": "per Selling prices commission"
   },
   "Ctv": {
     "metaTitle": "Affiliate portal — T&C Cosmetics",
@@ -1960,6 +1961,7 @@
     "copy": "Copy",
     "copied": "Copied",
     "rate": "Commission {percent}%",
+    "rateByProduct": "Commission per product (fixed amount on the price list)",
     "recent": "Recent orders",
     "seeAll": "See all",
     "back": "← My orders",
