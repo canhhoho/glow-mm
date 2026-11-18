@@ -3,6 +3,7 @@
  * `errors` chặn bật hiển thị; `warnings` cho phép nhưng cần biết. Không tự ẩn SP đang hiển thị.
  * Quyết định của chủ shop: thiếu ảnh chỉ cảnh báo; SP đang hiển thị vẫn lưu được, chỉ chặn giá ≤ 0 / không còn biến thể.
  */
+import { FEATURES } from "@/lib/features";
 
 /**
  * NOT_APPROVED: không còn do `evaluateReadiness` sinh ra (P1-A: readiness = điều kiện, duyệt là thao tác riêng) —
@@ -69,26 +70,35 @@ export type Readiness = { errors: Issue[]; warnings: Issue[] };
 
 const withSkus = (code: IssueCode, skus: string[]): Issue[] => (skus.length ? [{ code, skus }] : []);
 
+/**
+ * Thiếu khối lượng là LỖI chặn chỉ khi công thức giá tự động cần nó (cước/kg của kho nhập VN). Giá tự động đang tắt
+ * (`FEATURES.autoPricing`, 18/11/2026) hoặc kho mua MMK → chỉ cảnh báo NO_WEIGHT_LOCAL (vẫn cần khi gửi VTP).
+ * Ngoại lệ có chủ ý (như `fefo.ts` với cờ hạn dùng): cờ đổi quy tắc nghiệp vụ nên hàm thuần kiểm cờ.
+ * Dùng chung cho readiness và Kiểm tra dữ liệu (`reports/data-health.ts`).
+ */
+export const weightRequired = (pricingMode: "VN_IMPORT" | "LOCAL_MMK" | null | undefined): boolean =>
+  FEATURES.autoPricing && pricingMode !== "LOCAL_MMK";
+
 export function evaluateReadiness(p: ReadinessInput): Readiness {
   const active = p.variants.filter((v) => v.active);
   const hasWeight = (v: ReadinessInput["variants"][number]) =>
     (v.weightGrams ?? 0) > 0 ||
     (v.isBundle && !!v.componentWeights?.length && v.componentWeights.every((w) => (w ?? 0) > 0));
   const noWeight = active.filter((v) => !hasWeight(v)).map((v) => v.sku);
-  const localMode = p.location?.pricingMode === "LOCAL_MMK";
+  const needWeight = weightRequired(p.location?.pricingMode);
 
   const errors: Issue[] = [
     ...(active.length === 0 ? [{ code: "NO_ACTIVE_VARIANT" as const }] : []),
     ...(!p.location ? [{ code: "NO_WAREHOUSE" as const }] : !p.location.active || !p.location.sellable ? [{ code: "BAD_LOCATION" as const }] : []),
     ...withSkus("PRICE_ZERO", active.filter((v) => v.priceMmk <= 0).map((v) => v.sku)),
-    // Kho hàng nhập VN: công thức giá cần khối lượng (combo chưa khai báo → cộng thành phần).
-    ...(localMode ? [] : withSkus("NO_WEIGHT", noWeight)),
+    // Kho hàng nhập VN + giá tự động bật: công thức giá cần khối lượng (combo chưa khai báo → cộng thành phần).
+    ...(needWeight ? withSkus("NO_WEIGHT", noWeight) : []),
     ...withSkus("COMPONENT_INACTIVE", active.filter((v) => v.inactiveComponent).map((v) => v.sku)),
   ];
   const warnings: Issue[] = [
     ...(p.imageCount === 0 ? [{ code: "NO_IMAGE" as const }] : []),
     ...(p.content.some((c) => !c.description?.trim()) ? [{ code: "CONTENT_INCOMPLETE" as const }] : []),
-    ...(localMode ? withSkus("NO_WEIGHT_LOCAL", noWeight) : []),
+    ...(needWeight ? [] : withSkus("NO_WEIGHT_LOCAL", noWeight)),
     ...withSkus("COST_MISSING", p.costMissingSkus),
     ...withSkus("COST_ESTIMATED", p.costEstimatedSkus),
     ...(!p.preorderEnabled && active.length > 0 && active.every((v) => (p.available.get(v.id) ?? 0) <= 0) ? [{ code: "OUT_OF_STOCK" as const }] : []),
