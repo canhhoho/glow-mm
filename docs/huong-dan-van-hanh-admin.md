@@ -419,6 +419,8 @@ Xử lý đơn đặt trước: [mục 10.9](#109-đơn-đặt-trước).
 
 **Đổi kho hàng loạt:** tick sản phẩm → chọn kho → **Đổi kho**. Hàng còn ở kho cũ chỉ bán được sau khi chuyển kho ([8.3](#83-chuyển-kho-xuất-kho-và-điều-chỉnh)).
 
+**Bán đặt trước khi chưa có hàng (18/11/2026):** sản phẩm chưa nhập hàng thì chưa có kho bán → lỗi "Chưa có kho bán". Vào trang sản phẩm → tab **Tồn & nhập hàng** → khối **Chưa có kho bán** → chọn **Kho bán** → **Gán kho** (hoặc dùng **Đổi kho** ở danh sách). Sau đó đặt giá → gửi duyệt → duyệt → bật hiển thị; web hiện **Pre-order**, đơn khách vào **Đơn đặt trước**. Khi hàng về, nhập hàng vào đúng kho đã gán rồi chuyển xử lý đơn.
+
 **Hiện/ẩn:** từng sản phẩm ở bước 5 (**Bật hiển thị trên web** / **Ẩn khỏi web**); hàng loạt: tick → **Hiện trên web** / **Ẩn khỏi web**. Điều kiện bật: không còn lỗi ở [5.2](#52-trang-sản-phẩm-5-bước-và-các-lưu-ý) **và** đã được duyệt ít nhất một lần.
 
 **Thao tác hàng loạt khác ở danh sách:** **Chọn tất cả ({count})**, **Gửi duyệt**.
