@@ -24,7 +24,7 @@ export function AccountRowActions({
   remove?: { action: Action; fields: Record<string, string>; label: string; confirm: string };
 }) {
   return (
-    <div className="flex flex-wrap items-start gap-1 md:flex-nowrap md:justify-end">
+    <div className="flex flex-wrap items-center gap-1 md:flex-nowrap md:justify-end">
       <Link
         href={editHref}
         aria-label={editLabel}

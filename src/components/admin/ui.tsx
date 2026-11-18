@@ -231,6 +231,8 @@ export function DataTable({
   dense = false,
   className,
   tableClassName,
+  cols,
+  middle = false,
 }: {
   head: React.ReactNode[];
   children: React.ReactNode;
@@ -243,12 +245,23 @@ export function DataTable({
   className?: string;
   /** Lớp thêm cho `<table>` (vd `min-w-[1050px]` để cuộn ngang thay vì bóp cột). */
   tableClassName?: string;
+  /** Lớp độ rộng từng cột (`<colgroup>`), vd `md:w-[24%]` — dùng với `table-fixed` để chia cột theo nội dung. */
+  cols?: string[];
+  /** Căn giữa dọc mọi ô (máy tính) — bảng một hàng/dòng có badge, nút (vd Tài khoản). Mặc định căn trên cho ô nhiều dòng. */
+  middle?: boolean;
 }) {
   const hasRows = Array.isArray(children) ? children.length > 0 : !!children;
   // min-w-0: bảng nằm trong grid/flex vẫn tự cuộn ngang, không kéo giãn khối cha (gây tràn trang trên điện thoại).
   return (
     <div className={cn("relative min-w-0 overflow-x-auto rounded-xl border bg-card", className)}>
-      <table className={cn("w-full text-sm", stack && STACK, dense && DENSE, tableClassName)}>
+      <table className={cn("w-full text-sm", stack && STACK, dense && DENSE, middle && "md:[&_td]:align-middle", tableClassName)}>
+        {cols && (
+          <colgroup className={cn(stack && "max-md:hidden")}>
+            {cols.map((c, i) => (
+              <col key={i} className={c} />
+            ))}
+          </colgroup>
+        )}
         <thead className={cn("bg-muted/50 text-left text-xs text-muted-foreground", stack && "max-md:hidden")}>
           <tr>
             {head.map((h, i) => (

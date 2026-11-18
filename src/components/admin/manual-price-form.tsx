@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Calculator, Pencil } from "lucide-react";
 import { ActionForm } from "@/components/admin/action-form";
 import { BatchReviewOptions } from "@/components/admin/batch-review";
-import { Badge, DataTable, Td, fieldClass, fieldLabelClass } from "@/components/admin/ui";
+import { Badge, DataTable, Td, fieldClass } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
 import { fmtDate, fmtInt } from "@/lib/format";
@@ -62,6 +62,8 @@ export function ManualVndForm({
     ),
   );
   const rate = rates.find((r) => r.id === rateId);
+  const lotText = (s?: ManualRow["sources"][number]) =>
+    s && t("lotOption", { lot: s.lotNo, doc: s.documentCode, date: s.postedAt ? fmtDate(new Date(s.postedAt)) : "—", price: fmtInt(s.unitCostVnd) });
   const set = (id: string, patch: Partial<RowState>) => setState((s) => ({ ...s, [id]: { ...s[id], ...patch } }));
 
   const computed = useMemo(
@@ -95,12 +97,13 @@ export function ManualVndForm({
   const changedCount = computed.filter((c) => c.changed && editing.includes(c.r.variantId)).length;
 
   return (
-    <ActionForm action={applyManualVndAction} submitLabel={editAll ? t("saveConfirm", { count: lines.length, changed: changedCount }) : t("save", { count: changedCount })} icon={<Calculator aria-hidden />} className="space-y-4">
+    <ActionForm action={applyManualVndAction} submitLabel={editAll ? t("saveConfirm", { count: lines.length, changed: changedCount }) : t("save", { count: changedCount })} icon={<Calculator aria-hidden />} className="flex flex-wrap items-end gap-x-6 gap-y-4" actionsClassName="ml-auto">
       <input type="hidden" name="payload" value={payload} />
-      <div className="flex flex-wrap items-end gap-4">
-        <label className={fieldLabelClass}>
-          <span className="text-muted-foreground">{t("rate")}</span>
-          <select value={rateId} onChange={(e) => setRateId(e.target.value)} className={cn(fieldClass, "w-auto min-w-64")} data-testid="manual-rate">
+      {/* Thanh cấu hình ngang trên bảng: tỷ giá (áp cho cả bảng) + hướng dẫn tính. */}
+      <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 basis-full rounded-lg border bg-muted/30 px-3 py-2" data-testid="manual-toolbar">
+        <label className="flex min-w-0 flex-wrap items-center gap-2 text-sm max-sm:w-full">
+          <span className="font-medium">{t("rate")}</span>
+          <select value={rateId} onChange={(e) => setRateId(e.target.value)} className={cn(fieldClass, "w-full min-w-0 bg-background sm:w-auto sm:min-w-64")} data-testid="manual-rate">
             {rates.map((r) => (
               <option key={r.id} value={r.id}>
                 {t("rateOption", { vnd: r.vndPerMmk, date: fmtDate(new Date(r.effectiveAt)) })}
@@ -109,20 +112,25 @@ export function ManualVndForm({
             ))}
           </select>
         </label>
+        <span className="text-xs text-muted-foreground">{t("roundNote", { round: fmtInt(roundTo) })}</span>
+        {/* Hướng dẫn dài (công thức, ý nghĩa lãi, lô nguồn) gom vào phần mở rộng — bảng chỉ còn cột cần thao tác. */}
+        <details className="basis-full text-sm text-muted-foreground md:ml-auto md:basis-auto" data-testid="manual-help">
+          <summary className="cursor-pointer select-none md:text-right">{t("howTo")}</summary>
+          <p className="mt-1 max-w-2xl">{t("formula", { round: fmtInt(roundTo) })}</p>
+          <p className="mt-1 max-w-2xl">{t("profitNote")}</p>
+        </details>
       </div>
-      {rate && !rate.current && <Notice tone="warning">{t("oldRate")}</Notice>}
-      {/* Hướng dẫn dài (công thức, ý nghĩa lãi, lô nguồn) gom vào phần mở rộng — bảng chỉ còn cột cần thao tác. */}
-      <details className="text-sm text-muted-foreground" data-testid="manual-help">
-        <summary className="cursor-pointer select-none">{t("howTo")}</summary>
-        <p className="mt-1">{t("formula", { round: fmtInt(roundTo) })}</p>
-        <p className="mt-1">{t("profitNote")}</p>
-      </details>
+      {rate && !rate.current && <Notice tone="warning" className="basis-full">{t("oldRate")}</Notice>}
       <DataTable
         stack
         dense
+        middle
+        className="basis-full"
         tableClassName="md:table-fixed [&_th]:whitespace-normal [&_th]:align-bottom"
-        numeric={[1, 2, 3, 4, 5]}
-        head={[t("colProduct"), t("colPurchase"), t("colProfit"), t("colShip"), t("colCtv"), t("colFinal"), <span key="act" className="sr-only md:not-sr-only">{t("colActions")}</span>]}
+        // Chia cột theo nội dung: tên SP rộng nhất, lô nguồn đủ đọc mã lô/phiếu, ô số vừa 7–9 chữ số.
+        cols={["md:w-[23%]", "md:w-[9%]", "md:w-[18%]", "md:w-[11%]", "md:w-[10%]", "md:w-[10%]", "md:w-[11%]", "md:w-[8%]"]}
+        numeric={[1, 3, 4, 5, 6]}
+        head={[t("colProduct"), t("colPurchase"), t("colLot"), t("colProfit"), t("colShip"), t("colCtv"), t("colFinal"), <span key="act" className="sr-only md:not-sr-only">{t("colActions")}</span>]}
       >
         {computed.map((c) => {
           const id = c.r.variantId;
@@ -157,7 +165,7 @@ export function ManualVndForm({
           };
           return (
             <tr key={id} data-testid="manual-row" className={cn(c.changed && editable && "bg-primary/5")}>
-              <Td className="md:w-[31%]">
+              <Td>
                 <span className="block font-medium break-words">{c.r.productName}</span>
                 <span className="block text-xs break-all text-muted-foreground">
                   <span className="font-mono">{c.r.sku}</span>
@@ -165,8 +173,10 @@ export function ManualVndForm({
                 </span>
                 {c.r.isBundle && <Badge tone="brand">combo</Badge>}
               </Td>
-              <Td label={t("colPurchase")} numeric className="md:w-[19%]">
-                <div className="tabular-nums">{c.purchase != null ? fmtInt(c.purchase) : "—"}</div>
+              <Td label={t("colPurchase")} numeric>
+                <span className="tabular-nums">{c.purchase != null ? fmtInt(c.purchase) : "—"}</span>
+              </Td>
+              <Td label={t("colLot")}>
                 {c.r.isBundle ? (
                   <span className="block text-xs text-muted-foreground">{t("comboLot")}</span>
                 ) : c.r.sources.length === 0 ? (
@@ -174,15 +184,16 @@ export function ManualVndForm({
                 ) : (
                   <select
                     aria-label={`${t("colLot")} ${c.r.sku}`}
-                    title={t("colLot")}
+                    // Cột hẹp có thể cắt chữ → tooltip hiện đủ lô · phiếu · ngày · giá của lô đang chọn.
+                    title={lotText(c.r.sources.find((s) => s.lineId === c.st.sourceLineId)) ?? t("colLot")}
                     disabled={!editable}
                     value={c.st.sourceLineId}
                     onChange={(e) => set(id, { sourceLineId: e.target.value })}
-                    className={cn(fieldClass, "mt-1 w-full text-xs")}
+                    className={cn(fieldClass, "w-full min-w-0 text-xs")}
                   >
                     {c.r.sources.map((s) => (
                       <option key={s.lineId} value={s.lineId}>
-                        {t("lotOption", { lot: s.lotNo, doc: s.documentCode, date: s.postedAt ? fmtDate(new Date(s.postedAt)) : "—", price: fmtInt(s.unitCostVnd) })}
+                        {lotText(s)}
                       </option>
                     ))}
                   </select>
@@ -191,7 +202,7 @@ export function ManualVndForm({
               <Td label={t("colProfit")} numeric>{num("profit", t("colProfit"), { id: `profit-${id}` })}</Td>
               <Td label={t("colShip")} numeric>{num("ship", t("colShip"))}</Td>
               <Td label={t("colCtv")} numeric>{num("ctv", t("colCtv"))}</Td>
-              <Td label={t("colFinal")} numeric className="md:w-[12%]">
+              <Td label={t("colFinal")} numeric>
                 {editable ? (
                   <>
                     <div className="text-base font-semibold tabular-nums" data-testid="manual-final">{c.price != null ? fmtInt(c.price) : "—"}</div>
@@ -208,7 +219,7 @@ export function ManualVndForm({
                 )}
                 {c.r.pending && <div className="text-xs text-warning">{t("pending", { price: fmtInt(c.r.price) })}</div>}
               </Td>
-              <Td label={t("colActions")} className="md:w-16">
+              <Td label={t("colActions")} className="md:text-center">
                 <Button
                   type="button"
                   size="icon-lg"
@@ -229,7 +240,8 @@ export function ManualVndForm({
           );
         })}
       </DataTable>
-      {canReview && <BatchReviewOptions canApprove={canApprove} compact />}
+      {/* Hàng thao tác: ô gửi duyệt / duyệt luôn bên trái, nút Lưu bên phải (actionsClassName="ml-auto"). */}
+      {canReview ? <BatchReviewOptions canApprove={canApprove} compact /> : <span aria-hidden />}
     </ActionForm>
   );
 }

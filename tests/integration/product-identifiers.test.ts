@@ -2,12 +2,13 @@ import { describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { saveProduct } from "@/server/catalog/products";
 import { makeFixture } from "./fixtures";
+import { suggestVariantSku } from "@/lib/product-identifiers";
 
 describe("automatic catalog identifiers", () => {
   it("allocates distinct codes when two new products are saved concurrently", async () => {
     const f = await makeFixture();
     const slug = `auto-${f.tag.toLowerCase()}`;
-    const sku = `AUTO-${f.tag}-01`;
+    const sku = suggestVariantSku(slug, 0); // form gửi SKU gợi ý theo slug
     const draft = {
       slug, autoSlug: true, brandId: f.brandId, categoryId: f.categoryId, stockLocationId: f.mm.id,
       my: { name: "Bag" }, en: { name: "Bag" },
@@ -16,8 +17,9 @@ describe("automatic catalog identifiers", () => {
     const products = await Promise.all([saveProduct(draft, f.userId), saveProduct(draft, f.userId)]);
     expect(products.map(p => p.slug).sort()).toEqual([slug, `${slug}-2`].sort());
     const variants = await prisma.variant.findMany({ where: { productId: { in: products.map(p => p.id) } } });
-    // SKU tự sinh theo slug đã đổi: SP thứ hai `auto-x-2` → `AUTO-X-2-01`.
-    expect(variants.map(v => v.sku).sort()).toEqual([sku, `${slug}-2-01`.toUpperCase()].sort());
+    // SKU tự sinh theo slug đã đổi: SP thứ hai `auto-x-2` → SKU gợi ý của slug mới.
+    expect(variants.map(v => v.sku).sort()).toEqual([sku, suggestVariantSku(`${slug}-2`, 0)].sort());
+    expect(new Set(variants.map(v => v.sku)).size).toBe(2);
     expect(variants).toHaveLength(2);
   });
 

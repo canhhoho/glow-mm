@@ -57,7 +57,7 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
         </select>
         <FilterButton>{(await getTranslations("Common"))("filter")}</FilterButton>
       </FilterBar>
-      <DataTable stack empty={t("empty")} head={[t("name"), t("email"), t("role"), t("status"), t("createdAt"), (await getTranslations("Customers"))("actions")]}>
+      <DataTable stack middle empty={t("empty")} head={[t("name"), t("email"), t("role"), t("status"), t("createdAt"), (await getTranslations("Customers"))("actions")]}>
         {users.map((u) => (
           <tr key={u.id} data-testid="user-row">
             <Td>
@@ -72,7 +72,7 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
               <Badge tone={u.active ? "success" : "danger"}>{u.active ? t("active") : t("locked")}</Badge>
             </Td>
             <Td label={t("createdAt")} className="text-xs whitespace-nowrap">{fmtDateTime(u.createdAt)}</Td>
-            <Td className="align-middle md:w-px md:whitespace-nowrap">
+            <Td className="md:w-px md:whitespace-nowrap">
               {/* Dòng của chính mình chỉ có Sửa: không tự khoá / tự xoá. */}
               <AccountRowActions
                 editHref={`/admin/users/${u.id}`}

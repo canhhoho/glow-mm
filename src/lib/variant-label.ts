@@ -11,7 +11,8 @@ import { toUnicode } from "@/lib/myanmar";
  */
 export const STANDARD_VARIANT_LABELS = [adminVi, adminEn, adminMy].map((m) => m.Products.standardVariant);
 
-const fold = (s: string) => toUnicode(s).normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase();
+/** Chuẩn hoá để so khớp chữ (Unicode Myanmar, khoảng trắng, hoa thường). */
+export const fold = (s: string) => toUnicode(s).normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase();
 const STANDARD = new Set(STANDARD_VARIANT_LABELS.map(fold));
 
 export const isStandardVariantLabel = (label: string | null | undefined) => !!label && STANDARD.has(fold(label));

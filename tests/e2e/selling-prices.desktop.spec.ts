@@ -6,12 +6,22 @@ test("Giá bán (desktop): bảng theo kho và quy đổi ngầm ngay trên danh
   await login(page, "admin@glow.local");
   await page.goto("/admin/selling-prices?q=SV-SUN-50");
   const vnd = page.getByTestId("manual-vnd");
-  // 7 cột, đúng thứ tự; không còn cột trung gian "Giá mua + lãi (MMK)" (phép tính giữ nguyên).
-  await expect(vnd.locator("thead th")).toHaveText(["Sản phẩm", "Giá mua (VND) / Lô nguồn", "Lãi (VND)", "Vận chuyển (MMK)", "CTV (MMK)", "Giá bán (MMK)", "Thao tác"]);
+  // 8 cột, đúng thứ tự (18/11/2026: tách "Lô nguồn" khỏi "Giá mua"); không còn cột trung gian "Giá mua + lãi (MMK)".
+  await expect(vnd.locator("thead th")).toHaveText(["Sản phẩm", "Giá mua (VND)", "Lô nguồn", "Lãi (VND)", "Vận chuyển (MMK)", "CTV (MMK)", "Giá bán (MMK)", "Thao tác"]);
   await expect(vnd.getByRole("columnheader", { name: "Giá mua + lãi (MMK)" })).toHaveCount(0);
-  await expect(vnd.locator("tbody tr").first().locator("td")).toHaveCount(7);
+  await expect(vnd.locator("tbody tr").first().locator("td")).toHaveCount(8);
   await expect(page.getByTestId("price-pick")).toHaveCount(0);
   await expect(page.getByTestId("manual-formula")).toHaveCount(0);
+  // Tỷ giá trên thanh cấu hình ngang phía trên bảng; ô gửi duyệt + nút Lưu cùng một hàng dưới bảng.
+  const bar = vnd.getByTestId("manual-toolbar");
+  await expect(bar.getByTestId("manual-rate")).toBeVisible();
+  const tableBox = (await vnd.locator("table").boundingBox())!;
+  expect((await bar.boundingBox())!.y).toBeLessThan(tableBox.y);
+  const save = vnd.getByRole("button", { name: /^Lưu giá/ });
+  const submitNow = vnd.getByLabel("Gửi duyệt ngay");
+  const [saveBox, checkBox] = [(await save.boundingBox())!, (await submitNow.boundingBox())!];
+  expect(Math.abs(saveBox.y - checkBox.y)).toBeLessThan(saveBox.height);
+  expect(saveBox.x).toBeGreaterThan(checkBox.x);
   const line = vnd.getByTestId("manual-row").first();
   // Nút icon bút chì: nhãn truy cập + tooltip; bấm bằng bàn phím → ô Lãi được focus.
   const edit = line.getByRole("button", { name: /^Sửa giá / });

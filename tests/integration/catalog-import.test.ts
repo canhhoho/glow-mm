@@ -1,4 +1,5 @@
 import { afterAll, describe, expect, it, vi } from "vitest";
+import { skuStem } from "@/lib/product-identifiers";
 // Kiểm quy tắc hạn dùng → chạy với cờ hạn dùng BẬT (production đang tắt, 17/11/2026; hành vi tắt: expiry-off.test.ts).
 vi.mock("@/lib/features", async (orig) => (await import("../support/expiry-on")).expiryOn(orig));
 import { prisma } from "@/lib/db";
@@ -241,7 +242,7 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     expect(preview.errors).toEqual([]);
     expect(preview.counts.createdProducts).toBe(2);
     const slugBase = `zeta-${f.tag.toLowerCase()}`;
-    expect(preview.rows[2].sku.startsWith(slugBase.toUpperCase().slice(0, 30))).toBe(true);
+    expect(preview.rows[2].sku.startsWith(`${skuStem(slugBase)}-`)).toBe(true); // SKU tự sinh ngắn theo slug (18/11/2026)
     await commitCatalogImport(preview.input, f.userId);
     const mm = await prisma.product.findFirstOrThrow({ where: { brand: { name: brand }, translations: { some: { name: "ဆီရမ်" } } }, include: { variants: true } });
     expect(mm.slug.startsWith(slugBase)).toBe(true);

@@ -76,7 +76,8 @@ test("tạo SP có phân loại: mã tự sinh, giá 0, thanh 5 bước chỉ t�
   await openProductSettings(page);
   await expect(page.getByRole("textbox", { name: "Slug (URL)", exact: true })).toHaveValue(`tui-do-dior-${tag}`);
   const skus = page.getByRole("textbox", { name: "SKU", exact: true });
-  await expect(skus.nth(0)).toHaveValue(new RegExp(`^TUI-DO-DIOR-${tag}-0[12]$`));
+  // SKU tự sinh ngắn (18/11/2026): 3 chữ đầu + chữ cái đầu các từ + mã số (tối đa 8 ký tự); trùng → thêm -2.
+  await expect(skus.nth(0)).toHaveValue(new RegExp(`^TUI-DD${String(tag).slice(0, 8)}-0[12](-\\d+)?$`));
   const variantLabels = page.getByRole("textbox", { name: "Phân loại (dung tích/màu)", exact: true });
   await expect(variantLabels).toHaveCount(2);
   await expect(variantLabels.nth(0)).toHaveValue("Đỏ");

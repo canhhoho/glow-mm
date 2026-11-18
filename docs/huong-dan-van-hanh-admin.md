@@ -351,7 +351,7 @@ Khối **Kiểm tra điều kiện đăng bán** bên cạnh có ba dòng, mỗi
 - **Phân loại:** mỗi dòng có ô **Phân loại (dung tích/màu)** và ô **Đang dùng**. Bấm **Thêm phân loại** để thêm; biến thể mới có giá 0, và nếu sản phẩm đang bán thì biến thể mới **được tạo ở trạng thái tắt**.
 - **Thiết lập khác (mã, kho, hạn dùng)** (khối đóng sẵn, bấm để mở):
   - **Slug (URL)** — **khoá sau lần đăng bán đầu tiên** (đường dẫn khách đã dùng).
-  - **SKU** từng biến thể — tự điền, sửa được; trùng thì hệ thống tự thêm hậu tố khi lưu. Chỉ gồm chữ, số và `. _ -`.
+  - **SKU** từng biến thể — tự điền, sửa được; trùng thì hệ thống tự thêm hậu tố khi lưu. Chỉ gồm chữ, số và `. _ -`. SKU tự sinh dạng viết tắt (18/11/2026): 3 chữ đầu của từ đầu tên + chữ cái đầu các từ sau (tối đa 5) + dung tích/mã màu + số thứ tự phân loại, vd "ANESSA Perfect UV Spray 60g" → `ANE-PUS60-01`. Chỉ áp cho SKU tạo mới; SKU đã có giữ nguyên.
   - **Khối lượng (g)** từng biến thể.
   - **Kho** — chỉ hiện khi có nhiều kho. Đổi kho: hàng còn ở kho cũ chỉ bán lại sau khi tạo phiếu chuyển kho sang kho mới.
   - **Quản lý hạn sử dụng cho sản phẩm này**.
@@ -559,7 +559,8 @@ Tỷ giá được chốt vào lô lúc **ghi sổ phiếu nhập** (phiếu tay
 
 ### 7.2. Trang Giá bán (danh sách)
 
-> **Cập nhật 17/11/2026:** trang Giá bán **sửa giá ngay trong bảng** — chọn kho ở ô **Kho** (bảng tự lọc), bấm nút **bút chì (Sửa giá)** ở dòng cần đổi, điền lãi / vận chuyển / CTV rồi **Lưu giá** (chỉ các dòng đã bấm Sửa giá được lưu). Bảng gồm: Sản phẩm (tên, SKU dòng phụ) · Giá mua (VND) / Lô nguồn · Lãi (VND) · Vận chuyển (MMK) · CTV (MMK) · Giá bán (MMK) · Thao tác. Chưa đủ dữ liệu thì Giá bán hiện "—" kèm lý do (thiếu tỷ giá / giá mua / lãi, vận chuyển, CTV); số nhập sai báo ngay dưới ô. Công thức và lưu ý về lãi nằm ở mục mở rộng **Cách tính và lưu ý** (cột trung gian "Giá mua + lãi (MMK)" đã bỏ, phép tính không đổi). Kho hàng mua MMK không còn ô **Lãi cố định**. Mô tả "tick SKU → Nhập thủ công" bên dưới là cách cũ, vẫn dùng được qua trang `/admin/selling-prices/manual`.
+> **Cập nhật 17/11/2026:** trang Giá bán **sửa giá ngay trong bảng** — chọn kho ở ô **Kho** (bảng tự lọc), bấm nút **bút chì (Sửa giá)** ở dòng cần đổi, điền lãi / vận chuyển / CTV rồi **Lưu giá** (chỉ các dòng đã bấm Sửa giá được lưu). Bảng gồm: Sản phẩm (tên, SKU dòng phụ) · Giá mua (VND) · Lô nguồn · Lãi (VND) · Vận chuyển (MMK) · CTV (MMK) · Giá bán (MMK) · Thao tác. Chưa đủ dữ liệu thì Giá bán hiện "—" kèm lý do (thiếu tỷ giá / giá mua / lãi, vận chuyển, CTV); số nhập sai báo ngay dưới ô. Công thức và lưu ý về lãi nằm ở mục mở rộng **Cách tính và lưu ý** (cột trung gian "Giá mua + lãi (MMK)" đã bỏ, phép tính không đổi). Kho hàng mua MMK không còn ô **Lãi cố định**. Mô tả "tick SKU → Nhập thủ công" bên dưới là cách cũ, vẫn dùng được qua trang `/admin/selling-prices/manual`.
+> **Cập nhật 18/11/2026:** Giá mua và Lô nguồn là **2 cột riêng**; ô **Tỷ giá** nằm trên thanh ngang phía trên bảng (kèm mức làm tròn và mục Cách tính); ô **Gửi duyệt ngay / Duyệt luôn** cùng hàng với nút **Lưu giá** dưới bảng. Trang chi tiết SP có header gọn: ảnh đại diện nhỏ (bấm để tới phần quản lý ảnh, số góc ảnh = số ảnh), tên + trạng thái, SKU + thông tin cùng một hàng, nút thao tác bên phải.
 
 **Sản phẩm › Giá bán**, thẻ **Danh sách · Thủ công**. Mỗi SKU hiện:
 - giá **đang bán**, giá **chờ duyệt** (nếu có), **CTV: …** (hoa hồng đang áp dụng; chưa đặt = không có hoa hồng) và hoa hồng chờ duyệt;
@@ -588,7 +589,7 @@ Giá bán MMK = Giá bán VND ÷ tỷ giá (VND cho 1 MMK) + Vận chuyển (MMK
 1. Tick SKU ở trang Giá bán → **Nhập thủ công** (hoặc **Đặt giá** ở bước 3 của sản phẩm).
 2. Chọn **Tỷ giá** (hiện "1 MMK = … VND · từ ngày…", mặc định tỷ giá **đang dùng**; chọn tỷ giá cũ sẽ hiện cảnh báo).
 3. Mỗi dòng:
-   - **Lô nguồn** (cùng ô với giá mua): chọn lần nhập ("Lô … · phiếu … · ngày … · giá … VND"). Lô nhập nhiều lần với giá khác nhau hiện **từng lần nhập riêng** — giá mua lấy đúng lần đã chọn, **không bình quân**. Combo dùng tổng giá mua gần nhất của thành phần.
+   - **Lô nguồn** (cột riêng cạnh giá mua): chọn lần nhập ("Lô … · phiếu … · ngày … · giá … VND"). Lô nhập nhiều lần với giá khác nhau hiện **từng lần nhập riêng** — giá mua lấy đúng lần đã chọn, **không bình quân**. Combo dùng tổng giá mua gần nhất của thành phần.
    - **Giá mua NCC (VND)**: tự hiện theo lô đã chọn (là giá mua, **không phải** tổng giá vốn về kho).
    - Điền **Lãi mong muốn (VND/sp)**, **Vận chuyển (MMK/sp)**, **CTV (MMK/sp)** (gợi ý lấy từ lần thủ công trước / cước tính giá gần nhất).
    - **Giá bán VND** và **Giá bán cuối (MMK)** tự tính; giá cuối **không sửa tay**. Muốn đổi giá thì đổi lãi / vận chuyển / CTV.
@@ -685,6 +686,7 @@ Tạo từ **Tồn kho › Tạo phiếu**. Mỗi loại có quyền riêng (Qu�
 
 Tất cả: **Lưu nháp** → **Ghi sổ** ⛔📦.
 
+- **Chọn hàng trên phiếu Chuyển / Xuất / Điều chỉnh (18/11/2026):** mỗi dòng có 3 ô liên kết — **Tên sản phẩm** (gõ để hiện gợi ý), **SKU** (gợi ý trong SP đã chọn; gõ đúng SKU trước thì tự điền tên SP và phân loại), **Phân loại** (chỉ các phân loại của SP; SP một phân loại tự chọn). Đổi SP/SKU/phân loại thì ô **Lô** tự lọc lại theo biến thể và lô đã chọn bị bỏ. Tên SP gõ không khớp gợi ý → báo ngay, không lưu được.
 - **Phiếu nháp sai:** phiếu **Nhập** có nút **Sửa phiếu**. Phiếu **Xuất / Chuyển / Điều chỉnh** bấm **Huỷ và tạo lại**: form tạo phiếu mở sẵn các dòng của phiếu nháp; khi lưu, phiếu mới được tạo và phiếu nháp cũ bị huỷ cùng lúc (lỗi thì phiếu cũ giữ nguyên).
 - **Phiếu đã ghi sổ** không sửa, không xoá. Sai **số lượng**: tạo phiếu **Điều chỉnh** (hoặc phiếu chuyển/xuất ngược lại). Phiếu điều chỉnh **chỉ đổi tồn** — giá mua, tỷ giá, phí về kho và số lượng dùng để tính giá vốn lô / phân bổ chuyến **không đổi**. Sai giá, tỷ giá hoặc phí về kho trên phiếu nhập đã ghi sổ: báo quản trị; hiện chưa có chức năng sửa/đảo phiếu nhập đã ghi sổ (cần thiết kế riêng).
 - Danh sách chọn: ô **đi** gồm cả kho đã ngừng dùng (dọn tồn cũ, có nhãn); ô **đến** và vị trí điều chỉnh chỉ kho đang dùng. Biến thể đã tắt / sản phẩm ngừng kinh doanh **còn tồn** vẫn chọn được (có nhãn) để xử lý nốt; việc này không mở lại quyền bán.

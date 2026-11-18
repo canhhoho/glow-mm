@@ -2,7 +2,17 @@ import { expect, test, type Page } from "@playwright/test";
 import { login } from "./helpers";
 
 const SKU = "SV-SUN-50";
-const VARIANT = `${SKU} — Sunscreen SPF50 PA++++ (50ml)`;
+const PRODUCT = "Sunscreen SPF50 PA++++";
+
+/** Bộ chọn 3 ô (18/11/2026): gõ đúng SKU → tự điền tên SP + phân loại. */
+async function pickSku(page: Page, sku = SKU, line = page.locator("fieldset").first()) {
+  await line.getByLabel("SKU", { exact: true }).fill(sku);
+}
+async function expectPicked(page: Page) {
+  await expect(page.getByLabel("Tên sản phẩm")).toHaveValue(PRODUCT);
+  await expect(page.getByLabel("SKU", { exact: true })).toHaveValue(SKU);
+  await expect(page.getByLabel("Phân loại").locator("option:checked")).toHaveText("50ml");
+}
 
 async function postAndExpect(page: Page) {
   await page.getByRole("button", { name: "Lưu nháp" }).click();
@@ -34,7 +44,7 @@ test("quản lý kho: nhận → chuyển chờ kiểm tra → xuất, tồn kh�
   await page.goto("/admin/inventory/documents/new?type=TRANSFER");
   await page.getByLabel("Chọn vị trí xuất").selectOption({ label: "THAM — Kho Thắm" });
   await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "MM-QC — Chờ kiểm tra" });
-  await page.getByLabel("SKU / Phân loại").selectOption({ label: VARIANT });
+  await pickSku(page);
   await page.getByLabel("Lô").selectOption({ label: `${lot} · 10` }); // lô không hạn: nhãn chỉ có số lô · tồn
   await page.getByLabel("Số lượng").fill("4");
   await postAndExpect(page);
@@ -43,7 +53,7 @@ test("quản lý kho: nhận → chuyển chờ kiểm tra → xuất, tồn kh�
   await page.goto("/admin/inventory/documents/new?type=ISSUE");
   await page.getByLabel("Chọn vị trí xuất").selectOption({ label: "THAM — Kho Thắm" });
   await page.getByLabel("Lý do / ghi chú").fill("Hàng hỏng khi vận chuyển");
-  await page.getByLabel("SKU / Phân loại").selectOption({ label: VARIANT });
+  await pickSku(page);
   await page.getByLabel("Lô").selectOption({ label: `${lot} · 6` });
   await page.getByLabel("Số lượng").fill("1");
   await postAndExpect(page);
@@ -73,12 +83,12 @@ test("phiếu kho: lỗi server giữ lựa chọn; ghi sổ cần xác nhận; 
   const from = page.getByLabel("Chọn vị trí xuất");
   await from.selectOption({ label: "THAM — Kho Thắm" });
   await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "THAM — Kho Thắm" });
-  await page.getByLabel("SKU / Phân loại").selectOption({ label: VARIANT });
+  await pickSku(page);
   await page.getByLabel("Số lượng").fill("1");
   await page.getByRole("button", { name: "Lưu nháp" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "khác nhau" })).toBeVisible({ timeout: 20_000 });
   await expect(from.locator("option:checked")).toHaveText("THAM — Kho Thắm");
-  await expect(page.getByLabel("SKU / Phân loại").locator("option:checked")).toHaveText(VARIANT);
+  await expectPicked(page);
 
   await page.getByLabel("Chọn vị trí nhận").selectOption({ label: "MM-QC — Chờ kiểm tra" });
   await page.getByRole("button", { name: "Lưu nháp" }).click();
@@ -103,7 +113,7 @@ test("phiếu kho: lỗi server giữ lựa chọn; ghi sổ cần xác nhận; 
   await page.getByRole("link", { name: "Huỷ và tạo lại" }).click();
   await expect(page).toHaveURL(/type=TRANSFER&from=/, { timeout: 20_000 });
   await expect(page.getByTestId("replacing-note")).toBeVisible();
-  await expect(page.getByLabel("SKU / Phân loại").locator("option:checked")).toHaveText(VARIANT);
+  await expectPicked(page);
   await expect(page.getByLabel("Số lượng")).toHaveValue("1");
   await page.getByLabel("Số lượng").fill("2");
   await page.getByRole("button", { name: "Lưu nháp" }).click();
@@ -168,7 +178,7 @@ test("form chuyển kho: đổi kho xuất thì bỏ chọn lô không còn hàn
   await page.goto("/admin/inventory/documents/new?type=TRANSFER");
   const from = page.getByLabel("Chọn vị trí xuất");
   await from.selectOption({ label: "THAM — Kho Thắm" });
-  await page.getByLabel("SKU / Phân loại").selectOption({ label: VARIANT });
+  await pickSku(page);
   const batch = page.locator('select[name="batch-0"]');
   expect(await batch.locator("option").count()).toBeGreaterThan(1); // có lô còn hàng ở Kho Thắm
   await batch.selectOption({ index: 1 });
@@ -188,4 +198,57 @@ test("form chuyển kho: đổi kho xuất thì bỏ chọn lô không còn hàn
     await batch.selectOption({ index: 1 });
   }
   expect(cleared).toBe(true);
+});
+
+test("phiếu điều chỉnh: chọn Tên SP → SKU → Phân loại liên kết, lô theo biến thể, nhiều dòng độc lập", async ({ page }) => {
+  test.setTimeout(120_000); // form tải mọi lô — DB test tích luỹ nhiều lô
+
+  await login(page, "kho@glow.local");
+  await page.goto("/admin/inventory/documents/new?type=ADJUST");
+  await page.getByRole("combobox", { name: "Chọn vị trí", exact: true }).selectOption({ label: "THAM — Kho Thắm" });
+  await page.getByLabel("Lý do / ghi chú").fill("Kiểm kê E2E");
+  const line1 = page.locator("fieldset").nth(0);
+  const variant1 = line1.getByLabel("Phân loại");
+  // Chưa chọn SP: phân loại trống, gợi ý chọn SP trước.
+  await expect(variant1.locator("option")).toHaveText(["Chọn sản phẩm trước"]);
+  // Tên SP (gợi ý theo tên) → SP 2 phân loại: chỉ hiện đúng 2 phân loại, chưa tự chọn.
+  await line1.getByLabel("Tên sản phẩm").fill(PRODUCT);
+  await expect(variant1.locator("option")).toHaveText(["—", "100ml", "50ml"]); // theo thứ tự SKU
+  await expect(line1.getByLabel("SKU", { exact: true })).toHaveValue("");
+  // Chọn phân loại → SKU tự điền; lô chỉ của biến thể đó.
+  await variant1.selectOption({ label: "100ml" });
+  await expect(line1.getByLabel("SKU", { exact: true })).toHaveValue("SV-SUN-100");
+  await expect(line1.getByLabel("Lô")).toContainText("L2608");
+  await expect(line1.getByLabel("Lô").locator("option", { hasText: "L2601" })).toHaveCount(0);
+  // SKU không thuộc SP đã chọn → bỏ chọn phân loại.
+  await pickSku(page, "ML-TON-150", line1);
+  await expect(variant1.locator("option:checked")).toHaveText("—");
+  // Đúng SKU của SP → chọn lại phân loại.
+  await pickSku(page, SKU, line1);
+  await expect(variant1.locator("option:checked")).toHaveText("50ml");
+  await line1.getByLabel("Lô").selectOption({ index: 1 });
+  await line1.getByLabel("SL (+ thêm / − bớt)").fill("1");
+
+  // Dòng 2 độc lập: gõ SKU trước → tự điền tên SP + phân loại; dòng 1 giữ nguyên.
+  await page.getByRole("button", { name: "Thêm dòng" }).click();
+  const line2 = page.locator("fieldset").nth(1);
+  await pickSku(page, "ML-TON-150", line2);
+  await expect(line2.getByLabel("Tên sản phẩm")).toHaveValue("Rose Toner 150ml");
+  await expect(line2.getByLabel("Phân loại").locator("option:checked")).toHaveText("150ml");
+  await expect(line1.getByLabel("SKU", { exact: true })).toHaveValue(SKU);
+  await line2.getByLabel("Lô").selectOption({ index: 1 });
+  await line2.getByLabel("SL (+ thêm / − bớt)").fill("-1");
+
+  // Tên SP gõ sai → báo ngay, không lưu được.
+  await page.getByRole("button", { name: "Thêm dòng" }).click();
+  const line3 = page.locator("fieldset").nth(2);
+  await line3.getByLabel("Tên sản phẩm").fill("Không có SP này");
+  await expect(line3.getByText("Chọn sản phẩm trong danh sách gợi ý")).toBeVisible();
+  await line3.getByRole("button", { name: "Xoá" }).click();
+
+  await page.screenshot({ path: "test-results/screens/adjust-picker.png", fullPage: true });
+  await page.getByRole("button", { name: "Lưu nháp" }).click();
+  await expect(page).toHaveURL(/\/admin\/inventory\/documents\/(?!new(?:\?|$))[^/?]+$/, { timeout: 20_000 });
+  await expect(page.getByText("SV-SUN-50").filter({ visible: true }).first()).toBeVisible();
+  await expect(page.getByText("ML-TON-150").filter({ visible: true }).first()).toBeVisible();
 });

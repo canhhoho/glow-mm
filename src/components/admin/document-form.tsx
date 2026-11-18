@@ -9,13 +9,14 @@ import { createDocumentAction } from "@/server/inventory/actions";
 import { batchQtyAt, batchSelectable, keepValidBatches } from "@/server/inventory/document-form-rules";
 import { cn } from "@/lib/utils";
 import { FEATURES } from "@/lib/features";
+import { VariantPicker, pickerIndex, pickerTextFor, type PickerText, type PickerVariant } from "@/components/admin/variant-picker";
 
 type DocType = "RECEIVE" | "TRANSFER" | "ISSUE" | "ADJUST";
 type StockType = "SELLABLE" | "TESTER";
 
 export type FormData = {
   locations: { id: string; code: string; name: string; type: string; active: boolean }[];
-  variants: { id: string; label: string; isBundle: boolean; requiresExpiry: boolean; inactive?: boolean; archived?: boolean }[];
+  variants: (PickerVariant & { label: string; isBundle: boolean; requiresExpiry: boolean })[];
   batches: {
     id: string;
     variantId: string;
@@ -38,7 +39,7 @@ export type ReplaceDraft = {
   lines: { variantId: string; batchId: string; qty: number; stockType: StockType }[];
 };
 
-type Line = {
+type Line = PickerText & {
   key: number;
   variantId: string;
   batchId: string;
@@ -54,6 +55,8 @@ type Line = {
 let seq = 0;
 const blank = (): Line => ({
   key: ++seq,
+  productText: "",
+  skuText: "",
   variantId: "",
   batchId: "",
   lotNo: "",
@@ -76,16 +79,17 @@ export function DocumentForm({ type, data, replace }: { type: DocType; data: For
   const [toId, setToId] = useState(replace?.toId ?? "");
   const [shipmentId, setShipmentId] = useState("");
   const [reason, setReason] = useState(replace?.reason ?? "");
+  const variants = useMemo(() => data.variants.filter((v) => !v.isBundle), [data.variants]);
+  const picker = useMemo(() => pickerIndex(variants), [variants]);
   const [lines, setLines] = useState<Line[]>(() =>
     replace?.lines.length
-      ? replace.lines.map((l) => ({ ...blank(), variantId: l.variantId, batchId: l.batchId, qty: String(l.qty), stockType: l.stockType }))
+      ? replace.lines.map((l) => ({ ...blank(), ...pickerTextFor(picker, l.variantId, variants), variantId: l.variantId, batchId: l.batchId, qty: String(l.qty), stockType: l.stockType }))
       : [blank()],
   );
 
   const needsFrom = type === "TRANSFER" || type === "ISSUE";
   const needsTo = type !== "ISSUE";
   const stockLoc = type === "ADJUST" ? toId : fromId;
-  const variants = data.variants.filter((v) => !v.isBundle);
 
   const update = (key: number, patch: Partial<Line>) => {
     setLotsCleared(0);
@@ -203,29 +207,47 @@ export function DocumentForm({ type, data, replace }: { type: DocType; data: For
         </Notice>
       )}
 
+      {/* Gợi ý dùng chung cho mọi dòng (một lần, không lặp theo dòng): tên SP và mọi SKU. */}
+      <datalist id="picker-products">
+        {picker.products.map((p) => (
+          <option key={p.id} value={p.text} />
+        ))}
+      </datalist>
+      <datalist id="picker-skus">
+        {variants.map((v) => (
+          <option key={v.id} value={v.sku}>
+            {v.productName}
+          </option>
+        ))}
+      </datalist>
+
       <div className="space-y-3">
         {lines.map((l, i) => {
           const batchOptions = data.batches.filter((b) => b.variantId === l.variantId && batchSelectable(type, b, stockLoc, l.stockType));
           return (
-            <fieldset key={l.key} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-6" aria-label={`${t("line")} ${i + 1}`}>
-              <label className={cn(fieldLabelSmClass, "sm:col-span-2")}>
-                <span className="text-muted-foreground">{t("variant")}</span>
-                <select
-                  required
-                  value={l.variantId}
-                  onChange={(e) => update(l.key, { variantId: e.target.value, batchId: "", expiryDate: "", expiryStatus: !FEATURES.expiry ? "NONE" : variants.find((v) => v.id === e.target.value)?.requiresExpiry === false ? "NONE" : "DATED" })}
-                  className={fieldClass}
-                  name={`variant-${i}`}
-                >
-                  <option value="">—</option>
-                  {variants.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.label}
-                      {v.archived ? ` (${t("variantArchived")})` : v.inactive ? ` (${t("variantInactive")})` : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            // Điện thoại: 1 cột; sm: 2 cột (tên SP cả hàng); md: 6 cột (hàng 1: SP · SKU · phân loại, hàng 2: lô · SL · loại tồn);
+            // xl: một hàng, độ rộng theo nội dung (tên SP rộng nhất, SL hẹp).
+            <fieldset
+              key={l.key}
+              className={cn(
+                "grid items-start gap-2 rounded-lg border p-3 sm:grid-cols-2 md:grid-cols-6",
+                type !== "RECEIVE" && "xl:grid-cols-[minmax(14rem,2.2fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_minmax(9rem,1.3fr)_6.5rem_8rem_auto]",
+              )}
+              aria-label={`${t("line")} ${i + 1}`}
+            >
+              <VariantPicker
+                index={picker}
+                i={i}
+                lineKey={l.key}
+                variantId={l.variantId}
+                text={l}
+                productListId="picker-products"
+                skuListId="picker-skus"
+                className="sm:col-span-2 xl:col-span-1"
+                cellClassName="md:col-span-2 xl:col-span-1"
+                onText={(patch) => update(l.key, patch)}
+                onVariant={(id) => update(l.key, { variantId: id, batchId: "", expiryDate: "", expiryStatus: !FEATURES.expiry ? "NONE" : variants.find((v) => v.id === id)?.requiresExpiry === false ? "NONE" : "DATED" })}
+              />
 
               {type === "RECEIVE" ? (
                 <>
@@ -262,7 +284,7 @@ export function DocumentForm({ type, data, replace }: { type: DocType; data: For
                   </label>
                 </>
               ) : (
-                <label className={cn(fieldLabelSmClass, "sm:col-span-2")}>
+                <label className={cn(fieldLabelSmClass, "min-w-0 sm:col-span-2 md:col-span-3 xl:col-span-1")}>
                   <span className="text-muted-foreground">{t("batch")}</span>
                   <select
                     name={`batch-${i}`}
@@ -309,7 +331,7 @@ export function DocumentForm({ type, data, replace }: { type: DocType; data: For
                 </select>
               </label>
               {lines.length > 1 && (
-                <div className="flex items-end">
+                <div className="flex items-end self-end">
                   <Button type="button" variant="outline" size="icon-lg" onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))} title={t("remove")} aria-label={t("remove")}><Trash2 aria-hidden className="size-4 shrink-0" /></Button>
                 </div>
               )}

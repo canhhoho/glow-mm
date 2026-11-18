@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Check, ChevronLeft, ChevronRight, Copy, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronLeft, ChevronRight, Copy, ExternalLink, ImagePlus, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -220,80 +220,78 @@ export default async function EditProductPage({ params, searchParams }: PageProp
     <Page>
       {created && <Notice tone="success">{t("created")}</Notice>}
       {saved && <Notice tone="success">{t("saved")}</Notice>}
-      <div className="flex flex-col gap-5 rounded-xl border bg-card p-4 md:flex-row" data-testid="product-hero">
-        <div className="w-full max-w-60 shrink-0 space-y-2 md:w-52 xl:w-60">
-          <div className="relative aspect-square overflow-hidden rounded-xl border bg-muted">
-            {images[0] && <Image src={images[0].url} alt={images[0].alt || product.en.name} fill sizes="240px" className="object-cover" priority />}
+      {/* Header gọn (18/11/2026): ảnh nhỏ bên trái (bấm → quản lý ảnh ở tab Thông tin); bên phải 3 hàng:
+          tên + trạng thái | điều hướng · SKU + metadata · ghi chú | thao tác. Điện thoại: hàng 2–3 trải cả chiều ngang dưới ảnh. */}
+      <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2 rounded-xl border bg-card p-3 sm:gap-x-4 sm:p-4" data-testid="product-hero">
+        <a
+          href={tabHref("info", "#product-images")}
+          className="group relative size-16 shrink-0 overflow-hidden rounded-lg border bg-muted sm:row-span-3 sm:size-28"
+          aria-label={t("images")}
+          title={t("images")}
+          data-testid="hero-image"
+        >
+          {images[0] ? (
+            <Image src={images[0].url} alt={images[0].alt || product.en.name} fill sizes="112px" className="object-cover" priority />
+          ) : (
+            <ImagePlus className="absolute inset-0 m-auto size-6 text-muted-foreground" aria-hidden />
+          )}
+          <span className="absolute right-1 bottom-1 flex items-center gap-0.5 rounded-md bg-background/90 px-1.5 py-0.5 text-[11px] font-medium shadow-sm group-hover:bg-background">
+            {images.length > 0 ? images.length : <Plus className="size-3" aria-hidden />}
+          </span>
+        </a>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            <h1 className="text-lg leading-tight font-semibold break-words sm:text-xl">{product.en.name || product.my.name || product.slug}</h1>
+            <Badge tone={PRODUCT_LABEL_TONE[lab.label]}>{t(`lifecycle.${lab.label}`)}</Badge>
+            {lab.change && <Badge tone={changeTone(lab.change)}>{t(`change.${lab.change}`)}</Badge>}
           </div>
-          <div className="grid grid-cols-4 gap-2">
-            {images.slice(1, 4).map((img) => (
-              <span key={img.id} className="relative aspect-square overflow-hidden rounded-lg border bg-muted">
-                <Image src={img.url} alt={img.alt || product.en.name} fill sizes="56px" className="object-cover" />
-              </span>
-            ))}
-            <a href="#product-images" className="flex aspect-square items-center justify-center rounded-lg border border-dashed text-muted-foreground hover:bg-muted" aria-label={t("images")} title={t("images")}>
-              <Plus className="size-4" aria-hidden />
-            </a>
-          </div>
-        </div>
-        <div className="min-w-0 flex-1 space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 space-y-2">
-              <h1 className="text-xl font-semibold break-words sm:text-2xl">{product.en.name || product.my.name || product.slug}</h1>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs">
-                  SKU: {product.variants[0]?.sku ?? "—"}
-                  {product.variants.length > 1 && ` · ${t("list.moreVariants", { n: product.variants.length - 1 })}`}
+          <nav aria-label={t("hero.adjacent")} className="flex shrink-0 items-center gap-1">
+            <LinkButton href={backHref} icon="back" iconOnly>
+              {td("back")}
+            </LinkButton>
+            {(
+              [
+                ["prev", adjacent.prev, ChevronLeft],
+                ["next", adjacent.next, ChevronRight],
+              ] as const
+            ).map(([k, target, Icon]) =>
+              target ? (
+                <Link key={k} href={`/admin/products/${target}${fromPath ? `?from=${encodeURIComponent(fromPath)}` : ""}`} className={buttonVariants({ variant: "outline", size: "icon-lg" })} aria-label={t(`hero.${k}`)} title={t(`hero.${k}`)}>
+                  <Icon aria-hidden />
+                </Link>
+              ) : (
+                <span key={k} className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "pointer-events-none opacity-40 max-sm:hidden")} aria-hidden>
+                  <Icon />
                 </span>
-                <Badge tone={PRODUCT_LABEL_TONE[lab.label]}>{t(`lifecycle.${lab.label}`)}</Badge>
-                {lab.change && <Badge tone={changeTone(lab.change)}>{t(`change.${lab.change}`)}</Badge>}
-              </div>
-              <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
-                <span>{t("colBrand")}: <span className="text-foreground">{brandName}</span></span>
-                <span aria-hidden>|</span>
-                <span>{t("colCategory")}: <span className="text-foreground">{categoryName}</span></span>
-                <span aria-hidden>|</span>
-                <span>{t("warehouse")}: <span className="text-foreground">{warehouseName}</span></span>
-                <span aria-hidden>|</span>
-                <span>{t("list.colUpdated")}: <span className="text-foreground">{fmtDateTime(approval.updatedAt)}</span></span>
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <LinkButton href={backHref} icon="back" iconOnly>
-                {td("back")}
-              </LinkButton>
-              <nav aria-label={t("hero.adjacent")} className="flex items-center gap-1">
-                {(
-                  [
-                    ["prev", adjacent.prev, ChevronLeft],
-                    ["next", adjacent.next, ChevronRight],
-                  ] as const
-                ).map(([k, target, Icon]) =>
-                  target ? (
-                    <Link key={k} href={`/admin/products/${target}${fromPath ? `?from=${encodeURIComponent(fromPath)}` : ""}`} className={buttonVariants({ variant: "outline", size: "icon-lg" })} aria-label={t(`hero.${k}`)} title={t(`hero.${k}`)}>
-                      <Icon aria-hidden />
-                    </Link>
-                  ) : (
-                    <span key={k} className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "pointer-events-none opacity-40")} aria-hidden>
-                      <Icon />
-                    </span>
-                  ),
-                )}
-              </nav>
-              {product.published && (
-                <a href={localizedPath("my", `/p/${product.slug}`)} target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline", size: "lg" })}>
-                  {t("block.viewAsCustomer")}
-                </a>
-              )}
-              <Link href={`/admin/products/new?copyFrom=${product.id}`} className={buttonVariants({ variant: "outline", size: "lg" })}>
-                <Copy aria-hidden /> {t("list.duplicate")}
-              </Link>
-              {primaryAction}
-            </div>
-          </div>
-          <p className="text-sm text-muted-foreground" data-testid="hero-note">
+              ),
+            )}
+          </nav>
+        </div>
+        <p className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground sm:col-span-1">
+          <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
+            SKU: {product.variants[0]?.sku ?? "—"}
+            {product.variants.length > 1 && ` · ${t("list.moreVariants", { n: product.variants.length - 1 })}`}
+          </span>
+          <span>{t("colBrand")}: <span className="text-foreground">{brandName}</span></span>
+          <span>{t("colCategory")}: <span className="text-foreground">{categoryName}</span></span>
+          <span>{t("warehouse")}: <span className="text-foreground">{warehouseName}</span></span>
+          <span>{t("list.colUpdated")}: <span className="text-foreground">{fmtDateTime(approval.updatedAt)}</span></span>
+        </p>
+        <div className="col-span-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 sm:col-span-1">
+          <p className="min-w-0 text-xs text-muted-foreground" data-testid="hero-note">
             {archived ? t("archived.heroNote") : notes.review}
           </p>
+          <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+            {product.published && (
+              <a href={localizedPath("my", `/p/${product.slug}`)} target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline", size: "lg" })}>
+                <ExternalLink aria-hidden /> {t("block.viewAsCustomer")}
+              </a>
+            )}
+            <Link href={`/admin/products/new?copyFrom=${product.id}`} className={buttonVariants({ variant: "outline", size: "lg" })}>
+              <Copy aria-hidden /> {t("list.duplicate")}
+            </Link>
+            {primaryAction}
+          </div>
         </div>
       </div>
 
