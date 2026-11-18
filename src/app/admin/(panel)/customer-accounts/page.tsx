@@ -85,6 +85,7 @@ export default async function CustomerAccountsPage({ searchParams }: PageProps<"
         <p className="text-xs text-muted-foreground">{t("resultCount", { count: accounts.length })}</p>
         <DataTable
           stack
+          middle
           empty={t("empty")}
           numeric={[2]}
           head={[t("name"), t("method"), t("orders"), t("createdAt"), t("status"), t("actions")]}
@@ -93,8 +94,8 @@ export default async function CustomerAccountsPage({ searchParams }: PageProps<"
             const hasPassword = a.providers.includes("credential");
             return (
               <tr key={a.id} data-testid="customer-row">
-                <Td className="md:min-w-56 md:py-4">
-                  <div className="flex items-start gap-3">
+                <Td className="md:min-w-56">
+                  <div className="flex items-center gap-3">
                     <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 font-semibold text-primary">
                       {Array.from(a.name.trim())[0]?.toUpperCase() ?? "?"}
                     </span>
@@ -120,7 +121,7 @@ export default async function CustomerAccountsPage({ searchParams }: PageProps<"
                 <Td label={t("status")}>
                   <Badge tone={a.active ? "success" : "danger"}>{a.active ? t("active") : t("locked")}</Badge>
                 </Td>
-                <Td className="align-middle md:w-px md:whitespace-nowrap">
+                <Td className="md:w-px md:whitespace-nowrap">
                   <AccountRowActions
                     editHref={`/admin/customer-accounts/${a.id}`}
                     editLabel={t("edit")}

@@ -124,8 +124,9 @@ export function ManualVndForm({
       <DataTable
         stack
         dense
+        middle
         className="basis-full"
-        tableClassName="md:table-fixed md:[&_td]:align-middle [&_th]:whitespace-normal [&_th]:align-bottom"
+        tableClassName="md:table-fixed [&_th]:whitespace-normal [&_th]:align-bottom"
         // Chia cột theo nội dung: tên SP rộng nhất, lô nguồn đủ đọc mã lô/phiếu, ô số vừa 7–9 chữ số.
         cols={["md:w-[23%]", "md:w-[9%]", "md:w-[18%]", "md:w-[11%]", "md:w-[10%]", "md:w-[10%]", "md:w-[11%]", "md:w-[8%]"]}
         numeric={[1, 3, 4, 5, 6]}
