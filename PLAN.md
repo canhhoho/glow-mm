@@ -2,26 +2,27 @@
 
 ## Cập nhật triển khai quy trình (05/11/2026)
 
-Đã triển khai local D4.1–D4.3, D5, D6.1, D7, D8.1–D8.2 và các mục DT.3 sửa vận đơn/DT.5/DT.6, D3 hiển thị phiếu soạn/cảnh báo xuất nội bộ. Xem [bằng chứng nghiệm thu và điều kiện còn mở](docs/nghiem-thu-d4-d9.md). Chủ shop yêu cầu giữ chính sách hoa hồng hiện tại: không thêm gate COD mới. Guest COD chờ ít nhất hai tuần dữ liệu D5 thực tế; import VTP chờ file thật; tách đợt nhập/lô NSX chờ bằng chứng và quyết định. Chưa triển khai production.
+Đã triển khai local D4.1–D4.3, D5, D6.1, D7, D8.1–D8.2 và các mục DT.3 sửa vận đơn/DT.5/DT.6, D3 hiển thị phiếu soạn/cảnh báo xuất nội bộ. Xem [bằng chứng nghiệm thu và điều kiện còn mở](docs/nghiem-thu-d4-d9.md). Chủ shop yêu cầu giữ chính sách hoa hồng hiện tại: không thêm gate COD mới. Guest COD chờ ít nhất hai tuần dữ liệu D5 thực tế; import VTP chờ file thật; tách đợt nhập/lô NSX chờ bằng chứng và quyết định. Cập nhật 18/11/2026: **đã lên production** từ 17/11/2026 (tandcstore.com, deploy tự động khi push `main`).
 
 ## Quyết định đã chốt
 | # | Chủ đề | Chốt |
 |---|---|---|
 | 1 | Dữ liệu đầu | Import CSV/Excel (có file mẫu); tồn đầu kỳ = phiếu nhập qua ledger |
-| 2 | Giá | Tỷ giá nhập tay (P23: qua USD→MMK, USD→VND); giá = vốn VND ÷ tỷ giá VND/MMK × (1+%lãi), làm tròn 100 MMK, xem trước → áp dụng; lưu lịch sử |
-| 3 | Kho | 1 kho VN + 1 kho MM + vị trí ảo Đang vận chuyển / Hải quan / Chờ kiểm tra; hỗ trợ N kho |
+| 2 | Giá | **16/11/2026:** giá tự động tắt (`FEATURES.autoPricing=false`, giữ code). Giá bán đặt **thủ công** ở trang Giá bán: kho nhập VN = (giá mua VND lô chọn + lãi VND) ÷ tỷ giá + vận chuyển MMK + CTV MMK, làm tròn lên; kho mua MMK nhập thẳng. SP đã duyệt → giá chờ duyệt; lưu lịch sử giá. Tỷ giá nhập tay (VND/MMK); nút "Tính lại theo tỷ giá mới" (18/11) |
+| 3 | Kho | N kho; **mỗi SP thuộc đúng một kho bán**, gán khi ghi sổ phiếu nhập/chuyển đầu tiên (16/11/2026). Vị trí Chờ kiểm tra vẫn dùng; Đang vận chuyển / Hải quan thuộc chuyến hàng (đang tắt) |
 | 4 | Giữ hàng | Cấp biến thể; phân lô FEFO khi Đóng gói |
-| 5 | Hạn dùng | Ngừng bán <90 ngày, cảnh báo 180 ngày (cấu hình) |
-| 6 | Landed cost | Phân bổ theo giá trị mua, số lượng hoặc khối lượng nhập đã ghi sổ; lưu lịch sử và cảnh báo cần phân bổ lại |
+| 5 | Hạn dùng | **17/11/2026: tắt hoàn toàn** (`FEATURES.expiry=false`) — không chặn bán theo hạn, form không có ô hạn. Khi bật lại: ngừng bán <90 ngày, cảnh báo 180 ngày, hạn theo lô |
+| 6 | Giá vốn | **16/11/2026: bỏ landed cost / phân bổ chuyến** (`FEATURES.shipments=false`). Giá vốn lô = giá mua × tỷ giá lúc ghi sổ; ghi sổ phiếu nhập VND khi chưa có tỷ giá → chặn |
 | 7 | Hàng trả | Vào "Chờ kiểm tra" → nhập lại hoặc huỷ |
 | 8 | Combo/Tester | Combo cố định trừ kho thành phần; tester/quà = loại tồn riêng trên cùng lô |
 | 9 | COD | Gọi xác nhận; tự huỷ/nhả sau 24h (cấu hình) |
 | 10 | Ship | Bảng phí theo vùng/township + mã vận đơn tay; adapter cho API hãng sau |
-| 11 | Khách | Xem hàng không cần đăng nhập; **đặt hàng trên web bắt buộc tài khoản khách** (P14: Google + email/mật khẩu); đơn ngoài web vẫn tra bằng mã đơn + SĐT, không OTP |
+| 11 | Khách | Xem hàng không cần đăng nhập; **đặt hàng trên web bắt buộc tài khoản khách** (SĐT hoặc email + mật khẩu; **đăng nhập Google đã gỡ 14/11/2026**, làm lại sau); đơn ngoài web vẫn tra bằng mã đơn + SĐT, không OTP |
 | 12 | Admin i18n | vi + en + my |
 | 13 | Chat | FB Page + Viber; link cấu hình qua env/admin |
 | 14 | Myanmar text | Bộ phát hiện Zawgyi của Google (vendored) + Rabbit + Noto Sans Myanmar tự host |
-| 15 | Auth/File/CI | Better Auth + RBAC tự viết; Vercel Blob ↔ ổ đĩa; GitHub Actions; PWA cơ bản |
+| 15 | Auth/File/CI | Better Auth + RBAC tự viết; file qua adapter (production: ổ đĩa `STORAGE_DRIVER=local`; Vercel Blob cho môi trường Vercel); GitHub Actions + deploy tự động; PWA cơ bản |
+| 16 | Hoa hồng CTV | **18/11/2026:** hoa hồng bán hàng = mức MMK/sản phẩm nhập ở Giá bán × SL giữ (SP để trống = không hoa hồng); tầng trên 2% tiền hàng; giữ 7 ngày rồi mới trả |
 
 **Kết quả xác minh:**
 - `better-auth` bản mới nhất 1.7.8 → đang được phát triển, OK.

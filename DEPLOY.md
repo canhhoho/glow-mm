@@ -2,11 +2,11 @@
 
 Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong biến môi trường (xem `.env.example`).
 
-Đợt quy trình 05/11/2026 có migration D1/D3/D4/D5/D8. Trước phát hành cần CI, backup/khôi phục thử và nghiệm thu; các lệnh cập nhật server nằm ở PHẦN 4 của `docs/lenh-trien-khai-tandcstore.md`. Analytics nội bộ mặc định bật (`ANALYTICS_ENABLED=true`, `ANALYTICS_RETENTION_DAYS=180`), cần cron `cleanup`; tắt thu thập không xóa lịch sử, cleanup vẫn áp thời hạn. Xem `docs/nghiem-thu-d4-d9.md` để biết mục còn mở; chưa có tuyên bố đã triển khai production.
+Đợt quy trình 05/11/2026 có migration D1/D3/D4/D5/D8. Trước phát hành cần CI, backup/khôi phục thử và nghiệm thu; các lệnh cập nhật server nằm ở PHẦN 4 của `docs/lenh-trien-khai-tandcstore.md`. Analytics nội bộ mặc định bật (`ANALYTICS_ENABLED=true`, `ANALYTICS_RETENTION_DAYS=180`), cần cron `cleanup`; tắt thu thập không xóa lịch sử, cleanup vẫn áp thời hạn. Xem `docs/nghiem-thu-d4-d9.md` để biết mục còn mở. **Production đang chạy từ 17/11/2026** trên server `10.201.42.65` (tandcstore.com), deploy tự động khi push `main` (CI xanh → tag `release-…` → `ops/deploy.sh`).
 
 > **Làm theo từng bước cho tên miền `tandcstore.com` + server `10.201.42.65`:** [docs/huong-dan-trien-khai-tandcstore.md](docs/huong-dan-trien-khai-tandcstore.md). Server đó đang chạy web VCM với Nginx trên 80/443 → **không cài Coolify** (Traefik sẽ chiếm 80/443); chạy `docker-compose.prod.yml` (project `tandc`) sau Nginx dùng chung. File này là tài liệu tham khảo chi tiết.
 
-| | Testing | Production (sau) |
+| | Testing (Vercel `cavaho/glow-mm` — chưa xác nhận còn dùng) | Production (đang chạy) |
 |---|---|---|
 | App | Vercel (functions `sin1` Singapore) | Server `10.201.42.65` (dùng chung với web VCM): **Docker Compose + Nginx/Certbot sẵn có** — xem runbook. Coolify (§2) chỉ dùng khi có server riêng biệt |
 | DB | Neon Singapore (2 DB: preview, main) | PostgreSQL 17 trong Docker |
@@ -108,9 +108,11 @@ WHERE NOT EXISTS (SELECT 1 FROM account c WHERE c."userId" = u.id AND c."provide
 
 ---
 
-## 2. Chuyển sang server riêng (Coolify + Docker)
+## 2. Chuyển sang server riêng (Coolify + Docker) — §2.1–2.3 LƯU TRỮ
 
 > Mục này mô tả cách dùng **Coolify trên một server riêng biệt**. Server hiện có (`10.201.42.65`, dùng chung với web VCM) dùng **Docker Compose + Nginx** theo [docs/huong-dan-trien-khai-tandcstore.md](docs/huong-dan-trien-khai-tandcstore.md) (PHẦN B–D). Các phần chuyển dữ liệu (§2.4), checklist (§2.5), backup (§3) dùng chung cho cả hai cách.
+>
+> **§2.1–2.3 (cài Coolify, tạo ứng dụng, domain) là lưu trữ — KHÔNG áp dụng cho server hiện tại** (18/11/2026). Chỉ dùng nếu sau này chuyển sang một server riêng biệt.
 
 ### 2.1 Chuẩn bị server
 - **Cấu hình khuyến nghị:** Ubuntu Server 24.04 LTS, ≥ 2 vCPU, 4 GB RAM, ≥ 40 GB SSD, IP tĩnh.
