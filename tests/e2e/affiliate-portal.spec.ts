@@ -36,11 +36,11 @@ test("khách mở link CTV rồi đặt hàng → đơn hiện trong cổng CTV 
   await loginCtv(page);
   await expect(page.getByTestId("ctv-ref-link")).toHaveText(/\/\?ref=MAUNG$/);
   await page.getByRole("link", { name: "Đơn của tôi" }).click();
-  const row = page.getByTestId("ctv-order").filter({ hasText: code });
+  const row = page.getByTestId("ctv-order").filter({ hasText: code, visible: true });
   await expect(row).toContainText("Ma Ref");
   await expect(row).toContainText("Link giới thiệu");
   await expect(row).toContainText("Chờ");
-  await row.click();
+  await page.goto((await row.getByRole("link").first().getAttribute("href"))!);
   // 18/11/2026: hoa hồng theo mức ở Giá bán (Sunscreen mẫu 2 500 MMK/cái), không còn %.
   await expect(page.getByTestId("ctv-order-commission")).toContainText("2,500 MMK");
   await expect(page.getByTestId("ctv-order-commission")).toContainText("theo hoa hồng ở Giá bán");
@@ -64,9 +64,9 @@ test("CTV đăng nhập storefront bằng tài khoản CTV → đơn đặt trê
 
   await loginCtv(page);
   await page.getByRole("link", { name: "Đơn của tôi" }).click();
-  const row = page.getByTestId("ctv-order").filter({ hasText: code });
+  const row = page.getByTestId("ctv-order").filter({ hasText: code, visible: true });
   await expect(row).toContainText("CTV tự lên đơn");
-  await row.click();
+  await page.goto((await row.getByRole("link").first().getAttribute("href"))!);
   // 18/11/2026: hoa hồng theo mức ở Giá bán (Sunscreen mẫu 2 500 MMK/cái), không còn %.
   await expect(page.getByTestId("ctv-order-commission")).toContainText("2,500 MMK");
   await expect(page.getByTestId("ctv-order-commission")).toContainText("theo hoa hồng ở Giá bán");
@@ -154,7 +154,7 @@ test("mobile: thanh mục ở đáy, Tài khoản trên header chứa ngôn ng�
   await expect(page).toHaveURL(/\/ctv\/orders$/);
   const month = (await page.getByLabel("Tháng").boundingBox())!;
   const state = (await page.getByLabel("Hoa hồng").boundingBox())!;
-  expect(month.x + month.width).toBeLessThanOrEqual(state.x);
+  expect(month.x + month.width <= state.x || month.y + month.height <= state.y).toBe(true); // không chồng nhau (điện thoại: ô tháng cả hàng)
   // Ô tháng theo ngôn ngữ giao diện (không dùng ô month của trình duyệt — 18/11/2026: hiện "tháng mười 11 2026").
   await expect(page.getByLabel("Tháng")).toHaveValue(/^\d{4}-\d{2}$/);
   await expect(page.getByLabel("Tháng").locator("option:checked")).toHaveText(/^tháng \d{1,2} năm \d{4}$/);

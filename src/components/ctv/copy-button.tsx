@@ -4,14 +4,14 @@ import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-/** Nút sao chép link giới thiệu (cổng CTV). */
+/** Nút sao chép (cổng CTV) — cao bằng ô nhập admin (size lg, 18/11/2026). */
 export function CopyButton({ text, label, done }: { text: string; label: string; done: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <Button
       type="button"
       variant="outline"
-      size="touch"
+      size="lg"
       onClick={async () => {
         try {
           await navigator.clipboard.writeText(text);

@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { Banknote, CircleCheck, Clock, ShoppingBag, Wallet } from "lucide-react";
 import { fmtInt } from "@/lib/format";
 import { siteUrl } from "@/lib/site";
 import { requireAffiliate } from "@/server/auth/session";
 import { affiliateOrders, getAffiliate } from "@/server/affiliates/affiliates";
 import { getNumberSetting } from "@/server/settings";
-import { PageHeader, Stat } from "@/components/admin/ui";
-import { CopyButton } from "@/components/ctv/copy-button";
-import { CtvOrderCard } from "@/components/ctv/ctv-order-card";
-import { storeCard } from "@/components/store/ui";
-import { cn } from "@/lib/utils";
+import { Page, PageHeader, Section, StatCard } from "@/components/admin/ui";
+import { CopyLink } from "@/components/ctv/copy-link";
+import { CtvOrdersTable } from "@/components/ctv/ctv-orders-table";
 
+/** Tổng quan cổng CTV — thành phần admin (Section, StatCard, DataTable), khung CTV giữ nguyên (18/11/2026). */
 export default async function CtvHomePage() {
   const user = await requireAffiliate();
   const [t, ta, a, orders, holdDays] = await Promise.all([
@@ -24,63 +24,47 @@ export default async function CtvHomePage() {
   const s = a!.summary;
 
   return (
-    <div className="space-y-4">
+    <Page>
       <PageHeader title={t("hello", { name: user.name })} />
 
-      <section className={cn(storeCard, "space-y-2")}>
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="font-medium">{t("refLink")}</h2>
-          <span className="text-sm text-muted-foreground">
-            {ta("code")}: <span className="font-mono text-foreground">{user.code}</span> ·{" "}
-            {t("rateByProduct")}
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <code className="min-w-0 flex-1 truncate rounded-lg bg-muted px-3 py-2.5 text-sm" data-testid="ctv-ref-link">
-            {refLink}
-          </code>
-          <CopyButton text={refLink} label={t("copy")} done={t("copied")} />
-        </div>
+      <Section title={t("refLink")}>
+        <p className="text-sm text-muted-foreground">
+          {ta("code")}: <span className="font-mono text-foreground">{user.code}</span> · {t("rateByProduct")}
+        </p>
+        <CopyLink text={refLink} testId="ctv-ref-link" copy={t("copy")} copied={t("copied")} />
         <p className="text-xs text-muted-foreground">{t("refHint")}</p>
         <p className="text-xs text-muted-foreground">{t("productLinkHint", { code: user.code })}</p>
-      </section>
+      </Section>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        <Stat label={ta("statOrders")} value={fmtInt(s.monthOrders)} />
-        <Stat label={ta("statSales")} value={fmtInt(s.monthSalesMmk)} />
-        <Stat label={ta("statPending")} value={fmtInt(s.pendingMmk)} />
-        <Stat label={ta("statPayable")} value={fmtInt(s.payableMmk)} href="/ctv/payouts" testId="ctv-payable" />
-        <Stat label={ta("statPaid")} value={fmtInt(s.paidMmk)} href="/ctv/payouts" />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <StatCard icon={<ShoppingBag />} tone="brand" label={ta("statOrders")} value={fmtInt(s.monthOrders)} />
+        <StatCard icon={<Banknote />} tone="green" label={ta("statSales")} value={fmtInt(s.monthSalesMmk)} />
+        <StatCard icon={<Clock />} tone="warning" label={ta("statPending")} value={fmtInt(s.pendingMmk)} />
+        <StatCard icon={<Wallet />} tone="success" label={ta("statPayable")} value={fmtInt(s.payableMmk)} href="/ctv/payouts" testId="ctv-payable" />
+        <StatCard icon={<CircleCheck />} tone="neutral" label={ta("statPaid")} value={fmtInt(s.paidMmk)} href="/ctv/payouts" />
       </div>
-      <p className="text-xs text-muted-foreground" data-testid="ctv-split">
-        {t("split", {
-          salePending: fmtInt(s.sale.pendingMmk),
-          salePayable: fmtInt(s.sale.payableMmk),
-          teamPending: fmtInt(s.upline.pendingMmk),
-          teamPayable: fmtInt(s.upline.payableMmk),
-        })}
-      </p>
-      <p className="text-xs text-muted-foreground">{t("holdHint", { days: holdDays })}</p>
+      <div className="space-y-1 text-xs text-muted-foreground">
+        <p data-testid="ctv-split">
+          {t("split", {
+            salePending: fmtInt(s.sale.pendingMmk),
+            salePayable: fmtInt(s.sale.payableMmk),
+            teamPending: fmtInt(s.upline.pendingMmk),
+            teamPayable: fmtInt(s.upline.payableMmk),
+          })}
+        </p>
+        <p>{t("holdHint", { days: holdDays })}</p>
+      </div>
 
-      <section className="space-y-2">
-        <div className="flex items-baseline justify-between">
-          <h2 className="font-medium">{t("recent")}</h2>
-          <Link href="/ctv/orders" className="text-sm text-brand underline">
+      <Section
+        title={t("recent")}
+        actions={
+          <Link href="/ctv/orders" className="text-sm text-primary underline">
             {t("seeAll")}
           </Link>
-        </div>
-        {orders.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{ta("ordersEmpty")}</p>
-        ) : (
-          <ul className="space-y-2">
-            {orders.slice(0, 5).map((o) => (
-              <li key={o.id}>
-                <CtvOrderCard order={o} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
+        }
+      >
+        <CtvOrdersTable orders={orders.slice(0, 5)} empty={ta("ordersEmpty")} />
+      </Section>
+    </Page>
   );
 }
