@@ -9,6 +9,7 @@ import { readCatalogFile, sheetRowsToCsv } from "@/server/catalog/catalog-sheet-
 import adminVi from "../../messages/admin.vi.json";
 import adminEn from "../../messages/admin.en.json";
 import adminMy from "../../messages/admin.my.json";
+import { addCatalogSheet } from "../support/catalog-workbook";
 
 const lists = { brands: ["Sen Việt", "Cocoon"], categories: ["Skincare", "Makeup"], warehouses: ["THAM", "CHI"] };
 const asFile = (bytes: Uint8Array, name = "nhap.xlsx") => new File([Buffer.from(bytes)], name);
@@ -101,6 +102,18 @@ describe("File Excel nhập/cập nhật sản phẩm (một sheet)", () => {
     const { csv, lines } = await readCatalogFile(asFile(bytes));
     expect(lines).toEqual([CATALOG_HEADER_ROW + 1]);
     expect(parseCsvObjects(csv)[0]).toMatchObject({ name: "Sunscreen", sku: "000123", weight_g: "80", description_my: "နေကာခရင်မ်", description_en: "Line 1\nLine 2", qty: "" });
+  });
+
+  it("chỉ đọc dữ liệu của sheet đã chọn, tên có dấu và báo lỗi nếu sheet không tồn tại", async () => {
+    const first = buildCatalogWorkbook(lists, [{ name: "First sheet only", sku: "FIRST" }]);
+    const second = buildCatalogWorkbook(lists, [{ name: "Second sheet only", sku: "SECOND", qty: 4 }]);
+    const name = "Đợt 2 & bổ sung";
+    const file = asFile(addCatalogSheet(first, second, name));
+    const chosen = await readCatalogFile(file, name);
+    expect(chosen.sheetName).toBe(name);
+    expect(chosen.lines).toEqual([2]);
+    expect(parseCsvObjects(chosen.csv)).toEqual([expect.objectContaining({ name: "Second sheet only", sku: "SECOND", qty: "4" })]);
+    await expect(readCatalogFile(file, "Không tồn tại")).rejects.toThrow("Không tìm thấy sheet đã chọn");
   });
 
   it("đọc ngày Excel và dd/mm/yyyy; ô Hạn sử dụng 'Không' = không hạn; ngày sai báo đúng dòng", () => {

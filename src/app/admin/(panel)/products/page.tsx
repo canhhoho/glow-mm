@@ -6,7 +6,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { productFilterOptions } from "@/server/catalog/admin-queries";
-import { listProductsPage, MAIN_LIST_TABS, OTHER_LIST_TABS, PAGE_SIZES, parseListTab, SELL_MODES, type ListTab } from "@/server/catalog/product-list";
+import { listProductsPage, LIST_TABS, MAIN_LIST_TABS, PAGE_SIZES, parseListTab, SELL_MODES, type ListTab } from "@/server/catalog/product-list";
 import { changeSummaries } from "@/server/catalog/review";
 import { catalogStats } from "@/server/catalog/stats";
 import type { ChangeItem } from "@/server/catalog/change-summary";
@@ -74,10 +74,8 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
     rejected: stats.rejected,
     archived: stats.byLabel.ARCHIVED,
   };
-  // Tab chính = hàng đợi công việc; "Ngừng kinh doanh" chỉ hiện khi có SP; trạng thái phụ nằm trong ô chọn.
+  // Tab chính = lối tắt; ô chọn luôn có đủ trạng thái, kể cả trạng thái chưa có SP.
   const tabs = MAIN_LIST_TABS.filter((k) => k !== "archived" || tabCount[k] > 0 || k === tab);
-  const otherTabs = OTHER_LIST_TABS.filter((k) => k !== "rejected" || tabCount[k] > 0 || k === tab);
-  const mainTab = tab !== "active" && (MAIN_LIST_TABS as readonly string[]).includes(tab);
   // Mở chi tiết kèm `from` = danh sách hiện tại (tab, bộ lọc, trang) để nút Quay lại về đúng chỗ.
   const listHref = href({ page: list.page });
   const detailHref = (id: string) => `/admin/products/${id}?from=${encodeURIComponent(listHref)}`;
@@ -104,18 +102,13 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <FilterBar className="flex-1">
-          {mainTab ? (
-            <input type="hidden" name="status" value={tab} />
-          ) : (
-            <select name="status" defaultValue={tab === "active" ? "" : tab} aria-label={t("otherStatuses")} className={fieldClass}>
-              <option value="">{t("otherStatuses")}</option>
-              {otherTabs.map((k) => (
-                <option key={k} value={k}>
-                  {t(`tab.${k}`)} ({fmtInt(tabCount[k])})
-                </option>
-              ))}
-            </select>
-          )}
+          <select key={tab} name="status" defaultValue={tab} aria-label={t("colStatus")} className={fieldClass}>
+            {LIST_TABS.map((k) => (
+              <option key={k} value={k}>
+                {t(`tab.${k}`)} ({fmtInt(tabCount[k])})
+              </option>
+            ))}
+          </select>
           <SearchInput label={t("search")} defaultValue={query} />
           {/* Bộ lọc nâng cao thu gọn (vẫn nằm trong form nên gửi cùng nút Lọc); tự mở khi đang lọc. */}
           <details className="group/adv w-full md:w-auto" open={!!(categoryId || brandId || warehouseId || sell)}>

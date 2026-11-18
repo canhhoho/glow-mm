@@ -34,8 +34,11 @@ test("D4: đóng ngoại lệ COD trả toàn bộ, xem tuổi nợ và báo cá
   await page.getByRole("button", { name: "Ghi nhận trả hàng", exact: true }).click();
   await expect(page.getByTestId("order-status")).toContainText("Trả hàng");
   await page.goto("/admin/orders/cod?filter=exception");
-  await expect(page.getByRole("link", { name: code, exact: true })).toBeVisible();
-  await expect(page.getByRole("columnheader", { name: "Số ngày chờ" })).toBeVisible();
+  const codOrder = page.getByRole("link", { name: code, exact: true });
+  await expect(codOrder).toBeVisible();
+  const codRow = page.locator("tr").filter({ has: codOrder });
+  await expect(codRow.locator('td[data-label="Số ngày chờ"]')).toHaveText(/\d+ ngày/);
+  await expect(codRow.getByRole("link", { name: `Mở đối soát đơn ${code}` })).toBeVisible();
   await page.goto(orderUrl);
   await page.getByLabel("Tiền thực nhận (MMK)", { exact: true }).fill("0");
   await page.getByLabel("Phí hãng khấu trừ (MMK)", { exact: true }).fill("0");

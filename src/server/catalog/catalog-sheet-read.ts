@@ -1,11 +1,11 @@
 import "server-only";
-import { readSheet, type CellValue } from "read-excel-file/node";
+import { readSheet, SheetNotFoundError, type CellValue } from "read-excel-file/node";
 import { parseCsv, toCsv } from "@/lib/csv";
 import { ALL_SHEET_COLUMNS, CATALOG_SHEET, normalizeNumberText, parseYesNo, sheetHeaderKey } from "@/lib/catalog-sheet";
+import { MAX_CATALOG_FILE_BYTES } from "@/lib/xlsx-sheets";
 
 /** Đọc file nhập/cập nhật sản phẩm (một sheet). Trả CSV khoá chuẩn + số dòng Excel để báo lỗi. */
 
-const MAX_BYTES = 2 * 1024 * 1024;
 export const MAX_SHEET_ROWS = 5000;
 const TYPES = new Map(ALL_SHEET_COLUMNS.map((c) => [c.key, c.type]));
 
@@ -27,9 +27,9 @@ function dateValue(value: CellValue | Date, line: number): string {
 const isHeader = (keys: string[]) => ["name", "name_my", "sku"].some((k) => keys.includes(k)) && keys.filter(Boolean).length >= 2;
 
 /** Bảng ô (Excel hoặc CSV) → CSV khoá chuẩn. Bỏ qua tiêu đề/ghi chú phía trên và dòng trống. */
-export function sheetRowsToCsv(rows: (CellValue | Date | null)[][]) {
+export function sheetRowsToCsv(rows: (CellValue | Date | null)[][], sheetName = CATALOG_SHEET) {
   const headerIndex = rows.slice(0, 20).findIndex((r) => isHeader(r.map(sheetHeaderKey)));
-  if (headerIndex < 0) throw new Error(`Không tìm thấy hàng tiêu đề (cần cột Tên sản phẩm hoặc SKU). Hãy dùng file mẫu mới, sheet "${CATALOG_SHEET}".`);
+  if (headerIndex < 0) throw new Error(`Không tìm thấy hàng tiêu đề (cần cột Tên sản phẩm hoặc SKU) trong sheet "${sheetName}". Hãy dùng tiêu đề từ file mẫu.`);
   const keys = rows[headerIndex].map(sheetHeaderKey);
   const used = keys.filter(Boolean);
   if (new Set(used).size !== used.length) throw new Error("File có cột trùng tên. Mỗi cột chỉ được xuất hiện một lần.");
@@ -51,17 +51,27 @@ export function sheetRowsToCsv(rows: (CellValue | Date | null)[][]) {
     }));
     lines.push(i + 1);
   }
-  if (data.length === 0) throw new Error(`File chưa có dữ liệu. Điền từ dòng ${headerIndex + 2} trong sheet "${CATALOG_SHEET}" rồi tải lên lại.`);
+  if (data.length === 0) throw new Error(`File chưa có dữ liệu. Điền từ dòng ${headerIndex + 2} trong sheet "${sheetName}" rồi tải lên lại.`);
   return { csv: toCsv([columns, ...data]), lines };
 }
 
-export async function readCatalogFile(file: FormDataEntryValue | null) {
+export async function readCatalogFile(file: FormDataEntryValue | null, sheetName?: string): Promise<{ csv: string; lines: number[]; sheetName?: string }> {
   if (!(file instanceof File) || file.size === 0) throw new Error("Chưa chọn file Excel (.xlsx) hoặc CSV.");
-  if (file.size > MAX_BYTES) throw new Error("File quá lớn (tối đa 2 MB).");
+  if (file.size > MAX_CATALOG_FILE_BYTES) throw new Error("File quá lớn (tối đa 2 MB).");
   const extension = file.name.toLowerCase().split(".").pop();
   if (extension === "csv") return sheetRowsToCsv(parseCsv(await file.text()));
   if (extension !== "xlsx") throw new Error("Chỉ nhận Excel .xlsx hoặc CSV. Với file .xls cũ, hãy lưu lại thành .xlsx.");
   const bytes = Buffer.from(await file.arrayBuffer());
+  if (sheetName !== undefined) {
+    let rows: (CellValue | null)[][];
+    try {
+      rows = await readSheet(bytes, sheetName);
+    } catch (e) {
+      if (e instanceof SheetNotFoundError) throw new Error("Không tìm thấy sheet đã chọn trong file Excel.");
+      throw new Error("Không đọc được sheet đã chọn. Hãy kiểm tra file Excel rồi thử lại.");
+    }
+    return { ...sheetRowsToCsv(rows, sheetName), sheetName };
+  }
   let rows: (CellValue | null)[][];
   try {
     rows = await readSheet(bytes, CATALOG_SHEET);

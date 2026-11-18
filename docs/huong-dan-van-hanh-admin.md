@@ -474,7 +474,7 @@ Dấu phân cách hàng nghìn kiểu 150,000 hoặc 150.000 đều được nh�
 ### 6.3. Các bước
 
 1. Mở file, **điền dữ liệu từ dòng 7** (không sửa dòng tiêu đề).
-2. Ở trang nhập: chọn file → bấm **Xem trước**. **Xem trước chỉ đọc, chưa lưu gì.**
+2. Ở trang nhập: chọn file → bấm **Xem trước**. **Xem trước chỉ đọc, chưa lưu gì.** Từ 18/11/2026, file .xlsx **có nhiều sheet** hiện ô **Sheet nhập dữ liệu** để chọn sheet cần nhập (chỉ liệt kê sheet đang hiện; file một sheet và file CSV chọn sẵn). Kết quả ghi rõ "Xem trước sheet: …"; đổi sheet thì xem trước lại, không cần chọn lại file.
 3. Đọc kết quả: tóm tắt "{created} SP mới · {updated} SP cập nhật · {unchanged} SP không đổi · {stock} dòng nhập tồn"; từng dòng có nhãn **Tạo mới** / **Cập nhật** / **Không đổi**. Mục **Cần sửa trong file trước khi nhập:** là lỗi bắt buộc sửa; mục **Lưu ý:** là cảnh báo.
 4. Sửa file và **Xem trước** lại cho đến khi hết lỗi.
 5. Chọn tuỳ chọn: **Gửi duyệt ngay** (đã tick sẵn) và **Duyệt luôn** (chỉ người có quyền duyệt; không bao giờ tự đăng sản phẩm mới).
@@ -638,6 +638,8 @@ Dòng bị bỏ qua khi xem trước: "Thiếu giá mua đã ghi sổ", "Thiếu
 ### 8.1. Tồn kho
 
 **Kho hàng › Tồn kho** cho thấy tồn theo sản phẩm và vị trí, và các nút tạo phiếu (**Tạo phiếu**: Nhập kho, Chuyển kho, Xuất kho, Điều chỉnh). Tồn **"Còn bán"** = tồn thực tế trừ hàng đang giữ cho đơn, trừ lô hết hạn/ngừng bán/chưa biết hạn.
+
+> **Cập nhật 18/11/2026:** ô tổng đầu trang có thêm **Giá vốn tồn (VND)** = Σ số lượng × giá mua VND của lô, ở mọi vị trí, **chỉ tính lô mua bằng VND** (lô mua MMK không có giá VND nên không nằm trong số này). Cột giá trị trong bảng đổi tên **Giá vốn (MMK)** vì đó là giá vốn lô, không phải giá bán.
 
 ### 8.2. Phiếu nhập kho
 
@@ -948,7 +950,7 @@ Bấm **Giao thành công · Đã thu tiền** chỉ ghi nhận **khách đã tr
 
 ### 11.1. Xem danh sách
 
-**Đơn hàng › Đối soát COD** ("Đối soát tiền COD"): tóm tắt "{n} đơn chờ tiền về · COD gốc … MMK (chưa trừ phí hãng)", số đơn ngoại lệ, ô tuổi nợ ("{ngày} ngày · {n} đơn"), ba tab **Tất cả** / **Chờ tiền về cửa hàng** / **Có hoàn hàng / hoàn tiền · Cần đối soát riêng**. Cột: **Mã đơn**, **Hãng / Mã vận đơn**, **Hãng đã thu khách lúc**, **Số ngày chờ**, **COD đã thu (MMK)**, **Tình trạng tiền về**. **Việc đối soát làm ở trang chi tiết đơn**, khối **Đối soát tiền COD**.
+**Đơn hàng › Đối soát COD** ("Đối soát tiền COD", cập nhật 18/11/2026): 3 ô tổng (**Đơn cần đối soát**, **COD chờ nhận** — COD gốc, chưa trừ phí hãng, **Ngoại lệ** kèm COD gốc), khối **Thời gian chờ** theo mốc 0–7 / 8–14 / 15–30 / trên 30 ngày (tính cả ngoại lệ), ba tab có số đếm **Tất cả** / **Chờ tiền về** / **Ngoại lệ**. Cột: **Mã đơn**, **Hãng / Mã vận đơn**, **Ngày thu COD**, **Số ngày chờ**, **COD đã thu (MMK)**, **Trạng thái**, nút **Mở đối soát** ở từng dòng. **Việc đối soát làm ở trang chi tiết đơn**, khối **Đối soát tiền COD**.
 
 ### 11.2. Trường hợp thường (đơn Hoàn tất, đã thu tiền, không trả hàng)
 

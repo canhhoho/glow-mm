@@ -88,53 +88,62 @@ export default async function InventoryPage({ searchParams }: PageProps<"/admin/
       />
 
       {/* Ô số tổng (P3b: cùng kiểu ô số của danh sách SP / dashboard; dòng gợi ý dưới ô) */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-        <div>
-          <StatCard icon={<Package />} tone="brand" value={fmtInt(summary.availableUnits)} label={t("statSellable")} />
-          <Hint>
-            {summary.heldUnits > 0
-              ? t("statSellableHintHeld", { variants: summary.sellableVariants, held: summary.heldUnits })
-              : t("statSellableHint", { variants: summary.sellableVariants })}
-          </Hint>
+      <div className="@container">
+        <div className={cn(
+          "grid grid-cols-2 gap-3 *:grid *:min-w-0 *:grid-rows-[1fr_auto]",
+          FEATURES.expiry ? "md:grid-cols-3 2xl:grid-cols-6" : "@min-[52rem]:grid-cols-4",
+        )}>
+          <div>
+            <StatCard icon={<Package />} tone="brand" value={fmtInt(summary.availableUnits)} label={t("statSellable")} />
+            <Hint>
+              {summary.heldUnits > 0
+                ? t("statSellableHintHeld", { variants: summary.sellableVariants, held: summary.heldUnits })
+                : t("statSellableHint", { variants: summary.sellableVariants })}
+            </Hint>
+          </div>
+          <div>
+            <StatCard icon={<Wallet />} tone="green" value={compact(summary.valueMmk, locale)} label={t("statValue")} />
+            <Hint>
+              {[summary.unvaluedUnits > 0 ? t("statValueUnvalued", { units: summary.unvaluedUnits }) : t("statValueHint"), summary.estimatedUnits > 0 ? t("estimatedUnits", { units: summary.estimatedUnits }) : ""].filter(Boolean).join(" · ")}
+            </Hint>
+          </div>
+          <div>
+            <StatCard icon={<Wallet />} tone="green" value={compact(summary.valueVnd, locale)} label={t("statValueVnd")} />
+            <Hint>{t("statValueVndHint")}</Hint>
+          </div>
+          <div>
+            <StatCard icon={<ShieldAlert />} tone="neutral" value={fmtInt(summary.byLocationType.QUARANTINE)} label={t("statQuarantine")} href="/admin/inventory/quarantine" />
+            <Hint>{t("statQuarantineHint")}</Hint>
+          </div>
+          {FEATURES.expiry && (
+            <>
+              <div>
+                <StatCard
+                  icon={<Clock />}
+                  tone="warning"
+                  value={t("lotsN", { n: summary.near.lots })}
+                  label={t("statNear", { days: th.warnDays })}
+                  href={href({ tab: "all", expiry: "near", stockType: undefined, q: undefined })}
+                  active={f.expiry === "near"}
+                  testId="tile-near"
+                />
+                <Hint>{t("unitsN", { n: summary.near.units })}</Hint>
+              </div>
+              <div>
+                <StatCard
+                  icon={<Ban />}
+                  tone="danger"
+                  value={t("lotsN", { n: summary.blocked.lots })}
+                  label={t("statBlocked", { days: th.blockDays })}
+                  href={href({ tab: "all", expiry: "blocked", stockType: undefined, q: undefined })}
+                  active={f.expiry === "blocked"}
+                  testId="tile-blocked"
+                />
+                <Hint>{t("unitsN", { n: summary.blocked.units })}</Hint>
+              </div>
+            </>
+          )}
         </div>
-        <div>
-          <StatCard icon={<Wallet />} tone="green" value={compact(summary.valueMmk, locale)} label={t("statValue")} />
-          <Hint>
-            {[summary.unvaluedUnits > 0 ? t("statValueUnvalued", { units: summary.unvaluedUnits }) : t("statValueHint"), summary.estimatedUnits > 0 ? t("estimatedUnits", { units: summary.estimatedUnits }) : ""].filter(Boolean).join(" · ")}
-          </Hint>
-        </div>
-        <div>
-          <StatCard icon={<ShieldAlert />} tone="neutral" value={fmtInt(summary.byLocationType.QUARANTINE)} label={t("statQuarantine")} href="/admin/inventory/quarantine" />
-          <Hint>{t("statQuarantineHint")}</Hint>
-        </div>
-        {FEATURES.expiry && (
-          <>
-            <div>
-              <StatCard
-                icon={<Clock />}
-                tone="warning"
-                value={t("lotsN", { n: summary.near.lots })}
-                label={t("statNear", { days: th.warnDays })}
-                href={href({ tab: "all", expiry: "near", stockType: undefined, q: undefined })}
-                active={f.expiry === "near"}
-                testId="tile-near"
-              />
-              <Hint>{t("unitsN", { n: summary.near.units })}</Hint>
-            </div>
-            <div>
-              <StatCard
-                icon={<Ban />}
-                tone="danger"
-                value={t("lotsN", { n: summary.blocked.lots })}
-                label={t("statBlocked", { days: th.blockDays })}
-                href={href({ tab: "all", expiry: "blocked", stockType: undefined, q: undefined })}
-                active={f.expiry === "blocked"}
-                testId="tile-blocked"
-              />
-              <Hint>{t("unitsN", { n: summary.blocked.units })}</Hint>
-            </div>
-          </>
-        )}
       </div>
 
       <TabNav

@@ -103,7 +103,7 @@ function balanceWhere(f: StockFilter, now: Date, t: Thresholds): Prisma.StockBal
 
 const ROW_INCLUDE = {
   location: { select: { code: true, name: true, type: true, sellable: true } },
-  batch: { select: { variantId: true, lotNo: true, expiryDate: true, expiryStatus: true, landedCostMmk: true, estimatedCostMmk: true } },
+  batch: { select: { variantId: true, lotNo: true, expiryDate: true, expiryStatus: true, unitCostVnd: true, landedCostMmk: true, estimatedCostMmk: true } },
 } satisfies Prisma.StockBalanceInclude;
 
 async function loadRows(where: Prisma.StockBalanceWhereInput): Promise<BalanceRow[]> {
@@ -114,6 +114,7 @@ async function loadRows(where: Prisma.StockBalanceWhereInput): Promise<BalanceRo
     lotNo: r.batch.lotNo,
     expiryDate: r.batch.expiryDate,
     expiryStatus: r.batch.expiryStatus,
+    unitCostVnd: r.batch.unitCostVnd,
     landedCostMmk: inventoryCost(r.batch).unitCostMmk,
     costStatus: inventoryCost(r.batch).costStatus,
     locationId: r.locationId,

@@ -89,6 +89,7 @@ describe("Trang Tồn kho — số liệu khớp sổ kho", () => {
       availableUnits: 9 + 5 - 2,
       sellableVariants: 1,
       valueMmk: 12_000,
+      valueVnd: 2_900_000,
       unvaluedUnits: 5 + 4 + 8,
       inbound: { units: 3, lots: 1 },
       near: { units: 5, lots: 1 },
