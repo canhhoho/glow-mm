@@ -130,6 +130,7 @@
       "invalid_name": "Vui lòng nhập họ tên người nhận",
       "invalid_address": "Vui lòng nhập địa chỉ đầy đủ (ít nhất 3 ký tự)",
       "variant_unavailable": "Một số sản phẩm không còn bán — vui lòng kiểm tra giỏ hàng",
+      "cart_empty": "Giỏ hàng đang trống — vui lòng thêm sản phẩm rồi đặt lại",
       "price_missing": "Một số sản phẩm chưa có giá bán — vui lòng liên hệ cửa hàng",
       "out_of_stock": "Một số sản phẩm không đủ hàng — vui lòng kiểm tra giỏ hàng",
       "invalid_form": "Vui lòng kiểm tra thông tin đã nhập",

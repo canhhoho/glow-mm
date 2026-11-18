@@ -66,6 +66,8 @@ export type CreateOrderContext = {
 export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
   const input = createOrderSchema.parse(raw);
   const channel = ctx.userId ? input.channel : "WEB";
+  // `userId` = nhân viên/CTV tạo đơn. Đơn web của khách (kể cả đã đăng nhập — tài khoản nằm ở `accountId`) luôn có
+  // userId null → tắt "Nhận đơn trên web" chặn MỌI đơn khách trên web, khớp trang checkout; đơn nhân viên/CTV vẫn đi qua.
   if (!ctx.userId && !(await getBoolSetting("store.checkoutEnabled"))) {
     throw new OrderError("checkout_disabled", "Đang tạm ngừng nhận đơn trên web");
   }

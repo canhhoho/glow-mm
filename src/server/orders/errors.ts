@@ -5,6 +5,8 @@ export type OrderErrorCode =
   | "invalid_phone"
   | "invalid_zone"
   | "variant_unavailable"
+  /** Giỏ trống lúc bấm đặt hàng (web). */
+  | "cart_empty"
   | "price_missing"
   | "pick_mismatch"
   | "pick_required"

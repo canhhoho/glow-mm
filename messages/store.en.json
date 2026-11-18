@@ -130,6 +130,7 @@
       "invalid_name": "Please enter the recipient's name",
       "invalid_address": "Please enter the full address (at least 3 characters)",
       "variant_unavailable": "Some items are no longer available — please check your cart",
+      "cart_empty": "Your cart is empty — please add products and try again",
       "price_missing": "Some items don't have a price yet — please contact us",
       "out_of_stock": "Not enough stock for some items — please check your cart",
       "invalid_form": "Please check the information you entered",
