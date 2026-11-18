@@ -3,6 +3,8 @@
     "title": "Admin — T&C Cosmetics"
   },
   "SellingPrices": {
+    "rateRecalcBanner": "A newer exchange rate exists than the last price change of {count} SKUs (VN import warehouse) — selling prices have not changed.",
+    "rateRecalcButton": "Recalculate prices with new rate",
     "title": "Selling prices",
     "automatic": "Automatic",
     "manual": "List · Manual",
@@ -50,6 +52,10 @@
     "commissionPercent": "by %",
     "pendingCommission": "pending: {value}",
     "manualPage": {
+      "saveConfirm": "Save & confirm {count} SKUs ({changed} price changes)",
+      "rateRecalcTitle": "Recalculate prices with new rate",
+      "rateRecalcHint": "{count} SKUs are pre-calculated with the latest rate, keeping last profit, shipping and commission. Check the Selling price column, adjust if needed, then Save. Rows missing data show a reason and are not saved. Approved products: new prices await approval.",
+      "rateRecalcNone": "No SKUs need recalculating for the new rate.",
       "editPrice": "Edit price",
       "colActions": "Actions",
       "colPurchaseMmk": "Purchase price (MMK)",
@@ -1340,6 +1346,7 @@
     "requirePickHint": "Turn on once the warehouse uses pick slips: orders without locked lots cannot be handed over. Off: orders without a slip are issued by FEFO as before."
   },
   "Pricing": {
+    "rateConfirmed": "Confirmed {count} SKUs keep their price at the new rate",
     "tabRates": "Exchange rates",
     "tabHistory": "Price history",
     "current": "Current",

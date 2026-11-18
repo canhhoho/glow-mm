@@ -10,7 +10,7 @@ import type { Tx } from "@/server/inventory/ledger";
 import { variantCosts } from "./cost";
 import { guardApproval } from "@/server/catalog/approval";
 import { effectivePricingOf, stagePrices } from "@/server/catalog/change-request";
-import { commissionOverPrice, writeLivePrice } from "@/server/catalog/price-write";
+import { commissionOverPrice, recordPriceConfirmation, writeLivePrice } from "@/server/catalog/price-write";
 import { lockCatalog } from "@/server/catalog/products";
 import { writeAudit } from "@/server/audit";
 import { mmkPerVndFromUsd, parseScaled, priceLocalMmk, priceVndManual, priceVnImport, shippingMmk, suggestPrice } from "./formula";
@@ -477,7 +477,15 @@ export const manualSchema = z.object({
     )
     .min(1)
     .max(200),
+  /**
+   * Tính lại theo tỷ giá mới (18/11/2026): dòng tính ra giá + hoa hồng KHÔNG đổi vẫn được ghi lịch sử "xác nhận"
+   * (giá cũ = giá mới, lý do RATE_CONFIRM_REASON) để hết cảnh báo RATE_NEWER — không thì cảnh báo/nút còn mãi.
+   */
+  confirmUnchanged: z.boolean().optional(),
 });
+
+/** Lý do trong lịch sử giá khi xác nhận giá không đổi sau khi đổi tỷ giá. */
+export const RATE_CONFIRM_REASON = "Xác nhận giá theo tỷ giá mới (không đổi)";
 
 /**
  * Thủ công kho VND: Giá bán MMK = (giá mua NCC của lần nhập được chọn + lãi VND) ÷ tỷ giá + vận chuyển + CTV,
@@ -534,7 +542,17 @@ export async function applyManualVnd(raw: unknown, userId: string, now = new Dat
         });
       }
       const changed = computed.filter((c) => c.newPriceMmk !== c.basePriceMmk || c.commissionMmk !== c.baseCommissionMmk);
-      if (changed.length === 0) throw new PricingError("Giá và hoa hồng không đổi so với hiện tại");
+      const confirm = input.confirmUnchanged ? computed.filter((c) => !changed.includes(c)) : [];
+      if (changed.length === 0 && confirm.length === 0) throw new PricingError("Giá và hoa hồng không đổi so với hiện tại");
+      const writeConfirms = async (runId: string | null) => {
+        for (const c of confirm) {
+          await recordPriceConfirmation(tx, { variantId: c.variantId, priceMmk: c.oldPriceMmk, reason: RATE_CONFIRM_REASON, runId, userId, at: now });
+        }
+      };
+      if (changed.length === 0) {
+        await writeConfirms(null);
+        return { applied: 0, skipped: [], remaining: 0, awaitingApproval: 0, runId: null, unchanged: confirm.length, confirmed: confirm.length, review: null };
+      }
       const run = await tx.priceUpdateRun.create({
         data: {
           mode: "MANUAL",
@@ -551,8 +569,9 @@ export async function applyManualVnd(raw: unknown, userId: string, now = new Dat
       await tx.$queryRaw`SELECT "id" FROM "PriceUpdateRun" WHERE "id" = ${run.id} FOR UPDATE`;
       const lines = await tx.priceRunLine.findMany({ where: { runId: run.id }, include: { variant: { select: { sku: true } } } });
       const outcome = await applyLines(tx, run.id, lines, null, userId, now);
+      await writeConfirms(run.id);
       const review = opts.submit ? await submitTouched(tx, outcome.touched, userId, { changedBefore: outcome.changedBefore }) : null;
-      return { ...outcome, runId: run.id, unchanged: computed.length - changed.length, review };
+      return { ...outcome, runId: run.id as string | null, unchanged: computed.length - changed.length, confirmed: confirm.length, review };
     },
     { maxWait: 10_000, timeout: 120_000 },
   );

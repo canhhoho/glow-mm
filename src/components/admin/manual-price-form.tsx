@@ -33,6 +33,7 @@ export function ManualVndForm({
   roundTo,
   canReview,
   canApprove,
+  editAll = false,
 }: {
   location: { id: string; code: string; name: string };
   rows: ManualRow[];
@@ -41,9 +42,11 @@ export function ManualVndForm({
   roundTo: number;
   canReview: boolean;
   canApprove: boolean;
+  /** Mở sẵn sửa mọi dòng (tính lại theo tỷ giá mới); dòng thiếu dữ liệu vẫn hiện lý do và không được gửi. */
+  editAll?: boolean;
 }) {
   const t = useTranslations("SellingPrices.manualPage");
-  const [editing, setEditing] = useState<string[]>([]);
+  const [editing, setEditing] = useState<string[]>(() => (editAll ? rows.map((r) => r.variantId) : []));
   const [rateId, setRateId] = useState(currentRateId ?? rates[0]?.id ?? "");
   const [state, setState] = useState<Record<string, RowState>>(() =>
     Object.fromEntries(
@@ -87,11 +90,12 @@ export function ManualVndForm({
       expectedPriceMmk: c.r.price,
       expectedCommissionMmk: c.r.commission ?? "",
     }));
-  const payload = JSON.stringify({ locationId: location.id, rateId, lines });
+  // Tính lại theo tỷ giá mới: dòng giá không đổi cũng được xác nhận (hết cảnh báo tỷ giá mới).
+  const payload = JSON.stringify({ locationId: location.id, rateId, lines, ...(editAll && { confirmUnchanged: true }) });
   const changedCount = computed.filter((c) => c.changed && editing.includes(c.r.variantId)).length;
 
   return (
-    <ActionForm action={applyManualVndAction} submitLabel={t("save", { count: changedCount })} icon={<Calculator aria-hidden />} className="space-y-4">
+    <ActionForm action={applyManualVndAction} submitLabel={editAll ? t("saveConfirm", { count: lines.length, changed: changedCount }) : t("save", { count: changedCount })} icon={<Calculator aria-hidden />} className="space-y-4">
       <input type="hidden" name="payload" value={payload} />
       <div className="flex flex-wrap items-end gap-4">
         <label className={fieldLabelClass}>
@@ -137,7 +141,8 @@ export function ManualVndForm({
                   aria-invalid={invalid || undefined}
                   aria-describedby={invalid ? `${key}-err-${id}` : undefined}
                   readOnly={!editable}
-                  required={editable}
+                  // Tính lại theo tỷ giá mới (editAll): dòng thiếu dữ liệu chỉ hiện lý do và bị bỏ qua — không chặn lưu cả bảng.
+                  required={editable && !editAll}
                   type="number"
                   min={0}
                   step={1}

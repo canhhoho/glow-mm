@@ -3,6 +3,8 @@
     "title": "Quản trị — T&C Cosmetics"
   },
   "SellingPrices": {
+    "rateRecalcBanner": "Có tỷ giá mới hơn lần đặt giá gần nhất của {count} SKU (kho hàng nhập VN) — giá bán chưa tự đổi.",
+    "rateRecalcButton": "Tính lại giá theo tỷ giá mới",
     "title": "Giá bán",
     "automatic": "Tự động",
     "manual": "Danh sách · Thủ công",
@@ -50,6 +52,10 @@
     "commissionPercent": "theo %",
     "pendingCommission": "chờ duyệt: {value}",
     "manualPage": {
+      "saveConfirm": "Lưu & xác nhận {count} SKU ({changed} đổi giá)",
+      "rateRecalcTitle": "Tính lại giá theo tỷ giá mới",
+      "rateRecalcHint": "{count} SKU đã được tính sẵn theo tỷ giá mới nhất, giữ lãi, vận chuyển và CTV lần trước. Kiểm tra cột Giá bán, sửa nếu cần rồi bấm Lưu. Dòng thiếu dữ liệu ghi lý do và không được lưu. SP đã duyệt: giá mới chờ duyệt.",
+      "rateRecalcNone": "Không còn SKU nào cần tính lại theo tỷ giá mới.",
       "editPrice": "Sửa giá",
       "colActions": "Thao tác",
       "colPurchaseMmk": "Giá mua (MMK)",
@@ -1340,6 +1346,7 @@
     "requirePickHint": "Bật khi kho đã quen phiếu soạn: đơn chưa chốt lô sẽ không bàn giao được. Tắt: đơn chưa có phiếu vẫn xuất theo FEFO như trước."
   },
   "Pricing": {
+    "rateConfirmed": "Đã xác nhận {count} SKU giữ nguyên giá theo tỷ giá mới",
     "tabRates": "Tỷ giá",
     "tabHistory": "Lịch sử giá",
     "current": "Đang dùng",

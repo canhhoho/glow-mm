@@ -137,7 +137,7 @@ describe("Thủ công kho VND", () => {
     await expect(applyManualVnd({ locationId: f.mm.id, rateId: rate.id, lines: [{ ...line, expectedPriceMmk: 9_000 }] }, f.userId)).rejects.toThrow("vừa được đổi");
     const res = await applyManualVnd({ locationId: f.mm.id, rateId: rate.id, lines: [line] }, f.userId);
     expect(res).toMatchObject({ applied: 1, awaitingApproval: 1 });
-    const runLine = await prisma.priceRunLine.findFirstOrThrow({ where: { runId: res.runId } });
+    const runLine = await prisma.priceRunLine.findFirstOrThrow({ where: { runId: res.runId! } });
     expect(runLine).toMatchObject({ costVnd: 100_000, profitVnd: 50_000, sellVnd: 150_000, shipMmk: 800, commissionMmk: 2_000, newPriceMmk: 27_800, sourceLineId: sources[1].lineId });
     expect(await variant(f.variantId)).toMatchObject({ priceMmk: 10_000, affiliateCommissionMmk: null });
     await approve(f);

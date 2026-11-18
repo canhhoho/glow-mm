@@ -7,7 +7,8 @@ import { fmtInt } from "@/lib/format";
 import { saveProductPricingAction } from "@/server/catalog/actions";
 import type { manualPricingView, ManualRow } from "@/server/pricing/manual";
 
-export async function ManualPricingSheet({ view, canReview, canApprove }: { view: Awaited<ReturnType<typeof manualPricingView>>; canReview: boolean; canApprove: boolean }) {
+/** `editAll`: mở sẵn chế độ sửa mọi dòng VND (nút "Tính lại theo tỷ giá mới") — người dùng xem lại rồi lưu một lần. */
+export async function ManualPricingSheet({ view, canReview, canApprove, editAll = false }: { view: Awaited<ReturnType<typeof manualPricingView>>; canReview: boolean; canApprove: boolean; editAll?: boolean }) {
   const t = await getTranslations("SellingPrices.manualPage");
   return (<>
       {view.groups.length === 0 && view.unplaced.length === 0 && <Notice tone="info">{t("empty")}</Notice>}
@@ -24,7 +25,7 @@ export async function ManualPricingSheet({ view, canReview, canApprove }: { view
               </Notice>
             )}
             {/* key theo tập SKU (không theo giá): lưu xong giá đổi thì form KHÔNG dựng lại → giữ thông báo "Đã áp dụng…"; đổi trang/bộ lọc/tỷ giá thì dựng lại. */}
-            <ManualVndForm key={`${g.location.id}|${g.rows.map((r) => r.variantId).join(",")}|${view.currentRateId}|${view.roundTo}`} location={g.location} rows={g.rows} rates={view.rates} currentRateId={view.currentRateId} roundTo={view.roundTo} canReview={canReview} canApprove={canApprove} />
+            <ManualVndForm key={`${g.location.id}|${g.rows.map((r) => r.variantId).join(",")}|${view.currentRateId}|${view.roundTo}`} location={g.location} rows={g.rows} rates={view.rates} currentRateId={view.currentRateId} roundTo={view.roundTo} canReview={canReview} canApprove={canApprove} editAll={editAll} />
           </Section>
         ) : (
           <Section key={g.location.id} title={t("groupMmk", { name: g.location.name })} testId="manual-mmk">

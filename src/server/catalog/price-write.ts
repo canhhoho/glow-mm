@@ -33,6 +33,16 @@ export const commissionOverPrice = (priceMmk: number, commission: number | null 
  * Ghi `PriceHistory` khi GIÁ đổi; kèm hoa hồng cũ/mới nếu hoa hồng cũng đổi. Chỉ đổi hoa hồng → không ghi
  * (đã có trong audit của thao tác).
  */
+/**
+ * Ghi PriceHistory XÁC NHẬN giá không đổi (giá cũ = giá mới) — 18/11/2026, tính lại theo tỷ giá mới: đánh dấu đã
+ * xem lại giá sau khi đổi tỷ giá để hết cảnh báo RATE_NEWER (readiness đọc lần ghi lịch sử giá gần nhất).
+ */
+export async function recordPriceConfirmation(tx: Tx, c: { variantId: string; priceMmk: number; reason: string; runId?: string | null; userId: string; at?: Date }) {
+  await tx.priceHistory.create({
+    data: { variantId: c.variantId, oldPriceMmk: c.priceMmk, newPriceMmk: c.priceMmk, reason: c.reason, runId: c.runId ?? null, userId: c.userId, ...(c.at && { createdAt: c.at }) },
+  });
+}
+
 export async function recordPriceChange(tx: Tx, c: Omit<LivePriceChange, "productId">) {
   if (c.to.priceMmk === c.from.priceMmk) return;
   const commissionChanged = c.from.commission !== undefined && c.to.commission !== undefined && c.from.commission !== c.to.commission;
