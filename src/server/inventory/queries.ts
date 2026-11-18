@@ -37,6 +37,10 @@ export async function listVariantsForPicker() {
     inactive: !v.active,
     archived: v.product.archivedAt != null,
     label: `${v.sku} — ${variantDisplayName(productName(v.product.translations, v.product.slug), v.label)}`,
+    // Bộ chọn 3 ô ở phiếu kho (tên SP → SKU → phân loại, 18/11/2026).
+    productId: v.productId,
+    productName: productName(v.product.translations, v.product.slug),
+    variantLabel: v.label,
   }));
 }
 

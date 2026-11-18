@@ -686,6 +686,7 @@ Tạo từ **Tồn kho › Tạo phiếu**. Mỗi loại có quyền riêng (Qu�
 
 Tất cả: **Lưu nháp** → **Ghi sổ** ⛔📦.
 
+- **Chọn hàng trên phiếu Chuyển / Xuất / Điều chỉnh (18/11/2026):** mỗi dòng có 3 ô liên kết — **Tên sản phẩm** (gõ để hiện gợi ý), **SKU** (gợi ý trong SP đã chọn; gõ đúng SKU trước thì tự điền tên SP và phân loại), **Phân loại** (chỉ các phân loại của SP; SP một phân loại tự chọn). Đổi SP/SKU/phân loại thì ô **Lô** tự lọc lại theo biến thể và lô đã chọn bị bỏ. Tên SP gõ không khớp gợi ý → báo ngay, không lưu được.
 - **Phiếu nháp sai:** phiếu **Nhập** có nút **Sửa phiếu**. Phiếu **Xuất / Chuyển / Điều chỉnh** bấm **Huỷ và tạo lại**: form tạo phiếu mở sẵn các dòng của phiếu nháp; khi lưu, phiếu mới được tạo và phiếu nháp cũ bị huỷ cùng lúc (lỗi thì phiếu cũ giữ nguyên).
 - **Phiếu đã ghi sổ** không sửa, không xoá. Sai **số lượng**: tạo phiếu **Điều chỉnh** (hoặc phiếu chuyển/xuất ngược lại). Phiếu điều chỉnh **chỉ đổi tồn** — giá mua, tỷ giá, phí về kho và số lượng dùng để tính giá vốn lô / phân bổ chuyến **không đổi**. Sai giá, tỷ giá hoặc phí về kho trên phiếu nhập đã ghi sổ: báo quản trị; hiện chưa có chức năng sửa/đảo phiếu nhập đã ghi sổ (cần thiết kế riêng).
 - Danh sách chọn: ô **đi** gồm cả kho đã ngừng dùng (dọn tồn cũ, có nhãn); ô **đến** và vị trí điều chỉnh chỉ kho đang dùng. Biến thể đã tắt / sản phẩm ngừng kinh doanh **còn tồn** vẫn chọn được (có nhãn) để xử lý nốt; việc này không mở lại quyền bán.
