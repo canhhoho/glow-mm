@@ -485,6 +485,23 @@ export async function discardChangesAction(_prev: ActionState, formData: FormDat
 }
 
 /** Bước 5 (QT3): bật/tắt đặt trước khi hết hàng + hạn mức theo biến thể (`variantId[]` / `preorderLimit[]` cùng thứ tự). */
+/**
+ * Gán kho bán cho MỘT SP chưa có kho (trang SP bước 2) — để bán đặt trước khi chưa nhập hàng. Lối tắt của "Đổi kho"
+ * ở danh sách: cùng hàm domain `moveProductsToWarehouse` (kiểm kho bán, combo cùng kho, audit).
+ */
+export async function assignProductWarehouseAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  let productId = "";
+  try {
+    const user = await requirePermission("catalog:manage");
+    productId = String(formData.get("productId") ?? "");
+    await moveProductsToWarehouse([productId], formData.get("toLocationId"), user.id);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  revalidatePath(`/admin/products/${productId}`);
+  return { ok: "1" };
+}
+
 export async function saveProductPreorderAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   let productId = "";
   try {

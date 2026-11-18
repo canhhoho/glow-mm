@@ -25,7 +25,15 @@ import {
 import { createOrder, findOrderForCustomer } from "@/server/orders/orders";
 import { returnItems } from "@/server/orders/returns";
 import { transitionOrder } from "@/server/orders/transitions";
-import { admin, orderInput, saleFixture, unpublishTestProducts, type SaleFixture } from "./fixtures";
+import { admin, orderInput, saleFixture as baseSaleFixture, unpublishTestProducts, type SaleFixture } from "./fixtures";
+
+// 18/11/2026: hoa hồng bán hàng chỉ theo mức MMK/cái ở Giá bán (không còn % theo CTV). SP mẫu của file này đặt
+// 1 000 MMK/cái (= 10% giá 10 000 trước đây) để các số chi trả giữ nguyên; % tầng trên không đổi.
+const saleFixture = async (...args: Parameters<typeof baseSaleFixture>) => {
+  const f = await baseSaleFixture(...args);
+  await prisma.variant.update({ where: { id: f.variantId }, data: { affiliateCommissionMmk: 1_000 } });
+  return f;
+};
 
 afterAll(unpublishTestProducts);
 
@@ -96,14 +104,19 @@ describe("Gắn CTV khi tạo đơn (P10)", () => {
     expect(await prisma.affiliate.findUnique({ where: { id: child.id } })).toMatchObject({ parentId: a.id });
   });
 
-  it("link giới thiệu hợp lệ → đơn thuộc CTV, chốt % lúc đặt (đổi % sau không ảnh hưởng)", async () => {
+  it("link giới thiệu hợp lệ → đơn thuộc CTV, hoa hồng chốt theo mức ở Giá bán lúc đặt (không chốt % của CTV)", async () => {
     const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
     const a = await makeAffiliate(f, { rateBp: 1200 });
     const order = await createOrder(orderInput(f, 1), { userId: null, affiliate: { source: "LINK", code: a.code } });
-    expect(order).toMatchObject({ affiliateId: a.id, affiliateSource: "LINK", commissionRateBp: 1200, channel: "WEB" });
+    expect(order).toMatchObject({ affiliateId: a.id, affiliateSource: "LINK", commissionRateBp: null, channel: "WEB" });
+    const unit = async () => (await prisma.orderItem.findFirstOrThrow({ where: { orderId: order.id } })).commissionPerUnitMmk;
+    expect(await unit()).toBe(1_000);
 
-    await prisma.affiliate.update({ where: { id: a.id }, data: { commissionRateBp: 500 } });
-    expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).commissionRateBp).toBe(1200);
+    // Đổi mức ở Giá bán sau khi đặt → đơn cũ giữ mức lúc đặt. SP để trống mức → đơn mới không có hoa hồng bán hàng.
+    await prisma.variant.update({ where: { id: f.variantId }, data: { affiliateCommissionMmk: null } });
+    expect(await unit()).toBe(1_000);
+    const blank = await createOrder(orderInput(f, 1, { phone: "09781230002" }), { userId: null, affiliate: { source: "LINK", code: a.code } });
+    expect(await getAffiliateOrder(a.id, blank.id)).toMatchObject({ commission: { commissionMmk: 0 } });
   });
 
   it("mã không tồn tại / CTV bị khoá / tài khoản bị khoá → đơn vẫn đặt được, không gắn CTV", async () => {
@@ -124,6 +137,19 @@ describe("Gắn CTV khi tạo đơn (P10)", () => {
       { userId: a.userId, affiliate: { source: "AFFILIATE", id: a.id } },
     );
     expect(order).toMatchObject({ affiliateId: a.id, affiliateSource: "AFFILIATE", createdById: a.userId, channel: "FACEBOOK" });
+  });
+
+  it("nhân viên lên đơn: không chọn CTV → không gắn CTV, không hoa hồng (kể cả SP có hoa hồng cố định); chọn CTV → tính cho CTV đó", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
+    await prisma.variant.update({ where: { id: f.variantId }, data: { affiliateCommissionMmk: 1_500 } });
+    const own = await createOrder(orderInput(f, 1), { userId: f.userId });
+    expect(own).toMatchObject({ affiliateId: null, affiliateSource: null, commissionRateBp: null, createdById: f.userId });
+    expect(await prisma.orderItem.findMany({ where: { orderId: own.id }, select: { commissionPerUnitMmk: true } })).toEqual([{ commissionPerUnitMmk: null }]);
+
+    const a = await makeAffiliate(f);
+    const assigned = await createOrder(orderInput(f, 1, { phone: "09781230001" }), { userId: f.userId, affiliate: { source: "STAFF", id: a.id } });
+    expect(assigned).toMatchObject({ affiliateId: a.id, affiliateSource: "STAFF" });
+    expect(await prisma.orderItem.findMany({ where: { orderId: assigned.id }, select: { commissionPerUnitMmk: true } })).toEqual([{ commissionPerUnitMmk: 1_500 }]);
   });
 
   it("nhân viên gán CTV đã khoá → invalid_affiliate, không tạo đơn", async () => {
@@ -218,7 +244,7 @@ describe("Quản lý CTV + chi trả (P10b)", () => {
     await expect(setAffiliateActive("khong-ton-tai", false, f.userId)).rejects.toMatchObject({ code: "not_found" });
   });
 
-  it("gán CTV cho đơn: chốt % hiện tại, kho không có quyền, CTV bị khoá → lỗi", async () => {
+  it("gán CTV cho đơn: chốt mức ở Giá bán, kho không có quyền, CTV bị khoá → lỗi", async () => {
     const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
     const a = await makeAffiliate(f, { rateBp: 900 });
     const locked = await makeAffiliate(f, { suffix: "L", active: false });
@@ -229,7 +255,8 @@ describe("Quản lý CTV + chi trả (P10b)", () => {
       code: "forbidden",
     });
     await expect(assignOrderAffiliate(order.id, locked.id, staff)).rejects.toMatchObject({ code: "not_found" });
-    expect(await assignOrderAffiliate(order.id, a.id, staff)).toMatchObject({ affiliateId: a.id, affiliateSource: "STAFF", commissionRateBp: 900 });
+    expect(await assignOrderAffiliate(order.id, a.id, staff)).toMatchObject({ affiliateId: a.id, affiliateSource: "STAFF", commissionRateBp: null });
+    expect((await prisma.orderItem.findFirstOrThrow({ where: { orderId: order.id } })).commissionPerUnitMmk).toBe(1_000);
     expect(await assignOrderAffiliate(order.id, null, staff)).toMatchObject({ affiliateId: null, commissionRateBp: null });
 
     // Đơn đã huỷ: không gán / đổi CTV, không chỉnh %.
@@ -525,17 +552,20 @@ describe("Admin chỉnh % (P13)", () => {
       setOrderCommissionRates(order.id, { commissionPercent: "15" }, { userId: f.userId, role: "ORDER_STAFF" }),
     ).rejects.toMatchObject({ code: "forbidden" });
 
+    // 18/11/2026: đơn mới không có % bán hàng (theo mức ở Giá bán) → ô % bán hàng bị bỏ qua; % tầng trên vẫn chỉnh được.
     await setOrderCommissionRates(order.id, { commissionPercent: "15", uplinePercent: "5" }, admin(f));
     const mine = (await affiliateOrders(down.id)).find((o) => o.id === order.id)!;
-    expect(mine.commission.commissionMmk).toBe(3000);
-    expect(mine.uplineCommission!.commissionMmk).toBe(1000);
+    expect(mine.commission.commissionMmk).toBe(2000); // 2 × 1 000 (mức ở Giá bán), không đổi
+    expect(mine.uplineCommission!.commissionMmk).toBe(1000); // 20 000 × 5%
 
-    // Đơn không có cấp trên: % tầng trên bị bỏ qua.
+    // Đơn cũ đã chốt % bán hàng (trước 18/11/2026): vẫn chỉnh % được, % chỉ áp cho dòng không có mức cố định.
     const plain = await createOrder(orderInput(f, 1), { userId: null, affiliate: { source: "LINK", code: solo.code } });
     expect(await setOrderCommissionRates(plain.id, { commissionPercent: "8", uplinePercent: "9" }, admin(f))).toMatchObject({
-      commissionRateBp: 800,
-      uplineRateBp: null,
+      commissionRateBp: null,
+      uplineRateBp: null, // không có cấp trên → bỏ qua
     });
+    await prisma.order.update({ where: { id: plain.id }, data: { commissionRateBp: 1000 } });
+    expect(await setOrderCommissionRates(plain.id, { commissionPercent: "8" }, admin(f))).toMatchObject({ commissionRateBp: 800 });
 
     await recordPayout(down.id, {}, f.userId);
     await expect(setOrderCommissionRates(order.id, { commissionPercent: "20" }, admin(f))).rejects.toMatchObject({ code: "order_paid" });

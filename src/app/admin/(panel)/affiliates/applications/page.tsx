@@ -3,11 +3,9 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { fmtDateTime } from "@/lib/format";
 import { requirePagePermission } from "@/server/auth/session";
-import { bpToPercent } from "@/server/affiliates/commission";
 import { approveApplicationAction, rejectApplicationAction } from "@/server/affiliates/actions";
 import { suggestAffiliateCode } from "@/server/affiliates/affiliates";
 import { listApplications, pendingApplicationsCount } from "@/server/affiliates/applications";
-import { getNumberSetting } from "@/server/settings";
 import { ActionForm } from "@/components/admin/action-form";
 import { Badge, DataTable, EmptyState, fieldClass, fieldLabelClass, Page, PageHeader, Section, Td } from "@/components/admin/ui";
 import { AffiliateTabs } from "@/components/admin/section-tabs";
@@ -16,11 +14,10 @@ import { cn } from "@/lib/utils";
 /** Duyệt đơn đăng ký CTV qua link mời (P11b). */
 export default async function AffiliateApplicationsPage() {
   await requirePagePermission("affiliates:manage");
-  const [t, pending, decided, defaultBp, pendingTotal] = await Promise.all([
+  const [t, pending, decided, pendingTotal] = await Promise.all([
     getTranslations("Affiliates"),
     listApplications("PENDING"),
     listApplications("DECIDED"),
-    getNumberSetting("affiliate.defaultRateBp"),
     pendingApplicationsCount(),
   ]);
 
@@ -69,19 +66,6 @@ export default async function AffiliateApplicationsPage() {
                         pattern="[A-Za-z0-9]{4,12}"
                         defaultValue={suggestAffiliateCode()}
                         className={cn(fieldClass, "font-mono uppercase")}
-                      />
-                    </label>
-                    <label className={fieldLabelClass}>
-                      <span>{t("percent")}</span>
-                      <input
-                        name="commissionPercent"
-                        type="number"
-                        required
-                        min={0}
-                        max={50}
-                        step={0.01}
-                        defaultValue={bpToPercent(defaultBp)}
-                        className={fieldClass}
                       />
                     </label>
                   </div>

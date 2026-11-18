@@ -419,6 +419,8 @@ Xử lý đơn đặt trước: [mục 10.9](#109-đơn-đặt-trước).
 
 **Đổi kho hàng loạt:** tick sản phẩm → chọn kho → **Đổi kho**. Hàng còn ở kho cũ chỉ bán được sau khi chuyển kho ([8.3](#83-chuyển-kho-xuất-kho-và-điều-chỉnh)).
 
+**Bán đặt trước khi chưa có hàng (18/11/2026):** sản phẩm chưa nhập hàng thì chưa có kho bán → lỗi "Chưa có kho bán". Vào trang sản phẩm → tab **Tồn & nhập hàng** → khối **Chưa có kho bán** → chọn **Kho bán** → **Gán kho** (hoặc dùng **Đổi kho** ở danh sách). Sau đó đặt giá → gửi duyệt → duyệt → bật hiển thị; web hiện **Pre-order**, đơn khách vào **Đơn đặt trước**. Khi hàng về, nhập hàng vào đúng kho đã gán rồi chuyển xử lý đơn.
+
 **Hiện/ẩn:** từng sản phẩm ở bước 5 (**Bật hiển thị trên web** / **Ẩn khỏi web**); hàng loạt: tick → **Hiện trên web** / **Ẩn khỏi web**. Điều kiện bật: không còn lỗi ở [5.2](#52-trang-sản-phẩm-5-bước-và-các-lưu-ý) **và** đã được duyệt ít nhất một lần.
 
 **Thao tác hàng loạt khác ở danh sách:** **Chọn tất cả ({count})**, **Gửi duyệt**.
@@ -455,7 +457,7 @@ Dấu * = bắt buộc khi tạo sản phẩm mới.
 | Phân loại (dung tích/màu) | Màu/dung tích. Trống = "Tiêu chuẩn" |
 | Giá bán (MMK) | 💰 Điền = đặt giá (> 0) cho SKU có sẵn **và SKU mới**; **trống = giữ nguyên** (kể cả giá đang chờ duyệt). SKU mới để trống → giá 0, lưu nháp. Cần quyền quản lý giá |
 | Khối lượng (g) | Số nguyên gam. Kho Hàng nhập VN bắt buộc có trước khi gửi duyệt/đăng |
-| Hoa hồng CTV (MMK/cái) | 💰 Số tiền cố định/cái. Trống = giữ nguyên (SKU mới: theo % CTV). SP đã duyệt: chờ duyệt **cùng giá**. Không xoá được qua Excel |
+| Hoa hồng CTV (MMK/cái) | 💰 Số tiền cố định/cái. Trống = giữ nguyên (SKU mới: không có hoa hồng). SP đã duyệt: chờ duyệt **cùng giá**. Không xoá được qua Excel |
 | Mô tả Myanmar / Mô tả tiếng Anh | Tuỳ chọn |
 | Cách dùng, Thành phần, Bảo quản, Hạn sau mở nắp (tháng) | Tuỳ chọn; hạn sau mở nắp tối đa 120 tháng. **Đây là nơi duy nhất sửa các trường này** (form sản phẩm không có ô) |
 | Kho bán | Mã kho. Trống = kho mặc định. Không đổi được kho của sản phẩm đã có |
@@ -554,7 +556,7 @@ Tỷ giá được chốt vào lô lúc **ghi sổ phiếu nhập** (phiếu tay
 > **Cập nhật 17/11/2026:** trang Giá bán **sửa giá ngay trong bảng** — chọn kho ở ô **Kho** (bảng tự lọc), bấm nút **bút chì (Sửa giá)** ở dòng cần đổi, điền lãi / vận chuyển / CTV rồi **Lưu giá** (chỉ các dòng đã bấm Sửa giá được lưu). Bảng gồm: Sản phẩm (tên, SKU dòng phụ) · Giá mua (VND) / Lô nguồn · Lãi (VND) · Vận chuyển (MMK) · CTV (MMK) · Giá bán (MMK) · Thao tác. Chưa đủ dữ liệu thì Giá bán hiện "—" kèm lý do (thiếu tỷ giá / giá mua / lãi, vận chuyển, CTV); số nhập sai báo ngay dưới ô. Công thức và lưu ý về lãi nằm ở mục mở rộng **Cách tính và lưu ý** (cột trung gian "Giá mua + lãi (MMK)" đã bỏ, phép tính không đổi). Kho hàng mua MMK không còn ô **Lãi cố định**. Mô tả "tick SKU → Nhập thủ công" bên dưới là cách cũ, vẫn dùng được qua trang `/admin/selling-prices/manual`.
 
 **Sản phẩm › Giá bán**, thẻ **Danh sách · Thủ công**. Mỗi SKU hiện:
-- giá **đang bán**, giá **chờ duyệt** (nếu có), **CTV: …** (hoa hồng đang áp dụng, "theo %" nếu chưa đặt) và hoa hồng chờ duyệt;
+- giá **đang bán**, giá **chờ duyệt** (nếu có), **CTV: …** (hoa hồng đang áp dụng; chưa đặt = không có hoa hồng) và hoa hồng chờ duyệt;
 - **nguồn giá** (bảng tính / Excel / sửa tay + ngày), **giá mua gần nhất** (lần nhập đã ghi sổ, hàng bán được, đúng kho bán);
 - nhãn **Đầu vào mới — nên tính lại**.
 
@@ -587,7 +589,7 @@ Giá bán MMK = Giá bán VND ÷ tỷ giá (VND cho 1 MMK) + Vận chuyển (MMK
 4. Tuỳ chọn **Gửi duyệt ngay** / **Duyệt luôn**, rồi bấm **Lưu giá**.
 
 **Lưu ý**
-- **CTV** nhập ở đây đồng thời là **hoa hồng cố định của SKU** cho đơn có CTV (thay cho %).
+- **CTV** nhập ở đây là **hoa hồng CTV của SKU** cho đơn có CTV — nguồn duy nhất của hoa hồng bán hàng (18/11/2026); trống = không có hoa hồng.
 - **Lãi mong muốn chưa phải lợi nhuận cuối**: chưa trừ chi phí về kho / chuyến hàng, phí COD, hàng trả, chi phí vận hành.
 - Dòng chưa có phiếu nhập đã ghi sổ hiện "Chưa có phiếu nhập đã ghi sổ" và không lưu được.
 
@@ -595,7 +597,7 @@ Lỗi: "Giá / hoa hồng của … vừa được đổi ở nơi khác — t�
 
 ### 7.4. Thủ công — kho hàng mua MMK
 
-Giữ cách cũ, không dùng công thức VND: mỗi sản phẩm một khung, điền **Giá bán (MMK)**, **CTV (MMK/sp)** (trống = theo % CTV), **Lãi cố định (MMK/đv)** (dùng cho Tính tự động), **Lý do sửa giá** (bắt buộc khi giá đổi) → **Lưu giá**. Lỗi: "Nhập lý do sửa giá", "Giá bán phải lớn hơn 0", "Hoa hồng CTV của … lớn hơn giá bán".
+Giữ cách cũ, không dùng công thức VND: mỗi sản phẩm một khung, điền **Giá bán (MMK)**, **CTV (MMK/sp)** (trống = không có hoa hồng), **Lãi cố định (MMK/đv)** (dùng cho Tính tự động), **Lý do sửa giá** (bắt buộc khi giá đổi) → **Lưu giá**. Lỗi: "Nhập lý do sửa giá", "Giá bán phải lớn hơn 0", "Hoa hồng CTV của … lớn hơn giá bán".
 
 ### 7.5. Tự động (bảng tính giá)
 
@@ -973,9 +975,9 @@ Bấm **Giao thành công · Đã thu tiền** chỉ ghi nhận **khách đã tr
 
 ### 12.1. Thêm CTV và duyệt đơn đăng ký
 
-**Thêm trực tiếp:** **Cộng tác viên › Danh sách CTV › Thêm CTV**. Điền **Tên**, **Email đăng nhập**, **Số điện thoại**, **Mã giới thiệu** (4–12 ký tự A–Z/0–9, có gợi ý sẵn; đổi mã thì link cũ ngừng tính), **Hoa hồng (%)** (0–50), **% hưởng từ tuyến dưới** (0–20; trống = theo cài đặt chung), **Thông tin nhận tiền** (chỉ admin thấy), **Mật khẩu tạm** (≥ 12 ký tự), **Cấp trên** (không bắt buộc) → **Tạo CTV**. Sau đó gửi cho CTV email đăng nhập, mật khẩu tạm và link giới thiệu.
+**Thêm trực tiếp:** **Cộng tác viên › Danh sách CTV › Thêm CTV**. Điền **Tên**, **Email đăng nhập**, **Số điện thoại**, **Mã giới thiệu** (4–12 ký tự A–Z/0–9, có gợi ý sẵn; đổi mã thì link cũ ngừng tính), **% hưởng từ tuyến dưới** (0–20; trống = theo cài đặt chung), **Thông tin nhận tiền** (chỉ admin thấy), **Mật khẩu tạm** (≥ 12 ký tự), **Cấp trên** (không bắt buộc) → **Tạo CTV**. Sau đó gửi cho CTV email đăng nhập, mật khẩu tạm và link giới thiệu.
 
-**Duyệt đơn đăng ký:** CTV tự đăng ký qua link mời (do CTV khác gửi) → **Cộng tác viên › Đơn đăng ký**. **Duyệt**: điền **Mã giới thiệu**, **Hoa hồng (%)** (điền sẵn theo cài đặt), **Thông tin nhận tiền**; CTV mới nằm dưới người đã mời họ và đăng nhập bằng mật khẩu họ tự đặt. Hoặc **Từ chối** (tuỳ chọn **Lý do**).
+**Duyệt đơn đăng ký:** CTV tự đăng ký qua link mời (do CTV khác gửi) → **Cộng tác viên › Đơn đăng ký**. **Duyệt**: điền **Mã giới thiệu**, **Thông tin nhận tiền**; CTV mới nằm dưới người đã mời họ và đăng nhập bằng mật khẩu họ tự đặt. Hoặc **Từ chối** (tuỳ chọn **Lý do**).
 
 ### 12.2. Trang chi tiết CTV
 
@@ -989,13 +991,13 @@ Bấm **Giao thành công · Đã thu tiền** chỉ ghi nhận **khách đã tr
 ### 12.3. Cách tính hoa hồng
 
 - **Cơ sở tính** = tiền hàng **thực giữ** = (số lượng − số lượng trả) × đơn giá. **Phí ship không tính.**
-- **Hoa hồng người bán** = (hoa hồng cố định theo sản phẩm × số lượng giữ) + (% CTV × tiền hàng các dòng còn lại). Hoa hồng cố định là ô **CTV (MMK/sp)** ở trang Giá bán ([7.3](#73-thủ-công--kho-hàng-nhập-vn-công-thức-vnd)) hoặc cột Excel; nó được **chốt vào đơn** lúc gắn CTV.
-- **Hoa hồng tầng trên** = % cấp trên × **toàn bộ** tiền hàng giữ (không xét hoa hồng cố định). **Cửa hàng trả**, không trừ vào CTV bán.
-- % của CTV lúc đơn được tạo/gán **được chốt vào đơn**; đổi % sau chỉ áp cho đơn mới.
+- **Hoa hồng người bán (từ 18/11/2026)** = Σ hoa hồng CTV theo sản phẩm × số lượng giữ. Hoa hồng theo sản phẩm là ô **CTV (MMK/sp)** ở trang Giá bán ([7.3](#73-thủ-công--kho-hàng-nhập-vn-công-thức-vnd)) hoặc cột Excel. **Sản phẩm để trống = không có hoa hồng.** Không còn % hoa hồng theo từng CTV. Mức được **chốt vào đơn** lúc tạo đơn / gắn CTV; đổi mức ở Giá bán sau đó chỉ áp cho đơn mới.
+- **Hoa hồng tầng trên** = % cấp trên × **toàn bộ** tiền hàng giữ (không xét hoa hồng theo sản phẩm). **Cửa hàng trả**, không trừ vào CTV bán. % tầng trên chốt vào đơn, chỉnh được trên đơn chưa chi trả.
+- Đơn tạo **trước 18/11/2026** đã chốt % CTV vẫn tính như cũ (% cho dòng không có hoa hồng cố định) và vẫn chỉnh được % đó trên đơn.
 
-**Ví dụ (số giả định):** đơn có sản phẩm A 50.000 × 1 (hoa hồng cố định 5.000/cái) và B 30.000 × 2 = 60.000; CTV 10%, cấp trên 2%. Tiền hàng 110.000.
-- Người bán: 5.000 + 10% × 60.000 = **11.000**. Cấp trên: 2% × 110.000 = **2.200**.
-- Sau đó khách trả 1 cái B: tiền hàng giữ 80.000 → người bán 5.000 + 10% × 30.000 = **8.000**; cấp trên 2% × 80.000 = **1.600**.
+**Ví dụ (số giả định):** đơn có sản phẩm A 50.000 × 1 (hoa hồng 5.000/cái) và B 30.000 × 2 (để trống hoa hồng); cấp trên 2%. Tiền hàng 110.000.
+- Người bán: 5.000 × 1 = **5.000** (B không có hoa hồng). Cấp trên: 2% × 110.000 = **2.200**.
+- Sau đó khách trả 1 cái B: người bán vẫn **5.000**; cấp trên 2% × 80.000 = **1.600**.
 
 **Trạng thái:** **Chờ** (đơn chưa hoàn tất, hoặc còn trong thời gian chờ) → **Đến hạn** (sau **Hoa hồng đến hạn sau khi đơn hoàn thành (ngày)**, mặc định 7 ngày kể từ **Hoàn tất**) → **Đã trả**. **Không tính** = đơn huỷ hoặc trả hàng trước khi hoàn tất.
 

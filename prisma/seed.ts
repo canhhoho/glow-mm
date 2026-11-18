@@ -109,7 +109,8 @@ async function seedCatalog() {
   const moclan = await prisma.brand.create({ data: { slug: "moc-lan", name: "Mộc Lan", origin: "VN" } });
 
   // ── Sản phẩm ──
-  type V = { sku: string; label: string; priceMmk: number; costVnd: number; weightGrams: number };
+  /** `affiliateCommissionMmk`: hoa hồng CTV MMK/cái ở Giá bán (18/11/2026: nguồn duy nhất của hoa hồng bán hàng). */
+  type V = { sku: string; label: string; priceMmk: number; costVnd: number; weightGrams: number; affiliateCommissionMmk?: number };
   const product = async (p: {
     slug: string;
     brandId: string;
@@ -142,7 +143,7 @@ async function seedCatalog() {
         },
         tags: { create: p.tags.map((tagId) => ({ tagId })) },
         variants: {
-          create: p.variants.map((v) => ({ sku: v.sku, label: v.label, priceMmk: v.priceMmk, weightGrams: v.weightGrams })),
+          create: p.variants.map((v) => ({ sku: v.sku, label: v.label, priceMmk: v.priceMmk, weightGrams: v.weightGrams, affiliateCommissionMmk: v.affiliateCommissionMmk ?? null })),
         },
       },
       include: { variants: true },
@@ -166,7 +167,7 @@ async function seedCatalog() {
     ingredientsText: "Aqua, Zinc Oxide, Niacinamide, Glycerin",
     tags: [oily.id, sensitive.id, niacin.id],
     variants: [
-      { sku: "SV-SUN-50", label: "50ml", priceMmk: 25000, costVnd: 95000, weightGrams: 80 },
+      { sku: "SV-SUN-50", label: "50ml", priceMmk: 25000, costVnd: 95000, weightGrams: 80, affiliateCommissionMmk: 2500 },
       { sku: "SV-SUN-100", label: "100ml", priceMmk: 42000, costVnd: 160000, weightGrams: 140 },
     ],
   });

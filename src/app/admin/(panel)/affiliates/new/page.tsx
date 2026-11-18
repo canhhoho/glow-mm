@@ -11,10 +11,9 @@ import { fieldClass, fieldLabelClass, Page, PageHeader } from "@/components/admi
 
 export default async function NewAffiliatePage() {
   await requirePagePermission("affiliates:manage");
-  const [t, options, defaultBp, uplineBp] = await Promise.all([
+  const [t, options, uplineBp] = await Promise.all([
     getTranslations("Affiliates"),
     affiliateOptions(),
-    getNumberSetting("affiliate.defaultRateBp"),
     getNumberSetting("affiliate.uplineRateBp"),
   ]);
   return (
@@ -23,7 +22,7 @@ export default async function NewAffiliatePage() {
       <ActionForm action={createAffiliateAction} submitLabel={t("create")} className="space-y-3" icon={<Plus aria-hidden className="size-4 shrink-0" />}>
         <AffiliateFields
           withLogin
-          values={{ code: suggestAffiliateCode(), commissionPercent: bpToPercent(defaultBp) }}
+          values={{ code: suggestAffiliateCode() }}
           globalUplinePercent={bpToPercent(uplineBp)}
         />
         <label className={fieldLabelClass}>

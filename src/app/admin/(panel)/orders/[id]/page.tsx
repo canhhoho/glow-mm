@@ -227,7 +227,12 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ad
             <dd className="flex flex-wrap items-center gap-2">
               <span className="tabular-nums">{fmtInt(commission.commissionMmk)} MMK</span>
               <span className="text-xs text-muted-foreground">
-                ({ta("rate")}: {bpToPercent(order.commissionRateBp ?? 0)}%{hasFixedCommission(order.items) && ` · ${ta("fixedPerProduct")}`})
+                {/* 18/11/2026: hoa hồng bán hàng theo mức ở Giá bán; đơn cũ còn chốt % thì hiện %. */}
+                (
+                {order.commissionRateBp != null
+                  ? `${ta("rate")}: ${bpToPercent(order.commissionRateBp)}%${hasFixedCommission(order.items) ? ` · ${ta("fixedPerProduct")}` : ""}`
+                  : ta("byPriceList")}
+                )
               </span>
               <CommissionBadge state={commission.state} />
             </dd>
@@ -274,7 +279,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ad
               </select>
             </ActionForm>
           ))}
-        {can(user.role, "affiliates:manage") && order.affiliate && !affiliatePaid && !affiliateCancelled && (
+        {can(user.role, "affiliates:manage") && order.affiliate && !affiliatePaid && !affiliateCancelled && (order.commissionRateBp != null || order.uplineAffiliate) && (
           <ActionForm
             action={setOrderCommissionRatesAction}
             submitLabel={ta("orderRates.save")}
@@ -285,6 +290,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ad
             <input type="hidden" name="orderId" value={order.id} />
             <p className="text-xs text-muted-foreground">{ta("orderRates.hint")}</p>
             <div className="flex flex-wrap gap-3" data-testid="order-rates">
+              {order.commissionRateBp != null && (
               <label className={fieldLabelClass}>
                 <span className="text-muted-foreground">{ta("orderRates.sale")}</span>
                 <input
@@ -295,10 +301,11 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ad
                   max={50}
                   step={0.01}
                   inputMode="decimal"
-                  defaultValue={bpToPercent(order.commissionRateBp ?? 0)}
+                  defaultValue={bpToPercent(order.commissionRateBp)}
                   className={cn(fieldClass, "w-28")}
                 />
               </label>
+              )}
               {order.uplineAffiliate && (
                 <label className={fieldLabelClass}>
                   <span className="text-muted-foreground">{ta("orderRates.upline")}</span>

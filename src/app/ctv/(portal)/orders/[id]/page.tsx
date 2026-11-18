@@ -10,6 +10,8 @@ import { OrderStatusBadge } from "@/components/admin/order-badges";
 import { Notice } from "@/components/ui/notice";
 import { storeCard, storeListCard } from "@/components/store/ui";
 import { cn } from "@/lib/utils";
+import { siteUrl } from "@/lib/site";
+import { CopyButton } from "@/components/ctv/copy-button";
 
 export default async function CtvOrderPage({ params, searchParams }: PageProps<"/ctv/orders/[id]">) {
   const user = await requireAffiliate();
@@ -37,6 +39,22 @@ export default async function CtvOrderPage({ params, searchParams }: PageProps<"
         </span>
       </div>
       <p className="text-sm text-muted-foreground">{t("orderHint")}</p>
+      {/* Link theo dõi gửi khách (Viber/Messenger): trang Tra cứu điền sẵn mã đơn, khách nhập SĐT nhận hàng để xem. */}
+      {(() => {
+        const trackLink = `${siteUrl()}/track?code=${encodeURIComponent(order.code)}`;
+        return (
+          <section className={cn(storeCard, "space-y-2")}>
+            <h2 className="text-sm font-medium">{t("trackLink")}</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <code className="min-w-0 flex-1 truncate rounded-lg bg-muted px-3 py-2.5 text-sm" data-testid="ctv-track-link">
+                {trackLink}
+              </code>
+              <CopyButton text={trackLink} label={t("copy")} done={t("copied")} />
+            </div>
+            <p className="text-xs text-muted-foreground">{t("trackHint")}</p>
+          </section>
+        );
+      })()}
 
       <section className={cn(storeCard, "grid gap-3 text-sm sm:grid-cols-2")}>
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
@@ -63,7 +81,13 @@ export default async function CtvOrderPage({ params, searchParams }: PageProps<"
           <dt className="text-muted-foreground">{ta("colCommission")}</dt>
           <dd className="flex flex-wrap items-center gap-2" data-testid="ctv-order-commission">
             <span className="font-medium tabular-nums">{fmtInt(order.commission.commissionMmk)} MMK</span>
-            <span className="text-xs text-muted-foreground">({bpToPercent(order.commissionRateBp ?? 0)}%{hasFixedCommission(order.items) && ` · ${ta("fixedPerProduct")}`})</span>
+            <span className="text-xs text-muted-foreground">
+              (
+              {order.commissionRateBp != null
+                ? `${bpToPercent(order.commissionRateBp)}%${hasFixedCommission(order.items) ? ` · ${ta("fixedPerProduct")}` : ""}`
+                : ta("byPriceList")}
+              )
+            </span>
             <CommissionBadge state={order.commission.state} />
           </dd>
         </dl>

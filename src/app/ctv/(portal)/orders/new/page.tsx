@@ -12,7 +12,7 @@ import { PageHeader } from "@/components/admin/ui";
  */
 export default async function CtvNewOrderPage() {
   await requireAffiliate();
-  const [t, options] = await Promise.all([getTranslations("Ctv"), getLocale().then(orderFormOptions)]);
+  const [t, options] = await Promise.all([getTranslations("Ctv"), getLocale().then((locale) => orderFormOptions(locale, { withCommission: true }))]);
   return (
     <div className="space-y-4">
       <PageHeader title={t("newTitle")} description={t("newHint")} />

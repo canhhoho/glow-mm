@@ -41,7 +41,9 @@ test("khách mở link CTV rồi đặt hàng → đơn hiện trong cổng CTV 
   await expect(row).toContainText("Link giới thiệu");
   await expect(row).toContainText("Chờ");
   await row.click();
-  await expect(page.getByTestId("ctv-order-commission")).toContainText("10%");
+  // 18/11/2026: hoa hồng theo mức ở Giá bán (Sunscreen mẫu 2 500 MMK/cái), không còn %.
+  await expect(page.getByTestId("ctv-order-commission")).toContainText("2,500 MMK");
+  await expect(page.getByTestId("ctv-order-commission")).toContainText("theo hoa hồng ở Giá bán");
 });
 
 test("CTV đăng nhập storefront bằng tài khoản CTV → đơn đặt trên web tính cho chính CTV (bỏ qua link của người khác)", async ({ page }) => {
@@ -65,7 +67,9 @@ test("CTV đăng nhập storefront bằng tài khoản CTV → đơn đặt trê
   const row = page.getByTestId("ctv-order").filter({ hasText: code });
   await expect(row).toContainText("CTV tự lên đơn");
   await row.click();
-  await expect(page.getByTestId("ctv-order-commission")).toContainText("10%");
+  // 18/11/2026: hoa hồng theo mức ở Giá bán (Sunscreen mẫu 2 500 MMK/cái), không còn %.
+  await expect(page.getByTestId("ctv-order-commission")).toContainText("2,500 MMK");
+  await expect(page.getByTestId("ctv-order-commission")).toContainText("theo hoa hồng ở Giá bán");
 });
 
 test("CTV tự lên đơn cho khách; không xem được đơn không phải của mình", async ({ page }) => {
@@ -78,9 +82,22 @@ test("CTV tự lên đơn cho khách; không xem được đơn không phải c�
   await page.getByLabel("Địa chỉ").fill("No. 3, Strand Rd");
   const option = page.getByLabel("SKU / Phân loại").locator("option", { hasText: VARIANT });
   await page.getByLabel("SKU / Phân loại").selectOption((await option.getAttribute("value"))!);
+  // 18/11/2026: CTV thấy hoa hồng từng SP (mức ở Giá bán) + hoa hồng dự kiến của đơn.
+  await expect(option).toContainText("Hoa hồng: 2,500");
+  await expect(page.getByTestId("line-commission")).toHaveText("Hoa hồng: 2,500 MMK/cái");
+  await page.getByLabel("SL", { exact: true }).fill("2");
+  await expect(page.getByTestId("order-commission-estimate")).toHaveText("5,000 MMK");
   await page.getByLabel("SL", { exact: true }).fill("1");
   await page.getByRole("button", { name: "Tạo đơn" }).click();
   await expect(page).toHaveURL(/\/ctv\/orders\/[^/]+\?created=1$/);
+  // Link theo dõi gửi khách: mở ra trang Tra cứu đã điền sẵn mã đơn.
+  const code = (await page.getByRole("heading", { level: 1 }).textContent())!.trim();
+  const track = new URL((await page.getByTestId("ctv-track-link").textContent())!);
+  expect(track.pathname + track.search).toBe(`/track?code=${code}`);
+  const ctvOrderUrl = page.url();
+  await page.goto(`/en/track?code=${code}`);
+  await expect(page.getByLabel("Order code")).toHaveValue(code);
+  await page.goto(ctvOrderUrl);
   await expect(page.getByRole("status")).toContainText("Đã tạo đơn");
   await expect(page.getByTestId("order-status")).toContainText("Chờ xác nhận");
   await expect(page.getByTestId("ctv-order-commission")).toContainText("Chờ");

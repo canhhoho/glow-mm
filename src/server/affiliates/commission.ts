@@ -61,6 +61,16 @@ export function saleCommissionMmk(items: CommissionItem[], rateBp: number | null
  * đơn không có CTV → null (không tính); biến thể không đặt mức → null (dòng theo % đơn). Dùng chung khi tạo đơn
  * (`orders/orders.ts`) và khi gán/đổi/bỏ CTV (`affiliates.ts` `assignOrderAffiliate`) — R4.
  */
+/**
+ * % bán hàng chốt lên đơn khi gắn CTV. Từ 18/11/2026 hoa hồng bán hàng CHỈ theo mức MMK/cái nhập ở Giá bán
+ * (`commissionPerUnitMmk`); SP để trống = không hoa hồng → đơn mới không chốt % (null). Đơn cũ đã chốt % giữ nguyên
+ * (`saleCommissionMmk` vẫn tính % khi đơn có `commissionRateBp`). Hoa hồng tầng trên không đổi (% trên tiền hàng).
+ * Dùng chung khi tạo đơn và khi gán/đổi CTV.
+ */
+export function saleRateSnapshotBp(): number | null {
+  return null;
+}
+
 export function commissionPerUnitSnapshot(variantCommissionMmk: number | null | undefined, hasAffiliate: boolean): number | null {
   return hasAffiliate ? (variantCommissionMmk ?? null) : null;
 }

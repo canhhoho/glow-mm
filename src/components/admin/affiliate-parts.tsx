@@ -19,7 +19,6 @@ export type AffiliateFieldValues = {
   email: string;
   phone: string;
   code: string;
-  commissionPercent: number;
   /** % hưởng từ tuyến dưới (P13); null = dùng % chung. */
   uplinePercent: number | null;
   payoutInfo: string | null;
@@ -64,21 +63,8 @@ export async function AffiliateFields({
         />
         <span className="block text-xs text-muted-foreground">{t("codeHint")}</span>
       </label>
-      <label className={fieldLabelClass}>
-        <span>{t("percent")}</span>
-        <input
-          name="commissionPercent"
-          type="number"
-          required
-          min={0}
-          max={50}
-          step={0.01}
-          inputMode="decimal"
-          defaultValue={values?.commissionPercent}
-          className={fieldClass}
-        />
-        <span className="block text-xs text-muted-foreground">{t("percentHint")}</span>
-      </label>
+      {/* 18/11/2026: không còn % bán hàng theo CTV — hoa hồng bán hàng theo mức nhập ở Giá bán. */}
+      <p className="text-xs text-muted-foreground">{t("percentHint")}</p>
       <label className={fieldLabelClass}>
         <span>{t("uplinePercent")}</span>
         <input

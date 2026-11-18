@@ -10,7 +10,7 @@ import type { ChangeItem } from "@/server/catalog/change-summary";
 import { changeItemText } from "@/components/admin/change-text";
 import { productEditView, productReadinessView } from "@/server/catalog/review";
 import { getProductForEdit, getProductImages, productFormOptions } from "@/server/catalog/admin-queries";
-import { discardChangesAction, restoreProductAction, reviewProductsAction, submitProductsAction, saveProductPreorderAction, deleteProductImageAction, reorderProductImageAction, setProductPublishedAction, updateProductImageAltAction } from "@/server/catalog/actions";
+import { assignProductWarehouseAction, discardChangesAction, restoreProductAction, reviewProductsAction, submitProductsAction, saveProductPreorderAction, deleteProductImageAction, reorderProductImageAction, setProductPublishedAction, updateProductImageAltAction } from "@/server/catalog/actions";
 import { productPrimaryAction } from "@/server/catalog/product-actions";
 import { isSafeInternalPath } from "@/lib/safe-path";
 import { loadProductPricing, type PriceSource } from "@/server/catalog/product-pricing";
@@ -404,6 +404,27 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           {readiness.notReceivedSkus.length > 0 ? t("block.notReceived", { skus: readiness.notReceivedSkus.join(", ") }) : t("block.receivedAll")}
         </p>
         {stepIssues("stock").length > 0 && issueList(stepIssues("stock"))}
+        {/* Chưa có kho bán (chưa nhập hàng): gán kho ngay tại đây để bán đặt trước — lối tắt của "Đổi kho" ở danh sách. */}
+        {!archived && canManage && !product.stockLocationId && options.warehouses.length > 0 && (
+          <div className="rounded-lg border border-dashed p-3" data-testid="assign-warehouse">
+            <p className="text-sm font-medium">{t("block.warehouseTitle")}</p>
+            <p className="mb-2 text-xs text-muted-foreground">{t("block.warehouseHelp")}</p>
+            <ActionForm action={assignProductWarehouseAction} submitLabel={t("block.warehouseAssign")} okText={t("block.warehouseAssigned")} className="flex flex-wrap items-end gap-2">
+              <input type="hidden" name="productId" value={product.id} />
+              <label className={fieldLabelClass}>
+                <span className="text-muted-foreground">{t("block.warehouseLabel")}</span>
+                <select name="toLocationId" required defaultValue={options.warehouses.length === 1 ? options.warehouses[0].id : ""} className={fieldClass}>
+                  {options.warehouses.length > 1 && <option value="" disabled>—</option>}
+                  {options.warehouses.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.code} — {w.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </ActionForm>
+          </div>
+        )}
         {/* P3b: tồn chỉ để xem — cùng số liệu trang Tồn kho; nhập / điều chỉnh qua phiếu kho. */}
         {stock.rows.some((r) => r.cols || r.reserved > 0) ? (
           <DataTable dense numeric={[1, 2, 3]} head={[ti("colSku"), ti("colPhysical"), ti("colReserved"), ti("colAvailable"), ti("colEarliest")]}>

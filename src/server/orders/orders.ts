@@ -18,7 +18,7 @@ import { orderTotals } from "./pricing";
 import { reserveForOrder } from "./reservations";
 import { planOrderStock } from "./preorder";
 import { recordOrderEvent } from "@/server/analytics/record";
-import { commissionPerUnitSnapshot } from "@/server/affiliates/commission";
+import { commissionPerUnitSnapshot, saleRateSnapshotBp } from "@/server/affiliates/commission";
 
 /**
  * Tạo đơn — dùng chung cho storefront (khách tự đặt) và admin (đơn từ FB/Viber/điện thoại).
@@ -145,7 +145,7 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
             ...(affiliate && {
               affiliateId: affiliate.id,
               affiliateSource: ctx.affiliate!.source,
-              commissionRateBp: affiliate.commissionRateBp,
+              commissionRateBp: saleRateSnapshotBp(),
               ...(await uplineSnapshot(tx, affiliate.parentId)),
             }),
             // Đơn có CTV: chốt mức hoa hồng cố định của từng biến thể (null = dòng tính theo % của đơn).
@@ -194,7 +194,7 @@ async function resolveAffiliate(tx: Tx, ref: CreateOrderContext["affiliate"]) {
   if (!ref) return null;
   const a = await tx.affiliate.findFirst({
     where: { ...(ref.source === "LINK" ? { code: ref.code } : { id: ref.id }), active: true, user: { active: true } },
-    select: { id: true, commissionRateBp: true, parentId: true },
+    select: { id: true, parentId: true },
   });
   if (!a && ref.source !== "LINK") throw new OrderError("invalid_affiliate", "CTV không tồn tại hoặc đã bị khoá");
   return a;

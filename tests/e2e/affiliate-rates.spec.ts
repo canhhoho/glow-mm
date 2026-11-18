@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { login, pickAddressAdmin } from "./helpers";
 
 // P13: admin đặt % tầng trên riêng cho cấp trên (MAUNG) → đơn của tuyến dưới (LINN) chốt % đó;
-// admin chỉnh % trên đơn chưa chi trả → hoa hồng tính lại.
+// admin chỉnh % tầng trên trên đơn chưa chi trả → hoa hồng tầng trên tính lại (hoa hồng bán hàng theo mức ở Giá bán).
 
 const VARIANT = "SV-SUN-50 — Sunscreen SPF50 PA++++ (50ml)";
 
@@ -33,14 +33,16 @@ test("admin: % tầng trên riêng + chỉnh % trên đơn chưa chi trả", asy
     await expect(page.getByTestId("order-upline")).toContainText("MAUNG");
     await expect(page.getByTestId("order-upline")).toContainText("(3%)");
 
-    // Chỉnh % trên đơn: CTV 12%, tầng trên 4% (đơn 25 000 MMK → 3 000 / 1 000).
+    // 18/11/2026: hoa hồng bán hàng theo mức ở Giá bán (Sunscreen mẫu 2 500 MMK/cái) — không còn ô % bán hàng trên đơn.
+    // Chỉ chỉnh % tầng trên: 4% (đơn 25 000 MMK → 1 000); hoa hồng bán hàng giữ 2 500.
     const rates = page.getByTestId("order-rates");
-    await rates.getByLabel("% hoa hồng CTV").fill("12");
+    await expect(rates.getByLabel("% hoa hồng CTV")).toHaveCount(0);
     await rates.getByLabel("% tầng trên").fill("4");
     await page.getByRole("button", { name: "Lưu %" }).click();
     await expect(page.getByText("Đã cập nhật %")).toBeVisible();
     const section = page.getByTestId("order-affiliate");
-    await expect(section).toContainText("3,000 MMK");
+    await expect(section).toContainText("2,500 MMK");
+    await expect(section).toContainText("theo hoa hồng ở Giá bán");
     await expect(page.getByTestId("order-upline")).toContainText("1,000 MMK");
     await expect(page.getByTestId("order-upline")).toContainText("(4%)");
   } finally {
