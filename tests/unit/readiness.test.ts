@@ -1,5 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { blockingErrors, evaluateReadiness, listStatus, productSteps, publishBlockers, type ReadinessInput } from "@/server/catalog/readiness-rules";
+
+// Quy tắc khi BẬT giá tự động (khối lượng là lỗi chặn ở kho nhập VN); hành vi tắt: tests/unit/readiness-weight-off.test.ts.
+vi.mock("@/lib/features", async (orig) => (await import("../support/features")).featuresWith(orig, { autoPricing: true }));
+
 
 const base = (over: Partial<ReadinessInput> = {}): ReadinessInput => ({
   location: { active: true, sellable: true, pricingMode: "VN_IMPORT" },

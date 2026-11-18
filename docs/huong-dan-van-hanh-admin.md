@@ -334,9 +334,9 @@ Khối **Kiểm tra điều kiện đăng bán** bên cạnh có ba dòng, mỗi
 | "Không có phân loại đang dùng" | Bật ít nhất một phân loại (**Đang dùng**) |
 | "Kho bán đã ngừng hoặc không phải kho bán" | Đổi kho sản phẩm ([5.8](#58-xoá-khôi-phục-đổi-kho-ẩnhiện)) |
 | "Giá bán ≤ 0" | Đặt giá ở bước 3 |
-| "Thiếu khối lượng (cần cho cước/kg)" | Chỉ với kho **Hàng nhập VN**: điền **Khối lượng (g)** (ở phiếu nhập hoặc **Thiết lập khác**) |
+| "Thiếu khối lượng (cần cho cước/kg)" | Chỉ khi **giá tự động đang bật** và kho **Hàng nhập VN**: điền **Khối lượng (g)** (ở phiếu nhập hoặc **Thiết lập khác**). Giá tự động đang tắt (18/11/2026) → không còn chặn, chỉ là lưu ý "cần khi gửi VTP" |
 
-**Lưu ý (không chặn, nhưng nên xử lý):** "Chưa có ảnh"; "Thiếu mô tả (MY/EN)"; "Thiếu khối lượng (cần khi gửi VTP)" (kho Hàng mua MMK); "Tồn bán thiếu giá vốn"; "Tồn bán đang dùng giá vốn tạm"; "Hết hàng và không nhận đặt trước (trang SP hiện "Hết hàng")"; "Có tồn ở kho bán khác — chuyển kho để bán"; "Có phiếu nhập mới sau lần đặt giá gần nhất — nên tính lại giá"; "Có tỷ giá mới hơn lần đổi giá gần nhất — nên tính lại giá" (kho nhập VN).
+**Lưu ý (không chặn, nhưng nên xử lý):** "Chưa có ảnh"; "Thiếu mô tả (MY/EN)"; "Thiếu khối lượng (cần khi gửi VTP)" (kho Hàng mua MMK, và mọi kho khi giá tự động tắt); "Tồn bán thiếu giá vốn"; "Tồn bán đang dùng giá vốn tạm"; "Hết hàng và không nhận đặt trước (trang SP hiện "Hết hàng")"; "Có tồn ở kho bán khác — chuyển kho để bán"; "Có phiếu nhập mới sau lần đặt giá gần nhất — nên tính lại giá"; "Có tỷ giá mới hơn lần đổi giá gần nhất — nên tính lại giá" (kho nhập VN).
 
 Điều cần biết:
 - Chưa nhập hàng (bước 2 báo **Cần làm**) **không phải lỗi**: sản phẩm vẫn duyệt và đăng được, chỉ là khách thấy "Hết hàng" hoặc đặt trước.

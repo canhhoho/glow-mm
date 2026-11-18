@@ -1,5 +1,5 @@
 import { readSheet } from "read-excel-file/node";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { CATALOG_HEADER_ROW, CATALOG_SHEET, sheetHeaderKey } from "@/lib/catalog-sheet";
 import { toCsv } from "@/lib/csv";
 import { previewCatalogImport } from "@/server/catalog/catalog-import";
@@ -11,6 +11,10 @@ import { reviewProducts, submitProducts } from "@/server/catalog/review";
 import { catalogStats } from "@/server/catalog/stats";
 import { createDocument, postDocument } from "@/server/inventory/documents";
 import { makeFixture, unpublishTestProducts } from "./fixtures";
+
+// Quy tắc khi BẬT giá tự động (thiếu khối lượng ở kho nhập VN = lỗi); hành vi tắt: tests/unit/readiness-weight-off.test.ts.
+vi.mock("@/lib/features", async (orig) => (await import("../support/features")).featuresWith(orig, { autoPricing: true }));
+
 
 afterAll(unpublishTestProducts);
 

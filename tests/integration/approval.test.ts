@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/db";
 import { listProductsAdmin, getProductForEdit } from "@/server/catalog/admin-queries";
 import { commitCatalogImport, previewCatalogImport } from "@/server/catalog/catalog-import";
@@ -9,6 +9,10 @@ import { discardChanges, productEditView, reviewCounts, reviewProducts, saveAndA
 import { createDocument, postDocument } from "@/server/inventory/documents";
 import { applyRun, createRate, previewRun } from "@/server/pricing/runs";
 import { makeFixture, unpublishTestProducts, type Fixture } from "./fixtures";
+
+// Quy tắc khi BẬT giá tự động (khối lượng là lỗi chặn ở kho nhập VN); hành vi tắt: tests/unit/readiness-weight-off.test.ts.
+vi.mock("@/lib/features", async (orig) => (await import("../support/features")).featuresWith(orig, { autoPricing: true }));
+
 
 afterAll(unpublishTestProducts);
 

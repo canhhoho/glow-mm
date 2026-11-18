@@ -1,10 +1,14 @@
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/db";
 import { createDocument } from "@/server/inventory/documents";
 import { createOrder } from "@/server/orders/orders";
 import { transitionOrder } from "@/server/orders/transitions";
 import { baseline, dataHealth, type CheckKey } from "@/server/reports/data-health";
 import { admin, makeFixture, orderInput, saleFixture, unpublishTestProducts } from "./fixtures";
+
+// Quy tắc khi BẬT giá tự động (thiếu khối lượng ở kho nhập VN = lỗi); hành vi tắt: tests/unit/readiness-weight-off.test.ts.
+vi.mock("@/lib/features", async (orig) => (await import("../support/features")).featuresWith(orig, { autoPricing: true }));
+
 
 afterAll(unpublishTestProducts);
 

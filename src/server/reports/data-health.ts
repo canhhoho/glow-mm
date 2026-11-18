@@ -5,6 +5,7 @@ import { inventoryCost } from "@/server/inventory/cost";
 import { productName } from "@/server/inventory/queries";
 import { postedReceiveBatch } from "@/server/pricing/cost";
 import { FEATURES } from "@/lib/features";
+import { weightRequired } from "@/server/catalog/readiness-rules";
 
 /**
  * D0 — "Sức khoẻ dữ liệu": báo cáo CHỈ ĐỌC các chỗ dữ liệu sai/thiếu để người phụ trách sửa tay, và mốc thời gian
@@ -85,8 +86,8 @@ async function catalogChecks(): Promise<HealthCheck[]> {
     value,
     href: productHref(v.product.id),
   });
-  // Kho LOCAL_MMK không cần khối lượng để tính giá (chỉ cần cho VTP) → cảnh báo; kho VN_IMPORT/không chế độ → lỗi.
-  const isLocal = (v: (typeof weight)[number]) => v.product.stockLocation?.pricingMode === "LOCAL_MMK";
+  // Chung quy tắc với readiness: lỗi chỉ khi giá tự động cần khối lượng (kho VN_IMPORT + cờ bật); còn lại → cảnh báo (VTP).
+  const isLocal = (v: (typeof weight)[number]) => !weightRequired(v.product.stockLocation?.pricingMode);
   return [
     check("publishedZeroPrice", "error", zero.filter((v) => v.product.published).map((v) => variantRow(v, String(v.priceMmk)))),
     check("hiddenZeroPrice", "warning", zero.filter((v) => !v.product.published).map((v) => variantRow(v, String(v.priceMmk)))),

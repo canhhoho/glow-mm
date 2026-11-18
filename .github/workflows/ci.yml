@@ -1,9 +1,10 @@
 name: CI
 
+# changes: phân loại lần chạy — chỉ sửa tài liệu? (bỏ check/e2e/deploy) · push main đã được PR kiểm? (bỏ check/e2e).
 # check: lint + typecheck + unit + integration — mọi push dev/main và mọi PR.
-# e2e (full Playwright): push main, PR vào main, chạy tay và lịch hằng tuần.
-# Push main: check + e2e xanh → release (gắn tag release-YYYYMMDD-HHMM, giờ UTC) → deploy lên server Myanmar
-#   bằng runner self-hosted; runner chỉ gọi wrapper root /usr/local/sbin/tandc-deploy (→ ops/deploy.sh).
+# e2e (full Playwright, chia 3 shard song song): push main, PR vào main, chạy tay và lịch hằng tuần.
+# Push main: check + e2e xanh (hoặc đã xanh trên PR với CÙNG nội dung code) → release (gắn tag release-YYYYMMDD-HHMM,
+#   giờ UTC) → deploy lên server Myanmar bằng runner self-hosted; runner chỉ gọi wrapper root /usr/local/sbin/tandc-deploy.
 # Rollback tay: Actions → CI → Run workflow (nhánh main) → nhập rollback_tag → chỉ chạy job rollback.
 on:
   pull_request:
@@ -29,8 +30,77 @@ permissions:
   contents: read
 
 jobs:
-  check:
+  # docs_only: mọi file đổi đều là tài liệu (docs/**, *.md gốc, README.md) → không cần check/e2e/deploy.
+  # verified (chỉ push main): commit merge có cây code (tree) GIỐNG HỆT đầu PR (parent thứ 2) và lần chạy CI
+  #   của PR trên đúng SHA đó đã xanh cả check lẫn mọi shard e2e → không chạy lại, đi thẳng release/deploy.
+  #   Không thoả bất kỳ điều kiện nào → chạy đầy đủ như cũ.
+  changes:
     if: ${{ !inputs.rollback_tag }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      docs_only: ${{ steps.docs.outputs.docs_only }}
+      verified: ${{ steps.verified.outputs.verified }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: docs
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          range=""
+          if [ "$EVENT" = pull_request ]; then
+            range="$PR_BASE...HEAD"
+          elif [ "$EVENT" = push ] && [ -n "$BEFORE" ] && ! [[ "$BEFORE" =~ ^0+$ ]] \
+               && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            range="$BEFORE..HEAD"
+          fi
+          docs_only=false
+          if [ -n "$range" ]; then
+            files="$(git diff --name-only "$range")"
+            re='^(docs/|(CLAUDE|AGENTS|DEPLOY|PLAN|README|UI_AUDIT)\.md$|.*/README\.md$)'
+            if [ -n "$files" ] && ! printf '%s\n' "$files" | grep -qvE "$re"; then docs_only=true; fi
+            printf 'File đổi (%s):\n%s\n' "$range" "$files"
+          fi
+          echo "docs_only=$docs_only" | tee -a "$GITHUB_OUTPUT"
+      - id: verified
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IS_MAIN_PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: |
+          set -euo pipefail
+          verified=false
+          pr_head="$(git rev-parse -q --verify 'HEAD^2' 2>/dev/null || true)"
+          if [ "$IS_MAIN_PUSH" = true ] && [ -n "$pr_head" ] \
+             && [ "$(git rev-parse 'HEAD^{tree}')" = "$(git rev-parse "$pr_head^{tree}")" ]; then
+            echo "Cây code của merge = đầu PR $pr_head — tìm lần chạy CI xanh của PR."
+            runs="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$pr_head&event=pull_request&status=success&per_page=20" \
+              --jq '.workflow_runs[] | select(.path == ".github/workflows/ci.yml") | .id')"
+            for run in $runs; do
+              ok="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run/jobs?per_page=50" --jq '
+                [.jobs[] | select(.name == "check" or (.name | startswith("e2e")))] as $j
+                | ($j | map(select(.name == "check" and .conclusion == "success")) | length) > 0
+                  and ($j | map(select(.name | startswith("e2e"))) | length) > 0
+                  and ($j | all(.conclusion == "success"))')"
+              if [ "$ok" = true ]; then
+                verified=true
+                echo "Đã xanh trên PR: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run" | tee -a "$GITHUB_STEP_SUMMARY"
+                break
+              fi
+            done
+          fi
+          echo "verified=$verified" | tee -a "$GITHUB_OUTPUT"
+
+  check:
+    needs: changes
+    if: ${{ needs.changes.outputs.docs_only != 'true' && needs.changes.outputs.verified != 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
@@ -59,7 +129,9 @@ jobs:
         env:
           CI: "true"
 
+  # Mỗi shard là một máy riêng (DB + bản build riêng) → không đụng dữ liệu nhau dù Playwright chạy 1 worker.
   e2e:
+    name: e2e (${{ matrix.shard }}/3)
     needs: check
     if: >-
       github.event_name == 'workflow_dispatch' ||
@@ -68,6 +140,10 @@ jobs:
       (github.event_name == 'pull_request' && github.base_ref == 'main')
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     services:
       postgres:
         image: postgres:17.6-alpine
@@ -88,20 +164,27 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       # Build standalone + Playwright (dùng .env.test, cổng 3100)
-      - run: npm run test:e2e
+      - run: npx playwright test --shard=${{ matrix.shard }}/3
         env:
           CI: "true"
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: playwright-report
           retention-days: 7
 
-  # Gắn tag release lên đúng commit vừa qua check + e2e (commit đã có tag release thì dùng lại).
+  # Gắn tag release lên đúng commit vừa qua check + e2e, hoặc đã được PR kiểm với cùng cây code (verified).
+  # Commit đã có tag release thì dùng lại. Chỉ sửa tài liệu → không release, không deploy.
   release:
-    needs: [check, e2e]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [changes, check, e2e]
+    if: >-
+      ${{ !cancelled() &&
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.changes.result == 'success' &&
+      needs.changes.outputs.docs_only != 'true' &&
+      (needs.changes.outputs.verified == 'true' ||
+       (needs.check.result == 'success' && needs.e2e.result == 'success')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -130,9 +213,10 @@ jobs:
 
   # Deploy production. KHÔNG thêm checkout hay chạy code repo trong job này: runner chỉ gọi wrapper;
   # wrapper kiểm tag thuộc origin/main + trỏ đúng SHA rồi chạy ops/deploy.sh (backup khi có migration, health, smoke).
+  # Cần `!cancelled()`: khi check/e2e bị bỏ qua (verified), GitHub mặc định bỏ qua cả job phụ thuộc gián tiếp.
   deploy:
     needs: release
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: ${{ !cancelled() && needs.release.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     runs-on: [self-hosted, tandc-production]
     timeout-minutes: 45
     concurrency:
