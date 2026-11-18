@@ -6,7 +6,9 @@ import { FEATURES } from "@/lib/features";
 import { requirePagePermission } from "@/server/auth/session";
 import { PricingRunsTab } from "@/components/admin/pricing-runs-tab";
 import { PriceHistoryTab, RatesTab } from "@/components/admin/pricing-tabs";
-import { ClearFilters, FilterBar, FilterButton, Page, PageHeader, PageNumbers, SearchInput, StatCard, TabNav, fieldClass } from "@/components/admin/ui";
+import { ClearFilters, FilterBar, FilterButton, LinkButton, Page, PageHeader, PageNumbers, SearchInput, StatCard, TabNav, fieldClass } from "@/components/admin/ui";
+import { Notice } from "@/components/ui/notice";
+import { rateRecalcVariantIds } from "@/server/pricing/rate-recalc";
 import {
   listSellingPrices,
   SELLING_PAGE_SIZES,
@@ -47,6 +49,8 @@ export default async function SellingPricesPage({ searchParams }: PageProps<"/ad
   const requested = Number(sp.page);
   const page = Number.isSafeInteger(requested) && requested > 0 ? requested : 1;
   const stats = await sellingPriceStats();
+  // 18/11/2026: có tỷ giá mới hơn lần đổi giá gần nhất (kho nhập VN) → nút tính lại tất cả theo tỷ giá mới.
+  const recalc = manual || mode === "rates" ? (await rateRecalcVariantIds()).length : 0;
 
   const href = (o: { state?: SellingState | null; page?: number; size?: number; q?: string | null; warehouse?: string | null }) => {
     const p = new URLSearchParams({ mode: "manual" });
@@ -74,6 +78,16 @@ export default async function SellingPricesPage({ searchParams }: PageProps<"/ad
         <StatCard icon={<Clock />} tone="warning" value={fmtInt(stats.pending)} label={t("state.pending")} href={href({ state: "pending", page: 1 })} active={manual && state === "pending"} testId="stat-pending" />
         <StatCard icon={<TriangleAlert />} tone="neutral" value={fmtInt(stats.stale)} label={t("state.stale")} href={href({ state: "stale", page: 1 })} active={manual && state === "stale"} testId="stat-stale" />
       </div>
+      {recalc > 0 && (
+        <Notice tone="warning" data-testid="rate-recalc">
+          <span className="flex flex-wrap items-center gap-2">
+            <span>{t("rateRecalcBanner", { count: recalc })}</span>
+            <LinkButton href="/admin/selling-prices/manual?scope=rate" variant="primary">
+              {t("rateRecalcButton")}
+            </LinkButton>
+          </span>
+        </Notice>
+      )}
       <TabNav
         label={t("title")}
         tabs={[

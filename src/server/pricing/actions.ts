@@ -120,8 +120,12 @@ export async function applyManualVndAction(_prev: ActionState, formData: FormDat
     const user = await requirePermission("pricing:manage");
     const { submit, approve } = await reviewOptions(formData, user.role);
     const res = await applyManualVnd(JSON.parse(String(formData.get("payload") ?? "{}")), user.id, new Date(), { submit });
-    refreshPrices({ runId: res.runId });
-    ok = await outcomeText(res, res.runId, user.id, approve);
+    if (res.runId) {
+      refreshPrices({ runId: res.runId });
+      ok = await outcomeText(res, res.runId, user.id, approve);
+    } else ok = "";
+    // Tính lại theo tỷ giá mới: dòng giá không đổi đã được xác nhận (hết cảnh báo tỷ giá mới).
+    if (res.confirmed) ok = [ok, (await getTranslations("Pricing"))("rateConfirmed", { count: res.confirmed })].filter(Boolean).join(" · ");
   } catch (e) {
     return { error: message(e) };
   }

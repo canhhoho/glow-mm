@@ -26,7 +26,8 @@ export default async function CtvPortalLayout({ children }: LayoutProps<"/ctv">)
   }));
 
   return (
-    <div data-theme="store" className="min-h-dvh bg-background">
+    // 18/11/2026: dùng màu + thành phần admin (bỏ theme storefront); khung CTV (header, thanh mục đáy) giữ nguyên.
+    <div className="min-h-dvh bg-background">
       <header className="sticky top-0 z-30 border-b bg-card/95 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center gap-2 px-4 py-2">
           <div className="grid h-8 min-w-8 shrink-0 place-items-center rounded-lg bg-brand px-1 text-[11px] font-bold text-brand-foreground">{BRAND_MARK}</div>

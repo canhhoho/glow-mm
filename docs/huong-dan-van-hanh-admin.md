@@ -551,6 +551,12 @@ Kết quả: tỷ giá mới nhất thành **Đang dùng**. ⛔ **Tỷ giá ch�
 
 Tỷ giá được chốt vào lô lúc **ghi sổ phiếu nhập** (phiếu tay) hoặc lúc **xác nhận Excel**; sửa phiếu nháp mà không đổi giá mua thì giữ tỷ giá đã chốt. Lỗi: "Tỷ giá USD→MMK phải > 0, tối đa 2 chữ số thập phân".
 
+**Tính lại giá theo tỷ giá mới (18/11/2026):** thêm tỷ giá xong, trang **Giá bán** hiện khung "Có tỷ giá mới hơn lần đặt giá gần nhất của {N} SKU…" và nút **Tính lại giá theo tỷ giá mới** (chỉ kho hàng nhập VN, SKU đã từng có giá). Bấm nút → trang **Tính lại giá theo tỷ giá mới**: mọi SKU đã **mở sẵn chế độ sửa**, tính bằng **tỷ giá mới nhất** + **lãi, vận chuyển, CTV của lần đặt giá trước**. Xem cột **Giá bán**, sửa nếu cần → **Lưu & xác nhận {n} SKU ({m} đổi giá)**.
+- SKU đổi giá → áp giá mới (SP đã duyệt: giá mới **chờ duyệt**, khách vẫn thấy giá cũ đến khi duyệt).
+- SKU tính ra **không đổi** (làm tròn ra như cũ) → được **xác nhận** (lịch sử giá ghi "Xác nhận giá theo tỷ giá mới (không đổi)").
+- SKU thiếu dữ liệu (chưa có lãi lần trước / chưa có giá mua) → hiện lý do, **bị bỏ qua**; đặt giá tay cho SKU đó.
+- Lưu xong, SKU đã xử lý biến mất khỏi danh sách; hết SKU thì nút trên trang Giá bán cũng biến mất. Giá bán **không bao giờ tự đổi** khi chưa bấm Lưu.
+
 ### 7.2. Trang Giá bán (danh sách)
 
 > **Cập nhật 17/11/2026:** trang Giá bán **sửa giá ngay trong bảng** — chọn kho ở ô **Kho** (bảng tự lọc), bấm nút **bút chì (Sửa giá)** ở dòng cần đổi, điền lãi / vận chuyển / CTV rồi **Lưu giá** (chỉ các dòng đã bấm Sửa giá được lưu). Bảng gồm: Sản phẩm (tên, SKU dòng phụ) · Giá mua (VND) / Lô nguồn · Lãi (VND) · Vận chuyển (MMK) · CTV (MMK) · Giá bán (MMK) · Thao tác. Chưa đủ dữ liệu thì Giá bán hiện "—" kèm lý do (thiếu tỷ giá / giá mua / lãi, vận chuyển, CTV); số nhập sai báo ngay dưới ô. Công thức và lưu ý về lãi nằm ở mục mở rộng **Cách tính và lưu ý** (cột trung gian "Giá mua + lãi (MMK)" đã bỏ, phép tính không đổi). Kho hàng mua MMK không còn ô **Lãi cố định**. Mô tả "tick SKU → Nhập thủ công" bên dưới là cách cũ, vẫn dùng được qua trang `/admin/selling-prices/manual`.

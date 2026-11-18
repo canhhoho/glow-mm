@@ -1,13 +1,12 @@
 import { getTranslations } from "next-intl/server";
+import { CircleCheck, Clock, Wallet } from "lucide-react";
 import { fmtDate, fmtInt } from "@/lib/format";
 import { siteUrl } from "@/lib/site";
 import { requireAffiliate } from "@/server/auth/session";
 import { bpToPercent } from "@/server/affiliates/commission";
 import { teamOverview } from "@/server/affiliates/affiliates";
-import { Badge, PageHeader, Stat } from "@/components/admin/ui";
-import { CopyButton } from "@/components/ctv/copy-button";
-import { storeCard } from "@/components/store/ui";
-import { cn } from "@/lib/utils";
+import { Badge, DataTable, Page, PageHeader, Section, StatCard, Td } from "@/components/admin/ui";
+import { CopyLink } from "@/components/ctv/copy-link";
 
 /** Tuyến dưới (P11c): link mời + CTV mình tuyển trực tiếp và hoa hồng tầng trên — không có thông tin khách. */
 export default async function CtvTeamPage() {
@@ -17,69 +16,51 @@ export default async function CtvTeamPage() {
   const amount = (n: number) => `${fmtInt(n)} MMK`;
 
   return (
-    <div className="space-y-4">
+    <Page>
       <PageHeader title={t("team.title")} />
 
-      <section className={cn(storeCard, "space-y-2")}>
-        <h2 className="font-medium">{t("team.inviteLink")}</h2>
-        <div className="flex flex-wrap items-center gap-2">
-          <code className="min-w-0 flex-1 truncate rounded-lg bg-muted px-3 py-2.5 text-sm" data-testid="ctv-invite-link">
-            {inviteLink}
-          </code>
-          <CopyButton text={inviteLink} label={t("copy")} done={t("copied")} />
-        </div>
+      <Section title={t("team.inviteLink")}>
+        <CopyLink text={inviteLink} testId="ctv-invite-link" copy={t("copy")} copied={t("copied")} />
         <p className="text-xs text-muted-foreground">{t("team.inviteHint", { percent: bpToPercent(team.uplineRateBp) })}</p>
         {team.pendingApplications > 0 && (
           <p className="text-sm" data-testid="ctv-pending-apps">
             {t("team.pendingApps", { count: team.pendingApplications })}
           </p>
         )}
-      </section>
+      </Section>
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <Stat label={t("team.pending")} value={amount(team.total.pendingMmk)} testId="ctv-team-pending" />
-        <Stat label={t("team.payable")} value={amount(team.total.payableMmk)} />
-        <Stat label={t("team.paid")} value={amount(team.total.paidMmk)} />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <StatCard icon={<Clock />} tone="warning" label={t("team.pending")} value={amount(team.total.pendingMmk)} testId="ctv-team-pending" />
+        <StatCard icon={<Wallet />} tone="success" label={t("team.payable")} value={amount(team.total.payableMmk)} />
+        <StatCard icon={<CircleCheck />} tone="neutral" label={t("team.paid")} value={amount(team.total.paidMmk)} />
       </div>
 
-      <section className="space-y-2">
-        <h2 className="font-medium">
-          {t("team.members")} ({team.children.length})
-        </h2>
-        {team.children.length === 0 ? (
-          <p className={cn(storeCard, "text-center text-sm text-muted-foreground")}>{t("team.empty")}</p>
-        ) : (
-          <ul className="space-y-2">
-            {team.children.map((c) => (
-              <li key={c.id} className={storeCard} data-testid="ctv-team-member">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-medium">
-                    {c.user.name} <span className="font-mono text-xs text-muted-foreground">{c.code}</span>
-                  </span>
+      <Section title={`${t("team.members")} (${team.children.length})`}>
+        <DataTable
+          stack
+          empty={t("team.empty")}
+          numeric={[2, 3, 4]}
+          head={[ta("colCtv"), ta("colMonthSales"), ta("commissionState.pending"), ta("commissionState.payable"), ta("statPaid")]}
+        >
+          {team.children.map((c) => (
+            <tr key={c.id} data-testid="ctv-team-member">
+              <Td>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium">{c.user.name}</span>
+                  <span className="font-mono text-xs text-muted-foreground">{c.code}</span>
                   {!c.active && <Badge tone="danger">{ta("locked")}</Badge>}
                 </div>
-                <div className="mt-1 text-xs text-muted-foreground">
-                  {t("team.joined", { date: fmtDate(c.createdAt) })} ·{" "}
-                  {t("team.month", { orders: c.monthOrders, sales: fmtInt(c.monthSalesMmk) })}
-                </div>
-                <div className="mt-2 grid grid-cols-3 gap-2 text-sm">
-                  <span>
-                    <span className="block text-xs text-muted-foreground">{ta("commissionState.pending")}</span>
-                    <span className="tabular-nums">{fmtInt(c.commission.pendingMmk)}</span>
-                  </span>
-                  <span>
-                    <span className="block text-xs text-muted-foreground">{ta("commissionState.payable")}</span>
-                    <span className="tabular-nums">{fmtInt(c.commission.payableMmk)}</span>
-                  </span>
-                  <span>
-                    <span className="block text-xs text-muted-foreground">{ta("statPaid")}</span>
-                    <span className="tabular-nums">{fmtInt(c.commission.paidMmk)}</span>
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+                <div className="text-xs text-muted-foreground">{t("team.joined", { date: fmtDate(c.createdAt) })}</div>
+              </Td>
+              <Td label={ta("colMonthSales")} className="text-xs">
+                {t("team.month", { orders: c.monthOrders, sales: fmtInt(c.monthSalesMmk) })}
+              </Td>
+              <Td label={ta("commissionState.pending")} numeric>{fmtInt(c.commission.pendingMmk)}</Td>
+              <Td label={ta("commissionState.payable")} numeric>{fmtInt(c.commission.payableMmk)}</Td>
+              <Td label={ta("statPaid")} numeric>{fmtInt(c.commission.paidMmk)}</Td>
+            </tr>
+          ))}
+        </DataTable>
         {(team.former.pendingMmk !== 0 || team.former.payableMmk !== 0 || team.former.paidMmk !== 0) && (
           <p className="text-xs text-muted-foreground">
             {t("team.former", {
@@ -90,7 +71,7 @@ export default async function CtvTeamPage() {
           </p>
         )}
         <p className="text-xs text-muted-foreground">{t("team.privacy")}</p>
-      </section>
-    </div>
+      </Section>
+    </Page>
   );
 }

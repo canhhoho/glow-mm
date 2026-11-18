@@ -100,7 +100,7 @@ Bạn **chỉ thấy dữ liệu của chính mình**. Cổng CTV không vào đ
 
 ## 5. Theo dõi đơn
 
-**Đơn của tôi** liệt kê các đơn tính cho bạn; bấm vào một đơn xem **Sản phẩm** (**SL**, **Đơn giá**, **Thành tiền**), **Tiền hàng**, **Phí ship**, **Tổng cộng**, **Khách hàng**, **Địa chỉ**, **Tiến trình** (lịch sử trạng thái); dòng đã trả hiện "đã trả {n}".
+**Đơn của tôi** liệt kê các đơn tính cho bạn (lọc **Tháng** và **Hoa hồng**; trên điện thoại mỗi đơn một thẻ); bấm **mã đơn** để xem **Sản phẩm** (**SL**, **Đơn giá**, **Thành tiền**), **Tiền hàng**, **Phí ship**, **Tổng cộng**, **Khách hàng**, **Địa chỉ**, **Tiến trình** (lịch sử trạng thái); dòng đã trả hiện "đã trả {n}".
 
 Các trạng thái chính: **Chờ xác nhận** → **Chuẩn bị giao** → **Đang giao** → **Hoàn tất**; hoặc **Đã huỷ** / **Trả hàng**. Nội dung gợi ý trên đơn: "Shop sẽ gọi xác nhận rồi giao hàng; bạn theo dõi trạng thái tại đây."
 

@@ -3,15 +3,15 @@ import { fmtInt } from "@/lib/format";
 import { requireAffiliate } from "@/server/auth/session";
 import type { CommissionState } from "@/server/affiliates/commission";
 import { affiliateOrders, currentMonth } from "@/server/affiliates/affiliates";
-import { fieldLabelClass, PageHeader } from "@/components/admin/ui";
-import { CtvOrderCard } from "@/components/ctv/ctv-order-card";
-import { Button } from "@/components/ui/button";
+import { FilterBar, FilterButton, Page, PageHeader, fieldClass, fieldLabelClass } from "@/components/admin/ui";
+import { MonthSelect } from "@/components/admin/month-select";
+import { CtvOrdersTable } from "@/components/ctv/ctv-orders-table";
 import { cn } from "@/lib/utils";
-import { storeCard, storeField } from "@/components/store/ui";
 
 const STATES: CommissionState[] = ["pending", "payable", "void"];
 const str = (v: string | string[] | undefined) => (typeof v === "string" ? v.trim() : "");
 
+/** Đơn của tôi — thanh lọc + bảng theo chuẩn admin (FilterBar, DataTable stack), 18/11/2026. */
 export default async function CtvOrdersPage({ searchParams }: PageProps<"/ctv/orders">) {
   const user = await requireAffiliate();
   const sp = await searchParams;
@@ -26,22 +26,18 @@ export default async function CtvOrdersPage({ searchParams }: PageProps<"/ctv/or
   const totalCommission = orders.reduce((s, o) => s + o.commission.commissionMmk, 0);
 
   return (
-    <div className="space-y-4">
+    <Page>
       <PageHeader title={t("nav.orders")} />
-      <form className="grid grid-cols-2 gap-2 sm:flex sm:items-end" role="search">
-        <label className={cn(fieldLabelClass, "min-w-0")}>
-          <span className="block text-muted-foreground">{ta("month")}</span>
-          {/* iOS Safari tự bung rộng + căn giữa input tháng nếu không bỏ appearance. */}
-          <input
-            name="month"
-            type="month"
-            defaultValue={month}
-            className={cn(storeField, "min-w-0 appearance-none text-left sm:w-44 [&::-webkit-date-and-time-value]:text-left")}
-          />
+      <FilterBar>
+        {/* Điện thoại: ô tháng cả hàng (nhãn tháng dài, vd "tháng 11 năm 2026"); ô hoa hồng + nút Lọc hàng dưới. */}
+        <label className={cn(fieldLabelClass, "min-w-0 flex-[1_1_100%] sm:flex-none")}>
+          <span className="text-muted-foreground">{ta("month")}</span>
+          {/* Ô chọn tháng theo ngôn ngữ giao diện (ô month của trình duyệt hiện theo ngôn ngữ máy — 18/11/2026). */}
+          <MonthSelect name="month" value={month} className="sm:w-48" />
         </label>
-        <label className={cn(fieldLabelClass, "min-w-0")}>
-          <span className="block text-muted-foreground">{ta("state")}</span>
-          <select name="state" defaultValue={state ?? ""} className={cn(storeField, "min-w-0 sm:w-auto")}>
+        <label className={cn(fieldLabelClass, "min-w-0 flex-[1_1_10rem] sm:flex-none")}>
+          <span className="text-muted-foreground">{ta("state")}</span>
+          <select name="state" defaultValue={state ?? ""} className={cn(fieldClass, "sm:w-auto")}>
             <option value="">{ta("allStates")}</option>
             {STATES.map((s) => (
               <option key={s} value={s}>
@@ -50,24 +46,13 @@ export default async function CtvOrdersPage({ searchParams }: PageProps<"/ctv/or
             ))}
           </select>
         </label>
-        <Button type="submit" variant="outline" size="touch" className="col-span-2">
-          {ta("filter")}
-        </Button>
-      </form>
+        <FilterButton>{ta("filter")}</FilterButton>
+      </FilterBar>
       <p className="text-sm text-muted-foreground">
-        {ta("ordersCount", { count: orders.length })} · {ta("colCommission")}: <span className="font-medium text-foreground tabular-nums">{fmtInt(totalCommission)} MMK</span>
+        {ta("ordersCount", { count: orders.length })} · {ta("colCommission")}:{" "}
+        <span className="font-medium text-foreground tabular-nums">{fmtInt(totalCommission)} MMK</span>
       </p>
-      {orders.length === 0 ? (
-        <p className={cn(storeCard, "text-center text-sm text-muted-foreground")}>{ta("ordersEmpty")}</p>
-      ) : (
-        <ul className="space-y-2">
-          {orders.map((o) => (
-            <li key={o.id} data-testid="ctv-order">
-              <CtvOrderCard order={o} />
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+      <CtvOrdersTable orders={orders} empty={ta("ordersEmpty")} />
+    </Page>
   );
 }

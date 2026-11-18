@@ -120,4 +120,32 @@ test("thủ công kho VND: SP mới từ Excel → ghi sổ → Đặt giá (lô
   page.once("dialog", (d) => d.accept());
   await page.getByTestId("step-publish-block").getByRole("button", { name: "Ẩn khỏi web" }).click();
   await expect(page.getByTestId("step-publish-block")).toContainText("Đang ẩn khỏi web", { timeout: 15_000 });
+
+  // 18/11/2026: tỷ giá mới → trang Giá bán có nút "Tính lại giá theo tỷ giá mới" → mọi dòng mở sẵn sửa với tỷ giá mới
+  // nhất + lãi/vận chuyển/CTV lần trước → lưu → SKU không còn trong danh sách cần tính lại.
+  await db(async (c) => {
+    const r = await c.query(`SELECT "mmkPerUsd", "vndPerUsd", "createdById" FROM "ExchangeRate" ORDER BY "effectiveAt" DESC, id DESC LIMIT 1`);
+    const { mmkPerUsd, vndPerUsd, createdById } = r.rows[0];
+    const vnd = Number(vndPerUsd) + 300;
+    await c.query(
+      `INSERT INTO "ExchangeRate" (id, "mmkPerVnd", "mmkPerUsd", "vndPerUsd", "createdById", note) VALUES ($1, $2, $3, $4, $5, 'e2e rate-recalc')`,
+      [`e2e-rate-${suffix}`, (Number(mmkPerUsd) / vnd).toFixed(6), mmkPerUsd, vnd, createdById],
+    );
+  });
+  await page.goto("/admin/selling-prices");
+  await page.getByTestId("rate-recalc").getByRole("link", { name: "Tính lại giá theo tỷ giá mới" }).click();
+  await expect(page).toHaveURL(/\/admin\/selling-prices\/manual\?scope=rate$/);
+  await expect(page.getByTestId("rate-recalc-notice")).toBeVisible();
+  // { visible: true }: Next 16 giữ trang đã mở trước (Đặt giá ?productId=…) ẩn trong DOM → chỉ đếm phần tử đang hiện.
+  const recalcRow = page.getByTestId("manual-row").filter({ hasText: name, visible: true });
+  await expect(recalcRow.getByRole("spinbutton", { name: /^Lãi/ })).toHaveValue("50000"); // lãi lần trước, đang ở chế độ sửa
+  await expect(recalcRow.getByRole("spinbutton", { name: /^Lãi/ })).toBeEditable();
+  const recalcVnd = page.getByTestId("manual-vnd").filter({ has: recalcRow });
+  const submitNow = recalcVnd.getByRole("checkbox", { name: "Gửi duyệt ngay" });
+  if (await submitNow.isChecked()) await submitNow.uncheck();
+  await recalcVnd.getByRole("button", { name: /^Lưu & xác nhận/ }).click();
+  // Lưu xong trang tải lại danh sách cần tính lại → SKU vừa lưu biến mất (kể cả khi mở lại trang).
+  await expect(page.getByTestId("manual-row").filter({ hasText: name, visible: true })).toHaveCount(0, { timeout: 30_000 });
+  await page.goto("/admin/selling-prices/manual?scope=rate");
+  await expect(page.getByTestId("manual-row").filter({ hasText: name, visible: true })).toHaveCount(0);
 });
