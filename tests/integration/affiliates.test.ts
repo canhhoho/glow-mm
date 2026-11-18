@@ -126,6 +126,19 @@ describe("Gắn CTV khi tạo đơn (P10)", () => {
     expect(order).toMatchObject({ affiliateId: a.id, affiliateSource: "AFFILIATE", createdById: a.userId, channel: "FACEBOOK" });
   });
 
+  it("nhân viên lên đơn: không chọn CTV → không gắn CTV, không hoa hồng (kể cả SP có hoa hồng cố định); chọn CTV → tính cho CTV đó", async () => {
+    const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
+    await prisma.variant.update({ where: { id: f.variantId }, data: { affiliateCommissionMmk: 1_500 } });
+    const own = await createOrder(orderInput(f, 1), { userId: f.userId });
+    expect(own).toMatchObject({ affiliateId: null, affiliateSource: null, commissionRateBp: null, createdById: f.userId });
+    expect(await prisma.orderItem.findMany({ where: { orderId: own.id }, select: { commissionPerUnitMmk: true } })).toEqual([{ commissionPerUnitMmk: null }]);
+
+    const a = await makeAffiliate(f);
+    const assigned = await createOrder(orderInput(f, 1, { phone: "09781230001" }), { userId: f.userId, affiliate: { source: "STAFF", id: a.id } });
+    expect(assigned).toMatchObject({ affiliateId: a.id, affiliateSource: "STAFF" });
+    expect(await prisma.orderItem.findMany({ where: { orderId: assigned.id }, select: { commissionPerUnitMmk: true } })).toEqual([{ commissionPerUnitMmk: 1_500 }]);
+  });
+
   it("nhân viên gán CTV đã khoá → invalid_affiliate, không tạo đơn", async () => {
     const f = await saleFixture([{ lot: "A", expiryInDays: 400, qty: 5 }]);
     const a = await makeAffiliate(f, { active: false });
