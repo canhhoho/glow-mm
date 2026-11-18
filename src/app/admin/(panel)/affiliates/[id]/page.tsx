@@ -1,3 +1,4 @@
+import { MonthSelect } from "@/components/admin/month-select";
 import { LockKeyhole, LockKeyholeOpen, Trash2, Wallet, KeyRound } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -193,7 +194,7 @@ export default async function AffiliatePage({ params, searchParams }: PageProps<
         <FilterBar>
           <label className={fieldLabelClass}>
             <span className="text-muted-foreground">{t("month")}</span>
-            <input name="month" type="month" defaultValue={month === "all" ? "" : month} className={cn(fieldClass, "w-44")} />
+            <MonthSelect name="month" value={month === "all" ? "" : month} className="w-48" />
           </label>
           <label className={fieldLabelClass}>
             <span className="text-muted-foreground">{t("state")}</span>

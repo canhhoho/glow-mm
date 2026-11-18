@@ -1,3 +1,4 @@
+import { MonthSelect } from "@/components/admin/month-select";
 import { getTranslations } from "next-intl/server";
 import { fmtInt } from "@/lib/format";
 import { requireAffiliate } from "@/server/auth/session";
@@ -31,13 +32,8 @@ export default async function CtvOrdersPage({ searchParams }: PageProps<"/ctv/or
       <form className="grid grid-cols-2 gap-2 sm:flex sm:items-end" role="search">
         <label className={cn(fieldLabelClass, "min-w-0")}>
           <span className="block text-muted-foreground">{ta("month")}</span>
-          {/* iOS Safari tự bung rộng + căn giữa input tháng nếu không bỏ appearance. */}
-          <input
-            name="month"
-            type="month"
-            defaultValue={month}
-            className={cn(storeField, "min-w-0 appearance-none text-left sm:w-44 [&::-webkit-date-and-time-value]:text-left")}
-          />
+          {/* Ô chọn tháng theo ngôn ngữ giao diện (ô month của trình duyệt hiện theo ngôn ngữ máy — 18/11/2026). */}
+          <MonthSelect name="month" value={month} className={cn(storeField, "min-w-0 sm:w-48")} />
         </label>
         <label className={cn(fieldLabelClass, "min-w-0")}>
           <span className="block text-muted-foreground">{ta("state")}</span>

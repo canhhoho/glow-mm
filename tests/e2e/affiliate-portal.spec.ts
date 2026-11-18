@@ -155,6 +155,9 @@ test("mobile: thanh mục ở đáy, Tài khoản trên header chứa ngôn ng�
   const month = (await page.getByLabel("Tháng").boundingBox())!;
   const state = (await page.getByLabel("Hoa hồng").boundingBox())!;
   expect(month.x + month.width).toBeLessThanOrEqual(state.x);
+  // Ô tháng theo ngôn ngữ giao diện (không dùng ô month của trình duyệt — 18/11/2026: hiện "tháng mười 11 2026").
+  await expect(page.getByLabel("Tháng")).toHaveValue(/^\d{4}-\d{2}$/);
+  await expect(page.getByLabel("Tháng").locator("option:checked")).toHaveText(/^tháng \d{1,2} năm \d{4}$/);
   await expect(page.getByText(/^\d+ đơn · Hoa hồng:/)).toBeVisible();
 
   await page.getByTestId("ctv-account-link").click();
