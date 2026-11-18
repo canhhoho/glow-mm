@@ -49,7 +49,9 @@ if [ -n "${app_line:-}" ] && [ -n "${db_line:-}" ]; then
   # Cổng: app chỉ mở cho 127.0.0.1, DB không publish cổng nào.
   app_port="$(docker compose -p "$COMPOSE_PROJECT" port app 3000 2>/dev/null || true)"
   case "$app_port" in 127.0.0.1:*) ok "cổng app chỉ localhost ($app_port)" ;; *) bad "cổng app: '${app_port:-không publish}' (phải 127.0.0.1:…)" ;; esac
-  db_port="$(docker compose -p "$COMPOSE_PROJECT" port db 5432 2>/dev/null || true)"
+  # Đọc cấu hình publish thật của container (Compose ≥ 2.40 in ":0" cho cổng KHÔNG publish → `compose port` báo nhầm).
+  db_id="$(docker compose -p "$COMPOSE_PROJECT" ps -q db 2>/dev/null || true)"
+  db_port="$(docker port "$db_id" 5432 2>/dev/null | tr '\n' ' ' | sed 's/ *$//' || true)"
   if [ -z "$db_port" ]; then ok "DB không publish cổng"; else bad "DB đang publish cổng $db_port"; fi
 
   errors="$(docker compose -p "$COMPOSE_PROJECT" logs app --no-log-prefix 2>&1 | grep -ci error || true)"
