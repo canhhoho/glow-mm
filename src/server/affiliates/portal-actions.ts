@@ -10,6 +10,7 @@ import { requireAffiliate } from "@/server/auth/session";
 import type { ActionState } from "@/server/inventory/actions";
 import { OrderError } from "@/server/orders/errors";
 import { createOrder } from "@/server/orders/orders";
+import { orderErrorText } from "@/server/orders/error-text";
 import { MIN_STAFF_PASSWORD } from "@/server/auth/roles";
 import { ApplicationError, submitApplication } from "./applications";
 
@@ -24,7 +25,8 @@ export async function createAffiliateOrderAction(_prev: ActionState, formData: F
     id = (await createOrder(payload, { userId: user.id, affiliate: { source: "AFFILIATE", id: user.affiliateId } })).id;
   } catch (e) {
     const t = await getTranslations("Orders");
-    if (e instanceof OrderError) return { error: t(`err.${e.code}`) };
+    // Cùng câu báo lỗi chi tiết như admin (SKU thiếu hàng còn/cần, SKU chưa có giá…).
+    if (e instanceof OrderError) return { error: await orderErrorText(e) };
     if (e instanceof ZodError) return { error: t("err.invalid_form") };
     throw e;
   }

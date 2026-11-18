@@ -83,8 +83,9 @@ Bạn **chỉ thấy dữ liệu của chính mình**. Cổng CTV không vào đ
 **Các bước**
 1. Chọn **Tạo đơn** (trang "Tạo đơn cho khách").
 2. Điền thông tin người nhận (tên, số điện thoại), địa chỉ chọn lần lượt **Vùng / Bang → Huyện → Thị trấn** + địa chỉ chi tiết, ghi chú nếu cần.
-3. Thêm sản phẩm: chọn biến thể (có giá bán và số còn bán được) và số lượng; thêm dòng nếu nhiều sản phẩm.
+3. Thêm sản phẩm: chọn biến thể (có giá bán, số còn bán được và **hoa hồng của bạn/cái**) và số lượng; thêm dòng nếu nhiều sản phẩm. Dưới phần tạm tính có **Hoa hồng dự kiến của bạn**.
 4. Bấm **Tạo đơn**. Hiện "Đã tạo đơn. Shop sẽ gọi khách xác nhận."
+5. Ở trang đơn, khối **Link theo dõi đơn cho khách** → **Sao chép** rồi gửi khách qua Viber/Messenger. Khách mở link (mã đơn đã điền sẵn), nhập số điện thoại nhận hàng để xem tình trạng đơn.
 
 **Kết quả:** đơn vào trạng thái **Chờ xác nhận**; hàng được **giữ** cho đơn; cửa hàng gọi khách xác nhận. Giá là **giá bán hiện tại** của cửa hàng — bạn không tự đặt giá. **Phí ship = 0** (hãng vận chuyển thu của người nhận khi giao).
 
@@ -93,7 +94,7 @@ Bạn **chỉ thấy dữ liệu của chính mình**. Cổng CTV không vào đ
 - **Không tạo được đơn đặt trước.** Nếu sản phẩm không đủ hàng: "Không đủ hàng (còn/cần): SKU (còn/cần)". Chọn số lượng ít hơn hoặc hỏi cửa hàng khi nào có hàng.
 - Đơn **chưa xác nhận** quá thời gian giữ hàng (mặc định 24 giờ) sẽ **tự huỷ** — hãy báo khách nghe máy khi cửa hàng gọi.
 - Các lỗi khác: "Số điện thoại không hợp lệ", "Khu vực giao hàng không hợp lệ hoặc chưa có bảng phí", "Có sản phẩm đã ngừng bán", "Có sản phẩm chưa có giá bán (giá ≤ 0): SKU".
-- **[CHƯA XÁC MINH]** Biểu mẫu dùng chung với biểu mẫu tạo đơn của nhân viên; một số ô của nhân viên (như chọn CTV) có thể không hiện với bạn.
+- Biểu mẫu dùng chung với biểu mẫu tạo đơn của nhân viên; ô chọn CTV không hiện với bạn (đơn tự tính cho bạn). Lỗi thiếu hàng/chưa có giá/ngừng bán ghi rõ **SKU** (18/11/2026).
 
 ---
 

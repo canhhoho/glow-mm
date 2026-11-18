@@ -103,7 +103,12 @@ export async function getOrderAdmin(id: string, now = new Date()) {
 }
 
 /** Dữ liệu cho form tạo đơn tay: danh mục địa chỉ VTP (theo ngôn ngữ giao diện), biến thể đang bán + tồn khả dụng. */
-export async function orderFormOptions(locale: string, now = new Date()) {
+/**
+ * Lựa chọn cho form tạo đơn (admin + cổng CTV). `withCommission` (cổng CTV): kèm hoa hồng CTV MMK/cái của từng
+ * biến thể (mức ở Giá bán; null = không có hoa hồng) để CTV biết bán món nào được bao nhiêu.
+ */
+export async function orderFormOptions(locale: string, opts: { withCommission?: boolean; now?: Date } = {}) {
+  const now = opts.now ?? new Date();
   const [catalog, variants, blockDays] = await Promise.all([
     loadAddressCatalog(locale),
     prisma.variant.findMany({
@@ -122,6 +127,7 @@ export async function orderFormOptions(locale: string, now = new Date()) {
       label: `${v.sku} — ${variantDisplayName(productName(v.product.translations, v.product.slug), v.label)}`,
       priceMmk: v.priceMmk,
       available: avail.get(v.id) ?? 0,
+      ...(opts.withCommission && { commissionMmk: v.affiliateCommissionMmk }),
     })),
   };
 }

@@ -61,6 +61,9 @@ export function OrderForm({
     setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
 
   const subtotal = lines.reduce((s, l) => s + (variant(l.variantId)?.priceMmk ?? 0) * (Number(l.qty) || 0), 0);
+  // Cổng CTV: hoa hồng dự kiến = Σ mức ở Giá bán × SL (server chốt lại khi tạo đơn).
+  const showCommission = options.variants.some((o) => "commissionMmk" in o);
+  const commission = lines.reduce((s, l) => { const o = variant(l.variantId); return s + (o && "commissionMmk" in o ? (o.commissionMmk ?? 0) : 0) * (Number(l.qty) || 0); }, 0);
 
   const payload = useMemo(
     () =>
@@ -209,9 +212,16 @@ export function OrderForm({
                   {options.variants.map((o) => (
                     <option key={o.id} value={o.id} disabled={o.available <= 0}>
                       {o.label} · {fmtInt(o.priceMmk)} MMK · {t("available")}: {o.available}
+                      {"commissionMmk" in o && ` · ${ta("colCommission")}: ${o.commissionMmk ? fmtInt(o.commissionMmk) : "0"}`}
                     </option>
                   ))}
                 </select>
+                {/* Cổng CTV: ô chọn bị cắt chữ trên điện thoại → nhắc lại hoa hồng/cái của SP đang chọn. */}
+                {v && "commissionMmk" in v && (
+                  <span className="block text-xs text-muted-foreground" data-testid="line-commission">
+                    {ta("commissionPerUnit", { amount: fmtInt(v.commissionMmk ?? 0) })}
+                  </span>
+                )}
               </label>
               <label className={fieldLabelSmClass}>
                 <span className="text-muted-foreground">{t("qty")}</span>
@@ -247,6 +257,12 @@ export function OrderForm({
         <dt className="font-medium">{t("total")}</dt>
         <dd className="text-right font-medium tabular-nums">{fmtInt(subtotal)} MMK</dd>
         <dd className="col-span-2 text-xs text-muted-foreground">{t("shippingNote")}</dd>
+        {showCommission && (
+          <>
+            <dt>{ta("commissionEstimate")}</dt>
+            <dd className="text-right tabular-nums" data-testid="order-commission-estimate">{fmtInt(commission)} MMK</dd>
+          </>
+        )}
       </dl>
 
       {state?.error && (

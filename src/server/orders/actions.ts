@@ -10,6 +10,7 @@ import { ForbiddenError, requirePermission } from "@/server/auth/session";
 import type { ActionState } from "@/server/inventory/actions";
 import { bulkTransition, BULK_TRANSITIONS, type BulkState } from "./bulk";
 import { OrderError } from "./errors";
+import { orderErrorText } from "./error-text";
 import { createOrder } from "./orders";
 import { PickError, savePickManifests } from "./picking";
 import { returnItems } from "./returns";
@@ -32,25 +33,7 @@ export async function updateTrackingAction(_prev: ActionState, formData: FormDat
 }
 
 async function message(e: unknown): Promise<string> {
-  if (e instanceof OrderError) {
-    const t = await getTranslations("Orders");
-    if (e.code === "out_of_stock") {
-      const rows = (e.details?.variants as { variantId: string; requested: number; available: number }[]) ?? [];
-      const ids = rows.map((r) => r.variantId).concat(e.details?.variantId ? [String(e.details.variantId)] : []);
-      const skus = await prisma.variant.findMany({ where: { id: { in: ids } }, select: { id: true, sku: true } });
-      const sku = new Map(skus.map((s) => [s.id, s.sku]));
-      const list = rows.length
-        ? rows.map((r) => `${sku.get(r.variantId) ?? r.variantId} (${r.available}/${r.requested})`).join(", ")
-        : ids.map((id) => sku.get(id) ?? id).join(", ");
-      return `${t("err.out_of_stock")}: ${list}`;
-    }
-    if (e.code === "price_missing" && e.details?.sku) return `${t("err.price_missing")}: ${String(e.details.sku)}`;
-    if (e.code === "cost_missing") {
-      const lots = (e.details?.lots as { sku: string; lotNo: string }[]) ?? [];
-      return `${t("err.cost_missing")}: ${lots.map((l) => `${l.sku} · ${l.lotNo}`).join(", ")}`;
-    }
-    return t(`err.${e.code}`);
-  }
+  if (e instanceof OrderError) return orderErrorText(e);
   if (e instanceof ZodError) return e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
   if (e instanceof Error) return e.message;
   return String(e);
