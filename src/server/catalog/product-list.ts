@@ -15,9 +15,8 @@ import { loadReadiness, loadReadinessErrors } from "./readiness";
  */
 export const LIST_TABS = ["active", "published", "review", "incomplete", "draft", "hidden", "outOfStock", "rejected", "archived"] as const;
 export type ListTab = (typeof LIST_TABS)[number];
-/** Tab chính trên danh sách (theo việc cần làm); trạng thái phụ nằm trong ô chọn "Trạng thái khác" — cùng tham số `status`. */
+/** Tab chính trên danh sách = lối tắt theo việc cần làm; ô chọn trạng thái luôn có đủ `LIST_TABS` — cùng tham số `status`. */
 export const MAIN_LIST_TABS = ["active", "incomplete", "review", "published", "archived"] as const satisfies readonly ListTab[];
-export const OTHER_LIST_TABS = ["draft", "hidden", "outOfStock", "rejected"] as const satisfies readonly ListTab[];
 export const SELL_MODES = ["instock", "preorder", "out"] as const;
 export type SellMode = (typeof SELL_MODES)[number];
 export const PAGE_SIZES = [20, 50, 100] as const;
