@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Save } from "lucide-react";
 import type { ActionState } from "@/server/inventory/actions";
 import { askConfirm } from "@/lib/confirm";
+import { cn } from "@/lib/utils";
 import type { Density } from "@/components/ui/field";
 
 /**
@@ -23,6 +24,7 @@ export function ActionForm({
   icon = <Save aria-hidden />,
   density = "compact",
   id,
+  actionsClassName,
 }: {
   action: (prev: ActionState, fd: FormData) => Promise<ActionState>;
   children: React.ReactNode;
@@ -36,6 +38,8 @@ export function ActionForm({
   density?: Density;
   /** Để ô nhập nằm ngoài form gắn vào bằng thuộc tính `form`. */
   id?: string;
+  /** Lớp thêm cho nhóm nút Lưu (vd `ml-auto` để đẩy nút về phải trên thanh thao tác). */
+  actionsClassName?: string;
 }) {
   const t = useTranslations("Docs");
   const [state, formAction, pending] = useActionState(action, undefined);
@@ -59,7 +63,7 @@ export function ActionForm({
     >
       {children}
       {/* self-end: form dạng lưới/flex → nút nằm đáy ô, thẳng hàng với ô nhập cùng hàng (nút cao bằng ô: size lg). */}
-      <div className="flex flex-wrap items-center gap-3 self-end">
+      <div className={cn("flex flex-wrap items-center gap-3 self-end", actionsClassName)}>
         <Button size={density === "touch" ? "touch" : "lg"} type="submit" variant={variant} disabled={pending}>
           {icon}
           {submitLabel}
@@ -71,7 +75,7 @@ export function ActionForm({
         )}
       </div>
       {state?.error && (
-        <p role="alert" className="col-span-full max-w-2xl text-sm text-destructive">
+        <p role="alert" className="col-span-full basis-full max-w-2xl text-sm text-destructive">
           {t("error")}: {state.error}
         </p>
       )}

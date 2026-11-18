@@ -8,9 +8,10 @@ import type { BatchReviewView } from "@/server/catalog/batch-review-text";
  */
 export function BatchReviewOptions({ canApprove, compact = false }: { canApprove: boolean; compact?: boolean }) {
   const t = useTranslations("BatchReview");
-  // `compact` (trang Đặt giá): gợi ý ngắn cạnh ô, giải thích đầy đủ trong phần mở rộng — cùng ô, cùng hành vi.
+  // `compact` (trang Đặt giá): các ô xếp ngang trên thanh thao tác cạnh nút Lưu, gợi ý ngắn dưới mỗi ô,
+  // giải thích đầy đủ trong phần mở rộng — cùng ô, cùng hành vi.
   return (
-    <fieldset className="space-y-1.5 text-sm">
+    <fieldset className={compact ? "flex flex-wrap items-start gap-x-6 gap-y-2 text-sm" : "space-y-1.5 text-sm"}>
       <legend className="sr-only">{t("legend")}</legend>
       <label className="flex items-start gap-2">
         <input type="checkbox" name="submitNow" defaultChecked className="mt-0.5 size-4 accent-primary" />
