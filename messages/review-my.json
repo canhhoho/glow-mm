@@ -116,6 +116,7 @@
     "Catalog.pagination",
     "Catalog.previous",
     "Catalog.seeMore",
+    "Checkout.err.cart_empty",
     "Checkout.err.invalid_address",
     "Checkout.err.invalid_name",
     "Checkout.err.price_missing",

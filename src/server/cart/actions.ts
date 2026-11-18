@@ -55,6 +55,21 @@ async function writeCart(lines: ReturnType<typeof parseCart>) {
   else jar.set(CART_COOKIE, serializeCart(lines), COOKIE_OPTS);
 }
 
+/**
+ * Giỏ sau khi bỏ dòng trỏ tới biến thể ĐÃ BỊ XOÁ HẲN (SP nháp bị xoá, dữ liệu cũ…). Trang giỏ/checkout (`getCartDetails`)
+ * vốn không hiện các dòng này → đặt hàng cũng không được vấp vào chúng (trước đây báo "không còn bán" mà giỏ trông bình
+ * thường). Biến thể còn nhưng ngừng bán / SP ẩn vẫn giữ để trang giỏ báo rõ từng dòng. Có dòng bị bỏ → ghi lại cookie.
+ */
+async function readLiveCart() {
+  const lines = await readCart();
+  if (lines.length === 0) return lines;
+  const found = await prisma.variant.findMany({ where: { id: { in: lines.map((l) => l.variantId) } }, select: { id: true } });
+  const ids = new Set(found.map((v) => v.id));
+  const live = lines.filter((l) => ids.has(l.variantId));
+  if (live.length !== lines.length) await writeCart(live);
+  return live;
+}
+
 /** CTV giới thiệu (cookie do proxy đặt khi khách mở link `?ref=`) — đọc phía server, không tin dữ liệu form. */
 async function referralFromCookie() {
   const code = normalizeRefCode((await cookies()).get(REF_COOKIE)?.value);
@@ -81,7 +96,7 @@ const addIntent = z.enum(["cart", "buy"]).catch("cart");
 export async function addToCartAction(formData: FormData) {
   const locale = localeOf(formData);
   const intent = addIntent.parse(formData.get("intent") ?? "cart");
-  await writeCart(addLine(await readCart(), String(formData.get("variantId")), Number(formData.get("qty") ?? 1)));
+  await writeCart(addLine(await readLiveCart(), String(formData.get("variantId")), Number(formData.get("qty") ?? 1)));
   if (intent === "buy" && !(await getCustomerUser())) {
     // Redirect của Server Action render thẳng trang đích, không qua proxy → tự chuyển tới đăng nhập (P14c).
     const prefix = localePrefix(locale);
@@ -92,17 +107,26 @@ export async function addToCartAction(formData: FormData) {
 
 /** Đổi số lượng / xoá dòng (qty = 0). Trang giỏ tự render lại sau khi cookie đổi. */
 export async function setCartQtyAction(formData: FormData) {
-  await writeCart(setLine(await readCart(), String(formData.get("variantId")), Number(formData.get("qty"))));
+  await writeCart(setLine(await readLiveCart(), String(formData.get("variantId")), Number(formData.get("qty"))));
 }
 
 /** Đặt hàng trên web: bắt buộc tài khoản khách (P14c) — đơn gắn `accountId`, tuỳ chọn lưu địa chỉ vào sổ. */
 export async function placeOrderAction(_prev: StoreActionState, formData: FormData): Promise<StoreActionState> {
   const locale = localeOf(formData);
   const user = await requireCustomer(locale, "/checkout");
-  const items = await readCart();
+  const items = await readLiveCart();
+  if (items.length === 0) {
+    // Giỏ trống mà form mang idempotencyKey của một đơn đã tạo (bấm đặt hàng lần 2 sau khi lần 1 đã thành công và xoá giỏ)
+    // → mở đơn đó thay vì báo lỗi.
+    const key = formData.get("idempotencyKey");
+    const placed = typeof key === "string" && key
+      ? await prisma.order.findFirst({ where: { idempotencyKey: key, accountId: user.id }, select: { code: true } })
+      : null;
+    if (placed) redirect({ href: { pathname: `/order/${placed.code}`, query: { placed: "1" } }, locale });
+  }
   let order;
   try {
-    if (items.length === 0) throw new OrderError("variant_unavailable", "Giỏ hàng trống");
+    if (items.length === 0) throw new OrderError("cart_empty", "Giỏ hàng trống");
     order = await createOrder(
       {
         channel: "WEB",
@@ -147,7 +171,7 @@ export async function placeOrderAction(_prev: StoreActionState, formData: FormDa
     }
     if (e instanceof OrderError && e.code === "invalid_phone") fieldErrors[e.details?.field === "phone2" ? "phone2" : "phone"] = error;
     if (e instanceof OrderError && e.code === "invalid_zone") fieldErrors.townshipId = error;
-    const cartError = e instanceof OrderError && ["out_of_stock", "variant_unavailable", "price_missing"].includes(e.code);
+    const cartError = e instanceof OrderError && ["out_of_stock", "variant_unavailable", "price_missing", "cart_empty"].includes(e.code);
     const variantId = e instanceof OrderError && typeof e.details?.variantId === "string" ? e.details.variantId : undefined;
     const shortages = e instanceof OrderError && Array.isArray(e.details?.variants) ? e.details.variants.flatMap((row: unknown) => row && typeof row === "object" && "variantId" in row && typeof row.variantId === "string" ? [row.variantId] : []) : [];
     const ids = [...new Set([...(variantId ? [variantId] : []), ...shortages])].slice(0, 50);
