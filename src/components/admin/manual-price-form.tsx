@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Calculator, Pencil } from "lucide-react";
 import { ActionForm } from "@/components/admin/action-form";
 import { BatchReviewOptions } from "@/components/admin/batch-review";
-import { Badge, DataTable, Td, fieldClass, fieldLabelClass } from "@/components/admin/ui";
+import { Badge, DataTable, Td, fieldClass } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
 import { fmtDate, fmtInt } from "@/lib/format";
