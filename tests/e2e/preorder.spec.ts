@@ -96,3 +96,39 @@ test("khách đặt trước SP hết hàng → admin thấy ở danh sách ch�
     await release();
   }
 });
+
+// 18/11/2026: hiển thị đặt trước ở mọi nơi khách thấy — thẻ danh sách, trang SP, giỏ — và SP TẮT đặt trước thì là "Hết hàng".
+test("hết hàng: thẻ + trang SP + giỏ hiện đặt trước; tắt đặt trước → Hết hàng, không mua được", async ({ page }) => {
+  test.setTimeout(90_000);
+  const hold = `e2e-preorder-ui-${Date.now()}`;
+  await db(async (c) => {
+    const v = (await c.query('SELECT id FROM "Variant" WHERE sku = $1', [SKU])).rows[0].id as string;
+    const order = (await c.query('SELECT id FROM "Order" ORDER BY "createdAt" LIMIT 1')).rows[0].id as string;
+    await c.query(`INSERT INTO "Reservation" (id, "variantId", "orderId", qty, status, "expiresAt") VALUES ($1, $2, $3, 1000000, 'ACTIVE', NULL)`, [hold, v, order]);
+  });
+  const setPreorder = (on: boolean) => db((c) => c.query('UPDATE "Product" SET "preorderEnabled" = $1 WHERE slug = $2', [on, SLUG]));
+  try {
+    const card = page.locator("li").filter({ has: page.locator(`a[href="/en/p/${SLUG}"]`) });
+    await page.goto("/en/search?q=Herbal%20Shampoo");
+    await expect(card.getByTestId("card-preorder")).toHaveText("Pre-order");
+
+    await page.goto(`/en/p/${SLUG}`);
+    await expect(page.getByRole("button", { name: "Pre-order", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Add to cart" }).click();
+    await expect(page).toHaveURL(/\/en\/cart$/);
+    await expect(page.getByTestId("cart-preorder")).toBeVisible();
+    await expect(page.getByText(/whole order ships once everything is in stock/)).toBeVisible();
+
+    await setPreorder(false);
+    await page.goto("/en/search?q=Herbal%20Shampoo");
+    await expect(card.getByTestId("card-preorder")).toHaveCount(0);
+    await expect(card.getByText("Out of stock").first()).toBeVisible();
+    await page.goto(`/en/p/${SLUG}`);
+    await expect(page.getByTestId("single-variant").getByText("Out of stock", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Add to cart" })).toHaveCount(0);
+    await expect(page.getByTestId("preorder-note")).toHaveCount(0);
+  } finally {
+    await setPreorder(true);
+    await db((c) => c.query('DELETE FROM "Reservation" WHERE id = $1', [hold]));
+  }
+});
