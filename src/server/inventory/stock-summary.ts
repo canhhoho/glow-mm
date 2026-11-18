@@ -16,6 +16,8 @@ export type BalanceRow = {
   lotNo: string;
   expiryDate: Date | null;
   expiryStatus?: "DATED" | "NONE" | "UNKNOWN";
+  /** Giá mua gốc VND của một đơn vị trong lô. */
+  unitCostVnd?: number | null;
   /** Giá vốn MMK/đơn vị được chọn (thực tế hoặc tạm tính); null = thiếu dữ liệu. */
   landedCostMmk: number | null;
   costStatus?: CostStatus;
@@ -38,6 +40,8 @@ export type StockSummary = {
   sellableVariants: number;
   /** Σ SL × giá vốn thực tế hoặc tạm tính; lô thiếu dữ liệu không tính, đếm riêng. */
   valueMmk: number;
+  /** Tổng giá mua gốc của lượng tồn thuộc các lô có giá mua VND. */
+  valueVnd: number;
   unvaluedUnits: number;
   estimatedUnits: number;
   /** Đang vận chuyển + hải quan. */
@@ -62,6 +66,7 @@ export function summarizeStock(rows: BalanceRow[], now: Date, t: Thresholds): St
     sellableUnits: 0,
     sellableVariants: 0,
     valueMmk: 0,
+    valueVnd: 0,
     unvaluedUnits: 0,
     estimatedUnits: 0,
     inbound: { units: 0, lots: 0 },
@@ -77,6 +82,7 @@ export function summarizeStock(rows: BalanceRow[], now: Date, t: Thresholds): St
     s.byLocation[r.locationCode] = (s.byLocation[r.locationCode] ?? 0) + r.qty;
     if (r.landedCostMmk == null) s.unvaluedUnits += r.qty;
     else s.valueMmk += r.qty * r.landedCostMmk;
+    if (r.unitCostVnd != null) s.valueVnd += r.qty * r.unitCostVnd;
     if (r.costStatus === "ESTIMATED") s.estimatedUnits += r.qty;
     if (isInbound(r.locationType)) {
       s.inbound.units += r.qty;

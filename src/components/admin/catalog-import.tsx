@@ -1,21 +1,26 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import { Check, Download, Eye } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { catalogImportAction } from "@/server/catalog/actions";
+import { catalogImportAction, type CatalogImportState } from "@/server/catalog/actions";
 import type { CatalogImportPreview, ImportChange, ImportIssue, ImportRowView } from "@/server/catalog/catalog-import";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { FileField } from "@/components/admin/file-field";
-import { Badge, DataTable, Notice, Td } from "@/components/admin/ui";
+import { Badge, DataTable, Field, fieldClass, Notice, Td } from "@/components/admin/ui";
 import { fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { MAX_CATALOG_FILE_BYTES, visibleXlsxSheets } from "@/lib/xlsx-sheets";
 import { BatchReviewOptions, BatchReviewSummary } from "@/components/admin/batch-review";
 
 const ACTION_TONE = { create: "brand", update: "warning", same: "neutral", error: "danger" } as const;
 const FILTERS = ["all", "error", "warning", "create", "update", "same"] as const;
 type Filter = (typeof FILTERS)[number];
+type WorkbookChoice =
+  | { file: File; status: "loading" }
+  | { file: File; status: "ready"; sheets: string[]; selected: string }
+  | { file: File; status: "error"; message: "sheetReadError" | "fileTooLarge" };
 
 /** Trang này chỉ nói về thông tin SP: lưu ý về lô nhập kho (hạn dùng, giá vốn) xem ở phiếu nhập nháp; lỗi thì luôn hiện. */
 const shownIssues = (r: ImportRowView): ImportIssue[] => r.issues.filter((i) => i.level === "error" || !i.stock);
@@ -39,8 +44,34 @@ const matches = (r: ImportRowView, f: Filter) =>
 /** Một luồng cho tạo mới + cập nhật + nhập tồn: tải mẫu → chọn file → xem trước → xác nhận. */
 export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) {
   const t = useTranslations("CatalogImport");
-  const [state, action, pending] = useActionState(catalogImportAction, undefined);
+  const [actionState, action, pending] = useActionState(catalogImportAction, undefined);
+  const [ignoredState, setIgnoredState] = useState<CatalogImportState>();
+  const [workbook, setWorkbook] = useState<WorkbookChoice>();
+  const state = actionState === ignoredState ? undefined : actionState;
   const preview = state?.preview;
+  const canPreview = !pending && (!workbook || (workbook.status === "ready" && Boolean(workbook.selected)));
+
+  async function chooseFile(file: File | undefined) {
+    setIgnoredState(actionState);
+    if (!file || !/\.xlsx$/i.test(file.name)) {
+      setWorkbook(undefined);
+      return;
+    }
+    if (file.size > MAX_CATALOG_FILE_BYTES) {
+      setWorkbook({ file, status: "error", message: "fileTooLarge" });
+      return;
+    }
+    setWorkbook({ file, status: "loading" });
+    const finish = (next: WorkbookChoice) => setWorkbook((current) => current?.file === file ? next : current);
+    try {
+      const sheets = await visibleXlsxSheets(file);
+      if (sheets.length === 0) throw new Error("No visible sheets");
+      finish({ file, status: "ready", sheets, selected: sheets.length === 1 ? sheets[0] : "" });
+    } catch {
+      finish({ file, status: "error", message: "sheetReadError" });
+    }
+  }
+
   return (
     <section className="space-y-4 rounded-xl border bg-card p-4">
       <div>
@@ -51,14 +82,37 @@ export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) 
         <a className={buttonVariants({ variant: "outline", size: "lg" })} href="/api/templates/catalog.xlsx"><Download aria-hidden />{t("templateBlank")}</a>
         <a className={buttonVariants({ variant: "outline", size: "lg" })} href="/api/templates/catalog-current.xlsx"><Download aria-hidden />{t("templateCurrent")}</a>
       </div>
-      <form action={action} className="flex flex-wrap items-end gap-3">
+      <form action={action} onSubmit={(event) => {
+        event.preventDefault();
+        if (!canPreview) return;
+        const formData = new FormData(event.currentTarget);
+        // Gửi thủ công để giữ ô file khi đổi sheet hoặc xem trước lại.
+        startTransition(() => action(formData));
+      }}>
         <input type="hidden" name="step" value="preview" />
-        <FileField name="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required aria-label={t("file")} className="max-w-72" />
-        <Button type="submit" size="lg" disabled={pending}><Eye aria-hidden />{t("preview")}</Button>
+        <fieldset disabled={pending} className="flex min-w-0 flex-wrap items-end gap-3">
+          <FileField name="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required aria-label={t("file")} className="max-w-72" onChange={(event) => void chooseFile(event.currentTarget.files?.[0])} />
+          {workbook?.status === "ready" && (workbook.sheets.length === 1 ? (
+            <input type="hidden" name="sheet" value={workbook.selected} />
+          ) : (
+            <Field label={t("sheetLabel")} className="w-full min-w-0 sm:w-auto">
+              <select name="sheet" required className={cn(fieldClass, "w-full sm:max-w-72")} value={workbook.selected} onChange={(event) => {
+                setIgnoredState(actionState);
+                setWorkbook({ ...workbook, selected: event.currentTarget.value });
+              }}>
+                <option value="" disabled>{t("chooseSheet")}</option>
+                {workbook.sheets.map((name) => <option key={name} value={name}>{name}</option>)}
+              </select>
+            </Field>
+          ))}
+          <Button type="submit" size="lg" disabled={!canPreview}><Eye aria-hidden />{t("preview")}</Button>
+        </fieldset>
       </form>
+      {workbook?.status === "loading" && <p role="status" className="text-sm text-muted-foreground">{t("readingSheets")}</p>}
+      {workbook?.status === "error" && <Notice tone="danger">{t(workbook.message)}</Notice>}
       {state?.error && <Notice tone="danger" className="whitespace-pre-line">{state.error}</Notice>}
 
-      {preview && <ImportPreview preview={preview} action={action} pending={pending} canApprove={canApprove} />}
+      {preview && <ImportPreview preview={preview} sheetName={state.sheetName} action={action} pending={pending} canApprove={canApprove} />}
 
       {state?.result && (
         <Notice tone="success" className="space-y-2 p-4">
@@ -83,7 +137,7 @@ export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) 
   );
 }
 
-function ImportPreview({ preview, action, pending, canApprove }: { preview: CatalogImportPreview; action: (formData: FormData) => void; pending: boolean; canApprove: boolean }) {
+function ImportPreview({ preview, sheetName, action, pending, canApprove }: { preview: CatalogImportPreview; sheetName?: string; action: (formData: FormData) => void; pending: boolean; canApprove: boolean }) {
   const t = useTranslations("CatalogImport");
   const tf = useTranslations("ProductFields");
   const [filter, setFilter] = useState<Filter>("all");
@@ -94,6 +148,7 @@ function ImportPreview({ preview, action, pending, canApprove }: { preview: Cata
   const rc = preview.rowCounts;
   return (
     <div className="space-y-3" data-testid="catalog-import-preview">
+      {sheetName && <p className="text-sm text-muted-foreground break-words">{t("previewingSheet", { sheet: sheetName })}</p>}
       <p className="text-sm font-medium" data-testid="catalog-import-summary">
         {t("summaryRows", { total: preview.rows.length, create: rc.create, update: rc.update, same: rc.same, error: rc.error })}
       </p>

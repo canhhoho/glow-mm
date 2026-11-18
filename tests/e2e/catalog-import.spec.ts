@@ -2,8 +2,9 @@ import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { readSheet } from "read-excel-file/node";
-import { CATALOG_HEADER_ROW, CATALOG_SHEET, sheetHeaderKey } from "../../src/lib/catalog-sheet";
+import { CATALOG_HEADER_ROW, CATALOG_LIST_SHEET, CATALOG_SHEET, sheetHeaderKey } from "../../src/lib/catalog-sheet";
 import { toCsv } from "../../src/lib/csv";
+import { addCatalogSheet } from "../support/catalog-workbook";
 import { livePrices, login, openProductEdit, openProductSettings, openProductTab, setPrices } from "./helpers";
 
 const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -41,6 +42,41 @@ async function upload(page: Page, name: string, buffer: Buffer) {
   await page.getByRole("button", { name: "Xem trước", exact: true }).click();
   await expect(page.getByTestId("catalog-import-preview")).toBeVisible({ timeout: 30_000 });
 }
+
+test("file nhiều sheet: chọn đúng sheet, đổi sheet thì bỏ bản xem trước cũ", async ({ page }) => {
+  await login(page, "admin@glow.local");
+  await page.goto("/admin/products/import");
+  const template = (await download(page, "Tải file mẫu trống")).bytes;
+  const base = { brand: "Sen Việt", category: "skincare" };
+  const first = fillCatalogTemplate(template, [{ ...base, name: "Dữ liệu đợt đầu" }]);
+  const secondName = `Sản phẩm đợt sau ${Date.now()}`;
+  const second = fillCatalogTemplate(template, [{ ...base, name: secondName, warehouse_code: "THAM", qty: 4, unit_cost: "100.000" }]);
+  const sheetName = "Đợt 2 & bổ sung";
+  await page.getByLabel("File Excel nhập sản phẩm", { exact: true }).setInputFiles({
+    name: "nhieu-sheet.xlsx", mimeType: XLSX, buffer: Buffer.from(addCatalogSheet(first, second, sheetName)),
+  });
+
+  const sheets = page.getByRole("combobox", { name: "Sheet nhập dữ liệu" });
+  const previewButton = page.getByRole("button", { name: "Xem trước", exact: true });
+  const preview = page.getByTestId("catalog-import-preview");
+  await expect(sheets).toBeVisible();
+  await expect(sheets.locator("option")).toHaveText(["Chọn sheet", CATALOG_SHEET, sheetName]);
+  await expect(sheets.locator(`option[value="${CATALOG_LIST_SHEET}"]`)).toHaveCount(0);
+  await expect(previewButton).toBeDisabled();
+
+  await sheets.selectOption(CATALOG_SHEET);
+  await previewButton.click();
+  await expect(preview).toContainText("Dữ liệu đợt đầu");
+  await sheets.selectOption(sheetName);
+  await expect(preview).toHaveCount(0);
+  await previewButton.click(); // Cùng file, không cần chọn lại.
+  await expect(preview).toContainText(`Xem trước sheet: ${sheetName}`);
+  await expect(preview).toContainText(secondName);
+  await expect(preview).not.toContainText("Dữ liệu đợt đầu");
+  await preview.getByRole("button", { name: "Xác nhận nhập", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Đã nhập: 1 SP mới");
+  await expect(page.getByRole("link", { name: /kiểm tra và ghi sổ/ })).toBeVisible();
+});
 
 test("file lỗi vẫn hiện Xác nhận nhập; sửa file và xem trước lại thì mở nút", async ({ page }) => {
   await login(page, "admin@glow.local");

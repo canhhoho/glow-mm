@@ -68,18 +68,20 @@ describe("summarizeStock — ô số tổng trang Tồn kho (FEATURES.expiry = f
     expect(s.inbound).toEqual({ units: 11, lots: 2 });
   });
 
-  it("giá trị tồn = Σ SL × giá vốn lô; lô chưa phân bổ đếm riêng; bỏ dòng SL ≤ 0", () => {
+  it("giá trị tồn MMK và VND theo giá lô tương ứng; bỏ dòng SL ≤ 0", () => {
     const s = summarizeStock(
       [
         row({ locationType: "MM_STOCK", qty: 3, landedCostMmk: 2500 }),
-        row({ locationType: "VN_STOCK", qty: 4, landedCostMmk: null }),
-        row({ locationType: "MM_STOCK", qty: 0, landedCostMmk: 9999 }),
-        row({ locationType: "MM_STOCK", qty: -2, landedCostMmk: 9999 }),
+        row({ locationType: "VN_STOCK", qty: 4, landedCostMmk: null, unitCostVnd: 40_000 }),
+        row({ locationType: "QUARANTINE", qty: 1, landedCostMmk: 1500, unitCostVnd: 60_000 }),
+        row({ locationType: "MM_STOCK", qty: 0, landedCostMmk: 9999, unitCostVnd: 500_000 }),
+        row({ locationType: "MM_STOCK", qty: -2, landedCostMmk: 9999, unitCostVnd: 500_000 }),
       ],
       now,
       t,
     );
-    expect(s.valueMmk).toBe(7500);
+    expect(s.valueMmk).toBe(9000);
+    expect(s.valueVnd).toBe(220_000);
     expect(s.unvaluedUnits).toBe(4);
   });
 });

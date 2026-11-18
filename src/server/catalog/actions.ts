@@ -353,7 +353,7 @@ export async function deleteProductImageAction(_prev: ActionState, formData: For
 }
 
 export type CatalogImportState =
-  | { preview?: CatalogImportPreview; result?: Omit<Awaited<ReturnType<typeof commitCatalogImport>>, "review">; review?: BatchReviewView; error?: string }
+  | { preview?: CatalogImportPreview; sheetName?: string; result?: Omit<Awaited<ReturnType<typeof commitCatalogImport>>, "review">; review?: BatchReviewView; error?: string }
   | undefined;
 
 /** Nhập/cập nhật SP từ một sheet: bước "preview" (chỉ đọc) rồi "confirm" (ghi trong một transaction). */
@@ -376,11 +376,13 @@ export async function catalogImportAction(_prev: CatalogImportState, formData: F
       revalidatePath("/admin/inventory/documents");
       return { result, review: reviewView };
     }
-    const file = await readCatalogFile(formData.get("file"));
+    const selectedSheet = formData.get("sheet");
+    const sheetName = selectedSheet === null ? undefined : z.string().min(1).max(128).parse(selectedSheet);
+    const file = await readCatalogFile(formData.get("file"), sheetName);
     const standardLabel = (await getTranslations("Products"))("standardVariant");
     const preview = await previewCatalogImport({ csv: file.csv, lines: file.lines, standardLabel });
     if (preview.counts.stockLines > 0) await requirePermission("stock:receive");
-    return { preview };
+    return { preview, sheetName: file.sheetName };
   } catch (e) {
     return { error: message(e) };
   }
