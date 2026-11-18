@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { skuStem } from "@/lib/product-identifiers";
 import { prisma } from "@/lib/db";
 import { createProduct } from "@/server/catalog/product-create";
 import { loadReadiness } from "@/server/catalog/readiness";
@@ -34,7 +35,8 @@ describe("Bước 1: tạo sản phẩm tối giản (QT1a)", () => {
     expect(saved.slug).toBe(`lip-tint-${f.tag.toLowerCase()}`);
     expect(saved.brand.name).toBe(`IT new brand ${f.tag}`);
     expect(saved.variants.map((v) => [v.label, v.priceMmk])).toEqual([["Đỏ", 0], ["Hồng", 0]]);
-    expect(saved.variants.every((v) => v.sku.startsWith(`LIP-TINT-${f.tag}`))).toBe(true);
+    expect(saved.variants.every((v) => v.sku.startsWith(`${skuStem(saved.slug)}-`))).toBe(true); // SKU tự sinh ngắn (18/11/2026)
+    expect(saved.variants.every((v) => v.sku.length <= 20)).toBe(true);
     // Tên còn lại chép theo tên đã nhập (luôn có my + en).
     expect(saved.translations.map((t) => t.name).sort()).toEqual([`Lip tint ${f.tag}`, `Lip tint ${f.tag}`]);
 

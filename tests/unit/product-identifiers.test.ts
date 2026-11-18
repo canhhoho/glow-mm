@@ -7,7 +7,14 @@ describe("product identifiers", () => {
     expect(suggestProductSlug("", "နေကာခရင်မ်")).toBe("product");
     // Tên chỉ có chữ Myanmar: gốc theo thương hiệu (nhập Excel + form tạo SP truyền slug thương hiệu).
     expect(suggestProductSlug("", "နေကာခရင်မ်", "nivea")).toBe("nivea");
-    expect(suggestVariantSku("dior-pink-bag", 0)).toBe("DIOR-PINK-BAG-01");
+    // SKU tự sinh ngắn (18/11/2026): viết tắt + dung tích / mã màu.
+    expect(suggestVariantSku("dior-pink-bag", 0)).toBe("DIO-PB-01");
+    expect(suggestVariantSku("anessa-perfect-uv-spray-60g", 0)).toBe("ANE-PUS60-01");
+    expect(suggestVariantSku("olaplex-no7-bonding-oil-60ml", 1)).toBe("OLA-NBO60-02");
+    expect(suggestVariantSku("into-you-lip-mud-em08", 0)).toBe("INT-YLMEM08-01");
+    expect(suggestVariantSku("cocoon-pomelo-shampoo-and-conditioner-500ml", 0)).toBe("COC-PSC500-01");
+    expect(suggestVariantSku("nivea", 0)).toBe("NIV-01");
+    expect(suggestVariantSku("product", 2)).toBe("PRO-03");
     expect(suggestVariantSku("x".repeat(80), 99).length).toBeLessThanOrEqual(40);
   });
 

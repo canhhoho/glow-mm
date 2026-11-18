@@ -351,7 +351,7 @@ Khối **Kiểm tra điều kiện đăng bán** bên cạnh có ba dòng, mỗi
 - **Phân loại:** mỗi dòng có ô **Phân loại (dung tích/màu)** và ô **Đang dùng**. Bấm **Thêm phân loại** để thêm; biến thể mới có giá 0, và nếu sản phẩm đang bán thì biến thể mới **được tạo ở trạng thái tắt**.
 - **Thiết lập khác (mã, kho, hạn dùng)** (khối đóng sẵn, bấm để mở):
   - **Slug (URL)** — **khoá sau lần đăng bán đầu tiên** (đường dẫn khách đã dùng).
-  - **SKU** từng biến thể — tự điền, sửa được; trùng thì hệ thống tự thêm hậu tố khi lưu. Chỉ gồm chữ, số và `. _ -`.
+  - **SKU** từng biến thể — tự điền, sửa được; trùng thì hệ thống tự thêm hậu tố khi lưu. Chỉ gồm chữ, số và `. _ -`. SKU tự sinh dạng viết tắt (18/11/2026): 3 chữ đầu của từ đầu tên + chữ cái đầu các từ sau (tối đa 5) + dung tích/mã màu + số thứ tự phân loại, vd "ANESSA Perfect UV Spray 60g" → `ANE-PUS60-01`. Chỉ áp cho SKU tạo mới; SKU đã có giữ nguyên.
   - **Khối lượng (g)** từng biến thể.
   - **Kho** — chỉ hiện khi có nhiều kho. Đổi kho: hàng còn ở kho cũ chỉ bán lại sau khi tạo phiếu chuyển kho sang kho mới.
   - **Quản lý hạn sử dụng cho sản phẩm này**.
