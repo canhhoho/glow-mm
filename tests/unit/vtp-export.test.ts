@@ -52,7 +52,8 @@ describe("Dữ liệu xuất VTP", () => {
 });
 
 describe("File Excel theo mẫu OMS", () => {
-  it("thay dữ liệu mẫu, giữ nguyên các sheet ẩn, styles, ảnh và validation", async () => {
+  // Nén/giải nén file mẫu thật: máy CI/máy bận có thể > 5s mặc định → nới riêng test này.
+  it("thay dữ liệu mẫu, giữ nguyên các sheet ẩn, styles, ảnh và validation", { timeout: 20_000 }, async () => {
     const template = await readFile("src/server/orders/templates/vtp-myanmar.xlsx");
     const row = vtpRow({ ...source, recipientName: "=TEST & <name>" }, { ...options, recipientName: "=TEST & <name>" }, 0);
     const output = fillVtpTemplate(template, [row, vtpRow({ ...source, code: "DEMO-002", paymentMethod: "BANK_TRANSFER", paymentStatus: "PAID" }, options, 1)]);

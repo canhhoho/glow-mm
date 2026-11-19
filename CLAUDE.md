@@ -8,7 +8,7 @@ Web bán mỹ phẩm B2C **T&C Cosmetics** (tên cũ Glow VN) nhập từ Việt
 | Sửa giá/kho/đơn/hoa hồng: điểm vào, hàm domain, nơi đọc/ghi | [docs/ban-do-nghiep-vu-admin.md](docs/ban-do-nghiep-vu-admin.md) |
 | Hướng dẫn người dùng (admin / CTV) | [docs/huong-dan-van-hanh-admin.md](docs/huong-dan-van-hanh-admin.md), [docs/huong-dan-cong-ctv.md](docs/huong-dan-cong-ctv.md) |
 | Triển khai server `10.201.42.65` (tandcstore.com, Docker Compose, **không** Coolify) | [docs/lenh-trien-khai-tandcstore.md](docs/lenh-trien-khai-tandcstore.md), [docs/huong-dan-trien-khai-tandcstore.md](docs/huong-dan-trien-khai-tandcstore.md), [DEPLOY.md](DEPLOY.md) (§2 Coolify chỉ là lịch sử) |
-| Kế hoạch / phase | [PLAN.md](PLAN.md) (bảng "Quyết định đã chốt" có mục cũ — xem "Còn mâu thuẫn") |
+| Kế hoạch / phase | [PLAN.md](PLAN.md) |
 
 ## Cách làm việc
 - Trả lời **tiếng Việt**, dễ hiểu, ngắn gọn. Điều chưa xác minh (luật/dịch vụ/thư viện Myanmar, hành vi chưa chạy thử) ghi **[CẦN XÁC MINH]**, không tự giả định.
@@ -78,7 +78,5 @@ Tài khoản seed: `admin@` / `kho@` / `donhang@glow.local` (admin), `ctv@glow.l
 - Làm việc trên `dev`; `main` chỉ chứa code đã test; merge `main` khi `check` xanh và đã có full E2E xanh (mục trên). Commit sau mỗi bước hoàn thành, kèm dòng `Co-Authored-By` theo hướng dẫn của hệ thống.
 
 ## Còn mâu thuẫn / chưa xác minh (17/11/2026)
-- `DEPLOY.md` §2 hướng dẫn Coolify, trái với runbook hiện hành (Docker Compose, không Coolify) — chưa sửa.
-- `PLAN.md` "Quyết định đã chốt" còn mục cũ (landed cost phân bổ chuyến, đăng nhập Google, giá tự động) — quyết định mới hơn trong file này và `docs/kien-truc.md` thắng; chưa sửa PLAN.md.
 - `outputs/` (đề xuất menu, QA) chưa vào git; `docs/kien-truc.md` chỉ được đối chiếu code ở ba điểm đã ghi ở đầu file.
 - `npm run db:reset` (`migrate reset --force`) tồn tại trong `package.json` — chỉ dùng khi người dùng cho phép, trên DB tạm.
