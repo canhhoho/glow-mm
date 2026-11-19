@@ -346,7 +346,9 @@ UNION ALL SELECT 'ten_loai_trung', count(*) FROM (SELECT 1 FROM \"Variant\" GROU
 
 **Đã gỡ khỏi code (19/11/2026):** `vercel.json`, adapter `vercel-blob` (+ nhánh trong `storage/index.ts`, `env.ts`; `STORAGE_DRIVER` chỉ còn `local`, `BLOB_READ_WRITE_TOKEN` bỏ), gói `@vercel/blob`, `@neondatabase/serverless`, `@prisma/adapter-neon`, nhánh `SEED_VIA_WEBSOCKET` ở seed, script `vercel-build`, `seed:preview` + `seed-preview.ps1`, cờ `--allow-blob`/`--yes` ở script seed.
 
-**Còn giữ có chủ ý:** enum `StorageDriver.VERCEL_BLOB`, `scripts/migrate-blob-to-local.mjs` + dòng `COPY` trong `Dockerfile` (stage `migrator`) + `tests/integration/files.test.ts` (cần giữ cho tới khi xác nhận production không còn dòng `FileObject` driver=VERCEL_BLOB; Dockerfile cần quyền sửa + server đang có bản chỉnh mirror Alpine chưa commit); `images.remotePatterns` trong `next.config.ts` và `BLOB_IMAGES` trong `csp.ts` (bỏ cùng lúc khi truy vấn kiểm tra = 0).
+**Đã bỏ thêm 19/11/2026:** `images.remotePatterns` (`next.config.ts`) và `BLOB_IMAGES` trong CSP — production xác nhận 0 dòng `FileObject` driver=VERCEL_BLOB.
+
+**Còn giữ có chủ ý:** enum `StorageDriver.VERCEL_BLOB`, `scripts/migrate-blob-to-local.mjs` + dòng `COPY` trong `Dockerfile` (stage `migrator`) + `tests/integration/files.test.ts`. Dọn nốt khi đã commit bản chỉnh mirror Alpine của server vào `Dockerfile` (sửa `Dockerfile` cần quyền; nếu không, lúc deploy có thể xung đột với bản chỉnh trên server).
 
 **Danh sách gốc (tham khảo):**
 - Storage: `src/server/adapters/storage/vercel-blob.ts`, nhánh `vercel-blob` trong `storage/index.ts` + `env.ts`, gói `@vercel/blob`, `images.remotePatterns` trong `next.config.ts`.
