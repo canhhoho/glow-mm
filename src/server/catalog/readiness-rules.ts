@@ -161,7 +161,7 @@ const STEP_OF: Record<IssueCode, ProductStep> = {
 
 export function productSteps(
   /** `approved`: bản live đã duyệt và không có bản đang sửa chờ xử lý (bỏ trống = đã duyệt). */
-  p: { published: boolean; notReceivedSkus: string[]; approved?: boolean },
+  p: { published: boolean; notReceivedSkus: string[]; approved?: boolean; preorderEnabled?: boolean },
   r: Readiness,
 ): { steps: StepView[]; current: ProductStep | null } {
   const of = (step: ProductStep, list: Issue[]) => list.filter((i) => STEP_OF[i.code] === step);
@@ -171,7 +171,9 @@ export function productSteps(
   const steps: StepView[] = (["create", "stock", "price"] as const).map((key) => {
     const errors = of(key, r.errors);
     const warnings = of(key, r.warnings);
-    const notReceived = key === "stock" && p.notReceivedSkus.length > 0;
+    // Bước 2 "Kho bán & hàng" (19/11/2026) có hai nhánh hợp lệ: đã nhập hàng, hoặc BÁN ĐẶT TRƯỚC (đã có kho — thiếu kho là
+    // lỗi NO_WAREHOUSE — và đang bật đặt trước). Chưa nhập hàng mà tắt đặt trước → không bán được → còn phải nhập hàng.
+    const notReceived = key === "stock" && p.notReceivedSkus.length > 0 && !p.preorderEnabled;
     return {
       key,
       state: state(errors, warnings, notReceived),

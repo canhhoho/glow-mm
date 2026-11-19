@@ -815,7 +815,7 @@
     },
     "step": {
       "create": "Product information",
-      "stock": "Receive stock + cost",
+      "stock": "Warehouse & stock",
       "price": "Selling price",
       "review": "Review",
       "publish": "Publish"
@@ -832,6 +832,7 @@
     "block": {
       "editInfo": "Edit product details",
       "notReceived": "Not received yet: {skus}",
+      "notReceivedPreorder": "Not received yet: {skus} — selling as pre-order (toggle in the Publish step). Create a receipt when goods arrive.",
       "receivedAll": "Every option has a posted receipt or transfer.",
       "warehouseTitle": "No sales warehouse yet",
       "warehouseHelp": "Selling as pre-order (no stock yet): just pick a sales warehouse — no receipt needed. Later receipts use this warehouse.",
@@ -1005,6 +1006,7 @@
       "noteCreateOk": "Basic details complete",
       "noteCreateMissing": "Details missing",
       "noteStock": "Stock: {n}",
+      "noteStockPreorder": "Pre-order (no stock yet)",
       "notePrice": "Price: {price} MMK",
       "notePriceMissing": "No price yet",
       "notePricePending": "awaiting approval: {price} MMK",

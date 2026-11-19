@@ -815,7 +815,7 @@
     },
     "step": {
       "create": "Thông tin sản phẩm",
-      "stock": "Nhập kho + giá vốn",
+      "stock": "Kho bán & hàng",
       "price": "Giá bán",
       "review": "Duyệt",
       "publish": "Đăng bán"
@@ -832,6 +832,7 @@
     "block": {
       "editInfo": "Sửa thông tin sản phẩm",
       "notReceived": "Chưa nhập hàng: {skus}",
+      "notReceivedPreorder": "Chưa nhập hàng: {skus} — đang bán đặt trước (bật/tắt ở bước Đăng bán). Hàng về thì tạo phiếu nhập.",
       "receivedAll": "Mọi phân loại đã có phiếu nhập hoặc chuyển kho đã ghi sổ.",
       "warehouseTitle": "Chưa có kho bán",
       "warehouseHelp": "Bán đặt trước (chưa có hàng): chỉ cần chọn kho bán, chưa cần nhập hàng. Phiếu nhập sau này dùng kho này.",
@@ -1005,6 +1006,7 @@
       "noteCreateOk": "Đã có thông tin cơ bản",
       "noteCreateMissing": "Còn thiếu thông tin",
       "noteStock": "Tồn: {n}",
+      "noteStockPreorder": "Bán đặt trước (chưa có hàng)",
       "notePrice": "Giá bán: {price} MMK",
       "notePriceMissing": "Chưa có giá bán",
       "notePricePending": "chờ duyệt: {price} MMK",

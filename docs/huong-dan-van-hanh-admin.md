@@ -97,7 +97,9 @@ Menu đầy đủ (mỗi người chỉ thấy các mục mình có quyền):
 **Luồng 1 — đưa sản phẩm lên bán** (chi tiết: [mục 5](#5-sản-phẩm) đến [mục 9](#9-duyệt-và-đăng-bán))
 
 ```
-Bước 1 Tạo sản phẩm → Bước 2 Nhập kho + giá vốn → Bước 3 Giá bán → Bước 4 Duyệt → Bước 5 Đăng bán
+Bước 1 Tạo sản phẩm → Bước 2 Kho bán & hàng → Bước 3 Giá bán → Bước 4 Duyệt → Bước 5 Đăng bán
+
+> **19/11/2026 — ba nghiệp vụ tách riêng:** *Tạo sản phẩm* (hồ sơ, không cần tồn) · *Nhập kho* (hàng thật, phiếu, giá vốn — không tự đăng bán) · *Đăng bán* (giá hợp lệ + duyệt — không bắt buộc đã có hàng). Hai nhánh: **có hàng** = tạo SP → nhập kho → giá → duyệt/đăng → bán; **đặt trước** = tạo SP → gán kho bán (bước 2) → nhập **giá mua hiện tại** ở trang Giá bán → duyệt/đăng (đặt trước mặc định bật) → khách đặt (đơn Chờ hàng) → hàng về → nhập kho → xử lý đơn.
 ```
 
 **Luồng 2 — một đơn hàng** (chi tiết: [mục 10](#10-đơn-hàng) và [mục 11](#11-đối-soát-tiền-cod))
@@ -321,7 +323,7 @@ Mở sản phẩm từ **Danh sách sản phẩm**. Ở đầu trang có nút **
 | Bước | Tên | Làm gì |
 |---|---|---|
 | 1 | **Tạo sản phẩm** | Ảnh và thông tin sản phẩm ([5.3](#53-sửa-thông-tin-sản-phẩm), [5.4](#54-ảnh-sản-phẩm)) |
-| 2 | **Nhập kho + giá vốn** | Nút **Nhập hàng**, **Xem tồn kho** ([mục 8](#8-kho-hàng)) |
+| 2 | **Kho bán & hàng** | Gán kho bán (sản phẩm chưa có kho), nút **Nhập hàng**, **Xem tồn kho** ([mục 8](#8-kho-hàng)). **Xong** khi đã nhập hàng, hoặc **chưa có hàng nhưng đã có kho và đang bật đặt trước** (ghi "Bán đặt trước"). Tắt đặt trước mà chưa có hàng → còn phải nhập hàng |
 | 3 | **Giá bán** | Nút **Đặt giá** (Thủ công) hoặc **Tính tự động** — cả hai mở trang **Giá bán** ([mục 7](#7-giá-bán-và-tỷ-giá)) |
 | 4 | **Duyệt** | Gửi duyệt/duyệt ([mục 9](#9-duyệt-và-đăng-bán)) |
 | 5 | **Đăng bán** | **Bật hiển thị trên web** / **Ẩn khỏi web**, **Đặt trước khi hết hàng** |

@@ -24,4 +24,11 @@ test("SP chưa nhập hàng: bước 2 có ô chọn kho bán; gán xong hết l
   await box.getByRole("button", { name: "Gán kho" }).click();
   await expect(page.getByTestId("assign-warehouse")).toHaveCount(0, { timeout: 15_000 });
   await expect(page.getByTestId("issue-NO_WAREHOUSE")).toHaveCount(0);
+  // 19/11/2026: chưa nhập hàng + đặt trước đang bật (mặc định) → bước "Kho bán & hàng" xong theo nhánh bán đặt trước.
+  const stepStock = page.getByTestId("product-steps").getByTestId("step-stock");
+  // Không còn "Cần làm" (có thể "Có lưu ý" vì SP mới chưa có khối lượng — cảnh báo không chặn).
+  await expect(stepStock).toHaveAttribute("data-state", /done|warn/);
+  await expect(stepStock).toContainText("Bán đặt trước (chưa có hàng)");
+  await expect(page.locator("#step-stock")).toContainText("đang bán đặt trước");
+  await page.screenshot({ path: "test-results/screens/assign-warehouse-preorder.png", fullPage: true });
 });
