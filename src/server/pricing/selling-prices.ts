@@ -27,7 +27,7 @@ async function pendingPrices() {
 
 /**
  * Cùng quy tắc cảnh báo `PRICE_STALE` (readiness): SKU đang bật, giá > 0, đã có lịch sử giá, và có phiếu NHẬP ghi sổ
- * (combo: của bất kỳ thành phần nào) sau lần đổi giá gần nhất. Chỉ tính lần nhập hợp lệ làm nguồn giá
+ * HOẶC lần đổi giá mua (`Variant.purchasePriceAt`, 19/11/2026) (combo: của bất kỳ thành phần nào) sau lần đổi giá gần nhất. Chỉ tính lần nhập hợp lệ làm nguồn giá
  * (`receiptSourceLine` + đúng kho — A1 16/11).
  */
 async function staleVariantIds(): Promise<string[]> {
@@ -40,6 +40,10 @@ async function staleVariantIds(): Promise<string[]> {
       WHERE d.type = 'RECEIVE' AND d.status = 'POSTED' AND l.qty > 0 AND l."stockType" = 'SELLABLE'
         AND t.type <> 'QUARANTINE' AND (NOT t.sellable OR t.id = lp."stockLocationId")
       GROUP BY 1),
+    -- Mốc giá mua = lần nhập hợp lệ mới nhất hoặc lần đổi giá mua (sửa tay / Excel), cái nào sau.
+    buy AS (
+      SELECT v.id AS "variantId", GREATEST((SELECT rcv.at FROM rcv WHERE rcv."variantId" = v.id), v."purchasePriceAt") AS at
+      FROM "Variant" v),
     chg AS (
       -- Lần đặt giá gần nhất: lịch sử giá, hoặc giá đang chờ duyệt (đặt sau khi có phiếu nhập → không còn "cũ").
       SELECT "variantId", MAX(at) AS at FROM (
@@ -54,8 +58,8 @@ async function staleVariantIds(): Promise<string[]> {
     JOIN chg ON chg."variantId" = v.id
     WHERE p."archivedAt" IS NULL AND v.active AND v."priceMmk" > 0
       AND (CASE WHEN v."isBundle"
-            THEN (SELECT MAX(rcv.at) FROM "BundleItem" b JOIN rcv ON rcv."variantId" = b."componentId" WHERE b."bundleId" = v.id)
-            ELSE (SELECT rcv.at FROM rcv WHERE rcv."variantId" = v.id) END) > chg.at`;
+            THEN (SELECT MAX(buy.at) FROM "BundleItem" b JOIN buy ON buy."variantId" = b."componentId" WHERE b."bundleId" = v.id)
+            ELSE (SELECT buy.at FROM buy WHERE buy."variantId" = v.id) END) > chg.at`;
   return rows.map((r) => r.id);
 }
 

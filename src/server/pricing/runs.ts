@@ -193,7 +193,7 @@ async function computeLines(tx: Tx, variantIds: string[], ctx: RunCtx, sources?:
       loc: v.product.stockLocationId,
       cost: cost.costVnd,
       src: src?.lineId ?? null,
-      comps: cost.components?.map((c) => [c.componentId, c.qty, c.source.lineId, c.cost]) ?? null,
+      comps: cost.components?.map((c) => [c.componentId, c.qty, c.source?.lineId ?? null, c.cost]) ?? null,
     };
     if (ctx.mode === "LOCAL_MMK") {
       const profit = v.product.fixedProfitMmk;
@@ -533,7 +533,7 @@ export async function applyManualVnd(raw: unknown, userId: string, now = new Dat
           sourcePostedAt: cost.source?.postedAt,
           sourceLineId: cost.source?.lineId,
           weightFromComponents: false,
-          fingerprint: fingerprintOf({ v: FORMULA_VERSION, mode: "MANUAL", src: cost.source?.lineId ?? null, comps: cost.components?.map((c) => [c.componentId, c.qty, c.source.lineId, c.cost]) ?? null, cost: cost.costVnd, l }),
+          fingerprint: fingerprintOf({ v: FORMULA_VERSION, mode: "MANUAL", src: cost.source?.lineId ?? null, comps: cost.components?.map((c) => [c.componentId, c.qty, c.source?.lineId ?? null, c.cost]) ?? null, cost: cost.costVnd, l }),
           basePriceMmk: e.priceMmk,
           baseCommissionMmk: e.commission,
           profitVnd: l.profitVnd,

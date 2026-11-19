@@ -43,7 +43,9 @@ export type VariantCost = {
   costVnd: number;
   landed: boolean;
   source?: CostSource;
-  components?: { componentId: string; qty: number; cost: number; source: CostSource }[];
+  /** Lấy từ giá mua hiện tại của phân loại (`Variant.purchasePrice*`), không phải một lần nhập cụ thể. */
+  purchase?: true;
+  components?: { componentId: string; qty: number; cost: number; source?: CostSource; purchase?: true }[];
 } | null;
 export type CostCurrency = "VND" | "MMK";
 
@@ -110,6 +112,10 @@ export async function receiptSources(tx: Tx, variantIds: string[]): Promise<Map<
  * Giá mua 0 hợp lệ.
  *  - VND: PURCHASE dùng giá mua của chính lần nhập; LANDED giữ cách tính cũ (vốn về kho của lô).
  *  - MMK (kho mua tại Myanmar): giá mua MMK của lần nhập.
+ * Giá mua hiện tại của phân loại (19/11/2026, phương án A): khi KHÔNG chọn lần nhập cụ thể, giá mua (PURCHASE / MMK) lấy từ
+ * `Variant.purchasePriceVnd|Mmk` nếu có — giá này luôn là giá thật mới nhất (sửa tay, Excel, hoặc tự cập nhật khi ghi sổ
+ * phiếu nhập) nên SP chưa có hàng (đặt trước) vẫn tính được giá. Chưa có giá mua (dữ liệu cũ) → lần nhập mới nhất như trước.
+ * LANDED (giá tự động, đang tắt) vẫn chỉ theo lô.
  * Combo = tổng vốn thành phần × số lượng; thiếu vốn một thành phần → không tính được (null), không coi là 0.
  * Lần nhập được chọn không hợp lệ (khác biến thể / tester / kho khác / sai loại tiền) → không tính được.
  */
@@ -153,6 +159,19 @@ export async function variantCosts(
     );
   }
 
+  if (currency === "MMK" || basis === "PURCHASE") {
+    const own = await tx.variant.findMany({ where: { id: { in: [...baseIds] } }, select: { id: true, purchasePriceVnd: true, purchasePriceMmk: true, purchasePriceAt: true } });
+    for (const v of own) {
+      if (chosen?.has(v.id)) continue; // đã chọn đúng một lần nhập → giữ lô đó
+      const price = currency === "VND" ? v.purchasePriceVnd : v.purchasePriceMmk;
+      if (price == null) continue;
+      // Giá mua chỉ là bản đồng bộ từ lần nhập mới nhất (cùng mốc hoặc cũ hơn) → giữ lô để còn truy vết lô + phiếu (D1).
+      const lotAt = base.get(v.id)?.source?.postedAt;
+      if (lotAt && v.purchasePriceAt && v.purchasePriceAt <= lotAt) continue;
+      base.set(v.id, { costVnd: price, landed: currency === "MMK", purchase: true });
+    }
+  }
+
   const result = new Map<string, VariantCost>();
   for (const id of variantIds) {
     const def = defs.get(id);
@@ -167,7 +186,7 @@ export async function variantCosts(
         ? {
             costVnd: parts.reduce((s, p) => s + p.cost!.costVnd * p.qty, 0),
             landed: parts.every((p) => p.cost!.landed),
-            components: parts.map((p) => ({ componentId: p.componentId, qty: p.qty, cost: p.cost!.costVnd, source: p.cost!.source! })),
+            components: parts.map((p) => ({ componentId: p.componentId, qty: p.qty, cost: p.cost!.costVnd, source: p.cost!.source, ...(p.cost!.purchase && { purchase: true as const }) })),
           }
         : null,
     );

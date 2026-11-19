@@ -377,6 +377,13 @@ model Variant {
   affiliateCommissionMmk Int?
   /// QT3: tối đa số cái nhận đặt trước (cộng dồn các đơn đang chờ hàng); null = theo cài đặt `preorder.defaultLimit`.
   preorderLimit          Int?
+  /// Giá mua thật HIỆN TẠI của phân loại (19/11/2026), theo tiền của kho bán: VND (kho nhập VN) / MMK (kho mua tại Myanmar).
+  /// Sửa tay ở trang Giá bán / Excel, hoặc tự cập nhật khi ghi sổ phiếu nhập (giá của lần nhập đó). Là nguồn giá mua mặc định
+  /// để tính giá bán (kể cả SP chưa có hàng — đặt trước); KHÔNG phải giá vốn (giá vốn lấy từ lô thật).
+  purchasePriceVnd       Int?
+  purchasePriceMmk       Int?
+  /// Lần đổi giá mua gần nhất — giá bán cũ hơn mốc này → cảnh báo PRICE_STALE (nhắc tính lại).
+  purchasePriceAt        DateTime?
   bundleItems            BundleItem[]        @relation("BundleParent")
   componentOf            BundleItem[]        @relation("BundleComponent")
   batches                Batch[]

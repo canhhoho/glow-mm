@@ -35,7 +35,8 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
           priceMmk: true,
           weightGrams: true,
           isBundle: true,
-          bundleItems: { select: { componentId: true, component: { select: { weightGrams: true, active: true, product: { select: { archivedAt: true } } } } } },
+          purchasePriceAt: true,
+          bundleItems: { select: { componentId: true, component: { select: { weightGrams: true, active: true, purchasePriceAt: true, product: { select: { archivedAt: true } } } } } },
         },
       },
     },
@@ -98,7 +99,9 @@ export async function loadReadiness(db: Tx, productIds: string[], now = new Date
       .filter((v) => {
         const changed = lastPriceChange.get(v.id);
         if (!v.active || v.priceMmk <= 0 || !changed) return false;
-        const receivedAt = Math.max(0, ...(v.isBundle ? v.bundleItems.map((b) => lastReceive.get(b.componentId) ?? 0) : [lastReceive.get(v.id) ?? 0]));
+        // 19/11/2026: mốc = lần nhập hợp lệ mới nhất HOẶC lần đổi giá mua (sửa tay / Excel) — cái nào sau.
+        const at = (id: string, purchaseAt: Date | null) => Math.max(lastReceive.get(id) ?? 0, purchaseAt?.getTime() ?? 0);
+        const receivedAt = Math.max(0, ...(v.isBundle ? v.bundleItems.map((b) => at(b.componentId, b.component.purchasePriceAt)) : [at(v.id, v.purchasePriceAt)]));
         return receivedAt > changed;
       })
       .map((v) => v.sku)
