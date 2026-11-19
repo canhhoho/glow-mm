@@ -1,5 +1,5 @@
 /**
- * IP thật của client sau reverse proxy (P19). `x-real-ip` do proxy đặt (Traefik/Coolify, Vercel) → tin trước;
+ * IP thật của client sau reverse proxy (P19). `x-real-ip` do proxy đặt (Nginx) → tin trước;
  * không có thì lấy phần tử CUỐI của `x-forwarded-for` (do proxy gần nhất thêm) — phần tử đầu là client tự khai.
  * Dùng chung cho rate limit tự viết và Better Auth (`IP_HEADERS`).
  */

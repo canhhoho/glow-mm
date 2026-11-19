@@ -1,7 +1,8 @@
 export type StoredFile = {
-  driver: "VERCEL_BLOB" | "LOCAL";
+  /** Cột DB (enum `StorageDriver`) còn giá trị VERCEL_BLOB cho dữ liệu cũ — chỉ script migrate-blob-to-local đọc. */
+  driver: "LOCAL";
   key: string;
-  /** URL công khai (blob) hoặc đường dẫn /api/files/<key> (local). */
+  /** Đường dẫn /api/files/<key> (local). */
   url: string;
   mime: string;
   size: number;

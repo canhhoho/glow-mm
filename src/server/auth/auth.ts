@@ -17,14 +17,14 @@ export const auth = betterAuth({
   baseURL: process.env.APP_URL,
   secret: process.env.BETTER_AUTH_SECRET,
   database: prismaAdapter(prisma, { provider: "postgresql" }),
-  // IP cho rate limit: header do proxy đặt (Traefik/Vercel), xem src/lib/client-ip.ts.
+  // IP cho rate limit: header do proxy đặt (Nginx), xem src/lib/client-ip.ts.
   advanced: { ipAddress: { ipAddressHeaders: IP_HEADERS } },
   emailAndPassword: {
     enabled: true,
     disableSignUp: true,
     minPasswordLength: 8,
   },
-  // Lưu trong DB để mọi instance (Vercel serverless / nhiều container) dùng chung bộ đếm.
+  // Lưu trong DB để mọi instance (nhiều container / instance) dùng chung bộ đếm.
   // Nhân viên cùng cửa hàng thường chung 1 IP → nới giới hạn đăng nhập: 10 lần / 60 giây / IP
   // (cộng thêm 10 lần / 10 phút / tài khoản ở `authBeforeHook`).
   rateLimit: {

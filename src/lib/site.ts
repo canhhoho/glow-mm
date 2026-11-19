@@ -2,8 +2,8 @@ import { routing } from "@/i18n/routing";
 
 /**
  * URL gốc của storefront cho metadata (canonical, hreflang, Open Graph, sitemap).
- * Đọc thẳng `APP_URL` (không qua `env()` vì lúc build Docker chưa có secret) — Docker truyền qua build arg,
- * Vercel có env lúc build. Không có thì dùng localhost (dev/test).
+ * Đọc thẳng `APP_URL` (không qua `env()` vì lúc build Docker chưa có secret) — Docker truyền qua build arg.
+ * Không có thì dùng localhost (dev/test).
  */
 export function siteUrl(): string {
   const raw = process.env.APP_URL?.trim();

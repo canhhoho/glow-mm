@@ -1,13 +1,13 @@
 /**
- * Ảnh MINH HOẠ tự vẽ cho bản Preview (Vercel) — thay ảnh demo lengocanh.vn (có bản quyền, chỉ dùng local).
+ * Ảnh MINH HOẠ tự vẽ cho DB dev/demo — thay ảnh demo lengocanh.vn (có bản quyền, chỉ dùng local).
  * Chạy SAU `npm run db:seed` (+ `db:seed:demo -- --no-images` nếu muốn có ~45 SP demo):
  *
- *   npm run db:seed:placeholders -- [--dry-run] [--products] [--banners] [--icons] [--yes]
+ *   npm run db:seed:placeholders -- [--dry-run] [--products] [--banners] [--icons]
  *
  * - Không truyền --products/--banners/--icons → làm cả ba.
  * - Ảnh SP: SP đã đăng chưa có ảnh. Banner: chỉ khi chưa có banner nào (2 banner). Icon: danh mục gốc chưa có icon.
  * - Đi qua domain (`addProductImages`, `createBanner`, `setCategoryIcon`): cùng kiểm tra ảnh + AuditLog như admin.
- * - STORAGE_DRIVER=vercel-blob (Blob public) → bắt buộc --yes để tránh chạy nhầm DB/Blob. KHÔNG dùng cho production thật.
+ * - Chỉ chạy trên DB dev/test (xem DB đích in ở dòng đầu). KHÔNG dùng cho production thật.
  * - Trang chủ/catalog cache theo tag: ảnh mới có thể hiện sau vài phút (hết hạn cache) hoặc sau khi redeploy.
  */
 import "dotenv/config";
@@ -37,9 +37,6 @@ function dbHost() {
 async function main() {
   const driver = process.env.STORAGE_DRIVER ?? "local";
   log(`${DRY ? "[dry-run] " : ""}Ảnh minh hoạ → DB ${dbHost()} · storage ${driver}`);
-  if (driver === "vercel-blob" && !DRY && !args.has("--yes")) {
-    throw new Error("STORAGE_DRIVER=vercel-blob: kiểm tra DB/Blob đích ở dòng trên rồi chạy lại với --yes.");
-  }
   const admin = await prisma.user.findFirst({ where: { role: "ADMIN", active: true }, orderBy: { createdAt: "asc" } });
   if (!admin) throw new Error("Chưa có nhân viên ADMIN — chạy `npm run db:seed` trước.");
 

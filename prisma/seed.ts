@@ -5,25 +5,12 @@
  * Tồn đầu kỳ được tạo qua phiếu RECEIVE đã POSTED + ledger + balance (đúng quy tắc kho).
  */
 import "dotenv/config";
-import { neonConfig } from "@neondatabase/serverless";
-import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { hashPassword } from "better-auth/crypto";
 import { PrismaClient, type StockType } from "../src/generated/prisma/client";
 import { normalizeForSearch } from "../src/lib/myanmar";
 
-// SEED_VIA_WEBSOCKET=1: kết nối Neon qua WebSocket cổng 443 — dùng khi mạng chặn cổng 5432.
-// Chỉ áp dụng cho công cụ seed; app luôn dùng Postgres chuẩn (adapter-pg).
-function createAdapter() {
-  const connectionString = process.env.DATABASE_URL;
-  if (process.env.SEED_VIA_WEBSOCKET === "1") {
-    neonConfig.webSocketConstructor = WebSocket;
-    return new PrismaNeon({ connectionString });
-  }
-  return new PrismaPg({ connectionString });
-}
-
-const prisma = new PrismaClient({ adapter: createAdapter() });
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 
 const STAFF = [
   { id: "seed-admin", email: "admin@glow.local", name: "Admin", role: "ADMIN", locale: "vi" },
@@ -363,7 +350,7 @@ async function seedStock() {
         });
       }
     }
-  }, { maxWait: 30_000, timeout: 120_000 }); // DB ở xa (Neon Singapore) → cho thêm thời gian
+  }, { maxWait: 30_000, timeout: 120_000 }); // DB ở xa → cho thêm thời gian
 }
 
 /** Thị trấn mẫu (danh mục VTP chèn sẵn bằng migration P15): Kamaryut, Yangon (West), Yangon. */

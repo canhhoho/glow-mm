@@ -18,7 +18,9 @@ Cùng một code chạy ở 2 môi trường. Mọi khác biệt nằm trong bi�
 
 ---
 
-## 1. Testing: GitHub + Vercel + Neon
+## 1. Testing: GitHub + Vercel + Neon — LƯU TRỮ (Vercel/Neon đã bỏ khỏi code 19/11/2026)
+
+> **Không còn áp dụng.** Code không còn adapter Vercel Blob, Neon, `vercel.json` hay script `vercel-build`; chỉ §1.1 (GitHub) còn dùng. Môi trường duy nhất là server riêng (Docker Compose + Nginx). Các bước Vercel/Neon dưới đây chỉ để tra cứu lịch sử.
 
 ### 1.1 GitHub
 1. Tạo repo **private**, rồi push:
@@ -340,8 +342,13 @@ UNION ALL SELECT 'ten_loai_trung', count(*) FROM (SELECT 1 FROM \"Variant\" GROU
 - Khác 0 thì **không deploy**. Chạy bản đầy đủ `scripts/data-checks.ts` trên bản sao (§3.3) để lấy danh sách cần xử lý.
 - Rollback mà không mất dữ liệu: các lệnh `DROP …` ghi ở đầu file migration, rồi deploy lại tag trước.
 
-## 5. Dọn sau khi tắt hẳn Vercel (P19 ghi lại, chưa làm)
-Chỉ làm khi đã chuyển xong dữ liệu (§2.4) và không còn dùng Vercel Preview:
+## 5. Dọn sau khi tắt hẳn Vercel (đã làm một phần 19/11/2026)
+
+**Đã gỡ khỏi code (19/11/2026):** `vercel.json`, adapter `vercel-blob` (+ nhánh trong `storage/index.ts`, `env.ts`; `STORAGE_DRIVER` chỉ còn `local`, `BLOB_READ_WRITE_TOKEN` bỏ), gói `@vercel/blob`, `@neondatabase/serverless`, `@prisma/adapter-neon`, nhánh `SEED_VIA_WEBSOCKET` ở seed, script `vercel-build`, `seed:preview` + `seed-preview.ps1`, cờ `--allow-blob`/`--yes` ở script seed.
+
+**Còn giữ có chủ ý:** enum `StorageDriver.VERCEL_BLOB`, `scripts/migrate-blob-to-local.mjs` + dòng `COPY` trong `Dockerfile` (stage `migrator`) + `tests/integration/files.test.ts` (cần giữ cho tới khi xác nhận production không còn dòng `FileObject` driver=VERCEL_BLOB; Dockerfile cần quyền sửa + server đang có bản chỉnh mirror Alpine chưa commit); `images.remotePatterns` trong `next.config.ts` và `BLOB_IMAGES` trong `csp.ts` (bỏ cùng lúc khi truy vấn kiểm tra = 0).
+
+**Danh sách gốc (tham khảo):**
 - Storage: `src/server/adapters/storage/vercel-blob.ts`, nhánh `vercel-blob` trong `storage/index.ts` + `env.ts`, gói `@vercel/blob`, `images.remotePatterns` trong `next.config.ts`.
 - Script chuyển file: `scripts/migrate-blob-to-local.mjs`, dòng `COPY` trong `Dockerfile` (stage `migrator`), test `tests/integration/files.test.ts` (giữ phần test `LocalDiskStorage`).
 - Neon: `@neondatabase/serverless`, `@prisma/adapter-neon`, nhánh `SEED_VIA_WEBSOCKET` trong `prisma/seed.ts`.

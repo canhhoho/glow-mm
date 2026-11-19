@@ -2,7 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 
 /**
  * Xác thực cron: header `Authorization: Bearer <CRON_SECRET>`.
- * Vercel Cron tự gửi header này; Coolify/crontab gửi bằng curl.
+ * crontab trên host gửi bằng curl (ops/cron.example).
  */
 export function isAuthorizedCron(authorization: string | null, secret: string | undefined): boolean {
   if (!secret || !authorization?.startsWith("Bearer ")) return false;

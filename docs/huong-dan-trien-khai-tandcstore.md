@@ -40,7 +40,9 @@
 
 ---
 
-# PHẦN A — tandcstore.com trên Vercel (làm ngay)
+# PHẦN A — tandcstore.com trên Vercel (LƯU TRỮ — không còn áp dụng)
+
+> **19/11/2026:** production chạy trên server riêng (PHẦN B–D) và Vercel/Neon đã bỏ khỏi code. PHẦN A chỉ còn để tra cứu lịch sử; đừng làm theo.
 
 ## A1. Gắn tên miền vào Vercel
 - [ ] Vercel → project `glow-mm` → **Settings → Domains → Add**:
