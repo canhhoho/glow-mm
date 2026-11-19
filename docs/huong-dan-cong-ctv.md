@@ -83,7 +83,7 @@ Bạn **chỉ thấy dữ liệu của chính mình**. Cổng CTV không vào đ
 **Các bước**
 1. Chọn **Tạo đơn** (trang "Tạo đơn cho khách").
 2. Điền thông tin người nhận (tên, số điện thoại), địa chỉ chọn lần lượt **Vùng / Bang → Huyện → Thị trấn** + địa chỉ chi tiết, ghi chú nếu cần.
-3. Thêm sản phẩm: chọn biến thể (có giá bán, số còn bán được và **hoa hồng của bạn/cái**) và số lượng; thêm dòng nếu nhiều sản phẩm. Dưới phần tạm tính có **Hoa hồng dự kiến của bạn**.
+3. Thêm sản phẩm: chọn biến thể (có giá bán, số còn bán được và **hoa hồng của bạn/cái**; hàng chưa có mà cửa hàng còn nhận đặt trước ghi **"Đặt trước: còn nhận N"** — đơn đó là **đơn đặt trước**, trạng thái **Chờ hàng về**, cửa hàng xử lý khi hàng về) và số lượng; thêm dòng nếu nhiều sản phẩm. Dưới phần tạm tính có **Hoa hồng dự kiến của bạn**.
 4. Bấm **Tạo đơn**. Hiện "Đã tạo đơn. Shop sẽ gọi khách xác nhận."
 5. Ở trang đơn, khối **Link theo dõi đơn cho khách** → **Sao chép** rồi gửi khách qua Viber/Messenger. Khách mở link (mã đơn đã điền sẵn), nhập số điện thoại nhận hàng để xem tình trạng đơn.
 

@@ -824,7 +824,7 @@ Trang danh sách **Đơn hàng › Danh sách đơn** có bộ lọc (kể cả 
 1. **Đơn hàng › Danh sách đơn › Tạo đơn**.
 2. (Tuỳ chọn) gõ SĐT ở **Tìm khách theo SĐT** → **Tìm**: hiện "Khách cũ: {tên} · {n} đơn" hoặc "Khách mới".
 3. Điền: **Kênh đặt** (Facebook, Viber, Điện thoại, Website), **Phương thức thanh toán** (COD hoặc Chuyển khoản), **CTV (không bắt buộc)**, **Người trả cước giao khách**, **Tên người nhận**, **SĐT**, **SĐT phụ (không bắt buộc)**, địa chỉ chọn lần lượt **Vùng / Bang** → **Huyện** → **Thị trấn**, **Địa chỉ**, **Ghi chú**.
-4. Thêm sản phẩm: chọn **SKU / Phân loại** (hiện giá và **Còn bán được**), nhập **SL**, bấm **+ Thêm sản phẩm** nếu có nhiều dòng.
+4. Thêm sản phẩm: chọn **SKU / Phân loại** (hiện giá và **Còn bán được**; hàng hết mà còn nhận đặt trước ghi **"Đặt trước: còn nhận N"** — chọn được, dưới dòng ghi "đơn sẽ là đơn đặt trước", 19/11/2026), nhập **SL**, bấm **+ Thêm sản phẩm** nếu có nhiều dòng.
 5. Xem **Ước tính (server tính lại khi lưu)** rồi bấm **Tạo đơn**.
 
 **Kết quả**
@@ -1225,7 +1225,6 @@ Nếu gặp trang lỗi chung của hệ thống (không phải thông báo nghi
 - **Tính phí ship** (luôn bằng 0; hãng thu khi giao).
 - **Gõ đè giá cuối ở chế độ Thủ công kho VND** (giá luôn theo công thức; muốn giá tròn / khuyến mãi thì đổi lãi, hoặc nhập thẳng qua Excel).
 - **Giá bán riêng theo lô** (lô chỉ là cơ sở tính; giá áp chung cho SKU).
-- **Đơn đặt trước do nhân viên hoặc CTV tạo** (chỉ khách web).
 - **Sửa ở giao diện** các trường **Cách dùng**, **Thành phần (INCI)**, **Bảo quản**, **Hạn sau mở nắp** (chỉ qua Excel) và các ngưỡng **báo tồn thấp**, **thời gian VN→MM**, **tồn an toàn** theo sản phẩm (hiện cố định mặc định: 5, 21, 0).
 - **Xoá hoặc sửa tỷ giá**; **huỷ/sửa đối soát COD** đã xác nhận.
 - **Đăng nhập bằng Google** (đã gỡ ngày 14/11/2026).

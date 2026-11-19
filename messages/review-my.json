@@ -1949,6 +1949,8 @@
     "CatalogImport.rowStock",
     "CatalogImport.summaryStock",
     "Products.hero.noteStockPreorder",
-    "Products.block.notReceivedPreorder"
+    "Products.block.notReceivedPreorder",
+    "Orders.preorderOpen",
+    "Orders.preorderLine"
   ]
 }

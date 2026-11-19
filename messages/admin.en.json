@@ -1177,6 +1177,8 @@
     "remove": "Remove",
     "variant": "Variant",
     "available": "Available",
+    "preorderOpen": "Pre-order: {n} left",
+    "preorderLine": "Out of stock — this will be a pre-order (Awaiting stock, nothing reserved).",
     "estimate": "Estimate (recalculated on save)",
     "freeShip": "Free",
     "create": "Create order",

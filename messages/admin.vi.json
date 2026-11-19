@@ -1177,6 +1177,8 @@
     "remove": "Xoá",
     "variant": "SKU / Phân loại",
     "available": "Còn bán được",
+    "preorderOpen": "Đặt trước: còn nhận {n}",
+    "preorderLine": "Chưa có hàng — đơn sẽ là đơn đặt trước (Chờ hàng, không giữ hàng).",
     "estimate": "Ước tính (server tính lại khi lưu)",
     "freeShip": "Miễn phí",
     "create": "Tạo đơn",

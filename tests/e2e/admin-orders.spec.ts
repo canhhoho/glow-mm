@@ -144,9 +144,10 @@ test("huỷ đơn thủ công nhả hàng; lỗi hiển thị khi đặt quá t�
   const option = page.getByLabel("SKU / Phân loại").locator("option", { hasText: "ML-LIP-02" });
   await page.getByLabel("SKU / Phân loại").selectOption((await option.getAttribute("value"))!);
 
-  // Vượt tồn: bỏ giới hạn max của ô số lượng để kiểm tra lỗi từ server.
+  // Vượt tồn: bỏ giới hạn max của ô số lượng để kiểm tra lỗi từ server. 19/11/2026: đơn tạo tay vượt tồn nhưng trong hạn mức
+  // đặt trước thành đơn đặt trước → phải vượt cả hạn mức (mặc định 20) mới báo "Không đủ hàng".
   await page.getByLabel("SL", { exact: true }).evaluate((el) => el.removeAttribute("max"));
-  await page.getByLabel("SL", { exact: true }).fill("5");
+  await page.getByLabel("SL", { exact: true }).fill("50"); // > hạn mức 20, ≤ 99 (giới hạn mỗi dòng)
   await page.getByRole("button", { name: "Tạo đơn" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Không đủ hàng" })).toBeVisible();
 

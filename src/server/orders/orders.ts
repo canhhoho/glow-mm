@@ -96,8 +96,8 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
     return await prisma.$transaction(
       async (tx) => {
         const lines = await priceLines(tx, items, input.locale);
-        // QT3: chỉ đơn khách tự đặt trên web mới thành đơn đặt trước; đơn tạo tay (nhân viên / CTV) thiếu hàng → lỗi như cũ.
-        const stock = await planOrderStock(tx, items, { now, blockDays, allowPreorder: !ctx.userId });
+        // QT3 + 19/11/2026: MỌI đơn (khách trên web, nhân viên, CTV tạo tay) thiếu hàng mà còn hạn mức đặt trước → đơn đặt trước.
+        const stock = await planOrderStock(tx, items, { now, blockDays });
         const status = stock.preorder ? ("AWAITING_STOCK" as const) : ("PENDING" as const);
         const township = await findActiveTownship(input.townshipId, tx);
         if (!township) throw new OrderError("invalid_zone", "Địa chỉ giao hàng không hợp lệ");

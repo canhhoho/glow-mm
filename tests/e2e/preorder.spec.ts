@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import pg from "pg";
-import { login, pickAddress, signInAtPrompt } from "./helpers";
+import { login, pickAddress, pickAddressAdmin, signInAtPrompt } from "./helpers";
 
 // QT3: SP hết hàng (mặc định nhận đặt trước) → khách đặt trước → đơn "Chờ hàng về" → hàng về → admin chuyển xử lý.
 // SP seed không spec nào khác dùng; "hết hàng" tạo bằng giữ hàng tạm (Reservation) rồi xoá — không đụng sổ kho.
@@ -129,6 +129,37 @@ test("hết hàng: thẻ + trang SP + giỏ hiện đặt trước; tắt đặt
     await expect(page.getByTestId("preorder-note")).toHaveCount(0);
   } finally {
     await setPreorder(true);
+    await db((c) => c.query('DELETE FROM "Reservation" WHERE id = $1', [hold]));
+  }
+});
+
+test("nhân viên tạo đơn tay cho SP hết hàng → chọn được hàng đặt trước, đơn thành Chờ hàng về (19/11/2026)", async ({ page }) => {
+  test.setTimeout(120_000);
+  const hold = `e2e-preorder-staff-${Date.now()}`;
+  await db(async (c) => {
+    const v = (await c.query('SELECT id FROM "Variant" WHERE sku = $1', [SKU])).rows[0].id as string;
+    const order = (
+      await c.query(`SELECT o.id FROM "Order" o WHERE NOT EXISTS (SELECT 1 FROM "Reservation" r WHERE r."orderId" = o.id AND r."variantId" = $1) ORDER BY o."createdAt" LIMIT 1`, [v])
+    ).rows[0].id as string;
+    await c.query(`INSERT INTO "Reservation" (id, "variantId", "orderId", qty, status, "expiresAt") VALUES ($1, $2, $3, 1000000, 'ACTIVE', NULL)`, [hold, v, order]);
+  });
+  try {
+    await login(page, "donhang@glow.local");
+    await page.goto("/admin/orders/new?phone=09%207812%209900");
+    await page.getByLabel("Tên người nhận").fill("Ma Pre Order");
+    await pickAddressAdmin(page);
+    await page.getByLabel("Địa chỉ").fill("No. 9, Pre Order St");
+    const select = page.getByLabel("SKU / Phân loại");
+    const option = select.locator("option", { hasText: SKU });
+    await expect(option).toBeEnabled();
+    await expect(option).toContainText("Đặt trước: còn nhận");
+    await select.selectOption((await option.getAttribute("value"))!);
+    await expect(page.getByTestId("line-preorder")).toContainText("đơn đặt trước");
+    await page.getByLabel("SL", { exact: true }).fill("1");
+    await page.getByRole("button", { name: "Tạo đơn" }).click();
+    await expect(page).toHaveURL(/\/admin\/orders\/[^/]+$/);
+    await expect(page.getByText("Chờ hàng về").filter({ visible: true }).first()).toBeVisible();
+  } finally {
     await db((c) => c.query('DELETE FROM "Reservation" WHERE id = $1', [hold]));
   }
 });
