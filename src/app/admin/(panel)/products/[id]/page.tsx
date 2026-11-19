@@ -484,7 +484,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
                   {row?.cost ? (
                     <>
                       {fmtInt(row.cost.amount)} {row.cost.currency}
-                      {row.cost.source && <div className="text-muted-foreground">{row.cost.source.documentCode}</div>}
+                      {row.cost.source ? <div className="text-muted-foreground">{row.cost.source.documentCode}</div> : row.cost.purchase && <div className="text-muted-foreground">{t("priceBlock.currentPurchase")}</div>}
                     </>
                   ) : (
                     "—"

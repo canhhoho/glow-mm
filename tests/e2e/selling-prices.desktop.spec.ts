@@ -39,7 +39,10 @@ test("Giá bán (desktop): bảng theo kho và quy đổi ngầm ngay trên danh
   await line.getByRole("spinbutton", { name: /^Vận chuyển/ }).fill("800");
   await line.getByRole("spinbutton", { name: /^CTV/ }).fill("0");
   await expect(line.getByTestId("manual-final")).not.toHaveText("—");
-  await expect(line.getByRole("spinbutton")).toHaveCount(3);
+  // 19/11/2026: thêm ô Giá mua (giá mua hiện tại của phân loại, sửa được) — 4 ô số: giá mua, lãi, vận chuyển, CTV.
+  await expect(line.getByRole("spinbutton")).toHaveCount(4);
+  await expect(line.getByRole("spinbutton", { name: /^Giá mua \(VND\)/ })).toBeEditable();
+  await expect(line.getByRole("combobox", { name: /^Lô nguồn/ }).locator("option").first()).toHaveText("Giá mua hiện tại");
   await expect(page).toHaveURL(/selling-prices\?q=/);
   await page.screenshot({ path: "test-results/screens/selling-prices-manual-desktop.png", fullPage: true });
 });

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { getProductForEdit } from "@/server/catalog/admin-queries";
 import { saveProduct } from "@/server/catalog/products";
 import { createDocument, postDocument } from "@/server/inventory/documents";
-import { applyManualVnd, applyRun, createRate, previewRun } from "@/server/pricing/runs";
+import { applyManualPricing, applyRun, createRate, previewRun } from "@/server/pricing/runs";
 import { makeFixture, unpublishTestProducts, type Fixture } from "./fixtures";
 
 /**
@@ -54,14 +54,14 @@ describe("Ghi giá live — SP chưa duyệt", () => {
     const f = await ready();
     const rate = await rateOf(f);
     const line = { variantId: f.variantId, profitVnd: 50_000, shipMmk: 800, commissionMmk: 2_000, expectedPriceMmk: 10_000, expectedCommissionMmk: null };
-    const res = await applyManualVnd({ locationId: f.mm.id, rateId: rate.id, lines: [line] }, f.userId);
+    const res = await applyManualPricing({ locationId: f.mm.id, rateId: rate.id, lines: [line] }, f.userId);
     expect(res).toMatchObject({ applied: 1, awaitingApproval: 0 });
     const v = await variant(f.variantId);
     expect(v.affiliateCommissionMmk).toBe(2_000);
     expect(await history(f.variantId)).toEqual([
       { oldPriceMmk: 10_000, newPriceMmk: v.priceMmk, oldCommissionMmk: null, newCommissionMmk: 2_000, reason: "bulk", runId: res.runId },
     ]);
-    await expect(applyManualVnd({ locationId: f.mm.id, rateId: rate.id, lines: [{ ...line, profitVnd: 60_000 }] }, f.userId)).rejects.toThrow(/vừa được đổi/);
+    await expect(applyManualPricing({ locationId: f.mm.id, rateId: rate.id, lines: [{ ...line, profitVnd: 60_000 }] }, f.userId)).rejects.toThrow(/vừa được đổi/);
   });
 
   it("Excel (saveProduct có giá): lịch sử theo lý do import, ghi cả hoa hồng đổi; giá 0 lưu nháp được; hoa hồng > giá bị chặn", async () => {

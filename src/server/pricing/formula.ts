@@ -149,6 +149,20 @@ export function priceVndManual(input: RateValue & { purchaseVnd: number; profitV
   return Number(((goods + extra + den - ONE) / den) * BigInt(roundTo));
 }
 
+/**
+ * Trang Giá bán — chế độ THỦ CÔNG, kho mua tại Myanmar (Kho Chi, 19/11/2026): không tỷ giá, không vận chuyển
+ * (khách tự trả phí chở nội địa). Giá bán MMK = giá mua MMK + lãi MMK + CTV MMK, làm tròn LÊN bội số `roundTo`.
+ * Vd: 15.000 + 5.000 + 1.000 = 21.000.
+ */
+export function priceMmkManual(input: { purchaseMmk: number; profitMmk: number; commissionMmk: number; roundTo: number }): number {
+  const { purchaseMmk, profitMmk, commissionMmk, roundTo } = input;
+  assertWhole(purchaseMmk, "Giá mua (MMK)");
+  assertWhole(profitMmk, "Lãi (MMK)");
+  assertWhole(commissionMmk, "CTV (MMK)");
+  if (!Number.isInteger(roundTo) || roundTo <= 0) throw new Error("Bội số làm tròn phải > 0");
+  return Math.ceil((purchaseMmk + profitMmk + commissionMmk) / roundTo) * roundTo;
+}
+
 /** Giá bán VND ÷ tỷ giá → MMK chưa làm tròn (hiển thị bảng thủ công), làm tròn nửa lên tới 1 MMK. */
 export function sellVndToMmk(sellVnd: number, rate: RateValue): number {
   return convertVndToMmk(sellVnd, rate);

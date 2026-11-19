@@ -8,7 +8,7 @@ import { loadProductPricing, type VariantPricingRow } from "@/server/catalog/pro
 /**
  * Trang Giá bán (P3b): bảng tổng hợp mọi SKU của SP chưa ngừng KD — giá đang bán, giá chờ duyệt
  * (bản đang sửa), giá mua gần nhất, nguồn giá. Chỉ đọc; ghi giá qua bảng tính (`applyRun`), thủ công kho VND
- * (`applyManualVnd`) hoặc kho MMK (`saveProductPricing`) — xem docs/ban-do-nghiep-vu-admin.md.
+ * (`applyManualPricing`, cả kho nhập VN lẫn kho mua tại Myanmar — 19/11/2026) — xem docs/ban-do-nghiep-vu-admin.md.
  */
 export const SELLING_STATES = ["zero", "pending", "stale"] as const;
 export type SellingState = (typeof SELLING_STATES)[number];

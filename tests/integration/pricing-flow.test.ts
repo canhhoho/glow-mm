@@ -7,7 +7,7 @@ import { reviewProducts, submitProducts } from "@/server/catalog/review";
 import { createDocument, postDocument, updateReceiveDraft } from "@/server/inventory/documents";
 import { inventoryCost } from "@/server/inventory/cost";
 import { receiptSources } from "@/server/pricing/cost";
-import { applyManualVnd, applyRun, createRate, previewRun } from "@/server/pricing/runs";
+import { applyManualPricing, applyRun, createRate, previewRun } from "@/server/pricing/runs";
 import { makeFixture, unpublishTestProducts, type Fixture } from "./fixtures";
 
 afterAll(unpublishTestProducts);
@@ -134,8 +134,8 @@ describe("Thủ công kho VND", () => {
     const sources = (await receiptSources(prisma, [f.variantId])).get(f.variantId)!;
     expect(sources.map((s) => s.unitCostVnd)).toEqual([130_000, 100_000]);
     const line = { variantId: f.variantId, sourceLineId: sources[1].lineId, profitVnd: 50_000, shipMmk: 800, commissionMmk: 2_000, expectedPriceMmk: 10_000, expectedCommissionMmk: "" };
-    await expect(applyManualVnd({ locationId: f.mm.id, rateId: rate.id, lines: [{ ...line, expectedPriceMmk: 9_000 }] }, f.userId)).rejects.toThrow("vừa được đổi");
-    const res = await applyManualVnd({ locationId: f.mm.id, rateId: rate.id, lines: [line] }, f.userId);
+    await expect(applyManualPricing({ locationId: f.mm.id, rateId: rate.id, lines: [{ ...line, expectedPriceMmk: 9_000 }] }, f.userId)).rejects.toThrow("vừa được đổi");
+    const res = await applyManualPricing({ locationId: f.mm.id, rateId: rate.id, lines: [line] }, f.userId);
     expect(res).toMatchObject({ applied: 1, awaitingApproval: 1 });
     const runLine = await prisma.priceRunLine.findFirstOrThrow({ where: { runId: res.runId! } });
     expect(runLine).toMatchObject({ costVnd: 100_000, profitVnd: 50_000, sellVnd: 150_000, shipMmk: 800, commissionMmk: 2_000, newPriceMmk: 27_800, sourceLineId: sources[1].lineId });
@@ -144,10 +144,31 @@ describe("Thủ công kho VND", () => {
     expect(await variant(f.variantId)).toMatchObject({ priceMmk: 27_800, affiliateCommissionMmk: 2_000 });
   });
 
-  it("không dùng công thức VND cho kho MMK", async () => {
+  it("kho Chi (mua tại Myanmar): giá = giá mua MMK + lãi MMK + CTV, không tỷ giá, không vận chuyển; sửa giá mua ngay trên trang", async () => {
     const f = await makeFixture();
-    const rate = await createRate({ mmkPerUsd: "4500", vndPerUsd: "27000" }, f.userId);
-    await expect(applyManualVnd({ locationId: f.chi.id, rateId: rate.id, lines: [{ variantId: f.variantId, profitVnd: 1, shipMmk: 0, commissionMmk: 0, expectedPriceMmk: 10_000, expectedCommissionMmk: "" }] }, f.userId)).rejects.toThrow("kho hàng nhập Việt Nam");
+    await prisma.product.update({ where: { id: f.productId }, data: { stockLocationId: f.chi.id } });
+    // Thiếu lãi MMK (gửi lãi VND) → báo đúng loại tiền.
+    await expect(applyManualPricing({ locationId: f.chi.id, lines: [{ variantId: f.variantId, purchase: 15_000, profitVnd: 1, commissionMmk: 0, expectedPriceMmk: 10_000, expectedCommissionMmk: "" }] }, f.userId)).rejects.toThrow("nhập lãi (MMK)");
+    // SP chưa có hàng: giá mua nhập tay 15.000 + lãi 5.000 + CTV 1.000 = 21.000 (bội số làm tròn mặc định).
+    const res = await applyManualPricing({ locationId: f.chi.id, lines: [{ variantId: f.variantId, purchase: 15_000, profitMmk: 5_000, commissionMmk: 1_000, expectedPriceMmk: 10_000, expectedCommissionMmk: "" }] }, f.userId);
+    expect(res.applied).toBe(1);
+    const runLine = await prisma.priceRunLine.findFirstOrThrow({ where: { runId: res.runId! } });
+    expect(runLine).toMatchObject({ costMmk: 15_000, profitMmk: 5_000, costVnd: null, shipMmk: null, sellVnd: null, commissionMmk: 1_000, newPriceMmk: 21_000, sourceLineId: null });
+    expect(await prisma.priceUpdateRun.findUniqueOrThrow({ where: { id: res.runId! } })).toMatchObject({ rateId: null, mode: "MANUAL" });
+    expect(await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).toMatchObject({ purchasePriceMmk: 15_000, purchasePriceVnd: null });
+  });
+
+  it("kho nhập VN, SP chưa có hàng: nhập giá mua hiện tại trên trang → tính được giá (không cần phiếu nhập)", async () => {
+    const f = await makeFixture();
+    const rate = await createRate({ mmkPerUsd: "4500", vndPerUsd: "27000" }, f.userId); // 6 VND / MMK
+    const line = { variantId: f.variantId, purchase: 120_000, profitVnd: 30_000, shipMmk: 800, commissionMmk: 2_000, expectedPriceMmk: 10_000, expectedCommissionMmk: "" };
+    const res = await applyManualPricing({ locationId: f.mm.id, rateId: rate.id, lines: [line] }, f.userId);
+    expect(res.applied).toBe(1);
+    // (120.000 + 30.000) ÷ 6 = 25.000 + 800 + 2.000 = 27.800.
+    expect(await prisma.priceRunLine.findFirstOrThrow({ where: { runId: res.runId! } })).toMatchObject({ costVnd: 120_000, profitVnd: 30_000, newPriceMmk: 27_800, sourceLineId: null });
+    expect(await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).toMatchObject({ purchasePriceVnd: 120_000 });
+    // Kho nhập VN vẫn bắt buộc tỷ giá.
+    await expect(applyManualPricing({ locationId: f.mm.id, lines: [line] }, f.userId)).rejects.toThrow("Tỷ giá");
   });
 });
 

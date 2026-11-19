@@ -13,7 +13,8 @@ import { effectivePricingOf, stagePrices } from "@/server/catalog/change-request
 import { commissionOverPrice, recordPriceConfirmation, writeLivePrice } from "@/server/catalog/price-write";
 import { lockCatalog } from "@/server/catalog/products";
 import { writeAudit } from "@/server/audit";
-import { mmkPerVndFromUsd, parseScaled, priceLocalMmk, priceVndManual, priceVnImport, shippingMmk, suggestPrice } from "./formula";
+import { mmkPerVndFromUsd, parseScaled, priceLocalMmk, priceMmkManual, priceVndManual, priceVnImport, shippingMmk, suggestPrice } from "./formula";
+import { currencyOfMode, setPurchasePrices } from "./purchase-price";
 
 /**
  * Cập nhật giá hàng loạt: nhập tỷ giá → tạo bản XEM TRƯỚC (lưu từng dòng) → chọn dòng → ÁP DỤNG.
@@ -455,20 +456,26 @@ export async function applyRun(runId: string, variantIds: string[], userId: stri
   );
 }
 
-// ── Chế độ THỦ CÔNG — kho hàng nhập VN (trang Giá bán, 16/11) ──
+// ── Chế độ THỦ CÔNG — trang Giá bán: kho hàng nhập VN (16/11) + kho mua tại Myanmar (19/11/2026) ──
 
 const money = z.coerce.number().int().min(0).max(1_000_000_000);
 export const manualSchema = z.object({
   locationId: rawId,
-  rateId: rawId,
+  /** Bắt buộc với kho hàng nhập VN; kho mua tại Myanmar không liên quan tỷ giá (bỏ trống). */
+  rateId: z.preprocess(blankToUndefined, rawId.optional()),
   lines: z
     .array(
       z.object({
         variantId: rawId,
-        /** Lần nhập (dòng phiếu) làm cơ sở; trống = lần nhập gần nhất. Combo: bỏ qua (tổng thành phần). */
+        /** Lần nhập (dòng phiếu) làm cơ sở; trống = giá mua hiện tại của phân loại (hoặc lần nhập gần nhất). Combo: tổng thành phần. */
         sourceLineId: z.preprocess(blankToUndefined, rawId.optional()),
-        profitVnd: money,
-        shipMmk: money,
+        /** Giá mua hiện tại sửa trên trang (tiền của kho) — chỉ khi không chọn lần nhập; ghi qua `setPurchasePrices`. */
+        purchase: z.preprocess(blankToUndefined, money.optional()),
+        /** Lãi: kho nhập VN = VND (`profitVnd`); kho mua tại Myanmar = MMK (`profitMmk`). */
+        profitVnd: z.preprocess(blankToUndefined, money.optional()),
+        profitMmk: z.preprocess(blankToUndefined, money.optional()),
+        /** Vận chuyển MMK/sp — chỉ kho nhập VN (kho Myanmar: khách tự trả phí chở nội địa → luôn 0). */
+        shipMmk: z.preprocess(blankToUndefined, money.optional()),
         commissionMmk: money,
         /** Giá / hoa hồng hiệu lực người dùng đang thấy — khác hiện tại → bỏ qua (PRICE_CHANGED). */
         expectedPriceMmk: z.coerce.number().int().min(0),
@@ -488,44 +495,57 @@ export const manualSchema = z.object({
 export const RATE_CONFIRM_REASON = "Xác nhận giá theo tỷ giá mới (không đổi)";
 
 /**
- * Thủ công kho VND: Giá bán MMK = (giá mua NCC của lần nhập được chọn + lãi VND) ÷ tỷ giá + vận chuyển + CTV,
- * làm tròn theo `pricing.roundTo`. Máy chủ tự tính lại (không nhận giá từ trình duyệt). Tạo bản tính MANUAL và áp
- * ngay trong cùng transaction (SP đã duyệt → chờ duyệt; giá + hoa hồng có hiệu lực cùng lúc).
+ * Thủ công (trang Giá bán). Máy chủ tự tính lại (không nhận giá từ trình duyệt):
+ *  - kho nhập VN: Giá bán MMK = (giá mua VND + lãi VND) ÷ tỷ giá + vận chuyển + CTV;
+ *  - kho mua tại Myanmar (Kho Chi): Giá bán MMK = giá mua MMK + lãi MMK + CTV (không tỷ giá, không vận chuyển);
+ * làm tròn theo `pricing.roundTo`. Giá mua = lần nhập được chọn, hoặc giá mua hiện tại của phân loại (sửa được ngay trên
+ * trang → `setPurchasePrices`, cùng transaction). Tạo bản tính MANUAL và áp ngay (SP đã duyệt → chờ duyệt).
  */
-export async function applyManualVnd(raw: unknown, userId: string, now = new Date(), opts: { submit?: boolean } = {}) {
+export async function applyManualPricing(raw: unknown, userId: string, now = new Date(), opts: { submit?: boolean } = {}) {
   const input = manualSchema.parse(raw);
   const roundTo = await getNumberSetting("pricing.roundTo");
   return prisma.$transaction(
     async (tx) => {
       const location = await tx.location.findUnique({ where: { id: input.locationId } });
       if (!location?.sellable || !location.active) throw new PricingError("Kho tính giá phải là kho bán đang dùng");
-      if ((location.pricingMode ?? "VN_IMPORT") !== "VN_IMPORT") throw new PricingError("Chế độ thủ công theo VND chỉ dùng cho kho hàng nhập Việt Nam");
-      const rate = await tx.exchangeRate.findUnique({ where: { id: input.rateId } });
-      if (!rate) throw new PricingError("Tỷ giá không tồn tại");
+      const mmk = location.pricingMode === "LOCAL_MMK";
+      const currency = currencyOfMode(location.pricingMode);
+      const rate = mmk || !input.rateId ? null : await tx.exchangeRate.findUnique({ where: { id: input.rateId } });
+      if (!mmk && !rate) throw new PricingError("Tỷ giá không tồn tại");
       const ids = input.lines.map((l) => l.variantId);
       if (new Set(ids).size !== ids.length) throw new PricingError("Mỗi SKU chỉ một dòng");
-      const variants = await tx.variant.findMany({ where: { id: { in: ids } }, select: { id: true, sku: true, priceMmk: true, product: { select: { stockLocationId: true, archivedAt: true } } } });
+      const variants = await tx.variant.findMany({ where: { id: { in: ids } }, select: { id: true, sku: true, priceMmk: true, isBundle: true, product: { select: { stockLocationId: true, archivedAt: true } } } });
       const byId = new Map(variants.map((v) => [v.id, v]));
-      const sources = new Map(input.lines.flatMap((l) => (l.sourceLineId ? [[l.variantId, l.sourceLineId] as const] : [])));
-      const costs = await variantCosts(tx, ids, "VND", "PURCHASE", { sourceLineIds: sources });
-      const eff = await effectivePricingOf(tx, ids);
-      const computed: ComputedLine[] = [];
       for (const l of input.lines) {
         const v = byId.get(l.variantId);
         if (!v || v.product.archivedAt) throw new PricingError("Phân loại không tồn tại hoặc đã ngừng kinh doanh");
         if (v.product.stockLocationId !== location.id) throw new PricingError(`${v.sku} không thuộc kho ${location.code}`);
+        if ((mmk ? l.profitMmk : l.profitVnd) == null) throw new PricingError(`${v.sku}: nhập lãi (${currency})`);
+        if (l.purchase != null && (l.sourceLineId || v.isBundle)) throw new PricingError(`${v.sku}: chỉ sửa giá mua khi dùng giá mua hiện tại (không chọn lần nhập, không phải combo)`);
+      }
+      // Giá mua sửa trên trang → giá mua hiện tại của phân loại (một đường ghi), rồi mới tính giá theo giá đó.
+      await setPurchasePrices(tx, input.lines.flatMap((l) => (l.purchase != null ? [{ variantId: l.variantId, currency, amount: l.purchase }] : [])), { userId, source: "manual", at: now });
+      const sources = new Map(input.lines.flatMap((l) => (l.sourceLineId ? [[l.variantId, l.sourceLineId] as const] : [])));
+      const costs = await variantCosts(tx, ids, currency, "PURCHASE", { sourceLineIds: sources });
+      const eff = await effectivePricingOf(tx, ids);
+      const computed: ComputedLine[] = [];
+      for (const l of input.lines) {
+        const v = byId.get(l.variantId)!;
         const cost = costs.get(l.variantId);
-        if (!cost) throw new PricingError(`${v.sku}: chưa có giá mua từ phiếu nhập đã ghi sổ (hoặc lần nhập đã chọn không hợp lệ)`);
+        if (!cost) throw new PricingError(`${v.sku}: chưa có giá mua — nhập giá mua hiện tại hoặc chọn một lần nhập đã ghi sổ`);
         const e = eff.get(l.variantId)!;
         if (e.priceMmk !== l.expectedPriceMmk || e.commission !== l.expectedCommissionMmk) {
           throw new PricingError(`Giá / hoa hồng của ${v.sku} vừa được đổi ở nơi khác — tải lại trang`);
         }
-        const newPriceMmk = priceVndManual({ ...rate, purchaseVnd: cost.costVnd, profitVnd: l.profitVnd, shipMmk: l.shipMmk, commissionMmk: l.commissionMmk, roundTo });
+        const profit = (mmk ? l.profitMmk : l.profitVnd)!;
+        const ship = mmk ? 0 : (l.shipMmk ?? 0);
+        const newPriceMmk = mmk
+          ? priceMmkManual({ purchaseMmk: cost.costVnd, profitMmk: profit, commissionMmk: l.commissionMmk, roundTo })
+          : priceVndManual({ ...rate!, purchaseVnd: cost.costVnd, profitVnd: profit, shipMmk: ship, commissionMmk: l.commissionMmk, roundTo });
         if (newPriceMmk <= 0) throw new PricingError(`${v.sku}: giá bán phải lớn hơn 0`);
         computed.push({
           variantId: v.id,
-          costVnd: cost.costVnd,
-          shipMmk: l.shipMmk,
+          ...(mmk ? { costMmk: cost.costVnd, profitMmk: profit } : { costVnd: cost.costVnd, shipMmk: ship, profitVnd: profit, sellVnd: cost.costVnd + profit }),
           oldPriceMmk: v.priceMmk,
           newPriceMmk,
           sourceBatchId: cost.source?.batchId,
@@ -533,11 +553,9 @@ export async function applyManualVnd(raw: unknown, userId: string, now = new Dat
           sourcePostedAt: cost.source?.postedAt,
           sourceLineId: cost.source?.lineId,
           weightFromComponents: false,
-          fingerprint: fingerprintOf({ v: FORMULA_VERSION, mode: "MANUAL", src: cost.source?.lineId ?? null, comps: cost.components?.map((c) => [c.componentId, c.qty, c.source?.lineId ?? null, c.cost]) ?? null, cost: cost.costVnd, l }),
+          fingerprint: fingerprintOf({ v: FORMULA_VERSION, mode: "MANUAL", cur: currency, src: cost.source?.lineId ?? null, comps: cost.components?.map((c) => [c.componentId, c.qty, c.source?.lineId ?? null, c.cost]) ?? null, cost: cost.costVnd, l }),
           basePriceMmk: e.priceMmk,
           baseCommissionMmk: e.commission,
-          profitVnd: l.profitVnd,
-          sellVnd: cost.costVnd + l.profitVnd,
           commissionMmk: l.commissionMmk,
         });
       }
@@ -557,7 +575,7 @@ export async function applyManualVnd(raw: unknown, userId: string, now = new Dat
         data: {
           mode: "MANUAL",
           locationId: location.id,
-          rateId: rate.id,
+          rateId: rate?.id ?? null,
           roundTo,
           createdById: userId,
           createdAt: now,

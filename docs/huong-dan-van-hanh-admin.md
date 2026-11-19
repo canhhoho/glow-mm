@@ -598,13 +598,15 @@ Giá bán MMK = Giá bán VND ÷ tỷ giá (VND cho 1 MMK) + Vận chuyển (MMK
 **Lưu ý**
 - **CTV** nhập ở đây là **hoa hồng CTV của SKU** cho đơn có CTV — nguồn duy nhất của hoa hồng bán hàng (18/11/2026); trống = không có hoa hồng.
 - **Lãi mong muốn chưa phải lợi nhuận cuối**: chưa trừ chi phí về kho / chuyến hàng, phí COD, hàng trả, chi phí vận hành.
-- Dòng chưa có phiếu nhập đã ghi sổ hiện "Chưa có phiếu nhập đã ghi sổ" và không lưu được.
+- **Giá mua (19/11/2026):** cột **Lô nguồn** có lựa chọn đầu **"Giá mua hiện tại"** (mặc định) — khi đó ô **Giá mua** sửa được: đây là giá mua thật hiện tại của phân loại, lưu cùng khi bấm **Lưu giá**. Sản phẩm **chưa có hàng** (bán đặt trước) chỉ cần nhập giá mua ở đây, không cần phiếu nhập. Ghi sổ phiếu nhập sẽ tự cập nhật giá mua theo giá của lần nhập đó; đổi giá mua (tay, Excel hay phiếu nhập) thì sản phẩm hiện ở thẻ **"Giá cũ hơn giá mua"** để tính lại. Muốn tính theo đúng một lần nhập cũ thì chọn lần nhập đó ở Lô nguồn.
 
-Lỗi: "Giá / hoa hồng của … vừa được đổi ở nơi khác — tải lại trang"; "… không thuộc kho …"; "Giá và hoa hồng không đổi so với hiện tại"; "Chế độ thủ công theo VND chỉ dùng cho kho hàng nhập Việt Nam".
+Lỗi: "Giá / hoa hồng của … vừa được đổi ở nơi khác — tải lại trang"; "… không thuộc kho …"; "Giá và hoa hồng không đổi so với hiện tại"; "… chưa có giá mua — nhập giá mua hiện tại hoặc chọn một lần nhập đã ghi sổ".
 
-### 7.4. Thủ công — kho hàng mua MMK
+### 7.4. Thủ công — kho mua tại Myanmar (Kho Chi)
 
-Giữ cách cũ, không dùng công thức VND: mỗi sản phẩm một khung, điền **Giá bán (MMK)**, **CTV (MMK/sp)** (trống = không có hoa hồng), **Lãi cố định (MMK/đv)** (dùng cho Tính tự động), **Lý do sửa giá** (bắt buộc khi giá đổi) → **Lưu giá**. Lỗi: "Nhập lý do sửa giá", "Giá bán phải lớn hơn 0", "Hoa hồng CTV của … lớn hơn giá bán".
+**Cập nhật 19/11/2026:** dùng **cùng bảng** với kho hàng nhập VN, khác ở: **không có ô tỷ giá**, **không có cột Vận chuyển** (khách tự trả phí chở nội địa), giá mua và lãi tính bằng **MMK**.
+
+**Giá bán (MMK) = Giá mua (MMK) + Lãi (MMK) + CTV (MMK)**, làm tròn lên theo cài đặt. Lãi đặt theo **từng phân loại** (lần sau tự điền lãi lần trước). Ví dụ: 15.000 + 5.000 + 1.000 = **21.000 MMK**. Giá mua như mục 7.3 (giá mua hiện tại sửa được, hoặc chọn một lần nhập). Lỗi: "… nhập lãi (MMK)", "Hoa hồng CTV của … lớn hơn giá bán".
 
 ### 7.5. Tự động (bảng tính giá)
 

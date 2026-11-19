@@ -4,7 +4,7 @@ import { loadReadiness } from "@/server/catalog/readiness";
 import { createDocument, postDocument } from "@/server/inventory/documents";
 import { receiptSources } from "@/server/pricing/cost";
 import { rateRecalcVariantIds } from "@/server/pricing/rate-recalc";
-import { applyManualVnd, createRate, RATE_CONFIRM_REASON } from "@/server/pricing/runs";
+import { applyManualPricing, createRate, RATE_CONFIRM_REASON } from "@/server/pricing/runs";
 import { makeFixture, unpublishTestProducts } from "./fixtures";
 
 afterAll(unpublishTestProducts);
@@ -21,7 +21,7 @@ describe("Tính lại giá theo tỷ giá mới", () => {
     const commission = async () => (await prisma.variant.findUniqueOrThrow({ where: { id: f.variantId } })).affiliateCommissionMmk ?? "";
     const warned = async () => !!(await loadReadiness(prisma, [f.productId])).get(f.productId)!.warnings.find((w) => w.code === "RATE_NEWER");
     const apply = async (rateId: string, confirmUnchanged?: boolean) =>
-      applyManualVnd(
+      applyManualPricing(
         {
           locationId: f.mm.id,
           rateId,
