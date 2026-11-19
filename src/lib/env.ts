@@ -24,13 +24,12 @@ const schema = z
     ...analyticsEnvSchema.shape,
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     DATABASE_URL: z.string().url(),
-    /** Số kết nối tối đa của pool pg (đọc trực tiếp ở src/lib/db.ts) — server riêng ~20, Vercel/Neon để mặc định 10. */
+    /** Số kết nối tối đa của pool pg (đọc trực tiếp ở src/lib/db.ts) — server riêng ~20, mặc định 10. */
     DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).optional(),
     APP_URL: z.string().url(),
     BETTER_AUTH_SECRET: z.string().min(32),
     CRON_SECRET: z.string().min(16),
-    STORAGE_DRIVER: z.enum(["vercel-blob", "local"]).default("local"),
-    BLOB_READ_WRITE_TOKEN: z.string().optional(),
+    STORAGE_DRIVER: z.enum(["local"]).default("local"),
     LOCAL_STORAGE_DIR: z.string().default("./storage"),
     FB_PAGE_USERNAME: z.string().optional(),
     VIBER_CHAT_URI: z.string().optional(),
@@ -48,10 +47,6 @@ const schema = z
   .refine((e) => e.NODE_ENV !== "production" || isProductionUrl(e.APP_URL), {
     message: "APP_URL phải là https:// ở production",
     path: ["APP_URL"],
-  })
-  .refine((e) => e.STORAGE_DRIVER !== "vercel-blob" || !!e.BLOB_READ_WRITE_TOKEN, {
-    message: "BLOB_READ_WRITE_TOKEN là bắt buộc khi STORAGE_DRIVER=vercel-blob",
-    path: ["BLOB_READ_WRITE_TOKEN"],
   })
   .refine((e) => e.EMAIL_DRIVER !== "resend" || (!!e.RESEND_API_KEY && !!e.EMAIL_FROM), {
     message: "RESEND_API_KEY và EMAIL_FROM là bắt buộc khi EMAIL_DRIVER=resend",

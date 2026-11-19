@@ -1,6 +1,6 @@
 import type { EmailAdapter, EmailMessage } from "./types";
 
-/** Gửi qua Resend REST API (fetch thuần, không SDK — chạy được cả Vercel lẫn server Myanmar). */
+/** Gửi qua Resend REST API (fetch thuần, không SDK). */
 export class ResendEmail implements EmailAdapter {
   constructor(
     private readonly apiKey: string,

@@ -2,12 +2,12 @@
  * Dữ liệu DEMO (~40 SP thật từ lengocanh.vn) để test giao diện storefront — P5.
  * Chạy SAU `npm run db:seed` (cần nhân viên, kho, tỷ giá mẫu):
  *
- *   npm run db:seed:demo -- [--dry-run] [--no-images] [--allow-blob]
+ *   npm run db:seed:demo -- [--dry-run] [--no-images]
  *
  * - Chỉ dùng cho DB dev (hoặc preview khi được cho phép). KHÔNG chạy trên production, KHÔNG chạy trên glow_test
  *   (E2E dựa vào seed gốc).
  * - Chạy lại an toàn: tạo theo slug/mã nếu chưa có; ảnh chỉ tải cho SP chưa có ảnh; tồn kho chỉ nhập một lần (SH-DEMO-001).
- * - Ảnh mẫu thuộc bản quyền shop/thương hiệu → chỉ để test local: mặc định từ chối khi STORAGE_DRIVER=vercel-blob.
+ * - Ảnh mẫu thuộc bản quyền shop/thương hiệu → chỉ để test local, không dùng cho production.
  * - Tồn kho đi đúng luồng nghiệp vụ: chuyến hàng → phiếu RECEIVE → ghi sổ (ledger) → đánh dấu đến → phân bổ chi phí.
  */
 import "dotenv/config";
@@ -64,9 +64,6 @@ const tr = (my: string, en: string) => [
 const log = (msg: string) => console.log(msg);
 
 async function main() {
-  if (process.env.STORAGE_DRIVER === "vercel-blob" && !args.has("--allow-blob") && !NO_IMAGES) {
-    throw new Error("STORAGE_DRIVER=vercel-blob: ảnh demo chỉ để test local. Dùng --no-images, hoặc --allow-blob nếu chắc chắn.");
-  }
   const admin = await prisma.user.findUnique({ where: { email: "admin@glow.local" } });
   const mm = await prisma.location.findUnique({ where: { code: "THAM" } }); // P24: SP demo thuộc Kho Thắm
   const rate = await prisma.exchangeRate.findFirst({ orderBy: { effectiveAt: "desc" } });

@@ -4,7 +4,7 @@ import { runComputeAlerts } from "@/server/alerts/queries";
 import { cancelExpiredOrders } from "@/server/orders/cron";
 
 /**
- * Tác vụ định kỳ (chạy được cả Vercel Cron lẫn crontab/Coolify).
+ * Tác vụ định kỳ (gọi từ crontab trên host, xem ops/cron.example).
  * Logic nằm ở src/server/<domain>/ (P2: giữ hàng/COD, P3: cảnh báo, P19: dọn dữ liệu tạm).
  * Lỗi → log một dòng JSON + HTTP 500 (`curl -f` trong crontab báo lỗi, log Docker thấy được).
  */

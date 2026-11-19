@@ -50,7 +50,7 @@ npx playwright test tests/e2e/smoke.spec.ts --project=mobile   # *.desktop.spec.
 Tài khoản seed: `admin@` / `kho@` / `donhang@glow.local` (admin), `ctv@glow.local` (cổng `/ctv`), `khach@glow.local` (khách `/login`); mật khẩu = `SEED_STAFF_PASSWORD` trong `.env`. Email dev ở `./storage/outbox/*.json`. Grep bỏ qua `.claude/worktrees/`.
 
 ## Quy tắc bất biến (chi tiết: docs/kien-truc.md)
-**Portability (Vercel/Neon ↔ server riêng Docker Compose, cùng một code):** chỉ PostgreSQL chuẩn qua Prisma; không dùng tính năng riêng Vercel trong logic lõi; file qua adapter `STORAGE_DRIVER`; việc định kỳ = `GET/POST /api/cron/<job>` với `Authorization: Bearer <CRON_SECRET>`; mọi URL/cấu hình từ env (Zod ở `src/lib/env.ts`) — thêm biến thì cập nhật `.env.example`.
+**Portability (server riêng Docker Compose; Vercel/Neon đã bỏ hẳn 19/11/2026):** chỉ PostgreSQL chuẩn qua Prisma; không gắn code vào một nhà cung cấp; file qua adapter `STORAGE_DRIVER` (hiện chỉ `local`); việc định kỳ = `GET/POST /api/cron/<job>` với `Authorization: Bearer <CRON_SECRET>`; mọi URL/cấu hình từ env (Zod ở `src/lib/env.ts`) — thêm biến thì cập nhật `.env.example`.
 
 **Kho (ưu tiên cao nhất):**
 - Tồn kho chỉ đổi qua `StockDocument` → `StockLedger` (chỉ ghi thêm) + `StockBalance` trong **cùng transaction**, khoá `SELECT … FOR UPDATE`; DB chặn tồn âm và sửa/xoá ledger. Không bao giờ sửa số lượng trực tiếp.
@@ -60,7 +60,7 @@ Tài khoản seed: `admin@` / `kho@` / `donhang@glow.local` (admin), `ctv@glow.l
 - Cờ tính năng `lib/features.ts`: `autoPricing=false`, `shipments=false`, `expiry=false` — đang **tắt** (ẩn UI + chặn action, giữ code/bảng); giá bán chỉ đặt **thủ công** ở trang Giá bán. Bật lại bằng đổi cờ.
 
 **Code:**
-- Logic nghiệp vụ ở `src/server/<domain>/`, không import Next/Vercel (test được bằng Vitest). Luồng ghi: form → `actions.ts` ("use server") → `requirePermission` → hàm domain (tự parse Zod). Mọi action/route handler phải validate Zod + kiểm quyền phía server (middleware/proxy không phải lớp bảo mật).
+- Logic nghiệp vụ ở `src/server/<domain>/`, không import Next (test được bằng Vitest). Luồng ghi: form → `actions.ts` ("use server") → `requirePermission` → hàm domain (tự parse Zod). Mọi action/route handler phải validate Zod + kiểm quyền phía server (middleware/proxy không phải lớp bảo mật).
 - Đơn chỉ đổi trạng thái qua `orders/state-machine.ts`. Tiền là số nguyên (MMK, VND); tỷ giá `Decimal`; thời gian lưu UTC.
 - Chuỗi giao diện không viết cứng: storefront `messages/store.{my,en,vi}.json`, admin `messages/admin.{vi,en,my}.json` (test parity ép cùng key); thêm/sửa chuỗi `my` → thêm key vào `messages/review-my.json`. Chữ Myanmar dùng Unicode, input qua `src/lib/myanmar`.
 - Storefront: Server Components, JS client tối thiểu, dùng được trên Slow 3G. Admin `/admin/...` (locale cookie `ADMIN_LOCALE`). Màu dùng token trong `globals.css`, không hardcode.

@@ -15,7 +15,7 @@ export type CspOptions = {
   https: boolean;
 };
 
-/** Ảnh sản phẩm/banner trên Vercel Blob (giai đoạn Vercel; bỏ khi chuyển hẳn sang server — DEPLOY.md §5). */
+/** Ảnh cũ còn trỏ Vercel Blob (dữ liệu chưa chạy migrate-blob-to-local). Bỏ cùng `images.remotePatterns` khi production không còn dòng FileObject driver=VERCEL_BLOB. */
 const BLOB_IMAGES = "https://*.public.blob.vercel-storage.com";
 
 export function buildCsp({ nonce, dev, https }: CspOptions): string {
