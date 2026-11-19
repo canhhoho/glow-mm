@@ -34,7 +34,10 @@ test("admin xem kho; danh sách SP lọc theo kho; thủ kho không vào đượ
   await expect(to.locator("option", { hasText: "E2E-OLD" })).toHaveCount(0);
   await expect(to.locator("option", { hasText: "THAM" })).toHaveCount(1);
   await page.goto("/admin/inventory/documents/new?type=ADJUST");
-  await expect(page.getByLabel("Chọn vị trí", { exact: true }).locator("option", { hasText: "E2E-OLD" })).toHaveCount(0);
+  // getByLabel exact không khớp (tên nhãn gồm cả chữ các option) → dùng role; kiểm có kho THAM để chắc đã tìm thấy ô.
+  const adjustLoc = page.getByRole("combobox", { name: "Chọn vị trí", exact: true });
+  await expect(adjustLoc.locator("option", { hasText: "THAM" })).toHaveCount(1);
+  await expect(adjustLoc.locator("option", { hasText: "E2E-OLD" })).toHaveCount(0);
 
   await page.goto("/admin/products?q=SV-SUN-50");
   await expect(page.getByRole("row").filter({ hasText: "sen-viet-sunscreen-spf50" })).toContainText("Kho Thắm");
