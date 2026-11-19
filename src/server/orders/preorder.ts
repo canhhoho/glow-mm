@@ -37,24 +37,18 @@ export async function preorderCapacity(db: Tx, variantIds: string[]): Promise<Ma
  * Trước khi tạo đơn: khoá biến thể, kiểm tồn. Đủ hàng → đơn thường (`preorder: false`, gọi `reserveForOrder` sau).
  * Thiếu hàng ở dòng nào thì dòng đó phải đặt trước được (đủ hạn mức) → `preorder: true`; không thì `out_of_stock`.
  * Khoá dòng Variant (cả biến thể của đơn lẫn thành phần combo) → hai đơn tranh hạn mức cuối chạy tuần tự.
- * `allowPreorder` = false (đơn nhân viên / CTV tạo tay): thiếu hàng luôn `out_of_stock` như trước QT3.
+ * 19/11/2026: áp cho MỌI đơn (khách web, nhân viên, CTV tạo tay) — trước đây đơn tạo tay thiếu hàng luôn `out_of_stock`.
  */
 export async function planOrderStock(
   tx: Tx,
   items: { variantId: string; qty: number }[],
-  opts: AvailabilityOpts & { allowPreorder: boolean },
+  opts: AvailabilityOpts,
 ): Promise<{ preorder: boolean }> {
   const need = await componentNeeds(tx, items);
   await lockVariants(tx, [...need.keys(), ...items.map((i) => i.variantId)]);
   const avail = await baseAvailability(tx, [...need.keys()], opts);
   const short = new Set([...need].filter(([id, q]) => (avail.get(id) ?? 0) < q).map(([id]) => id));
   if (short.size === 0) return { preorder: false };
-  if (!opts.allowPreorder) {
-    throw new OrderError("out_of_stock", "Không đủ hàng", {
-      variants: [...short].map((id) => ({ variantId: id, requested: need.get(id)!, available: Math.max(0, avail.get(id) ?? 0) })),
-    });
-  }
-
   // Dòng thiếu hàng: biến thể thường thiếu, hoặc combo có thành phần thiếu (combo không đặt trước được → capacity 0).
   const defs = await bundleDefs(tx, items.map((i) => i.variantId));
   const partsOf = (variantId: string) => defs.get(variantId)?.map((c) => c.componentId) ?? [variantId];

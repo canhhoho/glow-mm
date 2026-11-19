@@ -9,7 +9,7 @@ describe("URL gốc + hreflang", () => {
     vi.stubEnv("APP_URL", "https://glow.example/");
     expect(siteUrl()).toBe("https://glow.example");
     expect(absoluteUrl("/api/files/a.png")).toBe("https://glow.example/api/files/a.png");
-    expect(absoluteUrl("https://x.public.blob.vercel-storage.com/a.png")).toBe("https://x.public.blob.vercel-storage.com/a.png");
+    expect(absoluteUrl("https://cdn.example.com/a.png")).toBe("https://cdn.example.com/a.png");
     vi.stubEnv("APP_URL", "");
     expect(siteUrl()).toBe("http://localhost:3000");
     vi.stubEnv("APP_URL", "glow.example");

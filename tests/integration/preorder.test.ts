@@ -43,9 +43,12 @@ describe("Đặt trước (QT3)", () => {
     expect(normal).toMatchObject({ status: "PENDING", preorder: false });
   });
 
-  it("đơn nhân viên, SP tắt đặt trước, combo: thiếu hàng vẫn out_of_stock", async () => {
+  it("đơn nhân viên / CTV tạo tay cũng đặt trước được (19/11/2026); SP tắt đặt trước, combo: thiếu hàng vẫn out_of_stock", async () => {
     const f = await preorderFixture(1, 5);
-    await expect(createOrder(orderInput(f, 2), { userId: f.userId })).rejects.toMatchObject({ code: "out_of_stock" });
+    // Trước 19/11/2026 đơn tạo tay thiếu hàng luôn lỗi; nay theo cùng hạn mức với đơn web.
+    expect(await createOrder(orderInput(f, 2), { userId: f.userId })).toMatchObject({ status: "AWAITING_STOCK", preorder: true });
+    expect(await capacity(f.variantId)).toBe(3);
+    await expect(createOrder(orderInput(f, 4, { phone: "09781234560" }), { userId: f.userId })).rejects.toMatchObject({ code: "out_of_stock" }); // vượt hạn mức còn lại
     const combo = await prisma.variant.create({
       data: { productId: f.productId, sku: `IT-${f.tag}-SET`, label: "Set", priceMmk: 15_000, isBundle: true, bundleItems: { create: { componentId: f.variantId, qty: 2 } } },
     });

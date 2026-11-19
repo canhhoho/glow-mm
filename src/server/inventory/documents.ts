@@ -13,6 +13,7 @@ import { applyMoves, type StockMove, type Tx } from "./ledger";
 import { lotCost, lotCostMmk, type ReceiptCostLine } from "./lot-cost";
 import { guardApproval } from "@/server/catalog/approval";
 import { latestRate } from "@/server/pricing/latest-rate";
+import { syncPurchasePricesFromReceipt } from "@/server/pricing/purchase-price";
 import { splitReceivePayload } from "./receive-split";
 
 /**
@@ -696,7 +697,11 @@ export async function postDocumentTx(tx: Tx, documentId: string, userId: string,
   await applyMoves(tx, documentId, userId, moves);
 
   // Nhận hàng: ghim tỷ giá vào dòng và tính lại giá vốn lô = bình quân theo SL đã nhập (P1-C, D11).
-  if (doc.type === "RECEIVE") await refreshReceivedLots(tx, doc, resolved.map((r) => r.batchId));
+  if (doc.type === "RECEIVE") {
+    await refreshReceivedLots(tx, doc, resolved.map((r) => r.batchId));
+    // Phương án A (19/11/2026): giá mua hiện tại của phân loại = giá của lần nhập vừa ghi sổ (cùng transaction).
+    await syncPurchasePricesFromReceipt(tx, doc.id, userId);
+  }
 
   await tx.auditLog.create({
     data: { userId, action: "stock.post", entity: "StockDocument", entityId: documentId, data: { code: doc.code } },

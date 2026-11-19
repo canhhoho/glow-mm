@@ -11,7 +11,7 @@ import { can } from "@/server/auth/roles";
 import { finishBatchReview } from "@/server/catalog/batch-review-text";
 import { refreshPrices } from "@/server/catalog/refresh-prices";
 import type { ActionState } from "@/server/inventory/actions";
-import { applyManualVnd, applyRun, cancelRun, createRate, previewRun } from "./runs";
+import { applyManualPricing, applyRun, cancelRun, createRate, previewRun } from "./runs";
 
 function message(e: unknown): string {
   if (e instanceof ZodError) return e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
@@ -114,12 +114,13 @@ export async function applyRunAction(_prev: ActionState, formData: FormData): Pr
 }
 
 /** Trang Giá bán — Thủ công kho VND: `payload` = JSON { locationId, rateId, lines[] } (máy chủ tự tính lại giá). */
-export async function applyManualVndAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+/** Trang Giá bán — thủ công cho cả kho nhập VN và kho mua tại Myanmar (19/11/2026). */
+export async function applyManualPricingAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   let ok: string;
   try {
     const user = await requirePermission("pricing:manage");
     const { submit, approve } = await reviewOptions(formData, user.role);
-    const res = await applyManualVnd(JSON.parse(String(formData.get("payload") ?? "{}")), user.id, new Date(), { submit });
+    const res = await applyManualPricing(JSON.parse(String(formData.get("payload") ?? "{}")), user.id, new Date(), { submit });
     if (res.runId) {
       refreshPrices({ runId: res.runId });
       ok = await outcomeText(res, res.runId, user.id, approve);

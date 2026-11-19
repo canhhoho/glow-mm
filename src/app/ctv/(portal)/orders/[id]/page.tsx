@@ -46,7 +46,7 @@ export default async function CtvOrderPage({ params, searchParams }: PageProps<"
 
       <Section>
         <div className="grid gap-3 text-sm sm:grid-cols-2">
-          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+          <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 [&>dd]:min-w-0 [&>dd]:break-words">
             <dt className="text-muted-foreground">{t("customer")}</dt>
             <dd>{order.recipientName}</dd>
             <dt className="text-muted-foreground">{ta("phone")}</dt>
@@ -60,7 +60,7 @@ export default async function CtvOrderPage({ params, searchParams }: PageProps<"
               <div className="text-xs text-muted-foreground">{order.zoneName}</div>
             </dd>
           </dl>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+          <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 [&>dd]:min-w-0 [&>dd]:break-words">
             <dt className="text-muted-foreground">{ta("colDate")}</dt>
             <dd>{fmtDateTime(order.createdAt)}</dd>
             <dt className="text-muted-foreground">{to("paymentMethod")}</dt>

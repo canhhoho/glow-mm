@@ -107,6 +107,17 @@ describe("productSteps (quy trình 5 bước)", () => {
     expect(steps.current).toBe("stock");
   });
 
+  it("chưa nhập hàng nhưng đã có kho + bật đặt trước → bước Kho bán & hàng xong (nhánh đặt trước); tắt đặt trước → còn phải nhập", () => {
+    // Cùng giá trị preorderEnabled với trang SP (readiness.ts truyền cho cả evaluateReadiness lẫn productSteps).
+    const on = evaluateReadiness(base({ available: new Map(), preorderEnabled: true }));
+    expect(states(productSteps({ published: false, notReceivedSkus: ["A"], preorderEnabled: true }, on)).stock).toBe("done");
+    const off = evaluateReadiness(base({ available: new Map(), preorderEnabled: false }));
+    expect(states(productSteps({ published: false, notReceivedSkus: ["A"], preorderEnabled: false }, off)).stock).toBe("todo");
+    // Chưa có kho bán → vẫn phải làm (lỗi NO_WAREHOUSE), dù bật đặt trước.
+    const noWh = evaluateReadiness(base({ location: null, available: new Map(), preorderEnabled: true }));
+    expect(states(productSteps({ published: false, notReceivedSkus: ["A"], preorderEnabled: true }, noWh)).stock).toBe("todo");
+  });
+
   it("đã nhập + có giá, chưa đăng → chờ đăng bán; cảnh báo giá vốn tạm không chặn", () => {
     const r = evaluateReadiness(base({ costEstimatedSkus: ["A"] }));
     const steps = productSteps({ published: false, notReceivedSkus: [] }, r);

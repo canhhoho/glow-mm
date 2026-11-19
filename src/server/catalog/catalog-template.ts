@@ -34,11 +34,12 @@ export async function catalogTemplateFile(withProducts: boolean, opts: { locale?
       id: true,
       categoryId: true,
       stockLocationId: true,
+      stockLocation: { select: { pricingMode: true } },
       storageNote: true,
       paoMonths: true,
       brand: { select: { name: true } },
       translations: { select: { locale: true, name: true, description: true, usage: true, ingredientsText: true } },
-      variants: { where: { isBundle: false }, orderBy: { sku: "asc" }, select: { id: true, sku: true, label: true, weightGrams: true } },
+      variants: { where: { isBundle: false }, orderBy: { sku: "asc" }, select: { id: true, sku: true, label: true, weightGrams: true, purchasePriceVnd: true, purchasePriceMmk: true } },
     },
   });
   const rows: TemplateRow[] = products.flatMap((p) => {
@@ -58,6 +59,8 @@ export async function catalogTemplateFile(withProducts: boolean, opts: { locale?
       storage_note: p.storageNote,
       pao_months: p.paoMonths,
       warehouse_code: p.stockLocationId ? warehouseCode.get(p.stockLocationId) : undefined,
+      // Giá mua hiện tại theo tiền của kho (19/11/2026) — nhập lại file với Số lượng trống giữ nguyên giá mua.
+      unit_cost: (p.stockLocation?.pricingMode === "LOCAL_MMK" ? v.purchasePriceMmk : v.purchasePriceVnd) ?? undefined,
       sku: v.sku,
     }));
   });

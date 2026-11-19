@@ -1,4 +1,5 @@
 import "server-only";
+import type { Tx } from "@/server/inventory/ledger";
 import { z } from "zod";
 import { rawId } from "@/lib/schemas";
 import { prisma } from "@/lib/db";
@@ -110,7 +111,11 @@ export async function deleteProducts(rawIds: unknown, userId: string): Promise<D
 export async function moveProductsToWarehouse(rawIds: unknown, rawLocationId: unknown, userId: string): Promise<number> {
   const ids = [...new Set(idsSchema.parse(rawIds))];
   const locationId = rawId.parse(rawLocationId);
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction((tx) => moveProductsToWarehouseTx(tx, ids, locationId, userId));
+}
+
+/** Cùng thao tác trong transaction có sẵn (nhập Excel gán kho từ cột Kho bán khi xác nhận — 19/11/2026). */
+export async function moveProductsToWarehouseTx(tx: Tx, ids: string[], locationId: string, userId: string): Promise<number> {
     const loc = await assertStockLocation(tx, locationId).catch((e: Error) => {
       throw new CatalogError(e.message);
     });
@@ -124,7 +129,6 @@ export async function moveProductsToWarehouse(rawIds: unknown, rawLocationId: un
       data: moved.map((entityId) => ({ userId, action: "product.move", entity: "Product", entityId, data: { locationId: loc.id } })),
     });
     return moved.length;
-  });
 }
 
 /** Khôi phục SP ngừng kinh doanh về danh mục (vẫn ẩn — bật hiển thị riêng). */

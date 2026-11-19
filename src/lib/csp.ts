@@ -15,9 +15,6 @@ export type CspOptions = {
   https: boolean;
 };
 
-/** Ảnh cũ còn trỏ Vercel Blob (dữ liệu chưa chạy migrate-blob-to-local). Bỏ cùng `images.remotePatterns` khi production không còn dòng FileObject driver=VERCEL_BLOB. */
-const BLOB_IMAGES = "https://*.public.blob.vercel-storage.com";
-
 export function buildCsp({ nonce, dev, https }: CspOptions): string {
   const script = nonce ? ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'"] : ["'self'", "'unsafe-inline'"];
   if (dev) script.push("'unsafe-eval'");
@@ -26,7 +23,7 @@ export function buildCsp({ nonce, dev, https }: CspOptions): string {
     ["script-src", script],
     // Style thuộc tính (next/image, style={{}}) và <style> của trang in nhãn → giữ 'unsafe-inline' cho style.
     ["style-src", ["'self'", "'unsafe-inline'"]],
-    ["img-src", ["'self'", "data:", "blob:", BLOB_IMAGES]],
+    ["img-src", ["'self'", "data:", "blob:"]],
     ["font-src", ["'self'"]],
     ["connect-src", dev ? ["'self'", "ws:"] : ["'self'"]],
     ["object-src", ["'none'"]],

@@ -64,7 +64,8 @@ test("tạo SP có phân loại: mã tự sinh, giá 0, thanh 5 bước chỉ t�
   const steps = page.getByTestId("product-steps");
   await expect(steps.getByTestId("step-create")).toHaveAttribute("data-state", "warn"); // chưa có ảnh/mô tả
   await expect(steps.getByTestId("step-stock")).toHaveAttribute("data-state", "todo");
-  await expect(steps.getByRole("link", { name: /Nhập kho/ })).toHaveAttribute("aria-current", "step");
+  // 19/11/2026: bước 2 đổi tên "Kho bán & hàng" (đã nhập hàng hoặc bán đặt trước); SP mới chưa có kho → bước hiện tại.
+  await expect(steps.getByRole("link", { name: /Kho bán & hàng/ })).toHaveAttribute("aria-current", "step");
   await expect(steps.getByTestId("step-publish")).toHaveAttribute("data-state", "waiting");
   await openProductTab(page, "price");
   await expect(page.getByTestId("step-price-row")).toHaveCount(2);

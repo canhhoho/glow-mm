@@ -11,8 +11,9 @@ import { effectivePricingOf } from "@/server/catalog/change-request";
 
 /**
  * Dữ liệu trang Giá bán — chế độ THỦ CÔNG (16/11). Gom theo kho bán:
- *  - kho hàng nhập VN: bảng (giá mua NCC của lần nhập chọn + lãi VND) ÷ tỷ giá + vận chuyển + CTV;
- *  - kho mua MMK: giữ nghiệp vụ cũ (giá nhập thẳng + hoa hồng + lãi cố định).
+ *  - kho hàng nhập VN: (giá mua VND + lãi VND) ÷ tỷ giá + vận chuyển + CTV;
+ *  - kho mua tại Myanmar (19/11/2026): giá mua MMK + lãi MMK + CTV (không tỷ giá, không vận chuyển).
+ * Giá mua = giá mua hiện tại của phân loại (sửa được trên trang) hoặc một lần nhập đã ghi sổ được chọn.
  * Chỉ đọc. Số tiền là số nguyên; tỷ giá trả về dạng chuỗi để client tính chính xác bằng `formula.ts`.
  */
 
@@ -33,11 +34,16 @@ export type ManualRow = {
   price: number;
   commission: number | null;
   pending: boolean;
-  /** Các lần nhập hợp lệ làm cơ sở (mới nhất trước). Combo: trống, dùng `comboCostVnd`. */
+  /** Các lần nhập hợp lệ làm cơ sở (mới nhất trước). Combo: trống, dùng `comboCost`. */
   sources: ManualSource[];
-  comboCostVnd: number | null;
-  /** Lần thủ công gần nhất của SKU (gợi ý): lãi VND, vận chuyển MMK. */
+  /** Combo: tổng giá mua thành phần theo tiền của kho (VND / MMK). */
+  comboCost: number | null;
+  /** Giá mua hiện tại của phân loại theo tiền của kho (`Variant.purchasePrice*`); null = chưa có. */
+  purchasePrice: number | null;
+  purchasePriceAt: string | null;
+  /** Lần thủ công gần nhất của SKU (gợi ý): lãi VND (kho VN) / lãi MMK (kho Myanmar), vận chuyển MMK. */
   lastProfitVnd: number | null;
+  lastProfitMmk: number | null;
   lastShipMmk: number | null;
   /** Gợi ý vận chuyển = cước/kg lần tính gần nhất × khối lượng (làm tròn), khi chưa có lần thủ công. */
   suggestedShipMmk: number | null;
@@ -67,6 +73,9 @@ export async function manualPricingView(f: { variantIds?: string[]; productId?: 
       weightGrams: true,
       priceMmk: true,
       affiliateCommissionMmk: true,
+      purchasePriceVnd: true,
+      purchasePriceMmk: true,
+      purchasePriceAt: true,
       productId: true,
       product: {
         select: {
@@ -80,15 +89,17 @@ export async function manualPricingView(f: { variantIds?: string[]; productId?: 
     },
   });
   const ids = variants.map((v) => v.id);
-  const [eff, sources, comboCosts, lastManual, ship, rates, current, roundTo] = await Promise.all([
+  const bundleIds = variants.filter((v) => v.isBundle).map((v) => v.id);
+  const [eff, sources, comboVnd, comboMmk, lastManual, ship, rates, current, roundTo] = await Promise.all([
     effectivePricingOf(prisma, ids),
     receiptSources(prisma, ids.filter((id) => !variants.find((v) => v.id === id)!.isBundle)),
-    variantCosts(prisma, variants.filter((v) => v.isBundle).map((v) => v.id), "VND", "PURCHASE"),
+    variantCosts(prisma, bundleIds, "VND", "PURCHASE"),
+    variantCosts(prisma, bundleIds, "MMK"),
     prisma.priceRunLine.findMany({
       where: { variantId: { in: ids }, status: "APPLIED", run: { mode: "MANUAL" } },
       orderBy: { appliedAt: "desc" },
       distinct: ["variantId"],
-      select: { variantId: true, profitVnd: true, shipMmk: true },
+      select: { variantId: true, profitVnd: true, profitMmk: true, shipMmk: true },
     }),
     lastShipRate(),
     listRates(10),
@@ -106,6 +117,7 @@ export async function manualPricingView(f: { variantIds?: string[]; productId?: 
       continue;
     }
     const g = groups.get(loc.id) ?? { location: { id: loc.id, code: loc.code, name: loc.name, pricingMode: loc.pricingMode ?? "VN_IMPORT" }, rows: [] };
+    const mmk = loc.pricingMode === "LOCAL_MMK";
     const e = eff.get(v.id)!;
     const weight = v.weightGrams && v.weightGrams > 0 ? v.weightGrams : v.isBundle && v.bundleItems.every((b) => (b.component.weightGrams ?? 0) > 0) ? v.bundleItems.reduce((s, b) => s + b.component.weightGrams! * b.qty, 0) : null;
     g.rows.push({
@@ -131,8 +143,11 @@ export async function manualPricingView(f: { variantIds?: string[]; productId?: 
         unitCostMmk: s.unitCostMmk,
         qty: s.qty,
       })),
-      comboCostVnd: comboCosts.get(v.id)?.costVnd ?? null,
+      comboCost: (mmk ? comboMmk : comboVnd).get(v.id)?.costVnd ?? null,
+      purchasePrice: mmk ? v.purchasePriceMmk : v.purchasePriceVnd,
+      purchasePriceAt: v.purchasePriceAt?.toISOString() ?? null,
       lastProfitVnd: last.get(v.id)?.profitVnd ?? null,
+      lastProfitMmk: last.get(v.id)?.profitMmk ?? null,
       lastShipMmk: last.get(v.id)?.shipMmk ?? null,
       suggestedShipMmk: ship != null && weight ? Math.round((ship * weight) / 1000) : null,
       weightGrams: weight,

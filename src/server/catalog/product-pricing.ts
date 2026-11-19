@@ -125,7 +125,7 @@ export type VariantPricingRow = {
   id: string;
   source: PriceSource;
   /** Giá mua của phiếu nhập ghi sổ mới nhất (theo loại tiền của kho SP); combo = tổng thành phần. */
-  cost: { amount: number; currency: "VND" | "MMK"; source?: CostSource } | null;
+  cost: { amount: number; currency: "VND" | "MMK"; source?: CostSource; /** Giá mua hiện tại của phân loại (không phải một lần nhập). */ purchase: boolean } | null;
   /** Phiếu NHẬP nháp mới nhất có SKU này: giá mua trong đó chưa được tính đến khi ghi sổ. */
   draft: { documentId: string; code: string } | null;
 };
@@ -163,7 +163,7 @@ export async function loadProductPricing(variantIds: string[], pricingMode: "VN_
             ? { kind: "import", at: h.createdAt }
             : { kind: "manual", note: h.reason?.startsWith(MANUAL_PRICE_PREFIX) ? h.reason.slice(MANUAL_PRICE_PREFIX.length) : "", at: h.createdAt };
       const c = costs.get(id);
-      return [id, { id, source, cost: c ? { amount: c.costVnd, currency, source: c.source } : null, draft: draftOf.get(id) ?? null }];
+      return [id, { id, source, cost: c ? { amount: c.costVnd, currency, source: c.source, purchase: !!c.purchase } : null, draft: draftOf.get(id) ?? null }];
     }),
   );
 }

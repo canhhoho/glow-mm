@@ -210,12 +210,18 @@ export function OrderForm({
                 >
                   <option value="">—</option>
                   {options.variants.map((o) => (
-                    <option key={o.id} value={o.id} disabled={o.available <= 0}>
-                      {o.label} · {fmtInt(o.priceMmk)} MMK · {t("available")}: {o.available}
+                    <option key={o.id} value={o.id} disabled={o.available <= 0 && o.preorder <= 0}>
+                      {o.label} · {fmtInt(o.priceMmk)} MMK · {o.available <= 0 && o.preorder > 0 ? t("preorderOpen", { n: fmtInt(o.preorder) }) : `${t("available")}: ${o.available}`}
                       {"commissionMmk" in o && ` · ${ta("colCommission")}: ${o.commissionMmk ? fmtInt(o.commissionMmk) : "0"}`}
                     </option>
                   ))}
                 </select>
+                {/* Hàng chưa có nhưng còn nhận đặt trước → đơn tạo ra là đơn đặt trước (Chờ hàng, không giữ hàng). */}
+                {v && v.available <= 0 && v.preorder > 0 && (
+                  <span className="block text-xs text-warning-foreground" data-testid="line-preorder">
+                    {t("preorderLine")}
+                  </span>
+                )}
                 {/* Cổng CTV: ô chọn bị cắt chữ trên điện thoại → nhắc lại hoa hồng/cái của SP đang chọn. */}
                 {v && "commissionMmk" in v && (
                   <span className="block text-xs text-muted-foreground" data-testid="line-commission">
@@ -230,7 +236,7 @@ export function OrderForm({
                   required
                   type="number"
                   min={1}
-                  max={v?.available ?? 99}
+                  max={v ? (v.available > 0 ? v.available : v.preorder) : 99}
                   step={1}
                   inputMode="numeric"
                   value={l.qty}

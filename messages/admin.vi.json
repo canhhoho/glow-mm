@@ -30,7 +30,7 @@
     "state": {
       "zero": "Chưa có giá",
       "pending": "Giá chờ duyệt",
-      "stale": "Giá cũ hơn phiếu nhập"
+      "stale": "Giá cũ hơn giá mua"
     },
     "stateLabel": "Tình trạng giá",
     "stateAll": "Mọi tình trạng",
@@ -64,9 +64,9 @@
       "back": "Giá bán",
       "empty": "Chưa chọn SKU nào — quay lại trang Giá bán và tick các SKU cần đặt giá.",
       "truncated": "Chỉ hiện 200 SKU đầu tiên — chọn ít SKU hơn.",
-      "unplaced": "Chưa đặt giá được cho SP chưa nhập hàng (chưa có kho bán): {skus}. Nhập hàng và ghi sổ phiếu trước.",
+      "unplaced": "Chưa đặt giá được cho SP chưa có kho bán: {skus}. Gán kho bán ở bước 2 trang sản phẩm (không cần nhập hàng).",
       "groupVnd": "{name} — hàng nhập VN (công thức VND)",
-      "groupMmk": "{name} — hàng mua MMK",
+      "groupMmk": "{name} — hàng mua tại Myanmar (giá MMK)",
       "noRate": "Chưa có tỷ giá — thêm tỷ giá trước.",
       "addRate": "Thêm tỷ giá",
       "rate": "Tỷ giá",
@@ -74,7 +74,7 @@
       "rateCurrent": "đang dùng",
       "oldRate": "Đang chọn tỷ giá cũ, không phải tỷ giá đang dùng — kiểm tra lại trước khi lưu.",
       "formula": "Giá bán VND = giá mua NCC + lãi · Giá bán MMK = giá bán VND ÷ tỷ giá + vận chuyển + CTV, làm tròn lên bội số {round} MMK.",
-      "profitNote": "Lãi mong muốn chỉ là phần cộng thêm trên giá mua NCC — chưa phải lợi nhuận cuối: chưa trừ phí COD, hàng trả và chi phí vận hành. Giá mua lấy đúng lần nhập đã chọn, không bình quân.",
+      "profitNote": "Lãi mong muốn chỉ là phần cộng thêm trên giá mua — chưa phải lợi nhuận cuối: chưa trừ phí COD, hàng trả và chi phí vận hành. Giá mua = giá mua hiện tại của phân loại (sửa được, lưu cùng khi lưu giá) hoặc đúng lần nhập đã chọn, không bình quân.",
       "colSku": "SKU",
       "colLot": "Lô nguồn",
       "colPurchase": "Giá mua (VND)",
@@ -86,9 +86,8 @@
       "colFinal": "Giá bán (MMK)",
       "colLastCost": "Giá mua gần nhất (chưa gồm phí về kho)",
       "colPrice": "Giá bán (MMK)",
-      "lotOption": "Lô {lot} · {doc} · {date} · {price} VND",
+      "lotOption": "Lô {lot} · {doc} · {date} · {price} {currency}",
       "comboLot": "Combo: tổng giá mua gần nhất của thành phần",
-      "noSource": "Chưa có phiếu nhập đã ghi sổ",
       "live": "Đang bán: {price}",
       "pending": "Đang chờ duyệt: {price}",
       "incomplete": "Điền lãi, vận chuyển, CTV",
@@ -99,11 +98,11 @@
       "noPrice": "Chưa có giá",
       "fieldInvalid": "Nhập số nguyên ≥ 0",
       "save": "Lưu giá ({count} SKU đổi)",
-      "saveMmk": "Lưu giá",
-      "mmkHelp": "Nhập CTV và giá bán MMK trực tiếp; nhập lý do khi đổi giá.",
-      "ctvPercent": "theo % CTV",
       "fixedProfit": "Lãi cố định (MMK/đv)",
-      "reason": "Lý do sửa giá"
+      "currentPurchase": "Giá mua hiện tại",
+      "colProfitMmk": "Lãi (MMK)",
+      "formulaMmk": "Kho mua tại Myanmar: Giá bán MMK = giá mua MMK + lãi MMK + CTV, làm tròn lên bội số {round} MMK. Không dùng tỷ giá; không có vận chuyển (khách tự trả phí chở nội địa).",
+      "incompleteMmk": "Điền giá mua, lãi, CTV"
     }
   },
   "Nav": {
@@ -770,7 +769,7 @@
         "COST_ESTIMATED": "Tồn bán đang dùng giá vốn tạm",
         "OUT_OF_STOCK": "Hết hàng và không nhận đặt trước (trang SP hiện \"Hết hàng\")",
         "STOCK_OTHER_WAREHOUSE": "Có tồn ở kho bán khác — chuyển kho để bán",
-        "PRICE_STALE": "Có phiếu nhập mới sau lần đặt giá gần nhất — nên tính lại giá",
+        "PRICE_STALE": "Giá mua đã đổi (sửa tay, Excel hoặc phiếu nhập mới) sau lần đặt giá gần nhất — nên tính lại giá",
         "NOT_APPROVED": "Chưa duyệt (bước 4)",
         "RATE_NEWER": "Có tỷ giá mới hơn lần đổi giá gần nhất — nên tính lại giá",
         "COMPONENT_INACTIVE": "Combo có thành phần đã tắt hoặc ngừng kinh doanh"
@@ -816,7 +815,7 @@
     },
     "step": {
       "create": "Thông tin sản phẩm",
-      "stock": "Nhập kho + giá vốn",
+      "stock": "Kho bán & hàng",
       "price": "Giá bán",
       "review": "Duyệt",
       "publish": "Đăng bán"
@@ -833,6 +832,7 @@
     "block": {
       "editInfo": "Sửa thông tin sản phẩm",
       "notReceived": "Chưa nhập hàng: {skus}",
+      "notReceivedPreorder": "Chưa nhập hàng: {skus} — đang bán đặt trước (bật/tắt ở bước Đăng bán). Hàng về thì tạo phiếu nhập.",
       "receivedAll": "Mọi phân loại đã có phiếu nhập hoặc chuyển kho đã ghi sổ.",
       "warehouseTitle": "Chưa có kho bán",
       "warehouseHelp": "Bán đặt trước (chưa có hàng): chỉ cần chọn kho bán, chưa cần nhập hàng. Phiếu nhập sau này dùng kho này.",
@@ -886,6 +886,7 @@
       "sourceNone": "Chưa có lịch sử",
       "lastCost": "Giá mua gần nhất (chưa gồm phí về kho)",
       "draftReceipt": "Phiếu nháp {code} chưa ghi sổ",
+      "currentPurchase": "Giá mua hiện tại",
       "inactive": "đang tắt",
       "manual": "Sửa giá tay",
       "manualHelp": "Giá phải lớn hơn 0. Đổi giá cần ghi lý do (lưu vào lịch sử giá).",
@@ -1005,6 +1006,7 @@
       "noteCreateOk": "Đã có thông tin cơ bản",
       "noteCreateMissing": "Còn thiếu thông tin",
       "noteStock": "Tồn: {n}",
+      "noteStockPreorder": "Bán đặt trước (chưa có hàng)",
       "notePrice": "Giá bán: {price} MMK",
       "notePriceMissing": "Chưa có giá bán",
       "notePricePending": "chờ duyệt: {price} MMK",
@@ -1175,6 +1177,8 @@
     "remove": "Xoá",
     "variant": "SKU / Phân loại",
     "available": "Còn bán được",
+    "preorderOpen": "Đặt trước: còn nhận {n}",
+    "preorderLine": "Chưa có hàng — đơn sẽ là đơn đặt trước (Chờ hàng, không giữ hàng).",
     "estimate": "Ước tính (server tính lại khi lưu)",
     "freeShip": "Miễn phí",
     "create": "Tạo đơn",
@@ -2480,12 +2484,12 @@
       "hint": "Tuỳ chọn. Số tháng dùng được sau khi mở nắp (PAO), khác hạn sử dụng của lô."
     },
     "warehouse_code": {
-      "label": "Kho nhập",
-      "hint": "Kho nhận hàng. SP chưa nhập hàng: kho này thành kho bán khi ghi sổ (trống = kho mặc định). SP đã có kho: phải đúng kho đó."
+      "label": "Kho bán",
+      "hint": "Bắt buộc với SP chưa có kho khi dòng có Số lượng hoặc Giá mua. SP chưa có kho: gán kho này khi xác nhận. SP đã có kho: phải đúng kho đó."
     },
     "qty": {
       "label": "Số lượng nhập",
-      "hint": "Tuỳ chọn. Có số lượng → tạo phiếu nhập nháp, kiểm tra rồi Ghi sổ."
+      "hint": "Trống hoặc 0 = chỉ tạo / cập nhật sản phẩm (không tồn). Số nguyên > 0 = tạo phiếu nhập nháp, kiểm tra rồi Ghi sổ."
     },
     "expiry_date": {
       "label": "Hạn sử dụng",
@@ -2493,7 +2497,7 @@
     },
     "unit_cost": {
       "label": "Giá mua/đv",
-      "hint": "Theo kho nhập: VND (kho hàng nhập Việt Nam) hoặc MMK (kho mua tại Myanmar). Không phải giá bán."
+      "hint": "Giá mua thật theo kho: VND (kho hàng nhập Việt Nam) hoặc MMK (kho mua tại Myanmar). Có số lượng → vào phiếu nhập; không số lượng → cập nhật giá mua hiện tại của phân loại. Không phải giá bán."
     },
     "lot_no": {
       "label": "Số lô",
@@ -2523,6 +2527,10 @@
     "sheetReadError": "Không đọc được danh sách sheet. Hãy chọn file .xlsx có ít nhất một sheet hiển thị.",
     "fileTooLarge": "File quá lớn (tối đa 2 MB).",
     "previewingSheet": "Xem trước sheet: {sheet}",
+    "rowProfile": "Chỉ hồ sơ sản phẩm",
+    "rowPurchase": "Hồ sơ sản phẩm · giá mua {amount} {currency} (kho {location})",
+    "rowStock": "Sản phẩm + phiếu nhập: {qty} · kho {location} · giá mua {cost} {currency}",
+    "summaryStock": "{stock} dòng tạo phiếu nhập nháp ({documents} phiếu) · {purchase} dòng cập nhật giá mua",
     "preview": "Xem trước",
     "colLine": "Dòng",
     "colAction": "Trạng thái",

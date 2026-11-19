@@ -13,7 +13,7 @@ export default async function CtvNewOrderPage() {
   await requireAffiliate();
   const [t, options] = await Promise.all([getTranslations("Ctv"), getLocale().then((locale) => orderFormOptions(locale, { withCommission: true }))]);
   return (
-    <Page>
+    <Page className="max-w-4xl">
       <PageHeader title={t("newTitle")} description={t("newHint")} />
       <Section>
         <OrderForm

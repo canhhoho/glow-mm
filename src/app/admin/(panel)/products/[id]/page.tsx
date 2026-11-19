@@ -125,7 +125,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
         : s.kind === "import"
           ? `${t("priceBlock.sourceImport")} · ${fmtDay(s.at)}`
           : `${t("priceBlock.sourceManual")} · ${fmtDay(s.at)}${s.note ? ` — ${s.note}` : ""}`;
-  const flow = productSteps({ published: product.published, notReceivedSkus: readiness.notReceivedSkus, approved: !!approval.approvedAt && !cr }, readiness);
+  const flow = productSteps({ published: product.published, notReceivedSkus: readiness.notReceivedSkus, approved: !!approval.approvedAt && !cr, preorderEnabled: approval.preorderEnabled }, readiness);
   const step = (key: ProductStep) => flow.steps.find((s) => s.key === key)!;
 
   type Row = Issue & { tone: "danger" | "warning"; kind: string };
@@ -168,7 +168,8 @@ export default async function EditProductPage({ params, searchParams }: PageProp
   const reviewNote = lab.label === "PENDING" || lab.change === "PENDING" ? t("hero.notePending") : lab.label === "REJECTED" || lab.change === "REJECTED" ? t("hero.noteRejected") : approval.approvedAt && !cr ? t("hero.noteApproved") : t("hero.noteNotSubmitted");
   const notes: Partial<Record<ProductStep, string>> = {
     create: step("create").state === "todo" ? t("hero.noteCreateMissing") : t("hero.noteCreateOk"),
-    stock: t("hero.noteStock", { n: fmtInt(stockTotal) }),
+    // Chưa có hàng nhưng đang bật đặt trước → nhánh "Bán đặt trước" (không bắt nhập kho để đăng bán).
+    stock: readiness.notReceivedSkus.length > 0 && stockTotal === 0 && approval.preorderEnabled ? t("hero.noteStockPreorder") : t("hero.noteStock", { n: fmtInt(stockTotal) }),
     price: [priceText ? t("hero.notePrice", { price: priceText }) : t("hero.notePriceMissing"), ...(pendingPrices.length ? [t("hero.notePricePending", { price: range(pendingPrices) })] : [])].join(" · "),
     review: reviewNote,
     publish: product.published ? t("hero.notePublished") : t("hero.noteNotPublished"),
@@ -399,7 +400,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
         }
       >
         <p className="text-sm" data-testid="stock-received">
-          {readiness.notReceivedSkus.length > 0 ? t("block.notReceived", { skus: readiness.notReceivedSkus.join(", ") }) : t("block.receivedAll")}
+          {readiness.notReceivedSkus.length > 0 ? t(approval.preorderEnabled ? "block.notReceivedPreorder" : "block.notReceived", { skus: readiness.notReceivedSkus.join(", ") }) : t("block.receivedAll")}
         </p>
         {stepIssues("stock").length > 0 && issueList(stepIssues("stock"))}
         {/* Chưa có kho bán (chưa nhập hàng): gán kho ngay tại đây để bán đặt trước — lối tắt của "Đổi kho" ở danh sách. */}
@@ -484,7 +485,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
                   {row?.cost ? (
                     <>
                       {fmtInt(row.cost.amount)} {row.cost.currency}
-                      {row.cost.source && <div className="text-muted-foreground">{row.cost.source.documentCode}</div>}
+                      {row.cost.source ? <div className="text-muted-foreground">{row.cost.source.documentCode}</div> : row.cost.purchase && <div className="text-muted-foreground">{t("priceBlock.currentPurchase")}</div>}
                     </>
                   ) : (
                     "—"

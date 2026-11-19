@@ -58,7 +58,6 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
     // Bỏ 2048/3840 mặc định: khách chủ yếu dùng điện thoại; ít kích thước = ít lần mã hoá AVIF và ít file cache.
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
-    remotePatterns: [{ protocol: "https", hostname: "*.public.blob.vercel-storage.com" }],
   },
   // Chứng từ chi trả CTV upload qua Server Action (tối đa 5MB + phần đầu multipart).
   experimental: { serverActions: { bodySizeLimit: "6mb" } },

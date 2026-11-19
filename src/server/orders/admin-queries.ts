@@ -6,6 +6,7 @@ import type { OrderChannel, OrderStatus, PaymentMethod, Prisma } from "@/generat
 import { salesBlockDays } from "@/server/inventory/documents";
 import { productName } from "@/server/inventory/queries";
 import { availableToSell } from "./availability";
+import { preorderCapacity } from "./preorder";
 import { normalizeMmPhone, phoneSearchDigits } from "@/lib/phone";
 import { toUnicode } from "@/lib/myanmar";
 import { ORDER_STATUSES, PREPARING_STATUSES } from "./state-machine";
@@ -119,7 +120,7 @@ export async function orderFormOptions(locale: string, opts: { withCommission?: 
     salesBlockDays(),
   ]);
   const ids = variants.map((v) => v.id);
-  const avail = await prisma.$transaction((tx) => availableToSell(tx, ids, { now, blockDays }));
+  const [avail, capacity] = await Promise.all([prisma.$transaction((tx) => availableToSell(tx, ids, { now, blockDays })), preorderCapacity(prisma, ids)]);
   return {
     catalog,
     variants: variants.map((v) => ({
@@ -127,6 +128,8 @@ export async function orderFormOptions(locale: string, opts: { withCommission?: 
       label: `${v.sku} — ${variantDisplayName(productName(v.product.translations, v.product.slug), v.label)}`,
       priceMmk: v.priceMmk,
       available: avail.get(v.id) ?? 0,
+      /** Số cái còn nhận đặt trước khi hết hàng (0 = không nhận / còn hàng) — cùng quy tắc storefront (19/11/2026). */
+      preorder: (avail.get(v.id) ?? 0) > 0 ? 0 : (capacity.get(v.id) ?? 0),
       ...(opts.withCommission && { commissionMmk: v.affiliateCommissionMmk }),
     })),
   };
