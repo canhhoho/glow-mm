@@ -36,7 +36,7 @@ export default async function CtvHomePage() {
         <p className="text-xs text-muted-foreground">{t("productLinkHint", { code: user.code })}</p>
       </Section>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <StatCard icon={<ShoppingBag />} tone="brand" label={ta("statOrders")} value={fmtInt(s.monthOrders)} />
         <StatCard icon={<Banknote />} tone="green" label={ta("statSales")} value={fmtInt(s.monthSalesMmk)} />
         <StatCard icon={<Clock />} tone="warning" label={ta("statPending")} value={fmtInt(s.pendingMmk)} />

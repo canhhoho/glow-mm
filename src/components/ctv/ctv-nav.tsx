@@ -65,9 +65,10 @@ export function CtvNav({ items, variant = "tabs" }: { items: { href: string; lab
     );
   }
 
+  // Tab xuống hàng khi hết chỗ (chữ Myanmar/Anh dài ở 768px) thay vì cuộn ngang làm mục cuối bị giấu.
   return (
-    <nav aria-label="CTV" className="-mx-4 overflow-x-auto px-4">
-      <ul className="flex gap-1 text-sm whitespace-nowrap">
+    <nav aria-label="CTV">
+      <ul className="flex flex-wrap gap-1 text-sm whitespace-nowrap">
         {items.map((i) => {
           const Icon = ICONS[i.href];
           const active = i.href === current;
