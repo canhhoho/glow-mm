@@ -117,9 +117,10 @@ test("mẫu một sheet: tạo SP hai biến thể kèm tồn + nội dung → x
   await upload(page, "nhap.xlsx", filled);
   const preview = page.getByTestId("catalog-import-preview");
   await expect(preview.getByTestId("catalog-import-summary")).toHaveText("2 dòng: 2 tạo mới · 0 cập nhật · 0 không đổi · 0 lỗi");
-  // Trang nhập chỉ hiện thông tin SP: không có cột Nhập kho (giá mua, lô… xem ở phiếu nhập nháp).
+  // Không có cột Nhập kho riêng; 19/11/2026: dòng phụ ghi rõ dòng này tạo phiếu nhập (SL · kho · giá mua theo tiền của kho).
   await expect(preview.getByRole("columnheader", { name: "Nhập kho" })).toHaveCount(0);
-  await expect(preview.getByRole("row").filter({ hasText: "50 ml" })).not.toContainText("100,000");
+  await expect(preview.getByRole("row").filter({ hasText: "50 ml" }).getByTestId("catalog-import-row-kind")).toContainText("Sản phẩm + phiếu nhập");
+  await expect(preview.getByTestId("catalog-import-stock-summary")).toContainText("dòng tạo phiếu nhập nháp");
   await expect(preview.getByRole("row").filter({ hasText: "50 ml" })).toContainText("90");
   await expect(preview.getByRole("alert")).toHaveCount(0);
   await page.screenshot({ path: "test-results/screens/catalog-import-preview.png", fullPage: true });

@@ -6,6 +6,7 @@
 import adminVi from "../../messages/admin.vi.json";
 import adminEn from "../../messages/admin.en.json";
 import adminMy from "../../messages/admin.my.json";
+import { FEATURES } from "./features";
 import { PRODUCT_FIELDS, type FieldList, type FieldType, type ProductField, type ProductSection } from "./product-fields";
 
 export const CATALOG_SHEET = "Nhap hang";
@@ -29,7 +30,9 @@ const OLD_LABELS: Record<string, string[]> = {
   category: ["Mã danh mục"],
   variant_label: ["Biến thể", "Biến thể (dung tích/màu)"],
   sku: ["Mã SKU"],
-  warehouse_code: ["Kho bán", "Mã kho bán"],
+  // 19/11/2026: nhãn đổi "Kho nhập" → "Kho bán", "Giá mua/đv" (en/my đổi) — file mẫu cũ vẫn nhận.
+  warehouse_code: ["Kho bán", "Mã kho bán", "Kho nhập", "Receiving warehouse", "လက်ခံဂိုဒေါင်"],
+  unit_cost: ["Purchase price/unit", "ဝယ်ဈေး/ခု"],
   qty: ["Số lượng"],
 };
 
@@ -59,7 +62,9 @@ export const LEGACY_COLUMNS: SheetColumn[] = [
   // Phí đưa về kho đã bỏ (16/11/2026): file cũ còn cột này vẫn đọc được, nhập bỏ qua kèm lưu ý.
   { key: "inbound_unit_vnd", type: "money", width: 0, group: "stock", aliases: ["Phí đưa về kho (VND/đv)", "Phí đưa về kho", "Inbound fee (VND/unit)", "ဂိုဒေါင်ရောက်စရိတ် (VND/ခု)"] },
   { key: "product_slug", type: "text", width: 0, group: "product", aliases: ["Mã sản phẩm"] },
-  { key: "mfg_date", type: "date", width: 0, group: "stock", aliases: ["Ngày sản xuất"] },
+  // Cờ hạn dùng tắt (19/11/2026): đọc dạng chữ để file cũ có ngày sai không chặn cả file — giá trị bị bỏ qua kèm lưu ý.
+  { key: "mfg_date", type: FEATURES.expiry ? "date" : "text", width: 0, group: "stock", aliases: ["Ngày sản xuất"] },
+  ...(FEATURES.expiry ? [] : [{ key: "expiry_date", type: "text", width: 0, group: "stock", aliases: ["Hạn sử dụng"] } satisfies SheetColumn]),
   { key: "stock_type", type: "text", width: 0, group: "stock", aliases: ["Loại hàng"] },
   { key: "expiry_status", type: "text", width: 0, group: "stock", aliases: ["Trạng thái hạn dùng"] },
   { key: "unit_cost_vnd", type: "money", width: 0, group: "stock", aliases: ["Giá mua (VND/đv)"] },
@@ -118,7 +123,8 @@ const fold = (s: string) => s.normalize("NFC").toLowerCase().replace(/\*/g, "").
 /** Mọi tên được nhận của một cột: khoá, nhãn 3 ngôn ngữ (cột hiện hành), nhãn/khoá mẫu cũ. */
 const HEADER_NAMES = new Map<string, string>();
 for (const c of ALL_SHEET_COLUMNS) {
-  const labels = CATALOG_COLUMNS.includes(c) ? (Object.keys(MESSAGES) as SheetLocale[]).map((l) => fieldMessages(l)[c.key]?.label ?? "") : [];
+  // Hạn sử dụng khi cờ tắt là cột cũ nhưng vẫn nhận theo nhãn 3 ngôn ngữ (file mẫu trước 19/11/2026) để báo "đã bỏ qua".
+  const labels = CATALOG_COLUMNS.includes(c) || c.key === "expiry_date" ? (Object.keys(MESSAGES) as SheetLocale[]).map((l) => fieldMessages(l)[c.key]?.label ?? "") : [];
   for (const name of [c.key, ...labels, ...(c.aliases ?? [])]) if (name && !HEADER_NAMES.has(fold(name))) HEADER_NAMES.set(fold(name), c.key);
 }
 

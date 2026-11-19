@@ -73,7 +73,8 @@ describe("File Excel nhập/cập nhật sản phẩm (một sheet)", () => {
     expect(keys).toEqual([
       "name", "brand", "category", "variant_label", "sku", "weight_g", "description_my", "description_en",
       "usage_my", "usage_en", "ingredients", "storage_note", "pao_months",
-      "warehouse_code", "qty", "expiry_date", "unit_cost", "lot_no",
+      // 19/11/2026: cờ hạn dùng tắt → không còn cột Hạn sử dụng.
+      "warehouse_code", "qty", "unit_cost", "lot_no",
     ]);
   });
 
@@ -90,7 +91,7 @@ describe("File Excel nhập/cập nhật sản phẩm (một sheet)", () => {
       const header = (await headerOf(bytes)).map(sheetHeaderKey);
       const colTags = [...sheet.matchAll(/<col\s[^>]*\/>/g)].map((m) => m[0]);
       const visible = header.filter((_, i) => !colTags[i].includes('hidden="1"'));
-      expect(visible).toEqual(["name", "brand", "category", "variant_label", ...(rows.length ? ["sku"] : []), "weight_g", "description_my", "description_en", "warehouse_code", "qty", "expiry_date", "unit_cost"]);
+      expect(visible).toEqual(["name", "brand", "category", "variant_label", ...(rows.length ? ["sku"] : []), "weight_g", "description_my", "description_en", "warehouse_code", "qty", "unit_cost"]);
       expect(sheet).toContain('outlineLevel="1"');
     }
   });
@@ -116,12 +117,11 @@ describe("File Excel nhập/cập nhật sản phẩm (một sheet)", () => {
     await expect(readCatalogFile(file, "Không tồn tại")).rejects.toThrow("Không tìm thấy sheet đã chọn");
   });
 
-  it("đọc ngày Excel và dd/mm/yyyy; ô Hạn sử dụng 'Không' = không hạn; ngày sai báo đúng dòng", () => {
-    const header = ["Tên sản phẩm", "Thương hiệu *", "Danh mục *", "Hạn sử dụng", "SKU"];
-    const ok = sheetRowsToCsv([["tiêu đề cũ"], header, ["A", "B", "C", new Date("2028-03-31T00:00:00Z"), "X"], [], ["A", "B", "C", "01/02/2029", "Y"], ["A", "B", "C", "Không", "Z"]]);
-    expect(ok.lines).toEqual([3, 5, 6]);
-    expect(parseCsvObjects(ok.csv).map((r) => r.expiry_date)).toEqual(["2028-03-31", "2029-02-01", "NONE"]);
-    expect(() => sheetRowsToCsv([header, ["A", "B", "C", "31/02/2028", "X"]])).toThrow("Dòng 2");
+  it("cờ hạn dùng tắt: cột Hạn sử dụng / Ngày SX của file cũ vẫn nhận ra nhưng đọc dạng chữ — ngày sai không chặn file", () => {
+    const header = ["Tên sản phẩm", "Thương hiệu *", "Danh mục *", "Hạn sử dụng", "Ngày sản xuất", "SKU"];
+    const read = sheetRowsToCsv([header, ["A", "B", "C", "31/02/2028", "xx", "X"], ["A", "B", "C", "Không", "", "Y"]]);
+    expect(read.lines).toEqual([2, 3]);
+    expect(parseCsvObjects(read.csv).map((r) => [r.expiry_date, r.mfg_date])).toEqual([["31/02/2028", "xx"], ["Không", ""]]);
   });
 
   it("ô số: bỏ phân cách nghìn (150.000 / 150,000 / khoảng trắng), giữ số Excel, số lẻ để báo lỗi", () => {

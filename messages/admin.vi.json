@@ -2480,12 +2480,12 @@
       "hint": "Tuỳ chọn. Số tháng dùng được sau khi mở nắp (PAO), khác hạn sử dụng của lô."
     },
     "warehouse_code": {
-      "label": "Kho nhập",
-      "hint": "Kho nhận hàng. SP chưa nhập hàng: kho này thành kho bán khi ghi sổ (trống = kho mặc định). SP đã có kho: phải đúng kho đó."
+      "label": "Kho bán",
+      "hint": "Bắt buộc với SP chưa có kho khi dòng có Số lượng hoặc Giá mua. SP chưa có kho: gán kho này khi xác nhận. SP đã có kho: phải đúng kho đó."
     },
     "qty": {
       "label": "Số lượng nhập",
-      "hint": "Tuỳ chọn. Có số lượng → tạo phiếu nhập nháp, kiểm tra rồi Ghi sổ."
+      "hint": "Trống hoặc 0 = chỉ tạo / cập nhật sản phẩm (không tồn). Số nguyên > 0 = tạo phiếu nhập nháp, kiểm tra rồi Ghi sổ."
     },
     "expiry_date": {
       "label": "Hạn sử dụng",
@@ -2493,7 +2493,7 @@
     },
     "unit_cost": {
       "label": "Giá mua/đv",
-      "hint": "Theo kho nhập: VND (kho hàng nhập Việt Nam) hoặc MMK (kho mua tại Myanmar). Không phải giá bán."
+      "hint": "Giá mua thật theo kho: VND (kho hàng nhập Việt Nam) hoặc MMK (kho mua tại Myanmar). Có số lượng → vào phiếu nhập; không số lượng → cập nhật giá mua hiện tại của phân loại. Không phải giá bán."
     },
     "lot_no": {
       "label": "Số lô",
@@ -2523,6 +2523,10 @@
     "sheetReadError": "Không đọc được danh sách sheet. Hãy chọn file .xlsx có ít nhất một sheet hiển thị.",
     "fileTooLarge": "File quá lớn (tối đa 2 MB).",
     "previewingSheet": "Xem trước sheet: {sheet}",
+    "rowProfile": "Chỉ hồ sơ sản phẩm",
+    "rowPurchase": "Hồ sơ sản phẩm · giá mua {amount} {currency} (kho {location})",
+    "rowStock": "Sản phẩm + phiếu nhập: {qty} · kho {location} · giá mua {cost} {currency}",
+    "summaryStock": "{stock} dòng tạo phiếu nhập nháp ({documents} phiếu) · {purchase} dòng cập nhật giá mua",
     "preview": "Xem trước",
     "colLine": "Dòng",
     "colAction": "Trạng thái",

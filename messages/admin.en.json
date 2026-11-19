@@ -2480,20 +2480,20 @@
       "hint": "Optional. Months usable after opening (PAO), separate from the lot expiry date."
     },
     "warehouse_code": {
-      "label": "Receiving warehouse",
-      "hint": "Warehouse that receives the goods. Not received yet: becomes the sales warehouse when posted (blank = default). Already placed: must be that warehouse."
+      "label": "Sales warehouse",
+      "hint": "Required for products without a warehouse when the row has a Quantity or Purchase price. Product without a warehouse: assigned this one on confirm. Product with a warehouse: must match it."
     },
     "qty": {
       "label": "Quantity in",
-      "hint": "Optional. A quantity creates a draft receipt — check it, then Post."
+      "hint": "Blank or 0 = only create / update the product (no stock). Whole number > 0 = create a draft receipt, check it, then Post."
     },
     "expiry_date": {
       "label": "Expiry date",
       "hint": "dd/mm/yyyy. Blank = unknown (not sellable yet). Write \"No\" if the item has no expiry."
     },
     "unit_cost": {
-      "label": "Purchase price/unit",
-      "hint": "By receiving warehouse: VND (Vietnam import) or MMK (bought in Myanmar). Not the selling price."
+      "label": "Unit purchase price",
+      "hint": "Actual purchase price by warehouse: VND (Vietnam import warehouse) or MMK (Myanmar warehouse). With quantity → goes on the receipt; without quantity → updates the variant's current purchase price. Not the selling price."
     },
     "lot_no": {
       "label": "Lot no.",
@@ -2523,6 +2523,10 @@
     "sheetReadError": "Could not read the sheet list. Choose an .xlsx file with at least one visible sheet.",
     "fileTooLarge": "The file is too large (2 MB maximum).",
     "previewingSheet": "Previewing sheet: {sheet}",
+    "rowProfile": "Product details only",
+    "rowPurchase": "Product details · purchase price {amount} {currency} (warehouse {location})",
+    "rowStock": "Product + receipt: {qty} · warehouse {location} · purchase price {cost} {currency}",
+    "summaryStock": "{stock} rows create draft receipts ({documents} receipts) · {purchase} rows update purchase prices",
     "preview": "Preview",
     "colLine": "Row",
     "colAction": "Status",

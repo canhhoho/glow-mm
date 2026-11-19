@@ -1943,6 +1943,10 @@
     "SellingPrices.manualPage.colProfitMmk",
     "SellingPrices.manualPage.formulaMmk",
     "SellingPrices.manualPage.incompleteMmk",
-    "Products.priceBlock.currentPurchase"
+    "Products.priceBlock.currentPurchase",
+    "CatalogImport.rowProfile",
+    "CatalogImport.rowPurchase",
+    "CatalogImport.rowStock",
+    "CatalogImport.summaryStock"
   ]
 }

@@ -35,7 +35,7 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     ]);
     const preview = await previewCatalogImport(input);
     expect(preview.errors).toEqual([]);
-    expect(preview.counts).toEqual({ createdProducts: 2, updatedProducts: 0, unchangedProducts: 0, stockLines: 4 });
+    expect(preview.counts).toEqual({ createdProducts: 2, updatedProducts: 0, unchangedProducts: 0, stockLines: 4, purchasePrices: 0 });
     expect(preview.input.rateId).toBe(rate.id);
     expect(preview.rows.map((r) => r.action)).toEqual(["create", "create", "create", "create"]);
     expect(preview.rows[0].stock).toMatchObject({ qty: 5, expiryStatus: "DATED", costMmk: 20000, location: f.mm.code, currency: "VND", unitCost: 100000, lotAuto: true }); // giá vốn = giá mua × tỷ giá (0,2), không có phí về kho
@@ -62,12 +62,12 @@ describe("Nhập / cập nhật sản phẩm một sheet", () => {
     const result = await commitCatalogImport(preview.input, f.userId);
     expect(result.documents).toHaveLength(2);
     const toner = await prisma.product.findFirstOrThrow({ where: { translations: { some: { name: `Toner ${f.tag}` } } }, include: { variants: { orderBy: { sku: "asc" } }, translations: true, brand: true } });
-    // 16/11/2026: SP mới chưa có kho bán — kho gán khi ghi sổ phiếu nhập (bên dưới).
-    expect(toner).toMatchObject({ published: false, stockLocationId: null, brand: { name: brand } });
+    // 19/11/2026: SP mới ghi cột Kho bán → gán kho ngay khi xác nhận nhập (trước đây: khi ghi sổ phiếu nhập).
+    expect(toner).toMatchObject({ published: false, stockLocationId: f.mm.id, brand: { name: brand } });
     expect(toner.translations.map((t) => t.name)).toEqual([`Toner ${f.tag}`, `Toner ${f.tag}`]); // tên còn thiếu chép theo
     expect(toner.variants.map((v) => [v.label, v.priceMmk])).toEqual([["100ml", 0], ["200ml", 0]]);
     const bag = await prisma.product.findFirstOrThrow({ where: { translations: { some: { name: `အိတ် ${f.tag}` } } } });
-    expect(bag).toMatchObject({ stockLocationId: null });
+    expect(bag).toMatchObject({ stockLocationId: f.chi.id });
 
     // Hai lô tự sinh của cùng SKU không trùng; lô VND chốt tỷ giá đã xem.
     const batches = await prisma.batch.findMany({ where: { variant: { productId: toner.id } }, orderBy: { lotNo: "asc" } });

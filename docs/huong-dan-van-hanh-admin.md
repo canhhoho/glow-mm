@@ -460,12 +460,11 @@ Dấu * = bắt buộc khi tạo sản phẩm mới.
 | Hoa hồng CTV (MMK/cái) | 💰 Số tiền cố định/cái. Trống = giữ nguyên (SKU mới: không có hoa hồng). SP đã duyệt: chờ duyệt **cùng giá**. Không xoá được qua Excel |
 | Mô tả Myanmar / Mô tả tiếng Anh | Tuỳ chọn |
 | Cách dùng, Thành phần, Bảo quản, Hạn sau mở nắp (tháng) | Tuỳ chọn; hạn sau mở nắp tối đa 120 tháng. **Đây là nơi duy nhất sửa các trường này** (form sản phẩm không có ô) |
-| Kho bán | Mã kho. Trống = kho mặc định. Không đổi được kho của sản phẩm đã có |
+| Kho bán | Mã kho (19/11/2026: **không còn tự lấy kho mặc định**). **Bắt buộc** với sản phẩm chưa có kho khi dòng có Số lượng hoặc Giá mua; sản phẩm chưa có kho được **gán kho này khi xác nhận** (kể cả dòng chỉ tạo sản phẩm). Không đổi được kho của sản phẩm đã có |
 | Có hạn dùng | "Có" (mặc định) hoặc "Không" |
 | SKU | **Trống = tạo mới; có SKU đã tồn tại = cập nhật sản phẩm đó** |
-| Số lượng nhập | Điền thì tạo **phiếu nhập nháp** |
-| Hạn sử dụng | dd/mm/yyyy. Trống ở sản phẩm có quản lý hạn = lô "chưa biết hạn", chưa bán được |
-| Giá mua/đv | VND với kho Hàng nhập VN, MMK với kho Hàng mua MMK |
+| Số lượng nhập | **Trống hoặc 0 = chỉ tạo / cập nhật hồ sơ sản phẩm** (không phiếu, không lô, không đổi tồn). **Số nguyên > 0** = tạo **phiếu nhập nháp**. Âm, số lẻ, chữ → báo lỗi |
+| Giá mua/đv | Giá mua thật theo kho: **VND** (kho hàng nhập VN) / **MMK** (kho mua tại Myanmar). Có số lượng → vào phiếu nhập; **không số lượng → cập nhật giá mua hiện tại của phân loại** (dùng để đặt giá, kể cả hàng đặt trước). Cột tiền khác kho → lỗi |
 | Phí đưa về kho (VND/đv) | Chỉ kho VND. Điền số (kể cả **0** = không phát sinh phí) → giá vốn thực tế = giá mua + phí. **Để trống = chưa biết** → lô **chưa có giá vốn** (không tự coi là 0; đơn dùng lô này không bàn giao được đến khi có giá vốn tạm/thực tế) |
 | Số lô | Trống = hệ thống tự đặt `NK<yymmdd>[-n]` |
 
@@ -486,6 +485,7 @@ Dấu phân cách hàng nghìn kiểu 150,000 hoặc 150.000 đều được nh�
 - **SKU mới hoặc không có SKU** → tạo sản phẩm **ẩn, chưa duyệt** 👁 (khách chưa thấy), giá = cột Giá bán (trống → 0, lưu nháp). Nếu tên trùng sản phẩm đã có, hệ thống cảnh báo "đã có sản phẩm cùng tên … Muốn cập nhật sản phẩm đó thì điền SKU của nó."
 - **Sản phẩm đã duyệt:** nội dung, giá **và hoa hồng CTV** đổi qua Excel đi vào **bản đang sửa** chờ duyệt ([9.4](#94-sửa-sản-phẩm-đã-duyệt)) — giá và hoa hồng có hiệu lực cùng lúc khi duyệt; khối lượng áp dụng ngay. Ô giá để trống **không** đụng tới giá đang chờ duyệt.
 - **Tải "danh sách sản phẩm hiện có"** ghi giá / hoa hồng **hiệu lực** (đang chờ duyệt nếu có) → tải về rồi nhập lại không sửa gì sẽ không đổi giá.
+- **Hai giai đoạn (19/11/2026):** bảng xem trước ghi dưới nhãn trạng thái từng dòng: **"Chỉ hồ sơ sản phẩm"**, **"Hồ sơ sản phẩm · giá mua …"** hoặc **"Sản phẩm + phiếu nhập: SL · kho · giá mua"**; dòng tóm tắt ghi số dòng tạo phiếu nhập và số dòng cập nhật giá mua. Có Số lô / Loại hàng mà không Số lượng → lưu ý "chưa nhập kho". Cột **Hạn sử dụng / Ngày sản xuất** của file cũ được bỏ qua kèm một lưu ý (file mẫu mới không còn cột này). File "danh sách sản phẩm hiện có" điền sẵn Giá mua hiện tại.
 - **Có Số lượng nhập** → 📦 tạo **phiếu Nhập kho NHÁP** (lý do "Nhập hàng từ Excel"), mỗi kho một phiếu. **Tồn chưa tăng cho đến khi bạn mở phiếu, kiểm tra và Ghi sổ** ([8.2](#82-phiếu-nhập-kho)). Hộp kết quả có link "{code} · kiểm tra và ghi sổ".
 - **Gửi duyệt ngay** bỏ qua sản phẩm chưa đủ điều kiện (vd chưa có giá): "Chưa gửi được {n} sản phẩm (chưa đủ điều kiện): … Giá bán ≤ 0". Đặt giá ([mục 7](#7-giá-bán-và-tỷ-giá)) rồi gửi duyệt.
 - **Duyệt luôn** chỉ duyệt sản phẩm mà lượt nhập này là thay đổi duy nhất. Sản phẩm đã có thay đổi / đang chờ duyệt từ trước được liệt kê "Chưa duyệt luôn … — mở xem đầy đủ rồi duyệt".
@@ -513,7 +513,7 @@ Dấu phân cách hàng nghìn kiểu 150,000 hoặc 150.000 đều được nh�
 | Chưa điền thương hiệu / Chưa điền danh mục | Điền ô còn thiếu |
 | {cột} khác nhau giữa các dòng | Các dòng cùng sản phẩm phải khớp nhau ở cột đó |
 | Sản phẩm đang thuộc kho X — đổi kho trong trang sản phẩm, không đổi qua Excel | Để trống hoặc điền đúng kho hiện tại |
-| Có thông tin tồn nhưng chưa điền Số lượng nhập | Điền số lượng hoặc xoá thông tin tồn |
+| Sản phẩm chưa có kho bán — ghi cột Kho bán để biết giá mua theo VND hay MMK / … nhập vào kho nào | Ghi mã kho ở cột Kho bán (19/11/2026: không còn tự lấy kho mặc định) |
 | Chưa điền giá mua (VND/đv) — kho … nhập từ Việt Nam | Điền giá mua |
 | Sản phẩm không quản lý hạn dùng: để trống hạn sử dụng | Xoá ô hạn sử dụng |
 | Trùng SKU và số lô X — gộp số lượng thành một dòng | Gộp dòng |

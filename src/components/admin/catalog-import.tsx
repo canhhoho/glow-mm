@@ -152,6 +152,12 @@ function ImportPreview({ preview, sheetName, action, pending, canApprove }: { pr
       <p className="text-sm font-medium" data-testid="catalog-import-summary">
         {t("summaryRows", { total: preview.rows.length, create: rc.create, update: rc.update, same: rc.same, error: rc.error })}
       </p>
+      {/* 19/11/2026: tách rõ hồ sơ SP (không tồn) và dòng tạo phiếu nhập; dòng chỉ có giá mua cập nhật giá mua hiện tại. */}
+      {(preview.counts.stockLines > 0 || preview.counts.purchasePrices > 0) && (
+        <p className="text-sm text-muted-foreground" data-testid="catalog-import-stock-summary">
+          {t("summaryStock", { stock: preview.counts.stockLines, documents: preview.documents, purchase: preview.counts.purchasePrices })}
+        </p>
+      )}
 
       {preview.general.length > 0 && (
         <Notice tone="danger" className="p-4">
@@ -206,6 +212,15 @@ function PreviewRow({ r }: { r: ImportRowView }) {
         <Badge tone={ACTION_TONE[r.action]}>{t(`action.${r.action}`)}</Badge>
         {r.changes.length > 0 && (
           <div className={cn("mt-1 text-xs", muted)}>{t("changed", { fields: r.changes.map(changeLabel).join(", ") })}</div>
+        )}
+        {r.action !== "error" && (
+          <div className={cn("mt-1 text-xs", muted)} data-testid="catalog-import-row-kind">
+            {r.stock
+              ? t("rowStock", { qty: fmtInt(r.stock.qty), location: r.stock.location, cost: fmtInt(r.stock.unitCost), currency: r.stock.currency })
+              : r.purchase
+                ? t("rowPurchase", { amount: fmtInt(r.purchase.amount), currency: r.purchase.currency, location: r.purchase.location })
+                : t("rowProfile")}
+          </div>
         )}
       </Td>
       <Td label={t("colProduct")}>
