@@ -53,11 +53,11 @@ export const PRODUCT_FIELDS: ProductField[] = [
   { key: "storage_note", section: "extra", level: "product", type: "text", form: true, excel: true, collapsed: true, wrap: true, width: 24 },
   { key: "pao_months", section: "extra", level: "product", type: "positive", form: true, excel: true, collapsed: true, width: 14 },
   { key: "warehouse_code", section: "stock", level: "stock", type: "text", list: "warehouses", form: false, excel: true, width: 12 },
-  { key: "qty", section: "stock", level: "stock", type: "positive", form: false, excel: true, width: 14 },
+  // 19/11/2026: Số lượng = SL DỰ KIẾN NHẬP (Variant.plannedReceiveQty) — không tạo phiếu; 0 hợp lệ.
+  { key: "qty", section: "stock", level: "stock", type: "whole", form: false, excel: true, width: 14 },
   // 19/11/2026: cờ hạn dùng tắt → file Excel không còn cột Hạn sử dụng (file cũ có cột này: bỏ qua kèm lưu ý — catalog-sheet LEGACY).
   { key: "expiry_date", section: "stock", level: "stock", type: "date", form: false, excel: FEATURES.expiry, width: 15 },
   { key: "unit_cost", section: "stock", level: "stock", type: "money", form: false, excel: true, width: 15 },
-  { key: "lot_no", section: "stock", level: "stock", type: "text", form: false, excel: true, collapsed: true, width: 14 },
 ];
 
 export const fieldsOf = (section: ProductSection) => PRODUCT_FIELDS.filter((f) => f.section === section);

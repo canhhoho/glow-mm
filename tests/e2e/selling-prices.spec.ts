@@ -46,17 +46,24 @@ test("thủ công kho VND: SP mới từ Excel → ghi sổ → Đặt giá (lô
   const name = `Manual price ${suffix}`;
   await login(page, "admin@glow.local");
 
-  // SP mới + tồn (phiếu nháp) qua Excel, ghi sổ.
+  // SP mới + SL dự kiến nhập + giá mua qua Excel (không tạo phiếu); phiếu nhập gợi ý sẵn → ghi sổ.
   await page.goto("/admin/products/import");
   const csv = toCsv([
-    ["name_en", "brand", "category", "weight_g", "warehouse_code", "qty", "expiry_date", "unit_cost"],
-    [name, "Sen Việt", "skincare", "100", "THAM", "5", "2029-12-31", "100000"],
+    ["name_en", "brand", "category", "weight_g", "warehouse_code", "qty", "unit_cost"],
+    [name, "Sen Việt", "skincare", "100", "THAM", "5", "100000"],
   ]);
   await page.getByLabel("File Excel nhập sản phẩm", { exact: true }).setInputFiles({ name: `manual-${suffix}.csv`, mimeType: "text/csv", buffer: Buffer.from(csv) });
   await page.getByRole("button", { name: "Xem trước", exact: true }).click();
   await expect(page.getByTestId("catalog-import-preview")).toBeVisible({ timeout: 30_000 });
   await page.getByRole("button", { name: "Xác nhận nhập", exact: true }).click();
-  await page.getByRole("link", { name: /kiểm tra và ghi sổ/ }).click();
+  await page.getByRole("link", { name: "Tạo phiếu nhập kho" }).click();
+  await page.getByRole("searchbox", { name: "Tìm SKU, tên sản phẩm" }).fill(name);
+  await page.getByRole("button", { name: "Chọn tất cả kết quả", exact: true }).click();
+  await page.getByRole("button", { name: "Tiếp tục nhập thông số", exact: true }).click();
+  await expect(page.getByRole("spinbutton", { name: /^Số lượng / })).toHaveValue("5");
+  await expect(page.getByRole("spinbutton", { name: /^Giá mua\/đv \(VND\) / })).toHaveValue("100000");
+  await page.getByRole("button", { name: "Lưu nháp" }).click();
+  await expect(page).toHaveURL(/\/admin\/inventory\/documents\/(?!new(?:\?|$))[^/?]+$/, { timeout: 30_000 });
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Ghi sổ", exact: true }).click();
   await expect(page.locator("span").filter({ hasText: /^Đã ghi sổ$/ }).filter({ visible: true })).toBeVisible();

@@ -75,7 +75,9 @@ test("file nhiều sheet: chọn đúng sheet, đổi sheet thì bỏ bản xem 
   await expect(preview).not.toContainText("Dữ liệu đợt đầu");
   await preview.getByRole("button", { name: "Xác nhận nhập", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Đã nhập: 1 SP mới");
-  await expect(page.getByRole("link", { name: /kiểm tra và ghi sổ/ })).toBeVisible();
+  // 19/11/2026: Excel không tạo phiếu — Số lượng thành SL dự kiến nhập, có link tạo phiếu nhập.
+  await expect(page.getByTestId("catalog-import-planned-note")).toContainText("1 phân loại");
+  await expect(page.getByRole("link", { name: "Tạo phiếu nhập kho" })).toBeVisible();
 });
 
 test("file lỗi vẫn hiện Xác nhận nhập; sửa file và xem trước lại thì mở nút", async ({ page }) => {
@@ -97,7 +99,7 @@ test("file lỗi vẫn hiện Xác nhận nhập; sửa file và xem trước l�
   // Chỉ kiểm tra xem trước, không ghi sản phẩm/tồn vào DB.
 });
 
-test("mẫu một sheet: tạo SP hai biến thể kèm tồn + nội dung → xác nhận → ghi sổ → giá → duyệt → đăng → khách thấy đúng", async ({ page }) => {
+test("mẫu một sheet: tạo SP hai biến thể + SL dự kiến nhập + nội dung → xác nhận → phiếu nhập gợi ý sẵn → ghi sổ → giá → duyệt → đăng → khách thấy đúng", async ({ page }) => {
   test.setTimeout(240_000);
   const suffix = Date.now();
   const name = `Excel imported ${suffix}`;
@@ -110,24 +112,37 @@ test("mẫu một sheet: tạo SP hai biến thể kèm tồn + nội dung → x
       name, brand: "Sen Việt", category: "skincare", variant_label: "50 ml", weight_g: 90,
       description_my: "Excel ဖြင့် ထည့်သွင်းသည်။", description_en: "Imported through the Excel browser flow.",
       usage_my: "နေ့စဉ် လိမ်းပါ။", usage_en: "Apply every morning.", ingredients: "Aqua, Zinc Oxide", storage_note: "Keep below 30°C", pao_months: 12,
-      warehouse_code: "THAM", qty: "3", expiry_date: "31/03/2028", unit_cost: "100.000",
+      warehouse_code: "THAM", qty: "3", unit_cost: "100.000",
     },
     { name, brand: "Sen Việt", category: "skincare", variant_label: "100 ml", weight_g: 140, warehouse_code: "THAM" },
   ]);
   await upload(page, "nhap.xlsx", filled);
   const preview = page.getByTestId("catalog-import-preview");
   await expect(preview.getByTestId("catalog-import-summary")).toHaveText("2 dòng: 2 tạo mới · 0 cập nhật · 0 không đổi · 0 lỗi");
-  // Không có cột Nhập kho riêng; 19/11/2026: dòng phụ ghi rõ dòng này tạo phiếu nhập (SL · kho · giá mua theo tiền của kho).
+  // Không có cột Nhập kho riêng; 19/11/2026: Số lượng = SL dự kiến nhập (Excel không tạo phiếu) + giá mua hiện tại.
   await expect(preview.getByRole("columnheader", { name: "Nhập kho" })).toHaveCount(0);
-  await expect(preview.getByRole("row").filter({ hasText: "50 ml" }).getByTestId("catalog-import-row-kind")).toContainText("Sản phẩm + phiếu nhập");
-  await expect(preview.getByTestId("catalog-import-stock-summary")).toContainText("dòng tạo phiếu nhập nháp");
+  await expect(preview.getByRole("row").filter({ hasText: "50 ml" }).getByTestId("catalog-import-row-kind")).toContainText("SL dự kiến nhập 3");
+  await expect(preview.getByTestId("catalog-import-stock-summary")).toContainText("1 phân loại ghi SL dự kiến nhập");
   await expect(preview.getByRole("row").filter({ hasText: "50 ml" })).toContainText("90");
   await expect(preview.getByRole("alert")).toHaveCount(0);
   await page.screenshot({ path: "test-results/screens/catalog-import-preview.png", fullPage: true });
   await page.getByRole("button", { name: "Xác nhận nhập", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Đã nhập: 1 SP mới", { timeout: 30_000 });
-  await page.getByRole("link", { name: /kiểm tra và ghi sổ/ }).click();
-  await expect(page).toHaveURL(/\/admin\/inventory\/documents\/[^/?]+$/);
+  await expect(page.getByTestId("catalog-import-planned-note")).toContainText("Đã ghi SL dự kiến nhập cho 1 phân loại");
+  // Hàng về: phiếu nhập — danh sách gợi ý lọc "có SL dự kiến nhập"; bước 2 điền sẵn SL 3, giá mua 100.000, lô NK + ngày.
+  await page.getByRole("link", { name: "Tạo phiếu nhập kho" }).click();
+  await expect(page.getByTestId("receive-selection")).toBeVisible();
+  await page.getByRole("searchbox", { name: "Tìm SKU, tên sản phẩm" }).fill(name);
+  await page.getByLabel("Chỉ SP có SL dự kiến nhập").check();
+  await expect(page.getByTestId("receive-selection").getByRole("row").filter({ hasText: name })).toHaveCount(1);
+  await page.getByRole("button", { name: "Chọn tất cả kết quả", exact: true }).click();
+  await page.getByRole("button", { name: "Tiếp tục nhập thông số", exact: true }).click();
+  await expect(page.getByRole("spinbutton", { name: /^Số lượng / })).toHaveValue("3");
+  await expect(page.getByRole("spinbutton", { name: /^Giá mua\/đv \(VND\) / })).toHaveValue("100000");
+  await expect(page.getByLabel("Số lô chung")).toHaveValue(/^NK\d{6}$/);
+  await page.screenshot({ path: "test-results/screens/receive-suggested.png", fullPage: true });
+  await page.getByRole("button", { name: "Lưu nháp" }).click();
+  await expect(page).toHaveURL(/\/admin\/inventory\/documents\/(?!new(?:\?|$))[^/?]+$/, { timeout: 30_000 });
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Ghi sổ", exact: true }).click();
   await expect(page.locator("span").filter({ hasText: /^Đã ghi sổ$/ }).filter({ visible: true })).toBeVisible();

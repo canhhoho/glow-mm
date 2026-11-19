@@ -33,17 +33,21 @@ type Row = {
 
 type Defaults = { lotNo: string; expiryDate: string; mfgDate: string; stockType: StockType };
 
-/** `key` ổn định: dòng gốc = chỉ số biến thể (server/client trùng nhau → không lệch hydration); dòng tách = bộ đếm riêng của form. */
+/**
+ * `key` ổn định: dòng gốc = chỉ số biến thể (server/client trùng nhau → không lệch hydration); dòng tách = bộ đếm riêng của form.
+ * Gợi ý (19/11/2026, sửa được): số lượng = SL dự kiến nhập của phân loại (0 vẫn hiện 0), giá mua = giá mua hiện tại (chưa có →
+ * giá lần nhập trước). Dòng tách (lô thứ 2…) để trống số lượng.
+ */
 const newRow = (v: ReceiveVariant, key: number, split = false): Row => ({
   key,
   variantId: v.id,
   split,
-  qty: "",
+  qty: split ? "" : String(v.plannedQty),
   lotNo: "",
   expiryStatus: !FEATURES.expiry ? "NONE" : v.requiresExpiry ? "DATED" : "NONE",
   expiryDate: "",
   mfgDate: "",
-  unitCost: v.lastCost == null ? "" : String(v.lastCost),
+  unitCost: String(v.purchasePrice ?? v.lastCost ?? ""),
   stockType: "",
 });
 
@@ -72,6 +76,9 @@ function rowInvalid(r: Row, d: Defaults) {
 }
 
 type Location = { id: string; code: string; name: string; sellable: boolean; pricingMode: "VN_IMPORT" | "LOCAL_MMK" | null };
+type StockFilter = "" | "in" | "out" | "awaiting";
+/** Ô lọc kho bán ở bước 1: "" = mọi kho, NO_WAREHOUSE = SP chưa có kho bán. */
+const NO_WAREHOUSE = "-";
 
 /**
  * Kho nhận cho một sản phẩm (P24): SP đã có kho bán → chỉ kho đó; SP chưa có kho → mọi kho. Vị trí không bán (Chờ kiểm tra,
@@ -113,6 +120,8 @@ function initialRows(variants: ReceiveVariant[], draft?: ReceiveDraft): { rows: 
  * từng sản phẩm; giữ dữ liệu khi quay lại bước 1. **Kho chọn theo từng sản phẩm** (SP đã có kho → cố định); lưu thì server tự
  * tách mỗi kho một phiếu nháp. Không có tỷ giá / phí về kho trên phiếu (tỷ giá chốt lúc ghi sổ).
  * `productId` (QT1b, nút "Nhập hàng" ở bước 2 trang SP): chọn sẵn các biến thể của SP.
+ * Bước 1 (19/11/2026) = danh sách gợi ý mọi phân loại đang bán, lọc theo tìm kiếm / thương hiệu / danh mục / kho bán / tình trạng
+ * hàng / có SL dự kiến nhập. `suggestedLot` = số lô chung gợi ý (NK + ngày tạo phiếu), sửa được.
  * `draft`: sửa phiếu nháp — mở bước 1 với dòng của phiếu đã tích sẵn; "Lưu nháp" cập nhật đúng phiếu đó.
  * Mỗi lần mở form một khoá chống trùng: bấm lưu 2 lần / gửi lại không tạo phiếu thứ hai (khoá dẫn xuất theo kho khi tách).
  */
@@ -123,6 +132,7 @@ export function ReceiveBulkForm({
   lastShip = null,
   productId,
   draft,
+  suggestedLot = "",
 }: {
   locations: Location[];
   shipments: { id: string; code: string }[];
@@ -130,6 +140,7 @@ export function ReceiveBulkForm({
   lastShip?: number | null;
   productId?: string;
   draft?: ReceiveDraft;
+  suggestedLot?: string;
 }) {
   const t = useTranslations("Docs");
   const ti = useTranslations("Inventory");
@@ -167,12 +178,16 @@ export function ReceiveBulkForm({
   const [shipmentId, setShipmentId] = useState(draft?.shipmentId ?? "");
   const [estimatedShip, setEstimatedShip] = useState(draft ? draft.estimatedShip : lastShip == null ? "" : String(lastShip));
   const [reason, setReason] = useState(draft?.reason ?? "");
-  const [defaults, setDefaults] = useState<Defaults>({ lotNo: "", expiryDate: "", mfgDate: "", stockType: "SELLABLE" });
+  const [defaults, setDefaults] = useState<Defaults>({ lotNo: suggestedLot, expiryDate: "", mfgDate: "", stockType: "SELLABLE" });
   const [init] = useState(() => initialRows(variants, draft));
   const [rows, setRows] = useState<Row[]>(init.rows);
   const nextKey = useRef(init.next);
   const [q, setQ] = useState("");
   const [brand, setBrand] = useState("");
+  const [category, setCategory] = useState("");
+  const [stockLoc, setStockLoc] = useState("");
+  const [stockFilter, setStockFilter] = useState<StockFilter>("");
+  const [onlyPlanned, setOnlyPlanned] = useState(false);
   const [onlyFilled, setOnlyFilled] = useState(false);
   const [invalid, setInvalid] = useState<Set<number>>(new Set());
   const [clientError, setClientError] = useState("");
@@ -181,6 +196,7 @@ export function ReceiveBulkForm({
   const [pasteMsg, setPasteMsg] = useState<{ filled: number; errors: string[] } | null>(null);
 
   const brands = useMemo(() => [...new Set(variants.map((v) => v.brand))].sort((a, b) => a.localeCompare(b)), [variants]);
+  const categories = useMemo(() => [...new Map(variants.filter((v) => v.category).map((v) => [v.categoryId, v.category])).entries()].sort((a, b) => a[1].localeCompare(b[1])), [variants]);
 
   const setWeight = useCallback((variantId: string, value: string) => setWeights((w) => ({ ...w, [variantId]: value })), []);
 
@@ -352,7 +368,25 @@ export function ReceiveBulkForm({
 
   if (step === 1) {
     const needle = fold(q.trim());
-    const choices = variants.filter((v) => (!brand || v.brand === brand) && (!productFilter || v.productId === productFilter) && (!needle || fold(`${v.sku} ${v.name} ${v.label} ${v.brand}`).includes(needle)));
+    const choices = variants.filter(
+      (v) =>
+        (!brand || v.brand === brand) &&
+        (!category || v.categoryId === category) &&
+        (!stockLoc || (stockLoc === NO_WAREHOUSE ? v.stockLocationId == null : v.stockLocationId === stockLoc)) &&
+        (stockFilter === "" || (stockFilter === "in" ? v.onHand > 0 : stockFilter === "out" ? v.onHand <= 0 : v.awaiting > 0)) &&
+        (!onlyPlanned || v.plannedQty > 0) &&
+        (!productFilter || v.productId === productFilter) &&
+        (!needle || fold(`${v.sku} ${v.name} ${v.label} ${v.brand}`).includes(needle)),
+    );
+    const filtering = !!(q || brand || category || stockLoc || stockFilter || onlyPlanned);
+    const clearFilters = () => {
+      setQ("");
+      setBrand("");
+      setCategory("");
+      setStockLoc("");
+      setStockFilter("");
+      setOnlyPlanned(false);
+    };
     const toggle = (id: string, checked: boolean) => setSelected((s) => {
       const next = new Set(s);
       if (checked) next.add(id); else next.delete(id);
@@ -372,26 +406,68 @@ export function ReceiveBulkForm({
           <option value="">{t("allBrands")}</option>
           {brands.map((b) => <option key={b}>{b}</option>)}
         </select>
+        <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label={t("filterCategory")} className={cn(fieldClass, "w-auto")}>
+          <option value="">{t("allCategories")}</option>
+          {categories.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+        </select>
+        <select value={stockLoc} onChange={(e) => setStockLoc(e.target.value)} aria-label={t("filterWarehouse")} className={cn(fieldClass, "w-auto")}>
+          <option value="">{t("allWarehouses")}</option>
+          {locations.filter((l) => l.sellable).map((l) => <option key={l.id} value={l.id}>{l.code} — {l.name}</option>)}
+          <option value={NO_WAREHOUSE}>{t("noWarehouseYet")}</option>
+        </select>
+        <select value={stockFilter} onChange={(e) => setStockFilter(e.target.value as StockFilter)} aria-label={t("filterStock")} className={cn(fieldClass, "w-auto")}>
+          <option value="">{t("stockAll")}</option>
+          <option value="in">{t("stockIn")}</option>
+          <option value="out">{t("stockOut")}</option>
+          <option value="awaiting">{t("stockAwaiting")}</option>
+        </select>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={onlyPlanned} onChange={(e) => setOnlyPlanned(e.target.checked)} className="size-4 accent-primary" />
+          {t("onlyPlanned")}
+        </label>
+        {filtering && <Button type="button" variant="ghost" size="lg" onClick={clearFilters}>{t("clearFilters")}</Button>}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
         <Button type="button" variant="outline" size="lg" disabled={!choices.length} onClick={() => setSelected((s) => new Set([...s, ...choices.map((v) => v.id)]))}>{t("receiveSelectAll")}</Button>
         <Button type="button" variant="outline" size="lg" disabled={!selected.size} onClick={() => setSelected(new Set())}>{t("receiveClearSelection")}</Button>
+        <span className="text-sm text-muted-foreground">{t("receiveMatchCount", { count: choices.length })}</span>
       </div>
       <div className="overflow-x-auto rounded-xl border bg-card">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-muted/50 text-left text-xs text-muted-foreground"><tr><th className="px-3 py-2 font-medium">{t("receiveChoose")}</th><th className="px-3 py-2 font-medium">{t("variant")}</th><th className="px-3 py-2 font-medium">{t("filterBrand")}</th><th className="px-3 py-2 font-medium">{t("warehouse")}</th></tr></thead>
+        <table className="w-full min-w-[46rem] text-left text-sm">
+          <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2 font-medium">{t("receiveChoose")}</th>
+              <th className="px-3 py-2 font-medium">{t("variant")}</th>
+              <th className="px-3 py-2 font-medium">{t("filterBrand")}</th>
+              <th className="px-3 py-2 font-medium">{t("warehouse")}</th>
+              <th className="px-3 py-2 text-right font-medium">{t("colOnHand")}</th>
+              <th className="px-3 py-2 text-right font-medium">{t("colPlanned")}</th>
+              <th className="px-3 py-2 text-right font-medium">{t("colPurchase")}</th>
+            </tr>
+          </thead>
           <tbody className="divide-y">
-            {choices.map((v) => <tr key={v.id} className={cn(selected.has(v.id) && "bg-primary/5")}>
-              <td className="px-3 py-2"><input id={`receive-pick-${v.id}`} type="checkbox" aria-label={`${t("receiveChoose")} ${v.sku}`} checked={selected.has(v.id)} onChange={(e) => toggle(v.id, e.target.checked)} className="size-4 accent-primary" /></td>
-              <td className="px-3 py-2"><label htmlFor={`receive-pick-${v.id}`} className="block cursor-pointer"><span className="font-mono text-xs">{v.sku}</span><span className="block">{v.name} <span className="text-muted-foreground">({v.label})</span></span></label></td>
-              <td className="px-3 py-2">{v.brand}</td>
-              <td className="px-3 py-2">{v.stockLocationId ? (locById.get(v.stockLocationId)?.name ?? "—") : <span className="text-muted-foreground">{t("noWarehouseYet")}</span>}</td>
-            </tr>)}
-            {!choices.length && <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">{t("noMatch")}</td></tr>}
+            {choices.map((v) => {
+              const price = v.purchasePrice ?? v.lastCost;
+              return <tr key={v.id} className={cn(selected.has(v.id) && "bg-primary/5")}>
+                <td className="px-3 py-2"><input id={`receive-pick-${v.id}`} type="checkbox" aria-label={`${t("receiveChoose")} ${v.sku}`} checked={selected.has(v.id)} onChange={(e) => toggle(v.id, e.target.checked)} className="size-4 accent-primary" /></td>
+                <td className="px-3 py-2"><label htmlFor={`receive-pick-${v.id}`} className="block cursor-pointer"><span className="font-mono text-xs">{v.sku}</span><span className="block">{v.name} <span className="text-muted-foreground">({v.label})</span></span>{v.category && <span className="block text-xs text-muted-foreground">{v.category}</span>}</label></td>
+                <td className="px-3 py-2">{v.brand}</td>
+                <td className="px-3 py-2">{v.stockLocationId ? (locById.get(v.stockLocationId)?.name ?? "—") : <span className="text-muted-foreground">{t("noWarehouseYet")}</span>}</td>
+                <td className="px-3 py-2 text-right tabular-nums">
+                  {fmtInt(v.onHand)}
+                  {v.awaiting > 0 && <span className="block text-xs text-warning-foreground">{t("awaitingCount", { count: fmtInt(v.awaiting) })}</span>}
+                </td>
+                <td className={cn("px-3 py-2 text-right tabular-nums", v.plannedQty > 0 ? "font-medium" : "text-muted-foreground")}>{fmtInt(v.plannedQty)}</td>
+                <td className="px-3 py-2 text-right tabular-nums">{price == null ? <span className="text-muted-foreground">—</span> : `${fmtInt(price)} ${v.currency ?? ""}`}</td>
+              </tr>;
+            })}
+            {!choices.length && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">{t("noMatch")}</td></tr>}
           </tbody>
         </table>
       </div>
       <div className="sticky bottom-0 flex flex-wrap items-center gap-3 border-t bg-background py-3">
         <span role="status" className="text-sm">{t("receiveSelectedCount", { count })}</span>
-        <Button type="button" size="lg" disabled={!count} onClick={() => { setQ(""); setBrand(""); setProductFilter(""); setOnlyFilled(false); setStep(2); }}>{t("receiveNext")}</Button>
+        <Button type="button" size="lg" disabled={!count} onClick={() => { clearFilters(); setProductFilter(""); setOnlyFilled(false); setStep(2); }}>{t("receiveNext")}</Button>
       </div>
     </div>;
   }

@@ -362,8 +362,6 @@ export async function catalogImportAction(_prev: CatalogImportState, formData: F
     const user = await requirePermission("catalog:manage");
     if (formData.get("step") === "confirm") {
       const input = catalogImportInputSchema.parse(JSON.parse(z.string().max(6_000_000).parse(formData.get("payload"))));
-      const check = await previewCatalogImport(input);
-      if (check.counts.stockLines > 0) await requirePermission("stock:receive");
       // §6.4: "Gửi duyệt ngay" (form bật sẵn) chạy cùng transaction; "Duyệt luôn" chỉ người có quyền duyệt, chạy sau commit.
       const submit = formData.get("submitNow") === "on";
       const approve = submit && formData.get("approveNow") === "on";
@@ -373,7 +371,6 @@ export async function catalogImportAction(_prev: CatalogImportState, formData: F
       refreshPrices();
       const reviewView = review ? await finishBatchReview(review, user.id, approve) : undefined;
       refreshPrices();
-      revalidatePath("/admin/inventory/documents");
       return { result, review: reviewView };
     }
     const selectedSheet = formData.get("sheet");
@@ -381,7 +378,6 @@ export async function catalogImportAction(_prev: CatalogImportState, formData: F
     const file = await readCatalogFile(formData.get("file"), sheetName);
     const standardLabel = (await getTranslations("Products"))("standardVariant");
     const preview = await previewCatalogImport({ csv: file.csv, lines: file.lines, standardLabel });
-    if (preview.counts.stockLines > 0) await requirePermission("stock:receive");
     return { preview, sheetName: file.sheetName };
   } catch (e) {
     return { error: message(e) };

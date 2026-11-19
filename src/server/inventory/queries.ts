@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { balanceKey, previewDocument, type PreviewDoc } from "./document-preview";
 import { receiptSourceLine } from "@/server/pricing/cost";
 import type { DocStatus, DocType } from "@/generated/prisma/client";
+import { yangonDayKey } from "@/lib/time";
 
 /** Tên hiển thị của sản phẩm cho admin: ưu tiên tiếng Anh, sau đó tiếng Myanmar. */
 export function productName(translations: { locale: string; name: string }[], fallback: string) {
@@ -46,15 +47,36 @@ export async function listVariantsForPicker() {
 
 /** Biến thể nhập kho được (đang dùng, không phải combo) cho bảng nhập nhanh; `lastCost` = giá mua của lần nhập gần nhất. */
 /** `includeIds`: biến thể đang có trong phiếu nháp được sửa — luôn kèm (kể cả đã tắt / ngừng KD) để không rơi dòng khi lưu. */
+/**
+ * Số lô gợi ý của phiếu nhập (19/11/2026): "NK" + ngày tạo phiếu (giờ Yangon) dạng yymmdd — cùng mẫu với lô tự sinh trước đây.
+ * Tính ở server để server/client hiển thị giống nhau (không lệch hydration quanh nửa đêm).
+ */
+export function suggestedReceiveLot(now = new Date()): string {
+  return `NK${yangonDayKey(now).slice(2).replaceAll("-", "")}`;
+}
+
+/**
+ * Danh sách gợi ý của phiếu nhập: mọi phân loại đang bán (không combo, SP chưa ngừng kinh doanh), kèm dữ liệu cho bộ lọc
+ * (thương hiệu, danh mục, kho bán, tình trạng hàng, SL dự kiến nhập) và giá trị gợi ý (SL dự kiến nhập, giá mua hiện tại).
+ */
 export async function listVariantsForReceive(opts: { includeIds?: string[] } = {}) {
-  const [variants, lastVnd, lastMmk] = await Promise.all([
+  const [variants, lastVnd, lastMmk, balances, waiting] = await Promise.all([
     prisma.variant.findMany({
       where: {
         isBundle: false,
         OR: [{ active: true, product: { archivedAt: null } }, ...(opts.includeIds?.length ? [{ id: { in: opts.includeIds } }] : [])],
       },
       orderBy: { sku: "asc" },
-      include: { product: { include: { translations: true, brand: true, stockLocation: { select: { pricingMode: true } } } } },
+      include: {
+        product: {
+          include: {
+            translations: true,
+            brand: true,
+            stockLocation: { select: { pricingMode: true } },
+            category: { select: { id: true, slug: true, translations: { select: { locale: true, name: true } } } },
+          },
+        },
+      },
     }),
     // Giá mua gợi ý: giá của lần nhập ĐÃ GHI SỔ gần nhất (hàng bán được) — không phải giá bình quân của lô (P1-C, A1 16/11).
     prisma.stockDocumentLine.findMany({
@@ -69,9 +91,19 @@ export async function listVariantsForReceive(opts: { includeIds?: string[] } = {
       orderBy: [{ variantId: "asc" }, { document: { postedAt: "desc" } }, { id: "desc" }],
       select: { variantId: true, unitCostMmk: true },
     }),
+    // Tồn hàng bán ở kho bán (bộ lọc "Còn hàng / Hết hàng") — chỉ để lọc, không phải số khả dụng (không trừ giữ hàng).
+    prisma.stockBalance.findMany({
+      where: { qty: { gt: 0 }, stockType: "SELLABLE", location: { sellable: true } },
+      select: { qty: true, batch: { select: { variantId: true } } },
+    }),
+    // Đơn đặt trước đang chờ hàng (bộ lọc "Có đơn chờ hàng").
+    prisma.orderItem.groupBy({ by: ["variantId"], where: { order: { status: "AWAITING_STOCK" } }, _sum: { qty: true } }),
   ]);
   const vnd = new Map(lastVnd.map((b) => [b.variantId, b.unitCostVnd]));
   const mmk = new Map(lastMmk.map((b) => [b.variantId, b.unitCostMmk]));
+  const onHand = new Map<string, number>();
+  for (const b of balances) onHand.set(b.batch.variantId, (onHand.get(b.batch.variantId) ?? 0) + b.qty);
+  const awaiting = new Map(waiting.map((w) => [w.variantId, w._sum.qty ?? 0]));
   return variants.map((v) => {
     // P24: loại tiền giá mua theo kho của SP (kho mua tại Myanmar → MMK). SP chưa có kho → null, form lấy theo kho nhận.
     const loc = v.product.stockLocation;
@@ -89,6 +121,14 @@ export async function listVariantsForReceive(opts: { includeIds?: string[] } = {
       requiresExpiry: v.product.requiresExpiry,
       currency,
       lastCost: (currency === "MMK" ? mmk.get(v.id) : currency === "VND" ? vnd.get(v.id) : undefined) ?? null,
+      /** Giá mua hiện tại theo tiền của kho bán (19/11/2026) — gợi ý giá mua của phiếu; null = chưa có (dùng giá lần nhập trước). */
+      purchasePrice: (currency === "MMK" ? v.purchasePriceMmk : currency === "VND" ? v.purchasePriceVnd : null) ?? null,
+      /** SL dự kiến nhập (điền khi tạo SP / Excel) — gợi ý số lượng của phiếu. */
+      plannedQty: v.plannedReceiveQty,
+      categoryId: v.product.categoryId,
+      category: v.product.category ? productName(v.product.category.translations, v.product.category.slug) : "",
+      onHand: onHand.get(v.id) ?? 0,
+      awaiting: awaiting.get(v.id) ?? 0,
     };
   });
 }

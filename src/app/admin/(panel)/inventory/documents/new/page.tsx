@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import type { Permission } from "@/server/auth/roles";
-import { batchesForForms, getDocument, listLocations, listShipments, listVariantsForPicker, listVariantsForReceive } from "@/server/inventory/queries";
+import { batchesForForms, getDocument, listLocations, listShipments, listVariantsForPicker, listVariantsForReceive, suggestedReceiveLot } from "@/server/inventory/queries";
 import { DocumentForm } from "@/components/admin/document-form";
 import { ReceiveBulkForm } from "@/components/admin/receive-bulk-form";
 import { lastShipRate } from "@/server/pricing/queries";
@@ -38,6 +38,7 @@ export default async function NewDocumentPage({ searchParams }: PageProps<"/admi
           shipments={shipments.map((s) => ({ id: s.id, code: s.code }))}
           variants={variants}
           productId={typeof product === "string" ? product : undefined}
+          suggestedLot={suggestedReceiveLot()}
         />
       </Page>
     );
