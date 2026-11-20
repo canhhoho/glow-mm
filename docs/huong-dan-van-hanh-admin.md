@@ -682,7 +682,7 @@ Tạo từ **Tồn kho › Tạo phiếu**. Mỗi loại có quyền riêng (Qu�
 |---|---|---|
 | **Chuyển kho** | Chuyển hàng giữa kho/vị trí, ví dụ sau khi **đổi kho** sản phẩm | Vị trí đi và đến phải khác nhau. Cột **Lô** để "Tự chọn theo FEFO" hoặc chọn lô |
 | **Xuất kho** | Xuất ngoài đơn hàng (hỏng, tặng…) | Bắt buộc **lý do** |
-| **Điều chỉnh** | **Sửa sai tồn** (kiểm kê lệch, nhập nhầm đã ghi sổ) | Bắt buộc chọn **lô** cụ thể (chỉ lô **đã có sổ kho** — lô chỉ thuộc phiếu nhập nháp thì ghi sổ phiếu nhập trước), nhập **SL (+ thêm / − bớt)** và lý do |
+| **Điều chỉnh** | **Sửa sai tồn** (kiểm kê lệch, nhập nhầm đã ghi sổ) | Bắt buộc chọn **lô** cụ thể (chỉ lô **đã có sổ kho** — lô chỉ thuộc phiếu nhập nháp thì ghi sổ phiếu nhập trước), nhập **SL (+ thêm / − bớt)** và lý do. 20/11/2026: chọn vị trí trước — ô Tên SP / SKU chỉ gợi ý **sản phẩm đang có tồn ở vị trí đó** (phiếu Xuất / Chuyển: tồn ở kho xuất); đổi vị trí thì dòng có SP không còn tồn bị bỏ chọn kèm thông báo |
 
 Tất cả: **Lưu nháp** → **Ghi sổ** ⛔📦.
 

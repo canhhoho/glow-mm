@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { batchSelectable, keepValidBatches, type FormBatchLike } from "@/server/inventory/document-form-rules";
+import { batchSelectable, keepValidBatches, variantsInStockAt, type FormBatchLike } from "@/server/inventory/document-form-rules";
 import { balanceKey, previewDocument } from "@/server/inventory/document-preview";
 
 const batches: FormBatchLike[] = [
@@ -15,6 +15,14 @@ describe("chọn lô ở form phiếu kho", () => {
     expect(batchSelectable("ISSUE", batches[1], "A", "TESTER")).toBe(true);
     expect(batchSelectable("ADJUST", batches[0], "B", "SELLABLE")).toBe(true);
     expect(batchSelectable("ADJUST", batches[2], "A", "SELLABLE")).toBe(false);
+  });
+
+  it("bộ chọn SP chỉ gồm phân loại đang có tồn (> 0, mọi loại tồn) ở vị trí; chưa chọn vị trí → rỗng", () => {
+    const more: FormBatchLike[] = [...batches, { id: "b4", variantId: "v2", posted: true, balances: [{ locationId: "A", stockType: "SELLABLE", qty: 0 }] }];
+    expect([...variantsInStockAt(more, "A")]).toEqual(["v1"]);
+    expect([...variantsInStockAt(more, "B")]).toEqual(["v1"]);
+    expect([...variantsInStockAt(more, "C")]).toEqual([]);
+    expect(variantsInStockAt(more, "").size).toBe(0);
   });
 
   it("đổi kho xuất → bỏ chọn lô không còn hàng ở kho mới, giữ lô còn hợp lệ, đếm số dòng bị bỏ", () => {

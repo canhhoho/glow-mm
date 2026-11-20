@@ -184,14 +184,17 @@ test("form chuyển kho: đổi kho xuất thì bỏ chọn lô không còn hàn
   await batch.selectOption({ index: 1 });
   await expect(batch).not.toHaveValue("");
 
-  // Thử lần lượt các kho xuất khác: ít nhất một kho không còn lô này → lô bị bỏ chọn kèm thông báo.
+  // Thử lần lượt các kho xuất khác: ít nhất một kho không còn lô này → lô bị bỏ chọn kèm thông báo. 20/11/2026: kho mới
+  // không có tồn của SP → bỏ chọn luôn SP (bộ chọn chỉ gồm SP có tồn ở kho xuất), thông báo riêng.
   const values = await from.locator("option").evaluateAll((os) => (os as HTMLOptionElement[]).map((o) => o.value).filter(Boolean));
   let cleared = false;
   for (const v of values) {
     await from.selectOption(v);
-    if (await page.getByTestId("lots-cleared").isVisible()) {
+    const productGone = await page.getByTestId("products-cleared").isVisible();
+    if (productGone || (await page.getByTestId("lots-cleared").isVisible())) {
       cleared = true;
       await expect(batch).toHaveValue("");
+      if (productGone) await expect(page.getByLabel("SKU", { exact: true })).toHaveValue("");
       break;
     }
     await from.selectOption({ label: "THAM — Kho Thắm" });
@@ -205,7 +208,12 @@ test("phiếu điều chỉnh: chọn Tên SP → SKU → Phân loại liên k�
 
   await login(page, "kho@glow.local");
   await page.goto("/admin/inventory/documents/new?type=ADJUST");
+  // 20/11/2026: bộ chọn SP chỉ gồm phân loại đang có tồn ở vị trí đã chọn — chưa chọn vị trí thì danh sách rỗng.
+  await expect(page.getByTestId("stock-picker-hint")).toContainText("Chọn vị trí trước");
+  await expect(page.locator("#picker-products option")).toHaveCount(0);
   await page.getByRole("combobox", { name: "Chọn vị trí", exact: true }).selectOption({ label: "THAM — Kho Thắm" });
+  await expect(page.getByTestId("stock-picker-hint")).toContainText("đang có tồn ở vị trí này");
+  expect(await page.locator("#picker-products option").count()).toBeGreaterThan(0);
   await page.getByLabel("Lý do / ghi chú").fill("Kiểm kê E2E");
   const line1 = page.locator("fieldset").nth(0);
   const variant1 = line1.getByLabel("Phân loại");
