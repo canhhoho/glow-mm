@@ -513,11 +513,7 @@ Dấu phân cách hàng nghìn kiểu 150,000 hoặc 150.000 đều được nh�
 | {cột} khác nhau giữa các dòng | Các dòng cùng sản phẩm phải khớp nhau ở cột đó |
 | Sản phẩm đang thuộc kho X — đổi kho trong trang sản phẩm, không đổi qua Excel | Để trống hoặc điền đúng kho hiện tại |
 | Sản phẩm chưa có kho bán — ghi cột Kho bán để biết giá mua theo VND hay MMK / … nhập vào kho nào | Ghi mã kho ở cột Kho bán (19/11/2026: không còn tự lấy kho mặc định) |
-| Chưa điền giá mua (VND/đv) — kho … nhập từ Việt Nam | Điền giá mua |
-| Sản phẩm không quản lý hạn dùng: để trống hạn sử dụng | Xoá ô hạn sử dụng |
-| Trùng SKU và số lô X — gộp số lượng thành một dòng | Gộp dòng |
-| Lô X … đã có với hạn dùng khác… | Dùng số lô khác hoặc đúng hạn cũ |
-| Lô X … thuộc chuyến hàng — nhập thêm qua phiếu nhập của chuyến | Nhập qua phiếu kho ([8.2](#82-phiếu-nhập-kho)) |
+| Kho X nhập giá mua MMK, để trống cột VND (hoặc ngược lại) | Ghi giá mua đúng loại tiền của kho. 19/11/2026: Excel **không bắt buộc** giá mua (kể cả khi có SL dự kiến nhập) và không còn kiểm số lô / hạn dùng — các kiểm này ở phiếu nhập ([8.2](#82-phiếu-nhập-kho)) |
 | Hoa hồng CTV … lớn hơn giá bán | Giảm hoa hồng |
 | …đã ngừng kinh doanh — khôi phục trước khi cập nhật | Khôi phục sản phẩm ([5.8](#58-xoá-khôi-phục-đổi-kho-ẩnhiện)) |
 
