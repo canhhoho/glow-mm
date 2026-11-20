@@ -10,6 +10,7 @@ import { parseReceivePaste } from "@/lib/receive-paste";
 import { cn } from "@/lib/utils";
 import { createDocumentAction, updateDocumentAction } from "@/server/inventory/actions";
 import type { ReceiveVariant } from "@/server/inventory/queries";
+import type { ReceivePick } from "@/lib/receive-picks";
 import { FEATURES } from "@/lib/features";
 
 type StockType = "SELLABLE" | "TESTER";
@@ -133,6 +134,7 @@ export function ReceiveBulkForm({
   productId,
   draft,
   suggestedLot = "",
+  picks = [],
 }: {
   locations: Location[];
   shipments: { id: string; code: string }[];
@@ -141,6 +143,8 @@ export function ReceiveBulkForm({
   productId?: string;
   draft?: ReceiveDraft;
   suggestedLot?: string;
+  /** Chọn sẵn từ Cảnh báo (`?pick=id[:qty]`, 20/11/2026): tích sẵn ở bước 1; qty thay SL dự kiến nhập ở bước 2. */
+  picks?: ReceivePick[];
 }) {
   const t = useTranslations("Docs");
   const ti = useTranslations("Inventory");
@@ -148,7 +152,10 @@ export function ReceiveBulkForm({
   const idempotencyKey = useRef<string | null>(null);
   const focus = productId ? allVariants.filter((v) => v.productId === productId) : [];
   const [step, setStep] = useState<1 | 2>(1);
-  const [selected, setSelected] = useState<Set<string>>(() => new Set(draft ? draft.lines.map((l) => l.variantId) : focus.map((v) => v.id)));
+  const known = useMemo(() => new Set(allVariants.map((v) => v.id)), [allVariants]);
+  const [selected, setSelected] = useState<Set<string>>(
+    () => new Set(draft ? draft.lines.map((l) => l.variantId) : [...focus.map((v) => v.id), ...picks.filter((p) => known.has(p.id)).map((p) => p.id)]),
+  );
   const [productFilter, setProductFilter] = useState(focus.length ? productId! : "");
   const variants = allVariants;
   const locById = useMemo(() => new Map(locations.map((l) => [l.id, l])), [locations]);
@@ -179,7 +186,12 @@ export function ReceiveBulkForm({
   const [estimatedShip, setEstimatedShip] = useState(draft ? draft.estimatedShip : lastShip == null ? "" : String(lastShip));
   const [reason, setReason] = useState(draft?.reason ?? "");
   const [defaults, setDefaults] = useState<Defaults>({ lotNo: suggestedLot, expiryDate: "", mfgDate: "", stockType: "SELLABLE" });
-  const [init] = useState(() => initialRows(variants, draft));
+  const [init] = useState(() => {
+    const r = initialRows(variants, draft);
+    if (draft || picks.length === 0) return r;
+    const qty = new Map(picks.flatMap((p) => (p.qty ? [[p.id, String(p.qty)] as const] : [])));
+    return { ...r, rows: r.rows.map((row) => (!row.split && qty.has(row.variantId) ? { ...row, qty: qty.get(row.variantId)! } : row)) };
+  });
   const [rows, setRows] = useState<Row[]>(init.rows);
   const nextKey = useRef(init.next);
   const [q, setQ] = useState("");

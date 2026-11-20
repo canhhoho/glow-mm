@@ -5,6 +5,7 @@ import type { Permission } from "@/server/auth/roles";
 import { batchesForForms, getDocument, listLocations, listShipments, listVariantsForPicker, listVariantsForReceive, suggestedReceiveLot } from "@/server/inventory/queries";
 import { DocumentForm } from "@/components/admin/document-form";
 import { ReceiveBulkForm } from "@/components/admin/receive-bulk-form";
+import { parseReceivePicks } from "@/lib/receive-picks";
 import { lastShipRate } from "@/server/pricing/queries";
 import { Page, PageHeader } from "@/components/admin/ui";
 import { FEATURES } from "@/lib/features";
@@ -17,7 +18,7 @@ const TYPES: Record<string, Permission> = {
 };
 
 export default async function NewDocumentPage({ searchParams }: PageProps<"/admin/inventory/documents/new">) {
-  const { type, product, from } = await searchParams;
+  const { type, product, from, pick } = await searchParams;
   if (typeof type !== "string" || !TYPES[type]) notFound();
   await requirePagePermission(TYPES[type]);
   if (type === "RECEIVE") {
@@ -39,6 +40,7 @@ export default async function NewDocumentPage({ searchParams }: PageProps<"/admi
           variants={variants}
           productId={typeof product === "string" ? product : undefined}
           suggestedLot={suggestedReceiveLot()}
+          picks={parseReceivePicks(pick)}
         />
       </Page>
     );

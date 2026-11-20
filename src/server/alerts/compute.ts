@@ -1,6 +1,6 @@
 /**
  * Cảnh báo kho & gợi ý đặt hàng. Thuần, không phụ thuộc DB (dữ liệu lấy ở queries.ts).
- *  - Tồn thấp: khả dụng để bán ≤ `lowStockAt` của biến thể.
+ *  - Tồn thấp: khả dụng để bán ≤ `lowStockAt` (ngưỡng chung ở Cài đặt, 20/11/2026).
  *  - Hạn dùng: hết hạn (< 0 ngày) / ngừng bán (< blockDays) / cận date (< warnDays).
  *  - Gợi ý đặt: nhu cầu = tốc độ bán × (thời gian về VN→MM + số ngày cần đủ hàng) + tồn an toàn;
  *    gợi ý = nhu cầu − khả dụng để bán, không âm. Từ P24 hàng nhập vào THẲNG kho bán của SP (kể cả hàng của chuyến chưa

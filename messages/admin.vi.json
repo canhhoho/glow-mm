@@ -106,6 +106,8 @@
     }
   },
   "Nav": {
+    "lowStockBadge": "phân loại tồn thấp",
+    "quarantineLotsBadge": "lô chờ kiểm tra",
     "sellingPrices": "Giá bán",
     "dashboard": "Tổng quan",
     "products": "Sản phẩm",
@@ -430,6 +432,14 @@
     "colPhysical": "Tổng tồn"
   },
   "Docs": {
+    "searchDocs": "Tìm mã phiếu, SKU, lý do",
+    "allTypes": "Mọi loại phiếu",
+    "fromDate": "Từ ngày",
+    "toDate": "Đến ngày",
+    "emptyFiltered": "Không có phiếu nào khớp bộ lọc.",
+    "pageStatus": "Trang {page}/{pages} · {total} phiếu",
+    "prevPage": "Trang trước",
+    "nextPage": "Trang sau",
     "receiveSelectStep": "Bước 1 — Chọn sản phẩm nhập kho",
     "receiveDetailsStep": "Bước 2 — Nhập thông số nhập kho",
     "receiveSelectHelp": "Danh sách gợi ý gồm mọi sản phẩm đang bán — lọc rồi đánh dấu các sản phẩm nhập trong đợt này. Bước sau điền sẵn: số lượng = SL dự kiến nhập, giá mua = giá mua hiện tại, số lô = NK + ngày tạo phiếu (đều sửa được). Kho nhận chọn cho từng sản phẩm; lưu nháp tự tách phiếu theo kho.",
@@ -1353,6 +1363,9 @@
         "previewDays": "Bản xem trước giá hết hạn sau (ngày)"
       },
       "reorder": {
+        "lowStockAt": "Báo tồn thấp khi còn bán được ≤ (cái)",
+        "leadTimeDays": "Thời gian hàng về (ngày)",
+        "safetyStock": "Tồn an toàn (cái)",
         "coverDays": "Số ngày bán cần đủ hàng sau khi về",
         "salesWindowDays": "Tính tốc độ bán trong (ngày gần nhất)"
       },
@@ -1518,6 +1531,7 @@
   },
   "Alerts": {
     "title": "Cảnh báo kho",
+    "createReceipt": "Tạo phiếu nhập ({count} SKU)",
     "tabLow": "Tồn thấp",
     "tabExpiry": "Hạn dùng",
     "tabReorder": "Gợi ý đặt hàng",

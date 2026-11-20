@@ -2,7 +2,9 @@ import { getTranslations } from "next-intl/server";
 import { LocationName } from "@/components/admin/stock-parts";
 import { requirePagePermission } from "@/server/auth/session";
 import { computeAlerts } from "@/server/alerts/queries";
-import { Badge, DataTable, Page, PageHeader, TabNav, Td } from "@/components/admin/ui";
+import { Badge, DataTable, LinkButton, Page, PageHeader, TabNav, Td } from "@/components/admin/ui";
+import { can } from "@/server/auth/roles";
+import { receivePicksHref, type ReceivePick } from "@/lib/receive-picks";
 import { fmtDay, fmtInt } from "@/lib/format";
 import { FEATURES } from "@/lib/features";
 
@@ -11,7 +13,7 @@ type Tab = (typeof ALL_TABS)[number];
 const LEVEL_TONE = { expired: "danger", unknown: "warning", blocked: "danger", near: "warning" } as const;
 
 export default async function AlertsPage({ searchParams }: PageProps<"/admin/alerts">) {
-  await requirePagePermission("stock:view");
+  const user = await requirePagePermission("stock:view");
   const tabs = (FEATURES.expiry ? ALL_TABS : ["low", "reorder"]) as readonly Tab[];
   const { tab: rawTab } = await searchParams;
   const tab: Tab = tabs.includes(rawTab as Tab) ? (rawTab as Tab) : "low";
@@ -23,6 +25,17 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
     reorder: counts.reorder,
   };
   const tabLabel: Record<Tab, string> = { low: t("tabLow"), expiry: t("tabExpiry"), reorder: t("tabReorder") };
+  // 20/11/2026 (audit #2): đi tiếp từ cảnh báo — phiếu nhập chọn sẵn SKU đang hiện, SL = số gợi ý đặt (nếu có).
+  const canReceive = can(user.role, "stock:receive");
+  const suggest = new Map(alerts.reorder.map((r) => [r.variantId, r.suggestQty]));
+  const receiveButton = (picks: ReceivePick[]) =>
+    canReceive && picks.length > 0 ? (
+      <div className="flex justify-end" data-testid="alerts-receive">
+        <LinkButton href={receivePicksHref(picks)} variant="primary" icon="new">
+          {t("createReceipt", { count: picks.length })}
+        </LinkButton>
+      </div>
+    ) : null;
   // Chuẩn bảng SP: tên là dòng chính, SKU dòng phụ (xuống dòng khi dài).
   const product = (sku: string, name: string) => (
     <>
@@ -53,6 +66,7 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
         }))}
       />
 
+      {tab === "low" && receiveButton(alerts.lowStock.map((v) => ({ id: v.variantId, qty: suggest.get(v.variantId) })))}
       {tab === "low" && (
         <DataTable stack empty={t("empty")} numeric={[1, 2, 3]} head={[t("product"), t("available"), t("threshold"), t("other")]}>
           {alerts.lowStock.map((v) => (
@@ -93,6 +107,7 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
 
       {tab === "reorder" && (
         <>
+          {receiveButton(alerts.reorder.map((r) => ({ id: r.variantId, qty: r.suggestQty })))}
           <p className="text-xs text-muted-foreground">{t("reorderHint")}</p>
           <DataTable
             stack

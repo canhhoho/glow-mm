@@ -16,6 +16,13 @@ export const SETTING_DEFAULTS = {
   "pricing.previewDays": 3,
   "reorder.coverDays": 30,
   "reorder.salesWindowDays": 60,
+  /**
+   * 20/11/2026 (audit #1): ngưỡng chung cho mọi phân loại — Cảnh báo "Tồn thấp" (khả dụng ≤ ngưỡng) và "Gợi ý đặt hàng"
+   * (thời gian hàng về, tồn an toàn). Thay các cột Variant.lowStockAt / leadTimeDays / safetyStock (không có nơi sửa).
+   */
+  "reorder.lowStockAt": 5,
+  "reorder.leadTimeDays": 21,
+  "reorder.safetyStock": 0,
   /** Số ngày sau khi đơn hoàn thành mới tính hoa hồng CTV là đến hạn (chờ đổi trả) — P10. */
   "affiliate.holdDays": 7,
   /** % tầng trên (P11): cấp trên hưởng trên tiền hàng đơn của CTV mình tuyển — phần vạn (200 = 2%). */
@@ -86,6 +93,9 @@ export const settingsSchema = z
     "pricing.previewDays": int(1, 30),
     "reorder.coverDays": int(0, 365),
     "reorder.salesWindowDays": int(7, 365),
+    "reorder.lowStockAt": int(0, 100_000),
+    "reorder.leadTimeDays": int(0, 365),
+    "reorder.safetyStock": int(0, 100_000),
     "affiliate.holdDays": int(0, 90),
     "affiliate.uplineRateBp": int(0, 2000),
     "affiliate.defaultRateBp": int(0, 5000),

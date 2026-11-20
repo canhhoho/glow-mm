@@ -695,7 +695,7 @@ Tất cả: **Lưu nháp** → **Ghi sổ** ⛔📦.
 
 Lỗi hay gặp khi ghi sổ: "Tồn không đủ…"; "Không đủ hàng: cần x, khả dụng y"; "Không thể lấy hàng đang giữ cho đơn — SKU: chỉ xuất được n, còn lại đang giữ cho đơn …" (hàng bạn định xuất đang được giữ cho đơn khác); "Lô X hết hạn hoặc chưa biết hạn — không chuyển vào kho bán …".
 
-Danh sách mọi phiếu: **Kho hàng › Phiếu kho** (phiếu **Hàng trả** do chức năng trả hàng của đơn tạo ra).
+Danh sách mọi phiếu: **Kho hàng › Phiếu kho** (phiếu **Hàng trả** do chức năng trả hàng của đơn tạo ra). Từ 20/11/2026 có ô **Tìm mã phiếu, SKU, lý do**, lọc **loại phiếu** và **Từ ngày / Đến ngày** (ngày tạo, giờ Yangon), phân trang 50 phiếu/trang — phiếu cũ vẫn mở được từ danh sách.
 
 ### 8.4. Lô và hạn sử dụng
 
@@ -738,6 +738,8 @@ Lỗi: "Chuyến hàng chưa có lô nào đã nhập kho"; "Thiếu khối lư�
 Lỗi: "Mã kho X đã có"; "Kho X còn tồn — chuyển hoặc xuất hết hàng…" (khi ngừng dùng); "Còn n sản phẩm thuộc kho X…"; "Phải còn ít nhất một kho bán" / "…một khu chờ kiểm tra hàng trả".
 
 ### 8.8. Cảnh báo kho
+
+> 20/11/2026: ngưỡng **tồn thấp**, **thời gian hàng về** và **tồn an toàn** là ngưỡng chung ở **Cấu hình cửa hàng › Gợi ý đặt hàng** (áp mọi phân loại). Tab **Tồn thấp** và **Gợi ý đặt hàng** có nút **Tạo phiếu nhập (N SKU)** (người có quyền nhập kho): mở phiếu nhập đã tích sẵn các SKU đang hiện, số lượng điền sẵn = **số nên đặt** (SKU không có gợi ý giữ SL dự kiến nhập). Mục **Tồn kho** trên menu có badge vàng = số phân loại tồn thấp (cạnh số lô chờ kiểm tra).
 
 **Kho hàng › Cảnh báo** (mọi vai trò xem được): ba thẻ **Tồn thấp**, **Hạn dùng** (mức **Hết hạn** / **Ngừng bán** / **Cận date** / **Chưa biết hạn**), **Gợi ý đặt hàng**. Gợi ý đặt hàng dựa vào tốc độ bán và hai ô ở Cấu hình cửa hàng: **Số ngày bán cần đủ hàng sau khi về** (mặc định 30) và **Tính tốc độ bán trong (ngày gần nhất)** (mặc định 60). Công thức: **nên đặt = bán/ngày × (thời gian về + số ngày cần đủ) + tồn an toàn − còn bán được**. Từ khi có hai kho bán, hàng nhập đi thẳng vào kho bán của sản phẩm (kể cả hàng của chuyến chưa bấm "Đánh dấu đã đến") nên đã nằm trong **còn bán được** — không cộng thêm "hàng đang về". Cột **Tồn ở vị trí khác (chưa tính)** là hàng còn ở kho cũ hoặc kho bán khác: chỉ để xem, chưa bán được cho tới khi chuyển về kho bán. Báo cáo › **Chuyến chưa đánh dấu đã đến** chỉ để theo dõi chuyến.
 
@@ -1124,7 +1126,10 @@ Chỉ **Quản trị viên**.
 | | **Hạn mức đặt trước mặc định mỗi phân loại (cái, 0 = không nhận)** | 20 | Số lượng đặt trước tối đa; 0 = tắt đặt trước |
 | **Giá** | **Làm tròn giá lên bội số (MMK)** | 100 | 💰 Dùng khi tính giá |
 | | **Bản xem trước giá hết hạn sau (ngày)** | 3 | Bảng tính giá cũ hơn phải làm lại |
-| **Gợi ý đặt hàng** | **Số ngày bán cần đủ hàng sau khi về** | 30 | Cho gợi ý ở **Cảnh báo** |
+| **Gợi ý đặt hàng** | **Báo tồn thấp khi còn bán được ≤ (cái)** | 5 | Ngưỡng chung mọi phân loại cho tab **Tồn thấp** và badge trên mục **Tồn kho** (20/11/2026) |
+| | **Thời gian hàng về (ngày)** | 21 | Cho gợi ý ở **Cảnh báo** |
+| | **Tồn an toàn (cái)** | 0 | Cộng thêm vào số nên đặt |
+| | **Số ngày bán cần đủ hàng sau khi về** | 30 | Cho gợi ý ở **Cảnh báo** |
 | | **Tính tốc độ bán trong (ngày gần nhất)** | 60 | Cho gợi ý ở **Cảnh báo** |
 | **Cộng tác viên** | **Hoa hồng đến hạn sau khi đơn hoàn thành (ngày)** | 7 | Thời gian chờ trước khi **Đến hạn** |
 | | **% bán hàng mặc định khi duyệt CTV mới (%)** | 10 | Điền sẵn khi duyệt đơn đăng ký |

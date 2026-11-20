@@ -6,6 +6,7 @@ import { blockedBatchWhere } from "@/server/inventory/fefo";
 import { getNumberSetting } from "@/server/settings";
 import type { NavCountKey } from "./nav";
 import { pendingPasswordResetCount } from "@/server/accounts/password-reset";
+import { lowStockCount } from "@/server/alerts/queries";
 
 /**
  * Số đếm cho badge menu admin — chỉ tính những số được yêu cầu (theo quyền của người xem).
@@ -15,6 +16,7 @@ import { pendingPasswordResetCount } from "@/server/accounts/password-reset";
  *  - blockedLots: số lô còn hàng (mọi vị trí) đã ngừng bán / hết hạn — như mục "Hạn dùng" ở trang Cảnh báo.
  *  - pendingApplications: đơn đăng ký CTV chờ duyệt (P11).
  *  - passwordResets: yêu cầu đặt lại mật khẩu của khách chờ admin xác nhận.
+ *  - lowStock: số phân loại tồn thấp (như tab Tồn thấp ở trang Cảnh báo) — badge trên mục Tồn kho (20/11/2026).
  */
 export async function navCounts(keys: Set<NavCountKey>, now = new Date()): Promise<Partial<Record<NavCountKey, number>>> {
   const distinctLots = async (where: Prisma.StockBalanceWhereInput) =>
@@ -45,5 +47,6 @@ export async function navCounts(keys: Set<NavCountKey>, now = new Date()): Promi
     jobs.push(prisma.affiliateApplication.count({ where: { status: "PENDING" } }).then((n) => ["pendingApplications", n]));
   }
   if (keys.has("passwordResets")) jobs.push(pendingPasswordResetCount(now).then((n) => ["passwordResets", n]));
+  if (keys.has("lowStock")) jobs.push(lowStockCount(now).then((n) => ["lowStock", n]));
   return Object.fromEntries(await Promise.all(jobs));
 }
