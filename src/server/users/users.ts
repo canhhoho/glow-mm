@@ -57,16 +57,6 @@ export async function listStaff(filter: StaffFilter = {}) {
   });
 }
 
-/** Số tài khoản đang hoạt động theo loại (khối "Tài khoản" ở trang Cài đặt). */
-export async function activeAccountCounts() {
-  const [staff, affiliates, customers] = await Promise.all([
-    prisma.user.count({ where: { role: { in: [...ROLES] }, active: true } }),
-    prisma.affiliate.count({ where: { active: true } }),
-    prisma.user.count({ where: { role: "CUSTOMER", active: true } }),
-  ]);
-  return { staff, affiliates, customers };
-}
-
 export async function getStaff(id: string) {
   const user = await prisma.user.findFirst({
     where: { id, role: { in: [...ROLES] } },

@@ -171,6 +171,7 @@
     "name": "Name",
     "namePlaceholder": "Kho Chi",
     "pricingMode": "Pricing",
+    "modeLocked": "This warehouse already has products or stock — the pricing method can't change. Create a new warehouse for a different method.",
     "mode": {
       "VN_IMPORT": "Imported from VN (VND)",
       "LOCAL_MMK": "Bought in MMK"
@@ -852,7 +853,7 @@
     "block": {
       "editInfo": "Edit product details",
       "notReceived": "Not received yet: {skus}",
-      "notReceivedPreorder": "Not received yet: {skus} — selling as pre-order (toggle in the Publish step). Create a receipt when goods arrive.",
+      "notReceivedPreorder": "Not received yet: {skus} — selling as pre-order (toggle in Pre-order below). Create a receipt when goods arrive.",
       "receivedAll": "Every option has a posted receipt or transfer.",
       "warehouseTitle": "No sales warehouse yet",
       "warehouseHelp": "Selling as pre-order (no stock yet): just pick a sales warehouse — no receipt needed. Later receipts use this warehouse.",
@@ -871,6 +872,7 @@
       "noIssues": "Nothing to do in this step."
     },
     "list": {
+      "counts": "{products} products · {skus} SKUs (excluding discontinued)",
       "step": "Step",
       "stepAll": "All steps",
       "stepDone": "Published",
@@ -1088,7 +1090,8 @@
     "tabAll": "All",
     "otherStatuses": "Cancelled / Returned",
     "allChannels": "All channels",
-    "overdueOnly": "Overdue only",
+    "overdueOnly": "Pending past reservation hold",
+    "advancedFilters": "More filters",
     "overdue": "Overdue",
     "empty": "No orders",
     "colCode": "Code",
@@ -1304,7 +1307,7 @@
     "allWarehouses": "All sales warehouses",
     "fromDate": "Ordered from",
     "toDate": "Ordered through",
-    "shippingDays": "Shipping for (days)",
+    "shippingDays": "Shipping longer than (days)",
     "pagination": "Order pages",
     "previousPage": "Previous",
     "nextPage": "Next",
@@ -1591,6 +1594,9 @@
     "estimatedQty": "Estimated-cost units",
     "codCarrierFees": "Recorded COD carrier fees",
     "profitAfterRecordedCosts": "After recorded selling costs",
+    "profitChain": "From revenue to profit",
+    "chainItem": "Item",
+    "shippingFeesNote": "not included in revenue.",
     "recordedCostBasis": "Based on order completion period and fees recorded as of viewing. {pending} COD orders await settlement. Store pays delivery on {sender} orders: only recorded fees are deducted; other unrecorded delivery costs are excluded. This is not accounting net profit.",
     "inboundHint": "Goods of these shipments are already received into the selling warehouse and counted in stock; the list only tracks shipments that have not arrived."
   },
@@ -1813,6 +1819,7 @@
     "all": "All",
     "active": "Active",
     "locked": "Locked",
+    "dueOnly": "Has commission payable",
     "filter": "Filter",
     "empty": "No affiliates yet",
     "emptyFiltered": "No affiliates match the filter",

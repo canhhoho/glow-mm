@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Archive, Download, Layers, MoreHorizontal, Package, Pencil, Plus, TriangleAlert, Upload } from "lucide-react";
+import { Download, MoreHorizontal, Pencil, Plus, Upload } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { buttonVariants } from "@/components/ui/button";
 import { requirePagePermission } from "@/server/auth/session";
@@ -14,7 +14,7 @@ import { changeItemText } from "@/components/admin/change-text";
 import { prisma } from "@/lib/db";
 import { BulkCheckbox, BulkPublishBar, RowProductAction } from "@/components/admin/product-bulk-publish";
 import { ActionMenu } from "@/components/admin/action-menu";
-import { Badge, DataTable, FilterBar, FilterButton, MENU_ITEM, Page, PageHeader, PageNumbers, SearchInput, StatCard, TabNav, Td, fieldClass } from "@/components/admin/ui";
+import { AdvancedFilters, Badge, DataTable, FilterBar, FilterButton, MENU_ITEM, Page, PageHeader, PageNumbers, SearchInput, TabNav, Td, fieldClass } from "@/components/admin/ui";
 import { fmtDateTime, fmtInt } from "@/lib/format";
 import { localizedPath } from "@/lib/site";
 import { cn } from "@/lib/utils";
@@ -85,15 +85,10 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
 
   return (
     <Page>
-      <PageHeader title={t("title")} description={t("list.subtitle")} />
+      {/* 20/11/2026 (audit): bỏ 4 ô số trùng tab/bộ lọc — tổng SP + SKU ghi ở mô tả đầu trang; trạng thái chọn ở tab / ô chọn. */}
+      <PageHeader title={t("title")} description={t("list.counts", { products: fmtInt(stats.totalProducts), skus: fmtInt(stats.skus) })} />
 
-      {/* Ô số khác với tab: tổng (ghi rõ không gồm ngừng kinh doanh), SKU, hàng đang bán đã hết, và số SP ngừng kinh doanh. */}
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <StatCard icon={<Package />} tone="brand" value={fmtInt(stats.totalProducts)} label={t("list.statTotal")} href={href({ status: undefined, page: undefined })} active={tab === "active"} testId="stat-total" />
-        <StatCard icon={<Layers />} tone="green" value={fmtInt(stats.skus)} label={t("list.statSkus")} testId="stat-skus" />
-        <StatCard icon={<TriangleAlert />} tone="warning" value={fmtInt(stats.published.outOfStock)} label={t("tab.outOfStock")} href={href({ status: "outOfStock", page: undefined })} active={tab === "outOfStock"} testId="stat-out-of-stock" />
-        <StatCard icon={<Archive />} tone="neutral" value={fmtInt(stats.byLabel.ARCHIVED)} label={t("tab.archived")} href={href({ status: "archived", page: undefined })} active={tab === "archived"} testId="stat-archived" />
-      </div>
+
 
       <TabNav
         label={t("colStatus")}
@@ -103,7 +98,8 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
       <div className="flex flex-wrap items-end justify-between gap-3">
         <FilterBar className="flex-1">
           <select key={tab} name="status" defaultValue={tab} aria-label={t("colStatus")} className={fieldClass}>
-            {LIST_TABS.map((k) => (
+            {/* "Hết hàng" lọc bằng ô "Điều kiện bán" (tách rõ Hết hàng / Đặt trước) — không lặp trong ô trạng thái. */}
+            {LIST_TABS.filter((k) => k !== "outOfStock" || tab === "outOfStock").map((k) => (
               <option key={k} value={k}>
                 {t(`tab.${k}`)} ({fmtInt(tabCount[k])})
               </option>
@@ -111,11 +107,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
           </select>
           <SearchInput label={t("search")} defaultValue={query} />
           {/* Bộ lọc nâng cao thu gọn (vẫn nằm trong form nên gửi cùng nút Lọc); tự mở khi đang lọc. */}
-          <details className="group/adv w-full md:w-auto" open={!!(categoryId || brandId || warehouseId || sell)}>
-            <summary className="flex min-h-9 cursor-pointer list-none items-center gap-1 rounded-md px-2 text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
-              {t("advancedFilters")}
-            </summary>
-            <div className="mt-2 flex flex-wrap gap-2">
+          <AdvancedFilters label={t("advancedFilters")} open={!!(categoryId || brandId || warehouseId || sell)}>
               <select name="category" defaultValue={categoryId ?? ""} aria-label={t("colCategory")} className={fieldClass}>
                 <option value="">{t("allCategories")}</option>
                 {options.categories.map((c) => (
@@ -151,8 +143,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
                   </option>
                 ))}
               </select>
-            </div>
-          </details>
+          </AdvancedFilters>
           <FilterButton>{tc("filter")}</FilterButton>
           {filtered && (
             <Link href={href({ q: undefined, brand: undefined, category: undefined, warehouse: undefined, sell: undefined, page: undefined })} className="self-center text-sm text-primary underline">
@@ -187,12 +178,14 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
       <DataTable
         stack
         empty={t("empty")}
+        numeric={[4, 5]}
         head={[
           <span key="sel" className="sr-only">{t("colSelect")}</span>,
           t("list.colProduct"),
           t("list.colSku"),
           tf("variant_label.label"),
-          t("list.colDescription"),
+          t("list.colPrice"),
+          t("list.colStock"),
           t("colCategory"),
           t("colStatus"),
           t("list.colUpdated"),
@@ -232,10 +225,15 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
               <span className="text-sm">{p.variants[0]?.label || "—"}</span>
               {p.variants.length > 1 && <span className="block text-xs text-muted-foreground">{t("list.moreVariants", { n: p.variants.length - 1 })}</span>}
             </Td>
-            <Td label={t("list.colDescription")} className="align-middle">
-              <p className="line-clamp-2 max-w-52 min-w-36 text-xs text-muted-foreground" title={p.description ?? undefined}>
-                {p.description ?? "—"}
-              </p>
+            {/* 20/11/2026 (audit): Giá bán + Tồn thay cột Mô tả — hai thông tin vận hành cần xem hằng ngày. */}
+            <Td label={t("list.colPrice")} numeric className="align-middle whitespace-nowrap">
+              {p.price ? (p.price.min === p.price.max ? fmtInt(p.price.min) : `${fmtInt(p.price.min)}–${fmtInt(p.price.max)}`) : <span className="text-muted-foreground">—</span>}
+            </Td>
+            <Td label={t("list.colStock")} numeric className="align-middle whitespace-nowrap">
+              <span data-testid="list-stock">{p.stock == null ? "—" : fmtInt(p.stock)}</span>
+              {p.sell !== "instock" && p.stock != null && (
+                <span className={cn("block text-xs", p.sell === "preorder" ? "text-warning-foreground" : "text-muted-foreground")}>{t(`sell.${p.sell}`)}</span>
+              )}
             </Td>
             <Td label={t("colCategory")} className="min-w-28 align-middle">
               {p.category}

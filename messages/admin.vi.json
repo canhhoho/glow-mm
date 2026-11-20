@@ -171,6 +171,7 @@
     "name": "Tên kho",
     "namePlaceholder": "Kho Chi",
     "pricingMode": "Cách tính giá",
+    "modeLocked": "Kho đã có sản phẩm hoặc đã có hàng — không đổi được cách tính giá. Cần cách tính khác thì tạo kho mới.",
     "mode": {
       "VN_IMPORT": "Hàng nhập VN (VND)",
       "LOCAL_MMK": "Hàng mua MMK"
@@ -852,7 +853,7 @@
     "block": {
       "editInfo": "Sửa thông tin sản phẩm",
       "notReceived": "Chưa nhập hàng: {skus}",
-      "notReceivedPreorder": "Chưa nhập hàng: {skus} — đang bán đặt trước (bật/tắt ở bước Đăng bán). Hàng về thì tạo phiếu nhập.",
+      "notReceivedPreorder": "Chưa nhập hàng: {skus} — đang bán đặt trước (bật/tắt ở mục Đặt trước bên dưới). Hàng về thì tạo phiếu nhập.",
       "receivedAll": "Mọi phân loại đã có phiếu nhập hoặc chuyển kho đã ghi sổ.",
       "warehouseTitle": "Chưa có kho bán",
       "warehouseHelp": "Bán đặt trước (chưa có hàng): chỉ cần chọn kho bán, chưa cần nhập hàng. Phiếu nhập sau này dùng kho này.",
@@ -871,6 +872,7 @@
       "noIssues": "Không có việc cần làm ở bước này."
     },
     "list": {
+      "counts": "{products} sản phẩm · {skus} SKU (không gồm ngừng kinh doanh)",
       "step": "Bước",
       "stepAll": "Mọi bước",
       "stepDone": "Đã đăng bán",
@@ -1088,7 +1090,8 @@
     "tabAll": "Tất cả",
     "otherStatuses": "Đã huỷ / Trả hàng",
     "allChannels": "Mọi kênh",
-    "overdueOnly": "Chỉ đơn quá hạn",
+    "overdueOnly": "Chờ xác nhận quá hạn giữ hàng",
+    "advancedFilters": "Bộ lọc nâng cao",
     "overdue": "Quá hạn",
     "empty": "Chưa có đơn nào",
     "colCode": "Mã đơn",
@@ -1304,7 +1307,7 @@
     "allWarehouses": "Tất cả kho bán",
     "fromDate": "Từ ngày đặt",
     "toDate": "Đến ngày đặt",
-    "shippingDays": "Đang giao từ (ngày)",
+    "shippingDays": "Đang giao quá (ngày)",
     "pagination": "Phân trang đơn hàng",
     "previousPage": "Trang trước",
     "nextPage": "Trang sau",
@@ -1591,6 +1594,9 @@
     "estimatedQty": "SL vốn tạm tính",
     "codCarrierFees": "Phí hãng khấu trừ COD",
     "profitAfterRecordedCosts": "Sau chi phí bán đã ghi nhận",
+    "profitChain": "Từ doanh thu đến lợi nhuận",
+    "chainItem": "Khoản",
+    "shippingFeesNote": "không tính vào doanh thu.",
     "recordedCostBasis": "Theo kỳ hoàn tất đơn; phí cập nhật đến lúc xem. Có {pending} đơn COD chưa đối soát nên chưa đủ phí. {sender} đơn cửa hàng trả cước: chỉ phần phí đã ghi nhận được trừ; cước khác chưa có số liệu chưa được trừ. Đây không phải lãi ròng kế toán.",
     "inboundHint": "Hàng của các chuyến này đã nhập vào kho bán và đã tính trong tồn; danh sách chỉ để theo dõi chuyến chưa đến."
   },
@@ -1813,6 +1819,7 @@
     "all": "Tất cả",
     "active": "Đang hoạt động",
     "locked": "Đã khoá",
+    "dueOnly": "Có hoa hồng phải trả",
     "filter": "Lọc",
     "empty": "Chưa có CTV",
     "emptyFiltered": "Không có CTV khớp bộ lọc",

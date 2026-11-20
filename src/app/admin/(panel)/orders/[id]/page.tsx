@@ -203,6 +203,61 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ad
         </dl>
       </Section>
 
+      {/* 20/11/2026 (audit): Hàng + tổng tiền ngay sau khách / địa chỉ — thông tin lõi khi xác nhận / soạn đơn; phí ship, CTV xếp sau. */}
+      <Section title={t("items")}>
+        <DataTable
+          stack
+          numeric={[1, 2, 3, 4]}
+          head={[t("product"), t("qty"), t("ret.returned"), t("unitPrice"), t("lineTotal"), t("lots")]}
+        >
+          {order.items.map((i) => (
+            <tr key={i.id}>
+              {/* Chuẩn bảng SP: tên (snapshot lúc đặt) là dòng chính, SKU dòng phụ. */}
+              <Td className="md:w-[38%]">
+                <span className="block font-medium break-words">{i.name}</span>
+                <span className="block font-mono text-xs break-all text-muted-foreground">{i.sku}</span>
+              </Td>
+              <Td label={t("qty")} numeric>
+                {fmtInt(i.qty)}
+              </Td>
+              <Td label={t("ret.returned")} numeric>
+                {i.returnedQty > 0 ? fmtInt(i.returnedQty) : "—"}
+              </Td>
+              <Td label={t("unitPrice")} numeric>
+                {fmtInt(i.unitPriceMmk)}
+              </Td>
+              <Td label={t("lineTotal")} numeric>
+                {fmtInt(i.qty * i.unitPriceMmk)}
+              </Td>
+              <Td label={t("lots")} className="text-xs">
+                {i.allocations.length === 0
+                  ? "—"
+                  : i.allocations.map((a) => (
+                      <div key={a.id} className="font-mono">
+                        {a.batch.lotNo} · {fmtDay(a.batch.expiryDate)} × {a.qty}
+                      </div>
+                    ))}
+              </Td>
+            </tr>
+          ))}
+        </DataTable>
+        <dl className="ml-auto grid max-w-xs grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm">
+          <dt>{t("subtotal")}</dt>
+          <dd className="text-right tabular-nums">{fmtInt(order.subtotalMmk)} MMK</dd>
+          {order.shippingFeeMmk > 0 && (
+            <>
+              <dt>{t("shipping")}</dt>
+              <dd className="text-right tabular-nums">{fmtInt(order.shippingFeeMmk)} MMK</dd>
+            </>
+          )}
+          <dt className="font-medium">{t("total")}</dt>
+          <dd className="text-right font-medium tabular-nums" data-testid="order-total">
+            {fmtInt(order.totalMmk)} MMK
+          </dd>
+          {order.shippingFeeMmk === 0 && <dd className="col-span-2 text-xs text-muted-foreground">{t("shippingNote")}</dd>}
+        </dl>
+      </Section>
+
       <VtpSingleInfo order={vtpPreview(order)} />
       {can(user.role, "orders:ship") && ["PAYMENT_CONFIRMED", "COD_CONFIRMED", "PACKING"].includes(order.status) && (
         <Section>
@@ -325,60 +380,6 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ad
             </div>
           </ActionForm>
         )}
-      </Section>
-
-      <Section title={t("items")}>
-        <DataTable
-          stack
-          numeric={[1, 2, 3, 4]}
-          head={[t("product"), t("qty"), t("ret.returned"), t("unitPrice"), t("lineTotal"), t("lots")]}
-        >
-          {order.items.map((i) => (
-            <tr key={i.id}>
-              {/* Chuẩn bảng SP: tên (snapshot lúc đặt) là dòng chính, SKU dòng phụ. */}
-              <Td className="md:w-[38%]">
-                <span className="block font-medium break-words">{i.name}</span>
-                <span className="block font-mono text-xs break-all text-muted-foreground">{i.sku}</span>
-              </Td>
-              <Td label={t("qty")} numeric>
-                {fmtInt(i.qty)}
-              </Td>
-              <Td label={t("ret.returned")} numeric>
-                {i.returnedQty > 0 ? fmtInt(i.returnedQty) : "—"}
-              </Td>
-              <Td label={t("unitPrice")} numeric>
-                {fmtInt(i.unitPriceMmk)}
-              </Td>
-              <Td label={t("lineTotal")} numeric>
-                {fmtInt(i.qty * i.unitPriceMmk)}
-              </Td>
-              <Td label={t("lots")} className="text-xs">
-                {i.allocations.length === 0
-                  ? "—"
-                  : i.allocations.map((a) => (
-                      <div key={a.id} className="font-mono">
-                        {a.batch.lotNo} · {fmtDay(a.batch.expiryDate)} × {a.qty}
-                      </div>
-                    ))}
-              </Td>
-            </tr>
-          ))}
-        </DataTable>
-        <dl className="ml-auto grid max-w-xs grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm">
-          <dt>{t("subtotal")}</dt>
-          <dd className="text-right tabular-nums">{fmtInt(order.subtotalMmk)} MMK</dd>
-          {order.shippingFeeMmk > 0 && (
-            <>
-              <dt>{t("shipping")}</dt>
-              <dd className="text-right tabular-nums">{fmtInt(order.shippingFeeMmk)} MMK</dd>
-            </>
-          )}
-          <dt className="font-medium">{t("total")}</dt>
-          <dd className="text-right font-medium tabular-nums" data-testid="order-total">
-            {fmtInt(order.totalMmk)} MMK
-          </dd>
-          {order.shippingFeeMmk === 0 && <dd className="col-span-2 text-xs text-muted-foreground">{t("shippingNote")}</dd>}
-        </dl>
       </Section>
 
       {canReturn && (

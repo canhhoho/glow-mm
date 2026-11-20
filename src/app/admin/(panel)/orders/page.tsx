@@ -10,7 +10,7 @@ import { BULK_TRANSITIONS } from "@/server/orders/bulk";
 import { BulkOrderBar } from "@/components/admin/bulk-order-bar";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/admin/order-badges";
 import { ORDER_TAB_STATUSES, OrdersTabs, type OrdersTab } from "@/components/admin/orders-tabs";
-import { Badge, checkboxClass, ClearFilters, DataTable, fieldClass, fieldLabelClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, PageNumbers, SearchInput, Td } from "@/components/admin/ui";
+import { AdvancedFilters, Badge, checkboxClass, ClearFilters, DataTable, fieldClass, fieldLabelClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, PageNumbers, SearchInput, Td } from "@/components/admin/ui";
 import { fmtDate, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -56,8 +56,6 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
       <FilterBar>
         <label className={fieldLabelClass}><span>{t("fromDate")}</span><input type="date" name="from" defaultValue={filter.from} className={fieldClass} /></label>
         <label className={fieldLabelClass}><span>{t("toDate")}</span><input type="date" name="to" defaultValue={filter.to} className={fieldClass} /></label>
-        <select name="locationId" defaultValue={filter.locationId ?? ""} aria-label={t("warehouse")} className={cn(fieldClass,"w-auto")}><option value="">{t("allWarehouses")}</option>{locations.map(l=><option key={l.id} value={l.id}>{l.code} — {l.name}</option>)}</select>
-        <label className={fieldLabelClass}><span>{t("shippingDays")}</span><input type="number" name="shippingDays" min={1} max={365} defaultValue={filter.shippingDays} className={cn(fieldClass,"w-28")} /></label>
         <SearchInput label={t("search")} defaultValue={filter.q} />
         {/* Trạng thái chính nằm ở tab (giữ qua nút Lọc bằng ô ẩn); ô chọn chỉ còn Đã huỷ / Trả hàng. */}
         {tabStatus ? (
@@ -72,33 +70,38 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
             ))}
           </select>
         )}
-        <select name="paymentMethod" defaultValue={filter.paymentMethod ?? ""} aria-label={t("paymentMethod")} className={cn(fieldClass, "w-auto")}>
-          <option value="">{t("allPaymentMethods")}</option>
-          <option value="COD">{t("method.COD")}</option>
-          <option value="BANK_TRANSFER">{t("method.BANK_TRANSFER")}</option>
-        </select>
-        <select name="channel" defaultValue={filter.channel ?? ""} aria-label={t("colChannel")} className={cn(fieldClass, "w-auto")}>
-          <option value="">{t("allChannels")}</option>
-          {CHANNELS.map((c) => (
-            <option key={c} value={c}>
-              {t(`channel.${c}`)}
-            </option>
-          ))}
-        </select>
-        {affiliates.length > 0 && (
-          <select name="affiliate" defaultValue={filter.affiliateId ?? ""} aria-label={t("colAffiliate")} className={cn(fieldClass, "w-auto")}>
-            <option value="">{t("allAffiliates")}</option>
-            {affiliates.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.label}
+        {/* 20/11/2026 (audit): lọc phụ thu gọn như danh sách SP; tự mở khi đang dùng. */}
+        <AdvancedFilters label={t("advancedFilters")} open={!!(filter.locationId || filter.shippingDays || filter.paymentMethod || filter.channel || filter.affiliateId || filter.overdue)}>
+          <select name="paymentMethod" defaultValue={filter.paymentMethod ?? ""} aria-label={t("paymentMethod")} className={cn(fieldClass, "w-auto")}>
+            <option value="">{t("allPaymentMethods")}</option>
+            <option value="COD">{t("method.COD")}</option>
+            <option value="BANK_TRANSFER">{t("method.BANK_TRANSFER")}</option>
+          </select>
+          <select name="channel" defaultValue={filter.channel ?? ""} aria-label={t("colChannel")} className={cn(fieldClass, "w-auto")}>
+            <option value="">{t("allChannels")}</option>
+            {CHANNELS.map((c) => (
+              <option key={c} value={c}>
+                {t(`channel.${c}`)}
               </option>
             ))}
           </select>
-        )}
-        <label className="flex h-9 items-center gap-1.5 text-sm">
-          <input type="checkbox" name="overdue" value="1" defaultChecked={filter.overdue} className={checkboxClass} />
-          {t("overdueOnly")}
-        </label>
+          <select name="locationId" defaultValue={filter.locationId ?? ""} aria-label={t("warehouse")} className={cn(fieldClass,"w-auto")}><option value="">{t("allWarehouses")}</option>{locations.map(l=><option key={l.id} value={l.id}>{l.code} — {l.name}</option>)}</select>
+          {affiliates.length > 0 && (
+            <select name="affiliate" defaultValue={filter.affiliateId ?? ""} aria-label={t("colAffiliate")} className={cn(fieldClass, "w-auto")}>
+              <option value="">{t("allAffiliates")}</option>
+              {affiliates.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.label}
+                </option>
+              ))}
+            </select>
+          )}
+          <label className={fieldLabelClass}><span>{t("shippingDays")}</span><input type="number" name="shippingDays" min={1} max={365} defaultValue={filter.shippingDays} className={cn(fieldClass,"w-28")} /></label>
+          <label className="flex h-9 items-center gap-1.5 text-sm">
+            <input type="checkbox" name="overdue" value="1" defaultChecked={filter.overdue} className={checkboxClass} />
+            {t("overdueOnly")}
+          </label>
+        </AdvancedFilters>
         <FilterButton>{tc("filter")}</FilterButton>
         {filtered && <ClearFilters href="/admin/orders">{t("clearFilters")}</ClearFilters>}
       </FilterBar>

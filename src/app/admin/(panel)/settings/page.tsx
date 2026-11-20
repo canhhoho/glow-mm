@@ -1,13 +1,11 @@
-import Link from "next/link";
-import { ArrowUpRight, Clock, Handshake, Package, ShoppingBag, SlidersHorizontal, Tags, TrendingUp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Clock, Handshake, Package, ShoppingBag, SlidersHorizontal, Tags, TrendingUp, Wallet, type LucideIcon } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
-import { activeAccountCounts } from "@/server/users/users";
 import { bpToPercent } from "@/server/affiliates/commission";
 import { getAllSettings, PERCENT_SETTING_KEYS, type NumericSettingKey } from "@/server/settings";
 import { saveSettingsAction } from "@/server/settings-actions";
 import { ActionForm } from "@/components/admin/action-form";
-import { fieldClass, fieldLabelClass, focusRing, Page, PageHeader } from "@/components/admin/ui";
+import { fieldClass, fieldLabelClass, Page, PageHeader } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import { FEATURES } from "@/lib/features";
 
@@ -21,43 +19,12 @@ const GROUPS: { title: string; icon: LucideIcon; keys: NumericSettingKey[] }[] =
 
 export default async function SettingsPage() {
   await requirePagePermission("settings:manage");
-  const [t, tn, settings, counts] = await Promise.all([
-    getTranslations("Settings"),
-    getTranslations("Nav"),
-    getAllSettings(),
-    activeAccountCounts(),
-  ]);
-  const accountLinks = [
-    { href: "/admin/users", label: tn("users"), hint: t("staffHint"), icon: Users, count: counts.staff },
-    { href: "/admin/affiliates", label: tn("affiliates"), hint: t("affiliateHint"), icon: Handshake, count: counts.affiliates },
-    { href: "/admin/customer-accounts", label: tn("customers"), hint: t("customersHint"), icon: UserRound, count: counts.customers },
-  ];
+  const [t, tn, settings] = await Promise.all([getTranslations("Settings"), getTranslations("Nav"), getAllSettings()]);
 
   return (
     <Page>
       <PageHeader title={tn("storeSettings")} description={t("description")} />
-      <section className="space-y-3" data-testid="settings-accounts" aria-labelledby="settings-accounts-title">
-        <div>
-          <h2 id="settings-accounts-title" className="font-medium">{t("accounts")}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{t("accountsHint")}</p>
-        </div>
-        <div className="grid gap-3 md:grid-cols-3">
-          {accountLinks.map((l) => (
-            <Link key={l.href} href={l.href} className={cn(focusRing, "group flex h-full flex-col gap-3 rounded-xl border bg-card p-4 shadow-xs transition-colors hover:border-primary/40")}>
-              <div className="flex items-center gap-3">
-                <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><l.icon className="size-5" aria-hidden /></span>
-                <h3 className="font-medium">{l.label}</h3>
-                <ArrowUpRight className="ml-auto size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden />
-              </div>
-              <p className="text-sm leading-relaxed text-muted-foreground">{l.hint}</p>
-              <div className="mt-auto flex items-baseline gap-2 border-t pt-3">
-                <span className="text-2xl font-semibold tabular-nums">{l.count}</span>
-                <span className="text-xs text-muted-foreground">{t("activeLabel")}</span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {/* 20/11/2026 (audit): bỏ khối thẻ "Tài khoản" (lặp mục menu Tài khoản / CTV) — trang chỉ còn cài đặt. */}
       <section aria-labelledby="settings-operations-title" className="space-y-3">
         <div>
           <h2 id="settings-operations-title" className="flex items-center gap-2 font-medium"><SlidersHorizontal className="size-4 text-muted-foreground" aria-hidden />{t("operations")}</h2>

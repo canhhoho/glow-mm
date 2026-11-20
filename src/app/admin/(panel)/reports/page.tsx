@@ -47,20 +47,41 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
         <FilterButton>{tc("filter")}</FilterButton>
       </FilterBar>
 
+      {/* 20/11/2026 (audit): 4 ô chính + bảng "từ doanh thu đến lợi nhuận" thay 12 ô ngang hàng — thấy rõ số nào trừ số nào.
+          Số liệu / công thức giữ nguyên (salesReport): hoa hồng CTV đã gồm tuyến dưới; phí ship thu tách khỏi doanh thu. */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label={`${t("revenue")} (MMK)`} value={fmtInt(totals.revenue)} testId="r-revenue" />
-        <Stat label={`${t("cogs")} (MMK)`} value={fmtInt(totals.cogs)} testId="r-cogs" />
-        <Stat label={`${t("profit")} (MMK)`} value={fmtInt(totals.profit)} testId="r-profit" />
-        <Stat label={t("margin")} value={totals.marginPct == null ? "—" : `${totals.marginPct}%`} />
+        <Stat label={`${t("revenue")} (MMK)`} value={fmtInt(totals.revenue)} hint={totals.returnedRevenue ? `${t("returns")}: ${fmtInt(totals.returnedRevenue)}` : undefined} testId="r-revenue" />
         <Stat label={t("orders")} value={totals.orders} testId="r-orders" />
-        <Stat label={`${t("returns")} (MMK)`} value={fmtInt(totals.returnedRevenue)} />
-        <Stat label={`${t("shippingFees")} (MMK)`} value={fmtInt(totals.shippingFees)} />
-        <Stat label={`${t("commission")} (MMK)`} value={fmtInt(totals.commission)} testId="r-commission" />
-        <Stat label={`${t("uplineCommission")} (MMK)`} value={fmtInt(totals.uplineCommission)} />
-        <Stat label={`${t("profitAfterCommission")} (MMK)`} value={fmtInt(totals.profitAfterCommission)} />
-        <Stat label={`${t("codCarrierFees")} (MMK)`} value={fmtInt(totals.codCarrierFees)} testId="r-cod-fees" />
+        <Stat label={`${t("profit")} (MMK)`} value={fmtInt(totals.profit)} hint={totals.marginPct == null ? undefined : `${t("margin")} ${totals.marginPct}%`} testId="r-profit" />
         <Stat label={`${t("profitAfterRecordedCosts")} (MMK)`} value={fmtInt(totals.profitAfterRecordedCosts)} testId="r-recorded-profit" />
       </section>
+      <Section title={t("profitChain")}>
+        <DataTable numeric={[1]} cols={["", "w-40 sm:w-48"]} tableClassName="table-fixed" head={[t("chainItem"), "MMK"]}>
+          {(
+            [
+              ["", t("revenue"), totals.revenue, "r-chain-revenue", false],
+              ["−", t("cogs"), totals.cogs, "r-cogs", false],
+              ["=", t("profit"), totals.profit, "r-chain-profit", true],
+              ["−", t("commission"), totals.commission, "r-commission", false],
+              ["=", t("profitAfterCommission"), totals.profitAfterCommission, "r-chain-after-commission", true],
+              ["−", t("codCarrierFees"), totals.codCarrierFees, "r-cod-fees", false],
+              ["=", t("profitAfterRecordedCosts"), totals.profitAfterRecordedCosts, "r-chain-recorded", true],
+            ] as const
+          ).map(([sign, label, value, id, subtotal]) => (
+            <tr key={id} className={cn(subtotal && "bg-muted/30 font-medium")}>
+              <Td>
+                <span className="inline-block w-4 text-muted-foreground">{sign}</span>
+                {label}
+                {id === "r-commission" && totals.uplineCommission > 0 && (
+                  <span className="block pl-4 text-xs text-muted-foreground">{t("uplineCommission")}: {fmtInt(totals.uplineCommission)}</span>
+                )}
+              </Td>
+              <Td numeric><span data-testid={id}>{fmtInt(value)}</span></Td>
+            </tr>
+          ))}
+        </DataTable>
+        <p className="text-xs text-muted-foreground">{t("shippingFees")}: {fmtInt(totals.shippingFees)} MMK — {t("shippingFeesNote")}</p>
+      </Section>
       <p className="text-sm text-muted-foreground">{t("recordedCostBasis", { pending: totals.unsettledCodOrders, sender: totals.senderPaysOrders })}</p>
 
       {report.missingCostOrders.length > 0 && (

@@ -89,6 +89,21 @@ export function LinkButton({
  * Thanh lọc (GET, chạy không cần JS): ô tìm + select + nút Lọc; điện thoại: ô tìm cả hàng, select ~2 ô một hàng.
  * Căn đáy (`items-end`): ô có nhãn phía trên (ngày) vẫn thẳng hàng với ô không nhãn.
  */
+/**
+ * Bộ lọc phụ thu gọn trong `FilterBar` (vẫn nằm trong form → gửi cùng nút Lọc); `open` = đang lọc bằng ô bên trong.
+ * Dùng chung cho danh sách SP và đơn hàng (20/11/2026).
+ */
+export function AdvancedFilters({ label, open, children }: { label: string; open: boolean; children: React.ReactNode }) {
+  return (
+    <details className="group/adv w-full md:w-auto" open={open}>
+      <summary className="flex min-h-9 cursor-pointer list-none items-center gap-1 rounded-md px-2 text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+        {label}
+      </summary>
+      <div className="mt-2 flex flex-wrap items-end gap-2">{children}</div>
+    </details>
+  );
+}
+
 export function FilterBar({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <form

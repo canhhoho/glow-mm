@@ -1970,6 +1970,14 @@
     "Docs.productsCleared",
     "Docs.stockPickerNoLocation",
     "Docs.stockPickerEmpty",
-    "Docs.stockPickerHint"
+    "Docs.stockPickerHint",
+    "Products.list.counts",
+    "Reports.profitChain",
+    "Reports.chainItem",
+    "Reports.shippingFeesNote",
+    "Orders.overdueOnly",
+    "Orders.advancedFilters",
+    "Affiliates.dueOnly",
+    "Warehouses.modeLocked"
   ]
 }

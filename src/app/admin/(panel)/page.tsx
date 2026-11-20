@@ -146,9 +146,9 @@ async function Exceptions({ showStock, showCatalog }: { showStock: boolean; show
   ]);
   const taskRows = tasks && stats ? [
     { key: "noImage", icon: <ImageOff />, n: tasks.noImage, href: "/admin/products" },
-    { key: "noPrice", icon: <Tag />, n: tasks.noPrice, href: "/admin/selling-prices" },
+    { key: "noPrice", icon: <Tag />, n: tasks.noPrice, href: "/admin/selling-prices?state=zero" },
     { key: "notReceived", icon: <Box />, n: tasks.notReceived, href: "/admin/inventory?received=no" },
-    { key: "outOfStock", icon: <TriangleAlert />, n: stats.published.outOfStock - stats.published.preorder, href: "/admin/products?status=outOfStock" },
+    { key: "outOfStock", icon: <TriangleAlert />, n: stats.published.outOfStock - stats.published.preorder, href: "/admin/products?status=published&sell=out" },
     { key: "rejected", icon: <FileText />, n: stats.rejected, href: "/admin/products?status=rejected" },
   ].filter((r) => r.n > 0) : [];
   return (

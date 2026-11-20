@@ -1,18 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { login } from "./helpers";
 
-test("cài đặt: thẻ tài khoản, lưu/kiểm tra dữ liệu và bố cục desktop/mobile", async ({ page }) => {
+test("cài đặt: lưu/kiểm tra dữ liệu và bố cục desktop/mobile (không còn thẻ tài khoản lặp menu)", async ({ page }) => {
   test.setTimeout(90_000);
   await page.setViewportSize({ width: 1600, height: 1000 });
   await login(page, "admin@glow.local");
   await page.goto("/admin/settings");
-  const accounts = page.getByTestId("settings-accounts");
-  await expect(accounts.getByRole("link")).toHaveCount(3);
-  await expect(accounts.getByRole("link", { name: /^Nhân viên/ })).toHaveAttribute("href", "/admin/users");
-  await expect(accounts.getByRole("link", { name: /^Cộng tác viên/ })).toHaveAttribute("href", "/admin/affiliates");
-  await accounts.getByRole("link", { name: /^Khách hàng/ }).click();
-  await expect(page).toHaveURL(/\/admin\/customer-accounts$/);
-  await page.goto("/admin/settings");
+  // 20/11/2026 (audit): khối thẻ Tài khoản đã bỏ — vào Nhân viên / Khách hàng qua menu Cài đặt › Tài khoản.
+  await expect(page.getByTestId("settings-accounts")).toHaveCount(0);
 
   // Hạn dùng đang tắt (`FEATURES.expiry`, 17/11/2026): nhóm hạn dùng ẩn; lưu cài đặt vẫn chạy (kiểm giữ ngưỡng ở pricing-settings.spec).
   await expect(page.getByLabel("Cảnh báo cận date dưới (ngày)")).toHaveCount(0);
