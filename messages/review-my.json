@@ -1966,6 +1966,10 @@
     "Docs.colOnHand",
     "Docs.colPlanned",
     "Docs.colPurchase",
-    "Docs.awaitingCount"
+    "Docs.awaitingCount",
+    "Docs.productsCleared",
+    "Docs.stockPickerNoLocation",
+    "Docs.stockPickerEmpty",
+    "Docs.stockPickerHint"
   ]
 }

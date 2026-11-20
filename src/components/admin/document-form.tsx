@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { fieldClass, fieldLabelClass, fieldLabelSmClass, Notice } from "@/components/admin/ui";
 import { createDocumentAction } from "@/server/inventory/actions";
-import { batchQtyAt, batchSelectable, keepValidBatches } from "@/server/inventory/document-form-rules";
+import { batchQtyAt, batchSelectable, keepValidBatches, variantsInStockAt } from "@/server/inventory/document-form-rules";
 import { cn } from "@/lib/utils";
 import { FEATURES } from "@/lib/features";
 import { VariantPicker, pickerIndex, pickerTextFor, type PickerText, type PickerVariant } from "@/components/admin/variant-picker";
@@ -80,19 +80,24 @@ export function DocumentForm({ type, data, replace }: { type: DocType; data: For
   const [shipmentId, setShipmentId] = useState("");
   const [reason, setReason] = useState(replace?.reason ?? "");
   const variants = useMemo(() => data.variants.filter((v) => !v.isBundle), [data.variants]);
-  const picker = useMemo(() => pickerIndex(variants), [variants]);
+  const needsFrom = type === "TRANSFER" || type === "ISSUE";
+  const needsTo = type !== "ISSUE";
+  const stockLoc = type === "ADJUST" ? toId : fromId;
+  // 20/11/2026: điều chỉnh / xuất / chuyển — bộ chọn chỉ gồm phân loại đang có tồn ở vị trí đã chọn (điều chỉnh: vị trí;
+  // xuất / chuyển: kho xuất). Phiếu nhập không dùng form này cho chọn SP (ReceiveBulkForm).
+  const stockOnly = type !== "RECEIVE";
+  const inStock = useMemo(() => variantsInStockAt(data.batches, stockLoc), [data.batches, stockLoc]);
+  const pickable = useMemo(() => (stockOnly ? variants.filter((v) => inStock.has(v.id)) : variants), [stockOnly, variants, inStock]);
+  const picker = useMemo(() => pickerIndex(pickable), [pickable]);
   const [lines, setLines] = useState<Line[]>(() =>
     replace?.lines.length
       ? replace.lines.map((l) => ({ ...blank(), ...pickerTextFor(picker, l.variantId, variants), variantId: l.variantId, batchId: l.batchId, qty: String(l.qty), stockType: l.stockType }))
       : [blank()],
   );
 
-  const needsFrom = type === "TRANSFER" || type === "ISSUE";
-  const needsTo = type !== "ISSUE";
-  const stockLoc = type === "ADJUST" ? toId : fromId;
-
   const update = (key: number, patch: Partial<Line>) => {
     setLotsCleared(0);
+    setProductsCleared(0);
     setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
   };
 
@@ -104,13 +109,25 @@ export function DocumentForm({ type, data, replace }: { type: DocType; data: For
   // Đổi kho: bỏ chọn lô không còn hợp lệ ở kho mới (cùng quy tắc với danh sách lô hiện ra) và báo cho người dùng,
   // để lô đã chọn ở kho cũ không âm thầm đi theo vào phiếu mới.
   const [lotsCleared, setLotsCleared] = useState(0);
+  const [productsCleared, setProductsCleared] = useState(0);
   const pickLocation = (kind: "from" | "to") => (value: string) => {
     if (kind === "from") setFromId(value);
     else setToId(value);
     const nextStockLoc = type === "ADJUST" ? (kind === "to" ? value : toId) : kind === "from" ? value : fromId;
-    const kept = keepValidBatches(lines, data.batches, type, nextStockLoc);
+    // Đổi vị trí tồn: dòng có SP không còn tồn ở vị trí mới → bỏ chọn SP (bộ chọn không còn SP đó), báo số dòng.
+    const stocked = variantsInStockAt(data.batches, nextStockLoc);
+    let dropped = 0;
+    const base = stockOnly && nextStockLoc !== stockLoc
+      ? lines.map((l) => {
+          if (!l.variantId || stocked.has(l.variantId)) return l;
+          dropped++;
+          return { ...l, productText: "", skuText: "", variantId: "", batchId: "" };
+        })
+      : lines;
+    const kept = keepValidBatches(base, data.batches, type, nextStockLoc);
     setLines(kept.lines);
     setLotsCleared(kept.cleared);
+    setProductsCleared(dropped);
   };
 
   const payload = useMemo(() => {
@@ -201,6 +218,16 @@ export function DocumentForm({ type, data, replace }: { type: DocType; data: For
         </label>
       </div>
 
+      {productsCleared > 0 && (
+        <Notice tone="warning" data-testid="products-cleared">
+          {t("productsCleared", { count: productsCleared })}
+        </Notice>
+      )}
+      {stockOnly && (
+        <p className="text-sm text-muted-foreground" data-testid="stock-picker-hint">
+          {!stockLoc ? t("stockPickerNoLocation") : pickable.length === 0 ? t("stockPickerEmpty") : t("stockPickerHint", { count: pickable.length })}
+        </p>
+      )}
       {lotsCleared > 0 && (
         <Notice tone="warning" data-testid="lots-cleared">
           {t("lotsCleared", { count: lotsCleared })}
@@ -214,7 +241,7 @@ export function DocumentForm({ type, data, replace }: { type: DocType; data: For
         ))}
       </datalist>
       <datalist id="picker-skus">
-        {variants.map((v) => (
+        {pickable.map((v) => (
           <option key={v.id} value={v.sku}>
             {v.productName}
           </option>

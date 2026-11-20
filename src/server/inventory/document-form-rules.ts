@@ -26,6 +26,17 @@ export function batchSelectable(type: DocKind, b: FormBatchLike, stockLocationId
   return type === "ADJUST" ? b.posted !== false : batchQtyAt(b, stockLocationId, stockType) > 0;
 }
 
+/**
+ * Phân loại đang có tồn (> 0, mọi loại tồn) tại một vị trí — bộ chọn sản phẩm của phiếu điều chỉnh / xuất / chuyển chỉ
+ * liệt kê các phân loại này (20/11/2026). Chưa chọn vị trí → rỗng.
+ */
+export function variantsInStockAt(batches: FormBatchLike[], locationId: string): Set<string> {
+  const out = new Set<string>();
+  if (!locationId) return out;
+  for (const b of batches) if (b.balances.some((x) => x.locationId === locationId && x.qty > 0)) out.add(b.variantId);
+  return out;
+}
+
 /** Bỏ chọn lô không còn hợp lệ (đổi kho / loại tồn); trả số dòng bị bỏ để báo cho người dùng. */
 export function keepValidBatches<L extends { variantId: string; batchId: string; stockType: string }>(
   lines: L[],
