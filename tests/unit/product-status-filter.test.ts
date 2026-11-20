@@ -35,7 +35,9 @@ describe("bộ lọc trạng thái sản phẩm", () => {
     }));
     const select = html.match(/<select\b[^>]*name="status"[^>]*>([\s\S]*?)<\/select>/)?.[1];
     expect(select).toBeDefined();
-    for (const value of LIST_TABS) expect(select).toContain(`value="${value}"`);
+    // 20/11/2026 (audit): "Hết hàng" lọc bằng ô Điều kiện bán — ô trạng thái chỉ còn mục này khi đang mở bằng link cũ.
+    for (const value of LIST_TABS.filter((v) => v !== "outOfStock" || v === status)) expect(select).toContain(`value="${value}"`);
+    if (status !== "outOfStock") expect(select).not.toContain(`value="outOfStock"`);
     expect(select).toContain(`value="${status}" selected=""`);
     expect(listProductsPage).toHaveBeenLastCalledWith(expect.objectContaining({ tab: status, q: "test" }));
     expect(html).not.toMatch(/<input[^>]*type="hidden"[^>]*name="status"/);

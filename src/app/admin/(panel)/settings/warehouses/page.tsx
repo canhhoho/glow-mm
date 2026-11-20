@@ -67,7 +67,15 @@ export default async function WarehousesPage({ searchParams }: PageProps<"/admin
                 <input type="hidden" name="id" value={r.id} />
                 <input name="name" required maxLength={60} defaultValue={r.name} aria-label={`${t("name")} ${r.code}`} className={cn(fieldClass, "w-40")} />
                 {r.sellable && (
-                  <select name="pricingMode" defaultValue={r.pricingMode ?? "VN_IMPORT"} aria-label={`${t("pricingMode")} ${r.code}`} className={cn(fieldClass, "w-auto")}>
+                  // 20/11/2026 (audit): kho đã có SP / hàng → khoá ô (ô khoá không gửi đi → server giữ cách tính giá cũ).
+                  <select
+                    name="pricingMode"
+                    defaultValue={r.pricingMode ?? "VN_IMPORT"}
+                    disabled={r.modeLocked}
+                    title={r.modeLocked ? t("modeLocked") : undefined}
+                    aria-label={`${t("pricingMode")} ${r.code}`}
+                    className={cn(fieldClass, "w-auto")}
+                  >
                     {MODES.map((m) => (
                       <option key={m} value={m}>
                         {t(`mode.${m}`)}

@@ -88,7 +88,7 @@ Menu đầy đủ (mỗi người chỉ thấy các mục mình có quyền):
 | **Kho hàng** | **Tồn kho**, **Phiếu kho**, **Chờ kiểm tra**, **Cảnh báo**, **Chuyến hàng** |
 | **Đăng bán** | **Chờ hoàn thiện**, **Chờ duyệt**, **Đang bán** (lối tắt vào danh sách sản phẩm đã lọc sẵn) |
 | **Tài khoản** | **Nhân viên**, **Khách hàng** |
-| **Cộng tác viên** | **Danh sách CTV**, **Đơn đăng ký**, **Hoa hồng & chi trả** |
+| **Cộng tác viên** | **Danh sách CTV** (lọc **Có hoa hồng phải trả**), **Đơn đăng ký** |
 | **Báo cáo** | **Bán hàng & lợi nhuận**, **Hành vi mua hàng**, **Sức khoẻ dữ liệu** |
 | **Cài đặt** | **Cấu hình cửa hàng**, **Quản lý kho**, **Địa bàn giao hàng**, và nhóm con **Nội dung trang chủ** (**Banner**, **Bộ sưu tập**) |
 
@@ -158,7 +158,7 @@ Làm theo vai trò. Mục ghi "(QTV)" chỉ Quản trị viên mới thấy.
 - [ ] **Báo cáo › Sức khoẻ dữ liệu**: xử lý các mục mức "Lỗi" trước, rồi "Cảnh báo".
 - [ ] **Sản phẩm › Giá bán**: lọc **Giá cũ hơn phiếu nhập** và **Chưa có giá**; tính lại giá khi cần ([mục 7.2](#72-trang-giá-bán-danh-sách)).
 - [ ] **Đối soát COD**: đơn nào quá vài ngày chưa có tiền về thì hỏi hãng ([mục 11](#11-đối-soát-tiền-cod)).
-- [ ] **Cộng tác viên › Hoa hồng & chi trả**: ai có **Đến hạn** thì chuyển tiền rồi bấm **Ghi nhận đã trả** ([mục 12.4](#124-chi-trả-hoa-hồng)).
+- [ ] **Cộng tác viên › Danh sách CTV**, tick **Có hoa hồng phải trả**: ai có **Đến hạn** thì chuyển tiền rồi bấm **Ghi nhận đã trả** ([mục 12.4](#124-chi-trả-hoa-hồng)).
 - [ ] **Kho hàng › Chuyến hàng**: chuyến nào báo **Cần phân bổ lại — đầu vào đã thay đổi** thì phân bổ lại ([mục 8.6](#86-chuyến-hàng-vn--mm-và-giá-vốn)).
 
 ### 2.5. Hằng tháng (Quản trị viên)
@@ -283,6 +283,8 @@ Sau khi sản phẩm đã được duyệt một lần, sửa các trường qua
 
 ## 5. Sản phẩm
 
+> **Danh sách sản phẩm (20/11/2026):** đầu trang ghi tổng số SP và SKU (không gồm ngừng kinh doanh); bỏ 4 ô số trùng tab. Trạng thái chọn ở hàng tab hoặc ô trạng thái; **Hết hàng / Đặt trước / Còn hàng** lọc bằng ô **Điều kiện bán** trong Bộ lọc nâng cao. Bảng có cột **Giá bán lẻ (MMK)** (khoảng giá nếu nhiều phân loại) và **Còn bán được** (dòng phụ "Đặt trước" / "Hết hàng") thay cột Mô tả.
+
 Chỉ **Quản trị viên** làm các việc trong mục này.
 
 ### 5.1. Tạo sản phẩm mới (bước 1 trong 5)
@@ -403,12 +405,12 @@ Với sản phẩm **đã duyệt**, thêm/xoá ảnh được giữ lại chờ
 
 **Không có trang quản lý thương hiệu.** Thương hiệu được **tạo khi bạn gõ tên mới** (ở form sản phẩm hoặc Excel) và **tự xoá khi không còn sản phẩm nào dùng**. Tên được so khớp không phân biệt hoa/thường và dấu ("Estée Lauder" và "Estee Lauder" là một). Thương hiệu chỉ còn sản phẩm ngừng kinh doanh vẫn được giữ nhưng không gợi ý ở form.
 
-### 5.7. Đặt trước khi hết hàng (bước 5)
+### 5.7. Đặt trước khi hết hàng (bước 2)
 
-Khối **Đặt trước khi hết hàng** (đang nhận / đã tắt):
+Khối **Đặt trước khi hết hàng** (đang nhận / đã tắt) nằm ở tab **Tồn & nhập hàng** — bước 2 "Kho bán & hàng" (20/11/2026, trước ở khối Đăng bán):
 - Mặc định **bật**: sản phẩm hết hàng vẫn cho **khách đặt trên web** (đơn vào trạng thái **Chờ hàng về**, không giữ hàng). Tắt bằng cách bỏ chọn **Cho đặt trước khi hết hàng** → **Lưu đặt trước**.
 - **Hạn mức (cái)** từng biến thể: để trống thì dùng ô **Hạn mức đặt trước mặc định mỗi phân loại (cái, 0 = không nhận)** ở Cấu hình cửa hàng (mặc định 20; **0 = không nhận**). Trang sản phẩm hiện "Đang chờ hàng: {n} cái".
-- Chỉ đơn **khách tự đặt trên web** mới thành đặt trước. Đơn do nhân viên/CTV tạo mà thiếu hàng sẽ báo "Không đủ hàng". Combo không đặt trước được.
+- Mọi đơn (khách trên web, nhân viên, CTV tạo tay — 19/11/2026) thiếu hàng mà còn hạn mức đều thành đơn đặt trước. Combo không đặt trước được.
 
 Xử lý đơn đặt trước: [mục 10.9](#109-đơn-đặt-trước).
 
@@ -806,7 +808,7 @@ Bước 5: **Bật hiển thị trên web** (chỉ hiện khi các bước trư�
 
 Tình trạng thanh toán: **Chưa trả**, **Chờ xác nhận thanh toán**, **Đã thanh toán**, **Đã hoàn tiền**.
 
-Trang danh sách **Đơn hàng › Danh sách đơn** có bộ lọc (kể cả **Chỉ đơn quá hạn**). Mở một đơn để xem chi tiết, các nút trong khối **Thao tác**, các khối **Vận chuyển**, **Phiếu kho** (link tới phiếu xuất/trả) và **Lịch sử** (ai làm gì, lúc nào; đơn khách tự đặt ghi "Khách tự đặt", việc hệ thống tự làm ghi "Hệ thống").
+Trang danh sách **Đơn hàng › Danh sách đơn** có bộ lọc: ngoài cùng là **Từ ngày / Đến ngày**, ô tìm và trạng thái; các lọc khác (thanh toán, kênh, kho, CTV, **Đang giao quá (ngày)**, **Chờ xác nhận quá hạn giữ hàng**) nằm trong **Bộ lọc nâng cao** (tự mở khi đang dùng — 20/11/2026). Mở một đơn để xem chi tiết, các nút trong khối **Thao tác**, các khối **Vận chuyển**, **Phiếu kho** (link tới phiếu xuất/trả) và **Lịch sử** (ai làm gì, lúc nào; đơn khách tự đặt ghi "Khách tự đặt", việc hệ thống tự làm ghi "Hệ thống").
 
 ### 10.2. Tạo đơn thủ công
 
@@ -841,7 +843,7 @@ Trang danh sách **Đơn hàng › Danh sách đơn** có bộ lọc (kể cả 
 
 - Đơn **Chờ xác nhận** giữ hàng theo **Giữ hàng chờ chuyển khoản (giờ)** (đơn chuyển khoản) và **Tự huỷ COD chưa xác nhận sau (giờ)** (đơn COD), mặc định **24 giờ** mỗi loại (1–168), đổi ở [15.1](#151-cấu-hình-cửa-hàng).
 - Hết hạn mà chưa xác nhận → hệ thống **tự huỷ** đơn (lý do "Quá hạn gọi xác nhận COD" hoặc "Quá hạn chuyển khoản", người thực hiện "Hệ thống"). Việc này do tác vụ chạy định kỳ mỗi 15 phút **[CHƯA XÁC MINH — phụ thuộc lịch chạy tự động trên server]**.
-- Trang đơn hiện **Giữ hàng đến** với giờ cụ thể hoặc **Không thời hạn**; đơn trễ có nhãn **Quá hạn** và lọc được bằng **Chỉ đơn quá hạn**.
+- Trang đơn hiện **Giữ hàng đến** với giờ cụ thể hoặc **Không thời hạn**; đơn trễ có nhãn **Quá hạn** và lọc được bằng **Chờ xác nhận quá hạn giữ hàng** (trong Bộ lọc nâng cao).
 - Nếu bạn xác nhận khi đã quá hạn nhưng đơn chưa bị tự huỷ, hệ thống **kiểm lại tồn**; hết hàng thì báo "Không đủ hàng".
 
 ### 10.4. Xác nhận đơn và ghi nhận tiền
@@ -1013,7 +1015,7 @@ Bấm **Giao thành công · Đã thu tiền** chỉ ghi nhận **khách đã tr
 
 ### 12.4. Chi trả hoa hồng
 
-**Cộng tác viên › Hoa hồng & chi trả**: mỗi CTV một dòng với **Chờ**, **Đến hạn**, **Đã trả**; **Xem** nhảy tới phần chi trả của CTV đó.
+**Cộng tác viên › Danh sách CTV**, tick **Có hoa hồng phải trả** (20/11/2026: thay tab "Hoa hồng & chi trả" cũ — link cũ tự chuyển về đây; CTV phải trả nhiều nhất lên đầu): mỗi CTV một dòng với **Chờ**, **Đến hạn**, **Đã trả**; bấm tên CTV tới phần chi trả của CTV đó.
 
 **Các bước chi trả**
 1. Mở CTV có **Đến hạn trả**. Đọc "{n} đơn · tổng {amount} MMK".
@@ -1074,7 +1076,7 @@ Bấm tên bạn (góc phải trên) → **Tài khoản của tôi** → **Đổ
 
 **Báo cáo › Bán hàng & lợi nhuận** (Quản trị viên). Chọn **Từ ngày** / **Đến ngày** → **Xem**.
 
-Cách tính: **doanh thu = đơn Hoàn tất theo ngày hoàn tất** (giờ Yangon), trừ hàng trả. Ý nghĩa các ô:
+Cách tính: **doanh thu = đơn Hoàn tất theo ngày hoàn tất** (giờ Yangon), trừ hàng trả. Từ 20/11/2026 trang có **4 ô chính** (Doanh thu — dòng phụ ghi hàng trả; Đơn hoàn tất; Lợi nhuận gộp — dòng phụ ghi biên lợi nhuận; Sau chi phí bán đã ghi nhận) và bảng **Từ doanh thu đến lợi nhuận** đi theo thứ tự Doanh thu − Giá vốn = Lợi nhuận gộp − Hoa hồng CTV = Lợi nhuận sau hoa hồng − Phí hãng khấu trừ COD = Sau chi phí bán đã ghi nhận; **Phí ship thu** ghi riêng dưới bảng (không tính vào doanh thu). Ý nghĩa các khoản:
 
 | Ô | Hiểu là |
 |---|---|
@@ -1106,6 +1108,8 @@ Trang có cảnh báo khi thiếu giá vốn hoặc dùng giá vốn tạm (con 
 Chỉ **Quản trị viên**.
 
 ### 15.1. Cấu hình cửa hàng
+
+> 20/11/2026: trang không còn khối thẻ **Tài khoản** ở đầu (lặp menu) — vào Nhân viên / Khách hàng qua **Cài đặt › Tài khoản**, CTV qua **Đơn hàng › CTV & hoa hồng**. Ở **Quản lý kho**, ô **Cách tính giá** của kho đã có sản phẩm hoặc đã có hàng bị khoá (rê chuột xem lý do); cần cách tính khác thì tạo kho mới.
 
 **Cài đặt › Cấu hình cửa hàng.** Sửa các ô rồi bấm **Lưu cài đặt** (một nút lưu tất cả, mọi thay đổi đều được ghi nhận). Đầu trang có lối tắt tới **Nhân viên**, **Cộng tác viên**, **Khách hàng**.
 

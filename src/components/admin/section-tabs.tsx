@@ -8,8 +8,11 @@ import { navCounts } from "@/server/admin/nav-counts";
  */
 const positive = (n: number | undefined) => (n && n > 0 ? n : undefined);
 
-/** CTV & hoa hồng: Hồ sơ · Đăng ký · Hoa hồng & chi trả. */
-export async function AffiliateTabs({ active }: { active: "list" | "applications" | "commissions" }) {
+/**
+ * CTV & hoa hồng: Danh sách · Đăng ký. 20/11/2026 (audit): bỏ tab "Hoa hồng & chi trả" (trùng dữ liệu/cột với Danh sách) —
+ * Danh sách có lọc "Có hoa hồng phải trả"; link cũ /admin/affiliates/commissions chuyển về lọc đó.
+ */
+export async function AffiliateTabs({ active }: { active: "list" | "applications" }) {
   const [tn, counts] = await Promise.all([getTranslations("Nav"), navCounts(new Set(["pendingApplications"]))]);
   return (
     <TabNav
@@ -17,7 +20,6 @@ export async function AffiliateTabs({ active }: { active: "list" | "applications
       tabs={[
         { href: "/admin/affiliates", label: tn("affiliateList"), active: active === "list" },
         { href: "/admin/affiliates/applications", label: tn("affiliateApplications"), active: active === "applications", count: positive(counts.pendingApplications), tone: "brand" },
-        { href: "/admin/affiliates/commissions", label: tn("affiliateCommissions"), active: active === "commissions" },
       ]}
     />
   );

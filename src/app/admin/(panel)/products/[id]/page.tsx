@@ -424,6 +424,50 @@ export default async function EditProductPage({ params, searchParams }: PageProp
             </ActionForm>
           </div>
         )}
+        {/* QT3: hết hàng → nhận đặt trước (mặc định bật); combo không đặt trước. 20/11/2026: chuyển từ khối Đăng bán về bước 2 —
+            bật đặt trước là một nhánh hợp lệ của "Kho bán & hàng" (productSteps). */}
+        {!archived && (
+        <details className="rounded-lg border p-4" data-testid="preorder-settings">
+          <summary className="cursor-pointer font-medium">
+            {t("preorder.title")} · {approval.preorderEnabled ? t("preorder.on") : t("preorder.off")}
+          </summary>
+          <div className="mt-3">
+            <ActionForm action={saveProductPreorderAction} submitLabel={t("preorder.save")} okText={t("preorder.saved")} className="space-y-3">
+              <p className="text-xs text-muted-foreground">{t("preorder.help", { n: preorderDefault })}</p>
+              <input type="hidden" name="productId" value={product.id} />
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="preorderEnabled" defaultChecked={approval.preorderEnabled} className="size-4 accent-primary" />
+                {t("preorder.enabled")}
+              </label>
+              {product.variants
+                .filter((v) => !v.isBundle)
+                .map((v) => (
+                  <div key={v.id} className="grid gap-1 sm:grid-cols-[1fr_10rem] sm:items-end">
+                    <input type="hidden" name="variantId" value={v.id} />
+                    <span className="text-sm">
+                      {v.label} <span className="font-mono text-xs text-muted-foreground">{v.sku}</span>
+                      <span className="block text-xs text-muted-foreground">{t("preorder.waiting", { n: waitingQty.get(v.id) ?? 0 })}</span>
+                    </span>
+                    <label className={fieldLabelClass}>
+                      <span className="text-muted-foreground">{t("preorder.limit")}</span>
+                      <input
+                        name="preorderLimit"
+                        aria-label={`${t("preorder.limit")} ${v.sku}`}
+                        type="number"
+                        min={0}
+                        step={1}
+                        inputMode="numeric"
+                        placeholder={String(preorderDefault)}
+                        defaultValue={preorderLimit.get(v.id) ?? ""}
+                        className={fieldClass}
+                      />
+                    </label>
+                  </div>
+                ))}
+            </ActionForm>
+          </div>
+        </details>
+        )}
         {/* P3b: tồn chỉ để xem — cùng số liệu trang Tồn kho; nhập / điều chỉnh qua phiếu kho. */}
         {stock.rows.some((r) => r.cols || r.reserved > 0) ? (
           <DataTable dense numeric={[1, 2, 3]} head={[ti("colSku"), ti("colPhysical"), ti("colReserved"), ti("colAvailable"), ti("colEarliest")]}>
@@ -652,47 +696,6 @@ export default async function EditProductPage({ params, searchParams }: PageProp
             iconOnly={false}
           />
         )}
-        {/* QT3: hết hàng → nhận đặt trước (mặc định bật); combo không đặt trước. */}
-        <details className="rounded-lg border p-4" data-testid="preorder-settings">
-          <summary className="cursor-pointer font-medium">
-            {t("preorder.title")} · {approval.preorderEnabled ? t("preorder.on") : t("preorder.off")}
-          </summary>
-          <div className="mt-3">
-            <ActionForm action={saveProductPreorderAction} submitLabel={t("preorder.save")} okText={t("preorder.saved")} className="space-y-3">
-              <p className="text-xs text-muted-foreground">{t("preorder.help", { n: preorderDefault })}</p>
-              <input type="hidden" name="productId" value={product.id} />
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" name="preorderEnabled" defaultChecked={approval.preorderEnabled} className="size-4 accent-primary" />
-                {t("preorder.enabled")}
-              </label>
-              {product.variants
-                .filter((v) => !v.isBundle)
-                .map((v) => (
-                  <div key={v.id} className="grid gap-1 sm:grid-cols-[1fr_10rem] sm:items-end">
-                    <input type="hidden" name="variantId" value={v.id} />
-                    <span className="text-sm">
-                      {v.label} <span className="font-mono text-xs text-muted-foreground">{v.sku}</span>
-                      <span className="block text-xs text-muted-foreground">{t("preorder.waiting", { n: waitingQty.get(v.id) ?? 0 })}</span>
-                    </span>
-                    <label className={fieldLabelClass}>
-                      <span className="text-muted-foreground">{t("preorder.limit")}</span>
-                      <input
-                        name="preorderLimit"
-                        aria-label={`${t("preorder.limit")} ${v.sku}`}
-                        type="number"
-                        min={0}
-                        step={1}
-                        inputMode="numeric"
-                        placeholder={String(preorderDefault)}
-                        defaultValue={preorderLimit.get(v.id) ?? ""}
-                        className={fieldClass}
-                      />
-                    </label>
-                  </div>
-                ))}
-            </ActionForm>
-          </div>
-        </details>
       </Section>
       </>
       )}

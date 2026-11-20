@@ -6,7 +6,7 @@ import { bpToPercent } from "@/server/affiliates/commission";
 import { listAffiliates } from "@/server/affiliates/affiliates";
 import { deleteAffiliateAction, setAffiliateActiveAction } from "@/server/affiliates/actions";
 import { AccountRowActions } from "@/components/admin/account-row-actions";
-import { Badge, DataTable, fieldClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Td } from "@/components/admin/ui";
+import { checkboxClass, Badge, DataTable, fieldClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, SearchInput, Td } from "@/components/admin/ui";
 import { AffiliateTabs } from "@/components/admin/section-tabs";
 
 const str = (v: string | string[] | undefined) => (typeof v === "string" ? v.trim() : "");
@@ -17,11 +17,14 @@ export default async function AffiliatesPage({ searchParams }: PageProps<"/admin
   const q = str(sp.q);
   const status = str(sp.status);
   const active = status === "active" ? true : status === "locked" ? false : undefined;
-  const [t, tn, affiliates] = await Promise.all([
+  // "Có hoa hồng phải trả" (thay tab Hoa hồng & chi trả, 20/11/2026): chỉ CTV có số phải trả > 0, nhiều nhất lên đầu.
+  const due = str(sp.due) === "1";
+  const [t, tn, all] = await Promise.all([
     getTranslations("Affiliates"),
     getTranslations("Nav"),
     listAffiliates({ q: q || undefined, active }),
   ]);
+  const affiliates = due ? all.filter((a) => a.summary.payableMmk > 0).sort((a, b) => b.summary.payableMmk - a.summary.payableMmk) : all;
 
   return (
     <Page>
@@ -43,11 +46,15 @@ export default async function AffiliatesPage({ searchParams }: PageProps<"/admin
           <option value="active">{t("active")}</option>
           <option value="locked">{t("locked")}</option>
         </select>
+        <label className="flex h-9 items-center gap-1.5 text-sm">
+          <input type="checkbox" name="due" value="1" defaultChecked={due} className={checkboxClass} />
+          {t("dueOnly")}
+        </label>
         <FilterButton>{(await getTranslations("Common"))("filter")}</FilterButton>
       </FilterBar>
       <DataTable
         stack
-        empty={active === undefined ? t("empty") : t("emptyFiltered")}
+        empty={active === undefined && !due ? t("empty") : t("emptyFiltered")}
         head={[t("colCtv"), t("colCode"), t("colPercent"), t("colMonthSales"), t("colPending"), t("colPayable"), t("colPaid"), <span key="actions" className="block md:text-right">{t("actions")}</span>]}
         numeric={[3, 4, 5, 6]}
       >

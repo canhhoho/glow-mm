@@ -61,14 +61,19 @@ test("mục gộp tab (Tài khoản, CTV & hoa hồng, Nội dung website) mở 
   await expect(page.getByRole("navigation", { name: "Vị trí trang" })).toContainText("Tài khoản");
   await page.keyboard.press("Escape");
 
-  // Đơn hàng › CTV & hoa hồng = ba tab; chuyển tab không đổi mục menu đang sáng.
+  // Đơn hàng › CTV & hoa hồng = hai tab (20/11/2026: bỏ tab Hoa hồng & chi trả); chuyển tab không đổi mục menu đang sáng.
   nav = await openAdminGroup(page, "Đơn hàng");
   await nav.getByRole("link", { name: /^CTV & hoa hồng/ }).click();
   await expect(page).toHaveURL(/\/admin\/affiliates$/);
   const affiliateTabs = page.getByRole("navigation", { name: "CTV & hoa hồng", exact: true });
   await expect(affiliateTabs.getByRole("link", { name: "Danh sách CTV", exact: true })).toHaveAttribute("aria-current", "page");
-  await affiliateTabs.getByRole("link", { name: "Hoa hồng & chi trả", exact: true }).click();
-  await expect(page).toHaveURL(/\/admin\/affiliates\/commissions$/);
+  await expect(affiliateTabs.getByRole("link", { name: "Hoa hồng & chi trả", exact: true })).toHaveCount(0);
+  await affiliateTabs.getByRole("link", { name: /^Đơn đăng ký/ }).click();
+  await expect(page).toHaveURL(/\/admin\/affiliates\/applications$/);
+  // Link cũ → Danh sách lọc "Có hoa hồng phải trả".
+  await page.goto("/admin/affiliates/commissions");
+  await expect(page).toHaveURL(/\/admin\/affiliates\?due=1$/);
+  await expect(page.getByLabel("Có hoa hồng phải trả")).toBeChecked();
   nav = await openAdminNav(page);
   await expect(nav.getByRole("link", { name: /^CTV & hoa hồng/ })).toHaveAttribute("aria-current", "page");
   await page.keyboard.press("Escape");

@@ -75,9 +75,7 @@ test("Cài đặt → Nhân viên → admin đổi email nhân viên → nhân v
   const password = `E2E-tam-${randomBytes(6).toString("hex")}`;
 
   await login(page, "admin@glow.local");
-  await page.goto("/admin/settings");
-  await page.getByTestId("settings-accounts").getByRole("link", { name: /^Nhân viên/ }).click();
-  await expect(page).toHaveURL(/\/admin\/users$/);
+  await page.goto("/admin/users");
   await page.getByRole("link", { name: "Thêm nhân viên" }).click();
   await page.getByRole("textbox", { name: "Họ tên" }).fill("Ko Mail");
   await page.getByRole("textbox", { name: "Email", exact: true }).fill(oldEmail);

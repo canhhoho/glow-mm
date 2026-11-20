@@ -133,15 +133,20 @@ export async function listProductsPage(f: ListFilter, now = new Date()) {
       brand: { select: { name: true } },
       category: { select: { slug: true, translations: { select: { locale: true, name: true } } } },
       stockLocation: { select: { name: true } },
-      translations: { select: { locale: true, name: true, description: true } },
-      variants: { orderBy: { sku: "asc" }, select: { id: true, sku: true, label: true, isBundle: true, active: true } },
+      translations: { select: { locale: true, name: true } },
+      variants: { orderBy: { sku: "asc" }, select: { id: true, sku: true, label: true, isBundle: true, active: true, priceMmk: true } },
       images: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }], take: 1, select: { alt: true, file: { select: { url: true } } } },
       changeRequest: { select: { productId: true } },
     },
   });
   const byId = new Map(rows.map((r) => [r.id, r]));
   const ordered = pageIds.map((id) => byId.get(id)!).filter(Boolean);
-  const readiness = await loadReadiness(prisma, ordered.filter((p) => !p.approvedAt && !p.archivedAt).map((p) => p.id), now);
+  const pageSet = new Set(pageIds);
+  // 20/11/2026: cột Giá bán + Tồn của danh sách — cùng hàm khả dụng/đặt trước với bộ lọc "Bán" (chỉ các SP của trang).
+  const [readiness, pageStock] = await Promise.all([
+    loadReadiness(prisma, ordered.filter((p) => !p.approvedAt && !p.archivedAt).map((p) => p.id), now),
+    stockOf(candidates.filter((c) => pageSet.has(c.id)), now),
+  ]);
 
   return {
     total,
@@ -151,14 +156,20 @@ export async function listProductsPage(f: ListFilter, now = new Date()) {
     rows: ordered.map((p) => {
       const lab = deriveLabel({ ...p, hasChanges: !!p.changeRequest });
       const missing = readiness.get(p.id)?.errors.length ?? 0;
+      const prices = p.variants.filter((v) => v.active && v.priceMmk > 0).map((v) => v.priceMmk);
+      const st = pageStock.get(p.id);
       return {
         id: p.id,
         slug: p.slug,
         name: productName(p.translations, p.slug),
-        description: plainDescription(p.translations),
         brand: p.brand.name,
         category: productName(p.category.translations, p.category.slug),
         warehouse: p.stockLocation?.name ?? null,
+        /** Giá bán đang hiệu lực (MMK) của phân loại đang bán: null = chưa có giá. */
+        price: prices.length ? { min: Math.min(...prices), max: Math.max(...prices) } : null,
+        /** Tồn còn bán được (null = chưa có phân loại đang bán) + điều kiện bán (còn hàng / đặt trước / hết). */
+        stock: st?.stock ?? null,
+        sell: st?.sell ?? ("out" as SellMode),
         image: p.images[0] ? { url: p.images[0].file.url, alt: p.images[0].alt ?? "" } : null,
         updatedAt: p.updatedAt,
         label: (lab.label === "DRAFT" && missing > 0 ? "INCOMPLETE" : lab.label) as ListLabel,
@@ -176,17 +187,6 @@ export async function listProductsPage(f: ListFilter, now = new Date()) {
 }
 export type ProductListRow = Awaited<ReturnType<typeof listProductsPage>>["rows"][number];
 
-/** Mô tả ngắn cho cột danh sách: cùng ngôn ngữ với tên (ưu tiên en), bỏ thẻ HTML / ký hiệu markdown, gộp khoảng trắng. */
-function plainDescription(translations: { locale: string; description: string | null }[]): string | null {
-  const raw = (translations.find((t) => t.locale === "en" && t.description) ?? translations.find((t) => t.description))?.description;
-  if (!raw) return null;
-  const text = raw
-    .replace(/<[^>]*>/g, " ")
-    .replace(/[#*_`>~]+/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-  return text ? text.slice(0, 300) : null;
-}
 
 /**
  * P3b — SP trước / sau theo thứ tự mặc định của danh sách (mới cập nhật trước, chưa ngừng KD).

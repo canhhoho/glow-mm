@@ -59,11 +59,15 @@ export async function listWarehouses(opts: { includeInactive?: boolean } = {}) {
   ]);
   const locations = [...active, ...inactive];
   const ids = locations.map((l) => l.id);
-  const [products, stock, inactiveCount] = await Promise.all([
+  const [products, stock, inactiveCount, anyProducts, moves] = await Promise.all([
     prisma.product.groupBy({ by: ["stockLocationId"], where: { archivedAt: null, stockLocationId: { in: ids } }, _count: { _all: true } }),
     prisma.stockBalance.groupBy({ by: ["locationId"], where: { qty: { gt: 0 }, locationId: { in: ids } }, _sum: { qty: true } }),
     prisma.location.count({ where: { active: false } }),
+    // Cùng điều kiện chặn đổi cách tính giá ở updateWarehouse (kể cả SP ngừng KD, kho đã từng có sổ kho) → khoá ô trên form.
+    prisma.product.groupBy({ by: ["stockLocationId"], where: { stockLocationId: { in: ids } }, _count: { _all: true } }),
+    prisma.stockLedger.groupBy({ by: ["locationId"], where: { locationId: { in: ids } }, _count: { _all: true } }),
   ]);
+  const locked = new Set([...anyProducts.map((p) => p.stockLocationId), ...moves.map((m) => m.locationId)]);
   const productCount = new Map(products.map((p) => [p.stockLocationId, p._count._all]));
   const stockQty = new Map(stock.map((s) => [s.locationId, s._sum.qty ?? 0]));
   const rows = locations.map((l) => ({
@@ -76,6 +80,8 @@ export async function listWarehouses(opts: { includeInactive?: boolean } = {}) {
     pricingMode: l.pricingMode,
     products: productCount.get(l.id) ?? 0,
     stock: stockQty.get(l.id) ?? 0,
+    /** Kho đã có SP / đã có sổ kho → không đổi được cách tính giá (server chặn ở updateWarehouse). */
+    modeLocked: locked.has(l.id),
   }));
   return { rows, inactiveCount };
 }

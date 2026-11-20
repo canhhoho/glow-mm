@@ -27,35 +27,43 @@ export default async function InventoryReportPage() {
       <PageHeader title={tn("inventoryReports")} description={t("inventoryBasis")} />
       <ReportsTabs active="inventory" />
       <Notice>{t("inventoryNow")}</Notice>
-      <div className="grid gap-5 lg:grid-cols-2 [&>*]:min-w-0">
-        <Section title={t("stock")}>
-          <DataTable empty={t("empty")} tableClassName="min-w-[40rem]" numeric={[1, 2, 3, 4, 5]} head={[t("locType"), t("qty"), t("tester"), t("value"), t("estimatedQty"), t("noCost")]}>
-            {stock.map((s) => (
-              <tr key={s.code ?? "inactive"} data-testid={`stock-${s.code ?? "inactive"}`}>
-                <Td className="whitespace-nowrap">{s.name ?? t("inactiveLocations")}</Td>
-                <Td numeric>{fmtInt(s.qty)}</Td>
-                <Td numeric>{fmtInt(s.testerQty)}</Td>
-                <Td numeric>{fmtInt(s.valueMmk)}</Td>
-                <Td numeric>{s.estimatedQty ? fmtInt(s.estimatedQty) : "—"}</Td>
-                <Td numeric>{s.missingCost ? fmtInt(s.missingCost) : "—"}</Td>
-              </tr>
-            ))}
-          </DataTable>
-        </Section>
-        <Section title={t("slow", { days: slow.days })}>
-          <DataTable empty={t("empty")} numeric={[1]} head={[tc("product"), t("available")]}>
-            {slow.items.slice(0, 20).map((v) => (
-              <tr key={v.variantId}>
-                <Td>
-                  <span className="block break-words">{v.name}</span>
-                  <span className="block font-mono text-xs break-all text-muted-foreground">{v.sku}</span>
-                </Td>
-                <Td numeric>{fmtInt(v.available)}</Td>
-              </tr>
-            ))}
-          </DataTable>
-        </Section>
-      </div>
+      {/* 20/11/2026: hai khối xếp dọc, mỗi khối rộng hết vùng nội dung (trước: hai cột trên lg → bảng tồn bị bó, phải cuộn ngang).
+          Bảng tồn: table-fixed + colgroup chia cột (kho rộng hơn, cột số đều nhau), tiêu đề dài xuống dòng; điện thoại giữ
+          độ rộng tối thiểu → cuộn trong bảng (DataTable đã overflow-x-auto). */}
+      <Section title={t("stock")}>
+        <DataTable
+          empty={t("empty")}
+          tableClassName="min-w-[40rem] table-fixed"
+          cols={["w-[22%]", "w-[17%]", "w-[11%]", "w-[18%]", "w-[16%]", "w-[16%]"]}
+          numeric={[1, 2, 3, 4, 5]}
+          head={[t("locType"), t("qty"), t("tester"), t("value"), t("estimatedQty"), t("noCost")].map((h, i) => (i === 0 ? h : <span key={i} className="whitespace-normal">{h}</span>))}
+        >
+          {stock.map((s) => (
+            <tr key={s.code ?? "inactive"} data-testid={`stock-${s.code ?? "inactive"}`}>
+              <Td className="break-words">{s.name ?? t("inactiveLocations")}</Td>
+              <Td numeric>{fmtInt(s.qty)}</Td>
+              <Td numeric>{fmtInt(s.testerQty)}</Td>
+              <Td numeric>{fmtInt(s.valueMmk)}</Td>
+              <Td numeric>{s.estimatedQty ? fmtInt(s.estimatedQty) : "—"}</Td>
+              <Td numeric>{s.missingCost ? fmtInt(s.missingCost) : "—"}</Td>
+            </tr>
+          ))}
+        </DataTable>
+      </Section>
+      <Section title={t("slow", { days: slow.days })}>
+        {/* Rộng hết vùng nội dung: cột SP co giãn, cột số hẹp cố định bên phải. */}
+        <DataTable empty={t("empty")} tableClassName="table-fixed" cols={["", "w-32 sm:w-40"]} numeric={[1]} head={[tc("product"), <span key="a" className="whitespace-normal">{t("available")}</span>]}>
+          {slow.items.slice(0, 20).map((v) => (
+            <tr key={v.variantId} data-testid="slow-row">
+              <Td>
+                <span className="block break-words">{v.name}</span>
+                <span className="block font-mono text-xs break-all text-muted-foreground">{v.sku}</span>
+              </Td>
+              <Td numeric>{fmtInt(v.available)}</Td>
+            </tr>
+          ))}
+        </DataTable>
+      </Section>
 
       {FEATURES.shipments && (
       <Section title={t("inbound")}>
