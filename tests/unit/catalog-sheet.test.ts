@@ -74,14 +74,15 @@ describe("File Excel nhập/cập nhật sản phẩm (một sheet)", () => {
       "name", "brand", "category", "variant_label", "sku", "weight_g", "description_my", "description_en",
       "usage_my", "usage_en", "ingredients", "storage_note", "pao_months",
       // 19/11/2026: cờ hạn dùng tắt → không còn cột Hạn sử dụng.
-      "warehouse_code", "qty", "unit_cost", "lot_no",
+      // 19/11/2026: Số lượng = SL dự kiến nhập; bỏ cột Số lô (Excel không tạo phiếu nhập).
+      "warehouse_code", "qty", "unit_cost",
     ]);
   });
 
   it("chỉ một kho bán → không có cột Kho nhập", async () => {
     const keys = (await headerOf(buildCatalogWorkbook({ ...lists, warehouses: ["THAM"] }))).map(sheetHeaderKey);
     expect(keys).not.toContain("warehouse_code");
-    expect(keys).toEqual(expect.arrayContaining(["name", "brand", "category", "sku", "qty", "unit_cost", "lot_no"]));
+    expect(keys).toEqual(expect.arrayContaining(["name", "brand", "category", "sku", "qty", "unit_cost"]));
   });
 
   it("cột phụ thu gọn; SKU chỉ thu gọn ở file mẫu trống", async () => {

@@ -384,6 +384,9 @@ model Variant {
   purchasePriceMmk       Int?
   /// Lần đổi giá mua gần nhất — giá bán cũ hơn mốc này → cảnh báo PRICE_STALE (nhắc tính lại).
   purchasePriceAt        DateTime?
+  /// SL dự kiến nhập (19/11/2026): điền khi tạo SP (Excel cột Số lượng / trang SP); phiếu nhập mới gợi ý số này (sửa được).
+  /// KHÔNG phải tồn kho. Ghi sổ phiếu nhập có phân loại này → về 0.
+  plannedReceiveQty      Int                 @default(0)
   bundleItems            BundleItem[]        @relation("BundleParent")
   componentOf            BundleItem[]        @relation("BundleComponent")
   batches                Batch[]

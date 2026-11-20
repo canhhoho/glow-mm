@@ -66,26 +66,25 @@ describe("A2 Excel không xoá ngầm, không vượt quyền", () => {
 
 });
 
-describe("A4 Giá vốn lô nhập Excel = giá mua × tỷ giá (không còn phí về kho)", () => {
-  it("xem trước khớp kết quả ghi sổ; cột Phí đưa về kho của file cũ bị bỏ qua", async () => {
+describe("A4 Excel → giá mua hiện tại; giá vốn lô = giá mua × tỷ giá lúc ghi sổ phiếu nhập (không còn phí về kho)", () => {
+  it("Excel ghi giá mua + SL dự kiến (không phiếu); phiếu nhập dùng giá đó → giá vốn = giá mua × tỷ giá; cột Phí đưa về kho bị bỏ qua", async () => {
     const f = await makeFixture();
     await createRate({ mmkPerUsd: "4420", vndPerUsd: "26000" }, f.userId);
+    await prisma.product.update({ where: { id: f.productId }, data: { slug: `it-${f.tag.toLowerCase()}` } });
     const sku = `IT-${f.tag}`;
-    const p = await previewCatalogImport(
-      csv([
-        { sku, qty: 2, expiry_date: "2029-12-31", unit_cost: 100000, inbound_unit_vnd: 5000, lot_no: "Z0" },
-        { sku, qty: 2, expiry_date: "2029-12-31", unit_cost: 100000, lot_no: "ZB" },
-      ]),
-    );
-    expect(p.rows.map((r) => r.stock?.costMmk)).toEqual([17_000, 17_000]); // 100.000 × 0,17, phí 5.000 của file cũ không tính
+    const p = await previewCatalogImport(csv([{ sku, qty: 4, unit_cost: 100000, inbound_unit_vnd: 5000 }]));
+    expect(p.errors).toEqual([]);
     expect(p.warnings.join("\n")).toContain("Phí đưa về kho không còn dùng");
-    const r = await commitCatalogImport(p.input, f.userId);
-    await postDocument(r.documents[0].id, f.userId);
-    const lots = await prisma.batch.findMany({ where: { variantId: f.variantId }, orderBy: { lotNo: "asc" } });
-    expect(lots.map((b) => [b.lotNo, inventoryCost(b).costStatus, inventoryCost(b).unitCostMmk])).toEqual([
-      ["Z0", "ACTUAL", 17_000],
-      ["ZB", "ACTUAL", 17_000],
-    ]);
+    expect(p.rows[0]).toMatchObject({ planned: 4, purchase: { amount: 100000, currency: "VND" } });
+    await commitCatalogImport(p.input, f.userId);
+    expect(await variant(f.variantId)).toMatchObject({ plannedReceiveQty: 4, purchasePriceVnd: 100000 });
+    expect(await prisma.batch.count({ where: { variantId: f.variantId } })).toBe(0);
+    // Hàng về: phiếu nhập (giá gợi ý = giá mua hiện tại) → giá vốn 100.000 × 0,17; SL dự kiến về 0.
+    const doc = await createDocument({ type: "RECEIVE", toId: f.mm.id, lines: [{ variantId: f.variantId, lotNo: "Z0", unitCostVnd: 100000, qty: 4 }] }, f.userId);
+    await postDocument(doc.id, f.userId);
+    const lot = await prisma.batch.findFirstOrThrow({ where: { variantId: f.variantId, lotNo: "Z0" } });
+    expect(inventoryCost(lot)).toMatchObject({ costStatus: "ACTUAL", unitCostMmk: 17_000 });
+    expect((await variant(f.variantId)).plannedReceiveQty).toBe(0);
   });
 });
 
@@ -173,17 +172,23 @@ describe("Thủ công kho VND", () => {
 });
 
 describe("A3 Sửa phiếu nhập nháp giữ dữ liệu", () => {
-  it("lưu lại không đổi → giữ giá mua + tỷ giá đã chốt từ Excel; đổi giá → chốt lại khi ghi sổ", async () => {
+  // Phiếu nháp cũ có dòng đã chốt tỷ giá (trước 19/11/2026 Excel tạo phiếu nháp và chốt tỷ giá) — dữ liệu còn trong DB.
+  it("lưu lại không đổi → giữ giá mua + tỷ giá đã chốt của phiếu nháp cũ; đổi giá → chốt lại khi ghi sổ", async () => {
     const f = await makeFixture();
     const rate = await createRate({ mmkPerUsd: "4420", vndPerUsd: "26000" }, f.userId);
-    const sku = `IT-${f.tag}`;
-    const p = await previewCatalogImport(
-      csv([
-        { sku, qty: 2, expiry_date: "2029-12-31", unit_cost: 100000, lot_no: "E5" },
-        { sku, qty: 1, expiry_date: "2029-12-31", unit_cost: 90000, lot_no: "E9" },
-      ]),
+    const draft = await createDocument(
+      {
+        type: "RECEIVE",
+        toId: f.mm.id,
+        lines: [
+          { variantId: f.variantId, lotNo: "E5", expiryDate: "2029-12-31", unitCostVnd: 100000, qty: 2 },
+          { variantId: f.variantId, lotNo: "E9", expiryDate: "2029-12-31", unitCostVnd: 90000, qty: 1 },
+        ],
+      },
+      f.userId,
     );
-    const docId = (await commitCatalogImport(p.input, f.userId)).documents[0].id;
+    const docId = draft.id;
+    await prisma.stockDocumentLine.updateMany({ where: { documentId: docId }, data: { rateId: rate.id } });
     const lines = async () =>
       (await prisma.stockDocumentLine.findMany({ where: { documentId: docId }, include: { batch: true }, orderBy: { batch: { lotNo: "asc" } } })).map((l) => ({
         lot: l.batch!.lotNo,

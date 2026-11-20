@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
-import { getDocument, listLocations, listShipments, listVariantsForReceive } from "@/server/inventory/queries";
+import { getDocument, listLocations, listShipments, listVariantsForReceive, suggestedReceiveLot } from "@/server/inventory/queries";
 import { ReceiveBulkForm, type ReceiveDraft } from "@/components/admin/receive-bulk-form";
 import { Page, PageHeader } from "@/components/admin/ui";
 import { FEATURES } from "@/lib/features";
@@ -47,6 +47,7 @@ export default async function EditDocumentPage({ params }: PageProps<"/admin/inv
         shipments={shipments.map((s) => ({ id: s.id, code: s.code }))}
         variants={variants}
         draft={draft}
+        suggestedLot={suggestedReceiveLot(doc.createdAt)}
       />
     </Page>
   );

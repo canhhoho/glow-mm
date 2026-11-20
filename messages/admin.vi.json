@@ -431,7 +431,23 @@
   "Docs": {
     "receiveSelectStep": "Bước 1 — Chọn sản phẩm nhập kho",
     "receiveDetailsStep": "Bước 2 — Nhập thông số nhập kho",
-    "receiveSelectHelp": "Đánh dấu các sản phẩm nhập trong đợt này. Kho nhận chọn cho từng sản phẩm ở bước sau; lưu nháp sẽ tự tách phiếu theo kho.",
+    "receiveSelectHelp": "Danh sách gợi ý gồm mọi sản phẩm đang bán — lọc rồi đánh dấu các sản phẩm nhập trong đợt này. Bước sau điền sẵn: số lượng = SL dự kiến nhập, giá mua = giá mua hiện tại, số lô = NK + ngày tạo phiếu (đều sửa được). Kho nhận chọn cho từng sản phẩm; lưu nháp tự tách phiếu theo kho.",
+    "filterCategory": "Danh mục",
+    "allCategories": "Mọi danh mục",
+    "filterWarehouse": "Kho bán",
+    "allWarehouses": "Mọi kho bán",
+    "filterStock": "Tình trạng hàng",
+    "stockAll": "Mọi tình trạng",
+    "stockIn": "Còn hàng",
+    "stockOut": "Hết hàng",
+    "stockAwaiting": "Có đơn đặt trước chờ hàng",
+    "onlyPlanned": "Chỉ SP có SL dự kiến nhập",
+    "clearFilters": "Bỏ lọc",
+    "receiveMatchCount": "{count} sản phẩm khớp",
+    "colOnHand": "Tồn bán",
+    "colPlanned": "SL dự kiến nhập",
+    "colPurchase": "Giá mua hiện tại",
+    "awaitingCount": "{count} chờ hàng",
     "receiveChoose": "Chọn",
     "receiveSelectAll": "Chọn tất cả kết quả",
     "receiveClearSelection": "Bỏ chọn tất cả",
@@ -2488,8 +2504,8 @@
       "hint": "Bắt buộc với SP chưa có kho khi dòng có Số lượng hoặc Giá mua. SP chưa có kho: gán kho này khi xác nhận. SP đã có kho: phải đúng kho đó."
     },
     "qty": {
-      "label": "Số lượng nhập",
-      "hint": "Trống hoặc 0 = chỉ tạo / cập nhật sản phẩm (không tồn). Số nguyên > 0 = tạo phiếu nhập nháp, kiểm tra rồi Ghi sổ."
+      "label": "SL dự kiến nhập",
+      "hint": "Số lượng dự kiến nhập (số nguyên ≥ 0; 0 hợp lệ). KHÔNG tạo phiếu, không đổi tồn — khi hàng về, phiếu nhập kho gợi ý sẵn số này (sửa được). Trống = giữ số cũ."
     },
     "expiry_date": {
       "label": "Hạn sử dụng",
@@ -2497,11 +2513,7 @@
     },
     "unit_cost": {
       "label": "Giá mua/đv",
-      "hint": "Giá mua thật theo kho: VND (kho hàng nhập Việt Nam) hoặc MMK (kho mua tại Myanmar). Có số lượng → vào phiếu nhập; không số lượng → cập nhật giá mua hiện tại của phân loại. Không phải giá bán."
-    },
-    "lot_no": {
-      "label": "Số lô",
-      "hint": "Tuỳ chọn. Trống = tự sinh."
+      "hint": "Giá mua thật hiện tại theo kho: VND (kho hàng nhập Việt Nam) hoặc MMK (kho mua tại Myanmar). Cập nhật giá mua hiện tại của phân loại; phiếu nhập gợi ý sẵn giá này. Không phải giá bán."
     },
     "priceReadonly": "Giá bán và hoa hồng CTV đặt ở trang Giá bán.",
     "currentPrice": "Giá đang bán",
@@ -2529,8 +2541,9 @@
     "previewingSheet": "Xem trước sheet: {sheet}",
     "rowProfile": "Chỉ hồ sơ sản phẩm",
     "rowPurchase": "Hồ sơ sản phẩm · giá mua {amount} {currency} (kho {location})",
-    "rowStock": "Sản phẩm + phiếu nhập: {qty} · kho {location} · giá mua {cost} {currency}",
-    "summaryStock": "{stock} dòng tạo phiếu nhập nháp ({documents} phiếu) · {purchase} dòng cập nhật giá mua",
+    "rowProfileBase": "Hồ sơ sản phẩm",
+    "rowPlanned": "SL dự kiến nhập {qty}",
+    "summaryPlanned": "{planned} phân loại ghi SL dự kiến nhập · {purchase} dòng cập nhật giá mua — Excel không tạo phiếu nhập; khi hàng về, tạo phiếu nhập (gợi ý sẵn số lượng và giá mua).",
     "preview": "Xem trước",
     "colLine": "Dòng",
     "colAction": "Trạng thái",
@@ -2545,7 +2558,6 @@
     "confirm": "Xác nhận nhập",
     "confirmBlocked": "Chưa thể xác nhận vì file còn lỗi. Sửa các lỗi phía trên, chọn lại file rồi bấm Xem trước.",
     "success": "Đã nhập: {created} SP mới, {updated} SP cập nhật.",
-    "reviewDraft": "kiểm tra và ghi sổ",
     "finishProducts": "Về danh sách sản phẩm để thêm ảnh và bật hiển thị",
     "summaryRows": "{total} dòng: {create} tạo mới · {update} cập nhật · {same} không đổi · {error} lỗi",
     "filterLabel": "Lọc dòng",
@@ -2567,7 +2579,8 @@
     "autoSku": "tự sinh",
     "showErrors": "Xem các dòng lỗi",
     "noRows": "Không có dòng nào khớp bộ lọc.",
-    "draftNote": "Phiếu nhập đang là NHÁP — tồn kho và giá vốn chỉ có sau khi mở phiếu và Ghi sổ."
+    "plannedNote": "Đã ghi SL dự kiến nhập cho {n} phân loại — tồn kho chưa đổi.",
+    "createReceipt": "Tạo phiếu nhập kho"
   },
   "Preorders": {
     "title": "Đơn đặt trước",

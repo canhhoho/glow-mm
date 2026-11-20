@@ -701,6 +701,9 @@ export async function postDocumentTx(tx: Tx, documentId: string, userId: string,
     await refreshReceivedLots(tx, doc, resolved.map((r) => r.batchId));
     // Phương án A (19/11/2026): giá mua hiện tại của phân loại = giá của lần nhập vừa ghi sổ (cùng transaction).
     await syncPurchasePricesFromReceipt(tx, doc.id, userId);
+    // SL dự kiến nhập (19/11/2026): đã nhập thật → hết "dự kiến" (về 0) cho mọi phân loại có trong phiếu.
+    const received = [...new Set(resolved.filter((r) => r.qty > 0).map((r) => r.variantId))];
+    if (received.length) await tx.variant.updateMany({ where: { id: { in: received }, plannedReceiveQty: { gt: 0 } }, data: { plannedReceiveQty: 0 } });
   }
 
   await tx.auditLog.create({

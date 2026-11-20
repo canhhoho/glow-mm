@@ -39,7 +39,7 @@ export async function catalogTemplateFile(withProducts: boolean, opts: { locale?
       paoMonths: true,
       brand: { select: { name: true } },
       translations: { select: { locale: true, name: true, description: true, usage: true, ingredientsText: true } },
-      variants: { where: { isBundle: false }, orderBy: { sku: "asc" }, select: { id: true, sku: true, label: true, weightGrams: true, purchasePriceVnd: true, purchasePriceMmk: true } },
+      variants: { where: { isBundle: false }, orderBy: { sku: "asc" }, select: { id: true, sku: true, label: true, weightGrams: true, purchasePriceVnd: true, purchasePriceMmk: true, plannedReceiveQty: true } },
     },
   });
   const rows: TemplateRow[] = products.flatMap((p) => {
@@ -61,6 +61,8 @@ export async function catalogTemplateFile(withProducts: boolean, opts: { locale?
       warehouse_code: p.stockLocationId ? warehouseCode.get(p.stockLocationId) : undefined,
       // Giá mua hiện tại theo tiền của kho (19/11/2026) — nhập lại file với Số lượng trống giữ nguyên giá mua.
       unit_cost: (p.stockLocation?.pricingMode === "LOCAL_MMK" ? v.purchasePriceMmk : v.purchasePriceVnd) ?? undefined,
+      // SL dự kiến nhập hiện tại (0 = để trống, nhập lại file không đổi gì).
+      qty: v.plannedReceiveQty || undefined,
       sku: v.sku,
     }));
   });

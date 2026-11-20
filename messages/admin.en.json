@@ -431,7 +431,23 @@
   "Docs": {
     "receiveSelectStep": "Step 1 — Select products to receive",
     "receiveDetailsStep": "Step 2 — Enter receipt details",
-    "receiveSelectHelp": "Select the products received this time. You choose the warehouse per product in the next step; saving the draft splits it by warehouse automatically.",
+    "receiveSelectHelp": "The suggestion list shows every product on sale — filter, then tick the products in this delivery. The next step pre-fills: quantity = planned receive qty, purchase price = current purchase price, lot = NK + receipt date (all editable). Pick the receiving warehouse per product; saving splits drafts by warehouse.",
+    "filterCategory": "Category",
+    "allCategories": "All categories",
+    "filterWarehouse": "Selling warehouse",
+    "allWarehouses": "All selling warehouses",
+    "filterStock": "Stock status",
+    "stockAll": "Any status",
+    "stockIn": "In stock",
+    "stockOut": "Out of stock",
+    "stockAwaiting": "Has pre-orders waiting",
+    "onlyPlanned": "Only with planned receive qty",
+    "clearFilters": "Clear filters",
+    "receiveMatchCount": "{count} products match",
+    "colOnHand": "Sellable stock",
+    "colPlanned": "Planned receive qty",
+    "colPurchase": "Current purchase price",
+    "awaitingCount": "{count} waiting",
     "receiveChoose": "Select",
     "receiveSelectAll": "Select all results",
     "receiveClearSelection": "Clear selection",
@@ -2488,8 +2504,8 @@
       "hint": "Required for products without a warehouse when the row has a Quantity or Purchase price. Product without a warehouse: assigned this one on confirm. Product with a warehouse: must match it."
     },
     "qty": {
-      "label": "Quantity in",
-      "hint": "Blank or 0 = only create / update the product (no stock). Whole number > 0 = create a draft receipt, check it, then Post."
+      "label": "Planned receive qty",
+      "hint": "Expected quantity to receive (whole number ≥ 0; 0 is fine). Does NOT create a receipt or change stock — when goods arrive, the stock receipt pre-fills this number (editable). Blank = keep the current value."
     },
     "expiry_date": {
       "label": "Expiry date",
@@ -2497,11 +2513,7 @@
     },
     "unit_cost": {
       "label": "Unit purchase price",
-      "hint": "Actual purchase price by warehouse: VND (Vietnam import warehouse) or MMK (Myanmar warehouse). With quantity → goes on the receipt; without quantity → updates the variant's current purchase price. Not the selling price."
-    },
-    "lot_no": {
-      "label": "Lot no.",
-      "hint": "Optional. Blank = auto."
+      "hint": "Current actual purchase price by warehouse: VND (Vietnam import warehouse) or MMK (Myanmar warehouse). Updates the variant's current purchase price; stock receipts pre-fill it. Not the selling price."
     },
     "priceReadonly": "Selling price and CTV commission are set on the Selling prices page.",
     "currentPrice": "Current price",
@@ -2529,8 +2541,9 @@
     "previewingSheet": "Previewing sheet: {sheet}",
     "rowProfile": "Product details only",
     "rowPurchase": "Product details · purchase price {amount} {currency} (warehouse {location})",
-    "rowStock": "Product + receipt: {qty} · warehouse {location} · purchase price {cost} {currency}",
-    "summaryStock": "{stock} rows create draft receipts ({documents} receipts) · {purchase} rows update purchase prices",
+    "rowProfileBase": "Product details",
+    "rowPlanned": "planned receive qty {qty}",
+    "summaryPlanned": "{planned} variants get a planned receive qty · {purchase} rows update the purchase price — Excel does not create receipts; when goods arrive, create a receipt (qty and purchase price are pre-filled).",
     "preview": "Preview",
     "colLine": "Row",
     "colAction": "Status",
@@ -2545,7 +2558,6 @@
     "confirm": "Confirm import",
     "confirmBlocked": "You cannot confirm while the file has errors. Fix the errors above, select the corrected file and click Preview again.",
     "success": "Imported: {created} new, {updated} updated products.",
-    "reviewDraft": "review and post",
     "finishProducts": "Back to products to add images and publish",
     "summaryRows": "{total} rows: {create} new · {update} updated · {same} unchanged · {error} errors",
     "filterLabel": "Filter rows",
@@ -2567,7 +2579,8 @@
     "autoSku": "auto",
     "showErrors": "Show error rows",
     "noRows": "No rows match this filter.",
-    "draftNote": "Receipts are DRAFTS — stock and cost appear only after you open them and Post."
+    "plannedNote": "Planned receive qty saved for {n} variants — stock unchanged.",
+    "createReceipt": "Create stock receipt"
   },
   "Preorders": {
     "title": "Pre-orders",

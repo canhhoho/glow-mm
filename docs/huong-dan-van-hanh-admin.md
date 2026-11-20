@@ -462,13 +462,12 @@ Dấu * = bắt buộc khi tạo sản phẩm mới.
 | Hoa hồng CTV (MMK/cái) | 💰 Số tiền cố định/cái. Trống = giữ nguyên (SKU mới: không có hoa hồng). SP đã duyệt: chờ duyệt **cùng giá**. Không xoá được qua Excel |
 | Mô tả Myanmar / Mô tả tiếng Anh | Tuỳ chọn |
 | Cách dùng, Thành phần, Bảo quản, Hạn sau mở nắp (tháng) | Tuỳ chọn; hạn sau mở nắp tối đa 120 tháng. **Đây là nơi duy nhất sửa các trường này** (form sản phẩm không có ô) |
-| Kho bán | Mã kho (19/11/2026: **không còn tự lấy kho mặc định**). **Bắt buộc** với sản phẩm chưa có kho khi dòng có Số lượng hoặc Giá mua; sản phẩm chưa có kho được **gán kho này khi xác nhận** (kể cả dòng chỉ tạo sản phẩm). Không đổi được kho của sản phẩm đã có |
+| Kho bán | Mã kho (19/11/2026: **không còn tự lấy kho mặc định**). **Bắt buộc** với sản phẩm chưa có kho khi dòng có SL dự kiến nhập > 0 hoặc Giá mua; sản phẩm chưa có kho được **gán kho này khi xác nhận** (kể cả dòng chỉ tạo sản phẩm). Không đổi được kho của sản phẩm đã có |
 | Có hạn dùng | "Có" (mặc định) hoặc "Không" |
 | SKU | **Trống = tạo mới; có SKU đã tồn tại = cập nhật sản phẩm đó** |
-| Số lượng nhập | **Trống hoặc 0 = chỉ tạo / cập nhật hồ sơ sản phẩm** (không phiếu, không lô, không đổi tồn). **Số nguyên > 0** = tạo **phiếu nhập nháp**. Âm, số lẻ, chữ → báo lỗi |
-| Giá mua/đv | Giá mua thật theo kho: **VND** (kho hàng nhập VN) / **MMK** (kho mua tại Myanmar). Có số lượng → vào phiếu nhập; **không số lượng → cập nhật giá mua hiện tại của phân loại** (dùng để đặt giá, kể cả hàng đặt trước). Cột tiền khác kho → lỗi |
+| SL dự kiến nhập (tên cũ "Số lượng nhập") | 19/11/2026: **số lượng dự kiến nhập** của phân loại (số nguyên ≥ 0; **0 vẫn ghi 0**; trống = giữ số cũ, SP mới = 0). **Không tạo phiếu, không lô, không đổi tồn** — khi hàng về, phiếu nhập kho điền sẵn số này ([8.2](#82-phiếu-nhập-kho)). Âm, số lẻ, chữ → báo lỗi. Nhiều dòng cùng SKU (file cũ) → cộng dồn |
+| Giá mua/đv | Giá mua thật theo kho: **VND** (kho hàng nhập VN) / **MMK** (kho mua tại Myanmar) → **cập nhật giá mua hiện tại của phân loại** (dùng để đặt giá, kể cả hàng đặt trước; phiếu nhập điền sẵn giá này). Cột tiền khác kho → lỗi |
 | Phí đưa về kho (VND/đv) | Chỉ kho VND. Điền số (kể cả **0** = không phát sinh phí) → giá vốn thực tế = giá mua + phí. **Để trống = chưa biết** → lô **chưa có giá vốn** (không tự coi là 0; đơn dùng lô này không bàn giao được đến khi có giá vốn tạm/thực tế) |
-| Số lô | Trống = hệ thống tự đặt `NK<yymmdd>[-n]` |
 
 Dấu phân cách hàng nghìn kiểu 150,000 hoặc 150.000 đều được nhận. Tối đa **2 MB** và **5000 dòng** mỗi lần.
 
@@ -476,7 +475,7 @@ Dấu phân cách hàng nghìn kiểu 150,000 hoặc 150.000 đều được nh�
 
 1. Mở file, **điền dữ liệu từ dòng 7** (không sửa dòng tiêu đề).
 2. Ở trang nhập: chọn file → bấm **Xem trước**. **Xem trước chỉ đọc, chưa lưu gì.** Từ 18/11/2026, file .xlsx **có nhiều sheet** hiện ô **Sheet nhập dữ liệu** để chọn sheet cần nhập (chỉ liệt kê sheet đang hiện; file một sheet và file CSV chọn sẵn). Kết quả ghi rõ "Xem trước sheet: …"; đổi sheet thì xem trước lại, không cần chọn lại file.
-3. Đọc kết quả: tóm tắt "{created} SP mới · {updated} SP cập nhật · {unchanged} SP không đổi · {stock} dòng nhập tồn"; từng dòng có nhãn **Tạo mới** / **Cập nhật** / **Không đổi**. Mục **Cần sửa trong file trước khi nhập:** là lỗi bắt buộc sửa; mục **Lưu ý:** là cảnh báo.
+3. Đọc kết quả: tóm tắt số dòng tạo mới / cập nhật / không đổi / lỗi, kèm "{n} phân loại ghi SL dự kiến nhập · {m} dòng cập nhật giá mua"; từng dòng có nhãn **Tạo mới** / **Cập nhật** / **Không đổi**. Mục **Cần sửa trong file trước khi nhập:** là lỗi bắt buộc sửa; mục **Lưu ý:** là cảnh báo.
 4. Sửa file và **Xem trước** lại cho đến khi hết lỗi.
 5. Chọn tuỳ chọn: **Gửi duyệt ngay** (đã tick sẵn) và **Duyệt luôn** (chỉ người có quyền duyệt; không bao giờ tự đăng sản phẩm mới).
 6. Bấm **Xác nhận nhập**. Nút bị khoá khi còn lỗi ("Chưa thể xác nhận vì file còn lỗi…"). Hệ thống kiểm tra lại toàn bộ trong một lần ghi duy nhất.
@@ -487,12 +486,10 @@ Dấu phân cách hàng nghìn kiểu 150,000 hoặc 150.000 đều được nh�
 - **SKU mới hoặc không có SKU** → tạo sản phẩm **ẩn, chưa duyệt** 👁 (khách chưa thấy), giá = cột Giá bán (trống → 0, lưu nháp). Nếu tên trùng sản phẩm đã có, hệ thống cảnh báo "đã có sản phẩm cùng tên … Muốn cập nhật sản phẩm đó thì điền SKU của nó."
 - **Sản phẩm đã duyệt:** nội dung, giá **và hoa hồng CTV** đổi qua Excel đi vào **bản đang sửa** chờ duyệt ([9.4](#94-sửa-sản-phẩm-đã-duyệt)) — giá và hoa hồng có hiệu lực cùng lúc khi duyệt; khối lượng áp dụng ngay. Ô giá để trống **không** đụng tới giá đang chờ duyệt.
 - **Tải "danh sách sản phẩm hiện có"** ghi giá / hoa hồng **hiệu lực** (đang chờ duyệt nếu có) → tải về rồi nhập lại không sửa gì sẽ không đổi giá.
-- **Hai giai đoạn (19/11/2026):** bảng xem trước ghi dưới nhãn trạng thái từng dòng: **"Chỉ hồ sơ sản phẩm"**, **"Hồ sơ sản phẩm · giá mua …"** hoặc **"Sản phẩm + phiếu nhập: SL · kho · giá mua"**; dòng tóm tắt ghi số dòng tạo phiếu nhập và số dòng cập nhật giá mua. Có Số lô / Loại hàng mà không Số lượng → lưu ý "chưa nhập kho". Cột **Hạn sử dụng / Ngày sản xuất** của file cũ được bỏ qua kèm một lưu ý (file mẫu mới không còn cột này). File "danh sách sản phẩm hiện có" điền sẵn Giá mua hiện tại.
-- **Có Số lượng nhập** → 📦 tạo **phiếu Nhập kho NHÁP** (lý do "Nhập hàng từ Excel"), mỗi kho một phiếu. **Tồn chưa tăng cho đến khi bạn mở phiếu, kiểm tra và Ghi sổ** ([8.2](#82-phiếu-nhập-kho)). Hộp kết quả có link "{code} · kiểm tra và ghi sổ".
+- **Excel chỉ là giai đoạn tạo sản phẩm (19/11/2026):** bảng xem trước ghi dưới nhãn trạng thái từng dòng: **"Chỉ hồ sơ sản phẩm"**, **"Hồ sơ sản phẩm · giá mua … · SL dự kiến nhập N"**. Cột **Số lô / Loại hàng / Hạn sử dụng / Ngày sản xuất** của file cũ được bỏ qua kèm lưu ý (file mẫu mới không còn các cột này). File "danh sách sản phẩm hiện có" điền sẵn Giá mua hiện tại và SL dự kiến nhập (0 = để trống).
+- 📦 **Excel không tạo phiếu nhập:** hộp kết quả ghi "Đã ghi SL dự kiến nhập cho {n} phân loại — tồn kho chưa đổi." kèm link **Tạo phiếu nhập kho**. Khi hàng về, tạo phiếu ở [8.2](#82-phiếu-nhập-kho) — số lượng và giá mua được điền sẵn.
 - **Gửi duyệt ngay** bỏ qua sản phẩm chưa đủ điều kiện (vd chưa có giá): "Chưa gửi được {n} sản phẩm (chưa đủ điều kiện): … Giá bán ≤ 0". Đặt giá ([mục 7](#7-giá-bán-và-tỷ-giá)) rồi gửi duyệt.
 - **Duyệt luôn** chỉ duyệt sản phẩm mà lượt nhập này là thay đổi duy nhất. Sản phẩm đã có thay đổi / đang chờ duyệt từ trước được liệt kê "Chưa duyệt luôn … — mở xem đầy đủ rồi duyệt".
-- **Xem trước giá vốn** chỉ hiện giá vốn sẽ thực sự được ghi; dòng để trống Phí đưa về kho hiện "—" và cảnh báo "để trống Phí đưa về kho → lô CHƯA CÓ giá vốn".
-- 💰 **Tỷ giá được chốt:** preview hiện "Tỷ giá tính giá vốn: 1 VND = {rate} MMK (chốt cho các lô nhập lần này)"; giá vốn các lô lấy theo tỷ giá đó.
 
 ### 6.5. Hệ thống tự chặn
 
@@ -516,11 +513,7 @@ Dấu phân cách hàng nghìn kiểu 150,000 hoặc 150.000 đều được nh�
 | {cột} khác nhau giữa các dòng | Các dòng cùng sản phẩm phải khớp nhau ở cột đó |
 | Sản phẩm đang thuộc kho X — đổi kho trong trang sản phẩm, không đổi qua Excel | Để trống hoặc điền đúng kho hiện tại |
 | Sản phẩm chưa có kho bán — ghi cột Kho bán để biết giá mua theo VND hay MMK / … nhập vào kho nào | Ghi mã kho ở cột Kho bán (19/11/2026: không còn tự lấy kho mặc định) |
-| Chưa điền giá mua (VND/đv) — kho … nhập từ Việt Nam | Điền giá mua |
-| Sản phẩm không quản lý hạn dùng: để trống hạn sử dụng | Xoá ô hạn sử dụng |
-| Trùng SKU và số lô X — gộp số lượng thành một dòng | Gộp dòng |
-| Lô X … đã có với hạn dùng khác… | Dùng số lô khác hoặc đúng hạn cũ |
-| Lô X … thuộc chuyến hàng — nhập thêm qua phiếu nhập của chuyến | Nhập qua phiếu kho ([8.2](#82-phiếu-nhập-kho)) |
+| Kho X nhập giá mua MMK, để trống cột VND (hoặc ngược lại) | Ghi giá mua đúng loại tiền của kho. 19/11/2026: Excel **không bắt buộc** giá mua (kể cả khi có SL dự kiến nhập) và không còn kiểm số lô / hạn dùng — các kiểm này ở phiếu nhập ([8.2](#82-phiếu-nhập-kho)) |
 | Hoa hồng CTV … lớn hơn giá bán | Giảm hoa hồng |
 | …đã ngừng kinh doanh — khôi phục trước khi cập nhật | Khôi phục sản phẩm ([5.8](#58-xoá-khôi-phục-đổi-kho-ẩnhiện)) |
 
@@ -551,7 +544,7 @@ Nguyên tắc chung:
 
 Kết quả: tỷ giá mới nhất thành **Đang dùng**. ⛔ **Tỷ giá chỉ thêm, không sửa, không xoá** — nhập sai thì thêm tỷ giá đúng ngay sau đó.
 
-Tỷ giá được chốt vào lô lúc **ghi sổ phiếu nhập** (phiếu tay) hoặc lúc **xác nhận Excel**; sửa phiếu nháp mà không đổi giá mua thì giữ tỷ giá đã chốt. Lỗi: "Tỷ giá USD→MMK phải > 0, tối đa 2 chữ số thập phân".
+Tỷ giá được chốt vào lô lúc **ghi sổ phiếu nhập** (từ 19/11/2026 Excel không tạo phiếu nên không chốt tỷ giá; phiếu nháp cũ từ Excel đã chốt thì sửa mà không đổi giá mua vẫn giữ tỷ giá đó). Lỗi: "Tỷ giá USD→MMK phải > 0, tối đa 2 chữ số thập phân".
 
 **Tính lại giá theo tỷ giá mới (18/11/2026):** thêm tỷ giá xong, trang **Giá bán** hiện khung "Có tỷ giá mới hơn lần đặt giá gần nhất của {N} SKU…" và nút **Tính lại giá theo tỷ giá mới** (chỉ kho hàng nhập VN, SKU đã từng có giá). Bấm nút → trang **Tính lại giá theo tỷ giá mới**: mọi SKU đã **mở sẵn chế độ sửa**, tính bằng **tỷ giá mới nhất** + **lãi, vận chuyển, CTV của lần đặt giá trước**. Xem cột **Giá bán**, sửa nếu cần → **Lưu & xác nhận {n} SKU ({m} đổi giá)**.
 - SKU đổi giá → áp giá mới (SP đã duyệt: giá mới **chờ duyệt**, khách vẫn thấy giá cũ đến khi duyệt).
@@ -653,11 +646,12 @@ Dòng bị bỏ qua khi xem trước: "Thiếu giá mua đã ghi sổ", "Thiếu
 
 **Các bước** (hai bước trên màn hình)
 1. **Kho hàng › Phiếu kho** hoặc **Tồn kho › Tạo phiếu › Nhập kho** (hoặc **Nhập hàng** ở bước 2 của sản phẩm).
-2. **Bước 1 — Chọn sản phẩm nhập kho:** chọn **Chọn vị trí nhận**, tick các SKU, bấm **Tiếp tục nhập thông số**. Mỗi phiếu nhập vào **một kho bán**; sản phẩm thuộc kho khác sẽ báo "sản phẩm thuộc A, không nhập vào B".
+2. **Bước 1 — Chọn sản phẩm nhập kho (danh sách gợi ý, 19/11/2026):** liệt kê **mọi sản phẩm đang bán** với cột Tồn bán (kèm "N chờ hàng" nếu có đơn đặt trước), **SL dự kiến nhập**, **Giá mua hiện tại**. Lọc theo tìm SKU/tên, **Thương hiệu**, **Danh mục**, **Kho bán** (gồm "Chưa nhập hàng" = SP chưa có kho), **Tình trạng hàng** (Còn hàng / Hết hàng / Có đơn đặt trước chờ hàng), **Chỉ SP có SL dự kiến nhập**; **Bỏ lọc**. **Chọn tất cả kết quả** tick mọi dòng đang lọc. Bấm **Tiếp tục nhập thông số**. Kho nhận chọn theo từng sản phẩm ở bước 2 (SP đã có kho bán → cố định); lưu nháp tự tách mỗi kho một phiếu.
 3. **Bước 2 — Nhập thông số nhập kho:**
    - **Chuyến hàng** (nếu hàng thuộc một chuyến VN → MM), **Lý do / ghi chú**.
-   - **Giá trị chung** để điền nhanh: **Số lô chung**, **Hạn dùng chung**, **Ngày SX chung**, **Loại tồn chung**; **Cước tạm tính VN → MM (MMK/kg)**.
+   - **Giá trị chung** để điền nhanh: **Số lô chung** (điền sẵn **NK + ngày tạo phiếu**, dạng `NK<yymmdd>`, sửa được), **Hạn dùng chung**, **Ngày SX chung**, **Loại tồn chung**; **Cước tạm tính VN → MM (MMK/kg)**.
    - Mỗi dòng: **Số lượng**, **Số lô**, **Hạn dùng** (hoặc **Chưa biết hạn · Chưa được bán**), **Ngày SX**, **Giá mua/đv (VND)** hoặc **(MMK)** tuỳ kho, **Phí về kho (VND/đv)** (chỉ hàng VND, tuỳ chọn: **0** = không phát sinh → giá vốn thực tế; **trống** = chưa biết → dùng giá vốn tạm theo cước tạm tính, không có thì thiếu giá vốn), **Loại tồn** (bán được / Tester/quà), **Khối lượng (g)** (chỉ điền cho biến thể đang trống khối lượng), **+ Lô** để thêm lô thứ hai.
+   - **Gợi ý điền sẵn (sửa được):** **Số lượng** = SL dự kiến nhập của phân loại (0 vẫn hiện 0 — phải sửa thành số thực nhập), **Giá mua** = giá mua hiện tại (chưa có → giá lần nhập gần nhất). **Ghi sổ** phiếu → SL dự kiến nhập của các phân loại trong phiếu về **0**.
    - Có thể **Dán từ Excel** với các cột: SKU · Số lượng · Số lô · Hạn dùng · Giá mua (VND) · [Ngày SX] · [SELLABLE/TESTER].
 4. Bấm **Lưu nháp** → phiếu ở trạng thái **Nháp**. Phiếu nháp còn **Sửa phiếu** được — trang sửa điền lại **giá mua và phí về kho của chính dòng** (không lấy bình quân của lô); lưu lại mà không đổi giá mua thì giữ tỷ giá đã chốt (vd từ Excel).
 5. Kiểm tra lại trên trang phiếu — **một bảng**: Sản phẩm (tên, SKU dòng phụ) · Số lô · Hạn dùng (ngày / **Chưa biết** = lô chưa ghi hạn / **Không áp dụng** = hàng không có hạn) · Số lượng nhập · Giá mua/đv · **Tồn hiện tại → Dự kiến** (theo SKU × loại tồn tại kho nhập, cộng mọi lô; nhiều lô cùng SKU nằm chung một dòng). Kho nhập và loại tồn (nếu mọi dòng giống nhau) ghi ở đầu phiếu; phiếu có cả hàng bán và tester thì mỗi dòng có nhãn loại tồn. Phiếu đã ghi sổ không hiện cột dự kiến. Rồi bấm **Ghi sổ** (hỏi "Ghi sổ phiếu {code}? Tồn kho sẽ thay đổi và không hoàn tác được.").

@@ -33,7 +33,8 @@ const OLD_LABELS: Record<string, string[]> = {
   // 19/11/2026: nhãn đổi "Kho nhập" → "Kho bán", "Giá mua/đv" (en/my đổi) — file mẫu cũ vẫn nhận.
   warehouse_code: ["Kho bán", "Mã kho bán", "Kho nhập", "Receiving warehouse", "လက်ခံဂိုဒေါင်"],
   unit_cost: ["Purchase price/unit", "ဝယ်ဈေး/ခု"],
-  qty: ["Số lượng"],
+  // 19/11/2026: "Số lượng nhập" → "SL dự kiến nhập" (Excel không tạo phiếu) — file mẫu cũ vẫn nhận.
+  qty: ["Số lượng", "Số lượng nhập", "Quantity in", "လက်ခံအရေအတွက်"],
 };
 
 export const CATALOG_COLUMNS: SheetColumn[] = PRODUCT_FIELDS.filter((f) => f.excel).map((f) => ({
@@ -66,6 +67,8 @@ export const LEGACY_COLUMNS: SheetColumn[] = [
   { key: "mfg_date", type: FEATURES.expiry ? "date" : "text", width: 0, group: "stock", aliases: ["Ngày sản xuất"] },
   ...(FEATURES.expiry ? [] : [{ key: "expiry_date", type: "text", width: 0, group: "stock", aliases: ["Hạn sử dụng"] } satisfies SheetColumn]),
   { key: "stock_type", type: "text", width: 0, group: "stock", aliases: ["Loại hàng"] },
+  // Số lô bỏ khỏi mẫu (19/11/2026: Excel không tạo phiếu nhập) — file cũ còn cột này: bỏ qua kèm lưu ý.
+  { key: "lot_no", type: "text", width: 0, group: "stock", aliases: ["Số lô", "Lot no.", "လော့နံပါတ်"] },
   { key: "expiry_status", type: "text", width: 0, group: "stock", aliases: ["Trạng thái hạn dùng"] },
   { key: "unit_cost_vnd", type: "money", width: 0, group: "stock", aliases: ["Giá mua (VND/đv)"] },
   { key: "unit_cost_mmk", type: "money", width: 0, group: "stock", aliases: ["Giá mua (MMK/đv)"] },

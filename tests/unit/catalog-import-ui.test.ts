@@ -30,8 +30,8 @@ beforeEach(() => {
   actionState.pending = false;
   actionState.state = { preview: {
     input: { csv: "name_en,brand,category\nCream,Brand,skincare", standardLabel: "Tiêu chuẩn" },
-    errors: [], warnings: [], rows: [], rate: null, general: [], documents: 0,
-    counts: { createdProducts: 1, updatedProducts: 0, unchangedProducts: 0, stockLines: 0, purchasePrices: 0 },
+    errors: [], warnings: [], rows: [], general: [],
+    counts: { createdProducts: 1, updatedProducts: 0, unchangedProducts: 0, plannedQty: 0, purchasePrices: 0 },
     rowCounts: { create: 1, update: 0, same: 0, error: 0 },
   } };
 });
@@ -77,7 +77,7 @@ describe("Xác nhận nhập Excel", () => {
 const row = (over: Partial<ImportRowView>): ImportRowView => ({
   line: 7, action: "create", name: "Cream", nameFromFile: true, brand: "Brand", category: "Skincare",
   sku: "CREAM-1", skuAuto: true, label: "", labelFromFile: false, weight: null, weightFromFile: false,
-  changes: [], stock: null, purchase: null, issues: [], ...over,
+  changes: [], planned: null, purchase: null, issues: [], ...over,
 });
 
 describe("Bảng xem trước nhập Excel", () => {
@@ -94,17 +94,28 @@ describe("Bảng xem trước nhập Excel", () => {
     expect(html).toContain(messages.CatalogImport.showErrors);
   });
 
-  it("không có cột nhập kho (dòng phụ ghi giai đoạn), lưu ý về lô ẩn (lỗi nhập kho vẫn hiện); ô trống ghi rõ tự sinh / tiêu chuẩn", () => {
+  it("không có cột nhập kho; dòng phụ ghi SL dự kiến nhập + giá mua (Excel không tạo phiếu); ô trống ghi rõ tự sinh / tiêu chuẩn", () => {
     const preview = actionState.state!.preview!;
-    preview.rows = [row({
-      stock: { qty: 5, lotNo: "NK261116", lotAuto: true, location: "TH", expiryDate: "2028-03-31", expiryStatus: "DATED", currency: "VND", unitCost: 150000, costMmk: null },
-      issues: [{ level: "warning", text: "lô chưa có hạn sử dụng", stock: true }, { level: "error", text: "Chưa điền giá mua" }, { level: "warning", text: "đã có sản phẩm cùng tên" }],
-    })];
+    preview.counts.plannedQty = 2;
+    preview.counts.purchasePrices = 1;
+    preview.rows = [
+      row({
+        planned: 5,
+        purchase: { amount: 150000, currency: "VND", location: "TH" },
+        issues: [{ level: "error", text: "Chưa điền giá mua" }, { level: "warning", text: "đã có sản phẩm cùng tên" }],
+      }),
+      row({ line: 8, planned: 0 }),
+      row({ line: 9 }),
+    ];
+    preview.rows[0].action = "create";
     const html = render();
     expect(html).not.toContain("Nhập kho"); // không có cột nhập kho riêng
-    // 19/11/2026: mỗi dòng ghi rõ giai đoạn — dòng này tạo phiếu nhập (SL, kho, giá mua theo tiền của kho).
-    expect(html).toContain(`Sản phẩm + phiếu nhập: 5 · kho TH · giá mua ${fmtInt(150000)} VND`);
-    expect(html).not.toContain("lô chưa có hạn sử dụng");
+    // 19/11/2026: Số lượng = SL dự kiến nhập — không phiếu nhập; 0 vẫn ghi 0.
+    expect(html).toContain(`Hồ sơ sản phẩm · giá mua ${fmtInt(150000)} VND (kho TH) · SL dự kiến nhập 5`);
+    expect(html).toContain("Hồ sơ sản phẩm · SL dự kiến nhập 0");
+    expect(html).toContain(messages.CatalogImport.rowProfile);
+    expect(html).not.toContain("phiếu nhập nháp");
+    expect(html).toContain("2 phân loại ghi SL dự kiến nhập · 1 dòng cập nhật giá mua");
     expect(html).toContain("Chưa điền giá mua");
     expect(html).toContain("đã có sản phẩm cùng tên");
     expect(html).toContain(messages.CatalogImport.autoSku);

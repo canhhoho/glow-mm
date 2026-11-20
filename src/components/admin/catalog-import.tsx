@@ -5,7 +5,7 @@ import { Check, Download, Eye } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { catalogImportAction, type CatalogImportState } from "@/server/catalog/actions";
-import type { CatalogImportPreview, ImportChange, ImportIssue, ImportRowView } from "@/server/catalog/catalog-import";
+import type { CatalogImportPreview, ImportChange, ImportRowView } from "@/server/catalog/catalog-import";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { FileField } from "@/components/admin/file-field";
 import { Badge, DataTable, Field, fieldClass, Notice, Td } from "@/components/admin/ui";
@@ -22,8 +22,6 @@ type WorkbookChoice =
   | { file: File; status: "ready"; sheets: string[]; selected: string }
   | { file: File; status: "error"; message: "sheetReadError" | "fileTooLarge" };
 
-/** Trang này chỉ nói về thông tin SP: lưu ý về lô nhập kho (hạn dùng, giá vốn) xem ở phiếu nhập nháp; lỗi thì luôn hiện. */
-const shownIssues = (r: ImportRowView): ImportIssue[] => r.issues.filter((i) => i.level === "error" || !i.stock);
 
 /**
  * Nhãn cột / trường đổi dùng chung `ProductFields` (cùng tên với form và tiêu đề Excel). Riêng mô tả, cách dùng
@@ -39,7 +37,7 @@ function useChangeLabel() {
   return (c: ImportChange) => (c === "description" || c === "usage" ? t(`field.${c}`) : tf(`${CHANGE_FIELD[c]}.label`));
 }
 const matches = (r: ImportRowView, f: Filter) =>
-  f === "all" ? true : f === "warning" ? shownIssues(r).some((i) => i.level === "warning") : r.action === f;
+  f === "all" ? true : f === "warning" ? r.issues.some((i) => i.level === "warning") : r.action === f;
 
 /** Một luồng cho tạo mới + cập nhật + nhập tồn: tải mẫu → chọn file → xem trước → xác nhận. */
 export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) {
@@ -117,17 +115,12 @@ export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) 
       {state?.result && (
         <Notice tone="success" className="space-y-2 p-4">
           <p>{t("success", { created: state.result.createdProducts, updated: state.result.updatedProducts })}</p>
-          {state.result.documents.length > 0 && (
-            <>
-              <p data-testid="catalog-import-draft-note">{t("draftNote")}</p>
-              <ul className="space-y-1">
-                {state.result.documents.map((d) => (
-                  <li key={d.id}>
-                    <Link className="text-primary underline" href={`/admin/inventory/documents/${d.id}`}>{d.code} · {t("reviewDraft")}</Link>
-                  </li>
-                ))}
-              </ul>
-            </>
+          {/* 19/11/2026: Excel không tạo phiếu — SL dự kiến nhập + giá mua được gợi ý sẵn khi tạo phiếu nhập. */}
+          {state.result.plannedQty > 0 && (
+            <p data-testid="catalog-import-planned-note">
+              {t("plannedNote", { n: state.result.plannedQty })}{" "}
+              <Link className="text-primary underline" href="/admin/inventory/documents/new?type=RECEIVE">{t("createReceipt")}</Link>
+            </p>
           )}
           {state.review && <BatchReviewSummary review={state.review} />}
           <Link href="/admin/products" className="text-primary underline">{t("finishProducts")}</Link>
@@ -152,10 +145,10 @@ function ImportPreview({ preview, sheetName, action, pending, canApprove }: { pr
       <p className="text-sm font-medium" data-testid="catalog-import-summary">
         {t("summaryRows", { total: preview.rows.length, create: rc.create, update: rc.update, same: rc.same, error: rc.error })}
       </p>
-      {/* 19/11/2026: tách rõ hồ sơ SP (không tồn) và dòng tạo phiếu nhập; dòng chỉ có giá mua cập nhật giá mua hiện tại. */}
-      {(preview.counts.stockLines > 0 || preview.counts.purchasePrices > 0) && (
+      {/* 19/11/2026: Excel chỉ ghi hồ sơ SP + SL dự kiến nhập + giá mua hiện tại — không tạo phiếu, không đổi tồn. */}
+      {(preview.counts.plannedQty > 0 || preview.counts.purchasePrices > 0) && (
         <p className="text-sm text-muted-foreground" data-testid="catalog-import-stock-summary">
-          {t("summaryStock", { stock: preview.counts.stockLines, documents: preview.documents, purchase: preview.counts.purchasePrices })}
+          {t("summaryPlanned", { planned: preview.counts.plannedQty, purchase: preview.counts.purchasePrices })}
         </p>
       )}
 
@@ -204,7 +197,7 @@ function PreviewRow({ r }: { r: ImportRowView }) {
   const tf = useTranslations("ProductFields");
   const changeLabel = useChangeLabel();
   const muted = "text-muted-foreground";
-  const issues = shownIssues(r);
+  const issues = r.issues;
   return (
     <tr data-testid={`catalog-import-row-${r.line}`}>
       <Td label={t("colLine")} numeric>{r.line}</Td>
@@ -215,11 +208,10 @@ function PreviewRow({ r }: { r: ImportRowView }) {
         )}
         {r.action !== "error" && (
           <div className={cn("mt-1 text-xs", muted)} data-testid="catalog-import-row-kind">
-            {r.stock
-              ? t("rowStock", { qty: fmtInt(r.stock.qty), location: r.stock.location, cost: fmtInt(r.stock.unitCost), currency: r.stock.currency })
-              : r.purchase
-                ? t("rowPurchase", { amount: fmtInt(r.purchase.amount), currency: r.purchase.currency, location: r.purchase.location })
-                : t("rowProfile")}
+            {[
+              r.purchase ? t("rowPurchase", { amount: fmtInt(r.purchase.amount), currency: r.purchase.currency, location: r.purchase.location }) : r.planned != null ? t("rowProfileBase") : t("rowProfile"),
+              r.planned != null && t("rowPlanned", { qty: fmtInt(r.planned) }),
+            ].filter(Boolean).join(" · ")}
           </div>
         )}
       </Td>
