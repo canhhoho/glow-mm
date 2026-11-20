@@ -1532,6 +1532,7 @@
   "Alerts": {
     "title": "Stock alerts",
     "createReceipt": "Create receipt ({count} SKUs)",
+    "createReceiptCapped": "Picks the first {count} of {total} SKUs (table order) — reopen afterwards for the rest.",
     "tabLow": "Low stock",
     "tabExpiry": "Expiry",
     "tabReorder": "Reorder",

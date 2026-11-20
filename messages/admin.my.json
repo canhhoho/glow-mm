@@ -1532,6 +1532,7 @@
   "Alerts": {
     "title": "ကုန်လှောင် သတိပေးချက်",
     "createReceipt": "သွင်းလွှာ ဖန်တီးရန် (SKU {count} ခု)",
+    "createReceiptCapped": "SKU {total} ခုအနက် ပထမ {count} ခု ရွေးမည် (ဇယားအစီအစဉ်) — ပြီးလျှင် ကျန်ရှိသည်အတွက် ပြန်ဖွင့်ပါ။",
     "tabLow": "လက်ကျန်နည်း",
     "tabExpiry": "သက်တမ်း",
     "tabReorder": "ပြန်မှာရန်",

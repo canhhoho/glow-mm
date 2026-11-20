@@ -1992,6 +1992,7 @@
     "Docs.emptyFiltered",
     "Docs.pageStatus",
     "Docs.prevPage",
-    "Docs.nextPage"
+    "Docs.nextPage",
+    "Alerts.createReceiptCapped"
   ]
 }

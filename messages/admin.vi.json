@@ -1532,6 +1532,7 @@
   "Alerts": {
     "title": "Cảnh báo kho",
     "createReceipt": "Tạo phiếu nhập ({count} SKU)",
+    "createReceiptCapped": "Chọn {count} SKU đầu trong {total} (theo thứ tự bảng) — nhập xong mở lại để tiếp.",
     "tabLow": "Tồn thấp",
     "tabExpiry": "Hạn dùng",
     "tabReorder": "Gợi ý đặt hàng",

@@ -4,7 +4,7 @@ import { requirePagePermission } from "@/server/auth/session";
 import { computeAlerts } from "@/server/alerts/queries";
 import { Badge, DataTable, LinkButton, Page, PageHeader, TabNav, Td } from "@/components/admin/ui";
 import { can } from "@/server/auth/roles";
-import { receivePicksHref, type ReceivePick } from "@/lib/receive-picks";
+import { MAX_RECEIVE_PICKS, receivePicksHref, type ReceivePick } from "@/lib/receive-picks";
 import { fmtDay, fmtInt } from "@/lib/format";
 import { FEATURES } from "@/lib/features";
 
@@ -28,14 +28,19 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
   // 20/11/2026 (audit #2): đi tiếp từ cảnh báo — phiếu nhập chọn sẵn SKU đang hiện, SL = số gợi ý đặt (nếu có).
   const canReceive = can(user.role, "stock:receive");
   const suggest = new Map(alerts.reorder.map((r) => [r.variantId, r.suggestQty]));
-  const receiveButton = (picks: ReceivePick[]) =>
-    canReceive && picks.length > 0 ? (
-      <div className="flex justify-end" data-testid="alerts-receive">
+  // Link mang tối đa MAX_RECEIVE_PICKS SKU (độ dài URL): nút ghi đúng số được chọn; bị cắt thì ghi rõ "N SKU đầu" theo thứ tự bảng.
+  const receiveButton = (all: ReceivePick[]) => {
+    if (!canReceive || all.length === 0) return null;
+    const picks = all.slice(0, MAX_RECEIVE_PICKS);
+    return (
+      <div className="flex flex-wrap items-center justify-end gap-2" data-testid="alerts-receive">
+        {all.length > picks.length && <span className="text-xs text-muted-foreground">{t("createReceiptCapped", { count: picks.length, total: all.length })}</span>}
         <LinkButton href={receivePicksHref(picks)} variant="primary" icon="new">
           {t("createReceipt", { count: picks.length })}
         </LinkButton>
       </div>
-    ) : null;
+    );
+  };
   // Chuẩn bảng SP: tên là dòng chính, SKU dòng phụ (xuống dòng khi dài).
   const product = (sku: string, name: string) => (
     <>
