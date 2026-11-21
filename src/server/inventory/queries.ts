@@ -5,6 +5,7 @@ import { balanceKey, previewDocument, type PreviewDoc } from "./document-preview
 import { receiptSourceLine } from "@/server/pricing/cost";
 import type { DocStatus, DocType, Prisma } from "@/generated/prisma/client";
 import { addDays, yangonDayKey, yangonDayStart } from "@/lib/time";
+import { optionalRange } from "@/lib/date-range";
 
 /** Tên hiển thị của sản phẩm cho admin: ưu tiên tiếng Anh, sau đó tiếng Myanmar. */
 export function productName(translations: { locale: string; name: string }[], fallback: string) {
@@ -165,11 +166,7 @@ export { DOC_TYPES };
  */
 export async function listDocuments(filter: { type?: DocType; status?: DocStatus; q?: string; from?: string; to?: string; page?: number }) {
   const q = filter.q?.trim();
-  let { from, to } = filter;
-  const day = (s?: string) => (s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : undefined);
-  from = day(from);
-  to = day(to);
-  if (from && to && from > to) [from, to] = [to, from];
+  const { from, to } = optionalRange(filter);
   const where: Prisma.StockDocumentWhereInput = {
     type: filter.type,
     status: filter.status,

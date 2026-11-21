@@ -2,9 +2,10 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
+import { datePresetItems, optionalRange, presetLabels } from "@/lib/date-range";
 import { DOC_PAGE_SIZE, DOC_TYPES, isDocType, listDocuments } from "@/server/inventory/queries";
 import { LocationName, NewDocMenu } from "@/components/admin/stock-parts";
-import { Badge, ClearFilters, DataTable, fieldClass, fieldLabelClass, FilterBar, FilterButton, Page, PageHeader, PageNumbers, SearchInput, TabNav, Td } from "@/components/admin/ui";
+import { Badge, ClearFilters, DataTable, DateRangeFields, fieldClass, FilterBar, FilterButton, Page, PageHeader, PageNumbers, SearchInput, TabNav, Td } from "@/components/admin/ui";
 import { fmtDate } from "@/lib/format";
 
 const STATUS_TONE = { DRAFT: "warning", POSTED: "success", CANCELLED: "neutral" } as const;
@@ -18,8 +19,7 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/admin/
   const str = (v: string | string[] | undefined) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
   const q = str(sp.q)?.slice(0, 100);
   const type = isDocType(sp.type) ? sp.type : undefined;
-  const from = str(sp.from);
-  const to = str(sp.to);
+  const { from, to } = optionalRange(sp);
   const [t, ti, tc, result] = await Promise.all([
     getTranslations("Docs"),
     getTranslations("Inventory"),
@@ -57,8 +57,7 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/admin/
             </option>
           ))}
         </select>
-        <label className={fieldLabelClass}><span>{t("fromDate")}</span><input type="date" name="from" defaultValue={from} className={fieldClass} /></label>
-        <label className={fieldLabelClass}><span>{t("toDate")}</span><input type="date" name="to" defaultValue={to} className={fieldClass} /></label>
+        <DateRangeFields from={from} to={to} fromLabel={t("fromDate")} toLabel={t("toDate")} presetsLabel={tc("datePresets")} presets={datePresetItems(presetLabels(tc), (r) => href({ ...r, page: undefined }), { from, to })} />
         <FilterButton>{tc("filter")}</FilterButton>
         {filtered && <ClearFilters href={href({ q: undefined, type: undefined, from: undefined, to: undefined, page: undefined })}>{t("clearFilters")}</ClearFilters>}
       </FilterBar>

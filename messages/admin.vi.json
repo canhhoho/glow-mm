@@ -106,6 +106,7 @@
     }
   },
   "Nav": {
+    "brands": "Thương hiệu",
     "lowStockBadge": "phân loại tồn thấp",
     "quarantineLotsBadge": "lô chờ kiểm tra",
     "sellingPrices": "Giá bán",
@@ -306,6 +307,8 @@
     "ORDER_STAFF": "Nhân viên đơn hàng"
   },
   "Common": {
+    "datePresets": "Khoảng nhanh",
+    "datePreset": {"today":"Hôm nay","last7":"7 ngày","last30":"30 ngày","thisMonth":"Tháng này","lastMonth":"Tháng trước"},
     "comingSoon": "Đang xây dựng",
     "notFoundTitle": "Không tìm thấy trang",
     "notFoundHint": "Đường dẫn sai hoặc trang đã bị xoá.",
@@ -832,6 +835,10 @@
     "newCombo": "Tạo combo",
     "created": "Đã tạo sản phẩm. Làm tiếp bước 2: nhập kho.",
     "create": {
+      "stockTitle": "Kho bán & giá mua (không bắt buộc)",
+      "stockHint": "Giống cột Kho bán / Giá mua / SL dự kiến nhập của file Excel. Để trống thì làm ở bước 2 trên trang sản phẩm. SL dự kiến nhập không tạo phiếu, không đổi tồn — phiếu nhập kho gợi ý sẵn số này.",
+      "noWarehouse": "— Chọn sau —",
+      "variantCol": "Phân loại",
       "comboTitle": "Tạo combo",
       "intro": "Bước 1/5 — chỉ cần thông tin cơ bản. Giá, ảnh, mô tả và hiển thị làm ở các bước sau trên trang sản phẩm.",
       "labelsPlaceholder": "VD: Đỏ, 50ml",
@@ -1560,6 +1567,10 @@
     "other": "Tồn ở vị trí khác (chưa tính)"
   },
   "Reports": {
+    "exportExcel": "Xuất Excel",
+    "sheetSummary": "Tổng hợp",
+    "sheetProducts": "Sản phẩm",
+    "period": "Kỳ báo cáo",
     "title": "Báo cáo",
     "from": "Từ ngày",
     "to": "Đến ngày",
@@ -1646,6 +1657,27 @@
       "same": "Mật khẩu mới phải khác mật khẩu hiện tại",
       "wrongCurrent": "Mật khẩu hiện tại không đúng"
     }
+  },
+  "Brands": {
+    "title": "Thương hiệu",
+    "intro": "Thương hiệu mới được tạo khi gõ tên ở form sản phẩm hoặc file Excel, và tự xoá khi không còn sản phẩm. Ở đây sửa chính tả tên hoặc gộp thương hiệu bị gõ trùng / sai.",
+    "search": "Tìm thương hiệu",
+    "empty": "Chưa có thương hiệu.",
+    "emptyFiltered": "Không có thương hiệu nào khớp.",
+    "colName": "Thương hiệu",
+    "colActive": "SP đang kinh doanh",
+    "colPublished": "Đang đăng bán",
+    "colActions": "Thao tác",
+    "archivedCount": "+ {count} SP ngừng kinh doanh",
+    "manage": "Đổi tên / gộp",
+    "newName": "Tên mới",
+    "rename": "Đổi tên",
+    "renamed": "Đã đổi tên",
+    "mergeInto": "Gộp vào thương hiệu",
+    "merge": "Gộp",
+    "merged": "Đã gộp",
+    "mergeConfirm": "Chuyển {count} sản phẩm của \"{name}\" sang thương hiệu đã chọn rồi xoá \"{name}\"? Không hoàn tác được.",
+    "mergeHelp": "Gộp: mọi sản phẩm (kể cả đã duyệt, đang bán) chuyển sang thương hiệu đích ngay, không phải duyệt lại; thương hiệu này bị xoá. Đổi tên trùng thương hiệu khác thì dùng Gộp."
   },
   "Categories": {
     "title": "Danh mục",

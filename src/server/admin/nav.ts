@@ -68,6 +68,7 @@ export const NAV: NavGroup[] = [
       { href: "/admin/products", key: "productList", permission: "catalog:manage", icon: "tag" },
       { href: "/admin/selling-prices", key: "sellingPrices", permission: "pricing:manage", icon: "coins", match: ["/admin/pricing"] },
       { href: "/admin/categories", key: "categories", permission: "catalog:manage", icon: "folder" },
+      { href: "/admin/brands", key: "brands", permission: "catalog:manage", icon: "layers" },
     ],
   },
   {

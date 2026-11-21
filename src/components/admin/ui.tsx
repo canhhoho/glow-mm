@@ -540,15 +540,51 @@ export function ClearFilters({ href, children }: { href: string; children: React
 }
 
 /**
+ * Ô Từ ngày / Đến ngày + nút khoảng nhanh (Hôm nay, 7 ngày, 30 ngày, Tháng này, Tháng trước) — đặt trong `FilterBar`
+ * (21/11/2026, audit #10). Nút nhanh là link (không JS), `presets` dựng bằng `datePresetItems` (`lib/date-range.ts`).
+ */
+export function DateRangeFields({
+  from,
+  to,
+  fromLabel,
+  toLabel,
+  presetsLabel,
+  presets,
+}: {
+  from?: string;
+  to?: string;
+  fromLabel: string;
+  toLabel: string;
+  presetsLabel: string;
+  presets: { key: string; href: string; label: string; active: boolean }[];
+}) {
+  return (
+    <>
+      <div className="w-full max-w-full overflow-x-auto" data-testid="date-presets">
+        <Segmented label={presetsLabel} items={presets} />
+      </div>
+      <label className={fieldLabelClass}>
+        <span>{fromLabel}</span>
+        <input type="date" name="from" defaultValue={from} className={cn(fieldClass, "w-40")} />
+      </label>
+      <label className={fieldLabelClass}>
+        <span>{toLabel}</span>
+        <input type="date" name="to" defaultValue={to} className={cn(fieldClass, "w-40")} />
+      </label>
+    </>
+  );
+}
+
+/**
  * Nút chuyển chế độ/khoảng (link, không JS): dashboard (khoảng ngày), kho (kiểu xem), data-health (kỳ).
  * `active` → `aria-current`.
  */
-export function Segmented({ label, items }: { label: string; items: { href: string; label: React.ReactNode; active: boolean }[] }) {
+export function Segmented({ label, items }: { label: string; items: { key?: string; href: string; label: React.ReactNode; active: boolean }[] }) {
   return (
     <nav aria-label={label} className="inline-flex rounded-lg border bg-card p-0.5 text-sm">
       {items.map((item) => (
         <Link
-          key={item.href}
+          key={item.key ?? item.href}
           href={item.href}
           aria-current={item.active ? "true" : undefined}
           className={cn(focusRing, "rounded-md px-3 py-1.5 whitespace-nowrap", item.active ? "bg-primary/10 font-medium text-primary" : "text-muted-foreground hover:text-foreground")}

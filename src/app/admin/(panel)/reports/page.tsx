@@ -1,27 +1,18 @@
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
-import { defaultRange, salesReport, type Range } from "@/server/reports/queries";
-import { DataTable, fieldClass, fieldLabelClass, FilterBar, FilterButton, Notice, Page, PageHeader, Section, Stat, Td } from "@/components/admin/ui";
+import { Download } from "lucide-react";
+import { SALES_RANGE, salesReport } from "@/server/reports/queries";
+import { DataTable, DateRangeFields, FilterBar, FilterButton, Notice, Page, PageHeader, Section, Stat, Td } from "@/components/admin/ui";
+import { buttonVariants } from "@/components/ui/button";
 import { ReportsTabs } from "@/components/admin/reports-tabs";
+import { datePresetItems, presetLabels, requiredRange } from "@/lib/date-range";
 import { fmtInt } from "@/lib/format";
-import { addDays } from "@/lib/time";
 import { cn } from "@/lib/utils";
-
-const DAY = /^\d{4}-\d{2}-\d{2}$/;
-const MAX_DAYS = 366;
-
-function parseRange(sp: Record<string, string | string[] | undefined>): Range {
-  const def = defaultRange();
-  let from = typeof sp.from === "string" && DAY.test(sp.from) ? sp.from : def.from;
-  let to = typeof sp.to === "string" && DAY.test(sp.to) ? sp.to : def.to;
-  if (from > to) [from, to] = [to, from]; // nhập ngược → đảo lại thay vì âm thầm về mặc định
-  // Giới hạn độ dài kỳ để truy vấn nhẹ.
-  return from < addDays(to, -(MAX_DAYS - 1)) ? { from: addDays(to, -(MAX_DAYS - 1)), to } : { from, to };
-}
 
 export default async function ReportsPage({ searchParams }: PageProps<"/admin/reports">) {
   await requirePagePermission("reports:view");
-  const range = parseRange(await searchParams);
+  // Nhập ngược → đảo lại; dài quá 366 ngày → cắt (lib/date-range, dùng chung với xuất Excel).
+  const range = requiredRange(await searchParams, SALES_RANGE);
   const [t, tc, report] = await Promise.all([
     getTranslations("Reports"),
     getTranslations("Common"),
@@ -32,18 +23,26 @@ export default async function ReportsPage({ searchParams }: PageProps<"/admin/re
 
   return (
     <Page>
-      <PageHeader title={(await getTranslations("Nav"))("salesReports")} description={t("basis")} />
+      <PageHeader
+        title={(await getTranslations("Nav"))("salesReports")}
+        description={t("basis")}
+        actions={
+          <a href={`/api/admin/reports/sales-export?from=${range.from}&to=${range.to}`} download className={buttonVariants({ variant: "outline", size: "lg" })} data-testid="sales-export">
+            <Download aria-hidden /> {t("exportExcel")}
+          </a>
+        }
+      />
       <ReportsTabs active="sales" />
       {/* key theo kỳ: điều hướng phía client giữ DOM → defaultValue cũ; đổi key để ô ngày hiện kỳ đã chuẩn hoá. */}
       <FilterBar key={`${range.from}|${range.to}`}>
-        <label className={fieldLabelClass}>
-          <span className="text-muted-foreground">{t("from")}</span>
-          <input type="date" name="from" defaultValue={range.from} className={cn(fieldClass, "w-40")} />
-        </label>
-        <label className={fieldLabelClass}>
-          <span className="text-muted-foreground">{t("to")}</span>
-          <input type="date" name="to" defaultValue={range.to} className={cn(fieldClass, "w-40")} />
-        </label>
+        <DateRangeFields
+          from={range.from}
+          to={range.to}
+          fromLabel={t("from")}
+          toLabel={t("to")}
+          presetsLabel={tc("datePresets")}
+          presets={datePresetItems(presetLabels(tc), (r) => `/admin/reports?from=${r.from}&to=${r.to}`, range)}
+        />
         <FilterButton>{tc("filter")}</FilterButton>
       </FilterBar>
 

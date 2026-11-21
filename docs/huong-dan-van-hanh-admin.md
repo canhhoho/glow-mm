@@ -301,6 +301,7 @@ Chỉ **Quản trị viên** làm các việc trong mục này.
    - **Danh mục** — bắt buộc.
    - **Kho** — chỉ hiện khi có nhiều hơn một kho bán.
    - **Phân loại (dung tích/màu)** — gõ từng loại, bấm Enter hoặc dấu phẩy để thêm (ví dụ "Đỏ", "50ml"). Để trống nếu chỉ có một loại → hệ thống tạo "Tiêu chuẩn".
+   - *(Không bắt buộc, 21/11/2026)* khối **Kho bán & giá mua**: chọn **Kho bán** → hiện bảng theo từng phân loại để điền **Giá mua/đv** (VND với kho nhập Việt Nam, MMK với kho mua tại Myanmar) và **SL dự kiến nhập** — giống các cột cùng tên của file Excel. Để trống thì làm ở bước 2 như cũ. Combo không có khối này (lấy kho của thành phần).
 3. Bấm **Tạo sản phẩm**.
 
 **Sao chép từ sản phẩm cũ:** mở khối **Sao chép từ sản phẩm cũ**, chọn **Sản phẩm nguồn**, bấm **Nạp thông tin** (điền sẵn tên, thương hiệu, danh mục, phân loại). Hoặc bấm **Nhân bản** ở trang một sản phẩm. Khi tạo, hệ thống chép mô tả, ảnh và thiết lập; **không chép giá, hoa hồng CTV, lãi cố định và tồn kho**.
@@ -403,7 +404,7 @@ Với sản phẩm **đã duyệt**, thêm/xoá ảnh được giữ lại chờ
 
 ### 5.6. Thương hiệu
 
-**Không có trang quản lý thương hiệu.** Thương hiệu được **tạo khi bạn gõ tên mới** (ở form sản phẩm hoặc Excel) và **tự xoá khi không còn sản phẩm nào dùng**. Tên được so khớp không phân biệt hoa/thường và dấu ("Estée Lauder" và "Estee Lauder" là một). Thương hiệu chỉ còn sản phẩm ngừng kinh doanh vẫn được giữ nhưng không gợi ý ở form.
+Thương hiệu được **tạo khi bạn gõ tên mới** (ở form sản phẩm hoặc Excel) và **tự xoá khi không còn sản phẩm nào dùng**. Từ 21/11/2026 có trang **Sản phẩm › Thương hiệu** (Quản trị viên): xem số SP đang kinh doanh / đang đăng của từng thương hiệu, bấm **Đổi tên / gộp** để **Đổi tên** (sửa chính tả; trùng tên thương hiệu khác thì phải dùng Gộp) hoặc **Gộp vào thương hiệu** khác — mọi SP (kể cả đã duyệt, đang bán) chuyển sang thương hiệu đích **ngay, không phải duyệt lại**, thương hiệu cũ bị xoá, không hoàn tác. Tên được so khớp không phân biệt hoa/thường và dấu ("Estée Lauder" và "Estee Lauder" là một). Thương hiệu chỉ còn sản phẩm ngừng kinh doanh vẫn được giữ nhưng không gợi ý ở form.
 
 ### 5.7. Đặt trước khi hết hàng (bước 2)
 
@@ -1076,7 +1077,7 @@ Bấm tên bạn (góc phải trên) → **Tài khoản của tôi** → **Đổ
 
 ### 14.2. Bán hàng & lợi nhuận
 
-**Báo cáo › Bán hàng & lợi nhuận** (Quản trị viên). Chọn **Từ ngày** / **Đến ngày** → **Xem**.
+**Báo cáo › Bán hàng & lợi nhuận** (Quản trị viên). Chọn **Từ ngày** / **Đến ngày** → **Lọc**, hoặc bấm nút **Khoảng nhanh** (Hôm nay / 7 ngày / 30 ngày / Tháng này / Tháng trước — 21/11/2026, cũng có ở Hành vi mua hàng, Đơn hàng, Phiếu kho). Nút **Xuất Excel** tải file cùng kỳ gồm 3 sheet: Tổng hợp (chuỗi doanh thu → lợi nhuận), Theo ngày, Sản phẩm (mọi SKU có bán, không chỉ top 10).
 
 Cách tính: **doanh thu = đơn Hoàn tất theo ngày hoàn tất** (giờ Yangon), trừ hàng trả. Từ 20/11/2026 trang có **4 ô chính** (Doanh thu — dòng phụ ghi hàng trả; Đơn hoàn tất; Lợi nhuận gộp — dòng phụ ghi biên lợi nhuận; Sau chi phí bán đã ghi nhận) và bảng **Từ doanh thu đến lợi nhuận** đi theo thứ tự Doanh thu − Giá vốn = Lợi nhuận gộp − Hoa hồng CTV = Lợi nhuận sau hoa hồng − Phí hãng khấu trừ COD = Sau chi phí bán đã ghi nhận; **Phí ship thu** ghi riêng dưới bảng (không tính vào doanh thu). Ý nghĩa các khoản:
 

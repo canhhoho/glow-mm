@@ -17,6 +17,7 @@ import { catalogImportInputSchema, commitCatalogImport, previewCatalogImport, ty
 import { deleteProducts, moveProductsToWarehouse, restoreProducts } from "./product-delete";
 import { ReadinessError } from "./readiness";
 import { createProduct } from "./product-create";
+import { mergeBrands, renameBrand } from "./brand-admin";
 import { saveProductPricing } from "./product-pricing";
 import { discardChanges, reviewProducts, saveAndApprove, submitProducts, type ReviewResult } from "./review";
 import { finishBatchReview, type BatchReviewView } from "./batch-review-text";
@@ -290,6 +291,37 @@ export async function deleteCategoryAction(_prev: ActionState, formData: FormDat
   categoriesChanged();
   revalidatePath("/admin/products"); // ô chọn danh mục ở form SP
   return { ok: "deleted" };
+}
+
+// ───────────────────────── Thương hiệu (21/11/2026, audit #14) ─────────────────────────
+
+/** Tên thương hiệu hiện ở thẻ SP / bộ lọc web khách → xoá cache catalog. */
+function brandsChanged() {
+  updateTag(CATALOG_TAG);
+  revalidatePath("/admin/brands");
+  revalidatePath("/admin/products");
+}
+
+export async function renameBrandAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("catalog:manage");
+    await renameBrand({ id: formId(40).parse(formData.get("brandId")), name: formData.get("name") }, user.id);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  brandsChanged();
+  return { ok: "renamed" };
+}
+
+export async function mergeBrandsAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const user = await requirePermission("catalog:manage");
+    await mergeBrands({ fromId: formId(40).parse(formData.get("brandId")), toId: formId(40).parse(formData.get("toId")) }, user.id);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  brandsChanged();
+  return { ok: "merged" };
 }
 
 // ───────────────────────── Ảnh sản phẩm ─────────────────────────

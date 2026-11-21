@@ -4,13 +4,14 @@ import { requirePagePermission } from "@/server/auth/session";
 import { can } from "@/server/auth/roles";
 import { affiliateOptions } from "@/server/affiliates/affiliates";
 import { listOrdersPageAdmin, sellableLocations } from "@/server/orders/admin-queries";
-import { pageNumber, validDay } from "@/lib/pagination";
+import { pageNumber } from "@/lib/pagination";
+import { datePresetItems, optionalRange, presetLabels } from "@/lib/date-range";
 import { ORDER_FILTER_STATUSES, PREPARING_STATUSES, TRANSITIONS } from "@/server/orders/state-machine";
 import { BULK_TRANSITIONS } from "@/server/orders/bulk";
 import { BulkOrderBar } from "@/components/admin/bulk-order-bar";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/admin/order-badges";
 import { ORDER_TAB_STATUSES, OrdersTabs, type OrdersTab } from "@/components/admin/orders-tabs";
-import { AdvancedFilters, Badge, checkboxClass, ClearFilters, DataTable, fieldClass, fieldLabelClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, PageNumbers, SearchInput, Td } from "@/components/admin/ui";
+import { AdvancedFilters, Badge, checkboxClass, ClearFilters, DataTable, DateRangeFields, fieldClass, fieldLabelClass, FilterBar, FilterButton, LinkButton, Page, PageHeader, PageNumbers, SearchInput, Td } from "@/components/admin/ui";
 import { fmtDate, fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +28,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
     q: str(sp.q),
     overdue: sp.overdue === "1",
     affiliateId: str(sp.affiliate),
-    from: validDay(sp.from), to: validDay(sp.to), locationId: str(sp.locationId), page: pageNumber(sp.page), shippingDays: Number(sp.shippingDays) || undefined,
+    ...optionalRange(sp), locationId: str(sp.locationId), page: pageNumber(sp.page), shippingDays: Number(sp.shippingDays) || undefined,
   };
   const [t, tc, tcod, result, affiliates, locations] = await Promise.all([getTranslations("Orders"), getTranslations("Common"), getTranslations("Cod"), listOrdersPageAdmin(filter), affiliateOptions(), sellableLocations()]);
   const orders = result.orders;
@@ -54,8 +55,14 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
       />
       <OrdersTabs active={activeTab} />
       <FilterBar>
-        <label className={fieldLabelClass}><span>{t("fromDate")}</span><input type="date" name="from" defaultValue={filter.from} className={fieldClass} /></label>
-        <label className={fieldLabelClass}><span>{t("toDate")}</span><input type="date" name="to" defaultValue={filter.to} className={fieldClass} /></label>
+        <DateRangeFields
+          from={filter.from}
+          to={filter.to}
+          fromLabel={t("fromDate")}
+          toLabel={t("toDate")}
+          presetsLabel={tc("datePresets")}
+          presets={datePresetItems(presetLabels(tc), (r) => { const params = new URLSearchParams(); for (const [key, value] of Object.entries(sp)) { if (key !== "page" && key !== "from" && key !== "to") for (const v of Array.isArray(value) ? value : value ? [value] : []) params.append(key, v); } params.set("from", r.from); params.set("to", r.to); return `/admin/orders?${params}`; }, filter)}
+        />
         <SearchInput label={t("search")} defaultValue={filter.q} />
         {/* Trạng thái chính nằm ở tab (giữ qua nút Lọc bằng ô ẩn); ô chọn chỉ còn Đã huỷ / Trả hàng. */}
         {tabStatus ? (

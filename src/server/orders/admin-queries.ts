@@ -10,7 +10,8 @@ import { preorderCapacity } from "./preorder";
 import { normalizeMmPhone, phoneSearchDigits } from "@/lib/phone";
 import { toUnicode } from "@/lib/myanmar";
 import { ORDER_STATUSES, PREPARING_STATUSES } from "./state-machine";
-import { pageNumber, validDay } from "@/lib/pagination";
+import { pageNumber } from "@/lib/pagination";
+import { optionalRange } from "@/lib/date-range";
 import { addDays, yangonDayStart } from "@/lib/time";
 
 /** Truy vấn cho admin đơn hàng (đọc, không thay đổi dữ liệu). */
@@ -37,9 +38,7 @@ export async function listOrdersPageAdmin(filter: OrderListFilter, now = new Dat
   }
   if (filter.affiliateId) where.affiliateId = filter.affiliateId;
   if (filter.locationId) where.items = { some: { variant: { product: { stockLocationId: filter.locationId } } } };
-  let from = validDay(filter.from);
-  let to = validDay(filter.to);
-  if (from && to && from > to) [from, to] = [to, from];
+  const { from, to } = optionalRange(filter);
   if (from || to) where.createdAt = { ...(from && { gte: yangonDayStart(from) }), ...(to && { lt: yangonDayStart(addDays(to,1)) }) };
   if (Number.isInteger(filter.shippingDays) && filter.shippingDays! > 0 && filter.shippingDays! <= 365) {
     where.status = "SHIPPING";
