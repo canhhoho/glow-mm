@@ -191,7 +191,7 @@ test("QT1b/QT2: tạo SP → nhập hàng từ bước 2 (điền sẵn, khối 
   // Bước 3: "Đặt giá" → trang Giá bán thủ công chỉ SP này → lãi + vận chuyển + CTV → lưu (giá tự động đang tắt).
   await expect(page.getByTestId("price-actions").getByRole("link", { name: "Tính tự động" })).toHaveCount(0);
   await page.getByTestId("price-actions").getByRole("link", { name: "Đặt giá" }).click();
-  await expect(page).toHaveURL(/\/admin\/selling-prices\/manual\?productId=/);
+  await expect(page).toHaveURL(/\/admin\/selling-prices\?productId=/);
   const vnd = page.getByTestId("manual-vnd");
   const line = vnd.getByTestId("manual-row").first();
   await expect(line).toContainText("100,000"); // giá mua NCC của lần nhập vừa ghi sổ

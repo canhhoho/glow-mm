@@ -170,7 +170,7 @@ test("mẫu một sheet: tạo SP hai biến thể + SL dự kiến nhập + n�
   await expect(page.getByTestId("step-publish-block").getByRole("button", { name: "Bật hiển thị trên web" })).toHaveCount(0);
   // 16/11: bước 3 dẫn về trang Giá bán (Excel không còn cột giá) → test đặt giá trực tiếp; thiếu ảnh chỉ là lưu ý.
   await openProductTab(page, "price");
-  await expect(page.getByTestId("price-actions").getByRole("link", { name: "Đặt giá" })).toHaveAttribute("href", /\/admin\/selling-prices\/manual\?productId=/);
+  await expect(page.getByTestId("price-actions").getByRole("link", { name: "Đặt giá" })).toHaveAttribute("href", /\/admin\/selling-prices\?productId=/);
   await expect(page.getByTestId("step-price-row")).toHaveCount(2);
   await setPrices(page, [27000, 42000]);
   // P1-A: đủ điều kiện không tự vào hàng đợi → bấm Gửi duyệt; người duyệt "Chỉ duyệt" (có xác nhận) → vẫn ẩn.
