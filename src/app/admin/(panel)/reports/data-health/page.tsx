@@ -2,11 +2,13 @@ import { Download } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
+import { webVitalsReport } from "@/server/analytics/queries";
 import { dataHealth, LONG_SHIPPING_DAYS, STALE_DRAFT_DAYS, type HealthCheck, type Percentiles } from "@/server/reports/data-health";
 import { ReportsTabs } from "@/components/admin/reports-tabs";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge, DataTable, Page, PageHeader, Section, Segmented, Td } from "@/components/admin/ui";
 import { fmtDateTime, fmtInt } from "@/lib/format";
+import { addDays, yangonDayKey } from "@/lib/time";
 import { cn } from "@/lib/utils";
 
 const PERIODS = [30, 90] as const;
@@ -21,7 +23,15 @@ export default async function DataHealthPage({ searchParams }: PageProps<"/admin
   await requirePagePermission("reports:view");
   const sp = await searchParams;
   const days = PERIODS.find((p) => String(p) === sp.days) ?? 30;
-  const [t, to, report] = await Promise.all([getTranslations("DataHealth"), getTranslations("Orders"), dataHealth(new Date(), days)]);
+  const now = new Date();
+  const today = yangonDayKey(now);
+  const [t, to, ta, report, vitals] = await Promise.all([
+    getTranslations("DataHealth"),
+    getTranslations("Orders"),
+    getTranslations("Analytics"),
+    dataHealth(now, days),
+    webVitalsReport({ from: addDays(today, -(days - 1)), to: today }),
+  ]);
   const b = report.baseline;
   const flowRows: [string, Percentiles][] = [
     [t("baseline.createdToConfirmed"), b.flow.createdToConfirmed],
@@ -145,6 +155,24 @@ export default async function DataHealthPage({ searchParams }: PageProps<"/admin
           </div>
         </div>
       </Section>
+
+      {/* 21/11/2026 (audit #20): Web Vitals dời từ Hành vi mua hàng — cùng kỳ 30/90 ngày của trang này. */}
+      <div id="web-vitals" className="scroll-mt-20">
+        <Section title={ta("vitals")} testId="web-vitals">
+          <p className="text-sm text-muted-foreground">{ta("vitalsHelp")}</p>
+          <DataTable head={[ta("pageType"), ta("device"), ta("metric"), ta("samples"), "p75"]} numeric={[3, 4]} empty={ta("empty")}>
+            {vitals.map((v) => (
+              <tr key={`${v.device}|${v.pageType}|${v.metric}`}>
+                <Td>{ta(`page.${v.pageType}`)}</Td>
+                <Td>{v.device === "mobile" ? ta("mobile") : v.device === "desktop" ? ta("desktop") : ta("unknown")}</Td>
+                <Td>{v.metric}</Td>
+                <Td numeric>{fmtInt(v.samples)}</Td>
+                <Td numeric>{v.metric === "CLS" ? v.p75.toFixed(3) : `${Math.round(v.p75)} ms`}</Td>
+              </tr>
+            ))}
+          </DataTable>
+        </Section>
+      </div>
     </Page>
   );
 }

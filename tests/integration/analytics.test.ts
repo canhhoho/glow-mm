@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/db";
 import { POST } from "@/app/api/events/route";
-import { analyticsReport } from "@/server/analytics/queries";
+import { analyticsReport, webVitalsReport } from "@/server/analytics/queries";
 import { createOrder } from "@/server/orders/orders";
 import { transitionOrder } from "@/server/orders/transitions";
 import { returnItems } from "@/server/orders/returns";
@@ -43,12 +43,12 @@ describe("D5 từ phiên xem hàng đến nghiệp vụ thực", () => {
     expect((await send(ctx, "web_vital", { metric: "LCP", value: 2000, pageType: "product" }, ids[0])).status).toBe(204);
     expect(await prisma.analyticsEvent.count({ where: { sessionId: ctx.sessionId } })).toBe(4);
     const day = yangonDayKey(new Date());
-    const report = await analyticsReport({ from: day, to: day });
+    const vitals = await webVitalsReport({ from: day, to: day });
     const rows = await prisma.analyticsEvent.findMany({ where: { name: "web_vital", device: "mobile", occurredAt: { gte: yangonDayStart(day), lt: yangonDayStart(addDays(day, 1)) } }, select: { props: true } });
     const values = rows.map((r) => r.props as { metric: string; value: number; pageType: string }).filter((p) => p.metric === "LCP" && p.pageType === "product").map((p) => p.value).sort((a, b) => a - b);
     const at = (values.length - 1) * .75;
     const expected = values[Math.floor(at)] + (values[Math.ceil(at)] - values[Math.floor(at)]) * (at - Math.floor(at));
-    expect(report.vitals.find((v) => v.device === "mobile" && v.metric === "LCP" && v.pageType === "product")?.p75).toBe(expected);
+    expect(vitals.find((v) => v.device === "mobile" && v.metric === "LCP" && v.pageType === "product")?.p75).toBe(expected);
   });
 
   it("tắt ghi sự kiện và dọn theo thời hạn", async () => {

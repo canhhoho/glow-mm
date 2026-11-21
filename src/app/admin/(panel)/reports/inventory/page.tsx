@@ -1,22 +1,21 @@
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
-import { inboundShipments, slowMovers, stockByLocation } from "@/server/reports/queries";
+import Link from "next/link";
+import { inboundShipments, stockByLocation } from "@/server/reports/queries";
 import { DataTable, Notice, Page, PageHeader, Section, Td } from "@/components/admin/ui";
 import { ReportsTabs } from "@/components/admin/reports-tabs";
 import { fmtDay, fmtInt } from "@/lib/format";
 import { FEATURES } from "@/lib/features";
 
 /**
- * Báo cáo tồn kho: số liệu TỒN HIỆN TẠI (không theo kỳ) — tồn theo kho, hàng bán chậm, chuyến hàng đang về.
+ * Báo cáo tồn kho: số liệu TỒN HIỆN TẠI (không theo kỳ) — tồn theo kho, chuyến hàng đang về (bán chậm: Cảnh báo › Bán chậm).
  * Các khối dời nguyên từ báo cáo Bán hàng; dùng cùng hàm `reports/queries.ts`, không thêm công thức mới.
  */
 export default async function InventoryReportPage() {
   await requirePagePermission("reports:view");
-  const [t, tc, tn, slow, inbound, stock] = await Promise.all([
+  const [t, tn, inbound, stock] = await Promise.all([
     getTranslations("Reports"),
-    getTranslations("Common"),
     getTranslations("Nav"),
-    slowMovers(),
     // Chuyến hàng đang tắt (`lib/features.ts`): không tải / không hiện khối "chuyến hàng đang về".
     FEATURES.shipments ? inboundShipments() : Promise.resolve([]),
     stockByLocation(),
@@ -50,20 +49,13 @@ export default async function InventoryReportPage() {
           ))}
         </DataTable>
       </Section>
-      <Section title={t("slow", { days: slow.days })}>
-        {/* Rộng hết vùng nội dung: cột SP co giãn, cột số hẹp cố định bên phải. */}
-        <DataTable empty={t("empty")} tableClassName="table-fixed" cols={["", "w-32 sm:w-40"]} numeric={[1]} head={[tc("product"), <span key="a" className="whitespace-normal">{t("available")}</span>]}>
-          {slow.items.slice(0, 20).map((v) => (
-            <tr key={v.variantId} data-testid="slow-row">
-              <Td>
-                <span className="block break-words">{v.name}</span>
-                <span className="block font-mono text-xs break-all text-muted-foreground">{v.sku}</span>
-              </Td>
-              <Td numeric>{fmtInt(v.available)}</Td>
-            </tr>
-          ))}
-        </DataTable>
-      </Section>
+      {/* 21/11/2026 (audit #19): "Bán chậm" dời sang Cảnh báo (tab Bán chậm) — để lại lối tắt. */}
+      <p className="text-sm text-muted-foreground">
+        {t("slowMoved")}{" "}
+        <Link href="/admin/alerts?tab=slow" className="text-primary underline">
+          {t("slowMovedLink")}
+        </Link>
+      </p>
 
       {FEATURES.shipments && (
       <Section title={t("inbound")}>

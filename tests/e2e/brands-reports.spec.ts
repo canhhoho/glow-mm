@@ -64,3 +64,19 @@ test("thương hiệu: đổi tên rồi gộp vào thương hiệu khác", asyn
   await expect(rows.first()).toContainText(`E2E Nivea ${tag}`);
   await expect(rows.first().getByRole("cell").nth(1)).toContainText("2");
 });
+
+// Ưu tiên thấp (21/11/2026): Bán chậm → tab Cảnh báo; Web Vitals → Sức khoẻ dữ liệu.
+test("Bán chậm ở tab Cảnh báo (Báo cáo › Tồn kho để lối tắt); Web Vitals ở Sức khoẻ dữ liệu", async ({ page }) => {
+  await login(page, "admin@glow.local");
+  await page.goto("/admin/reports/inventory");
+  await page.getByRole("link", { name: "Xem tab Bán chậm" }).click();
+  await expect(page).toHaveURL(/\/admin\/alerts\?tab=slow$/);
+  await expect(page.getByRole("link", { name: /^Bán chậm/ })).toHaveAttribute("aria-current", /page|true/);
+  await expect(page.getByText(/không bán được cái nào trong \d+ ngày/)).toBeVisible();
+
+  await page.goto("/admin/reports/analytics");
+  await expect(page.getByTestId("web-vitals")).toHaveCount(0);
+  await page.getByRole("link", { name: "Xem Web Vitals" }).click();
+  await expect(page).toHaveURL(/\/admin\/reports\/data-health#web-vitals$/);
+  await expect(page.getByTestId("web-vitals")).toBeVisible();
+});

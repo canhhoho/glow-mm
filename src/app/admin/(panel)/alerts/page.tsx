@@ -2,29 +2,32 @@ import { getTranslations } from "next-intl/server";
 import { LocationName } from "@/components/admin/stock-parts";
 import { requirePagePermission } from "@/server/auth/session";
 import { computeAlerts } from "@/server/alerts/queries";
+import { slowMovers } from "@/server/reports/queries";
 import { Badge, DataTable, LinkButton, Page, PageHeader, TabNav, Td } from "@/components/admin/ui";
 import { can } from "@/server/auth/roles";
 import { MAX_RECEIVE_PICKS, receivePicksHref, type ReceivePick } from "@/lib/receive-picks";
 import { fmtDay, fmtInt } from "@/lib/format";
 import { FEATURES } from "@/lib/features";
 
-const ALL_TABS = ["low", "expiry", "reorder"] as const;
+// 21/11/2026 (audit #19): "Bán chậm" dời từ Báo cáo › Tồn kho về đây — mọi tín hiệu tồn kho ở một trang.
+const ALL_TABS = ["low", "expiry", "reorder", "slow"] as const;
 type Tab = (typeof ALL_TABS)[number];
 const LEVEL_TONE = { expired: "danger", unknown: "warning", blocked: "danger", near: "warning" } as const;
 
 export default async function AlertsPage({ searchParams }: PageProps<"/admin/alerts">) {
   const user = await requirePagePermission("stock:view");
-  const tabs = (FEATURES.expiry ? ALL_TABS : ["low", "reorder"]) as readonly Tab[];
+  const tabs = (FEATURES.expiry ? ALL_TABS : ["low", "reorder", "slow"]) as readonly Tab[];
   const { tab: rawTab } = await searchParams;
   const tab: Tab = tabs.includes(rawTab as Tab) ? (rawTab as Tab) : "low";
-  const [t, ti, alerts] = await Promise.all([getTranslations("Alerts"), getTranslations("Inventory"), computeAlerts()]);
+  const [t, ti, alerts, slow] = await Promise.all([getTranslations("Alerts"), getTranslations("Inventory"), computeAlerts(), slowMovers()]);
   const { counts, settings } = alerts;
   const tabCount: Record<Tab, number> = {
     low: counts.lowStock,
     expiry: counts.expired + counts.blocked + counts.near + counts.unknown,
     reorder: counts.reorder,
+    slow: slow.items.length,
   };
-  const tabLabel: Record<Tab, string> = { low: t("tabLow"), expiry: t("tabExpiry"), reorder: t("tabReorder") };
+  const tabLabel: Record<Tab, string> = { low: t("tabLow"), expiry: t("tabExpiry"), reorder: t("tabReorder"), slow: t("tabSlow") };
   // 20/11/2026 (audit #2): đi tiếp từ cảnh báo — phiếu nhập chọn sẵn SKU đang hiện, SL = số gợi ý đặt (nếu có).
   const canReceive = can(user.role, "stock:receive");
   const suggest = new Map(alerts.reorder.map((r) => [r.variantId, r.suggestQty]));
@@ -67,7 +70,8 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
           active: k === tab,
           label: tabLabel[k],
           count: tabCount[k],
-          tone: tabCount[k] > 0 ? "danger" : "neutral",
+          // Bán chậm: thông tin để xả hàng, không phải việc gấp → không tô đỏ.
+          tone: tabCount[k] > 0 && k !== "slow" ? "danger" : "neutral",
         }))}
       />
 
@@ -137,6 +141,21 @@ export default async function AlertsPage({ searchParams }: PageProps<"/admin/ale
                 <Td label={t("coverDays")} numeric>{r.coverDaysLeft ?? "—"}</Td>
                 <Td label={t("leadTime")} numeric>{r.leadTimeDays}</Td>
                 <Td label={t("suggest")} numeric className="font-medium">{fmtInt(r.suggestQty)}</Td>
+              </tr>
+            ))}
+          </DataTable>
+        </>
+      )}
+
+      {tab === "slow" && (
+        <>
+          <p className="text-xs text-muted-foreground">{t("slowHint", { days: slow.days })}</p>
+          <DataTable stack empty={t("empty")} numeric={[1, 2]} head={[t("product"), t("available"), t("other")]}>
+            {slow.items.map((v) => (
+              <tr key={v.variantId} data-testid="slow-row">
+                <Td>{product(v.sku, v.name)}</Td>
+                <Td label={t("available")} numeric className="font-medium">{fmtInt(v.available)}</Td>
+                <Td label={t("other")} numeric className="text-muted-foreground">{v.otherQty > 0 ? fmtInt(v.otherQty) : "—"}</Td>
               </tr>
             ))}
           </DataTable>

@@ -13,7 +13,6 @@ import { CATALOG_TAG } from "./category-tree";
 export function refreshPrices(opts: { runId?: string } = {}) {
   updateTag(CATALOG_TAG);
   revalidatePath("/admin/selling-prices");
-  revalidatePath("/admin/selling-prices/manual");
   if (opts.runId) revalidatePath(`/admin/pricing/runs/${opts.runId}`);
   revalidatePath("/admin/products", "layout");
 }

@@ -270,7 +270,7 @@ export function ProductForm({
           <div className="space-y-1 text-sm text-muted-foreground">
             <p>
               {tf("priceReadonly")}{" "}
-              <Link className="text-primary underline" href={`/admin/selling-prices/manual?productId=${p.id}`}>
+              <Link className="text-primary underline" href={`/admin/selling-prices?productId=${p.id}`}>
                 {tf("setPrice")}
               </Link>
             </p>
