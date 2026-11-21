@@ -19,6 +19,7 @@ const BADGE_TONE: Record<NavCountKey, NonNullable<ShellItem["badge"]>["tone"]> =
   blockedLots: "warning",
   pendingApplications: "brand",
   passwordResets: "brand",
+  lowStock: "warning",
 };
 
 export default async function PanelLayout({ children }: LayoutProps<"/admin">) {
@@ -36,7 +37,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/admin">) {
         label: t(i.key),
         icon: i.icon,
         match: i.match,
-        badgeContent: i.count ? <Suspense fallback={null}><NavBadge counts={counts} kind={i.count} /></Suspense> : undefined,
+        badgeContent: i.count ? <Suspense fallback={null}><NavBadges counts={counts} kinds={[i.count].flat()} titles={Object.fromEntries([i.count].flat().map((k) => [k, t.has(`${k}Badge`) ? t(`${k}Badge`) : undefined]))} /></Suspense> : undefined,
       };
     }),
   }));
@@ -79,7 +80,19 @@ export default async function PanelLayout({ children }: LayoutProps<"/admin">) {
   );
 }
 
-async function NavBadge({ counts, kind }: { counts: ReturnType<typeof navCounts>; kind: NavCountKey }) {
-  const n = (await counts)[kind] ?? 0;
-  return n > 0 ? <span className={cn("ml-auto rounded-full px-1.5 text-2xs font-medium tabular-nums", TONES[BADGE_TONE[kind]])}>{n}</span> : null;
+/** Badge của một mục (có thể nhiều số: vd Tồn kho = tồn thấp + chờ kiểm tra); số 0 không hiện. `titles`: chú thích khi rê chuột. */
+async function NavBadges({ counts, kinds, titles }: { counts: ReturnType<typeof navCounts>; kinds: NavCountKey[]; titles: Partial<Record<NavCountKey, string>> }) {
+  const all = await counts;
+  const shown = kinds.filter((k) => (all[k] ?? 0) > 0);
+  if (shown.length === 0) return null;
+  return (
+    <span className="ml-auto flex gap-1">
+      {shown.map((k) => (
+        <span key={k} title={titles[k]} data-badge={k} className={cn("rounded-full px-1.5 text-2xs font-medium tabular-nums", TONES[BADGE_TONE[k]])}>
+          {all[k]}
+          {titles[k] && <span className="sr-only"> {titles[k]}</span>}
+        </span>
+      ))}
+    </span>
+  );
 }

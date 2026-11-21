@@ -3,8 +3,8 @@ import { variantDisplayName } from "@/lib/variant-label";
 import { prisma } from "@/lib/db";
 import { balanceKey, previewDocument, type PreviewDoc } from "./document-preview";
 import { receiptSourceLine } from "@/server/pricing/cost";
-import type { DocStatus, DocType } from "@/generated/prisma/client";
-import { yangonDayKey } from "@/lib/time";
+import type { DocStatus, DocType, Prisma } from "@/generated/prisma/client";
+import { addDays, yangonDayKey, yangonDayStart } from "@/lib/time";
 
 /** Tên hiển thị của sản phẩm cho admin: ưu tiên tiếng Anh, sau đó tiếng Myanmar. */
 export function productName(translations: { locale: string; name: string }[], fallback: string) {
@@ -154,13 +154,45 @@ export async function batchesForForms() {
   }));
 }
 
-export async function listDocuments(filter: { type?: DocType; status?: DocStatus }) {
-  return prisma.stockDocument.findMany({
-    where: { type: filter.type, status: filter.status },
-    orderBy: { createdAt: "desc" },
-    take: 200,
+export const DOC_PAGE_SIZE = 50;
+const DOC_TYPES = ["RECEIVE", "TRANSFER", "ISSUE", "ADJUST", "RETURN"] as const satisfies readonly DocType[];
+export const isDocType = (v: unknown): v is DocType => DOC_TYPES.includes(v as (typeof DOC_TYPES)[number]);
+export { DOC_TYPES };
+
+/**
+ * Danh sách phiếu kho (20/11/2026, audit #3): tìm theo mã phiếu / SKU / lý do, lọc loại phiếu và khoảng ngày tạo (giờ Yangon),
+ * phân trang — trước đây cắt cứng 200 phiếu mới nhất, phiếu cũ hơn không mở được từ danh sách.
+ */
+export async function listDocuments(filter: { type?: DocType; status?: DocStatus; q?: string; from?: string; to?: string; page?: number }) {
+  const q = filter.q?.trim();
+  let { from, to } = filter;
+  const day = (s?: string) => (s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : undefined);
+  from = day(from);
+  to = day(to);
+  if (from && to && from > to) [from, to] = [to, from];
+  const where: Prisma.StockDocumentWhereInput = {
+    type: filter.type,
+    status: filter.status,
+    ...(q && {
+      OR: [
+        { code: { contains: q, mode: "insensitive" } },
+        { reason: { contains: q, mode: "insensitive" } },
+        { lines: { some: { variant: { sku: { contains: q, mode: "insensitive" } } } } },
+      ],
+    }),
+    ...((from || to) && { createdAt: { ...(from && { gte: yangonDayStart(from) }), ...(to && { lt: yangonDayStart(addDays(to, 1)) }) } }),
+  };
+  const total = await prisma.stockDocument.count({ where });
+  const pageCount = Math.max(1, Math.ceil(total / DOC_PAGE_SIZE));
+  const page = Math.min(Math.max(1, filter.page ?? 1), pageCount);
+  const rows = await prisma.stockDocument.findMany({
+    where,
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    skip: (page - 1) * DOC_PAGE_SIZE,
+    take: DOC_PAGE_SIZE,
     include: { from: true, to: true, _count: { select: { lines: true } } },
   });
+  return { rows, total, page, pageCount };
 }
 
 export async function getDocument(id: string) {

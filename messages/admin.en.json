@@ -106,6 +106,8 @@
     }
   },
   "Nav": {
+    "lowStockBadge": "low-stock variants",
+    "quarantineLotsBadge": "lots awaiting inspection",
     "sellingPrices": "Selling prices",
     "dashboard": "Dashboard",
     "products": "Products",
@@ -430,6 +432,14 @@
     "colPhysical": "On hand"
   },
   "Docs": {
+    "searchDocs": "Search code, SKU, reason",
+    "allTypes": "All types",
+    "fromDate": "From",
+    "toDate": "To",
+    "emptyFiltered": "No documents match the filters.",
+    "pageStatus": "Page {page}/{pages} · {total} documents",
+    "prevPage": "Previous page",
+    "nextPage": "Next page",
     "receiveSelectStep": "Step 1 — Select products to receive",
     "receiveDetailsStep": "Step 2 — Enter receipt details",
     "receiveSelectHelp": "The suggestion list shows every product on sale — filter, then tick the products in this delivery. The next step pre-fills: quantity = planned receive qty, purchase price = current purchase price, lot = NK + receipt date (all editable). Pick the receiving warehouse per product; saving splits drafts by warehouse.",
@@ -1353,6 +1363,9 @@
         "previewDays": "Price previews expire after (days)"
       },
       "reorder": {
+        "lowStockAt": "Low-stock alert when available ≤ (units)",
+        "leadTimeDays": "Lead time (days)",
+        "safetyStock": "Safety stock (units)",
         "coverDays": "Days of stock to cover after arrival",
         "salesWindowDays": "Sales velocity window (last days)"
       },
@@ -1518,6 +1531,8 @@
   },
   "Alerts": {
     "title": "Stock alerts",
+    "createReceipt": "Create receipt ({count} SKUs)",
+    "createReceiptCapped": "Picks the first {count} of {total} SKUs (table order) — reopen afterwards for the rest.",
     "tabLow": "Low stock",
     "tabExpiry": "Expiry",
     "tabReorder": "Reorder",

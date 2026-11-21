@@ -3,14 +3,21 @@ import { variantDisplayName } from "@/lib/variant-label";
 import { prisma } from "@/lib/db";
 import { productName } from "@/server/inventory/queries";
 import { baseAvailability } from "@/server/orders/availability";
-import { getNumberSetting } from "@/server/settings";
+import { getNumberSetting, SETTING_DEFAULTS } from "@/server/settings";
 import { FEATURES } from "@/lib/features";
 import { classifyExpiry, lowStock, reorderList, type ExpiryLevel, type VariantStock } from "./compute";
 
 const DAY_MS = 86_400_000;
 
-/** Tồn theo biến thể (không gồm combo — combo trừ kho thành phần) + số đã bán trong cửa sổ. */
-export async function loadVariantStock(now: Date, opts: { blockDays: number; salesWindowDays: number }) {
+/** Ngưỡng chung (Cài đặt › Gợi ý đặt hàng) áp cho mọi phân loại — 20/11/2026. */
+export type StockThresholds = { lowStockAt: number; leadTimeDays: number; safetyStock: number };
+
+/**
+ * Tồn theo biến thể (không gồm combo — combo trừ kho thành phần) + số đã bán trong cửa sổ. `thresholds`: ngưỡng tồn thấp /
+ * thời gian về / tồn an toàn từ Cài đặt (không truyền → mặc định; báo cáo Bán chậm không dùng các ngưỡng này).
+ */
+export async function loadVariantStock(now: Date, opts: { blockDays: number; salesWindowDays: number; thresholds?: StockThresholds }) {
+  const th = opts.thresholds ?? { lowStockAt: SETTING_DEFAULTS["reorder.lowStockAt"], leadTimeDays: SETTING_DEFAULTS["reorder.leadTimeDays"], safetyStock: SETTING_DEFAULTS["reorder.safetyStock"] };
   const variants = await prisma.variant.findMany({
     where: { active: true, isBundle: false, product: { archivedAt: null } }, // SP ngừng kinh doanh: không báo tồn thấp / gợi ý đặt
     include: { product: { include: { translations: true } } },
@@ -54,9 +61,9 @@ export async function loadVariantStock(now: Date, opts: { blockDays: number; sal
       variantId: v.id,
       sku: v.sku,
       name: variantDisplayName(productName(v.product.translations, v.product.slug), v.label),
-      lowStockAt: v.lowStockAt,
-      safetyStock: v.safetyStock,
-      leadTimeDays: v.leadTimeDays,
+      lowStockAt: th.lowStockAt,
+      safetyStock: th.safetyStock,
+      leadTimeDays: th.leadTimeDays,
       available: Math.max(0, available.get(v.id) ?? 0),
       otherQty: other.get(v.id) ?? 0,
       soldUnits: Math.max(0, sold.get(v.id) ?? 0),
@@ -110,22 +117,40 @@ export async function loadExpiryAlerts(now: Date, t: { blockDays: number; warnDa
   });
 }
 
+/**
+ * Số phân loại tồn thấp cho badge menu (20/11/2026): cùng quy tắc `lowStock` của trang Cảnh báo (khả dụng ≤ ngưỡng chung
+ * ở Cài đặt) nhưng chỉ tính khả dụng — không đọc sổ bán hàng như `computeAlerts`.
+ */
+export async function lowStockCount(now = new Date()): Promise<number> {
+  const [blockDays, threshold, variants] = await Promise.all([
+    getNumberSetting("expiry.blockDays"),
+    getNumberSetting("reorder.lowStockAt"),
+    prisma.variant.findMany({ where: { active: true, isBundle: false, product: { archivedAt: null } }, select: { id: true } }),
+  ]);
+  const ids = variants.map((v) => v.id);
+  const available = await baseAvailability(prisma, ids, { now, blockDays: FEATURES.expiry ? blockDays : 0 });
+  return ids.filter((id) => Math.max(0, available.get(id) ?? 0) <= threshold).length;
+}
+
 /** Toàn bộ cảnh báo (trang /admin/alerts, dashboard, cron). */
 export async function computeAlerts(now = new Date()) {
-  const [blockDays, warnDays, salesWindowDays, coverDays] = await Promise.all([
+  const [blockDays, warnDays, salesWindowDays, coverDays, lowStockAt, leadTimeDays, safetyStock] = await Promise.all([
     getNumberSetting("expiry.blockDays"),
     getNumberSetting("expiry.warnDays"),
     getNumberSetting("reorder.salesWindowDays"),
     getNumberSetting("reorder.coverDays"),
+    getNumberSetting("reorder.lowStockAt"),
+    getNumberSetting("reorder.leadTimeDays"),
+    getNumberSetting("reorder.safetyStock"),
   ]);
   const [stock, expiry] = await Promise.all([
-    loadVariantStock(now, { blockDays, salesWindowDays }),
+    loadVariantStock(now, { blockDays, salesWindowDays, thresholds: { lowStockAt, leadTimeDays, safetyStock } }),
     loadExpiryAlerts(now, { blockDays, warnDays }),
   ]);
   const low = lowStock(stock);
   const reorder = reorderList(stock, { salesWindowDays, coverDays });
   return {
-    settings: { blockDays, warnDays, salesWindowDays, coverDays },
+    settings: { blockDays, warnDays, salesWindowDays, coverDays, lowStockAt, leadTimeDays, safetyStock },
     lowStock: low,
     expiry,
     reorder,

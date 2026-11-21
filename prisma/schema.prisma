@@ -370,6 +370,7 @@ model Variant {
   isBundle               Boolean             @default(false)
   active                 Boolean             @default(true)
   /// Thời gian VN→MM (ngày) cho gợi ý đặt hàng.
+  /// 20/11/2026: KHÔNG còn dùng cho Cảnh báo / gợi ý đặt hàng — ngưỡng chung ở Cài đặt (reorder.*). Giữ cột cho lần chỉnh riêng theo phân loại.
   leadTimeDays           Int                 @default(21)
   safetyStock            Int                 @default(0)
   lowStockAt             Int                 @default(5)

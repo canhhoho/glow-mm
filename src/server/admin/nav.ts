@@ -35,13 +35,14 @@ export type NavCountKey =
   | "quarantineLots"
   | "blockedLots"
   | "pendingApplications"
-  | "passwordResets";
+  | "passwordResets"
+  | "lowStock";
 
 /**
  * `match` = các tiền tố đường dẫn bổ sung để mục vẫn sáng khi mở trang con/trang gộp (vd. Cảnh báo thuộc Tồn kho),
  * giữ link cũ dùng được mà không cần chuyển hướng.
  */
-export type NavItem = { href: string; key: string; permission: Permission; icon: NavIcon; count?: NavCountKey; match?: string[]; /** Tính năng đang tắt (`lib/features.ts`) → mục bị ẩn khỏi menu. */ feature?: FeatureKey };
+export type NavItem = { href: string; key: string; permission: Permission; icon: NavIcon; /** Một hoặc nhiều badge (vd Tồn kho: chờ kiểm tra + tồn thấp). */ count?: NavCountKey | NavCountKey[]; match?: string[]; /** Tính năng đang tắt (`lib/features.ts`) → mục bị ẩn khỏi menu. */ feature?: FeatureKey };
 /** `key` null = nhóm không có tiêu đề (Tổng quan). */
 export type NavGroup = { key: string | null; icon?: NavIcon; items: NavItem[] };
 
@@ -74,7 +75,7 @@ export const NAV: NavGroup[] = [
     icon: "warehouse",
     items: [
       // Chờ kiểm tra + Cảnh báo là lối tắt trong trang Tồn kho; vẫn sáng mục này khi mở các trang đó.
-      { href: "/admin/inventory", key: "inventory", permission: "stock:view", icon: "box", count: "quarantineLots", match: ["/admin/alerts"] },
+      { href: "/admin/inventory", key: "inventory", permission: "stock:view", icon: "box", count: ["lowStock", "quarantineLots"], match: ["/admin/alerts"] },
       { href: "/admin/inventory/documents", key: "documents", permission: "stock:view", icon: "file" },
       { href: "/admin/shipments", key: "shipments", permission: "shipment:manage", icon: "truck", feature: "shipments" },
     ],
@@ -113,7 +114,7 @@ export function visibleNav(role: Role, nav: NavGroup[] = NAV): NavGroup[] {
 
 /** Các số đếm cần tính cho vai trò này (chỉ của mục được thấy). */
 export function neededCounts(groups: NavGroup[]): Set<NavCountKey> {
-  return new Set(groups.flatMap((g) => g.items.flatMap((i) => (i.count ? [i.count] : []))));
+  return new Set(groups.flatMap((g) => g.items.flatMap((i) => (i.count ? [i.count].flat() : []))));
 }
 
 /**

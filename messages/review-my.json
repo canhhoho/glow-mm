@@ -1978,6 +1978,21 @@
     "Orders.overdueOnly",
     "Orders.advancedFilters",
     "Affiliates.dueOnly",
-    "Warehouses.modeLocked"
+    "Warehouses.modeLocked",
+    "Settings.keys.reorder.lowStockAt",
+    "Settings.keys.reorder.leadTimeDays",
+    "Settings.keys.reorder.safetyStock",
+    "Alerts.createReceipt",
+    "Nav.lowStockBadge",
+    "Nav.quarantineLotsBadge",
+    "Docs.searchDocs",
+    "Docs.allTypes",
+    "Docs.fromDate",
+    "Docs.toDate",
+    "Docs.emptyFiltered",
+    "Docs.pageStatus",
+    "Docs.prevPage",
+    "Docs.nextPage",
+    "Alerts.createReceiptCapped"
   ]
 }
