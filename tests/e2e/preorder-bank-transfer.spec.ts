@@ -15,11 +15,17 @@ test.describe("B2 — Đơn Pre-order chuyển khoản", () => {
     // Giữ hàng tạm để biến thể hết hàng (chuyển sang preorder)
     const hold = `e2e-b2-hold-${Date.now()}`;
     const v = (await client.query<{ id: string }>('SELECT id FROM "Variant" WHERE sku = $1', [SKU])).rows[0].id;
-    const order = (await client.query<{ id: string }>('SELECT id FROM "Order" LIMIT 1')).rows[0].id;
+    const order = (
+      await client.query<{ id: string }>(
+        `SELECT o.id FROM "Order" o WHERE NOT EXISTS (SELECT 1 FROM "Reservation" r WHERE r."orderId" = o.id AND r."variantId" = $1) ORDER BY o."createdAt" LIMIT 1`,
+        [v],
+      )
+    ).rows[0].id;
     await client.query(
       `INSERT INTO "Reservation" (id, "variantId", "orderId", qty, status, "expiresAt") VALUES ($1, $2, $3, 1000000, 'ACTIVE', NULL)`,
       [hold, v, order],
     );
+    let placed: string | undefined;
 
     try {
       await page.goto(`/en/p/${SLUG}`);
@@ -40,6 +46,7 @@ test.describe("B2 — Đơn Pre-order chuyển khoản", () => {
       await page.getByRole("button", { name: "Place order" }).click();
 
       await expect(page).toHaveURL(/\/en\/order\/OD-/, { timeout: 30_000 });
+      placed = (await page.getByTestId("order-code").textContent())?.trim();
       await expect(page.getByTestId("order-status")).toHaveText("Waiting for stock");
 
       // Thông báo đặt trước nhắc nhở thanh toán
@@ -51,6 +58,8 @@ test.describe("B2 — Đơn Pre-order chuyển khoản", () => {
       await expect(page.getByTestId("bank-instructions")).toBeVisible();
       await expect(page.getByText("No receipt is required.", { exact: false })).toBeVisible();
     } finally {
+      // Dọn: đơn chờ hàng (không giữ hàng, chưa xuất kho) → huỷ để không chiếm hàng đợi đặt trước của spec khác.
+      if (placed) await client.query(`UPDATE "Order" SET status = 'CANCELLED' WHERE code = $1 AND status = 'AWAITING_STOCK'`, [placed]);
       await client.query('DELETE FROM "Reservation" WHERE id = $1', [hold]);
       await client.end();
     }

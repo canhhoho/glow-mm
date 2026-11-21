@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { Check, ChevronDown, Info, KeyRound, Mail, Phone, UserCheck, Users, UserX, X } from "lucide-react";
+import { Check, ChevronDown, Info, KeyRound, Mail, Phone, UserCheck, Users, UserX } from "lucide-react";
 import { fmtDateTime, fmtInt } from "@/lib/format";
 import { requirePagePermission } from "@/server/auth/session";
 import { isPhoneEmail } from "@/server/auth/customer-policy";

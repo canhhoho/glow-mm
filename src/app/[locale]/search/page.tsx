@@ -63,11 +63,6 @@ async function SearchContent({ params, searchParams }: PageProps<"/[locale]/sear
             <Link href="/" className={outlineButton}>
               {t("backHome")}
             </Link>
-            {current.q && (
-              <Link href="/search" className={outlineButton}>
-                {t("allProducts")}
-              </Link>
-            )}
           </div>
         )}
         <CatalogPagination current={current} {...result} locale={locale} />

@@ -25,6 +25,7 @@ test.describe("Checkout A2 — Hết hàng chuyển Pre-order cần khách xác 
       )
     ).rows[0].id;
     const holdId = `e2e-hold-${Date.now()}`;
+    let placed: string | undefined;
 
     try {
       // 1. Khách thêm sản phẩm (đang có sẵn hàng) vào giỏ
@@ -65,10 +66,13 @@ test.describe("Checkout A2 — Hết hàng chuyển Pre-order cần khách xác 
 
       // 7. Tạo đơn thành công với trạng thái Waiting for stock (AWAITING_STOCK)
       await expect(page).toHaveURL(/\/en\/order\/OD-/);
+      placed = (await page.getByTestId("order-code").textContent())?.trim();
       await expect(page.getByText("Thank you! Your order has been placed.")).toBeVisible();
       await expect(page.getByTestId("order-status")).toHaveText("Waiting for stock");
       await expect(page.getByTestId("order-preorder")).toBeVisible();
     } finally {
+      // Dọn: đơn chờ hàng (không giữ hàng, chưa xuất kho) → huỷ để không chiếm hàng đợi đặt trước của spec khác.
+      if (placed) await client.query(`UPDATE "Order" SET status = 'CANCELLED' WHERE code = $1 AND status = 'AWAITING_STOCK'`, [placed]);
       // Xoá giữ hàng tạm
       await client.query('DELETE FROM "Reservation" WHERE id = $1', [holdId]);
       await client.end();
