@@ -20,6 +20,8 @@ export type TransitionField = {
 const ICONS: Record<string, React.ReactNode> = {
   stockArrived: <PackageCheck aria-hidden />,
   confirmPayment: <Check aria-hidden />,
+  confirmPrepayment: <Check aria-hidden />,
+  stockArrivedPaid: <PackageCheck aria-hidden />,
   confirmCod: <Check aria-hidden />,
   ship: <Truck aria-hidden />,
   complete: <CheckCheck aria-hidden />,

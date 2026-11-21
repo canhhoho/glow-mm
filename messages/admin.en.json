@@ -1194,12 +1194,15 @@
       "ship": "Handed to carrier",
       "complete": "Delivery successful",
       "cancel": "Cancel order",
-      "stockArrived": "Stock arrived — move to processing"
+      "stockArrived": "Stock arrived — move to processing",
+      "confirmPrepayment": "Prepayment received",
+      "stockArrivedPaid": "Stock arrived — prepare shipment (prepaid)"
     },
     "confirmHint": {
       "COD": "Call the customer to verify the products, quantities, address and agreement to receive the order before confirming.",
       "BANK_TRANSFER": "Check the bank account and confirm only after receiving the correct order amount."
     },
+    "prepayHint": "Customer paid in advance: check the bank account and confirm only after receiving the correct order amount. When stock arrives the order goes straight to preparing.",
     "codCompleteHint": "Complete only after the customer receives the order and COD payment has been collected.",
     "completeCod": "Delivered · COD collected",
     "cancelConfirm": "Cancel this order and release held stock?",
@@ -2656,7 +2659,8 @@
     "short": "Not enough stock",
     "status": "Status",
     "missing": "Short {n}",
-    "ok": "Ready"
+    "ok": "Ready",
+    "paid": "Prepaid"
   },
   "BatchReview": {
     "legend": "Review after this batch",

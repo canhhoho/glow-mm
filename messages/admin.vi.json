@@ -1194,12 +1194,15 @@
       "ship": "Đã bàn giao vận chuyển",
       "complete": "Giao thành công",
       "cancel": "Huỷ đơn",
-      "stockArrived": "Hàng đã về — chuyển xử lý"
+      "stockArrived": "Hàng đã về — chuyển xử lý",
+      "confirmPrepayment": "Đã nhận tiền trước",
+      "stockArrivedPaid": "Hàng đã về — chuẩn bị giao (đã trả trước)"
     },
     "confirmHint": {
       "COD": "Gọi khách kiểm tra sản phẩm, số lượng, địa chỉ và xác nhận đồng ý nhận hàng trước khi bấm Xác nhận đơn.",
       "BANK_TRANSFER": "Đối chiếu tài khoản ngân hàng và chỉ bấm Đã nhận tiền khi đã nhận đúng số tiền của đơn."
     },
+    "prepayHint": "Khách chuyển khoản trước: đối chiếu tài khoản ngân hàng, chỉ bấm Đã nhận tiền trước khi đã nhận đúng số tiền của đơn. Hàng về sẽ chuyển thẳng sang chuẩn bị giao.",
     "codCompleteHint": "Chỉ hoàn tất khi khách đã nhận hàng và tiền COD đã được thu.",
     "completeCod": "Giao thành công · Đã thu tiền",
     "cancelConfirm": "Huỷ đơn này và nhả hàng đang giữ?",
@@ -2656,7 +2659,8 @@
     "short": "Chưa đủ hàng",
     "status": "Tình trạng",
     "missing": "Thiếu {n}",
-    "ok": "Đủ"
+    "ok": "Đủ",
+    "paid": "Đã trả trước"
   },
   "BatchReview": {
     "legend": "Gửi duyệt sau lượt này",

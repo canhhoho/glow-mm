@@ -90,7 +90,9 @@ async function OrderContent({ params, searchParams }: PageProps<"/[locale]/order
           {order.paymentMethod === "COD"
             ? t("preorderCodNotice")
             : order.paymentMethod === "BANK_TRANSFER"
-              ? t("preorderBankNotice")
+              ? order.paymentStatus === "PAID"
+                ? t("preorderPaidNotice")
+                : t("preorderBankNotice")
               : t("preorderInfo")}
         </Notice>
       )}

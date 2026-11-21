@@ -200,6 +200,7 @@
     "createdPending": "Đã tạo đơn — chờ cửa hàng xác nhận. Tạo đơn chưa có nghĩa là đã thanh toán.",
     "preorderInfo": "Đơn đặt trước: hàng về dự kiến 1–2 tuần, chúng tôi sẽ liên hệ xác nhận và giao hàng khi hàng về kho.",
     "preorderBankNotice": "Đơn đặt trước: Bạn có thể chuyển khoản ngay; hàng về trong 1–2 tuần.",
+    "preorderPaidNotice": "Đơn đặt trước: chúng tôi đã nhận tiền chuyển khoản; hàng về trong 1–2 tuần sẽ giao ngay cho bạn.",
     "preorderCodNotice": "Đơn đặt trước: Thanh toán khi nhận hàng, sau khi hàng về (dự kiến 1–2 tuần)."
   },
   "Track": {

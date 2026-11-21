@@ -15,7 +15,7 @@ Nguồn: bảng audit 18 mục của Codex, đã **đối chiếu lại với co
 | 07 | Chưa có phí/thời gian giao tham khảo | ✅ **Xong** (gói D1) | Trang Info (giao hàng) và Address.shippingNote nêu rõ nguyên tắc tiền hàng trả shop, phí ship khách trả trực tiếp cho hãng vận chuyển; phí và thời gian tuỳ vùng |
 | 08 | Nội dung biên lai mâu thuẫn | ✅ **Xong** (gói B1) | Đồng bộ chính sách chuyển khoản không cần biên lai ở Checkout.bankHint, Info.payment, Checkout.err.proof_not_allowed |
 | 09 | Dior Velvet 100 thiếu ảnh | ❌ Chưa — **dữ liệu, không phải code** | Admin tải ảnh ở trang sản phẩm |
-| 10 | Pre-order chuyển khoản: chưa nói khi nào trả tiền | ✅ **Xong** (gói B2) | Trang đơn AWAITING_STOCK hiện ngay thông tin ngân hàng + thông báo chuyển khoản ngay hoặc COD khi hàng về |
+| 10 | Pre-order chuyển khoản: chưa nói khi nào trả tiền | ✅ **Xong** (gói B2) | Trang đơn AWAITING_STOCK hiện ngay thông tin ngân hàng + thông báo chuyển khoản ngay hoặc COD khi hàng về; admin ghi nhận tiền trước (`confirmPrepayment` → hàng về `stockArrivedPaid`, chủ shop duyệt 21/11/2026) |
 | 11 | Banner Shop Now không có link | ⚠️ Một phần | Banner ảnh có `href` tuỳ chọn (admin nhập); khi trống thì không bấm được. Banner tĩnh (`HeroBanner`) đã có link `/search` |
 | 12 | Quên mật khẩu: không có thời gian xử lý | ✅ **Xong** (gói D3) | Quên mật khẩu qua SĐT đổi ngay, huỷ mọi phiên cũ, rate limit (3/ngày/SĐT, 5/giờ/IP); admin thấy danh sách theo dõi 7 ngày + nút "Đã kiểm tra" / "Khoá" (`server/accounts/password-reset.ts`, `/admin/customer-accounts`) |
 | 13 | Hai ô tìm kiếm | ✅ **Xong** (gói E1) | Ẩn ô tìm kiếm thừa trong trang trên mobile, header đồng bộ `q` trên desktop và mobile |

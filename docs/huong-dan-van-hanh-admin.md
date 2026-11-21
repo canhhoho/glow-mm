@@ -937,6 +937,11 @@ Lỗi: "Chỉ trả hàng cho đơn đang giao hoặc đã hoàn tất"; "Trả 
 2. Vào **Đơn đặt trước**; đơn **Đủ hàng** thì bấm **Hàng đã về — chuyển xử lý**.
 3. Hệ thống kiểm tồn, 📦 **giữ hàng**, đơn sang **Chờ xác nhận** và **thời gian giữ hàng bắt đầu tính từ lúc này**. Sau đó xử lý như đơn thường ([10.4](#104-xác-nhận-đơn-và-ghi-nhận-tiền)).
 
+**Khách chuyển khoản trước (21/11/2026):** đơn đặt trước chuyển khoản được trả tiền ngay khi còn chờ hàng.
+1. Đối chiếu tài khoản ngân hàng; đúng số tiền thì bấm **Đã nhận tiền trước** (ở **Đơn đặt trước** hoặc trang đơn). Đơn vẫn **Chờ hàng về**, có nhãn **Đã trả trước**; khách thấy "đã nhận tiền chuyển khoản".
+2. Hàng về và đơn **Đủ hàng** → bấm **Hàng đã về — chuẩn bị giao (đã trả trước)**: giữ hàng **không hết hạn**, đơn sang **Chuẩn bị giao** (bỏ qua Chờ xác nhận), rồi bàn giao vận chuyển như đơn thường.
+3. Huỷ đơn đã trả trước: hoàn tiền cho khách ngoài hệ thống như đơn đã thanh toán khác.
+
 Muốn bỏ đơn đặt trước: **Huỷ đơn** ở trang đơn.
 
 ### 10.10. Đánh giá của khách

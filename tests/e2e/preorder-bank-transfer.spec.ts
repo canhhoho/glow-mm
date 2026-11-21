@@ -1,13 +1,13 @@
 import { expect, test } from "@playwright/test";
 import pg from "pg";
-import { pickAddress, signInAtPrompt } from "./helpers";
+import { login, pickAddress, signInAtPrompt } from "./helpers";
 
 const SLUG = "sen-viet-herbal-shampoo";
 const SKU = "SV-SHA-300";
 
 test.describe("B2 — Đơn Pre-order chuyển khoản", () => {
-  test("khách đặt trước chọn chuyển khoản → trang đơn hiện thông tin ngân hàng ngay kèm câu chuyển khoản ngay", async ({ page }) => {
-    test.setTimeout(90_000);
+  test("khách đặt trước chọn chuyển khoản → trang đơn hiện thông tin ngân hàng ngay; admin ghi nhận tiền trước → khách thấy đã nhận tiền", async ({ page, browser }) => {
+    test.setTimeout(150_000);
 
     const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
     await client.connect();
@@ -57,6 +57,27 @@ test.describe("B2 — Đơn Pre-order chuyển khoản", () => {
       // Khối thông tin ngân hàng phải hiển thị ngay cho đơn chờ hàng
       await expect(page.getByTestId("bank-instructions")).toBeVisible();
       await expect(page.getByText("No receipt is required.", { exact: false })).toBeVisible();
+
+      // 21/11/2026: admin ghi nhận tiền trước ngay khi đơn còn chờ hàng (phiên admin riêng, giữ phiên khách).
+      const adminCtx = await browser.newContext({ viewport: page.viewportSize() ?? undefined });
+      try {
+        const admin = await adminCtx.newPage();
+        await login(admin, "admin@glow.local");
+        await admin.goto("/admin/orders/preorders");
+        const card = admin.getByTestId("preorder-order").filter({ hasText: placed! });
+        admin.once("dialog", (d) => d.accept());
+        await card.getByRole("button", { name: "Đã nhận tiền trước" }).click();
+        await expect(card.getByText("Đã trả trước", { exact: true })).toBeVisible();
+        await expect(card.getByRole("button", { name: "Đã nhận tiền trước" })).toHaveCount(0);
+        await admin.screenshot({ path: "test-results/screens/preorder-prepaid-admin.png", fullPage: true });
+      } finally {
+        await adminCtx.close();
+      }
+
+      await page.reload();
+      await expect(page.getByTestId("order-status")).toHaveText("Waiting for stock");
+      await expect(page.getByTestId("order-preorder")).toContainText("we have received your transfer");
+      await expect(page.getByTestId("bank-instructions")).toHaveCount(0);
     } finally {
       // Dọn: đơn chờ hàng (không giữ hàng, chưa xuất kho) → huỷ để không chiếm hàng đợi đặt trước của spec khác.
       if (placed) await client.query(`UPDATE "Order" SET status = 'CANCELLED' WHERE code = $1 AND status = 'AWAITING_STOCK'`, [placed]);
