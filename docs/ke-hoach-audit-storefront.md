@@ -28,9 +28,9 @@ Nguồn: bảng audit 18 mục của Codex, đã **đối chiếu lại với co
 ## 2. Việc cần chủ shop quyết định / cung cấp trước (chặn việc liên quan)
 
 - **Q1 (chặn C2):** cho khách vãng lai đặt COD không? (đề xuất audit; đang bắt đăng nhập.) Nếu "không" → bỏ C2.
-- **Q2 (chặn D1, C2):** thời gian Pre-order dự kiến thực tế (vd 7–14 ngày?) và có chuyển khoản ngay hay chờ hàng về.
-- **Q3 (chặn D3):** bảng phí + thời gian ship theo vùng thực tế.
-- **Q4 (chặn D4):** số ngày đổi trả và ai chịu phí hoàn hàng.
+- **Q2 (chặn B2, C1, D3):** thời gian Pre-order dự kiến thực tế (vd 7–14 ngày?), có chuyển khoản ngay hay chờ hàng về, và thời gian xử lý yêu cầu quên mật khẩu.
+- **Q3 (chặn D1):** bảng phí + thời gian ship theo vùng thực tế.
+- **Q4 (chặn D2):** số ngày đổi trả và ai chịu phí hoàn hàng.
 - **Q5 (không cần code):** điền `VIBER_CHAT_URI` / `FB_PAGE_USERNAME` trên production; tải ảnh Dior (09); gắn link cho banner ở Admin (11).
 
 ## 3. Các gói việc (giao Antigravity theo thứ tự)
