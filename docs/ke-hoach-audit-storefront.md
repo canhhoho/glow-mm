@@ -30,7 +30,8 @@ Nguồn: bảng audit 18 mục của Codex, đã **đối chiếu lại với co
 - **Q1:** khách **phải đăng nhập** mới đặt hàng → đóng mục 05 (bỏ C2).
 - **Q2:** Pre-order giao trong **1–2 tuần**. Khách **chuyển khoản ngay hoặc COD khi hàng về đều được**. Quên mật khẩu **tự động xử lý**, chỉ cần **báo cho admin** biết khách vừa đổi mật khẩu.
 - **Q3:** phí và thời gian ship theo vùng; **khách tự trả phí ship** cho hãng vận chuyển. [CẦN XÁC MINH] Bảng số tiền/số ngày cụ thể theo vùng chưa có → D1 chỉ viết nguyên tắc, không bịa con số.
-- **Q4:** đổi trả **shop chịu phí hoàn hàng**. [CẦN XÁC MINH] Số ngày được đổi trả chưa có → D2 giữ chỗ cho số ngày, hỏi lại trước khi viết.
+- **Q4:** đổi trả **shop chịu phí hoàn hàng**; **7 ngày** đổi trả (chủ shop xác nhận 21/11/2026).
+- **D3 (21/11/2026):** chủ shop chấp nhận quên mật khẩu **không** bắt nhập mã đơn; biện pháp an toàn = rate limit (b) + admin theo dõi/khoá.
 - **Q5 (không cần code, chủ shop tự làm):** điền `VIBER_CHAT_URI` / `FB_PAGE_USERNAME` trên production; tải ảnh Dior (09); gắn link cho banner ở Admin (11).
 
 ## 3. Các gói việc (giao Antigravity theo thứ tự)
