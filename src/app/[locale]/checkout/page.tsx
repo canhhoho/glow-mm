@@ -107,6 +107,8 @@ async function CheckoutContent({ params }: PageProps<"/[locale]/checkout">) {
             addresses={saved}
             accountName={user.name}
             accountPhone={user.phone}
+            expectedTotalMmk={cart.subtotalMmk}
+            expectedPreorder={cart.preorder}
             summary={<div className="space-y-2 rounded-lg bg-accent p-3 text-sm"><p className="flex justify-between font-medium"><span>{t("total")}</span><span>{formatMmk(cart.subtotalMmk, locale)}</span></p><p>{ta("shippingNote")}</p><p>{t("paymentReminder")}</p><ContactLinks locale={locale} /></div>}
           />
         ) : (

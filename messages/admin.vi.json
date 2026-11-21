@@ -1235,6 +1235,7 @@
       "cart_empty": "Chưa chọn sản phẩm nào",
       "price_missing": "Có sản phẩm chưa có giá bán (giá ≤ 0)",
       "out_of_stock": "Không đủ hàng (còn/cần)",
+      "preorder_unconfirmed": "Đơn có sản phẩm hết hàng cần xác nhận đặt trước",
       "not_found": "Không tìm thấy đơn",
       "invalid_transition": "Không thể thực hiện ở trạng thái hiện tại",
       "forbidden": "Bạn không có quyền thực hiện thao tác này",

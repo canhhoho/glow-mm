@@ -41,7 +41,9 @@ async function OrderContent({ params, searchParams }: PageProps<"/[locale]/order
   const total = formatMmk(order.totalMmk, locale);
   const awaitingPayment =
     order.paymentMethod === "BANK_TRANSFER" &&
-    order.status === "PENDING";
+    order.paymentStatus !== "PAID" &&
+    order.paymentStatus !== "REFUNDED" &&
+    (order.status === "PENDING" || order.status === "AWAITING_STOCK");
   const holdUntil = order.reservations[0]?.expiresAt;
   const delivery = order.deliveries[0];
 
@@ -83,7 +85,15 @@ async function OrderContent({ params, searchParams }: PageProps<"/[locale]/order
         )}
       </dl>
 
-      {order.status === "AWAITING_STOCK" && <Notice data-testid="order-preorder">{t("preorderInfo")}</Notice>}
+      {order.status === "AWAITING_STOCK" && (
+        <Notice data-testid="order-preorder">
+          {order.paymentMethod === "COD"
+            ? t("preorderCodNotice")
+            : order.paymentMethod === "BANK_TRANSFER"
+              ? t("preorderBankNotice")
+              : t("preorderInfo")}
+        </Notice>
+      )}
       {order.status === "PENDING" && order.paymentMethod === "COD" && <Notice>{t("codInfo", { total })}</Notice>}
 
       {awaitingPayment && (
@@ -93,6 +103,9 @@ async function OrderContent({ params, searchParams }: PageProps<"/[locale]/order
             {bankInstructions}
           </p>
           <p className="text-sm">{t("bankRef", { code: order.code })}</p>
+          {order.status === "AWAITING_STOCK" && (
+            <p className="text-sm font-medium">{t("preorderBankNotice")}</p>
+          )}
           {holdUntil && <p className="text-xs text-muted-foreground">{t("holdUntil", { time: fmtDateTime(holdUntil) })}</p>}
           <p className="text-sm text-muted-foreground">{t("bankConfirmation")}</p>
         </section>

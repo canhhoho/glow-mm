@@ -1235,6 +1235,7 @@
       "cart_empty": "No products selected",
       "price_missing": "An item has no selling price (price ≤ 0)",
       "out_of_stock": "Not enough stock (available/requested)",
+      "preorder_unconfirmed": "Items in order are out of stock and require pre-order confirmation",
       "not_found": "Order not found",
       "invalid_transition": "Not allowed in the current status",
       "forbidden": "You do not have permission",

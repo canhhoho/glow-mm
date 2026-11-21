@@ -7,15 +7,15 @@ Nguồn: bảng audit 18 mục của Codex, đã **đối chiếu lại với co
 | # | Mục audit | Trạng thái | Ghi chú đối chiếu code |
 |---|---|---|---|
 | 01 | Giỏ: Checkout không lưu số lượng | ✅ **Xong** (commit `0278beb`) | `saveCartAction`, nút Thanh toán là submit; `tests/e2e/cart-quantity.spec.ts` |
-| 02 | Checkout: giá đổi không báo khách | ❌ Chưa | `placeOrderAction`/`createOrder` lấy giá hiện hành; không có tổng khách đã thấy để đối chiếu |
-| 03 | Checkout: hết hàng → tự thành Pre-order | ❌ Chưa | `planOrderStock` quyết định phía server; form không gửi "khách đang mua hàng có sẵn" |
+| 02 | Checkout: giá đổi không báo khách | ✅ **Xong** (gói A1) | `expectedTotalMmk` đối chiếu tổng hiện hành, chặn tạo đơn và yêu cầu xác nhận khi đổi giá |
+| 03 | Checkout: hết hàng → tự thành Pre-order | ✅ **Xong** (gói A2) | `expectedPreorder` đối chiếu cờ preorder, chặn tạo đơn và yêu cầu xác nhận khi hết hàng chuyển Pre-order |
 | 04 | Không thấy liên hệ Viber/Messenger | ⚠️ Code đã có, **thiếu cấu hình** | `ContactLinks` có ở footer, trang SP, checkout, trang đơn nhưng ẩn khi `VIBER_CHAT_URI`/`FB_PAGE_USERNAME` trống. Việc của chủ shop: điền env production (không sửa code) |
 | 05 | Bắt buộc đăng nhập trước checkout | 🚫 **Đóng** — chủ shop chốt 21/11/2026: khách phải đăng nhập | Giữ P14c |
 | 06 | Pre-order chưa có thời gian dự kiến | ❌ Chưa | Chỉ có câu "giao khi hàng về" |
 | 07 | Chưa có phí/thời gian giao tham khảo | ❌ Chưa | Chỉ có `Address.shippingNote` |
-| 08 | Nội dung biên lai mâu thuẫn | ❌ Chưa | Trang đơn: "Không cần gửi biên lai" (`Order.bankConfirmation`); nhưng `Checkout.bankHint` và `Info.…` (chính sách thanh toán, `store.*.json` ~dòng 241) vẫn bảo tải biên lai |
+| 08 | Nội dung biên lai mâu thuẫn | ✅ **Xong** (gói B1) | Đồng bộ chính sách chuyển khoản không cần biên lai ở Checkout.bankHint, Info.payment, Checkout.err.proof_not_allowed |
 | 09 | Dior Velvet 100 thiếu ảnh | ❌ Chưa — **dữ liệu, không phải code** | Admin tải ảnh ở trang sản phẩm |
-| 10 | Pre-order chuyển khoản: chưa nói khi nào trả tiền | ❌ Chưa | `Order.preorderInfo` không nhắc thanh toán; khối ngân hàng chỉ hiện khi `PENDING` |
+| 10 | Pre-order chuyển khoản: chưa nói khi nào trả tiền | ✅ **Xong** (gói B2) | Trang đơn AWAITING_STOCK hiện ngay thông tin ngân hàng + thông báo chuyển khoản ngay hoặc COD khi hàng về |
 | 11 | Banner Shop Now không có link | ⚠️ Một phần | Banner ảnh có `href` tuỳ chọn (admin nhập); khi trống thì không bấm được. Banner tĩnh (`HeroBanner`) đã có link `/search` |
 | 12 | Quên mật khẩu: không có thời gian xử lý | ❌ Chưa — **đổi nghiệp vụ** (xem D3) | Hiện: yêu cầu đổi mật khẩu qua SĐT chờ admin duyệt (`server/accounts/password-reset.ts`, `/admin/customer-accounts`) |
 | 13 | Hai ô tìm kiếm | ❌ Chưa | `search/page.tsx` có ô riêng + ô ở header |

@@ -1,0 +1,58 @@
+import { expect, test } from "@playwright/test";
+import pg from "pg";
+import { pickAddress, signInAtPrompt } from "./helpers";
+
+const SLUG = "sen-viet-herbal-shampoo";
+const SKU = "SV-SHA-300";
+
+test.describe("B2 — Đơn Pre-order chuyển khoản", () => {
+  test("khách đặt trước chọn chuyển khoản → trang đơn hiện thông tin ngân hàng ngay kèm câu chuyển khoản ngay", async ({ page }) => {
+    test.setTimeout(90_000);
+
+    const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
+    await client.connect();
+
+    // Giữ hàng tạm để biến thể hết hàng (chuyển sang preorder)
+    const hold = `e2e-b2-hold-${Date.now()}`;
+    const v = (await client.query<{ id: string }>('SELECT id FROM "Variant" WHERE sku = $1', [SKU])).rows[0].id;
+    const order = (await client.query<{ id: string }>('SELECT id FROM "Order" LIMIT 1')).rows[0].id;
+    await client.query(
+      `INSERT INTO "Reservation" (id, "variantId", "orderId", qty, status, "expiresAt") VALUES ($1, $2, $3, 1000000, 'ACTIVE', NULL)`,
+      [hold, v, order],
+    );
+
+    try {
+      await page.goto(`/en/p/${SLUG}`);
+      await expect(page.getByRole("button", { name: "Pre-order", exact: true })).toBeVisible();
+      await page.getByRole("button", { name: "Pre-order", exact: true }).click();
+
+      await signInAtPrompt(page);
+      await expect(page).toHaveURL(/\/en\/checkout$/);
+      await expect(page.getByTestId("checkout-preorder")).toBeVisible();
+
+      await page.getByLabel("Full name").fill("Ma Preorder Bank");
+      await page.getByLabel("Phone number").fill("09 4500 8899");
+      await pickAddress(page);
+      await page.getByLabel("Address (house no., street, ward)").fill("No. 15, Inya Road");
+      await page.getByText("Bank transfer", { exact: true }).click();
+
+      // Bấm đặt hàng
+      await page.getByRole("button", { name: "Place order" }).click();
+
+      await expect(page).toHaveURL(/\/en\/order\/OD-/, { timeout: 30_000 });
+      await expect(page.getByTestId("order-status")).toHaveText("Waiting for stock");
+
+      // Thông báo đặt trước nhắc nhở thanh toán
+      const preorderNotice = page.getByTestId("order-preorder");
+      await expect(preorderNotice).toBeVisible();
+      await expect(preorderNotice).toContainText("You can transfer now; items arrive in 1–2 weeks.");
+
+      // Khối thông tin ngân hàng phải hiển thị ngay cho đơn chờ hàng
+      await expect(page.getByTestId("bank-instructions")).toBeVisible();
+      await expect(page.getByText("No receipt is required.", { exact: false })).toBeVisible();
+    } finally {
+      await client.query('DELETE FROM "Reservation" WHERE id = $1', [hold]);
+      await client.end();
+    }
+  });
+});

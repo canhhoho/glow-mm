@@ -15,4 +15,14 @@ describe("messages storefront", () => {
     expect(keys(my).sort()).toEqual(base);
     expect(keys(vi).sort()).toEqual(base);
   });
+
+  it("B1: không còn câu mâu thuẫn yêu cầu tải biên lai trong store.*.json", () => {
+    for (const [, dict] of [["vi", vi], ["en", en], ["my", my]] as const) {
+      const json = JSON.stringify(dict);
+      expect(json).not.toMatch(/tải ảnh biên lai/i);
+      expect(json).not.toMatch(/upload (?:a photo of )?the receipt/i);
+      expect(json).not.toMatch(/ပြေစာတင်ပါ/);
+      expect(json).not.toMatch(/ပြေစာဓာတ်ပုံ/);
+    }
+  });
 });

@@ -119,7 +119,7 @@
     "cod": "Thanh toán khi nhận hàng",
     "codHint": "Chúng tôi sẽ gọi điện để xác nhận đơn",
     "bank": "Chuyển khoản ngân hàng",
-    "bankHint": "Chuyển khoản và tải ảnh biên lai sau khi đặt hàng",
+    "bankHint": "Chuyển khoản sau khi đặt hàng; không cần gửi biên lai",
     "summary": "Tóm tắt đơn hàng",
     "shipping": "Phí giao hàng",
     "total": "Tổng (chưa gồm phí giao)",
@@ -136,11 +136,12 @@
       "invalid_form": "Vui lòng kiểm tra thông tin đã nhập",
       "not_found": "Không tìm thấy đơn hàng",
       "invalid_file": "Vui lòng tải ảnh JPG, PNG, WebP hoặc PDF tối đa 5MB",
-      "proof_not_allowed": "Đơn này không chờ biên lai",
+      "proof_not_allowed": "Cửa hàng không yêu cầu gửi biên lai",
       "invalid_transition": "Đơn này không thể thay đổi nữa",
       "forbidden": "Không được phép",
       "unknown": "Đã có lỗi, vui lòng thử lại",
-      "checkout_disabled": "Cửa hàng tạm ngưng nhận đơn trực tuyến. Vui lòng thử lại sau hoặc nhắn tin cho chúng tôi qua Viber/Messenger."
+      "checkout_disabled": "Cửa hàng tạm ngưng nhận đơn trực tuyến. Vui lòng thử lại sau hoặc nhắn tin cho chúng tôi qua Viber/Messenger.",
+      "preorder_unconfirmed": "Một số sản phẩm trong đơn đã hết hàng có sẵn và chuyển sang đặt trước. Vui lòng xác nhận lại."
     },
     "savedAddress": "Giao đến",
     "newAddress": "Địa chỉ mới",
@@ -150,7 +151,11 @@
     "reviewCart": "Kiểm tra lại giỏ hàng",
     "paymentReminder": "COD: trả tiền hàng khi nhận. Chuyển khoản: cửa hàng xác nhận sau khi nhận tiền.",
     "preorderTag": "đặt trước",
-    "preorderNotice": "Đơn có hàng đặt trước: cả đơn sẽ được giao khi đủ hàng. Chúng tôi sẽ liên hệ xác nhận khi hàng về."
+    "preorderNotice": "Đơn có hàng đặt trước: cả đơn sẽ được giao khi đủ hàng. Chúng tôi sẽ liên hệ xác nhận khi hàng về.",
+    "priceChangedNotice": "Giá sản phẩm trong giỏ hàng đã thay đổi. Tổng tiền mới là {total}. Vui lòng kiểm tra và xác nhận lại.",
+    "priceChangedConfirm": "Xác nhận đặt hàng",
+    "preorderConfirmNotice": "Một số sản phẩm trong giỏ hàng vừa hết hàng có sẵn và chuyển sang Đặt trước (giao sau khi hàng về trong 1–2 tuần). Vui lòng xác nhận để tiếp tục.",
+    "preorderConfirm": "Xác nhận đặt trước"
   },
   "Order": {
     "thanks": "Cảm ơn bạn! Đơn hàng đã được đặt.",
@@ -190,7 +195,9 @@
     },
     "askHelp": "Cần hỗ trợ? Liên hệ chúng tôi",
     "createdPending": "Đã tạo đơn — chờ cửa hàng xác nhận. Tạo đơn chưa có nghĩa là đã thanh toán.",
-    "preorderInfo": "Đơn đặt trước: chúng tôi sẽ liên hệ xác nhận và giao hàng khi hàng về kho."
+    "preorderInfo": "Đơn đặt trước: chúng tôi sẽ liên hệ xác nhận và giao hàng khi hàng về kho.",
+    "preorderBankNotice": "Đơn đặt trước: Bạn có thể chuyển khoản ngay; hàng về trong 1–2 tuần.",
+    "preorderCodNotice": "Đơn đặt trước: Thanh toán khi nhận hàng, sau khi hàng về (dự kiến 1–2 tuần)."
   },
   "Track": {
     "title": "Tra cứu đơn hàng",
@@ -238,7 +245,7 @@
       "title": "Thanh toán",
       "body": [
         "Thanh toán khi nhận hàng (COD): trả tiền cho người giao khi nhận hàng. Chúng tôi gọi điện xác nhận đơn trước.",
-        "Chuyển khoản ngân hàng: sau khi đặt hàng, chuyển khoản tổng tiền và tải ảnh biên lai ở trang đơn hàng. Chúng tôi giao hàng khi đã kiểm tra thanh toán.",
+        "Chuyển khoản ngân hàng: sau khi đặt hàng, chuyển khoản tổng tiền theo thông tin ở trang đơn hàng kèm mã đơn; không cần gửi biên lai. Chúng tôi giao hàng khi đã kiểm tra thanh toán nhận được.",
         "Đơn chuyển khoản chưa thanh toán được giữ trong thời gian có hạn, sau đó tự động huỷ."
       ]
     },

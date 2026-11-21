@@ -47,6 +47,7 @@ export const createOrderSchema = z.object({
     .min(1)
     .max(50),
   idempotencyKey: z.string().min(8).max(100).optional(),
+  expectedPreorder: z.boolean().optional(),
 });
 
 /**
@@ -98,6 +99,10 @@ export async function createOrder(raw: unknown, ctx: CreateOrderContext) {
         const lines = await priceLines(tx, items, input.locale);
         // QT3 + 19/11/2026: MỌI đơn (khách trên web, nhân viên, CTV tạo tay) thiếu hàng mà còn hạn mức đặt trước → đơn đặt trước.
         const stock = await planOrderStock(tx, items, { now, blockDays });
+        // A2: Khách trên web tưởng đang mua hàng có sẵn nhưng đơn sẽ thành AWAITING_STOCK → chặn để hỏi xác nhận.
+        if (!ctx.userId && stock.preorder && input.expectedPreorder === false) {
+          throw new OrderError("preorder_unconfirmed", "Đơn có sản phẩm hết hàng cần xác nhận đặt trước");
+        }
         const status = stock.preorder ? ("AWAITING_STOCK" as const) : ("PENDING" as const);
         const township = await findActiveTownship(input.townshipId, tx);
         if (!township) throw new OrderError("invalid_zone", "Địa chỉ giao hàng không hợp lệ");

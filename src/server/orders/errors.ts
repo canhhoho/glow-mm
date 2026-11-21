@@ -11,6 +11,7 @@ export type OrderErrorCode =
   | "pick_mismatch"
   | "pick_required"
   | "out_of_stock"
+  | "preorder_unconfirmed"
   /** 16/11: lô sắp xuất chưa có giá vốn (cả thực tế lẫn tạm tính) → chặn bàn giao. */
   | "cost_missing"
   | "not_found"
