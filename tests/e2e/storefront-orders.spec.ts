@@ -11,7 +11,7 @@ async function addToCartAndCheckout(page: Page, method: "Cash on delivery" | "Ba
   await expect(page.getByTestId("cart-count")).toHaveText("1");
 
   // Đặt hàng bắt buộc tài khoản (P14c): Checkout → đăng nhập → quay lại checkout, giỏ còn nguyên.
-  await page.getByRole("link", { name: "Checkout" }).click();
+  await page.getByRole("button", { name: "Checkout" }).click();
   await signInAtPrompt(page);
   await page.getByLabel("Full name").fill("Ma Thandar");
   await page.getByLabel("Phone number").fill(failFirst ? "12345" : phone);

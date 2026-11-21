@@ -15,7 +15,7 @@ async function setDala(page: Page, on: boolean) {
 async function southTownships(page: Page) {
   await page.goto("/en/p/sen-viet-sunscreen-spf50");
   await page.getByRole("button", { name: "Add to cart" }).click();
-  await page.getByRole("link", { name: "Checkout" }).click();
+  await page.getByRole("button", { name: "Checkout" }).click();
   await signInAtPrompt(page);
   await page.getByLabel("Deliver to").selectOption({ label: "A new address" });
   await page.getByLabel("State / Region").selectOption({ label: "Yangon" });

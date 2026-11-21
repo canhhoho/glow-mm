@@ -10,7 +10,7 @@ test("D5 hành trình thật ghi đủ phiên, tải lại không nhân đôi pu
     await page.goto("/en/p/sen-viet-sunscreen-spf50");
     await expect(page.locator("html")).toHaveAttribute("data-analytics", "on");
     await page.getByRole("button", { name: "Add to cart" }).click();
-    await page.getByRole("link", { name: "Checkout" }).click();
+    await page.getByRole("button", { name: "Checkout" }).click();
     await signInAtPrompt(page);
     await page.getByLabel("Full name").fill("Analytics Test");
     await page.getByLabel("Phone number").fill("09 7812 3456");

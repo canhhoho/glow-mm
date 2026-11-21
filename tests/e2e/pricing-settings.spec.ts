@@ -65,7 +65,7 @@ test("admin tắt nhận đơn web → trang checkout báo tạm ngừng → b�
   try {
     await page.goto("/en/p/sen-viet-sunscreen-spf50");
     await page.getByRole("button", { name: "Add to cart" }).click();
-    await page.getByRole("link", { name: "Checkout" }).click();
+    await page.getByRole("button", { name: "Checkout" }).click();
     await signInAtPrompt(page);
     await expect(page.getByRole("alert").filter({ hasText: "temporarily not accepting online orders" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Place order" })).toHaveCount(0);
@@ -75,7 +75,7 @@ test("admin tắt nhận đơn web → trang checkout báo tạm ngừng → b�
   // login() xoá cookie (giỏ + phiên khách) → thêm lại hàng, đăng nhập rồi kiểm tra form đặt hàng hiện lại.
   await page.goto("/en/p/sen-viet-sunscreen-spf50");
   await page.getByRole("button", { name: "Add to cart" }).click();
-  await page.getByRole("link", { name: "Checkout" }).click();
+  await page.getByRole("button", { name: "Checkout" }).click();
   await signInAtPrompt(page);
   await expect(page.getByRole("button", { name: "Place order" })).toBeVisible();
   // Dọn giỏ để không ảnh hưởng test khác (giỏ nằm trong cookie của context này).

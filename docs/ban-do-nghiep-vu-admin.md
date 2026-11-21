@@ -93,3 +93,5 @@ Trạng thái: R1–R8 đã xử lý (16/11/2026). Điểm trùng mới phát hi
    - Thêm nơi ghi mới cho phiếu kho / tồn / lịch sử giá → `tests/unit/write-paths.test.ts` sẽ báo lỗi: gọi hàm domain sẵn có thay vì nới danh sách cho phép.
    - Theo CLAUDE.md: `npm run check` + test bị ảnh hưởng; giá/kho/đơn = rủi ro cao → full E2E trước khi merge `main`.
 5. **Cập nhật tài liệu**: sửa bảng §1–3 (trang chính, hàm domain, trạng thái ⚠️/✅) trong cùng commit.
+
+**Giỏ hàng storefront (21/11/2026):** `/[locale]/cart` — mọi ô số lượng thuộc form chung `#cart-form` → `saveCartAction` (`server/cart/actions.ts`): nút "Cập nhật" chỉ lưu; "Thanh toán" lưu hết số đang nhập rồi kiểm giỏ (`getCartDetails`) trước khi sang `/checkout` (chưa đăng nhập → `/login?next=`). Ô trống/không hợp lệ giữ số cũ; xoá dòng = nút thùng rác (`setCartQtyAction`). Chạy không cần JS.

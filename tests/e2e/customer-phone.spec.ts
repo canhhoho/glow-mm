@@ -54,7 +54,7 @@ test("đăng ký bằng SĐT → vào tài khoản; checkout điền sẵn SĐT;
   // Checkout: SĐT tài khoản được điền sẵn.
   await page.goto("/en/p/sen-viet-sunscreen-spf50");
   await page.getByRole("button", { name: "Add to cart" }).click();
-  await page.getByRole("link", { name: "Checkout" }).click();
+  await page.getByRole("button", { name: "Checkout" }).click();
   await expect(page.getByLabel("Phone number")).toHaveValue(phone.normalized);
   await expect(page.getByTestId("ordering-as")).toContainText(phone.normalized);
 });

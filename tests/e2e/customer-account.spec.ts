@@ -164,7 +164,7 @@ test("đặt hàng khi đã đăng nhập: địa chỉ mới được lưu vào
   const email = await registerCustomer(page);
   await page.goto("/en/p/sen-viet-sunscreen-spf50");
   await page.getByRole("button", { name: "Add to cart" }).click();
-  await page.getByRole("link", { name: "Checkout" }).click();
+  await page.getByRole("button", { name: "Checkout" }).click();
   await expect(page).toHaveURL(/\/en\/checkout$/);
   await expect(page.getByTestId("ordering-as")).toContainText(email);
   await expect(page.getByLabel("Full name")).toHaveValue("Ma E2E");
