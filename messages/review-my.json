@@ -2027,6 +2027,12 @@
     "Brands.merge",
     "Brands.merged",
     "Brands.mergeConfirm",
-    "Brands.mergeHelp"
+    "Brands.mergeHelp",
+    "Alerts.tabSlow",
+    "Alerts.slowHint",
+    "Reports.slowMoved",
+    "Reports.slowMovedLink",
+    "Analytics.vitalsMoved",
+    "Analytics.vitalsMovedLink"
   ]
 }

@@ -1537,6 +1537,8 @@
     "discardConfirm": "Huỷ số hàng này (trừ khỏi kho)?"
   },
   "Alerts": {
+    "tabSlow": "Bán chậm",
+    "slowHint": "Còn hàng bán được nhưng không bán được cái nào trong {days} ngày gần nhất (số ngày = \"Số ngày tính tốc độ bán\" ở Cấu hình cửa hàng › Gợi ý đặt hàng). Cân nhắc khuyến mãi hoặc ngừng nhập.",
     "title": "Cảnh báo kho",
     "createReceipt": "Tạo phiếu nhập ({count} SKU)",
     "createReceiptCapped": "Chọn {count} SKU đầu trong {total} (theo thứ tự bảng) — nhập xong mở lại để tiếp.",
@@ -1567,6 +1569,8 @@
     "other": "Tồn ở vị trí khác (chưa tính)"
   },
   "Reports": {
+    "slowMoved": "Hàng bán chậm đã chuyển sang trang Cảnh báo kho.",
+    "slowMovedLink": "Xem tab Bán chậm",
     "exportExcel": "Xuất Excel",
     "sheetSummary": "Tổng hợp",
     "sheetProducts": "Sản phẩm",
@@ -1577,7 +1581,7 @@
     "apply": "Xem",
     "basis": "Doanh thu = tiền hàng đơn hoàn tất trong kỳ (theo ngày hoàn tất, giờ Yangon), đã trừ hàng khách trả. Lợi nhuận = doanh thu − giá vốn lô đã xuất. Phí ship tách riêng.",
     "inventoryNow": "Số liệu tồn hiện tại, không phụ thuộc kỳ báo cáo.",
-    "inventoryBasis": "Tồn hiện tại theo kho và hàng bán chậm.",
+    "inventoryBasis": "Tồn hiện tại theo kho (hàng bán chậm: Cảnh báo kho › Bán chậm).",
     "revenue": "Doanh thu",
     "cogs": "Giá vốn",
     "profit": "Lợi nhuận gộp",
@@ -2448,6 +2452,8 @@
     "tabAnalytics": "Hành vi mua hàng"
   },
   "Analytics": {
+    "vitalsMoved": "Tốc độ web (Web Vitals) đã chuyển sang Sức khoẻ dữ liệu.",
+    "vitalsMovedLink": "Xem Web Vitals",
     "title": "Hành vi mua hàng",
     "basis": "Phễu tuần tự theo phiên xem sản phẩm trong kỳ. Chỉ tính đơn web gắn cùng phiên; nhánh đăng nhập là tùy chọn. Khoảng lọc tối đa 90 ngày.",
     "disabled": "Đang tắt ghi sự kiện mới.",

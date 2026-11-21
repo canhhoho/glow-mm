@@ -1537,6 +1537,8 @@
     "discardConfirm": "Discard these items (remove from stock)?"
   },
   "Alerts": {
+    "tabSlow": "Slow movers",
+    "slowHint": "In stock but not a single unit sold in the last {days} days (days = \"Sales window\" in Store settings › Reorder suggestions). Consider a promotion or stop reordering.",
     "title": "Stock alerts",
     "createReceipt": "Create receipt ({count} SKUs)",
     "createReceiptCapped": "Picks the first {count} of {total} SKUs (table order) — reopen afterwards for the rest.",
@@ -1567,6 +1569,8 @@
     "other": "Stock elsewhere (not counted)"
   },
   "Reports": {
+    "slowMoved": "Slow movers moved to the Stock alerts page.",
+    "slowMovedLink": "Open the Slow movers tab",
     "exportExcel": "Export Excel",
     "sheetSummary": "Summary",
     "sheetProducts": "Products",
@@ -1577,7 +1581,7 @@
     "apply": "Apply",
     "basis": "Revenue = goods value of orders completed in the period (by completion date, Yangon time), net of returns. Profit = revenue − cost of issued lots. Shipping fees shown separately.",
     "inventoryNow": "Figures show current stock, independent of any reporting period.",
-    "inventoryBasis": "Current stock by warehouse and slow-moving goods.",
+    "inventoryBasis": "Current stock by warehouse (slow movers: Stock alerts › Slow movers).",
     "revenue": "Revenue",
     "cogs": "Cost of goods",
     "profit": "Gross profit",
@@ -2448,6 +2452,8 @@
     "tabAnalytics": "Shopping behavior"
   },
   "Analytics": {
+    "vitalsMoved": "Web Vitals moved to Data health.",
+    "vitalsMovedLink": "Open Web Vitals",
     "title": "Shopping behavior",
     "basis": "Sequential funnel for sessions viewing a product during the period. Only web orders linked to the same session count; login is optional. Maximum range: 90 days.",
     "disabled": "New event collection is disabled.",

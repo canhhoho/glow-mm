@@ -549,7 +549,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
         {/* 16/11: đặt giá ở trang Giá bán (thủ công, chọn lô cơ sở; Tự động đang tắt) — không còn form riêng ở đây. */}
         {can(user.role, "pricing:manage") && !archived && (
           <div className="flex flex-wrap items-center gap-2" data-testid="price-actions">
-            <LinkButton href={`/admin/selling-prices/manual?productId=${product.id}`} variant="primary" icon="edit">{t("priceBlock.setPrice")}</LinkButton>
+            <LinkButton href={`/admin/selling-prices?productId=${product.id}`} variant="primary" icon="edit">{t("priceBlock.setPrice")}</LinkButton>
             {FEATURES.autoPricing && <LinkButton href={`/admin/selling-prices?mode=auto&productId=${product.id}`}>{t("priceBlock.calcThis")}</LinkButton>}
             <span className="text-xs text-muted-foreground">{t("priceBlock.whereHelp")}</span>
           </div>

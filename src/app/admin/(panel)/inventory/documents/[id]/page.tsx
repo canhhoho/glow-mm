@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { focusQuery } from "@/lib/price-focus";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -65,7 +66,7 @@ export default async function DocumentPage({ params, searchParams }: PageProps<"
         title={`${t(doc.type)} · ${doc.code}`}
         back={{ href: "/admin/inventory/documents", label: t("back") }}
         // "Tính giá SKU vừa nhập" → trang Giá bán thủ công cho đúng các SKU của phiếu (giá tự động đang tắt).
-        actions={doc.type === "RECEIVE" && doc.status === "POSTED" && can(user.role, "pricing:manage") && <LinkButton href={`/admin/selling-prices/manual?${new URLSearchParams([...new Set(doc.lines.map((l) => l.variantId))].map((id) => ["ids", id]))}`}>{t("priceReceived")}</LinkButton>}
+        actions={doc.type === "RECEIVE" && doc.status === "POSTED" && can(user.role, "pricing:manage") && <LinkButton href={`/admin/selling-prices?${focusQuery({ ids: doc.lines.map((l) => l.variantId) })}`}>{t("priceReceived")}</LinkButton>}
       />
       {updated && <Notice tone="success">{t("updated")}</Notice>}
       {waitingPreorders > 0 && (

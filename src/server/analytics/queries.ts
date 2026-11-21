@@ -9,7 +9,7 @@ import { summarizeFunnel, type FunnelRawRow } from "./funnel";
 export async function analyticsReport(range: Range) {
   const start = yangonDayStart(range.from);
   const end = yangonDayStart(addDays(range.to, 1));
-  const [rows, vitals, first, activeDays] = await Promise.all([
+  const [rows, first, activeDays] = await Promise.all([
     prisma.$queryRaw<FunnelRawRow[]>`
       WITH viewed AS (
         SELECT "sessionId", MIN("occurredAt") AS at,
@@ -32,15 +32,25 @@ export async function analyticsReport(range: Range) {
       LEFT JOIN LATERAL (SELECT MIN("occurredAt") AS at FROM "AnalyticsEvent" WHERE "sessionId" = v."sessionId" AND name = 'order_cancelled' AND "occurredAt" >= p.at AND "occurredAt" < ${end}) ca ON TRUE
       LEFT JOIN LATERAL (SELECT MIN("occurredAt") AS at FROM "AnalyticsEvent" WHERE "sessionId" = v."sessionId" AND name = 'refund' AND "occurredAt" >= p.at AND "occurredAt" < ${end}) r ON TRUE
       GROUP BY v.device`,
-    prisma.$queryRaw<{ device: string | null; metric: string; pageType: string; samples: bigint; p75: number }[]>`
-      SELECT device, props->>'metric' AS metric, props->>'pageType' AS "pageType", COUNT(*) AS samples,
-        percentile_cont(0.75) WITHIN GROUP (ORDER BY (props->>'value')::double precision) AS p75
-      FROM "AnalyticsEvent" WHERE name = 'web_vital' AND "occurredAt" >= ${start} AND "occurredAt" < ${end}
-        AND props->>'metric' IN ('LCP', 'INP', 'CLS') AND jsonb_typeof(props->'value') = 'number'
-      GROUP BY device, props->>'metric', props->>'pageType'`,
     prisma.analyticsEvent.findFirst({ orderBy: { occurredAt: "asc" }, select: { occurredAt: true } }),
     prisma.$queryRaw<{ days: bigint }[]>`SELECT COUNT(DISTINCT ("occurredAt" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Yangon')::date) AS days FROM "AnalyticsEvent" WHERE "occurredAt" >= ${start} AND "occurredAt" < ${end}`,
   ]);
   return { ...summarizeFunnel(rows), range, enabled: analyticsConfig().ANALYTICS_ENABLED, startedAt: first?.occurredAt ?? null,
-    activeDays: Number(activeDays[0]?.days ?? 0), vitals: vitals.map((v) => ({ ...v, samples: Number(v.samples) })) };
+    activeDays: Number(activeDays[0]?.days ?? 0) };
+}
+
+/**
+ * Web Vitals (LCP / INP / CLS, p75 theo loại trang × thiết bị) — thông tin KỸ THUẬT, hiện ở Báo cáo › Sức khoẻ dữ liệu
+ * (21/11/2026, audit #20: tách khỏi trang Hành vi mua hàng để trang đó chỉ còn số liệu kinh doanh).
+ */
+export async function webVitalsReport(range: Range) {
+  const start = yangonDayStart(range.from);
+  const end = yangonDayStart(addDays(range.to, 1));
+  const vitals = await prisma.$queryRaw<{ device: string | null; metric: string; pageType: string; samples: bigint; p75: number }[]>`
+      SELECT device, props->>'metric' AS metric, props->>'pageType' AS "pageType", COUNT(*) AS samples,
+        percentile_cont(0.75) WITHIN GROUP (ORDER BY (props->>'value')::double precision) AS p75
+      FROM "AnalyticsEvent" WHERE name = 'web_vital' AND "occurredAt" >= ${start} AND "occurredAt" < ${end}
+        AND props->>'metric' IN ('LCP', 'INP', 'CLS') AND jsonb_typeof(props->'value') = 'number'
+      GROUP BY device, props->>'metric', props->>'pageType'`;
+  return vitals.map((v) => ({ ...v, samples: Number(v.samples) }));
 }

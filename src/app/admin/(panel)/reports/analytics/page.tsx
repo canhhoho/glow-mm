@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requirePagePermission } from "@/server/auth/session";
 import { analyticsReport } from "@/server/analytics/queries";
@@ -5,7 +6,7 @@ import { FUNNEL_KEYS } from "@/server/analytics/funnel";
 import { datePresetItems, presetLabels, requiredRange } from "@/lib/date-range";
 import { fmtDateTime, fmtInt } from "@/lib/format";
 import { ReportsTabs } from "@/components/admin/reports-tabs";
-import { DataTable, DateRangeFields, FilterBar, FilterButton, Notice, Page, PageHeader, Section, Stat, Td } from "@/components/admin/ui";
+import { DataTable, DateRangeFields, FilterBar, FilterButton, Notice, Page, PageHeader, Stat, Td } from "@/components/admin/ui";
 
 export default async function AnalyticsPage({ searchParams }: PageProps<"/admin/reports/analytics">) {
   await requirePagePermission("reports:view");
@@ -31,11 +32,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/admin/
     <DataTable stack numeric={[1, 2, 3, 4]} empty={t("empty")} head={[t("stepLabel"), t("all"), t("mobile"), t("desktop"), t("unknown")]}>
       {FUNNEL_KEYS.map((key) => <tr key={key}><Td className="max-md:font-medium">{t(`step.${key}`)}</Td><Td label={t("all")} numeric>{fmtInt(report.total[key])}</Td><Td label={t("mobile")} numeric>{fmtInt(report.groups.mobile[key])}</Td><Td label={t("desktop")} numeric>{fmtInt(report.groups.desktop[key])}</Td><Td label={t("unknown")} numeric>{fmtInt(report.groups.unknown[key])}</Td></tr>)}
     </DataTable>
-    <Section title={t("vitals")}>
-      <p className="text-sm text-muted-foreground">{t("vitalsHelp")}</p>
-      <DataTable head={[t("pageType"), t("device"), t("metric"), t("samples"), "p75"]} numeric={[3, 4]} empty={t("empty")}>
-        {report.vitals.map((v) => <tr key={`${v.device}|${v.pageType}|${v.metric}`}><Td>{t(`page.${v.pageType}`)}</Td><Td>{v.device === "mobile" ? t("mobile") : v.device === "desktop" ? t("desktop") : t("unknown")}</Td><Td>{v.metric}</Td><Td numeric>{fmtInt(v.samples)}</Td><Td numeric>{v.metric === "CLS" ? v.p75.toFixed(3) : `${Math.round(v.p75)} ms`}</Td></tr>)}
-      </DataTable>
-    </Section>
+    {/* 21/11/2026 (audit #20): Web Vitals (kỹ thuật) dời sang Sức khoẻ dữ liệu. */}
+    <p className="text-sm text-muted-foreground">{t("vitalsMoved")} <Link href="/admin/reports/data-health#web-vitals" className="text-primary underline">{t("vitalsMovedLink")}</Link></p>
   </Page>;
 }

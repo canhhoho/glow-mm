@@ -557,7 +557,7 @@ Tỷ giá được chốt vào lô lúc **ghi sổ phiếu nhập** (từ 19/11/
 
 ### 7.2. Trang Giá bán (danh sách)
 
-> **Cập nhật 17/11/2026:** trang Giá bán **sửa giá ngay trong bảng** — chọn kho ở ô **Kho** (bảng tự lọc), bấm nút **bút chì (Sửa giá)** ở dòng cần đổi, điền lãi / vận chuyển / CTV rồi **Lưu giá** (chỉ các dòng đã bấm Sửa giá được lưu). Bảng gồm: Sản phẩm (tên, SKU dòng phụ) · Giá mua (VND) · Lô nguồn · Lãi (VND) · Vận chuyển (MMK) · CTV (MMK) · Giá bán (MMK) · Thao tác. Chưa đủ dữ liệu thì Giá bán hiện "—" kèm lý do (thiếu tỷ giá / giá mua / lãi, vận chuyển, CTV); số nhập sai báo ngay dưới ô. Công thức và lưu ý về lãi nằm ở mục mở rộng **Cách tính và lưu ý** (cột trung gian "Giá mua + lãi (MMK)" đã bỏ, phép tính không đổi). Kho hàng mua MMK không còn ô **Lãi cố định**. Mô tả "tick SKU → Nhập thủ công" bên dưới là cách cũ, vẫn dùng được qua trang `/admin/selling-prices/manual`.
+> **Cập nhật 17/11/2026:** trang Giá bán **sửa giá ngay trong bảng** — chọn kho ở ô **Kho** (bảng tự lọc), bấm nút **bút chì (Sửa giá)** ở dòng cần đổi, điền lãi / vận chuyển / CTV rồi **Lưu giá** (chỉ các dòng đã bấm Sửa giá được lưu). Bảng gồm: Sản phẩm (tên, SKU dòng phụ) · Giá mua (VND) · Lô nguồn · Lãi (VND) · Vận chuyển (MMK) · CTV (MMK) · Giá bán (MMK) · Thao tác. Chưa đủ dữ liệu thì Giá bán hiện "—" kèm lý do (thiếu tỷ giá / giá mua / lãi, vận chuyển, CTV); số nhập sai báo ngay dưới ô. Công thức và lưu ý về lãi nằm ở mục mở rộng **Cách tính và lưu ý** (cột trung gian "Giá mua + lãi (MMK)" đã bỏ, phép tính không đổi). Kho hàng mua MMK không còn ô **Lãi cố định**. Mô tả "tick SKU → Nhập thủ công" bên dưới là cách cũ. Từ 21/11/2026 đặt giá cho nhóm SKU (nút **Đặt giá** ở trang SP, **Đặt giá hàng vừa nhập** ở phiếu nhập, **Tính lại giá theo tỷ giá mới**) mở ngay trang **Giá bán** (`/admin/selling-prices?productId=…` / `?ids=…` / `?scope=rate`); link cũ `/admin/selling-prices/manual` tự chuyển về đây.
 > **Cập nhật 18/11/2026:** Giá mua và Lô nguồn là **2 cột riêng**; ô **Tỷ giá** nằm trên thanh ngang phía trên bảng (kèm mức làm tròn và mục Cách tính); ô **Gửi duyệt ngay / Duyệt luôn** cùng hàng với nút **Lưu giá** dưới bảng. Trang chi tiết SP có header gọn: ảnh đại diện nhỏ (bấm để tới phần quản lý ảnh, số góc ảnh = số ảnh), tên + trạng thái, SKU + thông tin cùng một hàng, nút thao tác bên phải.
 
 **Sản phẩm › Giá bán**, thẻ **Danh sách · Thủ công**. Mỗi SKU hiện:
@@ -739,6 +739,8 @@ Lỗi: "Chuyến hàng chưa có lô nào đã nhập kho"; "Thiếu khối lư�
 Lỗi: "Mã kho X đã có"; "Kho X còn tồn — chuyển hoặc xuất hết hàng…" (khi ngừng dùng); "Còn n sản phẩm thuộc kho X…"; "Phải còn ít nhất một kho bán" / "…một khu chờ kiểm tra hàng trả".
 
 ### 8.8. Cảnh báo kho
+
+> 21/11/2026: thêm tab **Bán chậm** (còn hàng nhưng không bán được cái nào trong N ngày — N = "Số ngày tính tốc độ bán" ở Gợi ý đặt hàng), dời từ Báo cáo › Tồn kho.
 
 > 20/11/2026: ngưỡng **tồn thấp**, **thời gian hàng về** và **tồn an toàn** là ngưỡng chung ở **Cấu hình cửa hàng › Gợi ý đặt hàng** (áp mọi phân loại). Tab **Tồn thấp** và **Gợi ý đặt hàng** có nút **Tạo phiếu nhập (N SKU)** (người có quyền nhập kho): mở phiếu nhập đã tích sẵn các SKU đang hiện, số lượng điền sẵn = **số nên đặt** (SKU không có gợi ý giữ SL dự kiến nhập). Mục **Tồn kho** trên menu có badge vàng = số phân loại tồn thấp (cạnh số lô chờ kiểm tra).
 
@@ -1094,15 +1096,15 @@ Cách tính: **doanh thu = đơn Hoàn tất theo ngày hoàn tất** (giờ Yan
 | **Phí hãng khấu trừ COD** | Phí hãng ghi ở bước đối soát COD |
 | **Sau chi phí bán đã ghi nhận** | Lợi nhuận sau hoa hồng − phí hãng đã ghi nhận |
 
-Trang có cảnh báo khi thiếu giá vốn hoặc dùng giá vốn tạm (con số lợi nhuận khi đó chỉ là ước tính), và các bảng **Theo ngày**, **Bán chạy**, **Bán chậm**, **Tồn kho theo vị trí**, **Hàng đang vận chuyển**.
+Trang có cảnh báo khi thiếu giá vốn hoặc dùng giá vốn tạm (con số lợi nhuận khi đó chỉ là ước tính), và các bảng **Theo ngày**, **Bán chạy**, **Tồn kho theo vị trí**, **Hàng đang vận chuyển**. **Bán chậm** chuyển sang **Kho hàng › Cảnh báo › tab Bán chậm** (21/11/2026).
 
 ### 14.3. Hành vi mua hàng
 
-**Báo cáo › Hành vi mua hàng**: phễu từ **Xem sản phẩm** → **Thêm giỏ** → … → **Giao thành công**, chia theo thiết bị và tốc độ trải nghiệm; xem tối đa 90 ngày. Hệ thống chỉ ghi nhận dữ liệu tối thiểu. Theo nhóm phát triển, **chưa nên bật cho khách đặt COD không đăng nhập** trước khi có ít nhất hai tuần dữ liệu thực (hiện checkout bắt buộc đăng nhập).
+**Báo cáo › Hành vi mua hàng**: phễu từ **Xem sản phẩm** → **Thêm giỏ** → … → **Giao thành công**, chia theo thiết bị (bảng tốc độ web **Web Vitals** chuyển sang **Sức khoẻ dữ liệu** từ 21/11/2026); xem tối đa 90 ngày. Hệ thống chỉ ghi nhận dữ liệu tối thiểu. Theo nhóm phát triển, **chưa nên bật cho khách đặt COD không đăng nhập** trước khi có ít nhất hai tuần dữ liệu thực (hiện checkout bắt buộc đăng nhập).
 
 ### 14.4. Sức khoẻ dữ liệu
 
-**Báo cáo › Sức khoẻ dữ liệu**: trang **chỉ đọc**, không tự sửa gì; mỗi mục có mức **Lỗi** / **Cảnh báo** / **Theo dõi**. Xử lý theo thứ tự Lỗi → Cảnh báo. Các kiểm tra: sản phẩm đang bán giá ≤ 0; sản phẩm ẩn chưa có giá; sản phẩm chưa có ảnh; thiếu khối lượng; sản phẩm thuộc kho đã ngừng dùng; lô chưa có giá vốn; chỉ có giá vốn tạm; combo thiếu giá vốn; chuyến hàng cần phân bổ lại; lô lệch chuyến hàng; đơn chờ xác nhận quá hạn; đơn **Đang giao** quá lâu; đơn COD ngoại lệ; hàng đang **Chờ kiểm tra**; phiếu nháp để quá lâu. Bảng **Mốc vận hành** cho biết thời gian xử lý từng bước, tuổi nợ COD, tổng hoa hồng đã trả; nút **Tải mốc (JSON)** dành cho kỹ thuật viên.
+**Báo cáo › Sức khoẻ dữ liệu**: trang **chỉ đọc**, không tự sửa gì; mỗi mục có mức **Lỗi** / **Cảnh báo** / **Theo dõi**. Xử lý theo thứ tự Lỗi → Cảnh báo. Các kiểm tra: sản phẩm đang bán giá ≤ 0; sản phẩm ẩn chưa có giá; sản phẩm chưa có ảnh; thiếu khối lượng; sản phẩm thuộc kho đã ngừng dùng; lô chưa có giá vốn; chỉ có giá vốn tạm; combo thiếu giá vốn; chuyến hàng cần phân bổ lại; lô lệch chuyến hàng; đơn chờ xác nhận quá hạn; đơn **Đang giao** quá lâu; đơn COD ngoại lệ; hàng đang **Chờ kiểm tra**; phiếu nháp để quá lâu. Bảng **Mốc vận hành** cho biết thời gian xử lý từng bước, tuổi nợ COD, tổng hoa hồng đã trả; cuối trang là bảng **Web Vitals** (tốc độ tải trang khách, p75 theo loại trang × thiết bị, cùng kỳ 30/90 ngày); nút **Tải mốc (JSON)** dành cho kỹ thuật viên.
 
 ---
 

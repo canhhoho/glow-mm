@@ -9,6 +9,7 @@ import { PriceHistoryTab, RatesTab } from "@/components/admin/pricing-tabs";
 import { ClearFilters, FilterBar, FilterButton, LinkButton, Page, PageHeader, PageNumbers, SearchInput, StatCard, TabNav, fieldClass } from "@/components/admin/ui";
 import { Notice } from "@/components/ui/notice";
 import { rateRecalcVariantIds } from "@/server/pricing/rate-recalc";
+import { focusQuery, parsePriceFocus } from "@/lib/price-focus";
 import {
   listSellingPrices,
   SELLING_PAGE_SIZES,
@@ -27,20 +28,17 @@ const one = (v: string | string[] | undefined) => (typeof v === "string" ? v : u
 const many = (v: string | string[] | undefined) => (Array.isArray(v) ? v : v ? [v] : []).filter((x) => /^[a-z0-9]{1,40}$/i.test(x)).slice(0, 5000);
 
 export default async function SellingPricesPage({ searchParams }: PageProps<"/admin/selling-prices">) {
-  await requirePagePermission("pricing:manage");
+  const user = await requirePagePermission("pricing:manage");
   const sp = await searchParams;
+  // 21/11/2026 (audit #21): đặt giá cho SKU đã chọn (`ids`), mọi SKU của một SP (`productId`) hoặc tính lại theo tỷ giá
+  // (`scope=rate`) — trước là route riêng `/selling-prices/manual` (nay chỉ chuyển hướng về đây).
+  const focus = parsePriceFocus(sp);
+  if (focus && (sp.mode === undefined || sp.mode === "manual" || (sp.mode === "auto" && !FEATURES.autoPricing))) return <FocusedPrices focus={focus} role={user.role} />;
   const [t, tp] = await Promise.all([getTranslations("SellingPrices"), getTranslations("Pricing")]);
   // Tab: thủ công (mặc định) · tự động · tỷ giá · lịch sử giá (gộp trang "Giá & tỷ giá" cũ, 16/11/2026).
   const mode = (["auto", "rates", "history"] as const).find((m) => m === sp.mode) ?? "manual";
-  // Giá tự động đang tắt (`lib/features.ts`): link cũ `?mode=auto` chuyển sang trang Thủ công, giữ các SKU / SP đã chọn.
-  if (mode === "auto" && !FEATURES.autoPricing) {
-    const next = new URLSearchParams();
-    const ids = many(sp.ids);
-    if (ids.length) for (const id of ids) next.append("ids", id);
-    const productId = one(sp.productId);
-    if (productId) next.set("productId", productId);
-    redirect(ids.length || productId ? `/admin/selling-prices/manual?${next}` : "/admin/selling-prices?mode=manual");
-  }
+  // Giá tự động đang tắt (`lib/features.ts`): link cũ `?mode=auto` (không chọn SKU) → trang Thủ công.
+  if (mode === "auto" && !FEATURES.autoPricing) redirect("/admin/selling-prices?mode=manual");
   const manual = mode === "manual";
   const q = one(sp.q)?.trim().slice(0, 200) ?? "";
   const state = SELLING_STATES.find((s) => s === sp.state);
@@ -82,7 +80,7 @@ export default async function SellingPricesPage({ searchParams }: PageProps<"/ad
         <Notice tone="warning" data-testid="rate-recalc">
           <span className="flex flex-wrap items-center gap-2">
             <span>{t("rateRecalcBanner", { count: recalc })}</span>
-            <LinkButton href="/admin/selling-prices/manual?scope=rate" variant="primary">
+            <LinkButton href={`/admin/selling-prices?${focusQuery({ scope: "rate" })}`} variant="primary">
               {t("rateRecalcButton")}
             </LinkButton>
           </span>
@@ -101,6 +99,31 @@ export default async function SellingPricesPage({ searchParams }: PageProps<"/ad
       {mode === "rates" && <RatesTab />}
       {mode === "history" && <PriceHistoryTab />}
       {manual && <ManualPrices q={q} state={state} warehouseId={warehouseId} page={page} size={size} href={href} />}
+    </Page>
+  );
+}
+
+/** Đặt giá cho một nhóm SKU (cùng `ManualPricingSheet` với danh sách): `ids` / `productId` / `scope=rate`. */
+async function FocusedPrices({ focus, role }: { focus: NonNullable<ReturnType<typeof parsePriceFocus>>; role: Parameters<typeof can>[0] }) {
+  // `scope=rate` (18/11/2026): mọi SKU kho nhập VN có tỷ giá mới hơn lần đổi giá gần nhất (cùng quy tắc cảnh báo
+  // RATE_NEWER), mở sẵn sửa mọi dòng với tỷ giá mới nhất + lãi/vận chuyển/CTV lần trước.
+  const rateScope = focus.scope === "rate";
+  const ids = rateScope ? await rateRecalcVariantIds() : focus.ids;
+  const productId = rateScope ? undefined : focus.productId;
+  const [t, view] = await Promise.all([
+    getTranslations("SellingPrices.manualPage"),
+    rateScope && ids.length === 0 ? null : manualPricingView({ variantIds: ids, productId }),
+  ]);
+  const back = productId ? `/admin/products/${productId}?tab=price` : "/admin/selling-prices";
+  return (
+    <Page>
+      <PageHeader title={rateScope ? t("rateRecalcTitle") : t("title")} description={t("subtitle")} back={{ href: back, label: t("back") }} />
+      {rateScope && (
+        <Notice tone={ids.length ? "info" : "success"} data-testid="rate-recalc-notice">
+          {ids.length ? t("rateRecalcHint", { count: ids.length }) : t("rateRecalcNone")}
+        </Notice>
+      )}
+      {view && <ManualPricingSheet view={view} canReview={can(role, "catalog:manage")} canApprove={can(role, "catalog:approve")} editAll={rateScope} />}
     </Page>
   );
 }

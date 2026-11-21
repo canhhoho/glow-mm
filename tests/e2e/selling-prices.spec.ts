@@ -76,7 +76,7 @@ test("thủ công kho VND: SP mới từ Excel → ghi sổ → Đặt giá (lô
   // Bước 3 → trang Giá bán thủ công.
   await openProductTab(page, "price");
   await page.getByTestId("price-actions").getByRole("link", { name: "Đặt giá" }).click();
-  await expect(page).toHaveURL(/\/admin\/selling-prices\/manual\?productId=/);
+  await expect(page).toHaveURL(/\/admin\/selling-prices\?productId=/);
   const vnd = page.getByTestId("manual-vnd");
   await expect(vnd.getByTestId("manual-formula")).toHaveCount(0);
   const line = vnd.getByTestId("manual-row").first();
@@ -141,7 +141,7 @@ test("thủ công kho VND: SP mới từ Excel → ghi sổ → Đặt giá (lô
   });
   await page.goto("/admin/selling-prices");
   await page.getByTestId("rate-recalc").getByRole("link", { name: "Tính lại giá theo tỷ giá mới" }).click();
-  await expect(page).toHaveURL(/\/admin\/selling-prices\/manual\?scope=rate$/);
+  await expect(page).toHaveURL(/\/admin\/selling-prices\?scope=rate$/);
   await expect(page.getByTestId("rate-recalc-notice")).toBeVisible();
   // { visible: true }: Next 16 giữ trang đã mở trước (Đặt giá ?productId=…) ẩn trong DOM → chỉ đếm phần tử đang hiện.
   const recalcRow = page.getByTestId("manual-row").filter({ hasText: name, visible: true });
@@ -153,6 +153,8 @@ test("thủ công kho VND: SP mới từ Excel → ghi sổ → Đặt giá (lô
   await recalcVnd.getByRole("button", { name: /^Lưu & xác nhận/ }).click();
   // Lưu xong trang tải lại danh sách cần tính lại → SKU vừa lưu biến mất (kể cả khi mở lại trang).
   await expect(page.getByTestId("manual-row").filter({ hasText: name, visible: true })).toHaveCount(0, { timeout: 30_000 });
+  // Route cũ vẫn mở được (chuyển hướng về trang Giá bán).
   await page.goto("/admin/selling-prices/manual?scope=rate");
+  await expect(page).toHaveURL(/\/admin\/selling-prices\?scope=rate$/);
   await expect(page.getByTestId("manual-row").filter({ hasText: name, visible: true })).toHaveCount(0);
 });
