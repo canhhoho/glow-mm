@@ -196,6 +196,9 @@
     "Product.preorderNote",
     "Product.related",
     "Product.standardVariant",
+    "Search.allProducts",
+    "Search.backHome",
+    "Search.clearFilters",
     "Track.tooMany"
   ],
   "admin": [

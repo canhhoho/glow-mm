@@ -48,7 +48,7 @@ async function RegisterContent({ params, searchParams }: PageProps<"/[locale]/re
       )}
       <p className="text-sm">
         {t("haveAccount")}{" "}
-        <Link href={{ pathname: "/login", query: { next } }} className="inline-flex min-h-11 items-center font-medium text-brand hover:underline">
+        <Link href={{ pathname: "/login", query: { next } }} className="inline-flex min-h-11 items-center font-medium text-brand-dark hover:underline">
           {t("signInLink")}
         </Link>
       </p>

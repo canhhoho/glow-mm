@@ -52,7 +52,7 @@
     "image": "Image",
     "preorder": "Pre-order",
     "preorderAvailable": "Out of stock · pre-order available",
-    "preorderNote": "Pre-ordered items ship when they arrive. An order with pre-ordered items ships once everything is in stock.",
+    "preorderNote": "Pre-ordered items are expected in 1–2 weeks. An order with pre-ordered items ships once everything is in stock.",
     "expiryNone": "No expiry date"
   },
   "Footer": {
@@ -90,7 +90,10 @@
     "title": "Search",
     "placeholder": "Product, brand…",
     "submit": "Search",
-    "results": "Results for “{q}”"
+    "results": "Results for “{q}”",
+    "clearFilters": "Clear filters",
+    "backHome": "Back to home",
+    "allProducts": "View all products"
   },
   "Cart": {
     "title": "Your cart",
@@ -103,9 +106,9 @@
     "unavailable": "No longer available",
     "onlyLeft": "Only {count} available",
     "fix": "Please adjust the items marked in red",
-    "preorderLine": "Pre-order — ships when back in stock",
+    "preorderLine": "Pre-order — expected in 1–2 weeks",
     "preorderLimit": "Pre-order limited to {count}",
-    "preorderNotice": "Your cart has pre-order items: the whole order ships once everything is in stock. We will contact you when it arrives."
+    "preorderNotice": "Your cart has pre-order items (expected in 1–2 weeks): the whole order ships once everything is in stock. We will contact you when it arrives."
   },
   "Checkout": {
     "title": "Checkout",
@@ -151,7 +154,7 @@
     "reviewCart": "Review cart",
     "paymentReminder": "COD: pay for goods on delivery. Bank transfer: the store confirms after receiving payment.",
     "preorderTag": "pre-order",
-    "preorderNotice": "This order has pre-order items: the whole order ships once everything is in stock. We will contact you to confirm when it arrives.",
+    "preorderNotice": "This order has pre-order items (expected in 1–2 weeks): the whole order ships once everything is in stock. We will contact you to confirm when it arrives.",
     "priceChangedNotice": "Item prices in your cart have changed. The new total is {total}. Please review and confirm.",
     "priceChangedConfirm": "Confirm order",
     "preorderConfirmNotice": "Some items in your cart are now out of stock and have changed to Pre-order (ships in 1–2 weeks once back in stock). Please confirm to proceed.",
@@ -195,7 +198,7 @@
     },
     "askHelp": "Questions? Contact us",
     "createdPending": "Order created — waiting for store confirmation. Creating an order does not confirm payment.",
-    "preorderInfo": "Pre-order: we will contact you to confirm and ship once the items arrive.",
+    "preorderInfo": "Pre-order: items are expected in 1–2 weeks; we will contact you to confirm and ship once they arrive.",
     "preorderBankNotice": "Pre-order: You can transfer now; items arrive in 1–2 weeks.",
     "preorderCodNotice": "Pre-order: Cash on delivery once items arrive (estimated 1–2 weeks)."
   },
@@ -237,7 +240,7 @@
     "shipping": {
       "title": "Shipping",
       "body": [
-        "We deliver within Myanmar through our courier partner. The shipping fee is not included in your order total — you pay it directly to the courier when your parcel arrives.",
+        "We deliver via domestic courier services in Myanmar. Product total is paid to the shop; shipping fees are not included in the order total and are paid directly to the courier upon delivery. Cost and delivery time vary by region.",
         "After your order is confirmed we pack it and hand it to the courier. You can follow its status on the Track order page with your order code and phone number."
       ]
     },
@@ -397,6 +400,6 @@
     "chooseDistrict": "Choose district",
     "chooseTownship": "Choose township",
     "phone2": "Alternative phone (optional)",
-    "shippingNote": "Shipping fee is paid to the courier on delivery."
+    "shippingNote": "Product total is paid to the shop. Shipping fee is paid directly to the courier upon delivery; cost and delivery time vary by region."
   }
 }

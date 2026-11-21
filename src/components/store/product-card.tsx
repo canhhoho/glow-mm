@@ -29,7 +29,7 @@ export async function ProductCard({ p, locale }: { p: ProductCardData; locale: s
         </div>
         <p className="text-xs text-muted-foreground">{p.brand}</p>
         <p className="line-clamp-2 text-sm">{p.name}</p>
-        <p className="mt-auto pt-1 font-semibold text-brand">{t("from", { price: formatMmk(p.priceMmk, locale) })}</p>
+        <p className="mt-auto pt-1 font-semibold text-brand-dark">{t("from", { price: formatMmk(p.priceMmk, locale) })}</p>
         {/* Cả thẻ là link tới trang SP (chọn biến thể ở đó); "nút" chỉ là gợi ý thị giác. Hết hàng → không mời "chọn" (trừ đặt trước). */}
         <span
           className={cn(

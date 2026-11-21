@@ -18,6 +18,7 @@ export function parseCatalogParams(sp: Record<string, string | string[] | undefi
 }
 
 export async function CatalogPagination({ current, page, pages, total, locale }: { current: CatalogParams; page: number; pages: number; total: number; locale: string }) {
+  if (total === 0) return null;
   const t = await getTranslations({ locale, namespace: "Catalog" });
   const href = (next: number) => {
     const sp = new URLSearchParams({ sort: current.sort, page: String(next) });

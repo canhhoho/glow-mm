@@ -52,7 +52,7 @@
     "image": "Ảnh",
     "preorder": "Đặt trước",
     "preorderAvailable": "Hết hàng · nhận đặt trước",
-    "preorderNote": "Hàng đặt trước sẽ giao khi về kho. Đơn có hàng đặt trước được giao cùng lúc khi đủ hàng.",
+    "preorderNote": "Hàng đặt trước về dự kiến 1–2 tuần. Đơn có hàng đặt trước được giao cùng lúc khi đủ hàng.",
     "expiryNone": "Không áp dụng hạn dùng"
   },
   "Footer": {
@@ -90,7 +90,10 @@
     "title": "Tìm kiếm",
     "placeholder": "Sản phẩm, thương hiệu…",
     "submit": "Tìm",
-    "results": "Kết quả cho “{q}”"
+    "results": "Kết quả cho “{q}”",
+    "clearFilters": "Xoá bộ lọc",
+    "backHome": "Về trang chủ",
+    "allProducts": "Xem tất cả sản phẩm"
   },
   "Cart": {
     "title": "Giỏ hàng của bạn",
@@ -103,9 +106,9 @@
     "unavailable": "Không còn bán",
     "onlyLeft": "Chỉ còn {count}",
     "fix": "Vui lòng điều chỉnh các sản phẩm được đánh dấu đỏ",
-    "preorderLine": "Đặt trước — giao khi hàng về",
+    "preorderLine": "Đặt trước — dự kiến về 1–2 tuần",
     "preorderLimit": "Chỉ nhận đặt trước tối đa {count}",
-    "preorderNotice": "Giỏ hàng có hàng đặt trước: cả đơn sẽ được giao khi đủ hàng. Chúng tôi sẽ liên hệ khi hàng về."
+    "preorderNotice": "Giỏ hàng có hàng đặt trước (dự kiến về 1–2 tuần): cả đơn sẽ được giao khi đủ hàng. Chúng tôi sẽ liên hệ khi hàng về."
   },
   "Checkout": {
     "title": "Thanh toán",
@@ -151,7 +154,7 @@
     "reviewCart": "Kiểm tra lại giỏ hàng",
     "paymentReminder": "COD: trả tiền hàng khi nhận. Chuyển khoản: cửa hàng xác nhận sau khi nhận tiền.",
     "preorderTag": "đặt trước",
-    "preorderNotice": "Đơn có hàng đặt trước: cả đơn sẽ được giao khi đủ hàng. Chúng tôi sẽ liên hệ xác nhận khi hàng về.",
+    "preorderNotice": "Đơn có hàng đặt trước (dự kiến về 1–2 tuần): cả đơn sẽ được giao khi đủ hàng. Chúng tôi sẽ liên hệ xác nhận khi hàng về.",
     "priceChangedNotice": "Giá sản phẩm trong giỏ hàng đã thay đổi. Tổng tiền mới là {total}. Vui lòng kiểm tra và xác nhận lại.",
     "priceChangedConfirm": "Xác nhận đặt hàng",
     "preorderConfirmNotice": "Một số sản phẩm trong giỏ hàng vừa hết hàng có sẵn và chuyển sang Đặt trước (giao sau khi hàng về trong 1–2 tuần). Vui lòng xác nhận để tiếp tục.",
@@ -195,7 +198,7 @@
     },
     "askHelp": "Cần hỗ trợ? Liên hệ chúng tôi",
     "createdPending": "Đã tạo đơn — chờ cửa hàng xác nhận. Tạo đơn chưa có nghĩa là đã thanh toán.",
-    "preorderInfo": "Đơn đặt trước: chúng tôi sẽ liên hệ xác nhận và giao hàng khi hàng về kho.",
+    "preorderInfo": "Đơn đặt trước: hàng về dự kiến 1–2 tuần, chúng tôi sẽ liên hệ xác nhận và giao hàng khi hàng về kho.",
     "preorderBankNotice": "Đơn đặt trước: Bạn có thể chuyển khoản ngay; hàng về trong 1–2 tuần.",
     "preorderCodNotice": "Đơn đặt trước: Thanh toán khi nhận hàng, sau khi hàng về (dự kiến 1–2 tuần)."
   },
@@ -237,7 +240,7 @@
     "shipping": {
       "title": "Giao hàng",
       "body": [
-        "Chúng tôi giao hàng trong Myanmar qua đối tác vận chuyển. Phí giao hàng không nằm trong tổng đơn — bạn trả trực tiếp cho người giao khi nhận hàng.",
+        "Chúng tôi giao hàng qua các dịch vụ vận chuyển tại Myanmar. Tiền hàng trả cho shop, phí ship không tính vào đơn mà khách trả trực tiếp cho hãng vận chuyển khi nhận; mức phí và thời gian giao hàng tuỳ thuộc từng vùng.",
         "Sau khi đơn được xác nhận, chúng tôi đóng gói và giao cho đơn vị vận chuyển. Bạn có thể theo dõi trạng thái ở trang Tra cứu đơn bằng mã đơn và số điện thoại."
       ]
     },
@@ -397,6 +400,6 @@
     "chooseDistrict": "Chọn quận / huyện",
     "chooseTownship": "Chọn thị trấn",
     "phone2": "Số điện thoại phụ (không bắt buộc)",
-    "shippingNote": "Phí giao hàng trả cho người giao khi nhận hàng."
+    "shippingNote": "Tiền hàng trả cho shop. Phí ship khách trả trực tiếp cho hãng vận chuyển khi nhận; phí và thời gian tuỳ vùng."
   }
 }

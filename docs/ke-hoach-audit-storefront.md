@@ -11,18 +11,18 @@ Nguồn: bảng audit 18 mục của Codex, đã **đối chiếu lại với co
 | 03 | Checkout: hết hàng → tự thành Pre-order | ✅ **Xong** (gói A2) | `expectedPreorder` đối chiếu cờ preorder, chặn tạo đơn và yêu cầu xác nhận khi hết hàng chuyển Pre-order |
 | 04 | Không thấy liên hệ Viber/Messenger | ⚠️ Code đã có, **thiếu cấu hình** | `ContactLinks` có ở footer, trang SP, checkout, trang đơn nhưng ẩn khi `VIBER_CHAT_URI`/`FB_PAGE_USERNAME` trống. Việc của chủ shop: điền env production (không sửa code) |
 | 05 | Bắt buộc đăng nhập trước checkout | 🚫 **Đóng** — chủ shop chốt 21/11/2026: khách phải đăng nhập | Giữ P14c |
-| 06 | Pre-order chưa có thời gian dự kiến | ❌ Chưa | Chỉ có câu "giao khi hàng về" |
-| 07 | Chưa có phí/thời gian giao tham khảo | ❌ Chưa | Chỉ có `Address.shippingNote` |
+| 06 | Pre-order chưa có thời gian dự kiến | ✅ **Xong** (gói C1) | Sửa Product.preorderNote, Cart.preorderLine/preorderNotice, Checkout.preorderNotice, Order.preorderInfo thành dự kiến 1–2 tuần ở 3 ngôn ngữ |
+| 07 | Chưa có phí/thời gian giao tham khảo | ✅ **Xong** (gói D1) | Trang Info (giao hàng) và Address.shippingNote nêu rõ nguyên tắc tiền hàng trả shop, phí ship khách trả trực tiếp cho hãng vận chuyển; phí và thời gian tuỳ vùng |
 | 08 | Nội dung biên lai mâu thuẫn | ✅ **Xong** (gói B1) | Đồng bộ chính sách chuyển khoản không cần biên lai ở Checkout.bankHint, Info.payment, Checkout.err.proof_not_allowed |
 | 09 | Dior Velvet 100 thiếu ảnh | ❌ Chưa — **dữ liệu, không phải code** | Admin tải ảnh ở trang sản phẩm |
 | 10 | Pre-order chuyển khoản: chưa nói khi nào trả tiền | ✅ **Xong** (gói B2) | Trang đơn AWAITING_STOCK hiện ngay thông tin ngân hàng + thông báo chuyển khoản ngay hoặc COD khi hàng về |
 | 11 | Banner Shop Now không có link | ⚠️ Một phần | Banner ảnh có `href` tuỳ chọn (admin nhập); khi trống thì không bấm được. Banner tĩnh (`HeroBanner`) đã có link `/search` |
 | 12 | Quên mật khẩu: không có thời gian xử lý | ❌ Chưa — **đổi nghiệp vụ** (xem D3) | Hiện: yêu cầu đổi mật khẩu qua SĐT chờ admin duyệt (`server/accounts/password-reset.ts`, `/admin/customer-accounts`) |
-| 13 | Hai ô tìm kiếm | ❌ Chưa | `search/page.tsx` có ô riêng + ô ở header |
-| 14 | Tìm kiếm rỗng thiếu lối đi | ❌ Chưa | `Search.empty` + `pageCount` vẫn hiện |
+| 13 | Hai ô tìm kiếm | ✅ **Xong** (gói E1) | Ẩn ô tìm kiếm thừa trong trang trên mobile, header đồng bộ `q` trên desktop và mobile |
+| 14 | Tìm kiếm rỗng thiếu lối đi | ✅ **Xong** (gói E1) | Kết quả tìm kiếm rỗng ẩn phân trang/`pageCount`, thêm nút "Xoá bộ lọc" và lối về trang chủ |
 | 15 | Chính sách đổi trả mơ hồ | ❌ Chưa — đã biết shop chịu phí hoàn; **còn thiếu số ngày** | `Info.returns` |
-| 16 | Đổi ngôn ngữ giữ `next` cũ | ❌ Chưa | `language-switch.tsx` giữ nguyên query; `next=/checkout` không đổi locale |
-| 17 | Tương phản chữ trắng/hồng | ❌ Chưa | `--brand: #e8657a` + chữ trắng ≈ 3,19:1 (`globals.css`) |
+| 16 | Đổi ngôn ngữ giữ `next` cũ | ✅ **Xong** (gói E2) | `language-switch.tsx` đổi tiền tố locale trong param `next` an toàn |
+| 17 | Tương phản chữ trắng/hồng | ✅ **Xong** (gói F1) | Thêm `--brand-dark: #be354d` (đạt 5,47:1 với trắng, 5,21:1 với kem); áp dụng cho nút chính, giá, sao, link, nhãn |
 | 18 | Trang chủ lặp sản phẩm | ❌ Chưa | Phụ thuộc số SP; ưu tiên thấp |
 
 ## 2. Quyết định của chủ shop (21/11/2026)

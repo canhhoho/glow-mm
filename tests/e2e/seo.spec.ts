@@ -104,6 +104,11 @@ test("đổi ngôn ngữ giữ nguyên trang đang xem (kể cả query)", async
   await choose("Tiếng Việt", /\/vi\/search\?q=Sunscreen$/);
   await expect(page).toHaveURL(/\/vi\/search\?q=Sunscreen$/);
   await expect(page.locator('a[href="/vi/p/sen-viet-sunscreen-spf50"]').first()).toBeVisible();
+
+  // E2: Đổi ngôn ngữ ở /register?next=/checkout đổi tiền tố của next sang /en/checkout
+  await page.goto("/register?next=%2Fcheckout");
+  await choose("English", /\/en\/register\?next=%2Fen%2Fcheckout$/);
+  await expect(page).toHaveURL(/\/en\/register\?next=%2Fen%2Fcheckout$/);
 });
 
 test("trang tiếng Việt: giao diện tiếng Việt, nội dung SP chưa dịch hiện bản English", async ({ page }) => {

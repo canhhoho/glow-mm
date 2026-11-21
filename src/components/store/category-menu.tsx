@@ -40,7 +40,7 @@ async function CategoryTree({ locale }: { locale: string }) {
               </summary>
               <ul className="pb-2">
                 <li>
-                  <Link href={`/c/${n.slug}`} className={`${row} pl-8 text-sm text-brand`}>
+                  <Link href={`/c/${n.slug}`} className={`${row} pl-8 text-sm text-brand-dark`}>
                     {t("allIn", { name: n.name })}
                   </Link>
                 </li>

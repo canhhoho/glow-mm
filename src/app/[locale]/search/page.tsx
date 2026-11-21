@@ -3,9 +3,10 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { storeProductPage } from "@/server/catalog/cached";
+import { Link } from "@/i18n/navigation";
 import { CatalogFilters, CatalogPagination, parseCatalogParams } from "@/components/store/catalog-filters";
 import { ProductGrid } from "@/components/store/product-card";
-import { ListSkeleton, primaryButton, storeCard, storeField } from "@/components/store/ui";
+import { ListSkeleton, outlineButton, primaryButton, storeCard, storeField } from "@/components/store/ui";
 
 /** Kết quả tìm kiếm: không cho máy tìm kiếm index (SEO, P7). */
 export const metadata: Metadata = { robots: { index: false, follow: true } };
@@ -29,10 +30,13 @@ async function SearchContent({ params, searchParams }: PageProps<"/[locale]/sear
     storeProductPage({ locale, ...current }),
   ]);
 
+  const hasFilter = Boolean(current.q || current.brand || current.tags.length > 0 || current.sort !== "new");
+
   return (
     <div>
       <h1 className="mb-3 text-lg font-medium">{t("title")}</h1>
-      <form role="search" className="mb-3 flex gap-2 lg:max-w-2xl">
+      {/* Trên mobile ô tìm kiếm đã có sẵn ở header (ngay đầu màn hình) → ẩn ô trùng trong trang */}
+      <form role="search" className="mb-3 hidden gap-2 lg:flex lg:max-w-2xl">
         <input
           name="q"
           type="search"
@@ -49,6 +53,23 @@ async function SearchContent({ params, searchParams }: PageProps<"/[locale]/sear
       <section className={storeCard}>
         {current.q && <h2 className="mb-2 text-sm text-muted-foreground">{t("results", { q: current.q })}</h2>}
         <ProductGrid products={result.products} locale={locale} />
+        {result.total === 0 && (
+          <div className="mt-4 flex flex-wrap gap-2.5">
+            {hasFilter && (
+              <Link href="/search" className={outlineButton}>
+                {t("clearFilters")}
+              </Link>
+            )}
+            <Link href="/" className={outlineButton}>
+              {t("backHome")}
+            </Link>
+            {current.q && (
+              <Link href="/search" className={outlineButton}>
+                {t("allProducts")}
+              </Link>
+            )}
+          </div>
+        )}
         <CatalogPagination current={current} {...result} locale={locale} />
       </section>
     </div>
