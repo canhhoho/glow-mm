@@ -93,4 +93,40 @@ describe("Bước 1: tạo sản phẩm tối giản (QT1a)", () => {
       ),
     ).rejects.toThrow(/kho khác/);
   });
+  // 21/11/2026 (audit #4): form tạo SP có tuỳ chọn Kho bán + Giá mua + SL dự kiến nhập — cùng đường ghi với nhập Excel.
+  it("chọn Kho bán: gán kho, ghi giá mua theo tiền của kho và SL dự kiến nhập theo từng phân loại", async () => {
+    const f = await makeFixture();
+    const p = await createProduct(
+      {
+        nameEn: `Toner ${f.tag}`,
+        brandId: f.brandId,
+        categoryId: f.categoryId,
+        labels: ["100ml", "200ml"],
+        defaultLabel: "Tiêu chuẩn",
+        warehouseId: f.chi.id,
+        stock: [{ purchase: 12000, planned: 5 }, { purchase: null, planned: 0 }],
+      },
+      f.userId,
+    );
+    const saved = await prisma.product.findUniqueOrThrow({ where: { id: p.id }, include: { variants: { orderBy: { label: "asc" } } } });
+    expect(saved.stockLocationId).toBe(f.chi.id);
+    expect(saved.variants.map((v) => [v.label, v.purchasePriceMmk, v.purchasePriceVnd, v.plannedReceiveQty])).toEqual([
+      ["100ml", 12000, null, 5],
+      ["200ml", null, null, 0],
+    ]);
+    expect(await prisma.auditLog.count({ where: { action: "product.move", entityId: p.id } })).toBe(1);
+
+    // Kho nhập VN → giá mua VND.
+    const vn = await createProduct({ nameEn: `Serum ${f.tag}`, brandId: f.brandId, categoryId: f.categoryId, defaultLabel: "Tiêu chuẩn", warehouseId: f.mm.id, stock: [{ purchase: "85000", planned: "" }] }, f.userId);
+    const v = await prisma.variant.findFirstOrThrow({ where: { productId: vn.id } });
+    expect([v.purchasePriceVnd, v.purchasePriceMmk, v.plannedReceiveQty]).toEqual([85000, null, 0]);
+  });
+
+  it("giá mua / SL dự kiến mà không chọn kho, hoặc combo có kho → bị từ chối, không tạo gì", async () => {
+    const f = await makeFixture();
+    const name = `No warehouse ${f.tag}`;
+    await expect(createProduct({ nameEn: name, brandId: f.brandId, categoryId: f.categoryId, defaultLabel: "x", stock: [{ purchase: 1, planned: null }] }, f.userId)).rejects.toThrow();
+    await expect(createProduct({ kind: "combo", nameEn: name, brandId: f.brandId, categoryId: f.categoryId, defaultLabel: "x", warehouseId: f.mm.id, components: [{ componentId: "x", qty: 1 }] }, f.userId)).rejects.toThrow();
+    expect(await prisma.productTranslation.count({ where: { name } })).toBe(0);
+  });
 });

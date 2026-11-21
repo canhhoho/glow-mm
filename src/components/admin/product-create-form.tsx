@@ -13,7 +13,7 @@ type Options = {
   brands: { id: string; name: string }[];
   categories: { id: string; name: string }[];
   components: { id: string; label: string; stockLocationId: string | null; inactive?: boolean; archived?: boolean }[];
-  warehouses: { id: string; name: string; code: string }[];
+  warehouses: { id: string; name: string; code: string; pricingMode: string | null }[];
 };
 
 /** Dữ liệu điền sẵn khi "Sao chép từ sản phẩm cũ" (giá không chép — đặt ở bước 3). */
@@ -29,7 +29,8 @@ export type CreatePrefill = {
 
 /**
  * Bước 1 "Tạo sản phẩm": tên · thương hiệu · danh mục · phân loại — cùng nhãn với form sửa và file Excel
- * (`ProductFields.*`, `lib/product-fields.ts` `create: true`). Một tên cho mọi ngôn ngữ; kho bán gán khi nhập hàng.
+ * (`ProductFields.*`, `lib/product-fields.ts` `create: true`). Một tên cho mọi ngôn ngữ.
+ * 21/11/2026 (audit #4): tuỳ chọn Kho bán + Giá mua + SL dự kiến nhập theo từng phân loại (như file Excel); để trống = làm ở bước 2.
  * `kind="combo"`: thay phân loại bằng thành phần combo (combo lấy kho của thành phần). Slug/SKU tự sinh ở server.
  */
 export function ProductCreateForm({ kind, options, prefill }: { kind: "product" | "combo"; options: Options; prefill?: CreatePrefill }) {
@@ -45,6 +46,15 @@ export function ProductCreateForm({ kind, options, prefill }: { kind: "product" 
   const [labels, setLabels] = useState<string[]>(prefill?.labels ?? []);
   const [draftLabel, setDraftLabel] = useState("");
   const [components, setComponents] = useState(prefill?.components.length ? prefill.components : [{ componentId: "", qty: 1 }]);
+  const [warehouseId, setWarehouseId] = useState("");
+  const [stock, setStock] = useState<Record<string, { purchase: string; planned: string }>>({});
+  const warehouse = options.warehouses.find((w) => w.id === warehouseId);
+  const currency = warehouse?.pricingMode === "LOCAL_MMK" ? "MMK" : "VND";
+  // Ô phân loại còn chữ chưa nhấn Enter → vẫn tính.
+  const allLabels = useMemo(() => [...labels, ...draftLabel.split(",").map((s) => s.trim()).filter(Boolean)], [labels, draftLabel]);
+  const variantLabels = useMemo(() => (allLabels.length ? allLabels : [t("standardVariant")]), [allLabels, t]);
+  const setStockField = (label: string, key: "purchase" | "planned", value: string) =>
+    setStock((s) => ({ ...s, [label]: { ...(s[label] ?? { purchase: "", planned: "" }), [key]: value.replace(/\D/g, "") } }));
 
   const matchedBrand = options.brands.find((b) => b.name.toLowerCase() === brandInput.trim().toLowerCase());
   // Kho bán chọn lúc nhập hàng (16/11/2026): combo lấy kho của thành phần → chỉ SP đã nhập hàng, cùng kho với thành phần
@@ -71,13 +81,16 @@ export function ProductCreateForm({ kind, options, prefill }: { kind: "product" 
         brandId: matchedBrand?.id,
         brandName: matchedBrand ? undefined : brandInput.trim() || undefined,
         categoryId,
-        // Ô phân loại còn chữ chưa nhấn Enter → vẫn tính.
-        labels: kind === "product" ? [...labels, ...draftLabel.split(",").map((s) => s.trim()).filter(Boolean)] : [],
+        labels: kind === "product" ? allLabels : [],
         defaultLabel: t("standardVariant"),
         components: kind === "combo" ? components.filter((c) => c.componentId) : [],
         copyFromId: prefill?.copyFromId,
+        ...(kind === "product" && warehouseId && {
+          warehouseId,
+          stock: variantLabels.map((l) => ({ purchase: stock[l]?.purchase || null, planned: stock[l]?.planned || null })),
+        }),
       }),
-    [kind, name, matchedBrand, brandInput, categoryId, labels, draftLabel, components, prefill?.copyFromId, t],
+    [kind, name, matchedBrand, brandInput, categoryId, allLabels, variantLabels, components, prefill?.copyFromId, t, warehouseId, stock],
   );
 
 
@@ -182,6 +195,51 @@ export function ProductCreateForm({ kind, options, prefill }: { kind: "product" 
           <Button type="button" size="lg" variant="outline" onClick={() => setComponents((cs) => [...cs, { componentId: "", qty: 1 }])}>
             <Plus aria-hidden /> {t("addComponent")}
           </Button>
+        </fieldset>
+      )}
+
+      {kind === "product" && (
+        <fieldset className="space-y-3 rounded-lg border p-3" data-testid="create-stock">
+          <legend className="px-1 text-sm font-medium">{t("create.stockTitle")}</legend>
+          <p className="text-xs text-muted-foreground">{t("create.stockHint")}</p>
+          <Field label={tf("warehouse_code.label")}>
+            <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} className={fieldClass}>
+              <option value="">{t("create.noWarehouse")}</option>
+              {options.warehouses.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name} ({w.code})
+                </option>
+              ))}
+            </select>
+          </Field>
+          {warehouse && (
+            <div className="space-y-2">
+              <div className="grid grid-cols-[minmax(0,1fr)_8rem_7rem] gap-2 text-xs text-muted-foreground">
+                <span>{t("create.variantCol")}</span>
+                <span className="text-right">{tf("unit_cost.label")} ({currency})</span>
+                <span className="text-right">{tf("qty.label")}</span>
+              </div>
+              {variantLabels.map((l) => (
+                <div key={l} className="grid grid-cols-[minmax(0,1fr)_8rem_7rem] items-center gap-2">
+                  <span className="truncate text-sm">{l}</span>
+                  <input
+                    inputMode="numeric"
+                    value={stock[l]?.purchase ?? ""}
+                    onChange={(e) => setStockField(l, "purchase", e.target.value)}
+                    aria-label={`${tf("unit_cost.label")} (${currency}) ${l}`}
+                    className={cn(fieldClass, "text-right tabular-nums")}
+                  />
+                  <input
+                    inputMode="numeric"
+                    value={stock[l]?.planned ?? ""}
+                    onChange={(e) => setStockField(l, "planned", e.target.value)}
+                    aria-label={`${tf("qty.label")} ${l}`}
+                    className={cn(fieldClass, "text-right tabular-nums")}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </fieldset>
       )}
 

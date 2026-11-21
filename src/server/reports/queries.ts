@@ -17,6 +17,9 @@ import { inventoryCost } from "@/server/inventory/cost";
 export type Range = { from: string; to: string };
 
 /** Khoảng mặc định: 30 ngày gần nhất tính đến hôm nay (giờ Yangon). */
+/** Kỳ báo cáo bán hàng (trang + xuất Excel): mặc định 30 ngày, tối đa 366 ngày để truy vấn nhẹ. */
+export const SALES_RANGE = { defaultDays: 30, maxDays: 366 } as const;
+
 export function defaultRange(now = new Date(), days = 30): Range {
   const to = yangonDayKey(now);
   return { from: addDays(to, -(days - 1)), to };
