@@ -17,10 +17,10 @@ Nguồn: bảng audit 18 mục của Codex, đã **đối chiếu lại với co
 | 09 | Dior Velvet 100 thiếu ảnh | ❌ Chưa — **dữ liệu, không phải code** | Admin tải ảnh ở trang sản phẩm |
 | 10 | Pre-order chuyển khoản: chưa nói khi nào trả tiền | ✅ **Xong** (gói B2) | Trang đơn AWAITING_STOCK hiện ngay thông tin ngân hàng + thông báo chuyển khoản ngay hoặc COD khi hàng về |
 | 11 | Banner Shop Now không có link | ⚠️ Một phần | Banner ảnh có `href` tuỳ chọn (admin nhập); khi trống thì không bấm được. Banner tĩnh (`HeroBanner`) đã có link `/search` |
-| 12 | Quên mật khẩu: không có thời gian xử lý | ❌ Chưa — **đổi nghiệp vụ** (xem D3) | Hiện: yêu cầu đổi mật khẩu qua SĐT chờ admin duyệt (`server/accounts/password-reset.ts`, `/admin/customer-accounts`) |
+| 12 | Quên mật khẩu: không có thời gian xử lý | ✅ **Xong** (gói D3) | Quên mật khẩu qua SĐT đổi ngay, huỷ mọi phiên cũ, rate limit (3/ngày/SĐT, 5/giờ/IP); admin thấy danh sách theo dõi 7 ngày + nút "Đã kiểm tra" / "Khoá" (`server/accounts/password-reset.ts`, `/admin/customer-accounts`) |
 | 13 | Hai ô tìm kiếm | ✅ **Xong** (gói E1) | Ẩn ô tìm kiếm thừa trong trang trên mobile, header đồng bộ `q` trên desktop và mobile |
 | 14 | Tìm kiếm rỗng thiếu lối đi | ✅ **Xong** (gói E1) | Kết quả tìm kiếm rỗng ẩn phân trang/`pageCount`, thêm nút "Xoá bộ lọc" và lối về trang chủ |
-| 15 | Chính sách đổi trả mơ hồ | ❌ Chưa — đã biết shop chịu phí hoàn; **còn thiếu số ngày** | `Info.returns` |
+| 15 | Chính sách đổi trả cụ thể | ✅ **Xong** (gói D2) | `Info.returns` quy định 7 ngày đổi trả, shop chịu phí hoàn hàng |
 | 16 | Đổi ngôn ngữ giữ `next` cũ | ✅ **Xong** (gói E2) | `language-switch.tsx` đổi tiền tố locale trong param `next` an toàn |
 | 17 | Tương phản chữ trắng/hồng | ✅ **Xong** (gói F1) | Thêm `--brand-dark: #be354d` (đạt 5,47:1 với trắng, 5,21:1 với kem); áp dụng cho nút chính, giá, sao, link, nhãn |
 | 18 | Trang chủ lặp sản phẩm | ❌ Chưa | Phụ thuộc số SP; ưu tiên thấp |

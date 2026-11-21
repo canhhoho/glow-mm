@@ -11,7 +11,6 @@ import {
   RESET_TTL_DAYS,
 } from "@/server/accounts/password-reset";
 import { customerAuth } from "@/server/auth/customer-auth";
-import { cleanupExpired } from "@/server/cron/cleanup";
 import { createStaff } from "@/server/users/users";
 
 const OLD = "it-old-pass-1";
@@ -38,56 +37,42 @@ async function customer() {
 const request = (phone: string, password = NEW, extra: { ip?: string; now?: Date } = {}) =>
   requestPasswordReset({ phone, password, confirmPassword: password }, { ip: extra.ip ?? ip(), now: extra.now });
 
-const pendingOf = (userId: string) => prisma.passwordResetRequest.findMany({ where: { userId, status: "PENDING" } });
+/** Bản ghi đổi tự động chưa được admin xem (decidedById = null). */
+const unreviewedOf = (userId: string) => prisma.passwordResetRequest.findMany({ where: { userId, status: "APPROVED", decidedById: null } });
 
-describe("Khách quên mật khẩu → yêu cầu, admin xác nhận", () => {
-  it("yêu cầu chưa đổi gì; xác nhận → mật khẩu mới dùng được, cũ hết dùng, phiên bị thu hồi, hash bị xoá, có audit", async () => {
-    const admin = await actor();
+describe("Khách quên mật khẩu qua SĐT → đổi ngay, admin theo dõi (audit 12, gói D3)", () => {
+  it("đổi ngay: mật khẩu mới dùng được, cũ hết dùng, mọi phiên bị thu hồi, không lưu hash, có audit", async () => {
     const { userId, phone } = await customer();
     await signIn(phone, OLD); // tạo một phiên cũ
     expect(await prisma.session.count({ where: { userId } })).toBeGreaterThan(0);
 
     expect(await request(phone)).toEqual({ created: true });
-    const [req] = await pendingOf(userId);
-    expect(req.passwordHash).toBeTruthy();
-    expect(req.passwordHash).not.toContain(NEW); // chỉ lưu hash
-    expect(req.expiresAt.getTime() - req.createdAt.getTime()).toBe(RESET_TTL_DAYS * 86_400_000);
+    expect(await prisma.session.count({ where: { userId } })).toBe(0);
 
-    // Chưa xác nhận: mật khẩu cũ vẫn đăng nhập, mật khẩu mới thì chưa.
-    await expect(signIn(phone, OLD)).resolves.toBeTruthy();
-    await expect(signIn(phone, NEW)).rejects.toBeTruthy();
-
-    await decidePasswordReset(req.id, true, admin);
     await expect(signIn(phone, NEW)).resolves.toBeTruthy();
     await expect(signIn(phone, OLD)).rejects.toBeTruthy();
 
-    const done = await prisma.passwordResetRequest.findUniqueOrThrow({ where: { id: req.id } });
+    const [rec] = await unreviewedOf(userId);
+    expect(rec).toMatchObject({ status: "APPROVED", passwordHash: null, decidedById: null, phone });
+    expect(rec.expiresAt.getTime() - rec.createdAt.getTime()).toBe(RESET_TTL_DAYS * 86_400_000);
+    expect(await prisma.auditLog.count({ where: { entityId: userId, action: "customer.passwordReset.auto" } })).toBe(1);
+  });
+
+  it("admin bấm 'Đã kiểm tra': ghi người xem, rời danh sách theo dõi, có audit; không xem lại lần hai được", async () => {
+    const admin = await actor();
+    const { userId, phone } = await customer();
+    await request(phone);
+    const [rec] = await unreviewedOf(userId);
+    const countBefore = await pendingPasswordResetCount();
+
+    await decidePasswordReset(rec.id, true, admin);
+    const done = await prisma.passwordResetRequest.findUniqueOrThrow({ where: { id: rec.id } });
     expect(done).toMatchObject({ status: "APPROVED", passwordHash: null, decidedById: admin });
+    expect(await pendingPasswordResetCount()).toBe(countBefore - 1);
+    expect((await listPasswordResetRequests()).some((r) => r.id === rec.id)).toBe(false);
     expect(await prisma.auditLog.count({ where: { entityId: userId, action: "customer.passwordReset.approve", userId: admin } })).toBe(1);
-  });
-
-  it("xác nhận thu hồi mọi phiên đang có", async () => {
-    const admin = await actor();
-    const { userId, phone } = await customer();
-    await signIn(phone, OLD);
-    await request(phone);
-    const [req] = await pendingOf(userId);
-    expect(await prisma.session.count({ where: { userId } })).toBeGreaterThan(0);
-    await decidePasswordReset(req.id, true, admin);
-    expect(await prisma.session.count({ where: { userId } })).toBe(0);
-  });
-
-  it("từ chối: mật khẩu cũ giữ nguyên, hash bị xoá, không xác nhận lại được", async () => {
-    const admin = await actor();
-    const { userId, phone } = await customer();
-    await request(phone);
-    const [req] = await pendingOf(userId);
-    await decidePasswordReset(req.id, false, admin);
-    await expect(signIn(phone, OLD)).resolves.toBeTruthy();
-    await expect(signIn(phone, NEW)).rejects.toBeTruthy();
-    expect(await prisma.passwordResetRequest.findUniqueOrThrow({ where: { id: req.id } })).toMatchObject({ status: "REJECTED", passwordHash: null });
-    await expect(decidePasswordReset(req.id, true, admin)).rejects.toMatchObject({ code: "not_pending" });
-    expect(await prisma.auditLog.count({ where: { entityId: userId, action: "customer.passwordReset.reject" } })).toBe(1);
+    // Đã kiểm tra không làm đổi mật khẩu lần nữa
+    await expect(signIn(phone, NEW)).resolves.toBeTruthy();
   });
 
   it("SĐT chưa đăng ký: không tạo gì, kết quả không lộ; SĐT sai định dạng / mật khẩu ngắn / không khớp → lỗi", async () => {
@@ -99,48 +84,49 @@ describe("Khách quên mật khẩu → yêu cầu, admin xác nhận", () => {
     await expect(requestPasswordReset({ phone: randomPhone(), password: NEW, confirmPassword: "khac" }, { ip: ip() })).rejects.toThrow();
   });
 
-  it("gửi lại: bản cũ SUPERSEDED (xoá hash), chỉ còn một bản chờ — kể cả khi gửi đồng thời", async () => {
+  it("đổi nhiều lần (kể cả đồng thời): bản cũ chưa xem → SUPERSEDED, chỉ còn một bản theo dõi", async () => {
     const { userId, phone } = await customer();
     await request(phone, "it-first-pass-1");
-    const [first] = await pendingOf(userId);
+    const [first] = await unreviewedOf(userId);
     await Promise.all([request(phone, "it-second-pass-2"), request(phone, "it-third-pass-3")]);
-    const pending = await pendingOf(userId);
-    expect(pending).toHaveLength(1);
-    const old = await prisma.passwordResetRequest.findUniqueOrThrow({ where: { id: first.id } });
-    expect(old).toMatchObject({ status: "SUPERSEDED", passwordHash: null });
+    expect(await unreviewedOf(userId)).toHaveLength(1);
+    expect(await prisma.passwordResetRequest.findUniqueOrThrow({ where: { id: first.id } })).toMatchObject({ status: "SUPERSEDED", passwordHash: null });
     const all = await prisma.passwordResetRequest.findMany({ where: { userId } });
     expect(all.filter((r) => r.status === "SUPERSEDED")).toHaveLength(2);
   });
 
-  it("hết hạn: không xác nhận được; cron cleanup đóng yêu cầu quá hạn và xoá hash", async () => {
-    const admin = await actor();
+  it("bản đổi quá 7 ngày không còn trong danh sách theo dõi / số đếm", async () => {
     const { userId, phone } = await customer();
     const longAgo = new Date(Date.now() - (RESET_TTL_DAYS + 1) * 86_400_000);
     await request(phone, NEW, { now: longAgo });
-    const [req] = await pendingOf(userId);
-    expect(await listPasswordResetRequests()).not.toEqual(expect.arrayContaining([expect.objectContaining({ id: req.id })]));
-    await expect(decidePasswordReset(req.id, true, admin)).rejects.toMatchObject({ code: "expired" });
-    await expect(signIn(phone, NEW)).rejects.toBeTruthy();
-
-    expect((await cleanupExpired()).passwordResets).toBeGreaterThanOrEqual(1);
-    expect(await prisma.passwordResetRequest.findUniqueOrThrow({ where: { id: req.id } })).toMatchObject({ status: "REJECTED", passwordHash: null, decidedById: null });
-    expect(await expirePasswordResets()).toBe(0);
+    const [rec] = await unreviewedOf(userId);
+    expect((await listPasswordResetRequests()).some((r) => r.id === rec.id)).toBe(false);
+    // Mật khẩu vẫn đã đổi (đổi ngay lúc yêu cầu)
+    await expect(signIn(phone, NEW)).resolves.toBeTruthy();
   });
 
-  it("hai admin xác nhận cùng lúc: đúng một lần thành công", async () => {
+  it("yêu cầu PENDING kiểu cũ (trước D3): admin xác nhận vẫn áp mật khẩu; cron đóng bản PENDING quá hạn", async () => {
     const admin = await actor();
     const { userId, phone } = await customer();
-    await request(phone);
-    const [req] = await pendingOf(userId);
-    const results = await Promise.allSettled([decidePasswordReset(req.id, true, admin), decidePasswordReset(req.id, true, admin)]);
-    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
-    const failed = results.find((r) => r.status === "rejected") as PromiseRejectedResult;
-    expect(failed.reason).toMatchObject({ code: "not_pending" });
-    expect(await prisma.auditLog.count({ where: { entityId: userId, action: "customer.passwordReset.approve" } })).toBe(1);
+    const { hashPassword } = await import("better-auth/crypto");
+    const now = new Date();
+    const legacy = await prisma.passwordResetRequest.create({
+      data: { userId, phone, passwordHash: await hashPassword(NEW), status: "PENDING", createdAt: now, expiresAt: new Date(now.getTime() + RESET_TTL_DAYS * 86_400_000) },
+    });
+    await decidePasswordReset(legacy.id, true, admin);
+    await expect(signIn(phone, NEW)).resolves.toBeTruthy();
+    expect(await prisma.passwordResetRequest.findUniqueOrThrow({ where: { id: legacy.id } })).toMatchObject({ status: "APPROVED", passwordHash: null, decidedById: admin });
+
+    const old = new Date(Date.now() - (RESET_TTL_DAYS + 1) * 86_400_000);
+    const expired = await prisma.passwordResetRequest.create({
+      data: { userId, phone, passwordHash: "x", status: "PENDING", createdAt: old, expiresAt: new Date(old.getTime() + RESET_TTL_DAYS * 86_400_000) },
+    });
+    expect(await expirePasswordResets()).toBeGreaterThanOrEqual(1);
+    expect(await prisma.passwordResetRequest.findUniqueOrThrow({ where: { id: expired.id } })).toMatchObject({ status: "REJECTED", passwordHash: null, decidedById: null });
   });
 
   it("giới hạn tần suất: tối đa 3 lần / ngày / SĐT (kể cả SĐT chưa đăng ký) và 5 lần / giờ / IP", async () => {
-    const phone = randomPhone(); // chưa đăng ký: vẫn bị đếm, không lộ được là có tài khoản hay không
+    const phone = randomPhone();
     for (let i = 0; i < 3; i++) await request(phone);
     await expect(request(phone)).rejects.toMatchObject({ code: "too_many" });
 
@@ -149,7 +135,7 @@ describe("Khách quên mật khẩu → yêu cầu, admin xác nhận", () => {
     await expect(request(randomPhone(), NEW, { ip: sameIp })).rejects.toMatchObject({ code: "too_many" });
   });
 
-  it("không đổi được mật khẩu nhân viên / CTV qua luồng này; tài khoản bị khoá vẫn bị khoá sau khi xác nhận", async () => {
+  it("không đổi được mật khẩu nhân viên / CTV qua luồng này; tài khoản bị khoá vẫn bị khoá sau khi đổi", async () => {
     const admin = await actor();
     const staffPhone = randomPhone();
     const staff = await createStaff(
@@ -161,26 +147,20 @@ describe("Khách quên mật khẩu → yêu cầu, admin xác nhận", () => {
     expect(await prisma.passwordResetRequest.count({ where: { userId: staff.id } })).toBe(0);
 
     const { userId, phone } = await customer();
-    await request(phone);
-    const [req] = await pendingOf(userId);
     await prisma.user.update({ where: { id: userId }, data: { active: false } });
-    await decidePasswordReset(req.id, true, admin);
+    await request(phone);
     expect((await prisma.user.findUniqueOrThrow({ where: { id: userId } })).active).toBe(false);
   });
 
-  it("tài khoản chưa có mật khẩu (credential): xác nhận tạo mới; danh sách + số đếm chỉ tính yêu cầu còn hạn", async () => {
-    const admin = await actor();
+  it("tài khoản chưa có credential: đổi ngay tạo mới; danh sách theo dõi có thông tin khách, không lộ hash", async () => {
     const { userId, phone } = await customer();
     await prisma.account.deleteMany({ where: { userId, providerId: "credential" } });
     const countBefore = await pendingPasswordResetCount();
     await request(phone);
+    await expect(signIn(phone, NEW)).resolves.toBeTruthy();
     expect(await pendingPasswordResetCount()).toBe(countBefore + 1);
-    const list = await listPasswordResetRequests();
-    const row = list.find((r) => r.userId === userId)!;
+    const row = (await listPasswordResetRequests()).find((r) => r.userId === userId)!;
     expect(row).toMatchObject({ phone, name: "Ma Quen", active: true, orders: 0 });
     expect(JSON.stringify(row)).not.toContain("passwordHash");
-    await decidePasswordReset(row.id, true, admin);
-    await expect(signIn(phone, NEW)).resolves.toBeTruthy();
-    expect(await pendingPasswordResetCount()).toBe(countBefore);
   });
 });

@@ -255,9 +255,9 @@
     "returns": {
       "title": "Đổi trả",
       "body": [
-        "Nếu sản phẩm bị hỏng, giao sai hoặc gần hết hạn, hãy liên hệ chúng tôi trong vài ngày sau khi nhận, kèm mã đơn và ảnh chụp.",
+        "Nếu sản phẩm bị hỏng, giao sai hoặc gần hết hạn, hãy liên hệ chúng tôi trong vòng 7 ngày sau khi nhận hàng, kèm mã đơn và ảnh chụp. Cửa hàng chịu toàn bộ chi phí vận chuyển hàng hoàn.",
         "Hàng trả về được kiểm tra trước. Khi chấp nhận đổi trả, chúng tôi hoàn tiền cho sản phẩm trả lại hoặc gửi sản phẩm thay thế.",
-        "Vì lý do vệ sinh, sản phẩm đã mở không được trả lại trừ khi bị lỗi."
+        "Vì lý do vệ sinh, sản phẩm đã mở không được trả lại trừ khi bị lỗi do nhà sản xuất."
       ]
     },
     "privacy": {
@@ -302,10 +302,10 @@
     "checkEmail": "Chúng tôi đã gửi liên kết xác nhận đến {email}. Mở liên kết để hoàn tất tạo tài khoản (kiểm tra cả thư mục Spam).",
     "forgotTitle": "Đặt lại mật khẩu",
     "forgotIntro": "Nhập email tài khoản, chúng tôi sẽ gửi liên kết để đặt mật khẩu mới.",
-    "forgotPhoneIntro": "Nhập số điện thoại và mật khẩu mới. Sau khi cửa hàng xác nhận yêu cầu, bạn đăng nhập bằng mật khẩu mới.",
+    "forgotPhoneIntro": "Nhập số điện thoại và mật khẩu mới để đặt lại mật khẩu cho tài khoản.",
     "forgotByEmail": "Đặt lại qua email",
-    "resetRequested": "Đã gửi yêu cầu. Sau khi cửa hàng xác nhận, bạn đăng nhập bằng mật khẩu mới.",
-    "submitResetRequest": "Gửi yêu cầu",
+    "resetRequested": "Mật khẩu đã được cập nhật thành công. Bạn có thể đăng nhập ngay bằng mật khẩu mới.",
+    "submitResetRequest": "Đặt lại mật khẩu",
     "sendLink": "Gửi liên kết",
     "forgotSent": "Nếu có tài khoản với {email}, liên kết đặt lại đang được gửi.",
     "resetTitle": "Đặt mật khẩu mới",

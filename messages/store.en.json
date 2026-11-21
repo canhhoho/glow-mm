@@ -255,7 +255,7 @@
     "returns": {
       "title": "Returns",
       "body": [
-        "If a product arrives damaged, is wrong or is close to its expiry date, contact us within a few days of receiving it with your order code and photos.",
+        "If a product arrives damaged, is wrong or is close to its expiry date, contact us within 7 days of delivery with your order code and photos. The shop covers all return shipping costs.",
         "Returned items are inspected first. When the return is accepted we refund the amount for the returned items or send a replacement.",
         "For hygiene reasons, opened products cannot be returned unless they are faulty."
       ]
@@ -302,10 +302,10 @@
     "checkEmail": "We sent a confirmation link to {email}. Open it to finish creating your account (check Spam too).",
     "forgotTitle": "Reset your password",
     "forgotIntro": "Enter your account email and we will send you a link to set a new password.",
-    "forgotPhoneIntro": "Enter your phone number and a new password. Once the shop confirms your request, you can sign in with the new password.",
+    "forgotPhoneIntro": "Enter your phone number and new password to reset your account password.",
     "forgotByEmail": "Reset by email instead",
-    "resetRequested": "Request sent. After the shop confirms it, sign in with your new password.",
-    "submitResetRequest": "Send request",
+    "resetRequested": "Your password has been updated successfully. You can now sign in with your new password.",
+    "submitResetRequest": "Reset password",
     "sendLink": "Send link",
     "forgotSent": "If an account exists for {email}, a reset link is on its way.",
     "resetTitle": "Set a new password",

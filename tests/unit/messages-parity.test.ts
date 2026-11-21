@@ -55,4 +55,18 @@ describe("messages storefront", () => {
     expect(my.Address.shippingNote).toMatch(/တိုက်ရိုက်ပေးချေ/);
     expect(my.Info.shipping.body[0]).toMatch(/တိုက်ရိုက်ပေးချေ/);
   });
+
+  it("D2: Info.returns nêu rõ thời hạn 7 ngày và shop chịu chi phí hoàn hàng", () => {
+    // VI
+    expect(vi.Info.returns.body[0]).toMatch(/7 ngày/);
+    expect(vi.Info.returns.body[0]).toMatch(/chi phí vận chuyển hàng hoàn/);
+
+    // EN
+    expect(en.Info.returns.body[0]).toMatch(/7 days/);
+    expect(en.Info.returns.body[0]).toMatch(/covers all return shipping/);
+
+    // MY
+    expect(my.Info.returns.body[0]).toMatch(/၇ ရက်/);
+    expect(my.Info.returns.body[0]).toMatch(/ပြန်ပို့ခ/);
+  });
 });
