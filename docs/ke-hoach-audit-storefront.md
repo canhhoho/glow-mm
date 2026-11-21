@@ -10,28 +10,28 @@ Nguồn: bảng audit 18 mục của Codex, đã **đối chiếu lại với co
 | 02 | Checkout: giá đổi không báo khách | ❌ Chưa | `placeOrderAction`/`createOrder` lấy giá hiện hành; không có tổng khách đã thấy để đối chiếu |
 | 03 | Checkout: hết hàng → tự thành Pre-order | ❌ Chưa | `planOrderStock` quyết định phía server; form không gửi "khách đang mua hàng có sẵn" |
 | 04 | Không thấy liên hệ Viber/Messenger | ⚠️ Code đã có, **thiếu cấu hình** | `ContactLinks` có ở footer, trang SP, checkout, trang đơn nhưng ẩn khi `VIBER_CHAT_URI`/`FB_PAGE_USERNAME` trống. Việc của chủ shop: điền env production (không sửa code) |
-| 05 | Bắt buộc đăng nhập trước checkout | ❌ Chưa — **cần quyết định nghiệp vụ** | Đang là quy tắc cố ý (P14c); chưa được duyệt bỏ |
+| 05 | Bắt buộc đăng nhập trước checkout | 🚫 **Đóng** — chủ shop chốt 21/11/2026: khách phải đăng nhập | Giữ P14c |
 | 06 | Pre-order chưa có thời gian dự kiến | ❌ Chưa | Chỉ có câu "giao khi hàng về" |
 | 07 | Chưa có phí/thời gian giao tham khảo | ❌ Chưa | Chỉ có `Address.shippingNote` |
 | 08 | Nội dung biên lai mâu thuẫn | ❌ Chưa | Trang đơn: "Không cần gửi biên lai" (`Order.bankConfirmation`); nhưng `Checkout.bankHint` và `Info.…` (chính sách thanh toán, `store.*.json` ~dòng 241) vẫn bảo tải biên lai |
 | 09 | Dior Velvet 100 thiếu ảnh | ❌ Chưa — **dữ liệu, không phải code** | Admin tải ảnh ở trang sản phẩm |
 | 10 | Pre-order chuyển khoản: chưa nói khi nào trả tiền | ❌ Chưa | `Order.preorderInfo` không nhắc thanh toán; khối ngân hàng chỉ hiện khi `PENDING` |
 | 11 | Banner Shop Now không có link | ⚠️ Một phần | Banner ảnh có `href` tuỳ chọn (admin nhập); khi trống thì không bấm được. Banner tĩnh (`HeroBanner`) đã có link `/search` |
-| 12 | Quên mật khẩu: không có thời gian xử lý | ❌ Chưa | Chỉ thêm chữ + liên hệ |
+| 12 | Quên mật khẩu: không có thời gian xử lý | ❌ Chưa — **đổi nghiệp vụ** (xem D3) | Hiện: yêu cầu đổi mật khẩu qua SĐT chờ admin duyệt (`server/accounts/password-reset.ts`, `/admin/customer-accounts`) |
 | 13 | Hai ô tìm kiếm | ❌ Chưa | `search/page.tsx` có ô riêng + ô ở header |
 | 14 | Tìm kiếm rỗng thiếu lối đi | ❌ Chưa | `Search.empty` + `pageCount` vẫn hiện |
-| 15 | Chính sách đổi trả mơ hồ | ❌ Chưa — **cần số ngày/ai chịu phí từ chủ shop** | `Info.returns` |
+| 15 | Chính sách đổi trả mơ hồ | ❌ Chưa — đã biết shop chịu phí hoàn; **còn thiếu số ngày** | `Info.returns` |
 | 16 | Đổi ngôn ngữ giữ `next` cũ | ❌ Chưa | `language-switch.tsx` giữ nguyên query; `next=/checkout` không đổi locale |
 | 17 | Tương phản chữ trắng/hồng | ❌ Chưa | `--brand: #e8657a` + chữ trắng ≈ 3,19:1 (`globals.css`) |
 | 18 | Trang chủ lặp sản phẩm | ❌ Chưa | Phụ thuộc số SP; ưu tiên thấp |
 
-## 2. Việc cần chủ shop quyết định / cung cấp trước (chặn việc liên quan)
+## 2. Quyết định của chủ shop (21/11/2026)
 
-- **Q1 (chặn C2):** cho khách vãng lai đặt COD không? (đề xuất audit; đang bắt đăng nhập.) Nếu "không" → bỏ C2.
-- **Q2 (chặn B2, C1, D3):** thời gian Pre-order dự kiến thực tế (vd 7–14 ngày?), có chuyển khoản ngay hay chờ hàng về, và thời gian xử lý yêu cầu quên mật khẩu.
-- **Q3 (chặn D1):** bảng phí + thời gian ship theo vùng thực tế.
-- **Q4 (chặn D2):** số ngày đổi trả và ai chịu phí hoàn hàng.
-- **Q5 (không cần code):** điền `VIBER_CHAT_URI` / `FB_PAGE_USERNAME` trên production; tải ảnh Dior (09); gắn link cho banner ở Admin (11).
+- **Q1:** khách **phải đăng nhập** mới đặt hàng → đóng mục 05 (bỏ C2).
+- **Q2:** Pre-order giao trong **1–2 tuần**. Khách **chuyển khoản ngay hoặc COD khi hàng về đều được**. Quên mật khẩu **tự động xử lý**, chỉ cần **báo cho admin** biết khách vừa đổi mật khẩu.
+- **Q3:** phí và thời gian ship theo vùng; **khách tự trả phí ship** cho hãng vận chuyển. [CẦN XÁC MINH] Bảng số tiền/số ngày cụ thể theo vùng chưa có → D1 chỉ viết nguyên tắc, không bịa con số.
+- **Q4:** đổi trả **shop chịu phí hoàn hàng**. [CẦN XÁC MINH] Số ngày được đổi trả chưa có → D2 giữ chỗ cho số ngày, hỏi lại trước khi viết.
+- **Q5 (không cần code, chủ shop tự làm):** điền `VIBER_CHAT_URI` / `FB_PAGE_USERNAME` trên production; tải ảnh Dior (09); gắn link cho banner ở Admin (11).
 
 ## 3. Các gói việc (giao Antigravity theo thứ tự)
 
@@ -53,25 +53,27 @@ Mỗi gói độc lập; phụ thuộc ghi rõ. Gói **A** là rủi ro tiền �
 - Quy trình hiện hành = **không cần biên lai** (theo trang đơn). Sửa `Checkout.bankHint`, chính sách thanh toán (`Info`), `err.proof_not_allowed` cho đúng; không khôi phục tải biên lai. Cả vi/en/my + `review-my.json`.
 - Test: grep không còn "biên lai/receipt/ảnh chuyển khoản" mâu thuẫn trong `store.*.json`; E2E trang đơn chuyển khoản.
 
-### B2 — Nói rõ thanh toán với đơn Pre-order chuyển khoản (audit 10) · P2 · cần: Q2
-- Trang đơn `AWAITING_STOCK` + `BANK_TRANSFER`: ghi "Chưa cần chuyển tiền / chuyển khi chúng tôi báo hàng về" (theo Q2). Chuẩn bị sẵn hiển thị khối ngân hàng khi đơn chuyển sang `PENDING`.
+### B2 — Nói rõ thanh toán với đơn Pre-order (audit 10) · P2 · cần: không
+- Trang đơn `AWAITING_STOCK` + `BANK_TRANSFER`: hiện thông tin tài khoản ngân hàng **ngay** (như đơn `PENDING`) kèm câu "Bạn có thể chuyển khoản ngay; hàng về trong 1–2 tuần". `AWAITING_STOCK` + `COD`: "Thanh toán khi nhận hàng, sau khi hàng về".
+- Kiểm `bankConfirmation` (không cần biên lai) vẫn đúng với đơn chờ hàng; đối soát tiền dùng luồng sẵn có, không thêm trạng thái.
 - Test: E2E đơn thử Pre-order chuyển khoản.
 
-### C1 — Thời gian Pre-order dự kiến (audit 06) · P1 · cần: Q2
-- Hiện câu cố định theo cấu hình ("thường X–Y ngày, cửa hàng xác nhận trước khi bạn thanh toán") ở trang SP, giỏ, checkout. Nếu muốn theo SP: thêm trường cài đặt ở Admin (Cài đặt) — hỏi trước khi thêm cột DB.
+### C1 — Thời gian Pre-order dự kiến (audit 06) · P1 · cần: không
+- Sửa câu Pre-order có sẵn (`Product.preorderNote`, `Cart.preorderLine`/`preorderNotice`, `Checkout.preorderNotice`, `Order.preorderInfo`) thành "hàng về dự kiến **1–2 tuần**", 3 ngôn ngữ. Chỉ sửa chuỗi, **không** thêm cột DB/cài đặt.
 - Test: E2E hiển thị ở 3 chỗ.
 
-### C2 — Khách vãng lai (audit 05) · P1 · cần: **Q1** — chỉ làm nếu được duyệt
-- Phạm vi lớn (auth, claim đơn, analytics, rate limit) → tách kế hoạch riêng, **không** làm chung gói này. Nếu Q1 = "không": đóng mục.
+### D1 — Nói rõ phí ship (audit 07) · P1 · cần: không (bảng số liệu: chờ chủ shop)
+- Trang `Info` (giao hàng) + dòng ở checkout/giỏ (`Address.shippingNote`): ghi rõ **tiền hàng trả cho shop, phí ship khách trả cho hãng vận chuyển khi nhận; phí và thời gian tuỳ vùng**. Không tính ship trên đơn.
+- Không tự điền bảng phí/số ngày. Khi chủ shop gửi bảng thì thêm vào `Info` sau.
 
-### D1 — Phí/thời gian giao tham khảo (audit 07) · P1 · cần: Q3
-- Bảng tham khảo theo vùng trong `Info` (shipping) + dòng tóm tắt ở checkout; ghi rõ khoản trả cửa hàng / trả courier. Chỉ nội dung, không tính ship trên đơn.
+### D2 — Chính sách đổi trả cụ thể (audit 15) · P2 · cần: số ngày đổi trả
+- Sửa `Info.returns` (3 ngôn ngữ): **shop chịu phí hoàn hàng**; điều kiện giữ như hiện tại (hàng đã mở chỉ đổi khi lỗi). Số ngày: hỏi chủ shop trước khi viết, không tự đặt.
 
-### D2 — Chính sách đổi trả cụ thể (audit 15) · P2 · cần: Q4
-- Sửa `Info.returns` (3 ngôn ngữ) với số ngày, điều kiện, ai chịu phí.
-
-### D3 — Quên mật khẩu: thời gian + liên hệ (audit 12) · P2 · cần: Q2/Q5
-- Thêm "Cửa hàng xử lý trong X giờ làm việc" + `ContactLinks` vào `forgot-password` (khi có cấu hình).
+### D3 — Quên mật khẩu qua SĐT tự động + báo admin (audit 12) · P1 · cần: duyệt biện pháp an toàn (xem dưới)
+- Hiện tại: khách nhập SĐT + mật khẩu mới → `PasswordResetRequest` chờ admin duyệt ở `/admin/customer-accounts`. Đổi thành: **áp dụng ngay** (dùng lại hàm duyệt sẵn có trong `server/accounts/password-reset.ts`, ghi `decidedById = null`/trạng thái tự động), huỷ mọi phiên đăng nhập cũ của tài khoản, ghi audit; admin thấy danh sách "khách vừa đổi mật khẩu" (dùng lại bảng sẵn có thành nhật ký + badge đếm mới) và có nút **khoá/hoàn tác** khi nghi ngờ.
+- ⚠️ **Rủi ro bảo mật [cần chủ shop duyệt]:** không có OTP → ai biết SĐT của khách cũng đổi được mật khẩu và vào tài khoản (xem địa chỉ, lịch sử đơn). Biện pháp tối thiểu đề xuất, chọn ít nhất một: (a) bắt nhập **mã một đơn đã đặt** của SĐT đó (như trang tra đơn) khi tài khoản đã có đơn; (b) giới hạn số lần theo IP + theo SĐT (`hitRateLimit`); (c) giữ nguyên chờ duyệt cho tài khoản CTV. Luôn có (b).
+- Luồng quên mật khẩu qua email (gửi link) giữ nguyên.
+- Test: integration (đổi ngay, phiên cũ bị huỷ, giới hạn lần, nhật ký admin); E2E khách đổi mật khẩu rồi đăng nhập được. Đụng auth → **rủi ro cao**, cần full E2E trước khi merge `main`.
 
 ### E1 — Tìm kiếm gọn (audit 13, 14) · P2 · cần: không
 - Trang `/search`: chỉ giữ một ô (ô header đồng bộ `q`, hoặc bỏ ô trong trang trên mobile). Kết quả rỗng: ẩn `pageCount`, thêm nút "Xoá bộ lọc" và lối về danh mục / trang chủ.
@@ -96,8 +98,8 @@ Mỗi gói độc lập; phụ thuộc ghi rõ. Gói **A** là rủi ro tiền �
 
 ## 4. Thứ tự đề xuất và nghiệm thu
 
-1. A1 → A2 (tiền/đơn) → B1 → E2 → E1 → F1 (không cần quyết định).
-2. B2, C1, D1–D3 sau khi chủ shop trả lời Q2–Q4.
-3. C2 chỉ khi Q1 được duyệt.
+1. A1 → A2 (tiền/đơn) → B1 → B2 → C1 → D1 → E2 → E1 → F1 (đã đủ thông tin).
+2. D3 sau khi chủ shop chọn biện pháp an toàn; D2 sau khi có số ngày đổi trả.
+3. F2, G1 khi rảnh.
 
-Mỗi gói: `npm run check` + spec bị ảnh hưởng (mobile + desktop khi đụng giao diện dùng chung). Gói A1/A2 (checkout, đơn) coi là **rủi ro cao**: cần full E2E xanh trước khi merge `main`. Claude kiểm từng commit trước khi push; push/PR chỉ khi người dùng yêu cầu.
+Mỗi gói: `npm run check` + spec bị ảnh hưởng (mobile + desktop khi đụng giao diện dùng chung). Gói A1/A2 (checkout, đơn) và D3 (auth) coi là **rủi ro cao**: cần full E2E xanh trước khi merge `main`. Claude kiểm từng commit trước khi push; push/PR chỉ khi người dùng yêu cầu.
