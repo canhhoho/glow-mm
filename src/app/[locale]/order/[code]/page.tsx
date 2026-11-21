@@ -103,9 +103,6 @@ async function OrderContent({ params, searchParams }: PageProps<"/[locale]/order
             {bankInstructions}
           </p>
           <p className="text-sm">{t("bankRef", { code: order.code })}</p>
-          {order.status === "AWAITING_STOCK" && (
-            <p className="text-sm font-medium">{t("preorderBankNotice")}</p>
-          )}
           {holdUntil && <p className="text-xs text-muted-foreground">{t("holdUntil", { time: fmtDateTime(holdUntil) })}</p>}
           <p className="text-sm text-muted-foreground">{t("bankConfirmation")}</p>
         </section>

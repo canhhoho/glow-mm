@@ -13,12 +13,17 @@ test.describe("Checkout A2 — Hết hàng chuyển Pre-order cần khách xác 
 
     const v = (
       await client.query<{ id: string }>(
-        `SELECT v.id FROM "Variant" v JOIN "Product" p ON v."productId" = p.id WHERE p.slug = 'sen-viet-sunscreen-spf50' LIMIT 1`,
+        `SELECT v.id FROM "Variant" v WHERE v.sku = 'SV-SUN-50'`,
       )
     ).rows[0].id;
 
     // Lấy một order bất kỳ để gắn Reservation
-    const orderId = (await client.query<{ id: string }>('SELECT id FROM "Order" LIMIT 1')).rows[0].id;
+    const orderId = (
+      await client.query<{ id: string }>(
+        `SELECT o.id FROM "Order" o WHERE NOT EXISTS (SELECT 1 FROM "Reservation" r WHERE r."orderId" = o.id AND r."variantId" = $1) ORDER BY o."createdAt" LIMIT 1`,
+        [v],
+      )
+    ).rows[0].id;
     const holdId = `e2e-hold-${Date.now()}`;
 
     try {

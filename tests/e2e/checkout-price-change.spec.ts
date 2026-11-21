@@ -14,7 +14,7 @@ test.describe("Checkout A1 — Đổi giá giữa lúc xem và đặt", () => {
     // Lấy thông tin biến thể và giá gốc
     const variantRow = (
       await client.query<{ id: string; priceMmk: number }>(
-        `SELECT v.id, v."priceMmk" FROM "Variant" v JOIN "Product" p ON v."productId" = p.id WHERE p.slug = 'sen-viet-sunscreen-spf50' LIMIT 1`,
+        `SELECT v.id, v."priceMmk" FROM "Variant" v WHERE v.sku = 'SV-SUN-50'`,
       )
     ).rows[0];
     expect(variantRow).toBeDefined();

@@ -30,6 +30,11 @@ vi.mock("@/i18n/navigation", () => ({
   Link: () => null,
 }));
 
+// Vitest không chạy trong môi trường React Server → getTranslations thật báo "not supported in Client Components".
+vi.mock("next-intl/server", () => ({
+  getTranslations: async () => (key: string, values?: Record<string, unknown>) => (values ? `${key} ${Object.values(values).join(" ")}` : key),
+}));
+
 vi.mock("next/navigation", () => ({
   redirect: (url: string) => {
     redirectedTo = url;
@@ -79,7 +84,7 @@ describe("Checkout A1 — Giá đổi yêu cầu khách xác nhận lại", () =
     };
 
     // Giỏ có 2 cái variantId (tổng hiện hành 2 × 10.000 = 20.000 MMK)
-    mockCookies.set("cart", JSON.stringify([{ variantId: f.variantId, qty: 2 }]));
+    mockCookies.set("cart", `${f.variantId}:2`); // định dạng serializeCart
 
     // Khách gửi với expectedTotalMmk = 15.000 (giá cũ khách từng thấy)
     const fd1 = makeFormData({
