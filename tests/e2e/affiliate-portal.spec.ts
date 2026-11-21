@@ -22,7 +22,7 @@ test("khách mở link CTV rồi đặt hàng → đơn hiện trong cổng CTV 
   await page.goto("/en/p/sen-viet-sunscreen-spf50?ref=MAUNG");
   await expect(page).toHaveURL(/\/en\/p\/sen-viet-sunscreen-spf50$/);
   await page.getByRole("button", { name: "Add to cart" }).click();
-  await page.getByRole("link", { name: "Checkout" }).click();
+  await page.getByRole("button", { name: "Checkout" }).click();
   await signInAtPrompt(page); // cookie CTV từ link vẫn còn sau khi đăng nhập
   await page.getByLabel("Full name").fill("Ma Ref");
   await page.getByLabel("Phone number").fill("09 7812 7777");
@@ -50,7 +50,7 @@ test("CTV đăng nhập storefront bằng tài khoản CTV → đơn đặt trê
   test.setTimeout(90_000);
   await page.goto("/en/p/sen-viet-sunscreen-spf50?ref=LINN");
   await page.getByRole("button", { name: "Add to cart" }).click();
-  await page.getByRole("link", { name: "Checkout" }).click();
+  await page.getByRole("button", { name: "Checkout" }).click();
   await signInAtPrompt(page, "ctv@glow.local", PASSWORD);
   await expect(page.getByTestId("ordering-as-affiliate")).toContainText("MAUNG");
   await page.getByLabel("Full name").fill("Ma Hộ");

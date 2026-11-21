@@ -6,7 +6,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { formatMmk } from "@/lib/money";
-import { setCartQtyAction } from "@/server/cart/actions";
+import { saveCartAction, setCartQtyAction } from "@/server/cart/actions";
 import { CART_COOKIE, parseCart } from "@/server/cart/cart";
 import { getCartDetails } from "@/server/catalog/store-queries";
 import { BlockSkeleton, Notice, outlineButton, PageTitle, primaryButton, storeCard, storeField } from "@/components/store/ui";
@@ -78,9 +78,10 @@ async function CartContent({ params }: PageProps<"/[locale]/cart">) {
               </p>
             )}
             <div className="flex items-center gap-2">
-              <form action={setCartQtyAction} className="flex items-center gap-2">
-                <input type="hidden" name="variantId" value={l.variantId} />
-                <input
+              {/* Ô số lượng thuộc form chung #cart-form (thuộc tính form=) để "Thanh toán" lưu hết số đang nhập. */}
+              <input type="hidden" name="variantId" value={l.variantId} form="cart-form" />
+              <input
+                  form="cart-form"
                   name="qty"
                   type="number"
                   min={1}
@@ -90,8 +91,6 @@ async function CartContent({ params }: PageProps<"/[locale]/cart">) {
                   aria-label={l.standard ? l.name : `${l.name} ${l.label}`}
                   className={cn(storeField, "w-20")}
                 />
-                <button type="submit" className={outlineButton}><Save aria-hidden className="size-4 shrink-0" /> {t("update")}</button>
-              </form>
               <form action={setCartQtyAction}>
                 <input type="hidden" name="variantId" value={l.variantId} />
                 <input type="hidden" name="qty" value="0" />
@@ -111,13 +110,13 @@ async function CartContent({ params }: PageProps<"/[locale]/cart">) {
         {/* Cùng câu với checkout: không tính ship trên đơn, hãng vận chuyển thu khi giao (P15). */}
         <p className="text-xs text-muted-foreground">{ta("shippingNote")}</p>
         {cart.ok && cart.preorder && <Notice>{t("preorderNotice")}</Notice>}
-        {cart.ok ? (
-          <Link href="/checkout" className={cn(primaryButton, "w-full")}>
-            {t("checkout")}
-          </Link>
-        ) : (
-          <Notice tone="danger">{t("fix")}</Notice>
-        )}
+        {!cart.ok && <Notice tone="danger">{t("fix")}</Notice>}
+        <form id="cart-form" action={saveCartAction} className="space-y-2">
+          <input type="hidden" name="locale" value={locale} />
+          {/* Nút đầu tiên = nút mặc định khi bấm Enter trong ô số lượng → chỉ lưu, không nhảy sang thanh toán. */}
+          <button type="submit" className={cn(outlineButton, "w-full")}><Save aria-hidden className="size-4 shrink-0" /> {t("update")}</button>
+          <button type="submit" name="intent" value="checkout" className={cn(primaryButton, "w-full")}>{t("checkout")}</button>
+        </form>
       </aside>
     </div>
   );

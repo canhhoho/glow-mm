@@ -19,7 +19,7 @@ test("khách đánh giá sau khi nhận hàng → admin duyệt → hiện trên
   // Khách (đã đăng nhập — P14c) đặt COD; phiên khách nằm trong context của khách.
   await page.goto(PRODUCT);
   await page.getByRole("button", { name: "Add to cart" }).click();
-  await page.getByRole("link", { name: "Checkout" }).click();
+  await page.getByRole("button", { name: "Checkout" }).click();
   await signInAtPrompt(page);
   await page.getByLabel("Full name").fill("Ma Review");
   await page.getByLabel("Phone number").fill("09 4400 5566");

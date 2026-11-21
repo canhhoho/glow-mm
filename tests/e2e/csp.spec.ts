@@ -44,7 +44,7 @@ test("storefront: CSP 'unsafe-inline', không vi phạm trên các trang chính"
   // JS thật sự chạy: thêm vào giỏ (Server Action) từ trang SP.
   await visit(page, PRODUCT);
   await page.getByRole("button", { name: "Add to cart" }).click();
-  await expect(page.getByRole("link", { name: "Checkout" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Checkout" })).toBeVisible();
 
   // Khách đã đăng nhập: tài khoản + checkout.
   await loginCustomer(page, "khach@glow.local", PASSWORD);

@@ -19,7 +19,7 @@ test("tuyến dưới: đơn của CTV cấp dưới → cấp trên thấy hoa 
 
   await page.goto("/en/p/sen-viet-sunscreen-spf50?ref=LINN");
   await page.getByRole("button", { name: "Add to cart" }).click();
-  await page.getByRole("link", { name: "Checkout" }).click();
+  await page.getByRole("button", { name: "Checkout" }).click();
   await signInAtPrompt(page);
   await page.getByLabel("Full name").fill(customer);
   await page.getByLabel("Phone number").fill("09 7812 6666");

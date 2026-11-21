@@ -17,6 +17,7 @@ import { createAddress } from "@/server/accounts/accounts";
 import { getCustomerUser, requireCustomer } from "@/server/auth/customer-session";
 import { OrderError } from "@/server/orders/errors";
 import { createOrder, findOrderForCustomer } from "@/server/orders/orders";
+import { getCartDetails } from "@/server/catalog/store-queries";
 import {
   addLine,
   addOrderAccess,
@@ -108,6 +109,36 @@ export async function addToCartAction(formData: FormData) {
 /** Đổi số lượng / xoá dòng (qty = 0). Trang giỏ tự render lại sau khi cookie đổi. */
 export async function setCartQtyAction(formData: FormData) {
   await writeCart(setLine(await readLiveCart(), String(formData.get("variantId")), Number(formData.get("qty"))));
+}
+
+/**
+ * Lưu số lượng của MỌI dòng đang nhập trong một lần gửi (nút "Cập nhật"), hoặc lưu rồi sang thanh toán (intent=checkout).
+ * Trước đây "Thanh toán" chỉ là liên kết nên số vừa gõ chưa bấm "Cập nhật" bị mất. Chạy không cần JS (form HTML thuần).
+ * Chỉ sửa dòng ĐÃ có trong giỏ; ô trống / không hợp lệ / <1 giữ số cũ (xoá dòng dùng nút thùng rác). Giỏ còn lỗi
+ * (hết hàng, quá hạn mức…) → ở lại trang giỏ để khách thấy từng dòng.
+ */
+export async function saveCartAction(formData: FormData) {
+  const locale = localeOf(formData);
+  const ids = formData.getAll("variantId").map(String);
+  const qtys = formData.getAll("qty").map(String);
+  let lines = await readLiveCart();
+  const inCart = new Set(lines.map((l) => l.variantId));
+  const seen = new Set<string>();
+  ids.forEach((id, i) => {
+    const raw = (qtys[i] ?? "").trim();
+    const n = Number(raw);
+    if (!inCart.has(id) || seen.has(id) || raw === "" || !Number.isFinite(n) || n < 1) return;
+    seen.add(id);
+    lines = setLine(lines, id, n);
+  });
+  await writeCart(lines);
+  if (formData.get("intent") !== "checkout" || lines.length === 0) return;
+  if (!(await getCartDetails(lines, locale)).ok) return;
+  if (!(await getCustomerUser())) {
+    const prefix = localePrefix(locale);
+    nextRedirect(`${prefix}/login?next=${encodeURIComponent(`${prefix}/checkout`)}`);
+  }
+  redirect({ href: "/checkout", locale });
 }
 
 /** Đặt hàng trên web: bắt buộc tài khoản khách (P14c) — đơn gắn `accountId`, tuỳ chọn lưu địa chỉ vào sổ. */
