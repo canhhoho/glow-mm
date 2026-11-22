@@ -15,11 +15,14 @@ export function ReviewForm({ locale, code, productId, name }: { locale: string; 
       <input type="hidden" name="code" value={code} />
       <input type="hidden" name="productId" value={productId} />
       <p className="text-sm font-medium">{name}</p>
-      <fieldset className="flex flex-row-reverse justify-end gap-1 [&>label:has(input:checked)~label]:text-brand-dark">
+      <fieldset className="group/rating flex flex-row-reverse justify-end gap-1 [&>label:has(input:checked)~label]:text-brand-dark [&>label:hover~label]:text-brand-dark">
         <legend className="sr-only">{t("rating")}</legend>
         {/* DOM 5→1, hiển thị đảo lại 1→5: chọn sao N thì tô sao N và các sao đứng sau trong DOM (nhỏ hơn). */}
         {[5, 4, 3, 2, 1].map((n) => (
-          <label key={n} className="cursor-pointer text-2xl leading-none text-muted-foreground has-checked:text-brand-dark">
+          <label
+            key={n}
+            className="cursor-pointer rounded p-0.5 text-2xl leading-none text-muted-foreground transition-colors hover:text-brand-dark has-checked:text-brand-dark has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand"
+          >
             <input type="radio" name="rating" value={n} required className="sr-only" aria-label={t("stars", { n })} />
             <span aria-hidden>★</span>
           </label>

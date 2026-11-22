@@ -1,4 +1,5 @@
 import { cache, Suspense } from "react";
+import { Link } from "@/i18n/navigation";
 import { ProductGallery } from "@/components/store/product-gallery";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -247,9 +248,17 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
       )}
 
       <section id="reviews" aria-labelledby="reviews-h" className={`${storeCard} space-y-2`}>
-        <h2 id="reviews-h" className="font-medium">
-          {tr("heading")}
-        </h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="reviews-h" className="font-medium">
+            {tr("heading")}
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            {tr("howToReview")}{" "}
+            <Link href="/account" className="text-brand-dark underline">
+              {tr("myOrdersLink")}
+            </Link>
+          </p>
+        </div>
         {reviews.items.length === 0 ? (
           <p className="text-sm text-muted-foreground">{tr("none")}</p>
         ) : (

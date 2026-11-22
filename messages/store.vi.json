@@ -201,7 +201,8 @@
     "preorderInfo": "Đơn đặt trước: hàng về dự kiến 1–2 tuần, chúng tôi sẽ liên hệ xác nhận và giao hàng khi hàng về kho.",
     "preorderBankNotice": "Đơn đặt trước: Bạn có thể chuyển khoản ngay; hàng về trong 1–2 tuần.",
     "preorderPaidNotice": "Đơn đặt trước: chúng tôi đã nhận tiền chuyển khoản; hàng về trong 1–2 tuần sẽ giao ngay cho bạn.",
-    "preorderCodNotice": "Đơn đặt trước: Thanh toán khi nhận hàng, sau khi hàng về (dự kiến 1–2 tuần)."
+    "preorderCodNotice": "Đơn đặt trước: Thanh toán khi nhận hàng, sau khi hàng về (dự kiến 1–2 tuần).",
+    "ratePrompt": "Đánh giá sản phẩm"
   },
   "Track": {
     "title": "Tra cứu đơn hàng",
@@ -224,7 +225,9 @@
     "errGeneric": "Không gửi được đánh giá này",
     "heading": "Đánh giá",
     "summary": "{avg} / 5 · {count} đánh giá",
-    "none": "Chưa có đánh giá"
+    "none": "Chưa có đánh giá",
+    "howToReview": "Bạn đã mua sản phẩm này? Đánh giá tại",
+    "myOrdersLink": "Đơn hàng của tôi"
   },
   "Chat": {
     "label": "Chat với chúng tôi"

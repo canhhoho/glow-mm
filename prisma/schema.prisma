@@ -1314,6 +1314,7 @@ model Review {
 
   @@unique([productId, orderId])
   @@index([productId, status, createdAt])
+  @@index([status, createdAt])
   @@index([orderId])
 }
 

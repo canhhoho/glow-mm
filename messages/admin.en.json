@@ -107,6 +107,7 @@
   },
   "Nav": {
     "brands": "Brands",
+    "pendingReviewsBadge": "pending reviews",
     "lowStockBadge": "low-stock variants",
     "quarantineLotsBadge": "lots awaiting inspection",
     "sellingPrices": "Selling prices",
@@ -1648,7 +1649,13 @@
     "created": "Date",
     "approve": "Publish",
     "reject": "Reject",
-    "empty": "No reviews"
+    "empty": "No reviews",
+    "searchPlaceholder": "Search comments, order code, customer, product…",
+    "filterRating": "Filter by stars",
+    "allRatings": "All ratings",
+    "pageCount": "Page {page}/{pages} · {total} reviews",
+    "previousPage": "Previous",
+    "nextPage": "Next"
   },
   "Account": {
     "title": "My account",

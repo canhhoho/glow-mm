@@ -43,20 +43,43 @@ export async function submitReview(raw: unknown, access: { code: string; phone: 
 }
 
 export async function moderateReview(reviewId: string, approve: boolean, userId: string) {
-  const res = await prisma.review.updateMany({
-    where: { id: reviewId, status: { not: approve ? "APPROVED" : "REJECTED" } },
-    data: { status: approve ? "APPROVED" : "REJECTED" },
-  });
-  if (res.count !== 1) throw new Error("Đánh giá không tồn tại hoặc đã ở trạng thái này");
-  await prisma.auditLog.create({
-    data: { userId, action: approve ? "review.approve" : "review.reject", entity: "Review", entityId: reviewId },
+  await prisma.$transaction(async (tx) => {
+    const res = await tx.review.updateMany({
+      where: { id: reviewId, status: { not: approve ? "APPROVED" : "REJECTED" } },
+      data: { status: approve ? "APPROVED" : "REJECTED" },
+    });
+    if (res.count !== 1) throw new Error("Đánh giá không tồn tại hoặc đã ở trạng thái này");
+    await tx.auditLog.create({
+      data: { userId, action: approve ? "review.approve" : "review.reject", entity: "Review", entityId: reviewId },
+    });
   });
 }
 
-/** Tên hiển thị công khai: chỉ chữ đầu của tên người nhận (không lộ họ tên đầy đủ). */
+export async function reviewStatusCounts(): Promise<Record<ReviewStatus, number>> {
+  const counts = await prisma.review.groupBy({
+    by: ["status"],
+    _count: true,
+  });
+  const map: Record<ReviewStatus, number> = { PENDING: 0, APPROVED: 0, REJECTED: 0 };
+  for (const c of counts) {
+    map[c.status] = c._count;
+  }
+  return map;
+}
+
+const MM_HONORIFICS = new Set([
+  "Ma", "Ko", "U", "Daw", "Mg", "Sai", "Saw", "Naw",
+  "မ", "ကို", "ဦး", "ဒေါ်", "မောင်", "စိုင်း", "စော", "နော်",
+]);
+
+/** Tên hiển thị công khai: chỉ chữ đầu của tên người nhận (kèm chữ thứ 2 nếu từ đầu là kính ngữ Myanmar). */
 export function publicName(full: string): string {
-  const first = full.trim().split(/\s+/)[0] ?? "";
-  return first ? `${first} …` : "…";
+  const parts = full.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "…";
+  if (parts.length >= 2 && MM_HONORIFICS.has(parts[0])) {
+    return `${parts[0]} ${parts[1]} …`;
+  }
+  return `${parts[0]} …`;
 }
 
 export async function productReviews(productId: string, take = 20) {
@@ -101,14 +124,61 @@ export async function reviewablesForOrder(orderId: string) {
   });
 }
 
+export type AdminReviewQuery = {
+  status?: ReviewStatus;
+  q?: string;
+  rating?: number;
+  page?: number;
+  pageSize?: number;
+};
+
+export async function listReviewsAdminPage(query: AdminReviewQuery) {
+  const status = query.status ?? "PENDING";
+  const page = Math.max(1, query.page ?? 1);
+  const pageSize = Math.min(100, Math.max(10, query.pageSize ?? 25));
+  const q = query.q?.trim();
+  const rating = query.rating && query.rating >= 1 && query.rating <= 5 ? query.rating : undefined;
+
+  const where: Prisma.ReviewWhereInput = {
+    status,
+    ...(rating ? { rating } : {}),
+    ...(q
+      ? {
+          OR: [
+            { body: { contains: q, mode: "insensitive" } },
+            { order: { code: { contains: q, mode: "insensitive" } } },
+            { order: { recipientName: { contains: q, mode: "insensitive" } } },
+            { product: { slug: { contains: q, mode: "insensitive" } } },
+            { product: { translations: { some: { name: { contains: q, mode: "insensitive" } } } } },
+          ],
+        }
+      : {}),
+  };
+
+  const [total, rows] = await Promise.all([
+    prisma.review.count({ where }),
+    prisma.review.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      include: {
+        product: { select: { id: true, slug: true, translations: { select: { locale: true, name: true } } } },
+        order: { select: { id: true, code: true, recipientName: true } },
+      },
+    }),
+  ]);
+
+  return {
+    rows,
+    total,
+    page,
+    pageSize,
+    pages: Math.max(1, Math.ceil(total / pageSize)),
+  };
+}
+
 export async function listReviewsAdmin(status: ReviewStatus, take = 100) {
-  return prisma.review.findMany({
-    where: { status },
-    orderBy: { createdAt: "desc" },
-    take,
-    include: {
-      product: { select: { slug: true, translations: { select: { locale: true, name: true } } } },
-      order: { select: { id: true, code: true, recipientName: true } },
-    },
-  });
+  const res = await listReviewsAdminPage({ status, pageSize: take });
+  return res.rows;
 }

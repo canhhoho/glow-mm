@@ -107,6 +107,7 @@
   },
   "Nav": {
     "brands": "အမှတ်တံဆိပ်",
+    "pendingReviewsBadge": "အတည်ပြုရန်စောင့်ဆိုင်းနေသော သုံးသပ်ချက်များ",
     "lowStockBadge": "လက်ကျန်နည်းသော အမျိုးအစား",
     "quarantineLotsBadge": "စစ်ဆေးရန်စောင့်ဆဲ လော့",
     "sellingPrices": "ရောင်းဈေး",
@@ -1648,7 +1649,13 @@
     "created": "ရက်",
     "approve": "ထုတ်ပြန်",
     "reject": "ပယ်ချ",
-    "empty": "သုံးသပ်ချက်မရှိ"
+    "empty": "သုံးသပ်ချက်မရှိ",
+    "searchPlaceholder": "မှတ်ချက်၊ အော်ဒါ၊ ဝယ်သူ၊ ပစ္စည်း ရှာရန်…",
+    "filterRating": "ကြယ်အရ စစ်ထုတ်ရန်",
+    "allRatings": "ကြယ်အားလုံး",
+    "pageCount": "စာမျက်နှာ {page}/{pages} · သုံးသပ်ချက် {total}",
+    "previousPage": "ရှေ့စာမျက်နှာ",
+    "nextPage": "နောက်စာမျက်နှာ"
   },
   "Account": {
     "title": "ကျွန်ုပ်၏ အကောင့်",

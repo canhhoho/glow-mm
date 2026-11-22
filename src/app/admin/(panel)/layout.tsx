@@ -20,6 +20,7 @@ const BADGE_TONE: Record<NavCountKey, NonNullable<ShellItem["badge"]>["tone"]> =
   pendingApplications: "brand",
   passwordResets: "brand",
   lowStock: "warning",
+  pendingReviews: "brand",
 };
 
 export default async function PanelLayout({ children }: LayoutProps<"/admin">) {
