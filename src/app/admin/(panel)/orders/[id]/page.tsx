@@ -99,6 +99,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ad
         <Section title={t("actions")} testId="order-actions">
           {order.status === "AWAITING_STOCK" && <p className="text-sm text-muted-foreground" data-testid="preorder-hint">{t("preorderHint")}</p>}
           {order.status === "PENDING" && <p className="text-sm text-muted-foreground">{t(`confirmHint.${order.paymentMethod}`)}</p>}
+          {transitions.includes("confirmPrepayment") && <p className="text-sm text-muted-foreground">{t("prepayHint")}</p>}
           {order.status === "SHIPPING" && order.paymentMethod === "COD" && <p className="text-sm text-muted-foreground">{t("codCompleteHint")}</p>}
           {transitions.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("noActions")}</p>
@@ -112,7 +113,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<"/ad
                   label={n === "complete" && order.paymentMethod === "COD" ? t("completeCod") : t(`t.${n}`)}
                   fields={fieldsFor(n)}
                   variant={n === "cancel" ? "destructive" : "default"}
-                  confirm={n === "cancel" ? t("cancelConfirm") : undefined}
+                  confirm={n === "cancel" ? t("cancelConfirm") : n === "confirmPrepayment" ? t("prepayHint") : undefined}
                 />
               ))}
             </div>

@@ -52,7 +52,7 @@ async function LoginContent({ params, searchParams }: PageProps<"/[locale]/login
           {t("noAccount")}{" "}
           <Link
             href={{ pathname: "/register", query: { next } }}
-            className="inline-flex min-h-11 items-center font-medium text-brand hover:underline"
+            className="inline-flex min-h-11 items-center font-medium text-brand-dark hover:underline"
           >
             {t("createAccount")}
           </Link>

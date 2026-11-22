@@ -29,7 +29,7 @@ export async function StoreFooter({ locale }: { locale: string }) {
     getTranslations({ locale, namespace: "Nav" }),
     getTranslations({ locale, namespace: "Info" }),
   ]);
-  const link = "inline-flex min-h-11 items-center underline lg:min-h-9 lg:no-underline lg:hover:text-brand";
+  const link = "inline-flex min-h-11 items-center underline lg:min-h-9 lg:no-underline lg:hover:text-brand-dark";
   return (
     <footer className="mt-4 border-t border-border bg-card text-sm text-muted-foreground">
       <div className="mx-auto grid max-w-6xl gap-4 px-4 py-6 lg:auto-cols-fr lg:grid-flow-col lg:gap-8 lg:py-10">

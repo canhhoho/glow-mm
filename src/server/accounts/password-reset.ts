@@ -9,12 +9,14 @@ import { CUSTOMER_ROLE, phoneEmail } from "@/server/auth/customer-policy";
 import { consumeRateLimit, MIN_CUSTOMER_PASSWORD, PhoneAccountError } from "./phone";
 
 /**
- * Khách (tài khoản SĐT) quên mật khẩu — không SMS/OTP, không email: khách tự nhập mật khẩu mới trên web → YÊU CẦU chờ,
- * admin xác nhận trên web admin (không gọi khách) → mật khẩu mới có hiệu lực, mọi phiên cũ bị thu hồi.
+ * Khách (tài khoản SĐT) quên mật khẩu — không SMS/OTP, không email (audit 12, gói D3 — phương án B):
+ * khách nhập SĐT + mật khẩu mới → mật khẩu mới có hiệu lực NGAY, mọi phiên cũ bị thu hồi.
  *
- * - Mật khẩu cũ dùng được cho tới khi admin xác nhận. Chỉ lưu HASH; hash xoá (null) khi yêu cầu kết thúc.
- * - Gửi yêu cầu luôn trả "đã nhận" dù SĐT có tài khoản hay không (không dò được SĐT đã đăng ký).
- * - Mỗi khách một yêu cầu chờ (gửi lại → bản cũ SUPERSEDED); hết hạn sau 7 ngày. Chỉ role CUSTOMER (CTV do admin đặt lại).
+ * - Giới hạn tần suất 3 lần/ngày/SĐT, 5 lần/giờ/IP. Không lưu hash trong bản ghi theo dõi.
+ * - Luôn trả cùng một thông báo cho khách dù SĐT có tài khoản hay không (không dò được SĐT đã đăng ký).
+ * - Bản ghi APPROVED + decidedById = null = "chưa xem": hiện ở /admin/customer-accounts 7 ngày để admin
+ *   bấm "Đã kiểm tra" hoặc khoá tài khoản nếu nghi ngờ. Chỉ role CUSTOMER (CTV do admin đặt lại).
+ * - Bản PENDING kiểu cũ (trước D3) vẫn được admin xác nhận/từ chối và cron dọn khi quá hạn.
  */
 
 export type PasswordResetErrorCode = "not_found" | "not_pending" | "expired" | "not_customer";
@@ -65,31 +67,80 @@ export async function requestPasswordReset(raw: unknown, ctx: { ip: string; now?
   if (!user) return { created: false as const };
 
   await prisma.$transaction(async (tx) => {
-    // Khoá dòng user: hai yêu cầu cùng lúc không tạo hai bản PENDING.
+    // Khoá dòng user: tránh xung đột khi có yêu cầu đồng thời
     await tx.$queryRaw`SELECT "id" FROM "user" WHERE "id" = ${user.id} FOR UPDATE`;
+
+    // 1. Cập nhật mật khẩu ngay lập tức vào bảng account
+    const updated = await tx.account.updateMany({
+      where: { userId: user.id, providerId: "credential" },
+      data: { password: passwordHash },
+    });
+    if (updated.count === 0) {
+      await tx.account.create({
+        data: {
+          id: randomUUID(),
+          accountId: user.id,
+          providerId: "credential",
+          userId: user.id,
+          password: passwordHash,
+        },
+      });
+    }
+
+    // 2. Thu hồi toàn bộ phiên đăng nhập cũ của tài khoản
+    await tx.session.deleteMany({ where: { userId: user.id } });
+
+    // 3. Đánh dấu các bản ghi cũ là SUPERSEDED
     await tx.passwordResetRequest.updateMany({
-      where: { userId: user.id, status: "PENDING" },
+      where: { userId: user.id, status: { in: ["PENDING", "APPROVED"] }, decidedById: null },
       data: { status: "SUPERSEDED", passwordHash: null, decidedAt: now },
     });
+
+    // 4. Tạo bản ghi đặt lại mật khẩu tự động (decidedById = null để admin theo dõi)
     await tx.passwordResetRequest.create({
-      data: { userId: user.id, phone, passwordHash, ip: ctx.ip || null, createdAt: now, expiresAt: new Date(now.getTime() + RESET_TTL_DAYS * DAY_MS) },
+      data: {
+        userId: user.id,
+        phone,
+        passwordHash: null,
+        status: "APPROVED",
+        ip: ctx.ip || null,
+        createdAt: now,
+        expiresAt: new Date(now.getTime() + RESET_TTL_DAYS * DAY_MS),
+        decidedAt: now,
+        decidedById: null,
+      },
+    });
+
+    // 5. Ghi nhật ký kiểm toán (AuditLog)
+    await tx.auditLog.create({
+      data: {
+        userId: user.id,
+        action: "customer.passwordReset.auto",
+        entity: "User",
+        entityId: user.id,
+      },
     });
   });
   return { created: true as const };
 }
 
-const pendingWhere = (now: Date) => ({ status: "PENDING" as const, expiresAt: { gt: now } });
+const pendingWhere = (now: Date) => ({
+  OR: [
+    { status: "PENDING" as const, expiresAt: { gt: now } },
+    { status: "APPROVED" as const, decidedById: null, createdAt: { gte: new Date(now.getTime() - RESET_TTL_DAYS * DAY_MS) } },
+  ],
+});
 
-/** Số yêu cầu đang chờ (badge menu admin). */
+/** Số yêu cầu đang chờ / vừa đổi tự động chưa xem (badge menu admin). */
 export function pendingPasswordResetCount(now = new Date()) {
   return prisma.passwordResetRequest.count({ where: pendingWhere(now) });
 }
 
-/** Yêu cầu đang chờ cho trang admin (cũ nhất trước). Không trả hash. */
+/** Yêu cầu đang chờ hoặc vừa đổi tự động cho trang admin (mới nhất trước). */
 export async function listPasswordResetRequests(now = new Date()) {
   const rows = await prisma.passwordResetRequest.findMany({
     where: pendingWhere(now),
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: "desc" },
     take: 100,
     select: {
       id: true,
@@ -113,8 +164,7 @@ export async function listPasswordResetRequests(now = new Date()) {
 }
 
 /**
- * Admin xác nhận / từ chối. Một transaction, khoá yêu cầu: hai admin bấm cùng lúc → đúng một người thành công.
- * Xác nhận: ghi mật khẩu (tạo tài khoản `credential` nếu chưa có), xoá mọi phiên, KHÔNG mở khoá tài khoản đang bị khoá.
+ * Admin xác nhận đã kiểm tra / xử lý yêu cầu đổi mật khẩu.
  */
 export async function decidePasswordReset(idRaw: unknown, approve: boolean, actorId: string, now = new Date()) {
   const id = rawId.parse(idRaw);
@@ -125,16 +175,18 @@ export async function decidePasswordReset(idRaw: unknown, approve: boolean, acto
       select: { id: true, userId: true, status: true, expiresAt: true, passwordHash: true, user: { select: { role: true } } },
     });
     if (!req) throw new PasswordResetError("not_found", "Không tìm thấy yêu cầu");
-    if (req.status !== "PENDING") throw new PasswordResetError("not_pending", "Yêu cầu đã được xử lý");
-    if (req.expiresAt <= now) throw new PasswordResetError("expired", "Yêu cầu đã hết hạn");
-    if (approve) {
-      if (req.user.role !== CUSTOMER_ROLE || !req.passwordHash) throw new PasswordResetError("not_customer", "Không phải tài khoản khách");
+    if (req.status !== "PENDING" && req.status !== "APPROVED") throw new PasswordResetError("not_pending", "Yêu cầu đã được xử lý");
+
+    // Xử lý bản ghi cũ (PENDING) nếu có
+    if (req.status === "PENDING" && approve && req.passwordHash) {
+      if (req.user.role !== CUSTOMER_ROLE) throw new PasswordResetError("not_customer", "Không phải tài khoản khách");
       const updated = await tx.account.updateMany({ where: { userId: req.userId, providerId: "credential" }, data: { password: req.passwordHash } });
       if (updated.count === 0) {
         await tx.account.create({ data: { id: randomUUID(), accountId: req.userId, providerId: "credential", userId: req.userId, password: req.passwordHash } });
       }
       await tx.session.deleteMany({ where: { userId: req.userId } });
     }
+
     await tx.passwordResetRequest.update({
       where: { id },
       data: { status: approve ? "APPROVED" : "REJECTED", passwordHash: null, decidedAt: now, decidedById: actorId },

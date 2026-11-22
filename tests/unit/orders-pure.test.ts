@@ -35,6 +35,19 @@ describe("Máy trạng thái đơn", () => {
     expect(holdsReservation("AWAITING_STOCK")).toBe(false);
   });
 
+  it("21/11/2026: đơn đặt trước chuyển khoản trả trước → ghi nhận tiền, hàng về vào thẳng chuẩn bị giao", () => {
+    const paid = { ...bank("AWAITING_STOCK"), paymentStatus: "PAID" };
+    expect(availableTransitions(bank("AWAITING_STOCK"))).toEqual(["stockArrived", "confirmPrepayment", "cancel"]);
+    expect(assertTransition("confirmPrepayment", bank("AWAITING_STOCK"))).toBe("AWAITING_STOCK");
+    expect(canTransition("confirmPrepayment", cod("AWAITING_STOCK"))).toBe(false);
+    expect(availableTransitions(paid)).toEqual(["stockArrivedPaid", "cancel"]);
+    expect(assertTransition("stockArrivedPaid", paid)).toBe("PAYMENT_CONFIRMED");
+    // Đã trả không đi qua PENDING (giữ hàng có hạn → cron hết hạn huỷ đơn đã trả); chưa trả không vào thẳng chuẩn bị giao.
+    expect(canTransition("stockArrived", paid)).toBe(false);
+    expect(canTransition("stockArrivedPaid", bank("AWAITING_STOCK"))).toBe(false);
+    expect(availableTransitions({ ...bank("AWAITING_STOCK"), paymentStatus: "REFUNDED" })).toEqual(["cancel"]);
+  });
+
   it("đơn đóng gói cũ vẫn bàn giao được; không được giao lại", () => {
     expect(assertTransition("ship", cod("PACKING"))).toBe("SHIPPING");
     expect(canTransition("ship", cod("SHIPPING"))).toBe(false);

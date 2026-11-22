@@ -1194,12 +1194,15 @@
       "ship": "Đã bàn giao vận chuyển",
       "complete": "Giao thành công",
       "cancel": "Huỷ đơn",
-      "stockArrived": "Hàng đã về — chuyển xử lý"
+      "stockArrived": "Hàng đã về — chuyển xử lý",
+      "confirmPrepayment": "Đã nhận tiền trước",
+      "stockArrivedPaid": "Hàng đã về — chuẩn bị giao (đã trả trước)"
     },
     "confirmHint": {
       "COD": "Gọi khách kiểm tra sản phẩm, số lượng, địa chỉ và xác nhận đồng ý nhận hàng trước khi bấm Xác nhận đơn.",
       "BANK_TRANSFER": "Đối chiếu tài khoản ngân hàng và chỉ bấm Đã nhận tiền khi đã nhận đúng số tiền của đơn."
     },
+    "prepayHint": "Khách chuyển khoản trước: đối chiếu tài khoản ngân hàng, chỉ bấm Đã nhận tiền trước khi đã nhận đúng số tiền của đơn. Hàng về sẽ chuyển thẳng sang chuẩn bị giao.",
     "codCompleteHint": "Chỉ hoàn tất khi khách đã nhận hàng và tiền COD đã được thu.",
     "completeCod": "Giao thành công · Đã thu tiền",
     "cancelConfirm": "Huỷ đơn này và nhả hàng đang giữ?",
@@ -1235,6 +1238,7 @@
       "cart_empty": "Chưa chọn sản phẩm nào",
       "price_missing": "Có sản phẩm chưa có giá bán (giá ≤ 0)",
       "out_of_stock": "Không đủ hàng (còn/cần)",
+      "preorder_unconfirmed": "Đơn có sản phẩm hết hàng cần xác nhận đặt trước",
       "not_found": "Không tìm thấy đơn",
       "invalid_transition": "Không thể thực hiện ở trạng thái hiện tại",
       "forbidden": "Bạn không có quyền thực hiện thao tác này",
@@ -2213,14 +2217,14 @@
     "access": "Quyền truy cập",
     "phone": "Số điện thoại",
     "no_password": "Tài khoản này không có mật khẩu",
-    "resetRequestsTitle": "Yêu cầu đặt lại mật khẩu ({count})",
-    "resetRequestsHint": "Khách quên mật khẩu đã tự nhập mật khẩu mới. Xác nhận → mật khẩu mới có hiệu lực và khách bị đăng xuất khỏi mọi thiết bị. Từ chối → mật khẩu cũ giữ nguyên. Yêu cầu tự hết hạn sau 7 ngày.",
+    "resetRequestsTitle": "Khách vừa đổi mật khẩu qua SĐT ({count})",
+    "resetRequestsHint": "Các tài khoản này vừa tự đặt lại mật khẩu qua SĐT và bị đăng xuất khỏi mọi thiết bị cũ. Nếu nghi ngờ hành vi chiếm quyền, bạn có thể bấm Khoá tài khoản để bảo vệ khách.",
     "requestedAt": "Gửi lúc",
-    "approveReset": "Xác nhận",
+    "approveReset": "Đã kiểm tra",
     "rejectReset": "Từ chối",
-    "approveResetConfirm": "Xác nhận đặt lại mật khẩu cho {name} ({phone})? Mật khẩu mới có hiệu lực ngay và khách bị đăng xuất khỏi mọi thiết bị.",
+    "approveResetConfirm": "Đánh dấu đã kiểm tra yêu cầu đổi mật khẩu của {name} ({phone})?",
     "rejectResetConfirm": "Từ chối yêu cầu của {name}? Mật khẩu hiện tại giữ nguyên.",
-    "resetApproved": "Đã xác nhận — khách dùng được mật khẩu mới",
+    "resetApproved": "Đã đánh dấu kiểm tra",
     "resetRejected": "Đã từ chối yêu cầu"
   },
   "VtpExport": {
@@ -2655,7 +2659,8 @@
     "short": "Chưa đủ hàng",
     "status": "Tình trạng",
     "missing": "Thiếu {n}",
-    "ok": "Đủ"
+    "ok": "Đủ",
+    "paid": "Đã trả trước"
   },
   "BatchReview": {
     "legend": "Gửi duyệt sau lượt này",

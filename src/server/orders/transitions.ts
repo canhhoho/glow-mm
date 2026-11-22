@@ -85,6 +85,16 @@ export async function transitionInTx(
       await reserveForOrder(tx, { orderId: order.id, items, expiresAt: new Date(opts.now.getTime() + hours * 3_600_000) }, opts);
       break;
     }
+    case "confirmPrepayment":
+      // 21/11/2026: khách chuyển khoản trước cho đơn đặt trước — chỉ ghi nhận tiền, chưa giữ hàng (hàng chưa về).
+      data.paymentStatus = "PAID";
+      break;
+    case "stockArrivedPaid": {
+      // Hàng về cho đơn đã trả trước → giữ hàng không hết hạn (như confirmPayment), vào thẳng chuẩn bị giao.
+      const items = await tx.orderItem.findMany({ where: { orderId: order.id }, select: { variantId: true, qty: true } });
+      await reserveForOrder(tx, { orderId: order.id, items, expiresAt: null }, opts);
+      break;
+    }
     case "confirmCod":
       await holdIndefinitely(tx, order.id, opts);
       data.codConfirmedAt = opts.now;
@@ -128,7 +138,7 @@ export async function transitionInTx(
   await tx.auditLog.create({
     data: { userId, action: `order.${name}`, entity: "Order", entityId: order.id, data: { code: order.code, from: order.status, to } },
   });
-  const event = name === "confirmCod" || name === "confirmPayment" ? "order_confirmed" : name === "ship" ? "order_shipped" : name === "complete" ? "order_completed" : name === "cancel" ? "order_cancelled" : null;
+  const event = name === "confirmCod" || name === "confirmPayment" || name === "stockArrivedPaid" ? "order_confirmed" : name === "ship" ? "order_shipped" : name === "complete" ? "order_completed" : name === "cancel" ? "order_cancelled" : null;
   if (event) await recordOrderEvent(tx, event, updated);
   return updated;
 }

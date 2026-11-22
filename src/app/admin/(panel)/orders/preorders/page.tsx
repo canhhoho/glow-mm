@@ -42,6 +42,7 @@ export default async function PreordersPage() {
                 {o.code}
               </Link>
               {o.enough ? <Badge tone="success">{tp("enough")}</Badge> : <Badge tone="warning">{tp("short")}</Badge>}
+              {o.paymentStatus === "PAID" && <Badge tone="success">{tp("paid")}</Badge>}
             </span>
           }
         >
@@ -60,7 +61,19 @@ export default async function PreordersPage() {
               </tr>
             ))}
           </DataTable>
-          {canMove && o.enough && <TransitionForm orderId={o.id} transition="stockArrived" label={t("t.stockArrived")} />}
+          {canMove && (
+            <div className="flex flex-wrap gap-2">
+              {/* 21/11/2026: đơn chuyển khoản trả trước → ghi nhận tiền ngay; hàng về thì vào thẳng chuẩn bị giao. */}
+              {o.paymentMethod === "BANK_TRANSFER" && o.paymentStatus === "UNPAID" && (
+                <TransitionForm orderId={o.id} transition="confirmPrepayment" label={t("t.confirmPrepayment")} confirm={t("prepayHint")} />
+              )}
+              {o.enough && (o.paymentStatus === "PAID" ? (
+                <TransitionForm orderId={o.id} transition="stockArrivedPaid" label={t("t.stockArrivedPaid")} />
+              ) : (
+                <TransitionForm orderId={o.id} transition="stockArrived" label={t("t.stockArrived")} />
+              ))}
+            </div>
+          )}
         </Section>
       ))}
     </Page>

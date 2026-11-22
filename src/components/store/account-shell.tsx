@@ -49,7 +49,7 @@ export async function AccountShell({
             aria-current={tab.key === active ? "page" : undefined}
             className={cn(
               "inline-flex min-h-11 flex-1 items-center justify-center rounded-lg px-3 text-sm whitespace-nowrap",
-              tab.key === active ? "bg-brand font-medium text-brand-foreground" : "hover:bg-muted",
+              tab.key === active ? "bg-brand-dark font-medium text-brand-dark-foreground" : "hover:bg-muted",
             )}
           >
             {t(`nav.${tab.key}`)}

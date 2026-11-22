@@ -77,6 +77,7 @@ export async function preorderQueue(db: Tx, opts: AvailabilityOpts) {
       recipientName: true,
       recipientPhone: true,
       paymentMethod: true,
+      paymentStatus: true,
       totalMmk: true,
       items: { select: { id: true, variantId: true, sku: true, name: true, qty: true } },
     },

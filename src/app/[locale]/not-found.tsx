@@ -6,7 +6,7 @@ export default async function NotFound() {
   return (
     <div className="py-16 text-center">
       <h1 className="mb-4 text-lg font-medium">{t("title")}</h1>
-      <Link href="/" className="text-brand underline">
+      <Link href="/" className="text-brand-dark underline">
         {t("back")}
       </Link>
     </div>

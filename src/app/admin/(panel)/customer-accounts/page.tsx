@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { Check, ChevronDown, Info, KeyRound, Mail, Phone, UserCheck, Users, UserX, X } from "lucide-react";
+import { Check, ChevronDown, Info, KeyRound, Mail, Phone, UserCheck, Users, UserX } from "lucide-react";
 import { fmtDateTime, fmtInt } from "@/lib/format";
 import { requirePagePermission } from "@/server/auth/session";
 import { isPhoneEmail } from "@/server/auth/customer-policy";
@@ -47,6 +47,17 @@ export default async function CustomerAccountsPage({ searchParams }: PageProps<"
                   </div>
                 </div>
                 <div className="flex items-start gap-1">
+                  {r.active && (
+                    <ActionButton
+                      action={setCustomerActiveAction}
+                      fields={{ id: r.userId, active: "false" }}
+                      label={t("lock")}
+                      variant="destructive"
+                      icon={<UserX aria-hidden="true" />}
+                      iconOnly={false}
+                      confirm={t("lockConfirm", { name: r.name })}
+                    />
+                  )}
                   <ActionButton
                     action={decidePasswordResetAction}
                     fields={{ id: r.id, decision: "approve" }}
@@ -54,15 +65,6 @@ export default async function CustomerAccountsPage({ searchParams }: PageProps<"
                     icon={<Check aria-hidden="true" />}
                     iconOnly={false}
                     confirm={t("approveResetConfirm", { name: r.name, phone: r.phone })}
-                  />
-                  <ActionButton
-                    action={decidePasswordResetAction}
-                    fields={{ id: r.id, decision: "reject" }}
-                    label={t("rejectReset")}
-                    variant="outline"
-                    icon={<X aria-hidden="true" />}
-                    iconOnly={false}
-                    confirm={t("rejectResetConfirm", { name: r.name })}
                   />
                 </div>
               </li>

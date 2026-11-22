@@ -7,22 +7,22 @@ Nguồn: bảng audit 18 mục của Codex, đã **đối chiếu lại với co
 | # | Mục audit | Trạng thái | Ghi chú đối chiếu code |
 |---|---|---|---|
 | 01 | Giỏ: Checkout không lưu số lượng | ✅ **Xong** (commit `0278beb`) | `saveCartAction`, nút Thanh toán là submit; `tests/e2e/cart-quantity.spec.ts` |
-| 02 | Checkout: giá đổi không báo khách | ❌ Chưa | `placeOrderAction`/`createOrder` lấy giá hiện hành; không có tổng khách đã thấy để đối chiếu |
-| 03 | Checkout: hết hàng → tự thành Pre-order | ❌ Chưa | `planOrderStock` quyết định phía server; form không gửi "khách đang mua hàng có sẵn" |
+| 02 | Checkout: giá đổi không báo khách | ✅ **Xong** (gói A1) | `expectedTotalMmk` đối chiếu tổng hiện hành, chặn tạo đơn và yêu cầu xác nhận khi đổi giá |
+| 03 | Checkout: hết hàng → tự thành Pre-order | ✅ **Xong** (gói A2) | `expectedPreorder` đối chiếu cờ preorder, chặn tạo đơn và yêu cầu xác nhận khi hết hàng chuyển Pre-order |
 | 04 | Không thấy liên hệ Viber/Messenger | ⚠️ Code đã có, **thiếu cấu hình** | `ContactLinks` có ở footer, trang SP, checkout, trang đơn nhưng ẩn khi `VIBER_CHAT_URI`/`FB_PAGE_USERNAME` trống. Việc của chủ shop: điền env production (không sửa code) |
 | 05 | Bắt buộc đăng nhập trước checkout | 🚫 **Đóng** — chủ shop chốt 21/11/2026: khách phải đăng nhập | Giữ P14c |
-| 06 | Pre-order chưa có thời gian dự kiến | ❌ Chưa | Chỉ có câu "giao khi hàng về" |
-| 07 | Chưa có phí/thời gian giao tham khảo | ❌ Chưa | Chỉ có `Address.shippingNote` |
-| 08 | Nội dung biên lai mâu thuẫn | ❌ Chưa | Trang đơn: "Không cần gửi biên lai" (`Order.bankConfirmation`); nhưng `Checkout.bankHint` và `Info.…` (chính sách thanh toán, `store.*.json` ~dòng 241) vẫn bảo tải biên lai |
+| 06 | Pre-order chưa có thời gian dự kiến | ✅ **Xong** (gói C1) | Sửa Product.preorderNote, Cart.preorderLine/preorderNotice, Checkout.preorderNotice, Order.preorderInfo thành dự kiến 1–2 tuần ở 3 ngôn ngữ |
+| 07 | Chưa có phí/thời gian giao tham khảo | ✅ **Xong** (gói D1) | Trang Info (giao hàng) và Address.shippingNote nêu rõ nguyên tắc tiền hàng trả shop, phí ship khách trả trực tiếp cho hãng vận chuyển; phí và thời gian tuỳ vùng |
+| 08 | Nội dung biên lai mâu thuẫn | ✅ **Xong** (gói B1) | Đồng bộ chính sách chuyển khoản không cần biên lai ở Checkout.bankHint, Info.payment, Checkout.err.proof_not_allowed |
 | 09 | Dior Velvet 100 thiếu ảnh | ❌ Chưa — **dữ liệu, không phải code** | Admin tải ảnh ở trang sản phẩm |
-| 10 | Pre-order chuyển khoản: chưa nói khi nào trả tiền | ❌ Chưa | `Order.preorderInfo` không nhắc thanh toán; khối ngân hàng chỉ hiện khi `PENDING` |
+| 10 | Pre-order chuyển khoản: chưa nói khi nào trả tiền | ✅ **Xong** (gói B2) | Trang đơn AWAITING_STOCK hiện ngay thông tin ngân hàng + thông báo chuyển khoản ngay hoặc COD khi hàng về; admin ghi nhận tiền trước (`confirmPrepayment` → hàng về `stockArrivedPaid`, chủ shop duyệt 21/11/2026) |
 | 11 | Banner Shop Now không có link | ⚠️ Một phần | Banner ảnh có `href` tuỳ chọn (admin nhập); khi trống thì không bấm được. Banner tĩnh (`HeroBanner`) đã có link `/search` |
-| 12 | Quên mật khẩu: không có thời gian xử lý | ❌ Chưa — **đổi nghiệp vụ** (xem D3) | Hiện: yêu cầu đổi mật khẩu qua SĐT chờ admin duyệt (`server/accounts/password-reset.ts`, `/admin/customer-accounts`) |
-| 13 | Hai ô tìm kiếm | ❌ Chưa | `search/page.tsx` có ô riêng + ô ở header |
-| 14 | Tìm kiếm rỗng thiếu lối đi | ❌ Chưa | `Search.empty` + `pageCount` vẫn hiện |
-| 15 | Chính sách đổi trả mơ hồ | ❌ Chưa — đã biết shop chịu phí hoàn; **còn thiếu số ngày** | `Info.returns` |
-| 16 | Đổi ngôn ngữ giữ `next` cũ | ❌ Chưa | `language-switch.tsx` giữ nguyên query; `next=/checkout` không đổi locale |
-| 17 | Tương phản chữ trắng/hồng | ❌ Chưa | `--brand: #e8657a` + chữ trắng ≈ 3,19:1 (`globals.css`) |
+| 12 | Quên mật khẩu: không có thời gian xử lý | ✅ **Xong** (gói D3) | Quên mật khẩu qua SĐT đổi ngay, huỷ mọi phiên cũ, rate limit (3/ngày/SĐT, 5/giờ/IP); admin thấy danh sách theo dõi 7 ngày + nút "Đã kiểm tra" / "Khoá" (`server/accounts/password-reset.ts`, `/admin/customer-accounts`) |
+| 13 | Hai ô tìm kiếm | ✅ **Xong** (gói E1) | Ẩn ô tìm kiếm thừa trong trang trên mobile, header đồng bộ `q` trên desktop và mobile |
+| 14 | Tìm kiếm rỗng thiếu lối đi | ✅ **Xong** (gói E1) | Kết quả tìm kiếm rỗng ẩn phân trang/`pageCount`, thêm nút "Xoá bộ lọc" và lối về trang chủ |
+| 15 | Chính sách đổi trả cụ thể | ✅ **Xong** (gói D2) | `Info.returns` quy định 7 ngày đổi trả, shop chịu phí hoàn hàng |
+| 16 | Đổi ngôn ngữ giữ `next` cũ | ✅ **Xong** (gói E2) | `language-switch.tsx` đổi tiền tố locale trong param `next` an toàn |
+| 17 | Tương phản chữ trắng/hồng | ✅ **Xong** (gói F1) | Thêm `--brand-dark: #be354d` (đạt 5,47:1 với trắng, 5,21:1 với kem); áp dụng cho nút chính, giá, sao, link, nhãn |
 | 18 | Trang chủ lặp sản phẩm | ❌ Chưa | Phụ thuộc số SP; ưu tiên thấp |
 
 ## 2. Quyết định của chủ shop (21/11/2026)
@@ -30,7 +30,8 @@ Nguồn: bảng audit 18 mục của Codex, đã **đối chiếu lại với co
 - **Q1:** khách **phải đăng nhập** mới đặt hàng → đóng mục 05 (bỏ C2).
 - **Q2:** Pre-order giao trong **1–2 tuần**. Khách **chuyển khoản ngay hoặc COD khi hàng về đều được**. Quên mật khẩu **tự động xử lý**, chỉ cần **báo cho admin** biết khách vừa đổi mật khẩu.
 - **Q3:** phí và thời gian ship theo vùng; **khách tự trả phí ship** cho hãng vận chuyển. [CẦN XÁC MINH] Bảng số tiền/số ngày cụ thể theo vùng chưa có → D1 chỉ viết nguyên tắc, không bịa con số.
-- **Q4:** đổi trả **shop chịu phí hoàn hàng**. [CẦN XÁC MINH] Số ngày được đổi trả chưa có → D2 giữ chỗ cho số ngày, hỏi lại trước khi viết.
+- **Q4:** đổi trả **shop chịu phí hoàn hàng**; **7 ngày** đổi trả (chủ shop xác nhận 21/11/2026).
+- **D3 (21/11/2026):** chủ shop chấp nhận quên mật khẩu **không** bắt nhập mã đơn; biện pháp an toàn = rate limit (b) + admin theo dõi/khoá.
 - **Q5 (không cần code, chủ shop tự làm):** điền `VIBER_CHAT_URI` / `FB_PAGE_USERNAME` trên production; tải ảnh Dior (09); gắn link cho banner ở Admin (11).
 
 ## 3. Các gói việc (giao Antigravity theo thứ tự)

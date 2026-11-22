@@ -52,7 +52,7 @@
     "image": "Image",
     "preorder": "Pre-order",
     "preorderAvailable": "Out of stock · pre-order available",
-    "preorderNote": "Pre-ordered items ship when they arrive. An order with pre-ordered items ships once everything is in stock.",
+    "preorderNote": "Pre-ordered items are expected in 1–2 weeks. An order with pre-ordered items ships once everything is in stock.",
     "expiryNone": "No expiry date"
   },
   "Footer": {
@@ -90,7 +90,10 @@
     "title": "Search",
     "placeholder": "Product, brand…",
     "submit": "Search",
-    "results": "Results for “{q}”"
+    "results": "Results for “{q}”",
+    "clearFilters": "Clear filters",
+    "backHome": "Back to home",
+    "allProducts": "View all products"
   },
   "Cart": {
     "title": "Your cart",
@@ -103,9 +106,9 @@
     "unavailable": "No longer available",
     "onlyLeft": "Only {count} available",
     "fix": "Please adjust the items marked in red",
-    "preorderLine": "Pre-order — ships when back in stock",
+    "preorderLine": "Pre-order — expected in 1–2 weeks",
     "preorderLimit": "Pre-order limited to {count}",
-    "preorderNotice": "Your cart has pre-order items: the whole order ships once everything is in stock. We will contact you when it arrives."
+    "preorderNotice": "Your cart has pre-order items (expected in 1–2 weeks): the whole order ships once everything is in stock. We will contact you when it arrives."
   },
   "Checkout": {
     "title": "Checkout",
@@ -119,7 +122,7 @@
     "cod": "Cash on delivery",
     "codHint": "We will call you to confirm the order",
     "bank": "Bank transfer",
-    "bankHint": "Transfer and upload the receipt after ordering",
+    "bankHint": "Transfer after ordering; no receipt required",
     "summary": "Order summary",
     "shipping": "Shipping",
     "total": "Total (before shipping)",
@@ -136,11 +139,12 @@
       "invalid_form": "Please check the information you entered",
       "not_found": "Order not found",
       "invalid_file": "Please upload a JPG, PNG, WebP or PDF up to 5MB",
-      "proof_not_allowed": "This order is not waiting for a receipt",
+      "proof_not_allowed": "Receipt upload is not required",
       "invalid_transition": "This order can no longer be changed",
       "forbidden": "Not allowed",
       "unknown": "Something went wrong, please try again",
-      "checkout_disabled": "We are temporarily not accepting online orders. Please try again later or message us on Viber/Messenger."
+      "checkout_disabled": "We are temporarily not accepting online orders. Please try again later or message us on Viber/Messenger.",
+      "preorder_unconfirmed": "Items in your order are out of stock and have changed to pre-order. Please confirm."
     },
     "savedAddress": "Deliver to",
     "newAddress": "A new address",
@@ -150,7 +154,11 @@
     "reviewCart": "Review cart",
     "paymentReminder": "COD: pay for goods on delivery. Bank transfer: the store confirms after receiving payment.",
     "preorderTag": "pre-order",
-    "preorderNotice": "This order has pre-order items: the whole order ships once everything is in stock. We will contact you to confirm when it arrives."
+    "preorderNotice": "This order has pre-order items (expected in 1–2 weeks): the whole order ships once everything is in stock. We will contact you to confirm when it arrives.",
+    "priceChangedNotice": "Item prices in your cart have changed. The new total is {total}. Please review and confirm.",
+    "priceChangedConfirm": "Confirm order",
+    "preorderConfirmNotice": "Some items in your cart are now out of stock and have changed to Pre-order (ships in 1–2 weeks once back in stock). Please confirm to proceed.",
+    "preorderConfirm": "Confirm pre-order"
   },
   "Order": {
     "thanks": "Thank you! Your order has been placed.",
@@ -190,7 +198,10 @@
     },
     "askHelp": "Questions? Contact us",
     "createdPending": "Order created — waiting for store confirmation. Creating an order does not confirm payment.",
-    "preorderInfo": "Pre-order: we will contact you to confirm and ship once the items arrive."
+    "preorderInfo": "Pre-order: items are expected in 1–2 weeks; we will contact you to confirm and ship once they arrive.",
+    "preorderBankNotice": "Pre-order: You can transfer now; items arrive in 1–2 weeks.",
+    "preorderPaidNotice": "Pre-order: we have received your transfer; items arrive in 1–2 weeks and will be shipped to you right away.",
+    "preorderCodNotice": "Pre-order: Cash on delivery once items arrive (estimated 1–2 weeks)."
   },
   "Track": {
     "title": "Track your order",
@@ -230,7 +241,7 @@
     "shipping": {
       "title": "Shipping",
       "body": [
-        "We deliver within Myanmar through our courier partner. The shipping fee is not included in your order total — you pay it directly to the courier when your parcel arrives.",
+        "We deliver via domestic courier services in Myanmar. Product total is paid to the shop; shipping fees are not included in the order total and are paid directly to the courier upon delivery. Cost and delivery time vary by region.",
         "After your order is confirmed we pack it and hand it to the courier. You can follow its status on the Track order page with your order code and phone number."
       ]
     },
@@ -238,14 +249,14 @@
       "title": "Payment",
       "body": [
         "Cash on delivery (COD): pay the courier when you receive the parcel. We call you first to confirm the order.",
-        "Bank transfer: after ordering, transfer the total and upload a photo of the receipt on your order page. We ship once the payment has been checked.",
+        "Bank transfer: after ordering, transfer the total using the details on your order page with your order code; no receipt is required. We ship once the payment has been verified.",
         "Unpaid bank-transfer orders are held for a limited time and then cancelled automatically."
       ]
     },
     "returns": {
       "title": "Returns",
       "body": [
-        "If a product arrives damaged, is wrong or is close to its expiry date, contact us within a few days of receiving it with your order code and photos.",
+        "If a product arrives damaged, is wrong or is close to its expiry date, contact us within 7 days of delivery with your order code and photos. The shop covers all return shipping costs.",
         "Returned items are inspected first. When the return is accepted we refund the amount for the returned items or send a replacement.",
         "For hygiene reasons, opened products cannot be returned unless they are faulty."
       ]
@@ -292,10 +303,10 @@
     "checkEmail": "We sent a confirmation link to {email}. Open it to finish creating your account (check Spam too).",
     "forgotTitle": "Reset your password",
     "forgotIntro": "Enter your account email and we will send you a link to set a new password.",
-    "forgotPhoneIntro": "Enter your phone number and a new password. Once the shop confirms your request, you can sign in with the new password.",
+    "forgotPhoneIntro": "Enter your phone number and new password to reset your account password.",
     "forgotByEmail": "Reset by email instead",
-    "resetRequested": "Request sent. After the shop confirms it, sign in with your new password.",
-    "submitResetRequest": "Send request",
+    "resetRequested": "Your password has been updated successfully. You can now sign in with your new password.",
+    "submitResetRequest": "Reset password",
     "sendLink": "Send link",
     "forgotSent": "If an account exists for {email}, a reset link is on its way.",
     "resetTitle": "Set a new password",
@@ -390,6 +401,6 @@
     "chooseDistrict": "Choose district",
     "chooseTownship": "Choose township",
     "phone2": "Alternative phone (optional)",
-    "shippingNote": "Shipping fee is paid to the courier on delivery."
+    "shippingNote": "Product total is paid to the shop. Shipping fee is paid directly to the courier upon delivery; cost and delivery time vary by region."
   }
 }

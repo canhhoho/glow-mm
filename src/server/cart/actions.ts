@@ -18,6 +18,7 @@ import { getCustomerUser, requireCustomer } from "@/server/auth/customer-session
 import { OrderError } from "@/server/orders/errors";
 import { createOrder, findOrderForCustomer } from "@/server/orders/orders";
 import { getCartDetails } from "@/server/catalog/store-queries";
+import { formatMmk } from "@/lib/money";
 import {
   addLine,
   addOrderAccess,
@@ -31,7 +32,7 @@ import {
 
 /** Server Action của storefront. Mọi dữ liệu được kiểm lại ở domain. */
 
-export type StoreActionState = { error?: string; ok?: boolean; fieldErrors?: Record<string, string>; cartError?: boolean; sku?: string } | undefined;
+export type StoreActionState = { error?: string; ok?: boolean; fieldErrors?: Record<string, string>; cartError?: boolean; sku?: string; priceChanged?: boolean; newTotal?: number; needsPreorderConfirm?: boolean } | undefined;
 
 const COOKIE_OPTS = {
   httpOnly: true,
@@ -155,9 +156,49 @@ export async function placeOrderAction(_prev: StoreActionState, formData: FormDa
       : null;
     if (placed) redirect({ href: { pathname: `/order/${placed.code}`, query: { placed: "1" } }, locale });
   }
+
+  // A1 + A2: Trước createOrder, tính lại tổng hiện hành và cờ preorder; nếu khác với expectedTotalMmk / expectedPreorder
+  // mà khách đã thấy → không tạo đơn, yêu cầu khách xác nhận lại.
+  if (items.length > 0) {
+    const cart = await getCartDetails(items, locale);
+    if (cart.ok) {
+      const rawExpected = formData.get("expectedTotalMmk");
+      if (typeof rawExpected === "string" && rawExpected.trim() !== "") {
+        const parsedExpected = z.coerce.number().int().nonnegative().safeParse(rawExpected);
+        if (parsedExpected.success && parsedExpected.data !== cart.subtotalMmk) {
+          const tc = await getTranslations({ locale, namespace: "Checkout" });
+          return {
+            priceChanged: true,
+            newTotal: cart.subtotalMmk,
+            error: tc("priceChangedNotice", { total: formatMmk(cart.subtotalMmk, locale) }),
+          };
+        }
+      }
+
+      // A2: Chuyển sang Pre-order mà khách chưa thấy → yêu cầu xác nhận
+      const rawPreorder = formData.get("expectedPreorder");
+      const expectedPreorder = rawPreorder === "1" || rawPreorder === "true";
+      if (cart.preorder && !expectedPreorder) {
+        const tc = await getTranslations({ locale, namespace: "Checkout" });
+        return {
+          needsPreorderConfirm: true,
+          error: tc("preorderConfirmNotice"),
+        };
+      }
+    }
+  }
+
   let order;
   try {
     if (items.length === 0) throw new OrderError("cart_empty", "Giỏ hàng trống");
+    const rawPreorder = formData.get("expectedPreorder");
+    const expectedPreorder =
+      rawPreorder === "1" || rawPreorder === "true"
+        ? true
+        : rawPreorder === "0" || rawPreorder === "false"
+          ? false
+          : undefined;
+
     order = await createOrder(
       {
         channel: "WEB",
@@ -171,6 +212,7 @@ export async function placeOrderAction(_prev: StoreActionState, formData: FormDa
         locale,
         items,
         idempotencyKey: formData.get("idempotencyKey") || undefined,
+        expectedPreorder,
       },
       // Đăng nhập bằng tài khoản CTV → đơn tính cho chính CTV đó (mua cho mình / đặt hộ khách), bỏ qua link giới thiệu.
       {
@@ -202,6 +244,13 @@ export async function placeOrderAction(_prev: StoreActionState, formData: FormDa
     }
     if (e instanceof OrderError && e.code === "invalid_phone") fieldErrors[e.details?.field === "phone2" ? "phone2" : "phone"] = error;
     if (e instanceof OrderError && e.code === "invalid_zone") fieldErrors.townshipId = error;
+    if (e instanceof OrderError && e.code === "preorder_unconfirmed") {
+      const tc = await getTranslations({ locale, namespace: "Checkout" });
+      return {
+        needsPreorderConfirm: true,
+        error: tc("preorderConfirmNotice"),
+      };
+    }
     const cartError = e instanceof OrderError && ["out_of_stock", "variant_unavailable", "price_missing", "cart_empty"].includes(e.code);
     const variantId = e instanceof OrderError && typeof e.details?.variantId === "string" ? e.details.variantId : undefined;
     const shortages = e instanceof OrderError && Array.isArray(e.details?.variants) ? e.details.variants.flatMap((row: unknown) => row && typeof row === "object" && "variantId" in row && typeof row.variantId === "string" ? [row.variantId] : []) : [];

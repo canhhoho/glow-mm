@@ -10,13 +10,14 @@ import { env } from "@/lib/env";
 import { CART_COOKIE, cartCount, parseCart } from "@/server/cart/cart";
 import { CategoryMenu } from "./category-menu";
 import { CloseOnNavigate } from "./close-on-navigate";
+import { HeaderSearchInput } from "./header-search-input";
 import { LanguageSwitch } from "./language-switch";
 import { storeField } from "./ui";
 
 const langClass =
   "inline-flex min-h-8 cursor-pointer list-none items-center gap-1 rounded px-2 py-0.5 text-sm leading-[1.8] whitespace-nowrap text-brand-foreground ring-1 ring-white/50 [&::-webkit-details-marker]:hidden";
 const langItem =
-  "flex min-h-11 items-center px-4 text-sm leading-[1.8] hover:bg-accent aria-[current=true]:font-medium aria-[current=true]:text-brand";
+  "flex min-h-11 items-center px-4 text-sm leading-[1.8] hover:bg-accent aria-[current=true]:font-medium aria-[current=true]:text-brand-dark";
 
 /** Tên ngôn ngữ viết bằng chính ngôn ngữ đó (menu) + mã ngắn (nút). Thứ tự = `routing.locales`: my, en, vi. */
 const LOCALE_NAMES: Record<StoreLocale, string> = { my: "မြန်မာ", en: "English", vi: "Tiếng Việt" };
@@ -61,7 +62,7 @@ async function CartBadge() {
   if (n === 0) return null;
   return (
     <span
-      className="absolute top-1 right-0.5 grid min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] leading-4 text-brand-foreground lg:bg-card lg:text-brand"
+      className="absolute top-1 right-0.5 grid min-w-4 place-items-center rounded-full bg-brand-dark px-1 text-[10px] leading-4 text-brand-dark-foreground lg:bg-card lg:text-brand-dark"
       data-testid="cart-count"
     >
       {n > 99 ? "99+" : n}
@@ -74,7 +75,7 @@ async function HeaderContact({ locale }: { locale: string }) {
   await connection();
   const { FB_PAGE_USERNAME, VIBER_CHAT_URI } = env();
   const t = await getTranslations({ locale, namespace: "Product" });
-  const link = "inline-flex min-h-11 items-center hover:text-brand";
+  const link = "inline-flex min-h-11 items-center hover:text-brand-dark";
   return (
     <>
       {VIBER_CHAT_URI && (
@@ -124,10 +125,12 @@ export async function StoreHeader({ locale }: { locale: StoreLocale }) {
           className="relative col-start-2 row-start-2 flex gap-2 py-2 lg:row-start-1 lg:mx-auto lg:w-full lg:max-w-xl lg:py-0"
         >
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-          <input name="q" type="search" placeholder={ts("placeholder")} aria-label={t("search")} className={`${storeField} pl-9`} />
+          <Suspense fallback={<input name="q" type="search" placeholder={ts("placeholder")} aria-label={t("search")} className={`${storeField} pl-9`} />}>
+            <HeaderSearchInput placeholder={ts("placeholder")} ariaLabel={t("search")} className={`${storeField} pl-9`} />
+          </Suspense>
           <button
             type="submit"
-            className="hidden h-11 shrink-0 items-center justify-center rounded-lg bg-card px-5 font-medium whitespace-nowrap text-brand hover:bg-muted lg:inline-flex"
+            className="hidden h-11 shrink-0 items-center justify-center rounded-lg bg-card px-5 font-medium whitespace-nowrap text-brand-dark hover:bg-muted lg:inline-flex"
           >
             {ts("submit")}
           </button>
@@ -154,7 +157,7 @@ export async function StoreHeader({ locale }: { locale: StoreLocale }) {
         </Link>
 
         <div className="col-span-4 col-start-2 row-start-2 hidden items-center justify-end gap-5 text-sm lg:flex">
-          <Link href="/track" className="inline-flex min-h-11 items-center gap-1.5 hover:text-brand">
+          <Link href="/track" className="inline-flex min-h-11 items-center gap-1.5 hover:text-brand-dark">
             <PackageSearch className="size-4" aria-hidden />
             {t("orderLookup")}
           </Link>

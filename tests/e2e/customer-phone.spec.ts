@@ -90,7 +90,7 @@ test("khách SĐT quên mật khẩu → admin đặt mật khẩu tạm → kh�
   await expect(page).toHaveURL(/\/en\/account$/);
 });
 
-test("quên mật khẩu: khách nhập mật khẩu mới → yêu cầu chờ → admin xác nhận trên web → khách dùng mật khẩu mới", async ({ page }) => {
+test("quên mật khẩu (D3 21/11/2026): khách đặt mật khẩu mới → dùng được ngay; admin thấy trong danh sách và đánh dấu Đã kiểm tra", async ({ page }) => {
   test.setTimeout(120_000);
   const phone = randomPhone();
   const NEW = "e2e-new-pass-9";
@@ -115,19 +115,21 @@ test("quên mật khẩu: khách nhập mật khẩu mới → yêu cầu chờ 
   await form.getByLabel("Phone number").fill(phone.typed);
   await form.getByLabel("New password", { exact: true }).fill(NEW);
   await form.getByLabel("Confirm password").fill("khac-hoan-toan-1");
-  await form.getByRole("button", { name: "Send request" }).click();
+  await form.getByRole("button", { name: "Reset password" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Passwords do not match." })).toBeVisible();
   await expect(form.getByLabel("Phone number")).toHaveValue(phone.typed);
 
   await form.getByLabel("Confirm password").fill(NEW);
-  await form.getByRole("button", { name: "Send request" }).click();
-  await expect(page.getByText("Request sent. After the shop confirms it, sign in with your new password.")).toBeVisible();
+  await form.getByRole("button", { name: "Reset password" }).click();
+  await expect(page.getByText("Your password has been updated successfully.")).toBeVisible();
 
-  // Chưa xác nhận: mật khẩu mới chưa dùng được, mật khẩu cũ vẫn dùng được.
-  await phoneLogin(page, phone.normalized, NEW);
+  // Có hiệu lực ngay: mật khẩu cũ hết dùng, mật khẩu mới vào được.
+  await phoneLogin(page, phone.normalized, PASSWORD);
   await expect(page.getByRole("alert").filter({ hasText: "Wrong phone number or password." })).toBeVisible();
+  await phoneLogin(page, phone.normalized, NEW);
+  await expect(page).toHaveURL(/\/en\/account$/);
 
-  // Admin: thấy số trên menu + khối yêu cầu, bấm Xác nhận.
+  // Admin: thấy số trên menu + khối "khách vừa đổi mật khẩu", bấm Đã kiểm tra → khối biến mất.
   await login(page, "admin@glow.local");
   const nav = await openAdminGroup(page, "Cài đặt");
   await expect(nav.getByRole("link", { name: /^Tài khoản/ })).toContainText(/\d/);
@@ -136,23 +138,17 @@ test("quên mật khẩu: khách nhập mật khẩu mới → yêu cầu chờ 
   const request = page.getByTestId("reset-request").filter({ hasText: phone.normalized });
   await expect(request).toContainText("Ma Quen Mat Khau");
   page.once("dialog", (d) => d.accept());
-  await request.getByRole("button", { name: "Xác nhận", exact: true }).click();
+  await request.getByRole("button", { name: "Đã kiểm tra", exact: true }).click();
   await expect(page.getByTestId("reset-request").filter({ hasText: phone.normalized })).toHaveCount(0);
-
-  // Khách đăng nhập bằng mật khẩu mới; mật khẩu cũ hết dùng.
-  await page.context().clearCookies();
-  await phoneLogin(page, phone.normalized, PASSWORD);
-  await expect(page.getByRole("alert").filter({ hasText: "Wrong phone number or password." })).toBeVisible();
-  await phoneLogin(page, phone.normalized, NEW);
-  await expect(page).toHaveURL(/\/en\/account$/);
 });
 
-test("quên mật khẩu: admin từ chối → mật khẩu cũ giữ nguyên; SĐT chưa đăng ký vẫn thấy câu 'đã gửi' (không lộ)", async ({ page }) => {
+test("quên mật khẩu (D3): SĐT chưa đăng ký thấy cùng câu trả lời (không lộ); admin khoá tài khoản nghi ngờ → không đăng nhập được", async ({ page }) => {
   test.setTimeout(120_000);
   const phone = randomPhone();
+  const NEW = "e2e-other-pass-3";
   await page.goto("/en/register");
   const reg = page.locator("form").filter({ has: page.getByLabel("Phone number") });
-  await reg.getByLabel("Full name").fill("Ma Tu Choi");
+  await reg.getByLabel("Full name").fill("Ma Bi Khoa");
   await reg.getByLabel("Phone number").fill(phone.normalized);
   await reg.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await reg.getByLabel("Confirm password").fill(PASSWORD);
@@ -164,10 +160,10 @@ test("quên mật khẩu: admin từ chối → mật khẩu cũ giữ nguyên; 
     await page.goto("/en/forgot-password");
     const form = page.locator("form").filter({ has: page.getByLabel("New password", { exact: true }) });
     await form.getByLabel("Phone number").fill(value);
-    await form.getByLabel("New password", { exact: true }).fill("e2e-other-pass-3");
-    await form.getByLabel("Confirm password").fill("e2e-other-pass-3");
-    await form.getByRole("button", { name: "Send request" }).click();
-    await expect(page.getByText("Request sent. After the shop confirms it, sign in with your new password.")).toBeVisible();
+    await form.getByLabel("New password", { exact: true }).fill(NEW);
+    await form.getByLabel("Confirm password").fill(NEW);
+    await form.getByRole("button", { name: "Reset password" }).click();
+    await expect(page.getByText("Your password has been updated successfully.")).toBeVisible();
   };
   await ask(phone.normalized);
   await ask(`09${String(100_000_000 + Math.floor(Math.random() * 900_000_000))}`); // chưa đăng ký: cùng câu trả lời
@@ -176,10 +172,10 @@ test("quên mật khẩu: admin từ chối → mật khẩu cũ giữ nguyên; 
   await page.goto(`/admin/customer-accounts?q=${phone.normalized}`);
   const request = page.getByTestId("reset-request").filter({ hasText: phone.normalized });
   page.once("dialog", (d) => d.accept());
-  await request.getByRole("button", { name: "Từ chối", exact: true }).click();
-  await expect(page.getByTestId("reset-request").filter({ hasText: phone.normalized })).toHaveCount(0);
+  await request.getByRole("button", { name: "Khoá tài khoản", exact: true }).click();
+  await expect(request.getByRole("button", { name: "Khoá tài khoản", exact: true })).toHaveCount(0);
 
   await page.context().clearCookies();
-  await phoneLogin(page, phone.normalized, PASSWORD);
-  await expect(page).toHaveURL(/\/en\/account$/);
+  await phoneLogin(page, phone.normalized, NEW);
+  await expect(page.getByRole("alert").filter({ hasText: "This account is locked." })).toBeVisible();
 });

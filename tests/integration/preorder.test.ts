@@ -115,6 +115,34 @@ describe("Đặt trước (QT3)", () => {
     expect(await capacity(f.variantId)).toBe(10);
   });
 
+  it("21/11/2026: chuyển khoản trả trước cho đơn đặt trước → Đã nhận tiền trước; hàng về → chuẩn bị giao, giữ hàng không hết hạn", async () => {
+    const f = await preorderFixture(0, 10);
+    const order = await createOrder(orderInput(f, 2, { paymentMethod: "BANK_TRANSFER" }), { userId: null });
+    expect(order).toMatchObject({ status: "AWAITING_STOCK", paymentStatus: "UNPAID" });
+
+    const prepaid = await transitionOrder(order.id, "confirmPrepayment", admin(f));
+    expect(prepaid).toMatchObject({ status: "AWAITING_STOCK", paymentStatus: "PAID" });
+    expect(await prisma.reservation.count({ where: { orderId: order.id } })).toBe(0); // hàng chưa về → chưa giữ hàng
+    await expect(transitionOrder(order.id, "confirmPrepayment", admin(f))).rejects.toMatchObject({ code: "invalid_transition" });
+    await expect(transitionOrder(order.id, "stockArrived", admin(f))).rejects.toMatchObject({ code: "invalid_transition" });
+
+    await expect(transitionOrder(order.id, "stockArrivedPaid", admin(f))).rejects.toMatchObject({ code: "out_of_stock" });
+    await receive(f, 2, "P");
+    const moved = await transitionOrder(order.id, "stockArrivedPaid", admin(f));
+    expect(moved).toMatchObject({ status: "PAYMENT_CONFIRMED", paymentStatus: "PAID" });
+    const res = await prisma.reservation.findMany({ where: { orderId: order.id, status: "ACTIVE" } });
+    expect(res.map((r) => [r.qty, r.expiresAt])).toEqual([[2, null]]);
+
+    // Cron hết hạn chuyển khoản không huỷ đơn đã trả.
+    await cancelExpiredOrders("BANK_TRANSFER", new Date(Date.now() + 10 * 86_400_000));
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe("PAYMENT_CONFIRMED");
+    expect((await prisma.orderStatusHistory.findMany({ where: { orderId: order.id }, orderBy: { createdAt: "asc" }, select: { toStatus: true } })).map((h) => h.toStatus)).toEqual([
+      "AWAITING_STOCK",
+      "AWAITING_STOCK",
+      "PAYMENT_CONFIRMED",
+    ]);
+  });
+
   it("bước 5: lưu bật/tắt + hạn mức riêng (trống = mặc định), có audit; biến thể SP khác bị chặn", async () => {
     const f = await preorderFixture(0, null);
     await saveProductPreorder({ productId: f.productId, enabled: false, limits: [{ id: f.variantId, limit: "7" }] }, f.userId);

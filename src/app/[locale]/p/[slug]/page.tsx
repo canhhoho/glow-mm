@@ -156,11 +156,11 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
             <p className="text-sm text-muted-foreground">{p.brand}</p>
             <h1 className="text-lg font-medium lg:text-2xl">{p.name}</h1>
             {reviews.average != null && (
-              <a href="#reviews" className="text-sm text-brand" data-testid="rating-summary">
+              <a href="#reviews" className="text-sm text-brand-dark" data-testid="rating-summary">
                 ★ {tr("summary", { avg: reviews.average, count: reviews.count })}
               </a>
             )}
-            <p className="mt-2 text-xl font-semibold text-brand lg:text-2xl">
+            <p className="mt-2 text-xl font-semibold text-brand-dark lg:text-2xl">
               {p.variants.length > 1 ? tc("from", { price: formatMmk(minPrice, locale) }) : formatMmk(minPrice, locale)}
             </p>
             {p.tags.length > 0 && (
@@ -181,7 +181,7 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
               <div className="flex min-h-11 items-center gap-3 rounded-lg border border-border bg-card px-3 py-2" data-testid="single-variant">
                 {buyable(p.variants[0]) && <input type="hidden" name="variantId" value={p.variants[0].id} />}
                 {variantText(p.variants[0], !p.variants[0].standard)}
-                <span className="font-medium text-brand">{formatMmk(p.variants[0].priceMmk, locale)}</span>
+                <span className="font-medium text-brand-dark">{formatMmk(p.variants[0].priceMmk, locale)}</span>
               </div>
             ) : (
               <fieldset className="space-y-2">
@@ -189,7 +189,7 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
                 {p.variants.map((v) => (
                   <label
                     key={v.id}
-                    className="flex min-h-11 items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 has-checked:border-brand has-disabled:opacity-50"
+                    className="flex min-h-11 items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 has-checked:border-brand-dark has-disabled:opacity-50"
                   >
                     <input
                       type="radio"
@@ -200,7 +200,7 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
                       defaultChecked={v.id === firstAvailable?.id}
                     />
                     {variantText(v, true)}
-                    <span className="font-medium text-brand">{formatMmk(v.priceMmk, locale)}</span>
+                    <span className="font-medium text-brand-dark">{formatMmk(v.priceMmk, locale)}</span>
                   </label>
                 ))}
               </fieldset>
@@ -257,7 +257,7 @@ export default async function ProductPage({ params }: PageProps<"/[locale]/p/[sl
             {reviews.items.map((r) => (
               <li key={r.id} className="rounded-lg border border-border bg-card p-3 text-sm">
                 <p>
-                  <span className="text-brand" aria-label={tr("stars", { n: r.rating })}>
+                  <span className="text-brand-dark" aria-label={tr("stars", { n: r.rating })}>
                     {"★".repeat(r.rating)}
                     <span className="text-muted-foreground">{"★".repeat(5 - r.rating)}</span>
                   </span>{" "}

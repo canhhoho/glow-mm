@@ -35,6 +35,8 @@ export function CheckoutForm({
   addresses,
   accountName,
   accountPhone,
+  expectedTotalMmk,
+  expectedPreorder = false,
   summary,
 }: {
   locale: string;
@@ -44,6 +46,8 @@ export function CheckoutForm({
   accountName: string;
   /** SĐT của tài khoản SĐT (P17) — điền sẵn khi chưa có địa chỉ đã lưu. */
   accountPhone?: string | null;
+  expectedTotalMmk: number;
+  expectedPreorder?: boolean;
   summary?: ReactNode;
 }) {
   const t = useTranslations("Checkout");
@@ -53,6 +57,9 @@ export function CheckoutForm({
   const [selected, setSelected] = useState(addresses[0]?.id ?? "new");
   const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
   const a = addresses.find((x) => x.id === selected);
+  const currentExpectedTotal =
+    state?.priceChanged && typeof state.newTotal === "number" ? state.newTotal : expectedTotalMmk;
+  const currentExpectedPreorder = state?.needsPreorderConfirm ? true : expectedPreorder;
   const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (!state?.error) return;
@@ -83,6 +90,8 @@ export function CheckoutForm({
     >
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
+      <input type="hidden" name="expectedTotalMmk" value={currentExpectedTotal} />
+      <input type="hidden" name="expectedPreorder" value={currentExpectedPreorder ? "1" : "0"} />
       {addresses.length > 0 && (
         <label className="block space-y-1 text-sm">
           <span className="font-medium">{t("savedAddress")}</span>
@@ -183,11 +192,25 @@ export function CheckoutForm({
       </fieldset>
 
       {errorFor("paymentMethod")}
-      {state?.error && !Object.keys(state.fieldErrors ?? {}).length && <Notice tone="danger">{state.error}{state.sku && <span> · {state.sku}</span>}</Notice>}
+      {state?.needsPreorderConfirm || (state?.priceChanged && typeof state.newTotal === "number") ? (
+        <Notice tone="warning" data-testid={state?.needsPreorderConfirm ? "preorder-confirm-notice" : "price-changed-notice"}>
+          {state.error}
+        </Notice>
+      ) : (
+        state?.error && !Object.keys(state.fieldErrors ?? {}).length && (
+          <Notice tone="danger">
+            {state.error}{state.sku && <span> · {state.sku}</span>}
+          </Notice>
+        )
+      )}
       {state?.cartError && <Link href="/cart" className="underline">{t("reviewCart")}</Link>}
       {summary}
-      <button type="submit" disabled={pending || !hydrated} className={`${primaryButton} w-full`}>
-        {t("place")}
+      <button type="submit" disabled={pending || !hydrated} className={`${primaryButton} w-full`} data-testid="place-order-button">
+        {state?.needsPreorderConfirm
+          ? t("preorderConfirm")
+          : state?.priceChanged
+            ? t("priceChangedConfirm")
+            : t("place")}
       </button>
     </form>
   );

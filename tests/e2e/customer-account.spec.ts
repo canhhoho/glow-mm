@@ -171,7 +171,7 @@ test("đặt hàng khi đã đăng nhập: địa chỉ mới được lưu vào
   await page.getByLabel("Phone number").fill("09 7812 5151");
   await page.getByLabel("Alternative phone (optional)").fill("09 7812 5252");
   await pickAddress(page);
-  await expect(page.getByTestId("shipping-note")).toContainText("paid to the courier on delivery");
+  await expect(page.getByTestId("shipping-note")).toContainText("Shipping fee is paid directly to the courier upon delivery");
   await page.getByLabel("Address (house no., street, ward)").fill("No. 51, Saved Road");
   await expect(page.getByLabel("Save to my address book")).toBeChecked();
   await page.getByText("Cash on delivery", { exact: true }).click();

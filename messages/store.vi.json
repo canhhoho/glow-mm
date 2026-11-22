@@ -52,7 +52,7 @@
     "image": "Ảnh",
     "preorder": "Đặt trước",
     "preorderAvailable": "Hết hàng · nhận đặt trước",
-    "preorderNote": "Hàng đặt trước sẽ giao khi về kho. Đơn có hàng đặt trước được giao cùng lúc khi đủ hàng.",
+    "preorderNote": "Hàng đặt trước về dự kiến 1–2 tuần. Đơn có hàng đặt trước được giao cùng lúc khi đủ hàng.",
     "expiryNone": "Không áp dụng hạn dùng"
   },
   "Footer": {
@@ -90,7 +90,10 @@
     "title": "Tìm kiếm",
     "placeholder": "Sản phẩm, thương hiệu…",
     "submit": "Tìm",
-    "results": "Kết quả cho “{q}”"
+    "results": "Kết quả cho “{q}”",
+    "clearFilters": "Xoá bộ lọc",
+    "backHome": "Về trang chủ",
+    "allProducts": "Xem tất cả sản phẩm"
   },
   "Cart": {
     "title": "Giỏ hàng của bạn",
@@ -103,9 +106,9 @@
     "unavailable": "Không còn bán",
     "onlyLeft": "Chỉ còn {count}",
     "fix": "Vui lòng điều chỉnh các sản phẩm được đánh dấu đỏ",
-    "preorderLine": "Đặt trước — giao khi hàng về",
+    "preorderLine": "Đặt trước — dự kiến về 1–2 tuần",
     "preorderLimit": "Chỉ nhận đặt trước tối đa {count}",
-    "preorderNotice": "Giỏ hàng có hàng đặt trước: cả đơn sẽ được giao khi đủ hàng. Chúng tôi sẽ liên hệ khi hàng về."
+    "preorderNotice": "Giỏ hàng có hàng đặt trước (dự kiến về 1–2 tuần): cả đơn sẽ được giao khi đủ hàng. Chúng tôi sẽ liên hệ khi hàng về."
   },
   "Checkout": {
     "title": "Thanh toán",
@@ -119,7 +122,7 @@
     "cod": "Thanh toán khi nhận hàng",
     "codHint": "Chúng tôi sẽ gọi điện để xác nhận đơn",
     "bank": "Chuyển khoản ngân hàng",
-    "bankHint": "Chuyển khoản và tải ảnh biên lai sau khi đặt hàng",
+    "bankHint": "Chuyển khoản sau khi đặt hàng; không cần gửi biên lai",
     "summary": "Tóm tắt đơn hàng",
     "shipping": "Phí giao hàng",
     "total": "Tổng (chưa gồm phí giao)",
@@ -136,11 +139,12 @@
       "invalid_form": "Vui lòng kiểm tra thông tin đã nhập",
       "not_found": "Không tìm thấy đơn hàng",
       "invalid_file": "Vui lòng tải ảnh JPG, PNG, WebP hoặc PDF tối đa 5MB",
-      "proof_not_allowed": "Đơn này không chờ biên lai",
+      "proof_not_allowed": "Cửa hàng không yêu cầu gửi biên lai",
       "invalid_transition": "Đơn này không thể thay đổi nữa",
       "forbidden": "Không được phép",
       "unknown": "Đã có lỗi, vui lòng thử lại",
-      "checkout_disabled": "Cửa hàng tạm ngưng nhận đơn trực tuyến. Vui lòng thử lại sau hoặc nhắn tin cho chúng tôi qua Viber/Messenger."
+      "checkout_disabled": "Cửa hàng tạm ngưng nhận đơn trực tuyến. Vui lòng thử lại sau hoặc nhắn tin cho chúng tôi qua Viber/Messenger.",
+      "preorder_unconfirmed": "Một số sản phẩm trong đơn đã hết hàng có sẵn và chuyển sang đặt trước. Vui lòng xác nhận lại."
     },
     "savedAddress": "Giao đến",
     "newAddress": "Địa chỉ mới",
@@ -150,7 +154,11 @@
     "reviewCart": "Kiểm tra lại giỏ hàng",
     "paymentReminder": "COD: trả tiền hàng khi nhận. Chuyển khoản: cửa hàng xác nhận sau khi nhận tiền.",
     "preorderTag": "đặt trước",
-    "preorderNotice": "Đơn có hàng đặt trước: cả đơn sẽ được giao khi đủ hàng. Chúng tôi sẽ liên hệ xác nhận khi hàng về."
+    "preorderNotice": "Đơn có hàng đặt trước (dự kiến về 1–2 tuần): cả đơn sẽ được giao khi đủ hàng. Chúng tôi sẽ liên hệ xác nhận khi hàng về.",
+    "priceChangedNotice": "Giá sản phẩm trong giỏ hàng đã thay đổi. Tổng tiền mới là {total}. Vui lòng kiểm tra và xác nhận lại.",
+    "priceChangedConfirm": "Xác nhận đặt hàng",
+    "preorderConfirmNotice": "Một số sản phẩm trong giỏ hàng vừa hết hàng có sẵn và chuyển sang Đặt trước (giao sau khi hàng về trong 1–2 tuần). Vui lòng xác nhận để tiếp tục.",
+    "preorderConfirm": "Xác nhận đặt trước"
   },
   "Order": {
     "thanks": "Cảm ơn bạn! Đơn hàng đã được đặt.",
@@ -190,7 +198,10 @@
     },
     "askHelp": "Cần hỗ trợ? Liên hệ chúng tôi",
     "createdPending": "Đã tạo đơn — chờ cửa hàng xác nhận. Tạo đơn chưa có nghĩa là đã thanh toán.",
-    "preorderInfo": "Đơn đặt trước: chúng tôi sẽ liên hệ xác nhận và giao hàng khi hàng về kho."
+    "preorderInfo": "Đơn đặt trước: hàng về dự kiến 1–2 tuần, chúng tôi sẽ liên hệ xác nhận và giao hàng khi hàng về kho.",
+    "preorderBankNotice": "Đơn đặt trước: Bạn có thể chuyển khoản ngay; hàng về trong 1–2 tuần.",
+    "preorderPaidNotice": "Đơn đặt trước: chúng tôi đã nhận tiền chuyển khoản; hàng về trong 1–2 tuần sẽ giao ngay cho bạn.",
+    "preorderCodNotice": "Đơn đặt trước: Thanh toán khi nhận hàng, sau khi hàng về (dự kiến 1–2 tuần)."
   },
   "Track": {
     "title": "Tra cứu đơn hàng",
@@ -230,7 +241,7 @@
     "shipping": {
       "title": "Giao hàng",
       "body": [
-        "Chúng tôi giao hàng trong Myanmar qua đối tác vận chuyển. Phí giao hàng không nằm trong tổng đơn — bạn trả trực tiếp cho người giao khi nhận hàng.",
+        "Chúng tôi giao hàng qua các dịch vụ vận chuyển tại Myanmar. Tiền hàng trả cho shop, phí ship không tính vào đơn mà khách trả trực tiếp cho hãng vận chuyển khi nhận; mức phí và thời gian giao hàng tuỳ thuộc từng vùng.",
         "Sau khi đơn được xác nhận, chúng tôi đóng gói và giao cho đơn vị vận chuyển. Bạn có thể theo dõi trạng thái ở trang Tra cứu đơn bằng mã đơn và số điện thoại."
       ]
     },
@@ -238,16 +249,16 @@
       "title": "Thanh toán",
       "body": [
         "Thanh toán khi nhận hàng (COD): trả tiền cho người giao khi nhận hàng. Chúng tôi gọi điện xác nhận đơn trước.",
-        "Chuyển khoản ngân hàng: sau khi đặt hàng, chuyển khoản tổng tiền và tải ảnh biên lai ở trang đơn hàng. Chúng tôi giao hàng khi đã kiểm tra thanh toán.",
+        "Chuyển khoản ngân hàng: sau khi đặt hàng, chuyển khoản tổng tiền theo thông tin ở trang đơn hàng kèm mã đơn; không cần gửi biên lai. Chúng tôi giao hàng khi đã kiểm tra thanh toán nhận được.",
         "Đơn chuyển khoản chưa thanh toán được giữ trong thời gian có hạn, sau đó tự động huỷ."
       ]
     },
     "returns": {
       "title": "Đổi trả",
       "body": [
-        "Nếu sản phẩm bị hỏng, giao sai hoặc gần hết hạn, hãy liên hệ chúng tôi trong vài ngày sau khi nhận, kèm mã đơn và ảnh chụp.",
+        "Nếu sản phẩm bị hỏng, giao sai hoặc gần hết hạn, hãy liên hệ chúng tôi trong vòng 7 ngày sau khi nhận hàng, kèm mã đơn và ảnh chụp. Cửa hàng chịu toàn bộ chi phí vận chuyển hàng hoàn.",
         "Hàng trả về được kiểm tra trước. Khi chấp nhận đổi trả, chúng tôi hoàn tiền cho sản phẩm trả lại hoặc gửi sản phẩm thay thế.",
-        "Vì lý do vệ sinh, sản phẩm đã mở không được trả lại trừ khi bị lỗi."
+        "Vì lý do vệ sinh, sản phẩm đã mở không được trả lại trừ khi bị lỗi do nhà sản xuất."
       ]
     },
     "privacy": {
@@ -292,10 +303,10 @@
     "checkEmail": "Chúng tôi đã gửi liên kết xác nhận đến {email}. Mở liên kết để hoàn tất tạo tài khoản (kiểm tra cả thư mục Spam).",
     "forgotTitle": "Đặt lại mật khẩu",
     "forgotIntro": "Nhập email tài khoản, chúng tôi sẽ gửi liên kết để đặt mật khẩu mới.",
-    "forgotPhoneIntro": "Nhập số điện thoại và mật khẩu mới. Sau khi cửa hàng xác nhận yêu cầu, bạn đăng nhập bằng mật khẩu mới.",
+    "forgotPhoneIntro": "Nhập số điện thoại và mật khẩu mới để đặt lại mật khẩu cho tài khoản.",
     "forgotByEmail": "Đặt lại qua email",
-    "resetRequested": "Đã gửi yêu cầu. Sau khi cửa hàng xác nhận, bạn đăng nhập bằng mật khẩu mới.",
-    "submitResetRequest": "Gửi yêu cầu",
+    "resetRequested": "Mật khẩu đã được cập nhật thành công. Bạn có thể đăng nhập ngay bằng mật khẩu mới.",
+    "submitResetRequest": "Đặt lại mật khẩu",
     "sendLink": "Gửi liên kết",
     "forgotSent": "Nếu có tài khoản với {email}, liên kết đặt lại đang được gửi.",
     "resetTitle": "Đặt mật khẩu mới",
@@ -390,6 +401,6 @@
     "chooseDistrict": "Chọn quận / huyện",
     "chooseTownship": "Chọn thị trấn",
     "phone2": "Số điện thoại phụ (không bắt buộc)",
-    "shippingNote": "Phí giao hàng trả cho người giao khi nhận hàng."
+    "shippingNote": "Tiền hàng trả cho shop. Phí ship khách trả trực tiếp cho hãng vận chuyển khi nhận; phí và thời gian tuỳ vùng."
   }
 }

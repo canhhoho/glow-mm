@@ -56,8 +56,10 @@ test("khách đặt COD trên web → nhân viên gọi xác nhận", async ({ p
   await page.goto("/search?q=နေကာ");
   await expect(page.locator('a[href="/p/sen-viet-sunscreen-spf50"]')).toBeVisible();
   // Gõ bằng font Zawgyi (máy cũ) vẫn ra đúng sản phẩm.
-  await page.getByRole("main").getByRole("searchbox").fill(Rabbit.uni2zg("နေကာခရင်မ်"));
-  await page.getByRole("button", { name: "ရှာမည်" }).click();
+  // E1 (21/11/2026): mobile chỉ còn ô tìm ở header.
+  const box = page.getByRole("searchbox").filter({ visible: true }).first();
+  await box.fill(Rabbit.uni2zg("နေကာခရင်မ်"));
+  await box.press("Enter");
   await expect(page).toHaveURL(/\/search\?q=/);
   await expect(page.locator('a[href="/p/sen-viet-sunscreen-spf50"]')).toBeVisible();
 
