@@ -48,6 +48,7 @@ Ký hiệu: ✅ dùng chung đúng · ⚠️ logic lặp, có rủi ro · 🗑 c
 | Đặt trước | Trang SP (bật/tắt, hạn mức) | Cài đặt (`preorder.defaultLimit`), `/admin/orders/preorders` | ✅ `catalog/product-preorder.ts`, `orders/preorder.ts` | — |
 | Tài khoản NV/khách/CTV (khoá, xoá, đặt lại mật khẩu) | Trang chi tiết | Danh sách (`AccountRowActions` ✅) | `users/*`, `accounts/*`, `affiliates/*` | Lối tắt hợp lý, cùng action |
 | Danh mục, banner, bộ sưu tập | Trang riêng | — | `catalog/categories.ts`, `content/*` | — |
+| Trợ lý AI đọc dữ liệu (P25) | — (không có UI) | `POST /api/agent/mcp` | `agent/mcp.ts` → `agent/tools.ts`: chỉ gọi hàm đọc sẵn có (`listProductsPage`, `productReadinessView`, `stockByVariant`, `availableToSell`, `computeAlerts`, `loadReadiness`, `previewCatalogImport`) | GĐ 3 không ghi gì ngoài audit `agent.call`; thêm công cụ = thêm vào `AGENT_TOOLS` gọi hàm domain có sẵn. Thiết kế: [ket-noi-tro-ly-ai.md](ket-noi-tro-ly-ai.md) |
 | Bộ sưu tập: trạng thái SP và số hiện ngoài web | `/admin/content/collections/[id]`, danh sách | — | `addCollectionProductAction` | `content/collections.ts`: `getCollectionAdmin` (cờ `archived`, `visible` theo `STORE_VISIBLE`), `listCollectionsAdmin` (`items` đã cấu hình vs `visible` hiện ngoài web), `addCollectionProducts` (bỏ qua SP ngừng KD) | `CollectionItem` | Storefront lọc bằng `STORE_VISIBLE`; SP ngừng KD giữ dòng để xem lịch sử / gỡ |
 
 ## 3. Phân loại: giữ lối tắt, gom logic lặp
