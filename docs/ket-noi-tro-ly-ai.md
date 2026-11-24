@@ -170,6 +170,7 @@ Ghi chú triển khai và cách thử: §13.
 **Bước 4 — chủ shop làm (Claude không deploy):**
 1. `/admin/users` → tạo nhân viên "Trợ lý AI", vai trò **Quản lý kho**, rồi **khoá** tài khoản. Lấy id từ đường dẫn `/admin/users/<id>`.
 2. Trên server, thêm vào `/var/www/tandc/.env.prod`: `AGENT_ADMIN_TOKEN` (`openssl rand -hex 32` — chỉ chữ/số như CRON_SECRET), `AGENT_ADMIN_USER_ID=<id>`; không đặt `AGENT_ADMIN_SCOPES` (= chỉ đọc). `docker-compose.prod.yml` nạp cả file này vào container qua `env_file` → **không cần sửa compose**. Đặt trước khi merge `main`, lần deploy sẽ tạo lại container với biến mới.
+   Nếu đặt biến **sau** khi đã deploy: tạo lại riêng container web (gián đoạn ~10–30 giây) — `cd /var/www/tandc && docker compose -p tandc -f docker-compose.prod.yml --env-file .env.prod up -d --force-recreate --no-deps app` rồi `curl -s https://tandcstore.com/api/health`; hoặc đợi lần deploy kế tiếp.
 3. Thử: `curl -s https://tandcstore.com/api/agent/mcp -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'` → danh sách 7 công cụ; bỏ header → 401.
 4. Nginx theo runbook (`docs/lenh-trien-khai-tandcstore.md` bước 8c) đã có `client_max_body_size 10M`, `proxy_read_timeout 120s` và `/api/agent/` đi qua `location /` → **không cần sửa**. Chỉ xác nhận cấu hình thật khớp runbook: `nginx -T 2>/dev/null | grep -E "client_max_body_size|proxy_read_timeout"`.
 
