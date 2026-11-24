@@ -1168,6 +1168,12 @@ Chỉ **Quản trị viên**.
 
 Xem [10.10](#1010-đánh-giá-của-khách).
 
+### 15.7. Trợ lý AI và Nhật ký thao tác
+
+- **Cài đặt › Trợ lý AI**: tạo token cho từng agent (vd OpenClaw `tc-cosmetics`). Chọn **tài khoản thao tác** (nên dùng tài khoản "Trợ lý AI" vai trò Quản lý kho, đã khoá đăng nhập) và **quyền**. Token **chỉ hiện một lần** — chép ngay vào biến môi trường máy chạy agent. Quyền vai trò không có → báo lỗi khi tạo. **Thu hồi** → agent mất quyền ngay; mất token thì thu hồi và tạo mới. Hiện agent **chỉ đọc**; chi tiết: [ket-noi-tro-ly-ai.md](ket-noi-tro-ly-ai.md).
+- **Cài đặt › Nhật ký thao tác**: xem mọi thao tác ghi của nhân viên, trợ lý AI (nhóm `agent`) và hệ thống; lọc theo người / nhóm hành động / ngày; bấm id để mở đối tượng. Chỉ xem.
+- **Kho hàng › Phiếu kho**: phiếu do AI tạo có nhãn **AI** và lọc được bằng "Do trợ lý AI tạo"; số phiếu nháp AI chờ kiểm hiện ở menu.
+
 ---
 
 ## 16. Thao tác không hoàn tác được

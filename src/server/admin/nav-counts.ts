@@ -17,6 +17,7 @@ import { lowStockCount } from "@/server/alerts/queries";
  *  - pendingApplications: đơn đăng ký CTV chờ duyệt (P11).
  *  - passwordResets: yêu cầu đặt lại mật khẩu của khách chờ admin xác nhận.
  *  - lowStock: số phân loại tồn thấp (như tab Tồn thấp ở trang Cảnh báo) — badge trên mục Tồn kho (20/11/2026).
+ *  - agentDrafts: phiếu kho NHÁP do trợ lý AI tạo, chờ người kiểm và ghi sổ (P25 gói A).
  */
 export async function navCounts(keys: Set<NavCountKey>, now = new Date()): Promise<Partial<Record<NavCountKey, number>>> {
   const distinctLots = async (where: Prisma.StockBalanceWhereInput) =>
@@ -50,6 +51,9 @@ export async function navCounts(keys: Set<NavCountKey>, now = new Date()): Promi
   if (keys.has("lowStock")) jobs.push(lowStockCount(now).then((n) => ["lowStock", n]));
   if (keys.has("pendingReviews")) {
     jobs.push(prisma.review.count({ where: { status: "PENDING" } }).then((n) => ["pendingReviews", n]));
+  }
+  if (keys.has("agentDrafts")) {
+    jobs.push(prisma.stockDocument.count({ where: { source: "AGENT", status: "DRAFT" } }).then((n) => ["agentDrafts", n]));
   }
   return Object.fromEntries(await Promise.all(jobs));
 }

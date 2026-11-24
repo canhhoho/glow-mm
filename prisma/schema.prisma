@@ -47,6 +47,8 @@ model User {
   orders              Order[]                @relation("AccountOrders")
   addresses           AccountAddress[]
   passwordResets      PasswordResetRequest[]
+  /// Token cổng trợ lý AI (P25 gói A) dùng tài khoản này làm người thao tác.
+  agentTokens         AgentToken[]
 
   @@map("user")
 }
@@ -139,6 +141,30 @@ model AuditLog {
 
   @@index([entity, entityId])
   @@index([createdAt])
+  /// Trang Nhật ký thao tác (P25 gói A): lọc theo người / hành động.
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+}
+
+/// Token cổng trợ lý AI (P25 gói A, docs/ket-noi-tro-ly-ai.md §5). Chỉ lưu hash SHA-256; token gốc hiện MỘT lần lúc tạo.
+/// Quyền thực tế = `scopes` giao với quyền theo vai trò của `user` (src/server/agent/config.ts `SCOPE_ROLES`).
+/// Thu hồi = `active=false` (không xoá — nhật ký `agent.call` còn tham chiếu).
+model AgentToken {
+  id          String    @id @default(cuid())
+  name        String
+  tokenHash   String    @unique
+  /// 6 ký tự đầu của token để nhận diện trên giao diện (không đủ để dùng).
+  tokenPrefix String
+  scopes      String[]
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  active      Boolean   @default(true)
+  lastUsedAt  DateTime?
+  createdById String
+  createdAt   DateTime  @default(now())
+  revokedAt   DateTime?
+
+  @@index([userId])
 }
 
 /// Cấu hình key/value: expiry.blockDays, expiry.warnDays, reservation.transferHours, cod.confirmHours…
@@ -723,6 +749,8 @@ model StockDocument {
   estimatedShipMmkPerKg Int?
   /// Chống tạo trùng khi gửi lại cùng một form (mỗi lần mở form một khoá).
   idempotencyKey        String?             @unique
+  /// Ai tạo phiếu (P25 gói A): STAFF = nhân viên / hệ thống; AGENT = trợ lý AI qua cổng /api/agent (luôn là nháp).
+  source                DocSource           @default(STAFF)
   createdById           String
   postedById            String?
   createdAt             DateTime            @default(now())
@@ -733,6 +761,12 @@ model StockDocument {
 
   @@index([type, status])
   @@index([orderId])
+  @@index([source, status])
+}
+
+enum DocSource {
+  STAFF
+  AGENT
 }
 
 model StockDocumentLine {

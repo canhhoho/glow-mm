@@ -152,7 +152,10 @@
     "affiliatesCommission": "Affiliates & commissions",
     "inventoryReports": "Inventory",
     "accounts": "Accounts",
-    "websiteContent": "Website content"
+    "websiteContent": "Website content",
+    "aiAgents": "AI assistants",
+    "auditLog": "Audit log",
+    "agentDraftsBadge": "draft documents created by AI"
   },
   "Warehouses": {
     "title": "Warehouses",
@@ -309,7 +312,13 @@
   },
   "Common": {
     "datePresets": "Quick ranges",
-    "datePreset": {"today":"Today","last7":"7 days","last30":"30 days","thisMonth":"This month","lastMonth":"Last month"},
+    "datePreset": {
+      "today": "Today",
+      "last7": "7 days",
+      "last30": "30 days",
+      "thisMonth": "This month",
+      "lastMonth": "Last month"
+    },
     "comingSoon": "Coming soon",
     "notFoundTitle": "Page not found",
     "notFoundHint": "The link is wrong or the page was removed.",
@@ -614,7 +623,11 @@
     "variantInactive": "turned off",
     "postedNoteReceive": "Posted receipts can not be edited or deleted. Wrong quantity: create an adjustment (it only changes stock; purchase price, exchange rate, inbound cost and the quantity used for lot costing stay as they were). Wrong price, rate or inbound cost: tell an administrator — a separate correction process is needed.",
     "replaceDraft": "Cancel and recreate",
-    "replacingNote": "Recreating from draft {code}: when you save, {code} will be cancelled."
+    "replacingNote": "Recreating from draft {code}: when you save, {code} will be cancelled.",
+    "source": "Created by",
+    "sourceAll": "Anyone",
+    "sourceAgent": "Created by AI assistant",
+    "sourceAgentBadge": "AI"
   },
   "Ship": {
     "title": "Shipments VN → MM",
@@ -716,7 +729,13 @@
     "clearFilters": "Clear filters",
     "advancedFilters": "Advanced filters",
     "count": "{count} products",
-    "archived": "Discontinued",
+    "archived": {
+      "heroNote": "This product is discontinued — restore it to receive more stock or set prices.",
+      "title": "Discontinued product",
+      "body": "You cannot receive stock, set prices or publish while it is discontinued. Stock and history remain viewable; restore it to continue (restoring does not publish it).",
+      "viewStock": "View stock",
+      "viewHistory": "View history"
+    },
     "delete": "Delete",
     "restore": "Restore",
     "bulkDelete": "Delete selected",
@@ -866,8 +885,12 @@
       "waiting": "Waiting for earlier step"
     },
     "stepsLabel": "Product workflow",
-    "detailTab": {"info": "Information", "stock": "Stock & receiving", "price": "Selling price", "history": "History"},
-    "archived": {"heroNote": "This product is discontinued — restore it to receive more stock or set prices.", "title": "Discontinued product", "body": "You cannot receive stock, set prices or publish while it is discontinued. Stock and history remain viewable; restore it to continue (restoring does not publish it).", "viewStock": "View stock", "viewHistory": "View history"},
+    "detailTab": {
+      "info": "Information",
+      "stock": "Stock & receiving",
+      "price": "Selling price",
+      "history": "History"
+    },
     "block": {
       "editInfo": "Edit product details",
       "notReceived": "Not received yet: {skus}",
@@ -2683,5 +2706,81 @@
     "notReady": "{n} products not submitted (not ready):",
     "approveFailed": "{n} products not approved (still pending):",
     "needsReview": "{n} product(s) were not approved now because they have other earlier changes (content, images or prices) — open them to review in full:"
+  },
+  "Agents": {
+    "description": "Tokens that let AI assistants (OpenClaw) read store data via /api/agent/mcp. One token per agent; effective permissions never exceed the role of the linked account.",
+    "legacyEnv": "A legacy token is set via the AGENT_ADMIN_TOKEN environment variable. After moving agents to tokens created here, remove that variable on the server and recreate the container.",
+    "create": "Create a new token",
+    "createSubmit": "Create token",
+    "name": "Agent name",
+    "namePlaceholder": "e.g. tc-cosmetics (OpenClaw)",
+    "user": "Acting account",
+    "userPick": "Choose an account…",
+    "locked": "locked",
+    "scopes": "Permissions",
+    "scopesHint": "Permissions the account's role does not have are rejected on create.",
+    "createHint": "The token is shown only once right after creation — copy it into the agent machine's environment variable (e.g. TANDC_AGENT_TOKEN). If lost, revoke it and create a new one.",
+    "createdToken": "Created. Token (shown only now, copy it): {token}",
+    "empty": "No tokens yet.",
+    "lastUsed": "Last used",
+    "never": "Never",
+    "status": "Status",
+    "actions": "Actions",
+    "createdAt": "Created",
+    "active": "Active",
+    "revoked": "Revoked",
+    "revoke": "Revoke",
+    "revokeConfirm": "Revoke token \"{name}\"? Agents using it lose access immediately.",
+    "scopeInactive": "The account's current role lacks this permission — not in effect",
+    "scope": {
+      "catalog_read": {
+        "label": "View products",
+        "hint": "Search and view products, approval/publish status"
+      },
+      "stock_read": {
+        "label": "View stock",
+        "hint": "Stock per warehouse, sellable quantity, reorder suggestions"
+      },
+      "pricing_read": {
+        "label": "View prices",
+        "hint": "Selling and purchase prices — internal agents only"
+      },
+      "import_preview": {
+        "label": "Check import files",
+        "hint": "Preview product import CSV, writes nothing"
+      },
+      "import_commit": {
+        "label": "Commit import files",
+        "hint": "No tool yet — do not grant (decision Q2)"
+      },
+      "receive_draft": {
+        "label": "Create draft receipts",
+        "hint": "Phase 5 — drafts only, staff post them"
+      },
+      "catalog_submit": {
+        "label": "Submit products for approval",
+        "hint": "Phase 5 — currently only Administrators can hold this"
+      }
+    }
+  },
+  "AuditLog": {
+    "description": "Every write action by staff, AI assistants and the system. Read-only.",
+    "user": "Actor",
+    "allUsers": "Everyone",
+    "system": "System",
+    "action": "Action group",
+    "allActions": "All actions",
+    "searchEntity": "Object id",
+    "from": "From",
+    "to": "To",
+    "clearFilters": "Clear filters",
+    "empty": "No log entries yet.",
+    "emptyFiltered": "No entries match the filters.",
+    "time": "Time",
+    "entity": "Object",
+    "data": "Details",
+    "pageStatus": "Page {page}/{pages} · {total} entries",
+    "prevPage": "Previous page",
+    "nextPage": "Next page"
   }
 }

@@ -69,7 +69,8 @@ Hạ tầng: web chạy trên server `10.201.42.65` sau Nginx dùng chung; agent
 
 - So token bằng `timingSafeEqual` (dùng lại cách của `src/server/cron/auth.ts`).
 - Tài khoản "Trợ lý AI": tạo ở `/admin/users`, **khoá đăng nhập** (không dùng để vào /admin) — lớp API chỉ cần `userId` hợp lệ. Vai trò để hiển thị: quyết định Q4. Lớp API **không** dựa vào `can(role, …)` mà dựa vào scope.
-- Sau này (nhiều agent, xoay vòng token trong admin): bảng `AgentToken { id, name, tokenHash, scopes, userId, active, lastUsedAt }` + trang quản lý — ngoài phạm vi tài liệu này.
+- **Gói A (24/11/2026) — đã làm:** bảng `AgentToken` (chỉ lưu hash SHA-256 + 6 ký tự đầu) và trang **Cài đặt › Trợ lý AI** (`/admin/settings/agents`): mỗi agent một token, token hiện **một lần** lúc tạo, thu hồi tức thì, xem lần dùng cuối. Token env `AGENT_ADMIN_TOKEN` vẫn chạy (cách cũ) — trang hiện cảnh báo cho tới khi gỡ biến. Cổng tắt (404) khi không có token env lẫn token DB đang bật.
+- **Quyền thực tế = scope của token ∩ quyền theo vai trò** của tài khoản gắn token (`SCOPE_ROLES` trong `src/server/agent/config.ts`): scope ghi lấy đúng permission admin (`receive:draft` = `stock:receive`, `catalog:submit`/`import:commit` = `catalog:manage` → chỉ ADMIN). Tạo token với scope vai trò không có → từ chối; token cũ vượt vai trò bị cắt lúc gọi. **[Cần quyết định trước GĐ 5]** cho tài khoản Quản lý kho gửi duyệt SP hay không.
 
 | Scope | Công cụ | Giai đoạn |
 |---|---|---|
@@ -120,7 +121,9 @@ Không làm công cụ riêng tạo SP (`createProduct`): tạo SP đi qua file 
 
 - Hàm domain tự ghi AuditLog như khi nhân viên thao tác (userId = "Trợ lý AI").
 - Lớp API ghi thêm `writeAudit` action `agent.call`: tên công cụ, scope, kết quả (ok/lỗi), số dòng ảnh hưởng, hash của `csv` — **không** ghi nguyên CSV, không ghi token.
-- Admin xem được trong nhật ký hiện có (lọc theo người "Trợ lý AI").
+- Trang **Cài đặt › Nhật ký thao tác** (`/admin/settings/audit`, gói A): lọc theo người / nhóm hành động (`agent`, `stock`…) / id đối tượng / ngày, link sang đối tượng. Dòng `agent.call` ghi kèm tên token. Index `(userId, createdAt)`, `(action, createdAt)`.
+- Phiếu kho có cột `source` (`STAFF`/`AGENT`); phiếu nháp do AI tạo có badge ở menu Phiếu kho và bộ lọc "Do trợ lý AI tạo" (dùng từ GĐ 5).
+- Công cụ khai báo nhãn MCP `readOnlyHint`/`destructiveHint`/`idempotentHint`. Công cụ ghi (GĐ 5) phải đặt `write: true`, nhận `idempotencyKey` + `dryRun`, chỉ tạo bản nháp gắn `source=AGENT` (`src/server/agent/tools.ts`).
 
 ## 9. Bảo mật
 
@@ -148,6 +151,7 @@ Không làm công cụ riêng tạo SP (`createProduct`): tạo SP đi qua file 
 | 3 | Các công cụ đọc còn lại + `import_preview` | Claude Code | ✅ 24/11/2026 — `npm run check` + integration `agent-mcp.test.ts` xanh |
 | 4 | Tạo tài khoản "Trợ lý AI", đặt biến môi trường trên server, merge `main` (deploy) — chi tiết §13 | Chủ shop | ✅ 24/11/2026 — production: `tools/list` đủ 7 công cụ, `catalog_search` trả 74 SP thật, không token → 401 |
 | 5 | Nối OpenClaw (`mcp.servers.tandc`, token qua biến môi trường `TANDC_AGENT_TOKEN` của gateway); chặn công cụ `tandc` ở agent `main` và kiểm thử; sửa `AGENTS.md`/`NHAP-HANG.md`: tra cứu bằng công cụ, kiểm CSV bằng `import_preview`; ngừng dùng `PRODUCTS.md` | Claude Code (thay Cowork) | 🟡 24/11/2026: đã nối (`openclaw mcp probe` thấy 7 công cụ), `main` chặn bằng `tools.deny: ["tandc__*"]`, `tc-cosmetics` thêm `tandc__*` vào `tools.allow`, sửa `AGENTS.md`/`NHAP-HANG.md` (PRODUCTS.md chỉ dự phòng). Thử thật: tc-cosmetics trả đúng tồn/giá; Kirin trả "không có công cụ tandc". Còn: bộ câu hỏi B, C, H; thử Kirin hỏi giá/tồn (Gemini quá tải lúc thử) |
+| 5a | Gói A (chuẩn bị trước GĐ 5): token theo agent + trang quản lý, nhật ký thao tác, quyền = scope ∩ vai trò, nguồn phiếu + badge, nhãn MCP, khung `dryRun` | Claude Code | ✅ code 24/11/2026 trên `dev` (migration `p25_agent_hardening`, chỉ thêm) — chờ merge `main`. Sau deploy: tạo token ở trang Trợ lý AI cho `tc-cosmetics`, đổi `TANDC_AGENT_TOKEN` trên máy Windows, rồi xoá `AGENT_ADMIN_TOKEN`/`AGENT_ADMIN_USER_ID` khỏi `.env.prod` + tạo lại container |
 | 6 | GĐ 5: `receive_draft`, `catalog_submit` + full E2E (không làm `import_commit` — Q2) | Claude Code | Full E2E xanh, báo cáo 4 dòng |
 | 7 | Bật scope ghi cho token, cập nhật quy trình agent, chạy thử một lô hàng thật | Chủ shop + Cowork | Lô thật nhập thành công, phiếu do chủ shop ghi sổ |
 

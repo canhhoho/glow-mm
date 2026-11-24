@@ -21,6 +21,7 @@ const BADGE_TONE: Record<NavCountKey, NonNullable<ShellItem["badge"]>["tone"]> =
   passwordResets: "brand",
   lowStock: "warning",
   pendingReviews: "brand",
+  agentDrafts: "brand",
 };
 
 export default async function PanelLayout({ children }: LayoutProps<"/admin">) {

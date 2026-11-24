@@ -19,18 +19,20 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/admin/
   const str = (v: string | string[] | undefined) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
   const q = str(sp.q)?.slice(0, 100);
   const type = isDocType(sp.type) ? sp.type : undefined;
+  // P25 gói A: lọc phiếu do trợ lý AI tạo (badge menu "phiếu nháp do AI tạo" trỏ tới đây).
+  const source = sp.source === "AGENT" ? ("AGENT" as const) : undefined;
   const { from, to } = optionalRange(sp);
   const [t, ti, tc, result] = await Promise.all([
     getTranslations("Docs"),
     getTranslations("Inventory"),
     getTranslations("Common"),
-    listDocuments({ status, type, q, from, to, page: Number(str(sp.page)) || 1 }),
+    listDocuments({ status, type, source, q, from, to, page: Number(str(sp.page)) || 1 }),
   ]);
   const docs = result.rows;
-  const filtered = !!(q || type || from || to);
+  const filtered = !!(q || type || source || from || to);
   const href = (over: Record<string, string | number | undefined>) => {
     const qs = new URLSearchParams();
-    for (const [k, v] of Object.entries({ status: status === "DRAFT" ? "DRAFT" : undefined, q, type, from, to, ...over })) {
+    for (const [k, v] of Object.entries({ status: status === "DRAFT" ? "DRAFT" : undefined, q, type, source, from, to, ...over })) {
       if (v !== undefined && v !== "" && !(k === "page" && String(v) === "1")) qs.set(k, String(v));
     }
     return `/admin/inventory/documents${qs.size ? `?${qs}` : ""}`;
@@ -57,9 +59,13 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/admin/
             </option>
           ))}
         </select>
+        <select name="source" defaultValue={source ?? ""} aria-label={t("source")} className={fieldClass}>
+          <option value="">{t("sourceAll")}</option>
+          <option value="AGENT">{t("sourceAgent")}</option>
+        </select>
         <DateRangeFields from={from} to={to} fromLabel={t("fromDate")} toLabel={t("toDate")} presetsLabel={tc("datePresets")} presets={datePresetItems(presetLabels(tc), (r) => href({ ...r, page: undefined }), { from, to })} />
         <FilterButton>{tc("filter")}</FilterButton>
-        {filtered && <ClearFilters href={href({ q: undefined, type: undefined, from: undefined, to: undefined, page: undefined })}>{t("clearFilters")}</ClearFilters>}
+        {filtered && <ClearFilters href={href({ q: undefined, type: undefined, source: undefined, from: undefined, to: undefined, page: undefined })}>{t("clearFilters")}</ClearFilters>}
       </FilterBar>
       <DataTable
         stack
@@ -74,6 +80,7 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/admin/
               <Link href={d.type === "RECEIVE" && d.status === "DRAFT" && can(user.role, "stock:receive") ? `/admin/inventory/documents/${d.id}/edit` : `/admin/inventory/documents/${d.id}`} className="font-mono text-xs text-primary underline">
                 {d.code}
               </Link>
+              {d.source === "AGENT" && <span className="ml-1.5 align-middle"><Badge tone="brand">{t("sourceAgentBadge")}</Badge></span>}
             </Td>
             <Td label={t("type")}>{t(d.type)}</Td>
             <Td label={t("status")}>

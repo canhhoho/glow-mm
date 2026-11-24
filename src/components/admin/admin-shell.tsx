@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Bell,
+  Bot,
+  History,
   ChartColumn,
   ChevronRight,
   Coins,
@@ -55,6 +57,8 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   map: MapPinned,
   warehouse: Warehouse,
   gear: Settings,
+  bot: Bot,
+  history: History,
 };
 
 export type ShellItem = {

@@ -21,9 +21,14 @@ import type { AgentScope } from "./config";
 export class AgentToolError extends Error {}
 
 type Ctx = { userId: string; now: Date };
+/**
+ * Gói A (A3): công cụ GHI (giai đoạn 5) phải đặt `write: true`, nhận `idempotencyKey` và `dryRun` (chạy đủ kiểm tra như thật
+ * rồi không ghi), và chỉ tạo bản NHÁP gắn nguồn AGENT (vd `StockDocument.source`). Hiện chưa có công cụ ghi nào.
+ */
 export type AgentTool = {
   name: string;
   scope: AgentScope;
+  write?: boolean;
   description: string;
   input: z.ZodType;
   run: (input: never, ctx: Ctx) => Promise<unknown>;
