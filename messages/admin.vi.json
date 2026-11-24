@@ -107,6 +107,7 @@
   },
   "Nav": {
     "brands": "Thương hiệu",
+    "pendingReviewsBadge": "đánh giá chờ duyệt",
     "lowStockBadge": "phân loại tồn thấp",
     "quarantineLotsBadge": "lô chờ kiểm tra",
     "sellingPrices": "Giá bán",
@@ -1648,7 +1649,13 @@
     "created": "Ngày",
     "approve": "Đăng",
     "reject": "Từ chối",
-    "empty": "Không có đánh giá"
+    "empty": "Không có đánh giá",
+    "searchPlaceholder": "Tìm nhận xét, mã đơn, người nhận, SP…",
+    "filterRating": "Lọc theo số sao",
+    "allRatings": "Tất cả số sao",
+    "pageCount": "Trang {page}/{pages} · {total} đánh giá",
+    "previousPage": "Trang trước",
+    "nextPage": "Trang sau"
   },
   "Account": {
     "title": "Tài khoản của tôi",

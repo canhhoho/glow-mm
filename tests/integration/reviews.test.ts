@@ -45,7 +45,7 @@ describe("Đánh giá sản phẩm", () => {
     await moderateReview(review.id, true, f.userId);
     const shown = await productReviews(f.productId);
     expect(shown).toMatchObject({ count: 1, average: 4 });
-    expect(shown.items[0]).toMatchObject({ author: "Ma …", body: "ကောင်းပါတယ်" });
+    expect(shown.items[0]).toMatchObject({ author: "Ma Hla …", body: "ကောင်းပါတယ်" });
     await expect(moderateReview(review.id, true, f.userId)).rejects.toThrow();
 
     await moderateReview(review.id, false, f.userId);
@@ -53,8 +53,10 @@ describe("Đánh giá sản phẩm", () => {
     expect(await prisma.auditLog.count({ where: { entity: "Review", entityId: review.id } })).toBe(2);
   });
 
-  it("tên công khai chỉ lấy chữ đầu", () => {
-    expect(publicName("Ma Hla Hla")).toBe("Ma …");
+  it("tên công khai: giữ chữ đầu hoặc kính ngữ kèm chữ thứ hai cho tên Myanmar", () => {
+    expect(publicName("Ma Hla Hla")).toBe("Ma Hla …");
+    expect(publicName("Ko Min")).toBe("Ko Min …");
+    expect(publicName("Thiri Aung")).toBe("Thiri …");
     expect(publicName("  ")).toBe("…");
   });
 });

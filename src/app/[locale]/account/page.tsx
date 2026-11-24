@@ -61,6 +61,11 @@ async function AccountContent({ params }: PageProps<"/[locale]/account">) {
                     </span>
                     <span className="block text-sm">
                       {to(`st.${o.status}`)} · {to(`pay.${o.paymentStatus}`)}
+                      {o.status === "COMPLETED" && (
+                        <span className="ml-2 text-xs font-normal text-brand-dark underline">
+                          · {to("ratePrompt")}
+                        </span>
+                      )}
                     </span>
                   </span>
                   <span className="font-medium whitespace-nowrap">{formatMmk(o.totalMmk, locale)}</span>

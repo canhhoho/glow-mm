@@ -36,7 +36,8 @@ export type NavCountKey =
   | "blockedLots"
   | "pendingApplications"
   | "passwordResets"
-  | "lowStock";
+  | "lowStock"
+  | "pendingReviews";
 
 /**
  * `match` = các tiền tố đường dẫn bổ sung để mục vẫn sáng khi mở trang con/trang gộp (vd. Cảnh báo thuộc Tồn kho),
@@ -57,7 +58,7 @@ export const NAV: NavGroup[] = [
       { href: "/admin/orders/cod", key: "codSettlement", permission: "orders:reconcile-cod", icon: "coins" },
       // CTV: hồ sơ / đăng ký / hoa hồng & chi trả là tab của cùng mục.
       { href: "/admin/affiliates", key: "affiliatesCommission", permission: "affiliates:manage", icon: "handshake", count: "pendingApplications" },
-      { href: "/admin/reviews", key: "reviews", permission: "reviews:moderate", icon: "star" },
+      { href: "/admin/reviews", key: "reviews", permission: "reviews:moderate", icon: "star", count: "pendingReviews" },
     ],
   },
   {

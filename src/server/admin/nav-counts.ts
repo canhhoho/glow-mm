@@ -48,5 +48,8 @@ export async function navCounts(keys: Set<NavCountKey>, now = new Date()): Promi
   }
   if (keys.has("passwordResets")) jobs.push(pendingPasswordResetCount(now).then((n) => ["passwordResets", n]));
   if (keys.has("lowStock")) jobs.push(lowStockCount(now).then((n) => ["lowStock", n]));
+  if (keys.has("pendingReviews")) {
+    jobs.push(prisma.review.count({ where: { status: "PENDING" } }).then((n) => ["pendingReviews", n]));
+  }
   return Object.fromEntries(await Promise.all(jobs));
 }

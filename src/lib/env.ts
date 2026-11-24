@@ -7,6 +7,18 @@ const analyticsEnvSchema = z.object({
 });
 export const analyticsConfig = () => analyticsEnvSchema.parse(process.env);
 
+/**
+ * Cổng trợ lý AI (P25, docs/ket-noi-tro-ly-ai.md §5) — tuỳ chọn: thiếu token/user = cổng tắt (404).
+ * Đọc lười ở `src/server/agent/config.ts` (như CRON_SECRET) để đổi token có hiệu lực khi khởi động lại.
+ */
+const blankAsUnset = (s: z.ZodString) => z.preprocess((v) => (v === "" ? undefined : v), s.optional());
+export const agentEnvSchema = z.object({
+  AGENT_ADMIN_TOKEN: blankAsUnset(z.string().min(32)),
+  AGENT_ADMIN_USER_ID: blankAsUnset(z.string().min(1)),
+  /** Danh sách scope cách dấu phẩy; trống = chỉ đọc (catalog:read,stock:read,pricing:read,import:preview). */
+  AGENT_ADMIN_SCOPES: z.string().optional(),
+});
+
 /** Giá trị mẫu (`change-me…` trong .env.example) — không được dùng ở production. */
 export const isPlaceholderSecret = (v: string) => /change-?me/i.test(v);
 /** https, hoặc http trên máy (`next start` cục bộ / E2E chạy NODE_ENV=production ở localhost). */
@@ -22,6 +34,7 @@ export const isProductionUrl = (url: string) => {
 const schema = z
   .object({
     ...analyticsEnvSchema.shape,
+    ...agentEnvSchema.shape,
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     DATABASE_URL: z.string().url(),
     /** Số kết nối tối đa của pool pg (đọc trực tiếp ở src/lib/db.ts) — server riêng ~20, mặc định 10. */
@@ -40,8 +53,8 @@ const schema = z
     EMAIL_OUTBOX_DIR: z.string().default("./storage/outbox"),
   })
   // Production: không chạy với secret mẫu trong .env.example hoặc APP_URL không phải https (cookie mất cờ Secure).
-  .refine((e) => e.NODE_ENV !== "production" || ![e.BETTER_AUTH_SECRET, e.CRON_SECRET].some(isPlaceholderSecret), {
-    message: "BETTER_AUTH_SECRET / CRON_SECRET vẫn là giá trị mẫu — sinh bằng `openssl rand -base64 32`",
+  .refine((e) => e.NODE_ENV !== "production" || ![e.BETTER_AUTH_SECRET, e.CRON_SECRET, e.AGENT_ADMIN_TOKEN ?? ""].some(isPlaceholderSecret), {
+    message: "BETTER_AUTH_SECRET / CRON_SECRET / AGENT_ADMIN_TOKEN vẫn là giá trị mẫu — sinh bằng `openssl rand -base64 32`",
     path: ["BETTER_AUTH_SECRET"],
   })
   .refine((e) => e.NODE_ENV !== "production" || isProductionUrl(e.APP_URL), {
