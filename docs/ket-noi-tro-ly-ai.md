@@ -146,7 +146,7 @@ Không làm công cụ riêng tạo SP (`createProduct`): tạo SP đi qua file 
 | 1 | Xác minh OpenClaw: gọi MCP HTTP có header được không, khoá cấu hình; chốt A hay B | Cowork | ✅ Theo tài liệu: được (xem §4). Còn 2 điểm kiểm khi nối thật ở bước 5 |
 | 2 | Lớp xác thực + scope + rate limit + audit, cổng tắt khi thiếu env; công cụ `catalog_search`, `catalog_get` | Claude Code (nhánh `dev`) | ✅ 24/11/2026 |
 | 3 | Các công cụ đọc còn lại + `import_preview` | Claude Code | ✅ 24/11/2026 — `npm run check` + integration `agent-mcp.test.ts` xanh |
-| 4 | Tạo tài khoản "Trợ lý AI", đặt biến môi trường trên server, merge `main` (deploy) — chi tiết §13 | Chủ shop | `curl` có token trả dữ liệu, không token → 401 |
+| 4 | Tạo tài khoản "Trợ lý AI", đặt biến môi trường trên server, merge `main` (deploy) — chi tiết §13 | Chủ shop | ✅ 24/11/2026 — production: `tools/list` đủ 7 công cụ, `catalog_search` trả 74 SP thật, không token → 401 |
 | 5 | Nối OpenClaw (`mcp.servers.tandc`, token qua biến môi trường `TANDC_AGENT_TOKEN` của gateway); chặn công cụ `tandc` ở agent `main` và kiểm thử; sửa `AGENTS.md`/`NHAP-HANG.md`: tra cứu bằng công cụ, kiểm CSV bằng `import_preview`; ngừng dùng `PRODUCTS.md` | Cowork | Bộ câu hỏi kiểm tra nhóm B, C, H đạt |
 | 6 | GĐ 5: `receive_draft`, `catalog_submit` + full E2E (không làm `import_commit` — Q2) | Claude Code | Full E2E xanh, báo cáo 4 dòng |
 | 7 | Bật scope ghi cho token, cập nhật quy trình agent, chạy thử một lô hàng thật | Chủ shop + Cowork | Lô thật nhập thành công, phiếu do chủ shop ghi sổ |
