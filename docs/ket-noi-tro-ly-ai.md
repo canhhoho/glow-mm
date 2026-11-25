@@ -94,7 +94,7 @@ Hạ tầng: web chạy trên server `10.201.42.65` sau Nginx dùng chung; agent
 
 | Công cụ | Input | Output chính | Hàm domain |
 |---|---|---|---|
-| `catalog_search` | `q?`, `brand?`, `category?`, `warehouse?` (mã kho), `tab?` (theo `LIST_TABS`), `limit ≤ 50` | SKU, tên, phân loại, thương hiệu, danh mục, mã kho bán, trạng thái duyệt, đang bán/ẩn/ngừng KD, giá bán MMK | `listProductsPage` |
+| `catalog_search` | `q?` (tên mọi ngôn ngữ, SKU, slug; chữ Myanmar chuẩn hoá Unicode), `brand?`, `category?`, `warehouse?` (mã kho), `tab?` (theo `LIST_TABS`), `locale?` (C2: tên SP + danh mục theo `my`/`en`/`vi`), `limit ≤ 50` | SKU, tên, phân loại, thương hiệu, danh mục, mã kho bán, trạng thái duyệt, đang bán/ẩn/ngừng KD, giá bán MMK | `listProductsPage` |
 | `catalog_get` | `sku` | Như trên + mô tả my/en, cách dùng, thành phần, khối lượng, các phân loại cùng SP, vấn đề còn thiếu để duyệt | truy vấn SP + `productReadinessView` |
 | `stock_summary` | `q?`, `page?` | Theo SKU (25 dòng/trang, như bảng "Theo sản phẩm" ở Tồn kho): tồn theo mã kho, tester, chờ kiểm tra, đang giữ, còn bán | `stockByVariant` (`stockSummary` chỉ có ô tổng, không theo SKU) |
 | `stock_available` | `skus[] ≤ 100` | Khả dụng để bán theo SKU (tính cả combo) + SL dự kiến nhập; SKU không có → `missing` | `availableToSell` |

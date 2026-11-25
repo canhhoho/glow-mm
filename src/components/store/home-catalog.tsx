@@ -6,6 +6,7 @@ import type { StoreLocale } from "@/i18n/routing";
 import { cachedCardRows, cachedHomeCollectionRows, storeRootCategories } from "@/server/catalog/cached";
 import { withStock } from "@/server/catalog/store-queries";
 import { visibleCollections } from "@/server/content/collections";
+import { railsToShow } from "@/lib/home-rails";
 import { ProductRail } from "./product-card";
 import { ListSkeleton, StoreSection, storeCard } from "./ui";
 
@@ -13,7 +14,8 @@ const RAIL_SIZE = 10;
 
 /**
  * Phần dữ liệu (DB) của trang chủ — render lúc request, stream sau static shell.
- * Nhóm hàng (danh mục gốc, có icon) → các bộ sưu tập (admin chọn tay) → "Sản phẩm mới" → mỗi danh mục gốc một dải.
+ * Nhóm hàng (danh mục gốc, có icon) → các bộ sưu tập (admin chọn tay) → "Sản phẩm mới" → mỗi danh mục gốc một dải
+ * (G1: bỏ dải danh mục chỉ lặp lại SP đã có ở "Sản phẩm mới" — `railsToShow`).
  * Nội dung các dải lấy từ cache (P20); lịch bộ sưu tập + tồn kho tính lúc request, tồn gộp MỘT lần cho mọi dải.
  */
 export async function HomeCatalog({ locale }: { locale: StoreLocale }) {
@@ -32,6 +34,7 @@ export async function HomeCatalog({ locale }: { locale: StoreLocale }) {
   const [newest, ...rest] = await withStock([newestRows, ...categoryRows, ...visible.map((c) => c.products)]);
   const byCategory = rest.slice(0, categories.length);
   const collections = visible.map((c, i) => ({ slug: c.slug, name: c.name, products: rest[categories.length + i] }));
+  const showCategory = railsToShow(newest, byCategory, RAIL_SIZE);
 
   if (newest.length === 0) return <p className="text-sm text-muted-foreground">{t("empty")}</p>;
 
@@ -76,7 +79,7 @@ export async function HomeCatalog({ locale }: { locale: StoreLocale }) {
       </StoreSection>
 
       {categories.map((c, i) =>
-        byCategory[i].length === 0 ? null : (
+        !showCategory[i] ? null : (
           <StoreSection key={c.slug} id={`cat-${c.slug}`} title={c.name} more={{ href: `/c/${c.slug}`, label: tc("seeMore") }}>
             <ProductRail products={byCategory[i]} locale={locale} />
           </StoreSection>

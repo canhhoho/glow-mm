@@ -1155,6 +1155,8 @@ Chỉ **Quản trị viên**.
 - **Mô tả ảnh (alt)**, **Link khi bấm**, **Hiện cho ngôn ngữ**, **Đang bật**, **Bắt đầu** / **Kết thúc** (giờ Yangon).
 - Trong danh sách: **Lên** / **Xuống** (thứ tự), **Bật** / **Tắt**, **Sửa**, **Xoá**. Trạng thái: **Đang hiện**, **Đã tắt**, **Chờ đến lịch**, **Hết lịch**.
 - 👁 Không có banner nào thì trang chủ dùng banner mặc định.
+- 👁 Banner đang bật mà **chưa có link** hiện nhãn vàng **Chưa có link** và dòng nhắc ở đầu trang: khách bấm vào không mở trang nào. Nên gắn `/c/<danh-mục>`, `/collection/<bộ-sưu-tập>`, `/p/<sản-phẩm>` hoặc `/search`.
+- 👁 Trang chủ: dải sản phẩm của một danh mục chỉ lặp lại đúng các SP đã có ở **Sản phẩm mới** (shop còn ít SP) thì tự ẩn; khi danh mục có từ 10 SP trở lên thì dải hiện lại. Ô **Nhóm hàng** luôn có đủ danh mục.
 
 ### 15.4. Bộ sưu tập
 

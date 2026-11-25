@@ -104,6 +104,13 @@ describe("Cổng MCP trợ lý AI — công cụ đọc", () => {
     const byWarehouse = await call("catalog_search", { warehouse: f.mm.code, q: f.tag });
     expect(byWarehouse.result?.structuredContent.total).toBe(1);
     expect((await call("catalog_search", { brand: "khong-co-brand-nay" })).result?.isError).toBe(true);
+    // C2: tên theo ngôn ngữ yêu cầu; tìm được bằng tên tiếng Myanmar.
+    await prisma.productTranslation.create({ data: { productId: f.productId, locale: "my", name: `မြန်မာ ${f.tag}`, searchText: f.tag } });
+    const my = await call("catalog_search", { q: `မြန်မာ ${f.tag}`, locale: "my" });
+    expect(my.result?.structuredContent.rows[0]).toMatchObject({ name: `မြန်မာ ${f.tag}`, variants: [{ sku: `IT-${f.tag}` }] });
+    expect((await call("catalog_search", { q: f.tag, locale: "vi" })).result?.structuredContent.rows[0].name).toBe(`IT product ${f.tag}`); // thiếu bản vi → en
+    expect((await call("catalog_search", { q: f.tag })).result?.structuredContent.rows[0].name).toBe(`IT product ${f.tag}`);
+    await prisma.productTranslation.delete({ where: { productId_locale: { productId: f.productId, locale: "my" } } });
 
     const got = await call("catalog_get", { sku: `it-${f.tag}`.toLowerCase() });
     expect(got.result?.structuredContent).toMatchObject({ name: `IT product ${f.tag}`, warehouse: { code: f.mm.code, pricingMode: "VN_IMPORT" }, published: true });

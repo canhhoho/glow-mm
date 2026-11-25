@@ -145,3 +145,22 @@ test("quản lý kho không vào được trang nội dung; menu không hiện",
   await page.goto("/admin/categories");
   await expect(page).toHaveURL(/\/admin\?denied=1$/);
 });
+
+test("banner chưa có link: nhãn + thông báo nhắc gắn link (F2)", async ({ page }) => {
+  test.setTimeout(90_000);
+  const alt = `E2E no link ${Date.now()}`;
+  await login(page, "admin@glow.local");
+  await page.goto("/admin/content/banners/new");
+  await expect(page.getByText(/Để trống thì bấm banner không mở trang nào/)).toBeVisible();
+  await page.getByLabel(/Ảnh desktop/).setInputFiles({ name: "d.png", mimeType: "image/png", buffer: solidPng(90) });
+  await page.getByLabel("Mô tả ảnh (alt)").fill(alt);
+  await page.getByRole("button", { name: "Lưu" }).click();
+  await expect(page).toHaveURL(/\/admin\/content\/banners\?saved=1$/);
+  const row = page.getByTestId("banner-row").filter({ hasText: alt });
+  await expect(row.getByText("Chưa có link")).toBeVisible();
+  await expect(page.getByTestId("banner-no-link-notice")).toBeVisible();
+
+  page.once("dialog", (d) => d.accept());
+  await row.getByRole("button", { name: "Xoá" }).click();
+  await expect(row).toHaveCount(0);
+});

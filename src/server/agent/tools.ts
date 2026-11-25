@@ -24,6 +24,7 @@ import { customerText, maskName, maskPhone } from "./mask";
 import { manualPricingView } from "@/server/pricing/manual";
 import { changePct, priceMmkManual, priceVndManual } from "@/server/pricing/formula";
 import { focusQuery } from "@/lib/price-focus";
+import { toUnicode } from "@/lib/myanmar";
 import { getStoreProduct, loadCardPage, withStock } from "@/server/catalog/store-queries";
 import { STORE_PRODUCT } from "@/server/catalog/store-visibility";
 import type { AgentScope } from "./config";
@@ -83,6 +84,7 @@ const catalogSearchInput = z.object({
   category: z.string().trim().max(100).optional().describe("Slug hoặc tên danh mục (gồm danh mục con)"),
   warehouse: z.string().trim().max(20).optional().describe("Mã kho bán; 'none' = SP chưa có kho"),
   tab: z.enum(LIST_TABS).default("active").describe("Trạng thái như tab danh sách SP admin"),
+  locale: z.enum(LOCALES).optional().describe("C2: ngôn ngữ của tên SP + danh mục trả về (my = soạn cho khách Myanmar); bỏ trống = như danh sách admin (ưu tiên tiếng Anh)"),
   limit: z.number().int().min(1).max(50).default(20),
   page: z.number().int().min(1).default(1),
 });
@@ -101,17 +103,29 @@ async function catalogSearch(i: z.infer<typeof catalogSearchInput>, { now }: Ctx
   // Trang admin phân trang 20/50/100 → lấy trang 50 rồi cắt theo limit.
   const start = (i.page - 1) * i.limit;
   const res = await listProductsPage(
-    { tab: i.tab, q: i.q, brandId: brand?.id, categoryId: category?.id, warehouseId: i.warehouse === "none" ? "none" : warehouse?.id, page: Math.floor(start / 50) + 1, pageSize: 50 },
+    { tab: i.tab, q: i.q ? toUnicode(i.q) : undefined, brandId: brand?.id, categoryId: category?.id, warehouseId: i.warehouse === "none" ? "none" : warehouse?.id, page: Math.floor(start / 50) + 1, pageSize: 50 },
     now,
   );
   const offset = start % 50;
+  const page = res.rows.slice(offset, offset + i.limit);
+  // C2 (25/11/2026): tên theo ngôn ngữ yêu cầu (thiếu bản dịch → tiếng Anh → bản đầu tiên, như catalog_get).
+  const names = i.locale
+    ? new Map(
+        (
+          await prisma.product.findMany({
+            where: { id: { in: page.map((r) => r.id) } },
+            select: { id: true, translations: { select: { locale: true, name: true } }, category: { select: { translations: { select: { locale: true, name: true } } } } },
+          })
+        ).map((p) => [p.id, { name: pick(p.translations, i.locale!)?.name, category: pick(p.category.translations, i.locale!)?.name }]),
+      )
+    : null;
   return {
     total: res.total,
     page: i.page,
-    rows: res.rows.slice(offset, offset + i.limit).map((r) => ({
-      name: r.name,
+    rows: page.map((r) => ({
+      name: names?.get(r.id)?.name ?? r.name,
       brand: r.brand,
-      category: r.category,
+      category: names?.get(r.id)?.category ?? r.category,
       warehouse: r.warehouse,
       status: r.label,
       published: r.published,

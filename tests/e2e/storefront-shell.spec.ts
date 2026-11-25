@@ -15,7 +15,7 @@ test("menu danh mục 2 cấp: chỉ hiện nhánh có SP, tự đóng khi chuy�
   await expect(menu).not.toHaveAttribute("open");
 });
 
-test("mobile: không cuộn ngang; trang chủ có dải SP cuộn ngang theo danh mục", async ({ page }) => {
+test("mobile: không cuộn ngang; trang chủ có dải Sản phẩm mới + nhóm hàng", async ({ page }) => {
   for (const path of ["/en", "/en/c/skincare", "/en/p/sen-viet-sunscreen-spf50", "/en/cart", "/en/info/about"]) {
     await page.goto(path);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
@@ -23,7 +23,9 @@ test("mobile: không cuộn ngang; trang chủ có dải SP cuộn ngang theo da
   }
   await page.goto("/en");
   await expect(page.getByRole("heading", { name: "New arrivals" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Skincare", level: 2 })).toBeVisible();
+  // G1: dải danh mục chỉ lặp SP của "Sản phẩm mới" (shop ít SP) bị ẩn — quy tắc ở tests/unit/home-rails.test.ts;
+  // ô Nhóm hàng luôn có link tới danh mục.
+  await expect(page.locator('section[aria-labelledby="cat-h"]').getByRole("link", { name: "Skincare" })).toBeVisible();
 });
 
 test("ô tìm kiếm trên header", async ({ page }) => {

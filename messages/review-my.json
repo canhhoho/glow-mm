@@ -2121,6 +2121,9 @@
     "Agents.scope.orders_read.label",
     "Agents.scope.orders_read.hint",
     "Agents.scope.public_read.label",
-    "Agents.scope.public_read.hint"
+    "Agents.scope.public_read.hint",
+    "Content.noLink",
+    "Content.noLinkNotice",
+    "Content.hrefHint"
   ]
 }

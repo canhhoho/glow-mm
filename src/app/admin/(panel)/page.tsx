@@ -217,12 +217,13 @@ async function RecentActivity({ days, showStock }: { days: number; showStock: bo
       <h2 className="font-medium">{t("recent")}</h2>
       <div className={cn("grid gap-5", showStock && "lg:grid-cols-2")}>
         {showStock && (
-          <Card title={t("receiptsTitle")} action={<Link href="/admin/inventory/documents" className="inline-flex items-center gap-1 text-sm text-primary">{t("viewAll")} <ArrowRight className="size-3.5" aria-hidden /></Link>} testId="recent-receipts">
+          <Card title={t("receiptsTitle")} action={<Link href="/admin/inventory/documents" className="-my-2 inline-flex min-h-10 items-center gap-1 text-sm text-primary">{t("viewAll")} <ArrowRight className="size-3.5" aria-hidden /></Link>} testId="recent-receipts">
             {receipts.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t("receiptsEmpty")}</p>
             ) : (
               <DataTable
                 dense
+                stack
                 className="rounded-none border-0 bg-transparent"
                 numeric={[3, 4]}
                 head={[t("receiptCode"), t("receiptDate"), t("receiptLocation"), t("receiptSkus"), t("receiptQty"), t("receiptStatus")]}
@@ -230,18 +231,18 @@ async function RecentActivity({ days, showStock }: { days: number; showStock: bo
                 {receipts.map((r) => (
                   <tr key={r.id}>
                     <Td><Link href={`/admin/inventory/documents/${r.id}`} className="font-mono text-xs whitespace-nowrap hover:text-primary">{r.code}</Link></Td>
-                    <Td className="whitespace-nowrap text-muted-foreground tabular-nums">{fmtDateTime(r.at)}</Td>
-                    <Td>{r.location}</Td>
-                    <Td numeric>{fmtInt(r.skus)}</Td>
-                    <Td numeric>{fmtInt(r.qty)}</Td>
-                    <Td><Badge tone={r.status === "POSTED" ? "success" : "warning"}>{t(r.status === "POSTED" ? "receiptPosted" : "receiptDraft")}</Badge></Td>
+                    <Td label={t("receiptDate")} className="whitespace-nowrap text-muted-foreground tabular-nums">{fmtDateTime(r.at)}</Td>
+                    <Td label={t("receiptLocation")}>{r.location}</Td>
+                    <Td label={t("receiptSkus")} numeric>{fmtInt(r.skus)}</Td>
+                    <Td label={t("receiptQty")} numeric>{fmtInt(r.qty)}</Td>
+                    <Td label={t("receiptStatus")}><Badge tone={r.status === "POSTED" ? "success" : "warning"}>{t(r.status === "POSTED" ? "receiptPosted" : "receiptDraft")}</Badge></Td>
                   </tr>
                 ))}
               </DataTable>
             )}
           </Card>
         )}
-        <Card title={t("recentTitle")} action={<Link href="/admin/products" className="inline-flex items-center gap-1 text-sm text-primary">{t("viewAll")} <ArrowRight className="size-3.5" aria-hidden /></Link>} testId="recent-products">
+        <Card title={t("recentTitle")} action={<Link href="/admin/products" className="-my-2 inline-flex min-h-10 items-center gap-1 text-sm text-primary">{t("viewAll")} <ArrowRight className="size-3.5" aria-hidden /></Link>} testId="recent-products">
           <ul className="divide-y">
             {recent.map((p) => (
               <li key={p.id} className="flex items-center gap-3 py-2">
