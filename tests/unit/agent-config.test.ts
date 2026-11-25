@@ -35,12 +35,13 @@ describe("P25 cấu hình cổng trợ lý AI", () => {
 
   it("A4: quyền thực tế = scope ∩ vai trò; scope ghi theo đúng permission của admin", () => {
     const all = Object.keys(SCOPE_ROLES) as (keyof typeof SCOPE_ROLES)[];
-    expect([...effectiveScopes(all, "WAREHOUSE_MANAGER")].sort()).toEqual(["catalog:read", "import:preview", "pricing:read", "receive:draft", "stock:read"]);
-    expect([...effectiveScopes(all, "ORDER_STAFF")]).toEqual(["stock:read"]);
+    expect([...effectiveScopes(all, "WAREHOUSE_MANAGER")].sort()).toEqual(["catalog:read", "import:preview", "orders:read", "pricing:read", "receive:draft", "stock:read"]);
+    expect([...effectiveScopes(all, "ORDER_STAFF")]).toEqual(["stock:read", "orders:read"]);
     expect([...effectiveScopes(all, "ADMIN")].sort()).toEqual([...all].sort());
     expect(effectiveScopes(all, "CUSTOMER").size).toBe(0);
     expect(SCOPE_ROLES["receive:draft"]).toBe(PERMISSIONS["stock:receive"]);
     expect(SCOPE_ROLES["catalog:submit"]).toBe(PERMISSIONS["catalog:manage"]);
+    expect(SCOPE_ROLES["orders:read"]).toBe(PERMISSIONS["orders:view"]);
   });
 
   it("token sinh ra 64 ký tự hex, hash ổn định", () => {
@@ -61,6 +62,9 @@ describe("P25 cấu hình cổng trợ lý AI", () => {
       stock_available: "stock:read",
       reorder_suggestions: "stock:read",
       pricing_get: "pricing:read",
+      orders_summary: "orders:read",
+      order_search: "orders:read",
+      order_get: "orders:read",
       receive_draft: "receive:draft",
       import_preview: "import:preview",
     });
