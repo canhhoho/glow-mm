@@ -14,6 +14,8 @@ export default async function BannersPage({ searchParams }: PageProps<"/admin/co
   await requirePagePermission("content:manage");
   const [{ saved }, t, banners] = await Promise.all([searchParams, getTranslations("Content"), listBannersAdmin()]);
   const now = new Date();
+  // F2 (audit 11): banner đang chạy mà không có link → bấm vào không mở trang nào.
+  const noLink = banners.filter((b) => b.active && !b.href).length;
   const localeLabel = (l: string | null) =>
     l === "my" ? t("localeMy") : l === "en" ? t("localeEn") : l === "vi" ? t("localeVi") : t("localeAll");
 
@@ -29,6 +31,7 @@ export default async function BannersPage({ searchParams }: PageProps<"/admin/co
       />
       <ContentTabs active="banners" />
       {saved && <Notice tone="success">{t("saved")}</Notice>}
+      {noLink > 0 && <Notice tone="info" data-testid="banner-no-link-notice">{t("noLinkNotice", { count: noLink })}</Notice>}
       <DataTable
         stack
         empty={t("bannersEmpty")}
@@ -45,7 +48,11 @@ export default async function BannersPage({ searchParams }: PageProps<"/admin/co
               </Td>
               <Td label={t("colAlt")}>
                 <p>{b.alt}</p>
-                {b.href && <p className="font-mono text-xs text-muted-foreground">{b.href}</p>}
+                {b.href ? (
+                  <p className="font-mono text-xs break-all text-muted-foreground">{b.href}</p>
+                ) : (
+                  <Badge tone="warning">{t("noLink")}</Badge>
+                )}
               </Td>
               <Td label={t("colLocale")}>{localeLabel(b.locale)}</Td>
               <Td label={t("colSchedule")} className="text-xs whitespace-nowrap">

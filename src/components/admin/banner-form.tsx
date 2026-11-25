@@ -89,7 +89,8 @@ export function BannerForm({ banner }: { banner?: BannerFormValue }) {
         </label>
         <label className={cn(fieldLabelClass, "sm:col-span-2")}>
           <span className="text-muted-foreground">{t("href")}</span>
-          <input name="href" maxLength={500} defaultValue={banner?.href ?? ""} placeholder="/c/skincare" className={fieldClass} />
+          <input name="href" maxLength={500} defaultValue={banner?.href ?? ""} placeholder="/c/skincare" aria-describedby="banner-href-hint" className={fieldClass} />
+          <span id="banner-href-hint" className="text-xs text-muted-foreground">{t("hrefHint")}</span>
         </label>
         <label className={fieldLabelClass}>
           <span className="text-muted-foreground">{t("locale")}</span>
