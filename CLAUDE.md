@@ -8,7 +8,8 @@ Web bán mỹ phẩm B2C **T&C Cosmetics** (tên cũ Glow VN) nhập từ Việt
 | Sửa giá/kho/đơn/hoa hồng: điểm vào, hàm domain, nơi đọc/ghi | [docs/ban-do-nghiep-vu-admin.md](docs/ban-do-nghiep-vu-admin.md) |
 | Hướng dẫn người dùng (admin / CTV) | [docs/huong-dan-van-hanh-admin.md](docs/huong-dan-van-hanh-admin.md), [docs/huong-dan-cong-ctv.md](docs/huong-dan-cong-ctv.md) |
 | Triển khai server `10.201.42.65` (tandcstore.com, Docker Compose, **không** Coolify) | [docs/lenh-trien-khai-tandcstore.md](docs/lenh-trien-khai-tandcstore.md), [docs/huong-dan-trien-khai-tandcstore.md](docs/huong-dan-trien-khai-tandcstore.md), [DEPLOY.md](DEPLOY.md) (§2 Coolify chỉ là lịch sử) |
-| Kế hoạch / phase | [PLAN.md](PLAN.md) |
+| **Trạng thái hiện tại, việc dở, bước tiếp theo** (đọc đầu phiên) · kế hoạch / phase | [PLAN.md](PLAN.md) mục đầu |
+| Trợ lý AI (OpenClaw, cổng MCP, token, công cụ) | [docs/ket-noi-tro-ly-ai.md](docs/ket-noi-tro-ly-ai.md); workspace agent: repo private `canhhoho/tc-cosmetics-agent` |
 
 ## Cách làm việc
 - Trả lời **tiếng Việt**, dễ hiểu, ngắn gọn. Điều chưa xác minh (luật/dịch vụ/thư viện Myanmar, hành vi chưa chạy thử) ghi **[CẦN XÁC MINH]**, không tự giả định.
@@ -17,6 +18,8 @@ Web bán mỹ phẩm B2C **T&C Cosmetics** (tên cũ Glow VN) nhập từ Việt
 - **Truy vết trước khi sửa nghiệp vụ:** liệt kê điểm vào và nơi đọc/ghi — trang chính/con, form, Excel, thao tác hàng loạt, API/server action, hàm domain, DB, cache, web khách — bằng bản đồ nghiệp vụ + grep mọi đường ghi cột/hàm đó. Sửa nhất quán cả chuỗi, không chỉ vá một màn hình; cập nhật bản đồ trong cùng commit.
 - **Tái sử dụng:** mỗi nghiệp vụ có **một trang chính + một hàm domain**; trang/nút khác chỉ là lối tắt gọi action/hàm sẵn có (giữ lối tắt hữu ích). Không chép form/schema/công thức/component — dùng lại.
 - **Tiếp tục sau gián đoạn:** trước khi chạy lại, xem `git status` + `git log`, log/kết quả test gần nhất và tác vụ nền đang chạy; không chạy lại thứ đã xong.
+- **Hai máy (Myanmar / Việt Nam), mỗi lúc một máy:** đầu phiên `git status` + `git stash list` rồi `git pull` `dev`; cuối phiên push `dev` + cập nhật mục "Trạng thái hiện tại" ở đầu PLAN.md (chỉ khi người dùng yêu cầu push). Ghi nhớ của Claude không đồng bộ giữa máy → quy tắc lâu dài ghi vào file này.
+- **Worktree:** không tạo junction/symlink `node_modules` vào worktree (`git worktree remove --force` từng xoá sạch `node_modules` chính). Cần so sánh bản cũ: worktree có `npm ci` riêng hoặc `git stash`.
 - **Tài liệu:** mỗi thông tin một nguồn; giữ ngắn; không tạo bản `v01/v02`; không cập nhật nhiều file cho việc nhỏ. Hành vi đổi → cập nhật hướng dẫn vận hành + bản đồ nghiệp vụ; quyết định/bàn giao đáng lưu → thêm vào `docs/kien-truc.md` (hoặc PLAN.md nếu là phase). Tài liệu cũ **không** đúng hơn code đã kiểm chứng.
 - **Báo cáo test** luôn đủ 4 dòng: Đạt / Lỗi / Bỏ qua / Không chạy (kèm lý do); phần chỉ suy luận ghi rõ "chưa chạy".
 

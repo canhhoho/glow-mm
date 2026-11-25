@@ -1,6 +1,6 @@
 # Kết nối trợ lý AI (OpenClaw) với web — thiết kế
 
-**Trạng thái: ĐÃ DUYỆT 23/11/2026** (5 quyết định ở §12; phase **P25** trong PLAN.md). **GĐ 3 đã code xong 24/11/2026** trên `dev` (bước 2–3 ở §11, chưa merge `main`); tiếp theo là bước 4 (chủ shop). GĐ 5 chưa làm.
+**Trạng thái: ĐÃ DUYỆT 23/11/2026** (5 quyết định ở §12; phase **P25** trong PLAN.md). **Trên production 25/11/2026:** GĐ 3 (đọc), gói A, GĐ 5 `receive_draft`, B1 `data_health`, B2 đọc đơn (ẩn khách), B3 `price_suggest`, B4 `public:read`, C2. `catalog_submit`, `import_commit` không làm. Còn: B5 Telegram, B6 đơn nháp (chưa duyệt).
 Người viết thiết kế: Claude Cowork. Người làm code: Claude Code, theo CLAUDE.md. Mục ghi **[CẦN XÁC MINH]** phải kiểm khi nối thật.
 
 ## 1. Mục tiêu và phạm vi
@@ -181,7 +181,7 @@ Ghi chú triển khai và cách thử: §13.
 
 ## 13. Đã triển khai GĐ 3 (24/11/2026)
 
-**Code:** `src/server/agent/config.ts` (env, scope, so token) · `tools.ts` (7 công cụ đọc) · `mcp.ts` (JSON-RPC, kiểm quyền, rate limit, audit) · route `src/app/api/agent/mcp/route.ts` · biến `AGENT_ADMIN_*` trong `src/lib/env.ts` + `.env.example` (để trống = tắt; token mẫu `change-me…` bị chặn ở production). Test: `tests/unit/agent-config.test.ts`, `tests/integration/agent-mcp.test.ts`.
+**Code:** `src/server/agent/config.ts` (env, scope, so token) · `tools.ts` (`AGENT_TOOLS`: 14 công cụ đọc + `receive_draft`) · `mask.ts` (ẩn thông tin khách) · `mcp.ts` (JSON-RPC, kiểm quyền, rate limit, audit) · route `src/app/api/agent/mcp/route.ts` · biến `AGENT_ADMIN_*` trong `src/lib/env.ts` + `.env.example` (để trống = tắt; token mẫu `change-me…` bị chặn ở production). Test: `tests/unit/agent-config.test.ts`, `tests/integration/agent-mcp.test.ts`.
 
 **Bước 4 — chủ shop làm (Claude không deploy):**
 1. `/admin/users` → tạo nhân viên "Trợ lý AI", vai trò **Quản lý kho**, rồi **khoá** tài khoản. Lấy id từ đường dẫn `/admin/users/<id>`.
