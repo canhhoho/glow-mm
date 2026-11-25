@@ -29,9 +29,9 @@ export default async function AgentsPage() {
       {legacyEnv && <p role="note" data-testid="agent-legacy-env" className="rounded-md bg-warning-muted px-3 py-2 text-sm text-warning">{t("legacyEnv")}</p>}
 
       <Section title={t("create")}>
-        {/* Token 64 ký tự liền → cho xuống dòng, không đẩy form tràn ngang trên điện thoại. */}
-        <div className="min-w-0 [&_[role=status]]:min-w-0 [&_[role=status]]:font-mono [&_[role=status]]:break-all">
-        <ActionForm action={createAgentTokenAction} submitLabel={t("createSubmit")} className="grid gap-3 md:grid-cols-2" icon={<KeyRound aria-hidden className="size-4 shrink-0" />}>
+        {/* Token hiện trong ô một dòng + nút Sao chép (không tự xuống dòng → không chép sót). */}
+        <div className="min-w-0">
+        <ActionForm action={createAgentTokenAction} secret={{ label: t("createdToken"), copy: t("copyToken"), copied: t("copiedToken") }} submitLabel={t("createSubmit")} className="grid gap-3 md:grid-cols-2" icon={<KeyRound aria-hidden className="size-4 shrink-0" />}>
           <label className={fieldLabelClass}>
             <span>{t("name")}</span>
             <input name="name" required minLength={2} maxLength={60} placeholder={t("namePlaceholder")} className={fieldClass} />

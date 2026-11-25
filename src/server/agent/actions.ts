@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getTranslations } from "next-intl/server";
 import { ZodError } from "zod";
 import { requirePermission } from "@/server/auth/session";
 import type { ActionState } from "@/server/inventory/actions";
@@ -19,8 +18,8 @@ export async function createAgentTokenAction(_prev: ActionState, formData: FormD
     return { error: message(e) };
   }
   revalidatePath("/admin/settings/agents");
-  // Token gốc chỉ hiện đúng lần này (DB chỉ giữ hash).
-  return { ok: (await getTranslations("Agents"))("createdToken", { token }) };
+  // Token gốc chỉ hiện đúng lần này (DB chỉ giữ hash); trang hiện trong ô chỉ đọc + nút Sao chép (ActionForm `secret`).
+  return { ok: token };
 }
 
 export async function revokeAgentTokenAction(_prev: ActionState, formData: FormData): Promise<ActionState> {

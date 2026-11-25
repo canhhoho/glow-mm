@@ -7,6 +7,7 @@ import { Save } from "lucide-react";
 import type { ActionState } from "@/server/inventory/actions";
 import { askConfirm } from "@/lib/confirm";
 import { cn } from "@/lib/utils";
+import { CopyButton } from "@/components/ctv/copy-button";
 import type { Density } from "@/components/ui/field";
 
 /**
@@ -25,6 +26,7 @@ export function ActionForm({
   density = "compact",
   id,
   actionsClassName,
+  secret,
 }: {
   action: (prev: ActionState, fd: FormData) => Promise<ActionState>;
   children: React.ReactNode;
@@ -40,6 +42,11 @@ export function ActionForm({
   id?: string;
   /** Lớp thêm cho nhóm nút Lưu (vd `ml-auto` để đẩy nút về phải trên thanh thao tác). */
   actionsClassName?: string;
+  /**
+   * Action trả `ok` là chuỗi bí mật hiện một lần (vd token agent): hiện trong ô chỉ đọc một dòng (bấm vào = chọn hết) + nút
+   * Sao chép, thay vì đoạn chữ tự xuống dòng dễ chép sót (25/11/2026).
+   */
+  secret?: { label: string; copy: string; copied: string };
 }) {
   const t = useTranslations("Docs");
   const [state, formAction, pending] = useActionState(action, undefined);
@@ -68,12 +75,29 @@ export function ActionForm({
           {icon}
           {submitLabel}
         </Button>
-        {state?.ok && !state.error && (
+        {state?.ok && !state.error && !secret && (
           <p role="status" className="text-sm text-success">
             {okText ?? state.ok}
           </p>
         )}
       </div>
+      {secret && state?.ok && !state.error && (
+        <div role="status" className="col-span-full basis-full min-w-0 space-y-2 rounded-md border border-success/40 bg-success/5 p-3">
+          <p className="text-sm text-success">{secret.label}</p>
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <input
+              readOnly
+              value={state.ok}
+              data-testid="action-secret"
+              aria-label={secret.label}
+              onFocus={(e) => e.currentTarget.select()}
+              spellCheck={false}
+              className="h-10 min-w-0 flex-1 basis-64 rounded-md border bg-background px-3 font-mono text-sm"
+            />
+            <CopyButton text={state.ok} label={secret.copy} done={secret.copied} />
+          </div>
+        </div>
+      )}
       {state?.error && (
         <p role="alert" className="col-span-full basis-full max-w-2xl text-sm text-destructive">
           {t("error")}: {state.error}

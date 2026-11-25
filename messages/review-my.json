@@ -2114,6 +2114,9 @@
     "Docs.sourceAll",
     "Nav.agentDraftsBadge",
     "Nav.aiAgents",
-    "Nav.auditLog"
+    "Nav.auditLog",
+    "Agents.createdToken",
+    "Agents.copyToken",
+    "Agents.copiedToken"
   ]
 }
