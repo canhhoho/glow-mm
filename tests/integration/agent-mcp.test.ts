@@ -3,6 +3,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { toCsv } from "@/lib/csv";
 import { tokenKey } from "@/server/agent/config";
+import { createAgentToken, revokeAgentToken } from "@/server/agent/tokens";
+import { listAuditLogs } from "@/server/admin/audit-log";
+import { listDocuments } from "@/server/inventory/queries";
 import { AGENT_RATE, handleAgentMcp } from "@/server/agent/mcp";
 import { hitRateLimit } from "@/server/rate-limit";
 import { saleFixture, unpublishTestProducts, type SaleFixture } from "./fixtures";
@@ -70,6 +73,8 @@ describe("Cổng MCP trợ lý AI — xác thực", () => {
       ["catalog_get", "catalog_search", "import_preview", "pricing_get", "reorder_suggestions", "stock_available", "stock_summary"],
     );
     expect(all.result.tools.find((t: { name: string }) => t.name === "stock_available").inputSchema).toMatchObject({ type: "object", required: ["skus"] });
+    // A6: nhãn an toàn MCP — mọi công cụ GĐ 3 chỉ đọc.
+    expect(all.result.tools.every((t: { annotations: { readOnlyHint: boolean } }) => t.annotations.readOnlyHint === true)).toBe(true);
     const onlyStock = env({ AGENT_ADMIN_SCOPES: "stock:read" });
     const list = await (await rpc("tools/list", undefined, { env: onlyStock })).json();
     expect(list.result.tools.map((t: { name: string }) => t.name).sort()).toEqual(["reorder_suggestions", "stock_available", "stock_summary"]);
@@ -146,5 +151,67 @@ describe("Cổng MCP trợ lý AI — công cụ đọc", () => {
     expect(data.some((d) => d.ok === true && typeof d.csvHash === "string")).toBe(true);
     expect(JSON.stringify(data)).not.toContain(token);
     expect(JSON.stringify(data)).not.toContain("unit_cost");
+  });
+});
+
+describe("Gói A — token DB, chốt quyền theo vai trò, nhật ký, nguồn phiếu", () => {
+  const ORDER_USER = "it-agent-order";
+  const noEnv = {}; // chỉ token DB (cổng env tắt)
+  const callAs = async (tok: string, method: string, params?: Record<string, unknown>) => {
+    const res = await handleAgentMcp(
+      new Request("http://localhost/api/agent/mcp", { method: "POST", headers: { authorization: `Bearer ${tok}`, "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, ...(params && { params }) }) }),
+      noEnv,
+    );
+    return { status: res.status, body: res.status === 200 || res.status === 403 ? await res.json() : null };
+  };
+
+  beforeAll(async () => {
+    await prisma.user.upsert({ where: { id: ORDER_USER }, update: {}, create: { id: ORDER_USER, email: "it-agent-order@glow.local", name: "AI đơn (test)", role: "ORDER_STAFF", active: false } });
+  });
+
+  it("token DB: gọi được, ghi lần dùng cuối; thu hồi → 401; không token nào bật + không env → 404", async () => {
+    const { id, token: tok } = await createAgentToken({ name: "it-kho", userId: USER_ID, scopes: ["catalog:read", "stock:read"] }, f.userId);
+    const list = await callAs(tok, "tools/list");
+    expect(list.status).toBe(200);
+    expect(list.body.result.tools.map((t: { name: string }) => t.name).sort()).toEqual(["catalog_get", "catalog_search", "reorder_suggestions", "stock_available", "stock_summary"]);
+    expect((await callAs(tok, "tools/call", { name: "stock_available", arguments: { skus: [`IT-${f.tag}`] } })).body.result.structuredContent.rows[0].available).toBe(7);
+    expect((await prisma.agentToken.findUniqueOrThrow({ where: { id } })).lastUsedAt).not.toBeNull();
+    expect((await prisma.agentToken.findUniqueOrThrow({ where: { id } })).tokenHash).not.toBe(tok);
+
+    await revokeAgentToken({ id }, f.userId);
+    const other = await prisma.agentToken.count({ where: { active: true } });
+    expect((await callAs(tok, "ping")).status).toBe(other > 0 ? 401 : 404);
+    await prisma.agentToken.updateMany({ where: { name: { startsWith: "it-" } }, data: { active: false } });
+    expect((await callAs(tok, "ping")).status).toBe((await prisma.agentToken.count({ where: { active: true } })) > 0 ? 401 : 404);
+  });
+
+  it("A4: tạo token với quyền vai trò không có → từ chối; token cũ vượt vai trò bị cắt lúc gọi", async () => {
+    await expect(createAgentToken({ name: "it-don", userId: ORDER_USER, scopes: ["pricing:read"] }, f.userId)).rejects.toThrow("pricing:read");
+    await expect(createAgentToken({ name: "it-kh", userId: "khong-ton-tai", scopes: ["stock:read"] }, f.userId)).rejects.toThrow("nhân viên");
+    const { id, token: tok } = await createAgentToken({ name: "it-don2", userId: ORDER_USER, scopes: ["stock:read"] }, f.userId);
+    // Giả lập token lưu từ trước có scope rộng hơn vai trò.
+    await prisma.agentToken.update({ where: { id }, data: { scopes: ["stock:read", "pricing:read"] } });
+    const list = await callAs(tok, "tools/list");
+    expect(list.body.result.tools.map((t: { name: string }) => t.name).sort()).toEqual(["reorder_suggestions", "stock_available", "stock_summary"]);
+    expect((await callAs(tok, "tools/call", { name: "pricing_get", arguments: { skus: [`IT-${f.tag}`] } })).status).toBe(403);
+    await revokeAgentToken({ id }, f.userId);
+  });
+
+  it("nhật ký: lọc theo người / nhóm hành động; ghi tạo + thu hồi token và agent.call kèm tên token", async () => {
+    const byAgent = await listAuditLogs({ userId: USER_ID, action: "agent" });
+    expect(byAgent.rows.length).toBeGreaterThan(0);
+    expect(byAgent.rows.every((r) => r.userId === USER_ID && r.action.startsWith("agent."))).toBe(true);
+    expect(byAgent.rows.some((r) => (r.data as { token?: string } | null)?.token === "it-kho")).toBe(true);
+    const tokenOps = await listAuditLogs({ userId: f.userId, action: "agent.token.revoke" });
+    expect(tokenOps.rows.length).toBeGreaterThan(0);
+    expect(tokenOps.rows[0].user?.name).toBeTruthy();
+  });
+
+  it("nguồn phiếu: mặc định STAFF, lọc được phiếu AGENT", async () => {
+    const doc = await prisma.stockDocument.create({ data: { code: `IT-AG-${f.tag}`, type: "RECEIVE", toId: f.mm.id, createdById: USER_ID, source: "AGENT" } });
+    const agentDrafts = await listDocuments({ status: "DRAFT", source: "AGENT", q: doc.code });
+    expect(agentDrafts.rows.map((d) => d.code)).toEqual([doc.code]);
+    expect((await listDocuments({ status: "DRAFT", source: "STAFF", q: doc.code })).total).toBe(0);
+    await prisma.stockDocument.update({ where: { id: doc.id }, data: { status: "CANCELLED" } });
   });
 });

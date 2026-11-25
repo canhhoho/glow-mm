@@ -152,7 +152,10 @@
     "affiliatesCommission": "CTV & hoa hồng",
     "inventoryReports": "Tồn kho",
     "accounts": "Tài khoản",
-    "websiteContent": "Nội dung website"
+    "websiteContent": "Nội dung website",
+    "aiAgents": "Trợ lý AI",
+    "auditLog": "Nhật ký thao tác",
+    "agentDraftsBadge": "phiếu nháp do AI tạo"
   },
   "Warehouses": {
     "title": "Kho hàng",
@@ -309,7 +312,13 @@
   },
   "Common": {
     "datePresets": "Khoảng nhanh",
-    "datePreset": {"today":"Hôm nay","last7":"7 ngày","last30":"30 ngày","thisMonth":"Tháng này","lastMonth":"Tháng trước"},
+    "datePreset": {
+      "today": "Hôm nay",
+      "last7": "7 ngày",
+      "last30": "30 ngày",
+      "thisMonth": "Tháng này",
+      "lastMonth": "Tháng trước"
+    },
     "comingSoon": "Đang xây dựng",
     "notFoundTitle": "Không tìm thấy trang",
     "notFoundHint": "Đường dẫn sai hoặc trang đã bị xoá.",
@@ -614,7 +623,11 @@
     "variantInactive": "đã tắt",
     "postedNoteReceive": "Phiếu nhập đã ghi sổ — không sửa hay xoá được. Sai số lượng: tạo phiếu điều chỉnh (chỉ đổi tồn; giá mua, tỷ giá, phí về kho và số lượng dùng tính giá vốn không đổi). Sai giá, tỷ giá hoặc phí về kho: báo quản trị — cần quy trình sửa phiếu riêng.",
     "replaceDraft": "Huỷ và tạo lại",
-    "replacingNote": "Đang tạo lại từ phiếu nháp {code}: khi lưu, phiếu {code} sẽ bị huỷ."
+    "replacingNote": "Đang tạo lại từ phiếu nháp {code}: khi lưu, phiếu {code} sẽ bị huỷ.",
+    "source": "Người tạo",
+    "sourceAll": "Mọi người tạo",
+    "sourceAgent": "Do trợ lý AI tạo",
+    "sourceAgentBadge": "AI"
   },
   "Ship": {
     "title": "Chuyến hàng VN → MM",
@@ -716,7 +729,13 @@
     "clearFilters": "Bỏ lọc",
     "advancedFilters": "Bộ lọc nâng cao",
     "count": "{count} sản phẩm",
-    "archived": "Ngừng kinh doanh",
+    "archived": {
+      "heroNote": "Sản phẩm đã ngừng kinh doanh — khôi phục để nhập thêm hàng hoặc đặt giá.",
+      "title": "Sản phẩm đã ngừng kinh doanh",
+      "body": "Không nhập hàng, đặt giá hay đăng bán được khi ở trạng thái này. Bạn vẫn xem được tồn và lịch sử; khôi phục rồi mới thao tác tiếp (khôi phục không tự đăng bán).",
+      "viewStock": "Xem tồn",
+      "viewHistory": "Xem lịch sử"
+    },
     "delete": "Xoá",
     "restore": "Khôi phục",
     "bulkDelete": "Xoá đã chọn",
@@ -866,8 +885,12 @@
       "waiting": "Chờ bước trước"
     },
     "stepsLabel": "Quy trình sản phẩm",
-    "detailTab": {"info": "Thông tin", "stock": "Tồn & nhập hàng", "price": "Giá bán", "history": "Lịch sử"},
-    "archived": {"heroNote": "Sản phẩm đã ngừng kinh doanh — khôi phục để nhập thêm hàng hoặc đặt giá.", "title": "Sản phẩm đã ngừng kinh doanh", "body": "Không nhập hàng, đặt giá hay đăng bán được khi ở trạng thái này. Bạn vẫn xem được tồn và lịch sử; khôi phục rồi mới thao tác tiếp (khôi phục không tự đăng bán).", "viewStock": "Xem tồn", "viewHistory": "Xem lịch sử"},
+    "detailTab": {
+      "info": "Thông tin",
+      "stock": "Tồn & nhập hàng",
+      "price": "Giá bán",
+      "history": "Lịch sử"
+    },
     "block": {
       "editInfo": "Sửa thông tin sản phẩm",
       "notReceived": "Chưa nhập hàng: {skus}",
@@ -2683,5 +2706,81 @@
     "notReady": "Chưa gửi được {n} sản phẩm (chưa đủ điều kiện):",
     "approveFailed": "Duyệt chưa được {n} sản phẩm (vẫn chờ duyệt):",
     "needsReview": "Chưa duyệt luôn {n} sản phẩm vì có thay đổi khác từ trước (nội dung, ảnh hoặc giá) — mở xem đầy đủ rồi duyệt:"
+  },
+  "Agents": {
+    "description": "Token để trợ lý AI (OpenClaw) đọc dữ liệu web qua cổng /api/agent/mcp. Mỗi agent một token; quyền thực tế không vượt quá vai trò của tài khoản gắn token.",
+    "legacyEnv": "Đang có token cũ đặt bằng biến môi trường AGENT_ADMIN_TOKEN. Sau khi chuyển agent sang token tạo ở đây, xoá biến này trên server rồi tạo lại container.",
+    "create": "Tạo token mới",
+    "createSubmit": "Tạo token",
+    "name": "Tên agent",
+    "namePlaceholder": "vd: tc-cosmetics (OpenClaw)",
+    "user": "Tài khoản thao tác",
+    "userPick": "Chọn tài khoản…",
+    "locked": "đã khoá",
+    "scopes": "Quyền",
+    "scopesHint": "Quyền mà vai trò của tài khoản không có sẽ bị từ chối khi tạo.",
+    "createHint": "Token chỉ hiện một lần ngay sau khi tạo — chép vào biến môi trường của máy chạy agent (vd TANDC_AGENT_TOKEN). Mất token thì thu hồi và tạo token mới.",
+    "createdToken": "Đã tạo. Token (chỉ hiện lần này, hãy chép ngay): {token}",
+    "empty": "Chưa có token nào.",
+    "lastUsed": "Dùng lần cuối",
+    "never": "Chưa dùng",
+    "status": "Trạng thái",
+    "actions": "Thao tác",
+    "createdAt": "Tạo lúc",
+    "active": "Đang dùng",
+    "revoked": "Đã thu hồi",
+    "revoke": "Thu hồi",
+    "revokeConfirm": "Thu hồi token \"{name}\"? Agent dùng token này sẽ mất quyền truy cập ngay.",
+    "scopeInactive": "Vai trò hiện tại của tài khoản không có quyền này — không có hiệu lực",
+    "scope": {
+      "catalog_read": {
+        "label": "Xem sản phẩm",
+        "hint": "Tìm, xem chi tiết sản phẩm, trạng thái duyệt/đăng bán"
+      },
+      "stock_read": {
+        "label": "Xem tồn kho",
+        "hint": "Tồn theo kho, còn bán được, gợi ý đặt hàng"
+      },
+      "pricing_read": {
+        "label": "Xem giá",
+        "hint": "Giá bán và giá mua — chỉ cấp cho agent nội bộ"
+      },
+      "import_preview": {
+        "label": "Kiểm file nhập",
+        "hint": "Xem trước file CSV nhập sản phẩm, không ghi gì"
+      },
+      "import_commit": {
+        "label": "Xác nhận file nhập",
+        "hint": "Chưa có công cụ — không cấp (quyết định Q2)"
+      },
+      "receive_draft": {
+        "label": "Tạo phiếu nhập nháp",
+        "hint": "Giai đoạn 5 — chỉ tạo nháp, người ghi sổ"
+      },
+      "catalog_submit": {
+        "label": "Gửi sản phẩm chờ duyệt",
+        "hint": "Giai đoạn 5 — hiện chỉ Quản trị viên được giữ quyền này"
+      }
+    }
+  },
+  "AuditLog": {
+    "description": "Mọi thao tác ghi của nhân viên, trợ lý AI và hệ thống. Chỉ xem.",
+    "user": "Người thao tác",
+    "allUsers": "Mọi người",
+    "system": "Hệ thống",
+    "action": "Nhóm hành động",
+    "allActions": "Mọi hành động",
+    "searchEntity": "Mã đối tượng (id)",
+    "from": "Từ ngày",
+    "to": "Đến ngày",
+    "clearFilters": "Xoá bộ lọc",
+    "empty": "Chưa có nhật ký.",
+    "emptyFiltered": "Không có dòng nào khớp bộ lọc.",
+    "time": "Thời gian",
+    "entity": "Đối tượng",
+    "data": "Chi tiết",
+    "pageStatus": "Trang {page}/{pages} · {total} dòng",
+    "prevPage": "Trang trước",
+    "nextPage": "Trang sau"
   }
 }

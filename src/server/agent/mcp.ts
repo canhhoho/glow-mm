@@ -4,7 +4,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { writeAudit } from "@/server/audit";
 import { hitRateLimit } from "@/server/rate-limit";
-import { agentConfig, isAuthorizedAgent, tokenKey, type AgentConfig } from "./config";
+import { agentConfig, effectiveScopes, isAuthorizedAgent, tokenKey, type AgentScope } from "./config";
+import { hasActiveAgentTokens, resolveAgentToken, touchAgentToken } from "./tokens";
 import { AGENT_TOOLS, AgentToolError, agentTool } from "./tools";
 
 /**
@@ -28,21 +29,31 @@ const json = (body: unknown, status = 200) => Response.json(body, { status });
 const rpcResult = (id: RpcId, result: unknown) => json({ jsonrpc: "2.0", id, result });
 const rpcError = (id: RpcId, code: number, message: string, status = 200) => json({ jsonrpc: "2.0", id, error: { code, message } }, status);
 
-const toolList = (cfg: AgentConfig) =>
-  AGENT_TOOLS.filter((t) => cfg.scopes.has(t.scope)).map((t) => {
+/** Người gọi đã xác thực: token DB (gói A) hoặc token env cũ. `scopes` đã giao với quyền theo vai trò (A4). */
+type Caller = { userId: string; scopes: Set<AgentScope>; rateKey: string; tokenId: string | null; tokenName: string };
+
+// Gói A (A6): nhãn an toàn MCP — agent/OpenClaw biết công cụ nào chỉ đọc, công cụ nào ghi (ghi luôn chỉ tạo bản nháp, gửi lại
+// cùng idempotencyKey không tạo thêm).
+const toolList = (caller: Caller) =>
+  AGENT_TOOLS.filter((t) => caller.scopes.has(t.scope)).map((t) => {
     const inputSchema = z.toJSONSchema(t.input, { io: "input" }) as Record<string, unknown>;
     delete inputSchema.$schema;
-    return { name: t.name, description: t.description, inputSchema };
+    return {
+      name: t.name,
+      description: t.description,
+      inputSchema,
+      annotations: { readOnlyHint: !t.write, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    };
   });
 
 const zodMessage = (e: z.ZodError) => e.issues.map((i) => (i.path.length ? `${i.path.join(".")}: ${i.message}` : i.message)).join("; ");
 
-async function callTool(id: RpcId, params: Record<string, unknown> | undefined, cfg: AgentConfig, now: Date): Promise<Response> {
+async function callTool(id: RpcId, params: Record<string, unknown> | undefined, cfg: Caller, now: Date): Promise<Response> {
   const name = typeof params?.name === "string" ? params.name : "";
   const tool = agentTool(name);
   if (!tool) return rpcError(id, -32602, `Không có công cụ "${name}"`);
   if (!cfg.scopes.has(tool.scope)) return rpcError(id, -32001, `Token không có quyền ${tool.scope}`, 403);
-  if (name.startsWith("import_") && !(await hitRateLimit(`agent:import:${tokenKey(cfg.token)}`, AGENT_RATE.importMax, AGENT_RATE.windowMs, now))) {
+  if (name.startsWith("import_") && !(await hitRateLimit(`agent:import:${cfg.rateKey}`, AGENT_RATE.importMax, AGENT_RATE.windowMs, now))) {
     return rpcError(id, -32002, "Quá giới hạn công cụ nhập file, thử lại sau 1 phút", 429);
   }
 
@@ -55,7 +66,7 @@ async function callTool(id: RpcId, params: Record<string, unknown> | undefined, 
       entity: "Agent",
       entityId: name,
       // Không ghi nguyên CSV, không ghi token — chỉ hash để đối chiếu.
-      data: { tool: name, scope: tool.scope, ...(csv && { csvHash: createHash("sha256").update(csv).digest("hex") }), ...data },
+      data: { tool: name, scope: tool.scope, token: cfg.tokenName, ...(cfg.tokenId && { tokenId: cfg.tokenId }), ...(csv && { csvHash: createHash("sha256").update(csv).digest("hex") }), ...data },
     });
 
   const parsed = tool.input.safeParse(args);
@@ -80,20 +91,34 @@ async function callTool(id: RpcId, params: Record<string, unknown> | undefined, 
   }
 }
 
+/** Token DB trước (gói A), rồi token env cũ. Không có token nào đang bật → cổng coi như tắt (404). */
+async function authenticate(req: Request, env: Record<string, string | undefined>): Promise<Caller | Response> {
+  const header = req.headers.get("authorization");
+  const db = await resolveAgentToken(header);
+  if (db) return { userId: db.userId, scopes: new Set(db.scopes), rateKey: `t:${db.tokenId}`, tokenId: db.tokenId, tokenName: db.name };
+  const envCfg = agentConfig(env);
+  if (envCfg && isAuthorizedAgent(header, envCfg)) {
+    return { userId: envCfg.userId, scopes: envCfg.scopes, rateKey: tokenKey(envCfg.token), tokenId: null, tokenName: "env" };
+  }
+  return envCfg || (await hasActiveAgentTokens()) ? json({ error: "unauthorized" }, 401) : new Response(null, { status: 404 });
+}
+
 export async function handleAgentMcp(req: Request, env: Record<string, string | undefined> = process.env, now = new Date()): Promise<Response> {
-  const cfg = agentConfig(env);
-  if (!cfg) return new Response(null, { status: 404 });
-  if (!isAuthorizedAgent(req.headers.get("authorization"), cfg)) return json({ error: "unauthorized" }, 401);
+  const auth = await authenticate(req, env);
+  if (auth instanceof Response) return auth;
   if (req.method !== "POST") return new Response(null, { status: 405, headers: { Allow: "POST" } });
-  if (!(await hitRateLimit(`agent:${tokenKey(cfg.token)}`, AGENT_RATE.max, AGENT_RATE.windowMs, now))) {
+  if (!(await hitRateLimit(`agent:${auth.rateKey}`, AGENT_RATE.max, AGENT_RATE.windowMs, now))) {
     return json({ error: "rate_limited" }, 429);
   }
-  // Tài khoản "Trợ lý AI" phải tồn tại (AuditLog ghi đúng người); sai cấu hình → 503, không chạy công cụ.
-  const user = await prisma.user.findUnique({ where: { id: cfg.userId }, select: { role: true } });
+  // Tài khoản gắn token phải là nhân viên (AuditLog ghi đúng người); sai cấu hình → 503, không chạy công cụ.
+  const user = await prisma.user.findUnique({ where: { id: auth.userId }, select: { role: true } });
   if (!user || user.role === "CUSTOMER" || user.role === "AFFILIATE") {
-    console.error(JSON.stringify({ agent: "config", error: "AGENT_ADMIN_USER_ID không phải tài khoản nhân viên" }));
+    console.error(JSON.stringify({ agent: "config", token: auth.tokenName, error: "tài khoản gắn token không phải nhân viên" }));
     return json({ error: "agent_misconfigured" }, 503);
   }
+  // A4: quyền thực tế = scope ∩ quyền theo vai trò.
+  const cfg: Caller = { ...auth, scopes: effectiveScopes(auth.scopes, user.role) };
+  if (cfg.tokenId) await touchAgentToken(cfg.tokenId, now);
 
   const length = Number(req.headers.get("content-length") ?? 0);
   if (length > 3 * 1024 * 1024) return rpcError(null, -32600, "Payload quá lớn (tối đa 2 MB CSV)", 413);

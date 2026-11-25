@@ -26,7 +26,9 @@ export type NavIcon =
   | "userCircle"
   | "map"
   | "warehouse"
-  | "gear";
+  | "gear"
+  | "bot"
+  | "history";
 
 /** Số đếm hiện ở badge (xem `navCounts`). Badge menu chỉ cho việc cần xử lý; các số còn lại dùng ở tab/lối tắt trong trang. */
 export type NavCountKey =
@@ -37,7 +39,8 @@ export type NavCountKey =
   | "pendingApplications"
   | "passwordResets"
   | "lowStock"
-  | "pendingReviews";
+  | "pendingReviews"
+  | "agentDrafts";
 
 /**
  * `match` = các tiền tố đường dẫn bổ sung để mục vẫn sáng khi mở trang con/trang gộp (vd. Cảnh báo thuộc Tồn kho),
@@ -78,7 +81,7 @@ export const NAV: NavGroup[] = [
     items: [
       // Chờ kiểm tra + Cảnh báo là lối tắt trong trang Tồn kho; vẫn sáng mục này khi mở các trang đó.
       { href: "/admin/inventory", key: "inventory", permission: "stock:view", icon: "box", count: ["lowStock", "quarantineLots"], match: ["/admin/alerts"] },
-      { href: "/admin/inventory/documents", key: "documents", permission: "stock:view", icon: "file" },
+      { href: "/admin/inventory/documents", key: "documents", permission: "stock:view", icon: "file", count: "agentDrafts" },
       { href: "/admin/shipments", key: "shipments", permission: "shipment:manage", icon: "truck", feature: "shipments" },
     ],
   },
@@ -103,6 +106,9 @@ export const NAV: NavGroup[] = [
       { href: "/admin/settings/locations", key: "locations", permission: "settings:manage", icon: "map" },
       // Banner + Bộ sưu tập là hai tab của cùng mục.
       { href: "/admin/content/banners", key: "websiteContent", permission: "content:manage", icon: "image", match: ["/admin/content"] },
+      // P25 gói A: token cổng trợ lý AI + nhật ký mọi thao tác (người, AI, hệ thống).
+      { href: "/admin/settings/agents", key: "aiAgents", permission: "settings:manage", icon: "bot" },
+      { href: "/admin/settings/audit", key: "auditLog", permission: "settings:manage", icon: "history" },
     ],
   },
 ];

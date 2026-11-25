@@ -164,12 +164,13 @@ export { DOC_TYPES };
  * Danh sách phiếu kho (20/11/2026, audit #3): tìm theo mã phiếu / SKU / lý do, lọc loại phiếu và khoảng ngày tạo (giờ Yangon),
  * phân trang — trước đây cắt cứng 200 phiếu mới nhất, phiếu cũ hơn không mở được từ danh sách.
  */
-export async function listDocuments(filter: { type?: DocType; status?: DocStatus; q?: string; from?: string; to?: string; page?: number }) {
+export async function listDocuments(filter: { type?: DocType; status?: DocStatus; source?: "STAFF" | "AGENT"; q?: string; from?: string; to?: string; page?: number }) {
   const q = filter.q?.trim();
   const { from, to } = optionalRange(filter);
   const where: Prisma.StockDocumentWhereInput = {
     type: filter.type,
     status: filter.status,
+    source: filter.source,
     ...(q && {
       OR: [
         { code: { contains: q, mode: "insensitive" } },

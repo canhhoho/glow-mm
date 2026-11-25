@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { agentConfig, DEFAULT_AGENT_SCOPES, isAuthorizedAgent, parseScopes } from "@/server/agent/config";
+import { agentConfig, DEFAULT_AGENT_SCOPES, effectiveScopes, generateAgentToken, hashAgentToken, isAuthorizedAgent, parseScopes, SCOPE_ROLES } from "@/server/agent/config";
+import { PERMISSIONS } from "@/server/auth/roles";
 import { AGENT_TOOLS } from "@/server/agent/tools";
 
 const TOKEN = "t".repeat(40);
@@ -32,7 +33,26 @@ describe("P25 cấu hình cổng trợ lý AI", () => {
     expect(isAuthorizedAgent(null, cfg)).toBe(false);
   });
 
+  it("A4: quyền thực tế = scope ∩ vai trò; scope ghi theo đúng permission của admin", () => {
+    const all = Object.keys(SCOPE_ROLES) as (keyof typeof SCOPE_ROLES)[];
+    expect([...effectiveScopes(all, "WAREHOUSE_MANAGER")].sort()).toEqual(["catalog:read", "import:preview", "pricing:read", "receive:draft", "stock:read"]);
+    expect([...effectiveScopes(all, "ORDER_STAFF")]).toEqual(["stock:read"]);
+    expect([...effectiveScopes(all, "ADMIN")].sort()).toEqual([...all].sort());
+    expect(effectiveScopes(all, "CUSTOMER").size).toBe(0);
+    expect(SCOPE_ROLES["receive:draft"]).toBe(PERMISSIONS["stock:receive"]);
+    expect(SCOPE_ROLES["catalog:submit"]).toBe(PERMISSIONS["catalog:manage"]);
+  });
+
+  it("token sinh ra 64 ký tự hex, hash ổn định", () => {
+    const a = generateAgentToken();
+    expect(a).toMatch(/^[0-9a-f]{64}$/);
+    expect(generateAgentToken()).not.toBe(a);
+    expect(hashAgentToken(a)).toBe(hashAgentToken(a));
+    expect(hashAgentToken(a)).not.toContain(a);
+  });
+
   it("GĐ 3 chỉ có công cụ đọc, mỗi công cụ đúng scope", () => {
+    expect(AGENT_TOOLS.every((t) => !t.write)).toBe(true);
     expect(Object.fromEntries(AGENT_TOOLS.map((t) => [t.name, t.scope]))).toEqual({
       catalog_search: "catalog:read",
       catalog_get: "catalog:read",
