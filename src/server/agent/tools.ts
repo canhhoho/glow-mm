@@ -279,7 +279,13 @@ const ISSUE_HINTS: Record<(typeof ISSUE_CODES)[number], string> = {
   RATE_NEWER: "Có tỷ giá mới hơn lần đặt giá — nên tính lại",
 };
 /** Mục của trang Kiểm tra dữ liệu agent được đọc: kho + giá vốn (không tiền), KHÔNG có đơn hàng / COD / mốc doanh thu (B2 riêng). */
-const HEALTH_KEYS = new Set(["stockMissingCost", "draftOnlyCost", "comboMissingCost", "quarantine", "staleDrafts"]);
+const HEALTH_HINTS: Record<string, string> = {
+  stockMissingCost: "Lô có tồn bán nhưng chưa có giá vốn — đơn xuất từ lô này ghi Thiếu giá vốn (value = SL tồn)",
+  draftOnlyCost: "SKU chỉ có lô từ phiếu nhập NHÁP/đã huỷ — chưa có giá mua đã ghi sổ (không phải có tồn thiếu giá vốn); cần ghi sổ phiếu nhập thật",
+  comboMissingCost: "Combo chưa tính được giá vốn — thành phần chưa có lô nhập đã ghi sổ (value = thành phần thiếu)",
+  quarantine: "Hàng trả chờ kiểm tra — kiểm rồi nhập lại kho bán hoặc xuất huỷ (value = SL)",
+  staleDrafts: "Phiếu kho nháp để lâu — ghi sổ hoặc huỷ (value = số ngày)",
+};
 
 const dataHealthInput = z.object({
   code: z.enum(ISSUE_CODES).optional().describe("Chỉ lấy SP có mã lỗi/cảnh báo này"),
@@ -316,7 +322,7 @@ async function dataHealthTool(i: z.infer<typeof dataHealthInput>, { now }: Ctx) 
     generatedAt: now.toISOString(),
     products: { checked: products.length, matching: items.length, byCode, rows: items.slice(0, i.limit) },
     codes: ISSUE_HINTS,
-    checks: [...cost, ...ops].filter((c) => HEALTH_KEYS.has(c.key) && c.count > 0).map((c) => ({ key: c.key, severity: c.severity, count: c.count, rows: c.rows.slice(0, 20).map((r) => ({ ref: r.ref, name: r.name, value: r.value, url: r.href })) })),
+    checks: [...cost, ...ops].filter((c) => c.key in HEALTH_HINTS && c.count > 0).map((c) => ({ key: c.key, meaning: HEALTH_HINTS[c.key], severity: c.severity, count: c.count, rows: c.rows.slice(0, 20).map((r) => ({ ref: r.ref, name: r.name, value: r.value, url: r.href })) })),
     note: "errors chặn mở bán; warnings cần biết. Agent chỉ báo — sửa trên web (url).",
   };
 }

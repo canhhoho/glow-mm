@@ -133,6 +133,8 @@ describe("Cổng MCP trợ lý AI — công cụ đọc", () => {
     const errs = await call("data_health", { onlyErrors: true, limit: 100 });
     expect((errs.result!.structuredContent.products.rows as { errors: unknown[] }[]).every((r) => r.errors.length > 0)).toBe(true);
     const keys = (out.checks as { key: string }[]).map((c) => c.key);
+    // Mỗi mục có giải thích để agent không tự đoán nghĩa mã.
+    expect((out.checks as { meaning?: string }[]).every((c) => typeof c.meaning === "string" && c.meaning.length > 0)).toBe(true);
     for (const k of ["overdueOrders", "longShipping", "codExceptions"]) expect(keys).not.toContain(k);
     expect(JSON.stringify(out)).not.toMatch(/priceMmk|unitCost|totalMmk/);
     // Scope: chỉ stock:read → không gọi được.
