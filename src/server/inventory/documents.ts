@@ -312,7 +312,7 @@ const idempotencyKeyOf = (raw: unknown) =>
  * Tạo phiếu NHÁP. RECEIVE tạo (hoặc dùng lại) lô theo (biến thể, số lô).
  * `idempotencyKey` (mỗi lần mở form một khoá): gửi lại cùng form (bấm 2 lần, mạng chậm) → trả phiếu đã tạo, không tạo thêm.
  */
-export async function createDocument(raw: unknown, userId: string, transaction?: Tx, opts: { lockedRate?: LockedRates } = {}) {
+export async function createDocument(raw: unknown, userId: string, transaction?: Tx, opts: { lockedRate?: LockedRates; source?: "STAFF" | "AGENT" } = {}) {
   const input = documentSchema.parse(raw);
   const idempotencyKey = idempotencyKeyOf(raw);
   const db = transaction ?? prisma;
@@ -345,6 +345,7 @@ export async function createDocument(raw: unknown, userId: string, transaction?:
         reason: input.reason,
         estimatedShipMmkPerKg: input.type === "RECEIVE" ? input.estimatedShipMmkPerKg : undefined,
         idempotencyKey,
+        source: opts.source ?? "STAFF",
         createdById: userId,
         lines: { create: lines },
       },
@@ -457,9 +458,26 @@ async function assertOneSellableWarehousePerProduct(tx: Tx, inputs: ReceiveInput
  *   nhóm còn lại thành phiếu mới (lý do kế thừa). Tỷ giá đã chốt của dòng không đổi được giữ ở mọi phiếu.
  * Khối lượng chỉ ghi qua một phiếu. Trả danh sách phiếu (phiếu gốc đứng đầu khi sửa).
  */
-export async function saveReceiveDrafts(raw: unknown, userId: string, opts: { documentId?: string } = {}) {
+/** `dryRun`: chạy đủ kiểm tra trong transaction rồi huỷ — không phiếu, không lô nào được ghi. */
+class DryRunRollback extends Error {
+  constructor(readonly documents: { toId: string | null; lines: number }[]) {
+    super("dry-run");
+  }
+}
+
+/**
+ * `source`: AGENT = phiếu do trợ lý AI tạo qua /api/agent (P25 GĐ 5) — luôn là nháp, người kiểm và ghi sổ.
+ * `dryRun`: kiểm như thật (Zod, kho, giá mua đúng loại tiền, combo…) rồi rollback; trả `documents: []` + `preview`.
+ */
+export async function saveReceiveDrafts(raw: unknown, userId: string, opts: { documentId?: string; source?: "STAFF" | "AGENT"; dryRun?: boolean } = {}) {
   const groups = splitReceivePayload(raw);
   const keys = groups.flatMap((g) => (typeof g.payload.idempotencyKey === "string" ? [g.payload.idempotencyKey] : []));
+  if (opts.dryRun && opts.documentId) throw new DocumentError("dryRun chỉ dùng khi tạo phiếu mới");
+  // Gửi lại đúng khoá đã tạo (agent thử lại, mạng chậm) → trả phiếu cũ, kể cả khi đang dryRun.
+  if (keys.length && !opts.documentId) {
+    const existing = await prisma.stockDocument.findMany({ where: { idempotencyKey: { in: keys } }, orderBy: { createdAt: "asc" } });
+    if (existing.length === keys.length) return { documents: existing, split: existing.length > 1, existing: true };
+  }
   try {
     const documents = await prisma.$transaction(
       async (tx) => {
@@ -477,18 +495,24 @@ export async function saveReceiveDrafts(raw: unknown, userId: string, opts: { do
         if (opts.documentId) out.push({ index: originIdx, doc: await updateReceiveDraftTx(tx, opts.documentId, inputs[originIdx], userId, lockedRate) });
         for (let i = 0; i < groups.length; i++) {
           if (i === originIdx) continue;
-          out.push({ index: i, doc: await createDocument(groups[i].payload, userId, tx, { lockedRate }) });
+          out.push({ index: i, doc: await createDocument(groups[i].payload, userId, tx, { lockedRate, source: opts.source }) });
+        }
+        if (opts.dryRun) {
+          const counts = await tx.stockDocumentLine.groupBy({ by: ["documentId"], where: { documentId: { in: out.map((o) => o.doc.id) } }, _count: { _all: true } });
+          const n = new Map(counts.map((c) => [c.documentId, c._count._all]));
+          throw new DryRunRollback(out.sort((a, b) => a.index - b.index).map((o) => ({ toId: o.doc.toId, lines: n.get(o.doc.id) ?? 0 })));
         }
         return opts.documentId ? out.map((o) => o.doc) : out.sort((a, b) => a.index - b.index).map((o) => o.doc);
       },
       { maxWait: 10_000, timeout: 30_000 },
     );
-    return { documents, split: documents.length > 1 };
+    return { documents, split: documents.length > 1, existing: false };
   } catch (e) {
+    if (e instanceof DryRunRollback) return { documents: [], split: e.documents.length > 1, existing: false, preview: e.documents };
     // Hai request cùng khoá chạy song song: request thua trả các phiếu đã tạo.
     if (keys.length && e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
       const existing = await prisma.stockDocument.findMany({ where: { idempotencyKey: { in: keys } }, orderBy: { createdAt: "asc" } });
-      if (existing.length === keys.length) return { documents: existing, split: existing.length > 1 };
+      if (existing.length === keys.length) return { documents: existing, split: existing.length > 1, existing: true };
     }
     throw e;
   }

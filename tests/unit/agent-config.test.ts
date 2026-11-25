@@ -51,8 +51,8 @@ describe("P25 cấu hình cổng trợ lý AI", () => {
     expect(hashAgentToken(a)).not.toContain(a);
   });
 
-  it("GĐ 3 chỉ có công cụ đọc, mỗi công cụ đúng scope", () => {
-    expect(AGENT_TOOLS.every((t) => !t.write)).toBe(true);
+  it("công cụ đúng scope; chỉ receive_draft là công cụ ghi (GĐ 5)", () => {
+    expect(AGENT_TOOLS.filter((t) => t.write).map((t) => t.name)).toEqual(["receive_draft"]);
     expect(Object.fromEntries(AGENT_TOOLS.map((t) => [t.name, t.scope]))).toEqual({
       catalog_search: "catalog:read",
       catalog_get: "catalog:read",
@@ -60,6 +60,7 @@ describe("P25 cấu hình cổng trợ lý AI", () => {
       stock_available: "stock:read",
       reorder_suggestions: "stock:read",
       pricing_get: "pricing:read",
+      receive_draft: "receive:draft",
       import_preview: "import:preview",
     });
   });

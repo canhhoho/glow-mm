@@ -9,8 +9,9 @@ import { sheetRowsToCsv } from "@/server/catalog/catalog-sheet-read";
 import { LIST_TABS, listProductsPage } from "@/server/catalog/product-list";
 import { loadReadiness } from "@/server/catalog/readiness";
 import { productReadinessView } from "@/server/catalog/review";
-import { salesBlockDays } from "@/server/inventory/documents";
+import { saveReceiveDrafts, salesBlockDays } from "@/server/inventory/documents";
 import { stockByVariant, stockFilterSchema } from "@/server/inventory/overview";
+import { suggestedReceiveLot } from "@/server/inventory/queries";
 import { availableToSell } from "@/server/orders/availability";
 import type { AgentScope } from "./config";
 
@@ -20,7 +21,8 @@ import type { AgentScope } from "./config";
  */
 export class AgentToolError extends Error {}
 
-type Ctx = { userId: string; now: Date };
+/** `callerKey`: định danh token gọi (khoá idempotency của công cụ ghi được gắn tiền tố này để hai agent không đụng nhau). */
+type Ctx = { userId: string; now: Date; callerKey: string };
 /**
  * Gói A (A3): công cụ GHI (giai đoạn 5) phải đặt `write: true`, nhận `idempotencyKey` và `dryRun` (chạy đủ kiểm tra như thật
  * rồi không ghi), và chỉ tạo bản NHÁP gắn nguồn AGENT (vd `StockDocument.source`). Hiện chưa có công cụ ghi nào.
@@ -252,6 +254,95 @@ async function importPreview(i: z.infer<typeof importPreviewInput>) {
   };
 }
 
+// ── GĐ 5 — ghi NHÁP ──
+
+const receiveDraftInput = z.object({
+  lines: z
+    .array(
+      z.object({
+        sku,
+        qty: z.number().int().min(1).max(100_000).describe("Số lượng nhập"),
+        unitCost: z.number().int().min(0).max(2_147_483_647).optional().describe("Giá mua/đv theo tiền của kho (VND kho nhập VN, MMK kho mua tại Myanmar). Bỏ trống = giá mua hiện tại của phân loại"),
+        lotNo: z.string().trim().min(1).max(50).optional().describe("Số lô; bỏ trống = NK + ngày (như form nhập)"),
+        warehouse: z.string().trim().max(20).optional().describe("Mã kho — CHỈ cho SP chưa có kho bán; SP đã có kho thì phải trùng kho đó"),
+      }),
+    )
+    .min(1)
+    .max(200),
+  note: z.string().trim().max(200).optional().describe("Ghi chú (vd số hoá đơn NCC)"),
+  idempotencyKey: z.string().trim().min(8).max(80).describe("Khoá duy nhất cho MỖI phiếu muốn tạo; gửi lại cùng khoá → trả phiếu đã tạo, không tạo thêm"),
+  dryRun: z.boolean().default(false).describe("true = chỉ kiểm tra như thật, KHÔNG tạo phiếu"),
+});
+
+/**
+ * Tạo phiếu NHẬP nháp (tự tách mỗi kho một phiếu) qua đúng `saveReceiveDrafts` của form nhập; phiếu gắn `source=AGENT`.
+ * KHÔNG ghi sổ — tồn kho không đổi cho tới khi người kiểm và bấm ghi sổ trên admin.
+ */
+async function receiveDraft(i: z.infer<typeof receiveDraftInput>, { userId, now, callerKey }: Ctx) {
+  const { rows, missing } = await variantsBySku(i.lines.map((l) => l.sku));
+  if (missing.length) throw new AgentToolError(`Không có SKU: ${missing.join(", ")}`);
+  const bySku = new Map(rows.map((r) => [r.sku.toLowerCase(), r]));
+  const codes = [...new Set(i.lines.flatMap((l) => (l.warehouse ? [l.warehouse.toUpperCase()] : [])))];
+  const locs = new Map(
+    (await prisma.location.findMany({ where: { code: { in: codes, mode: "insensitive" } }, select: { id: true, code: true, sellable: true, active: true, pricingMode: true } })).map((l) => [l.code.toUpperCase(), l]),
+  );
+  const homes = new Map(
+    (await prisma.product.findMany({ where: { id: { in: [...new Set(rows.map((r) => r.productId))] } }, select: { id: true, stockLocation: { select: { id: true, code: true, pricingMode: true } } } })).map((p) => [p.id, p.stockLocation]),
+  );
+  const lot = suggestedReceiveLot(now);
+  const errors: string[] = [];
+  const lines = i.lines.map((l) => {
+    const v = bySku.get(l.sku.toLowerCase())!;
+    const home = homes.get(v.productId) ?? null;
+    let target = home;
+    if (l.warehouse) {
+      const given = locs.get(l.warehouse.toUpperCase());
+      if (!given || !given.sellable || !given.active) errors.push(`${v.sku}: kho "${l.warehouse}" không phải kho bán đang dùng`);
+      else if (home && home.id !== given.id) errors.push(`${v.sku}: SP thuộc kho ${home.code}, không nhập vào ${given.code} (đổi kho làm bằng "Chuyển kho" trên web)`);
+      else target = { id: given.id, code: given.code, pricingMode: given.pricingMode };
+    }
+    if (!target) errors.push(`${v.sku}: SP chưa có kho bán — ghi rõ warehouse`);
+    if (v.isBundle) errors.push(`${v.sku}: combo không nhập trực tiếp — nhập từng thành phần`);
+    if (!v.active || v.product.archivedAt) errors.push(`${v.sku}: phân loại đã ngừng dùng / SP ngừng kinh doanh`);
+    const currency = target?.pricingMode === "LOCAL_MMK" ? "MMK" : "VND";
+    const cost = l.unitCost ?? (currency === "MMK" ? v.purchasePriceMmk : v.purchasePriceVnd);
+    if (cost == null) errors.push(`${v.sku}: thiếu giá mua (${currency}) — ghi unitCost`);
+    return { v, target, currency, cost, qty: l.qty, lotNo: l.lotNo ?? lot };
+  });
+  if (errors.length) throw new AgentToolError(errors.join("\n"));
+
+  const payload = {
+    type: "RECEIVE",
+    reason: `[Trợ lý AI]${i.note ? ` ${i.note}` : ""}`,
+    idempotencyKey: `agent:${callerKey}:${i.idempotencyKey}`.slice(0, 100),
+    lines: lines.map((l) => ({
+      variantId: l.v.id,
+      toId: l.target!.id,
+      lotNo: l.lotNo,
+      qty: l.qty,
+      stockType: "SELLABLE",
+      ...(l.currency === "MMK" ? { unitCostMmk: l.cost } : { unitCostVnd: l.cost }),
+    })),
+  };
+  let res: Awaited<ReturnType<typeof saveReceiveDrafts>>;
+  try {
+    res = await saveReceiveDrafts(payload, userId, { source: "AGENT", dryRun: i.dryRun });
+  } catch (e) {
+    // Lỗi nghiệp vụ (DocumentError) → trả thông điệp cho agent sửa; Zod để lớp MCP xử lý; lỗi khác → log + 500.
+    if (e instanceof Error && e.name === "DocumentError") throw new AgentToolError(e.message);
+    throw e;
+  }
+  const summary = lines.map((l) => ({ sku: l.v.sku, warehouse: l.target!.code, qty: l.qty, unitCost: l.cost, currency: l.currency, lotNo: l.lotNo }));
+  if (i.dryRun) return { dryRun: true, ok: true, documentsToCreate: res.preview?.length ?? 0, rows: summary };
+  return {
+    dryRun: false,
+    alreadyCreated: res.existing,
+    documents: res.documents.map((d) => ({ code: d.code, status: d.status, url: `/admin/inventory/documents/${d.id}/edit` })),
+    rows: summary,
+    next: "Phiếu NHÁP — chủ shop kiểm tra rồi bấm Ghi sổ trên admin. Tồn kho chưa thay đổi.",
+  };
+}
+
 export const AGENT_TOOLS: AgentTool[] = [
   { name: "catalog_search", scope: "catalog:read", description: "Tìm sản phẩm trong admin (tên, SKU, thương hiệu, danh mục, kho bán, trạng thái duyệt/đăng bán, giá bán MMK, tồn bán được).", input: catalogSearchInput, run: catalogSearch as AgentTool["run"] },
   { name: "catalog_get", scope: "catalog:read", description: "Chi tiết một sản phẩm theo SKU: mô tả, cách dùng, thành phần, các phân loại, lỗi/cảnh báo còn thiếu để mở bán.", input: catalogGetInput, run: catalogGet as AgentTool["run"] },
@@ -259,6 +350,14 @@ export const AGENT_TOOLS: AgentTool[] = [
   { name: "stock_available", scope: "stock:read", description: "Số còn bán được (như web khách) cho tối đa 100 SKU, combo tính theo thành phần; kèm SL dự kiến nhập.", input: skusInput, run: stockAvailable as AgentTool["run"] },
   { name: "reorder_suggestions", scope: "stock:read", description: "Gợi ý đặt hàng như trang Cảnh báo: tốc độ bán, số ngày còn đủ hàng, số nên đặt thêm.", input: z.object({}), run: reorderSuggestions as AgentTool["run"] },
   { name: "pricing_get", scope: "pricing:read", description: "Giá bán MMK, giá mua hiện tại (VND hoặc MMK theo kho), ngày đổi giá mua, cờ giá bán cũ cần tính lại — tối đa 100 SKU.", input: skusInput, run: pricingGet as AgentTool["run"] },
+  {
+    name: "receive_draft",
+    scope: "receive:draft",
+    write: true,
+    description: "Tạo phiếu NHẬP kho NHÁP (tự tách mỗi kho một phiếu) để chủ shop kiểm và ghi sổ. Không đổi tồn kho. Luôn chạy dryRun: true trước; mỗi phiếu một idempotencyKey mới.",
+    input: receiveDraftInput,
+    run: receiveDraft as AgentTool["run"],
+  },
   { name: "import_preview", scope: "import:preview", description: "Kiểm file CSV nhập/cập nhật sản phẩm bằng đúng quy tắc trang Nhập Excel (chỉ xem trước, không ghi gì).", input: importPreviewInput, run: importPreview as AgentTool["run"] },
 ];
 
