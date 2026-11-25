@@ -1129,7 +1129,6 @@
     "allPaymentMethods": "All payment methods",
     "allStatuses": "All statuses",
     "tabAll": "All",
-    "otherStatuses": "Cancelled / Returned",
     "allChannels": "All channels",
     "overdueOnly": "Pending past reservation hold",
     "advancedFilters": "More filters",

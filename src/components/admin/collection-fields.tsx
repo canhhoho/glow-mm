@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { utcToYangonLocal } from "@/lib/time";
-import { fieldClass, fieldLabelClass } from "@/components/admin/ui";
+import { checkboxClass, fieldClass, fieldLabelClass } from "@/components/admin/ui";
 
 export type CollectionFieldsValue = {
   slug: string;
@@ -40,11 +40,11 @@ export async function CollectionFields({ value }: { value?: CollectionFieldsValu
       </label>
       <div className="flex flex-col justify-end gap-1 pb-1 text-sm">
         <label className="flex items-center gap-2">
-          <input type="checkbox" name="active" defaultChecked={value?.active ?? true} />
+          <input type="checkbox" name="active" defaultChecked={value?.active ?? true} className={checkboxClass} />
           {t("active")}
         </label>
         <label className="flex items-center gap-2">
-          <input type="checkbox" name="showOnHome" defaultChecked={value?.showOnHome ?? true} />
+          <input type="checkbox" name="showOnHome" defaultChecked={value?.showOnHome ?? true} className={checkboxClass} />
           {t("showOnHome")}
         </label>
       </div>

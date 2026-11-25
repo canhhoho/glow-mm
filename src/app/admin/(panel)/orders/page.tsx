@@ -64,12 +64,12 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ord
           presets={datePresetItems(presetLabels(tc), (r) => { const params = new URLSearchParams(); for (const [key, value] of Object.entries(sp)) { if (key !== "page" && key !== "from" && key !== "to") for (const v of Array.isArray(value) ? value : value ? [value] : []) params.append(key, v); } params.set("from", r.from); params.set("to", r.to); return `/admin/orders?${params}`; }, filter)}
         />
         <SearchInput label={t("search")} defaultValue={filter.q} />
-        {/* Trạng thái chính nằm ở tab (giữ qua nút Lọc bằng ô ẩn); ô chọn chỉ còn Đã huỷ / Trả hàng. */}
+        {/* Trạng thái chính nằm ở tab (giữ qua nút Lọc bằng ô ẩn); ô chọn: Mọi trạng thái (mặc định) / Đã huỷ / Trả hàng. */}
         {tabStatus ? (
           <input type="hidden" name="status" value={tabStatus} />
         ) : (
           <select name="status" defaultValue={filter.status ?? ""} aria-label={t("colStatus")} className={cn(fieldClass, "w-auto")}>
-            <option value="">{t("otherStatuses")}</option>
+            <option value="">{t("allStatuses")}</option>
             {ORDER_FILTER_STATUSES.filter((s) => s === "CANCELLED" || s === "RETURNED").map((s) => (
               <option key={s} value={s}>
                 {t(`status.${s}`)}
