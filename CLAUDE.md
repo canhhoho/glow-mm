@@ -41,6 +41,8 @@ npm run dev                           # http://localhost:3000 (storefront) · /a
 npm run check                         # NHANH: lint + typecheck + vitest unit — mặc định sau mỗi thay đổi
 npm run test:int                      # vitest integration (DB glow_test, cần docker)
 npm run test:e2e                      # Playwright (build standalone, cổng 3100); npm test = tất cả
+npm run db:test:fresh                 # xoá + tạo lại glow_test (chỉ localhost:15432/glow_test) rồi migrate + seed
+npm run test:e2e:fresh                # làm sạch glow_test rồi chạy E2E — dùng cho full E2E trên máy (glow_test tích luỹ dữ liệu làm E2E timeout)
 npm run data:check                    # kiểm dữ liệu; db:backfill-lot-cost: bổ sung giá vốn lô cũ (mặc định chạy thử)
 npm run i18n:export | i18n:import -- file.csv    # trao đổi bản dịch my qua CSV
 npx vitest run tests/unit/money.test.ts          # một test riêng
