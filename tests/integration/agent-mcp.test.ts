@@ -8,7 +8,7 @@ import { listAuditLogs } from "@/server/admin/audit-log";
 import { listDocuments } from "@/server/inventory/queries";
 import { AGENT_RATE, handleAgentMcp } from "@/server/agent/mcp";
 import { hitRateLimit } from "@/server/rate-limit";
-import { saleFixture, unpublishTestProducts, type SaleFixture } from "./fixtures";
+import { avail, saleFixture, unpublishTestProducts, type SaleFixture } from "./fixtures";
 
 /** P25 GĐ 3 — cổng MCP chỉ đọc cho trợ lý AI (docs/ket-noi-tro-ly-ai.md §10). */
 afterAll(unpublishTestProducts);
@@ -80,7 +80,7 @@ describe("Cổng MCP trợ lý AI — xác thực", () => {
     expect(list.result.tools.map((t: { name: string }) => t.name).sort()).toEqual(["reorder_suggestions", "stock_available", "stock_summary"]);
     const denied = await call("pricing_get", { skus: [`IT-${f.tag}`] }, onlyStock);
     expect(denied.status).toBe(403);
-    const unknown = await call("receive_draft", {});
+    const unknown = await call("catalog_submit", {});
     expect(unknown.error?.message).toContain("Không có công cụ");
   });
 
@@ -213,5 +213,89 @@ describe("Gói A — token DB, chốt quyền theo vai trò, nhật ký, nguồn
     expect(agentDrafts.rows.map((d) => d.code)).toEqual([doc.code]);
     expect((await listDocuments({ status: "DRAFT", source: "STAFF", q: doc.code })).total).toBe(0);
     await prisma.stockDocument.update({ where: { id: doc.id }, data: { status: "CANCELLED" } });
+  });
+});
+
+describe("GĐ 5 — receive_draft: phiếu nhập NHÁP do AI tạo", () => {
+  const writeEnv = () => env({ AGENT_ADMIN_SCOPES: "catalog:read,stock:read,receive:draft" });
+  const ledgerOf = async () => ({
+    ledger: await prisma.stockLedger.count({ where: { batch: { variantId: { in: [f.variantId] } } } }),
+    balance: (await prisma.stockBalance.aggregate({ where: { batch: { variantId: f.variantId } }, _sum: { qty: true } }))._sum.qty,
+  });
+  let chiSku = "";
+
+  beforeAll(async () => {
+    // SP thứ hai thuộc kho mua tại Myanmar (giá MMK) để thử tách 2 phiếu theo kho.
+    chiSku = `IT-${f.tag}-C`;
+    await prisma.product.create({
+      data: {
+        slug: `it-${f.tag.toLowerCase()}-chi`, brandId: f.brandId, categoryId: f.categoryId, stockLocationId: f.chi.id,
+        translations: { create: { locale: "en", name: `IT chi ${f.tag}`, searchText: f.tag } },
+        variants: { create: { sku: chiSku, label: "Std", priceMmk: 9000, purchasePriceMmk: 3000 } },
+      },
+    });
+  });
+
+  it("không có scope receive:draft → không thấy công cụ, gọi → 403", async () => {
+    const list = await (await rpc("tools/list")).json();
+    expect(list.result.tools.map((t: { name: string }) => t.name)).not.toContain("receive_draft");
+    expect((await call("receive_draft", { lines: [{ sku: `IT-${f.tag}`, qty: 1 }], idempotencyKey: "it-noscope-1" })).status).toBe(403);
+    const withScope = await (await rpc("tools/list", undefined, { env: writeEnv() })).json();
+    const tool = withScope.result.tools.find((t: { name: string }) => t.name === "receive_draft");
+    expect(tool.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: false, idempotentHint: true });
+  });
+
+  it("dryRun: kiểm như thật, không tạo phiếu nào; lỗi nghiệp vụ trả thông điệp", async () => {
+    const before = await prisma.stockDocument.count({ where: { source: "AGENT" } });
+    const dry = await call("receive_draft", { lines: [{ sku: `IT-${f.tag}`, qty: 3, unitCost: 110_000 }, { sku: chiSku, qty: 2 }], idempotencyKey: `it-dry-${f.tag}`, dryRun: true }, writeEnv());
+    expect(dry.result?.isError).toBeUndefined();
+    expect(dry.result?.structuredContent).toMatchObject({ dryRun: true, ok: true, documentsToCreate: 2 });
+    expect(dry.result?.structuredContent.rows).toEqual([
+      expect.objectContaining({ sku: `IT-${f.tag}`, warehouse: f.mm.code, currency: "VND", unitCost: 110_000, qty: 3 }),
+      expect.objectContaining({ sku: chiSku, warehouse: f.chi.code, currency: "MMK", unitCost: 3000, qty: 2 }),
+    ]);
+    expect(await prisma.stockDocument.count({ where: { source: "AGENT" } })).toBe(before);
+
+    const bad = await call("receive_draft", { lines: [{ sku: `IT-${f.tag}`, qty: 1, warehouse: f.chi.code }, { sku: "KHONG-CO", qty: 1 }], idempotencyKey: `it-bad-${f.tag}`, dryRun: true }, writeEnv());
+    expect(bad.result?.isError).toBe(true);
+    expect(bad.result?.content[0].text).toContain("KHONG-CO");
+    const wrongWh = await call("receive_draft", { lines: [{ sku: `IT-${f.tag}`, qty: 1, warehouse: f.chi.code }], idempotencyKey: `it-wh-${f.tag}`, dryRun: true }, writeEnv());
+    expect(wrongWh.result?.content[0].text).toContain("Chuyển kho");
+  });
+
+  it("tạo thật: 2 phiếu NHÁP nguồn AGENT, tồn kho không đổi; gửi lại cùng khoá trả phiếu cũ", async () => {
+    const before = await ledgerOf();
+    const args = { lines: [{ sku: `IT-${f.tag}`, qty: 3, unitCost: 110_000 }, { sku: chiSku, qty: 2 }], note: "HĐ-123", idempotencyKey: `it-real-${f.tag}` };
+    const res = await call("receive_draft", args, writeEnv());
+    expect(res.result?.isError).toBeUndefined();
+    const out = res.result!.structuredContent;
+    expect(out.alreadyCreated).toBe(false);
+    expect(out.documents).toHaveLength(2);
+    const docs = await prisma.stockDocument.findMany({ where: { code: { in: out.documents.map((d: { code: string }) => d.code) } }, include: { lines: true } });
+    expect(docs.every((d) => d.status === "DRAFT" && d.source === "AGENT" && d.type === "RECEIVE" && d.createdById === USER_ID)).toBe(true);
+    expect(docs.every((d) => d.reason?.startsWith("[Trợ lý AI] HĐ-123"))).toBe(true);
+    expect(docs.flatMap((d) => d.lines.map((l) => [l.qty, l.unitCostVnd, l.unitCostMmk])).sort()).toEqual([[2, null, 3000], [3, 110_000, null]].sort());
+    expect(await ledgerOf()).toEqual(before);
+    expect(await avail(f.variantId)).toBe(7);
+
+    const again = await call("receive_draft", args, writeEnv());
+    expect(again.result?.structuredContent.alreadyCreated).toBe(true);
+    expect(again.result?.structuredContent.documents.map((d: { code: string }) => d.code).sort()).toEqual(out.documents.map((d: { code: string }) => d.code).sort());
+    expect(await prisma.stockDocument.count({ where: { idempotencyKey: { contains: `it-real-${f.tag}` } } })).toBe(2);
+
+    const log = await prisma.auditLog.findFirst({ where: { userId: USER_ID, action: "agent.call", entityId: "receive_draft", data: { path: ["ok"], equals: true } }, orderBy: { createdAt: "desc" } });
+    expect((log?.data as { documents?: string[] }).documents?.sort()).toEqual(out.documents.map((d: { code: string }) => d.code).sort());
+
+    const listed = await listDocuments({ status: "DRAFT", source: "AGENT", q: out.documents[0].code });
+    expect(listed.total).toBe(1);
+    // Dọn: huỷ để không ảnh hưởng test khác.
+    await prisma.stockDocument.updateMany({ where: { id: { in: docs.map((d) => d.id) } }, data: { status: "CANCELLED" } });
+  });
+
+  it("thiếu giá mua và không có giá mua hiện tại → báo lỗi, không tạo", async () => {
+    await prisma.variant.update({ where: { sku: chiSku }, data: { purchasePriceMmk: null } });
+    const r = await call("receive_draft", { lines: [{ sku: chiSku, qty: 1 }], idempotencyKey: `it-nocost-${f.tag}` }, writeEnv());
+    expect(r.result?.isError).toBe(true);
+    expect(r.result?.content[0].text).toContain("thiếu giá mua");
   });
 });

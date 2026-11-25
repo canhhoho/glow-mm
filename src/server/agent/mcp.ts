@@ -75,9 +75,10 @@ async function callTool(id: RpcId, params: Record<string, unknown> | undefined, 
     return rpcResult(id, { content: [{ type: "text", text: `Input không hợp lệ: ${zodMessage(parsed.error)}` }], isError: true });
   }
   try {
-    const out = await tool.run(parsed.data as never, { userId: cfg.userId, now });
+    const out = await tool.run(parsed.data as never, { userId: cfg.userId, now, callerKey: cfg.rateKey });
     const rows = (out as { rows?: unknown[] })?.rows;
-    await audit({ ok: true, ...(Array.isArray(rows) && { rows: rows.length }) });
+    const docs = (out as { documents?: { code: string }[] })?.documents;
+    await audit({ ok: true, ...(Array.isArray(rows) && { rows: rows.length }), ...(tool.write && { dryRun: (parsed.data as { dryRun?: boolean }).dryRun === true }), ...(Array.isArray(docs) && { documents: docs.map((d) => d.code) }) });
     return rpcResult(id, { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out });
   } catch (e) {
     const known = e instanceof AgentToolError || e instanceof z.ZodError;
