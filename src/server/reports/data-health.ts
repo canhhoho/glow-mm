@@ -108,7 +108,7 @@ async function catalogChecks(): Promise<HealthCheck[]> {
 
 // ── Giá vốn & nguồn giá ────────────────────────────────────────────────────
 
-async function costChecks(): Promise<HealthCheck[]> {
+export async function costChecks(): Promise<HealthCheck[]> {
   const [balances, draftOnly, bundles, fix] = await Promise.all([
     prisma.stockBalance.findMany({
       where: { qty: { gt: 0 }, stockType: "SELLABLE", location: { sellable: true } },
@@ -244,7 +244,7 @@ async function costChecks(): Promise<HealthCheck[]> {
 
 // ── Vận hành ───────────────────────────────────────────────────────────────
 
-async function operationChecks(now: Date): Promise<HealthCheck[]> {
+export async function operationChecks(now: Date): Promise<HealthCheck[]> {
   const staleBefore = new Date(now.getTime() - STALE_DRAFT_DAYS * DAY_MS);
   const longBefore = new Date(now.getTime() - LONG_SHIPPING_DAYS * DAY_MS);
   const [overdue, shipping, cod, quarantine, drafts] = await Promise.all([
