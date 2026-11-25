@@ -2751,6 +2751,10 @@
         "label": "View orders",
         "hint": "Order overview, search and details — customer name/phone/address masked"
       },
+      "public_read": {
+        "label": "Customer view",
+        "hint": "Only what customers see on the website: listed products, prices, in stock — for customer-facing agents"
+      },
       "import_preview": {
         "label": "Check import files",
         "hint": "Preview product import CSV, writes nothing"

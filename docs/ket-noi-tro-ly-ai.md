@@ -78,8 +78,9 @@ Hạ tầng: web chạy trên server `10.201.42.65` sau Nginx dùng chung; agent
 |---|---|---|
 | `catalog:read` | `catalog_search`, `catalog_get`, `data_health` (gói B1, 25/11/2026) | 3 |
 | `stock:read` | `stock_summary`, `stock_available`, `reorder_suggestions` | 3 |
-| `pricing:read` | `pricing_get` (giá bán + giá mua + mốc giá mua) | 3 |
+| `pricing:read` | `pricing_get` (giá bán + giá mua + mốc giá mua), `price_suggest` (gói B3) | 3 |
 | `orders:read` | `orders_summary`, `order_search`, `order_get` (gói B2, 25/11/2026; = quyền `orders:view`, **không** bật mặc định) | 3 |
+| `public:read` | `store_search`, `store_product` (gói B4, 25/11/2026) — chỉ dữ liệu khách thấy, cho agent tư vấn khách; mọi vai trò nhân viên; **không** bật mặc định | 3 |
 | `import:preview` | `import_preview` | 3 |
 | `import:commit` | `import_commit` | 5 (tuỳ Q2) |
 | `receive:draft` | `receive_draft` | 5 |
@@ -98,6 +99,9 @@ Hạ tầng: web chạy trên server `10.201.42.65` sau Nginx dùng chung; agent
 | `stock_summary` | `q?`, `page?` | Theo SKU (25 dòng/trang, như bảng "Theo sản phẩm" ở Tồn kho): tồn theo mã kho, tester, chờ kiểm tra, đang giữ, còn bán | `stockByVariant` (`stockSummary` chỉ có ô tổng, không theo SKU) |
 | `stock_available` | `skus[] ≤ 100` | Khả dụng để bán theo SKU (tính cả combo) + SL dự kiến nhập; SKU không có → `missing` | `availableToSell` |
 | `data_health` (gói B1) | `code?`, `onlyErrors?`, `published?`, `limit ≤ 100` | SP còn thiếu gì để mở bán (mã lỗi/cảnh báo như tab "Chưa đủ" + giải thích mã) + mục kho/giá vốn của Kiểm tra dữ liệu (lô thiếu giá vốn, hàng chờ kiểm tra, phiếu nháp để lâu). **Không** có đơn/COD/mốc doanh thu (trang đó chỉ ADMIN; đơn là B2), không trả tiền. Mỗi mục `checks` kèm `meaning` | `loadReadiness` + `costChecks`/`operationChecks` của `reports/data-health.ts` (lọc mục) |
+| `price_suggest` (gói B3) | `skus[] ≤ 50`, `profitVnd?`, `profitMmk?`, `shipMmk?`, `commissionMmk?` (thử số khác) | Giá gợi ý MMK theo **đúng công thức trang Giá bán thủ công**, giá hiện tại, % thay đổi, từng đầu vào + nguồn (giá mua hiện tại / phiếu nhập, lãi lần trước / lãi cố định, vận chuyển lần trước / cước×khối lượng, CTV hiện tại, tỷ giá hiện hành), mục còn thiếu, link trang Giá bán. **Chỉ tính, không ghi** | `manualPricingView` + `priceVndManual`/`priceMmkManual` |
+| `store_search` (gói B4) | `q?`, `category?`, `brand?`, `locale` (`my` mặc định), `page?` | Như trang tìm kiếm của khách: tên, thương hiệu, giá từ, còn hàng / đặt trước, link `/<locale>/p/<slug>` | `loadCardPage` + `withStock` |
+| `store_product` (gói B4) | `slug` hoặc `sku`, `locale` | Như trang SP của khách: mô tả, cách dùng, thành phần, giá từng phân loại, còn hàng / đặt trước. **Không** số tồn, kho, giá mua; SP chưa đăng → lỗi | `getStoreProduct` |
 | `orders_summary` (gói B2) | — | Số đơn theo trạng thái, đơn đặt hôm nay (giờ Yangon), mục cần xử lý (quá hạn giữ hàng, giao quá lâu, COD ngoại lệ) + COD chưa về (số đơn, MMK) | `groupBy` + `operationChecks` + `outstandingCodSummary` |
 | `order_search` (gói B2) | `q?` (mã, SĐT, tên), `status?` (+ `PREPARING`), `paymentMethod?`, `channel?`, `from?`/`to?`, `overdue?`, `shippingDays?`, `page?` | 25 đơn/trang: mã, ngày, trạng thái, thanh toán, tổng MMK, số dòng, mã CTV, khách **đã ẩn**, link | `listOrdersPageAdmin` (lọc/tìm như trang Đơn hàng) |
 | `order_get` (gói B2) | `code` | Hàng (SKU, SL, giá bán, trả lại), tổng, trạng thái + lịch sử, vận chuyển, mốc COD, khách **đã ẩn**, ghi chú khách cắt ≤ 200 ký tự kèm cảnh báo | `getOrderAdmin` (bỏ lô/giá vốn, hoa hồng, tài khoản khách, địa chỉ chi tiết) |

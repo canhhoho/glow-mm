@@ -21,6 +21,11 @@ import { outstandingCodSummary } from "@/server/orders/cod";
 import { ORDER_STATUSES } from "@/server/orders/state-machine";
 import { yangonDayKey, yangonDayStart } from "@/lib/time";
 import { customerText, maskName, maskPhone } from "./mask";
+import { manualPricingView } from "@/server/pricing/manual";
+import { changePct, priceMmkManual, priceVndManual } from "@/server/pricing/formula";
+import { focusQuery } from "@/lib/price-focus";
+import { getStoreProduct, loadCardPage, withStock } from "@/server/catalog/store-queries";
+import { STORE_PRODUCT } from "@/server/catalog/store-visibility";
 import type { AgentScope } from "./config";
 
 /**
@@ -441,6 +446,119 @@ async function orderGetTool(i: z.infer<typeof orderGetInput>, { now }: Ctx) {
   };
 }
 
+// ── Gói B3 — gợi ý giá bán (chỉ tính, không ghi) ──
+
+const priceSuggestInput = z.object({
+  skus: z.array(sku).min(1).max(50),
+  profitVnd: z.number().int().min(0).max(100_000_000).optional().describe("Lãi mong muốn VND/sp (kho hàng nhập VN) — bỏ trống = lãi lần đặt giá gần nhất"),
+  profitMmk: z.number().int().min(0).max(100_000_000).optional().describe("Lãi MMK/sp (kho mua tại Myanmar) — bỏ trống = lãi lần trước / lãi cố định của SP"),
+  shipMmk: z.number().int().min(0).max(10_000_000).optional().describe("Vận chuyển MMK/sp (kho VN) — bỏ trống = lần trước / cước/kg × khối lượng"),
+  commissionMmk: z.number().int().min(0).max(10_000_000).optional().describe("Hoa hồng CTV MMK/sp — bỏ trống = mức hiện tại (không có = 0)"),
+});
+
+/**
+ * Gói B3: đúng công thức + dữ liệu của trang Giá bán chế độ thủ công (`manualPricingView` + `priceVndManual`/`priceMmkManual`):
+ * giá mua hiện tại (hoặc lần nhập đã ghi sổ mới nhất), lãi/vận chuyển lần trước, CTV hiện tại, tỷ giá hiện hành.
+ * KHÔNG ghi gì — chủ shop đặt giá ở trang Giá bán (`url`).
+ */
+async function priceSuggestTool(i: z.infer<typeof priceSuggestInput>) {
+  const found = await variantsBySku(i.skus);
+  const view = await manualPricingView({ variantIds: found.rows.map((v) => v.id) });
+  const rate = view.rates.find((r) => r.id === view.currentRateId) ?? null;
+  const rows = view.groups.flatMap((g) =>
+    g.rows.map((r) => {
+      const vnd = g.location.pricingMode !== "LOCAL_MMK";
+      const purchase = r.isBundle ? r.comboCost : (r.purchasePrice ?? (vnd ? r.sources[0]?.unitCostVnd : r.sources[0]?.unitCostMmk) ?? null);
+      const purchaseFrom = r.isBundle ? "combo" : r.purchasePrice != null ? "giá mua hiện tại" : r.sources[0] ? `phiếu nhập ${r.sources[0].documentCode}` : null;
+      const profit = vnd ? (i.profitVnd ?? r.lastProfitVnd) : (i.profitMmk ?? r.lastProfitMmk ?? r.fixedProfitMmk);
+      const profitFrom = (vnd ? i.profitVnd : i.profitMmk) != null ? "theo yêu cầu" : (vnd ? r.lastProfitVnd : r.lastProfitMmk) != null ? "lần đặt giá trước" : profit != null ? "lãi cố định của SP" : null;
+      const ship = vnd ? (i.shipMmk ?? r.lastShipMmk ?? r.suggestedShipMmk) : 0;
+      const shipFrom = !vnd ? "không tính (kho Myanmar)" : i.shipMmk != null ? "theo yêu cầu" : r.lastShipMmk != null ? "lần đặt giá trước" : r.suggestedShipMmk != null ? "cước/kg × khối lượng" : null;
+      const commission = i.commissionMmk ?? r.commission ?? 0;
+      const missing = [
+        purchase == null && "giá mua",
+        profit == null && "lãi (gửi profitVnd/profitMmk)",
+        ship == null && "vận chuyển (gửi shipMmk)",
+        vnd && !rate && "tỷ giá",
+      ].filter((x): x is string => !!x);
+      const suggested = missing.length
+        ? null
+        : vnd
+          ? priceVndManual({ ...rate!, purchaseVnd: purchase!, profitVnd: profit!, shipMmk: ship!, commissionMmk: commission, roundTo: view.roundTo })
+          : priceMmkManual({ purchaseMmk: purchase!, profitMmk: profit!, commissionMmk: commission, roundTo: view.roundTo });
+      return {
+        sku: r.sku,
+        name: r.productName,
+        warehouse: g.location.code,
+        currency: vnd ? "VND" : "MMK",
+        currentPriceMmk: r.price,
+        pendingApproval: r.pending,
+        suggestedPriceMmk: suggested,
+        changePct: suggested != null ? changePct(r.price, suggested) : null,
+        inputs: { purchase, purchaseFrom, profit, profitFrom, shipMmk: ship, shipFrom, commissionMmk: commission, vndPerMmk: vnd ? (rate?.vndPerMmk ?? null) : null, roundTo: view.roundTo },
+        missing,
+        url: `/admin/selling-prices?${focusQuery({ ids: [r.variantId] })}`,
+      };
+    }),
+  );
+  return {
+    rows,
+    unplaced: view.unplaced,
+    missing: found.missing,
+    formula: "Kho VN: (giá mua VND + lãi VND) ÷ tỷ giá + vận chuyển + CTV; kho Myanmar: giá mua MMK + lãi MMK + CTV; làm tròn LÊN bội số roundTo",
+    note: "Chỉ là gợi ý, chưa đổi giá. Chủ shop tự đặt giá ở trang Giá bán (url).",
+  };
+}
+
+// ── Gói B4 — dữ liệu khách thấy trên web (agent tư vấn khách) ──
+
+const STORE_LOCALES = ["my", "en", "vi"] as const;
+const storeSearchInput = z.object({
+  q: z.string().trim().min(1).max(80).optional().describe("Tên, thương hiệu hoặc SKU"),
+  category: z.string().trim().max(80).optional().describe("Slug danh mục"),
+  brand: z.string().trim().max(80).optional().describe("Slug thương hiệu"),
+  locale: z.enum(STORE_LOCALES).default("my"),
+  page: z.number().int().min(1).default(1),
+});
+
+/** Như trang tìm kiếm/danh mục của khách (`loadCardPage` + `withStock`): chỉ SP đang bán, giá thấp nhất, còn hàng hay không. */
+async function storeSearchTool(i: z.infer<typeof storeSearchInput>) {
+  const page = await loadCardPage({ locale: i.locale, q: i.q, category: i.category, brand: i.brand, take: 20, page: i.page });
+  const [cards] = await withStock([page.rows]);
+  return {
+    total: page.total,
+    page: page.page,
+    pages: page.pages,
+    rows: cards.map((c) => ({ name: c.name, brand: c.brand, fromPriceMmk: c.priceMmk, inStock: c.inStock, preorder: c.preorder, slug: c.slug, url: `/${i.locale}/p/${c.slug}` })),
+  };
+}
+
+const storeProductInput = z
+  .object({ slug: z.string().trim().min(1).max(160).optional(), sku: sku.optional(), locale: z.enum(STORE_LOCALES).default("my") })
+  .refine((x) => x.slug || x.sku, "Cần slug hoặc sku");
+
+/** Như trang SP của khách (`getStoreProduct`): nội dung + giá từng phân loại + còn hàng/đặt trước. Không có số tồn, kho, giá mua. */
+async function storeProductTool(i: z.infer<typeof storeProductInput>, { now }: Ctx) {
+  const slug =
+    i.slug ??
+    (await prisma.variant.findFirst({ where: { sku: { equals: i.sku!, mode: "insensitive" }, active: true, product: STORE_PRODUCT }, select: { product: { select: { slug: true } } } }))?.product.slug;
+  const p = slug ? await getStoreProduct(slug, i.locale, now) : null;
+  if (!p) throw new AgentToolError("Sản phẩm không có trên web khách (chưa đăng bán hoặc không tồn tại)");
+  return {
+    name: p.name,
+    brand: p.brand,
+    category: p.category.name,
+    description: p.description,
+    usage: p.usage,
+    ingredients: p.ingredients,
+    storageNote: p.storageNote,
+    tags: p.tags,
+    imageUrl: p.images[0]?.url ?? null,
+    variants: p.variants.map((v) => ({ label: v.standard ? null : v.label, priceMmk: v.priceMmk, inStock: v.available > 0, preorder: v.available <= 0 && v.preorder > 0 })),
+    url: `/${i.locale}/p/${p.slug}`,
+  };
+}
+
 // ── GĐ 5 — ghi NHÁP ──
 
 const receiveDraftInput = z.object({
@@ -546,6 +664,9 @@ export const AGENT_TOOLS: AgentTool[] = [
     input: receiveDraftInput,
     run: receiveDraft as AgentTool["run"],
   },
+  { name: "price_suggest", scope: "pricing:read", description: "Gợi ý giá bán theo đúng công thức trang Giá bán (giá mua, lãi, vận chuyển, CTV, tỷ giá hiện hành) kèm lý do từng số — CHỈ TÍNH, không đổi giá. Cho phép thử lãi/vận chuyển/CTV khác.", input: priceSuggestInput, run: priceSuggestTool as AgentTool["run"] },
+  { name: "store_search", scope: "public:read", description: "Tìm sản phẩm như khách thấy trên web (chỉ SP đang bán): tên, thương hiệu, giá từ, còn hàng / đặt trước, link. Không có tồn số, kho, giá mua.", input: storeSearchInput, run: storeSearchTool as AgentTool["run"] },
+  { name: "store_product", scope: "public:read", description: "Trang sản phẩm như khách thấy (slug hoặc SKU): mô tả, cách dùng, thành phần, giá từng phân loại, còn hàng / đặt trước. Không có tồn số, kho, giá mua.", input: storeProductInput, run: storeProductTool as AgentTool["run"] },
   { name: "orders_summary", scope: "orders:read", description: "Tổng quan đơn hàng: số đơn theo trạng thái, đơn đặt hôm nay, đơn quá hạn giữ hàng / giao quá lâu / COD ngoại lệ, COD chưa về. Chỉ đọc.", input: z.object({}), run: ordersSummaryTool as AgentTool["run"] },
   { name: "order_search", scope: "orders:read", description: "Tìm đơn như trang Đơn hàng (mã đơn, SĐT, tên người nhận, trạng thái, thanh toán, ngày, quá hạn, giao lâu) — 25 đơn/trang. Tên/SĐT khách đã ẩn.", input: orderSearchInput, run: orderSearchTool as AgentTool["run"] },
   { name: "order_get", scope: "orders:read", description: "Chi tiết một đơn theo mã: hàng, số lượng, giá bán, tổng, trạng thái + lịch sử, vận chuyển, COD. Tên/SĐT/địa chỉ khách đã ẩn; ghi chú khách bị cắt ngắn.", input: orderGetInput, run: orderGetTool as AgentTool["run"] },
