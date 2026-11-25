@@ -2117,6 +2117,10 @@
     "Nav.auditLog",
     "Agents.createdToken",
     "Agents.copyToken",
-    "Agents.copiedToken"
+    "Agents.copiedToken",
+    "Agents.scope.orders_read.label",
+    "Agents.scope.orders_read.hint",
+    "Agents.scope.public_read.label",
+    "Agents.scope.public_read.hint"
   ]
 }

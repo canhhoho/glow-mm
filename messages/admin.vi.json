@@ -2747,6 +2747,14 @@
         "label": "Xem giá",
         "hint": "Giá bán và giá mua — chỉ cấp cho agent nội bộ"
       },
+      "orders_read": {
+        "label": "Xem đơn hàng",
+        "hint": "Tổng quan, tìm và xem chi tiết đơn — tên/SĐT/địa chỉ khách đã ẩn"
+      },
+      "public_read": {
+        "label": "Xem như khách",
+        "hint": "Chỉ thông tin khách thấy trên web: SP đang bán, giá bán, còn hàng — cho agent tư vấn khách"
+      },
       "import_preview": {
         "label": "Kiểm file nhập",
         "hint": "Xem trước file CSV nhập sản phẩm, không ghi gì"

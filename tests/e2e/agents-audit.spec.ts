@@ -32,7 +32,7 @@ test("tạo token agent, gọi cổng MCP, thu hồi; nhật ký ghi lại", asy
   const ok = await call();
   expect(ok.status()).toBe(200);
   const names = (await ok.json()).result.tools.map((t: { name: string }) => t.name);
-  expect(names).toHaveLength(8); // 7 công cụ đọc + data_health (B1); KHO không có receive_draft/import_commit
+  expect(names).toHaveLength(9); // quyền mặc định: 7 công cụ đọc + data_health (B1) + price_suggest (B3)
   expect(names).toContain("data_health");
 
   page.once("dialog", (d) => d.accept());

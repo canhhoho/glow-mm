@@ -12,6 +12,8 @@ export const AGENT_SCOPES = [
   "catalog:read",
   "stock:read",
   "pricing:read",
+  "orders:read",
+  "public:read",
   "import:preview",
   "import:commit",
   "receive:draft",
@@ -31,6 +33,10 @@ export const SCOPE_ROLES: Record<AgentScope, readonly Role[]> = {
   "catalog:read": ["ADMIN", "WAREHOUSE_MANAGER"],
   "stock:read": PERMISSIONS["stock:view"],
   "pricing:read": ["ADMIN", "WAREHOUSE_MANAGER"],
+  // Gói B2: đọc đơn (thông tin khách đã ẩn) — đúng quyền xem đơn trên admin.
+  "orders:read": PERMISSIONS["orders:view"],
+  // Gói B4: chỉ dữ liệu khách thấy trên web (token cho agent tư vấn khách) — nhân viên nào cũng được giữ.
+  "public:read": ["ADMIN", "WAREHOUSE_MANAGER", "ORDER_STAFF"],
   "import:preview": ["ADMIN", "WAREHOUSE_MANAGER"],
   "import:commit": PERMISSIONS["catalog:manage"],
   "receive:draft": PERMISSIONS["stock:receive"],
