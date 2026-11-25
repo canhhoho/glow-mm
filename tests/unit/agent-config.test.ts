@@ -56,6 +56,7 @@ describe("P25 cấu hình cổng trợ lý AI", () => {
     expect(Object.fromEntries(AGENT_TOOLS.map((t) => [t.name, t.scope]))).toEqual({
       catalog_search: "catalog:read",
       catalog_get: "catalog:read",
+      data_health: "catalog:read",
       stock_summary: "stock:read",
       stock_available: "stock:read",
       reorder_suggestions: "stock:read",

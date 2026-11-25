@@ -8,6 +8,9 @@ import { previewCatalogImport } from "@/server/catalog/catalog-import";
 import { sheetRowsToCsv } from "@/server/catalog/catalog-sheet-read";
 import { LIST_TABS, listProductsPage } from "@/server/catalog/product-list";
 import { loadReadiness } from "@/server/catalog/readiness";
+import { ERROR_CODES, WARNING_CODES } from "@/server/catalog/readiness-rules";
+import { costChecks, operationChecks } from "@/server/reports/data-health";
+import { productName } from "@/server/inventory/queries";
 import { productReadinessView } from "@/server/catalog/review";
 import { saveReceiveDrafts, salesBlockDays } from "@/server/inventory/documents";
 import { stockByVariant, stockFilterSchema } from "@/server/inventory/overview";
@@ -254,6 +257,70 @@ async function importPreview(i: z.infer<typeof importPreviewInput>) {
   };
 }
 
+// ── Gói B1 — kiểm tra dữ liệu (chỉ đọc) ──
+
+const ISSUE_CODES = [...ERROR_CODES.filter((c) => c !== "NOT_APPROVED"), ...WARNING_CODES] as const;
+/** Giải thích mã cho agent (không phải chuỗi giao diện; trang admin dùng messages/admin.*.json). */
+const ISSUE_HINTS: Record<(typeof ISSUE_CODES)[number], string> = {
+  NO_ACTIVE_VARIANT: "Không còn phân loại đang bán",
+  BAD_LOCATION: "Kho bán đã ngừng / không phải kho bán",
+  NO_WAREHOUSE: "Chưa có kho bán (chưa ghi sổ phiếu nhập đầu tiên)",
+  PRICE_ZERO: "Giá bán = 0",
+  NO_WEIGHT: "Thiếu khối lượng (bắt buộc)",
+  COMPONENT_INACTIVE: "Combo có thành phần đã tắt",
+  NO_IMAGE: "Chưa có ảnh",
+  CONTENT_INCOMPLETE: "Thiếu mô tả (tiếng Myanmar hoặc Anh)",
+  NO_WEIGHT_LOCAL: "Thiếu khối lượng (cần khi gửi VTP)",
+  COST_MISSING: "Có tồn nhưng lô chưa có giá vốn",
+  COST_ESTIMATED: "Lô đang dùng giá vốn tạm",
+  OUT_OF_STOCK: "Hết hàng",
+  STOCK_OTHER_WAREHOUSE: "Tồn nằm ở kho bán khác kho của SP",
+  PRICE_STALE: "Giá bán cũ hơn lần nhập / đổi giá mua mới nhất — nên tính lại",
+  RATE_NEWER: "Có tỷ giá mới hơn lần đặt giá — nên tính lại",
+};
+/** Mục của trang Kiểm tra dữ liệu agent được đọc: kho + giá vốn (không tiền), KHÔNG có đơn hàng / COD / mốc doanh thu (B2 riêng). */
+const HEALTH_KEYS = new Set(["stockMissingCost", "draftOnlyCost", "comboMissingCost", "quarantine", "staleDrafts"]);
+
+const dataHealthInput = z.object({
+  code: z.enum(ISSUE_CODES).optional().describe("Chỉ lấy SP có mã lỗi/cảnh báo này"),
+  onlyErrors: z.boolean().default(false).describe("true = chỉ SP có LỖI chặn mở bán"),
+  published: z.boolean().optional().describe("true = chỉ SP đang hiển thị; false = chỉ SP đang ẩn; bỏ trống = tất cả"),
+  limit: z.number().int().min(1).max(100).default(50),
+});
+
+/**
+ * Gói B1 — SP còn thiếu gì để mở bán (đúng quy tắc ô "Kiểm tra mở bán" / tab "Chưa đủ" của danh sách SP: `loadReadiness`)
+ * + các mục kho/giá vốn của trang Báo cáo › Kiểm tra dữ liệu (`reports/data-health.ts`). Chỉ đọc; không trả tiền/giá vốn.
+ */
+async function dataHealthTool(i: z.infer<typeof dataHealthInput>, { now }: Ctx) {
+  const products = await prisma.product.findMany({
+    where: { archivedAt: null, ...(i.published !== undefined && { published: i.published }) },
+    orderBy: { slug: "asc" },
+    select: { id: true, slug: true, published: true, translations: { select: { locale: true, name: true } }, variants: { where: { active: true }, orderBy: { sku: "asc" }, select: { sku: true } } },
+  });
+  const [readiness, cost, ops] = await Promise.all([loadReadiness(prisma, products.map((p) => p.id), now), costChecks(), operationChecks(now)]);
+  const byCode: Partial<Record<string, number>> = {};
+  const items = products.flatMap((p) => {
+    const r = readiness.get(p.id);
+    if (!r) return [];
+    const errors = r.errors.filter((e) => e.code !== "NOT_APPROVED");
+    for (const x of [...errors, ...r.warnings]) byCode[x.code] = (byCode[x.code] ?? 0) + 1;
+    if (!errors.length && !r.warnings.length) return [];
+    if (i.onlyErrors && !errors.length) return [];
+    if (i.code && ![...errors, ...r.warnings].some((x) => x.code === i.code)) return [];
+    return [{ name: productName(p.translations, p.slug), skus: p.variants.map((v) => v.sku), published: p.published, errors, warnings: r.warnings, url: `/admin/products/${p.id}` }];
+  });
+  // Lỗi trước, rồi nhiều vấn đề trước.
+  items.sort((a, b) => b.errors.length - a.errors.length || b.errors.length + b.warnings.length - (a.errors.length + a.warnings.length));
+  return {
+    generatedAt: now.toISOString(),
+    products: { checked: products.length, matching: items.length, byCode, rows: items.slice(0, i.limit) },
+    codes: ISSUE_HINTS,
+    checks: [...cost, ...ops].filter((c) => HEALTH_KEYS.has(c.key) && c.count > 0).map((c) => ({ key: c.key, severity: c.severity, count: c.count, rows: c.rows.slice(0, 20).map((r) => ({ ref: r.ref, name: r.name, value: r.value, url: r.href })) })),
+    note: "errors chặn mở bán; warnings cần biết. Agent chỉ báo — sửa trên web (url).",
+  };
+}
+
 // ── GĐ 5 — ghi NHÁP ──
 
 const receiveDraftInput = z.object({
@@ -350,6 +417,7 @@ export const AGENT_TOOLS: AgentTool[] = [
   { name: "stock_available", scope: "stock:read", description: "Số còn bán được (như web khách) cho tối đa 100 SKU, combo tính theo thành phần; kèm SL dự kiến nhập.", input: skusInput, run: stockAvailable as AgentTool["run"] },
   { name: "reorder_suggestions", scope: "stock:read", description: "Gợi ý đặt hàng như trang Cảnh báo: tốc độ bán, số ngày còn đủ hàng, số nên đặt thêm.", input: z.object({}), run: reorderSuggestions as AgentTool["run"] },
   { name: "pricing_get", scope: "pricing:read", description: "Giá bán MMK, giá mua hiện tại (VND hoặc MMK theo kho), ngày đổi giá mua, cờ giá bán cũ cần tính lại — tối đa 100 SKU.", input: skusInput, run: pricingGet as AgentTool["run"] },
+  { name: "data_health", scope: "catalog:read", description: "Kiểm tra dữ liệu: SP còn thiếu gì để mở bán (ảnh, mô tả, giá, kho, khối lượng, giá vốn, giá cần tính lại…) theo đúng quy tắc admin, kèm lô thiếu giá vốn, hàng chờ kiểm tra, phiếu nháp để lâu. Chỉ đọc.", input: dataHealthInput, run: dataHealthTool as AgentTool["run"] },
   {
     name: "receive_draft",
     scope: "receive:draft",

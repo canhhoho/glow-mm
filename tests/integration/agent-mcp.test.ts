@@ -70,7 +70,7 @@ describe("Cổng MCP trợ lý AI — xác thực", () => {
   it("tools/list theo scope; thiếu scope → 403; mặc định không có công cụ ghi", async () => {
     const all = await (await rpc("tools/list")).json();
     expect(all.result.tools.map((t: { name: string }) => t.name).sort()).toEqual(
-      ["catalog_get", "catalog_search", "import_preview", "pricing_get", "reorder_suggestions", "stock_available", "stock_summary"],
+      ["catalog_get", "catalog_search", "data_health", "import_preview", "pricing_get", "reorder_suggestions", "stock_available", "stock_summary"],
     );
     expect(all.result.tools.find((t: { name: string }) => t.name === "stock_available").inputSchema).toMatchObject({ type: "object", required: ["skus"] });
     // A6: nhãn an toàn MCP — mọi công cụ GĐ 3 chỉ đọc.
@@ -118,6 +118,25 @@ describe("Cổng MCP trợ lý AI — công cụ đọc", () => {
     const re = await call("reorder_suggestions");
     expect(re.result?.structuredContent.settings.salesWindowDays).toBeGreaterThan(0);
     expect(re.result?.structuredContent.rows).toBeInstanceOf(Array);
+  });
+
+  it("data_health: SP thiếu gì theo quy tắc mở bán + mục kho/giá vốn, không có đơn hàng", async () => {
+    const all = await call("data_health", { limit: 100 });
+    expect(all.result?.isError).toBeUndefined();
+    const out = all.result!.structuredContent;
+    expect(out.products.checked).toBeGreaterThan(0);
+    expect(out.codes.NO_IMAGE).toBeTruthy();
+    const noImage = await call("data_health", { code: "NO_IMAGE", limit: 100 });
+    const rows = noImage.result!.structuredContent.products.rows as { warnings: { code: string }[]; errors: unknown[]; url: string }[];
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((r) => r.warnings.some((w) => w.code === "NO_IMAGE") && r.url.startsWith("/admin/products/"))).toBe(true);
+    const errs = await call("data_health", { onlyErrors: true, limit: 100 });
+    expect((errs.result!.structuredContent.products.rows as { errors: unknown[] }[]).every((r) => r.errors.length > 0)).toBe(true);
+    const keys = (out.checks as { key: string }[]).map((c) => c.key);
+    for (const k of ["overdueOrders", "longShipping", "codExceptions"]) expect(keys).not.toContain(k);
+    expect(JSON.stringify(out)).not.toMatch(/priceMmk|unitCost|totalMmk/);
+    // Scope: chỉ stock:read → không gọi được.
+    expect((await call("data_health", {}, env({ AGENT_ADMIN_SCOPES: "stock:read" }))).status).toBe(403);
   });
 
   it("pricing_get trả giá bán + giá mua theo kho", async () => {
@@ -173,7 +192,7 @@ describe("Gói A — token DB, chốt quyền theo vai trò, nhật ký, nguồn
     const { id, token: tok } = await createAgentToken({ name: "it-kho", userId: USER_ID, scopes: ["catalog:read", "stock:read"] }, f.userId);
     const list = await callAs(tok, "tools/list");
     expect(list.status).toBe(200);
-    expect(list.body.result.tools.map((t: { name: string }) => t.name).sort()).toEqual(["catalog_get", "catalog_search", "reorder_suggestions", "stock_available", "stock_summary"]);
+    expect(list.body.result.tools.map((t: { name: string }) => t.name).sort()).toEqual(["catalog_get", "catalog_search", "data_health", "reorder_suggestions", "stock_available", "stock_summary"]);
     expect((await callAs(tok, "tools/call", { name: "stock_available", arguments: { skus: [`IT-${f.tag}`] } })).body.result.structuredContent.rows[0].available).toBe(7);
     expect((await prisma.agentToken.findUniqueOrThrow({ where: { id } })).lastUsedAt).not.toBeNull();
     expect((await prisma.agentToken.findUniqueOrThrow({ where: { id } })).tokenHash).not.toBe(tok);

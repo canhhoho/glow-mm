@@ -74,7 +74,7 @@ Hạ tầng: web chạy trên server `10.201.42.65` sau Nginx dùng chung; agent
 
 | Scope | Công cụ | Giai đoạn |
 |---|---|---|
-| `catalog:read` | `catalog_search`, `catalog_get` | 3 |
+| `catalog:read` | `catalog_search`, `catalog_get`, `data_health` (gói B1, 25/11/2026) | 3 |
 | `stock:read` | `stock_summary`, `stock_available`, `reorder_suggestions` | 3 |
 | `pricing:read` | `pricing_get` (giá bán + giá mua + mốc giá mua) | 3 |
 | `import:preview` | `import_preview` | 3 |
@@ -94,6 +94,7 @@ Hạ tầng: web chạy trên server `10.201.42.65` sau Nginx dùng chung; agent
 | `catalog_get` | `sku` | Như trên + mô tả my/en, cách dùng, thành phần, khối lượng, các phân loại cùng SP, vấn đề còn thiếu để duyệt | truy vấn SP + `productReadinessView` |
 | `stock_summary` | `q?`, `page?` | Theo SKU (25 dòng/trang, như bảng "Theo sản phẩm" ở Tồn kho): tồn theo mã kho, tester, chờ kiểm tra, đang giữ, còn bán | `stockByVariant` (`stockSummary` chỉ có ô tổng, không theo SKU) |
 | `stock_available` | `skus[] ≤ 100` | Khả dụng để bán theo SKU (tính cả combo) + SL dự kiến nhập; SKU không có → `missing` | `availableToSell` |
+| `data_health` (gói B1) | `code?`, `onlyErrors?`, `published?`, `limit ≤ 100` | SP còn thiếu gì để mở bán (mã lỗi/cảnh báo như tab "Chưa đủ" + giải thích mã) + mục kho/giá vốn của Kiểm tra dữ liệu (lô thiếu giá vốn, hàng chờ kiểm tra, phiếu nháp để lâu). **Không** có đơn/COD/mốc doanh thu (trang đó chỉ ADMIN; đơn là B2), không trả tiền | `loadReadiness` + `costChecks`/`operationChecks` của `reports/data-health.ts` (lọc mục) |
 | `reorder_suggestions` | — | Gợi ý đặt hàng: SKU, tồn, nhu cầu, số gợi ý + ngưỡng Cài đặt | `computeAlerts` (đúng hàm của `/admin/alerts`) |
 | `pricing_get` | `skus[] ≤ 100` | Giá bán MMK, giá mua hiện tại (VND hoặc MMK theo kho), ngày đổi giá mua, cờ giá cũ (`PRICE_STALE`) | Truy vấn `Variant.purchasePrice*` + `loadReadiness` (cờ `PRICE_STALE`) |
 | `import_preview` | `csv` (nội dung file, tiêu đề theo mẫu — nhận nhãn vi/en/my như khi tải file) | Đúng bản xem trước của `/admin/products/import`: số SP tạo/sửa, từng dòng, **tiền tệ giá mua theo kho**, lỗi/cảnh báo; kèm `previewHash` | `sheetRowsToCsv(parseCsv(csv))` → `previewCatalogImport` (chỉ đọc) |
