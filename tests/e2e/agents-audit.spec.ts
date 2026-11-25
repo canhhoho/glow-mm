@@ -14,10 +14,15 @@ test("tạo token agent, gọi cổng MCP, thu hồi; nhật ký ghi lại", asy
   const kho = page.getByLabel("Tài khoản thao tác").locator("option", { hasText: "Quản lý kho" }).first();
   await page.getByLabel("Tài khoản thao tác").selectOption(await kho.getAttribute("value"));
   await page.getByRole("button", { name: "Tạo token" }).click();
-  const shown = page.getByRole("status").filter({ hasText: "Token" });
+  const shown = page.getByTestId("action-secret");
   await expect(shown).toBeVisible();
-  const token = /([0-9a-f]{64})/.exec((await shown.textContent()) ?? "")?.[1];
-  expect(token).toBeTruthy();
+  const token = await shown.inputValue();
+  expect(token).toMatch(/^[0-9a-f]{64}$/);
+  // Ô một dòng: không xuống dòng (chép đủ 64 ký tự), không tràn ngang trang.
+  const box = (await shown.boundingBox())!;
+  expect(box.height).toBeLessThan(60);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expect(page.getByRole("button", { name: "Sao chép token" })).toBeVisible();
   const row = page.getByTestId("agent-token-row").filter({ hasText: name });
   await expect(row).toContainText(token!.slice(0, 6));
   await page.screenshot({ path: "test-results/agents-page.png", fullPage: true });
