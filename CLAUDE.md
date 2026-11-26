@@ -18,7 +18,7 @@ Web bán mỹ phẩm B2C **T&C Cosmetics** (tên cũ Glow VN) nhập từ Việt
 - **Truy vết trước khi sửa nghiệp vụ:** liệt kê điểm vào và nơi đọc/ghi — trang chính/con, form, Excel, thao tác hàng loạt, API/server action, hàm domain, DB, cache, web khách — bằng bản đồ nghiệp vụ + grep mọi đường ghi cột/hàm đó. Sửa nhất quán cả chuỗi, không chỉ vá một màn hình; cập nhật bản đồ trong cùng commit.
 - **Tái sử dụng:** mỗi nghiệp vụ có **một trang chính + một hàm domain**; trang/nút khác chỉ là lối tắt gọi action/hàm sẵn có (giữ lối tắt hữu ích). Không chép form/schema/công thức/component — dùng lại.
 - **Tiếp tục sau gián đoạn:** trước khi chạy lại, xem `git status` + `git log`, log/kết quả test gần nhất và tác vụ nền đang chạy; không chạy lại thứ đã xong.
-- **Hai máy (Myanmar / Việt Nam), mỗi lúc một máy:** đầu phiên `git status` + `git stash list` rồi `git pull` `dev`; cuối phiên push `dev` + cập nhật mục "Trạng thái hiện tại" ở đầu PLAN.md (chỉ khi người dùng yêu cầu push). Ghi nhớ của Claude không đồng bộ giữa máy → quy tắc lâu dài ghi vào file này.
+- **Hai máy (Myanmar / Việt Nam), mỗi lúc một máy:** đầu phiên `git status` + `git stash list` rồi `git pull` `dev`; cuối phiên push `dev` + cập nhật mục "Trạng thái hiện tại" ở đầu PLAN.md (chỉ khi người dùng yêu cầu push). Ghi nhớ của Claude không đồng bộ giữa máy → quy tắc lâu dài ghi vào file này. **Máy VN** (26/11/2026): không có Docker (DISM của Windows hỏng, không bật được WSL2) → PostgreSQL 17 cài thẳng (dịch vụ `postgresql-x64-17`, cổng 15432, user/DB như docker-compose); bỏ qua `docker compose`. npm 11.19 ở máy này chặn script cài đặt → sau `npm ci`/`npm install` chạy `npx prisma generate`.
 - **Worktree:** không tạo junction/symlink `node_modules` vào worktree (`git worktree remove --force` từng xoá sạch `node_modules` chính). Cần so sánh bản cũ: worktree có `npm ci` riêng hoặc `git stash`.
 - **Tài liệu:** mỗi thông tin một nguồn; giữ ngắn; không tạo bản `v01/v02`; không cập nhật nhiều file cho việc nhỏ. Hành vi đổi → cập nhật hướng dẫn vận hành + bản đồ nghiệp vụ; quyết định/bàn giao đáng lưu → thêm vào `docs/kien-truc.md` (hoặc PLAN.md nếu là phase). Tài liệu cũ **không** đúng hơn code đã kiểm chứng.
 - **Báo cáo test** luôn đủ 4 dòng: Đạt / Lỗi / Bỏ qua / Không chạy (kèm lý do); phần chỉ suy luận ghi rõ "chưa chạy".
@@ -42,9 +42,9 @@ npm run db:migrate                    # prisma migrate dev; db:deploy = migrate 
 npm run db:seed                       # dữ liệu mẫu + tài khoản *@glow.local (db:seed:demo / db:seed:placeholders: chỉ DB dev)
 npm run dev                           # http://localhost:3000 (storefront) · /admin
 npm run check                         # NHANH: lint + typecheck + vitest unit — mặc định sau mỗi thay đổi
-npm run test:int                      # vitest integration (DB glow_test, cần docker)
+npm run test:int                      # vitest integration (DB glow_test, cần Postgres localhost:15432)
 npm run test:e2e                      # Playwright (build standalone, cổng 3100); npm test = tất cả
-npm run db:test:fresh                 # xoá + tạo lại glow_test (chỉ localhost:15432/glow_test) rồi migrate + seed
+npm run db:test:fresh                 # xoá + tạo lại glow_test (chỉ localhost:15432/glow_test, nối thẳng pg — có/không Docker đều chạy) rồi migrate + seed
 npm run test:e2e:fresh                # làm sạch glow_test rồi chạy E2E — dùng cho full E2E trên máy (glow_test tích luỹ dữ liệu làm E2E timeout)
 npm run data:check                    # kiểm dữ liệu; db:backfill-lot-cost: bổ sung giá vốn lô cũ (mặc định chạy thử)
 npm run i18n:export | i18n:import -- file.csv    # trao đổi bản dịch my qua CSV
