@@ -15,7 +15,7 @@ import { getRun } from "@/server/pricing/queries";
 import { FORMULA_VERSION } from "@/server/pricing/runs";
 import { ActionButton } from "@/components/admin/action-button";
 import { ActionForm } from "@/components/admin/action-form";
-import { Badge, DataTable, Notice, Page, PageHeader, StatCard, Td, fieldClass } from "@/components/admin/ui";
+import { Badge, DataTable, Notice, Page, PageHeader, Stat, Td, fieldClass } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import { fmtDate, fmtDateTime, fmtInt } from "@/lib/format";
 import { convertVndToMmk, rateDisplay } from "@/server/pricing/formula";
@@ -195,10 +195,10 @@ export default async function PriceRunPage({ params }: PageProps<"/admin/pricing
         </span>
       </div>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard icon={<ListOrdered />} tone="brand" value={fmtInt(run.lines.length)} label={t("statLines")} />
-        <StatCard icon={<Clock />} tone="warning" value={fmtInt(pending)} label={t("statPending")} />
-        <StatCard icon={<TriangleAlert />} tone="danger" value={fmtInt(bigChanges)} label={t("statBig", { pct: BIG_CHANGE })} />
-        <StatCard icon={<CircleCheck />} tone="success" value={fmtInt(appliedCount)} label={t("statApplied")} />
+        <Stat icon={<ListOrdered />} tone="brand" value={fmtInt(run.lines.length)} label={t("statLines")} />
+        <Stat icon={<Clock />} tone="warning" value={fmtInt(pending)} label={t("statPending")} />
+        <Stat icon={<TriangleAlert />} tone="danger" value={fmtInt(bigChanges)} label={t("statBig", { pct: BIG_CHANGE })} />
+        <Stat icon={<CircleCheck />} tone="success" value={fmtInt(appliedCount)} label={t("statApplied")} />
       </div>
       {expired && <Notice tone="danger">{t("expired")}</Notice>}
       {lastReview?.data && (

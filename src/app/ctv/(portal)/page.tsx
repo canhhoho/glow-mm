@@ -6,11 +6,11 @@ import { siteUrl } from "@/lib/site";
 import { requireAffiliate } from "@/server/auth/session";
 import { affiliateOrders, getAffiliate } from "@/server/affiliates/affiliates";
 import { getNumberSetting } from "@/server/settings";
-import { Page, PageHeader, Section, StatCard } from "@/components/admin/ui";
+import { Page, PageHeader, Section, Stat } from "@/components/admin/ui";
 import { CopyLink } from "@/components/ctv/copy-link";
 import { CtvOrdersTable } from "@/components/ctv/ctv-orders-table";
 
-/** Tổng quan cổng CTV — thành phần admin (Section, StatCard, DataTable), khung CTV giữ nguyên (18/11/2026). */
+/** Tổng quan cổng CTV — thành phần admin (Section, Stat, DataTable), khung CTV giữ nguyên (18/11/2026). */
 export default async function CtvHomePage() {
   const user = await requireAffiliate();
   const [t, ta, a, orders, holdDays] = await Promise.all([
@@ -37,11 +37,11 @@ export default async function CtvHomePage() {
       </Section>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <StatCard icon={<ShoppingBag />} tone="brand" label={ta("statOrders")} value={fmtInt(s.monthOrders)} />
-        <StatCard icon={<Banknote />} tone="green" label={ta("statSales")} value={fmtInt(s.monthSalesMmk)} />
-        <StatCard icon={<Clock />} tone="warning" label={ta("statPending")} value={fmtInt(s.pendingMmk)} />
-        <StatCard icon={<Wallet />} tone="success" label={ta("statPayable")} value={fmtInt(s.payableMmk)} href="/ctv/payouts" testId="ctv-payable" />
-        <StatCard icon={<CircleCheck />} tone="neutral" label={ta("statPaid")} value={fmtInt(s.paidMmk)} href="/ctv/payouts" />
+        <Stat icon={<ShoppingBag />} tone="brand" label={ta("statOrders")} value={fmtInt(s.monthOrders)} />
+        <Stat icon={<Banknote />} tone="green" label={ta("statSales")} value={fmtInt(s.monthSalesMmk)} />
+        <Stat icon={<Clock />} tone="warning" label={ta("statPending")} value={fmtInt(s.pendingMmk)} />
+        <Stat icon={<Wallet />} tone="success" label={ta("statPayable")} value={fmtInt(s.payableMmk)} href="/ctv/payouts" testId="ctv-payable" />
+        <Stat icon={<CircleCheck />} tone="neutral" label={ta("statPaid")} value={fmtInt(s.paidMmk)} href="/ctv/payouts" />
       </div>
       <div className="space-y-1 text-xs text-muted-foreground">
         <p data-testid="ctv-split">

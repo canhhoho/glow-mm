@@ -23,6 +23,7 @@ const RULES: { name: string; re: RegExp }[] = [
   { name: "mã màu hex trong class (dùng token trong globals.css)", re: /-\[#[0-9a-fA-F]{3,8}\]/ },
   { name: "cỡ chữ tuỳ ý text-[Npx] (dùng text-2xs/xs/sm…)", re: /\btext-\[\d+(?:\.\d+)?(?:px|rem)\]/ },
   { name: "text-brand cho chữ (tương phản thấp — dùng text-primary / text-brand-dark)", re: /\btext-brand(?![-\w])/ },
+  { name: "class brand-dark (một tên màu nhấn: dùng primary)", re: /\b(?:bg|text|border|ring|fill|stroke|outline|decoration)-brand-dark\b/ },
   { name: "ui/input, ui/label của shadcn (lệch chiều cao — dùng FIELD + Field)", re: /from "@\/components\/ui\/(?:input|label)"/ },
 ];
 

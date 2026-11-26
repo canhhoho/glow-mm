@@ -63,7 +63,7 @@ async function AccountContent({ params }: PageProps<"/[locale]/account">) {
                     <span className="block text-sm">
                       {to(`st.${o.status}`)} · {to(`pay.${o.paymentStatus}`)}
                       {o.status === "COMPLETED" && (
-                        <span className="ml-2 text-xs font-normal text-brand-dark underline">
+                        <span className="ml-2 text-xs font-normal text-primary underline">
                           · {to("ratePrompt")}
                         </span>
                       )}

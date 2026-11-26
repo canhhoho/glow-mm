@@ -4,9 +4,9 @@ import { fmtDateTime, fmtInt } from "@/lib/format";
 import { requireAffiliate } from "@/server/auth/session";
 import { getAffiliate } from "@/server/affiliates/affiliates";
 import { getNumberSetting } from "@/server/settings";
-import { DataTable, Page, PageHeader, Section, StatCard, Td } from "@/components/admin/ui";
+import { DataTable, Page, PageHeader, Section, Stat, Td } from "@/components/admin/ui";
 
-/** Thanh toán hoa hồng — StatCard + Section + DataTable stack theo chuẩn admin (18/11/2026). */
+/** Thanh toán hoa hồng — Stat + Section + DataTable stack theo chuẩn admin (18/11/2026). */
 export default async function CtvPayoutsPage() {
   const user = await requireAffiliate();
   const [t, ta, a, holdDays] = await Promise.all([
@@ -21,9 +21,9 @@ export default async function CtvPayoutsPage() {
     <Page>
       <PageHeader title={t("payoutsTitle")} />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <StatCard icon={<Wallet />} tone="success" label={t("payableNow")} value={`${fmtInt(s.payableMmk)} MMK`} testId="ctv-payable" />
-        <StatCard icon={<Clock />} tone="warning" label={ta("statPending")} value={`${fmtInt(s.pendingMmk)} MMK`} />
-        <StatCard icon={<CircleCheck />} tone="neutral" label={ta("statPaid")} value={`${fmtInt(s.paidMmk)} MMK`} testId="ctv-paid" />
+        <Stat icon={<Wallet />} tone="success" label={t("payableNow")} value={`${fmtInt(s.payableMmk)} MMK`} testId="ctv-payable" />
+        <Stat icon={<Clock />} tone="warning" label={ta("statPending")} value={`${fmtInt(s.pendingMmk)} MMK`} />
+        <Stat icon={<CircleCheck />} tone="neutral" label={ta("statPaid")} value={`${fmtInt(s.paidMmk)} MMK`} testId="ctv-paid" />
       </div>
       <div className="space-y-1 text-xs text-muted-foreground">
         <p>

@@ -34,7 +34,7 @@ Storefront là Server Components: nút là `<button>`/`<Link>` với chuỗi cla
 
 | Mục đích | Token / class | Ghi chú |
 |---|---|---|
-| Nút chính, link, chữ nhấn | `primary` (= `brand-dark` #be354d) | Admin/CTV viết `text-primary`; store hiện viết `text-brand-dark` — cùng giá trị |
+| Nút chính, link, chữ nhấn, giá | `primary` (#be354d, nguồn `--brand-dark`) | Một tên cho cả 3 portal (26/11/2026). Không còn class `*-brand-dark` (test chặn) |
 | Nền thương hiệu lớn | `brand` (#e8657a) | Logo, FAB, dải header store. **Không** dùng làm màu chữ nhỏ (tương phản ~3.3:1) |
 | Màu phụ xanh | `brand-2` | Chỉ icon/trang trí, **không** cho chữ |
 | Chữ thường / phụ | `foreground` / `muted-foreground` | |
@@ -65,7 +65,7 @@ Storefront là Server Components: nút là `<button>`/`<Link>` với chuỗi cla
 - **Bo góc**: card/khung/bảng/khối `rounded-xl` · control (nút, ô nhập, Notice, menu nổi) `rounded-lg` · mục menu/tab/trang số `rounded-md` · badge/pill/avatar/FAB `rounded-full`. Không dùng `rounded-2xl` trở lên (ngoại lệ có sẵn: màn đăng nhập admin).
 - Khối con lồng trong một card (dòng biến thể, dòng hàng trong form) được dùng `rounded-lg border p-3`.
 - **Viền**: admin/CTV khối = `rounded-xl border bg-card`; store khối = `storeCard` (`ring-1 ring-border`). Không trộn hai kiểu trong cùng khu.
-- **Bóng**: chỉ cho lớp nổi — menu/popover `shadow-md`, ngăn kéo `shadow-xl`, FAB `shadow-lg`, header store `shadow-sm`. Card không bóng (ngoại lệ `Stat`/`StatCard` `shadow-xs`).
+- **Bóng**: chỉ cho lớp nổi — menu/popover `shadow-md`, ngăn kéo `shadow-xl`, FAB `shadow-lg`, header store `shadow-sm`. Card không bóng (ngoại lệ `Stat` `shadow-xs`).
 
 ## 6. Icon, layout, responsive
 
@@ -93,9 +93,10 @@ Lõi dùng chung ở `src/components/ui/`: `button-variants`, `field` (`FIELD`),
 | Bảng | `DataTable` + `Td` (`numeric`, `stack`, `dense`, `empty`, `cols`) | — | Ngoại lệ được phép: trang in, `receive-bulk-form` |
 | Phân trang | `PageNumbers` (danh sách lớn) | `Pagination` | Cùng file `ui/pagination.tsx`; ô số trang 44px trên mobile |
 | Khối / card | `Section` (`title`, `actions`, `collapsible`) | `storeCard`, `storeListCard`, `StoreSection` | Không gõ tay `<section className="rounded-…">` |
-| Tab | `TabNav` (điều hướng giữa trang), `Segmented` (chế độ xem/khoảng ngày); tab nhóm menu ở `section-tabs.tsx` | `account-shell.tsx` | |
+| Tab trong trang | `TabNav` (gạch chân, điều hướng giữa trang), `Segmented` (chế độ xem/khoảng ngày); tab nhóm menu ở `section-tabs.tsx` | — | |
+| Thanh mục cấp khu (dạng viên) | thanh mục cổng CTV trên desktop (`ctv-nav.tsx`) | tab tài khoản khách (`account-shell.tsx`) | `PILL_NAV` + `pillNavItem` (`ui/pill-nav.ts`) |
 | Badge | `Badge tone` (`neutral/success/warning/danger/brand`) | như admin | Map trạng thái → tone ở `status-tones.ts`, `order-badges.tsx` — không map trong page |
-| Chỉ số | `Stat`, `StatCard` | — | |
+| Chỉ số | `Stat` (có/không `icon`, `tone`, `hint`, `href`, `active`) | — | Một component (gộp `StatCard` 26/11/2026) |
 | Hộp thông báo | `Notice tone` | như admin | Có nền, đầu trang/khối |
 | Dòng thông báo cạnh form | `FormMessage tone` (`error/success/warning/muted`) | như admin | Không gõ tay `<p role="alert" className="text-destructive">` |
 | Rỗng | `DataTable empty`, `EmptyState` (`action` = bước tiếp theo) | `EmptyState` | |
@@ -126,7 +127,8 @@ Lõi dùng chung ở `src/components/ui/`: `button-variants`, `field` (`FIELD`),
 
 **Đã làm 26/11/2026 (P1 + P2 của audit):** primitive chung chuyển lên `ui/` (Badge, EmptyState, NotFoundState, Skeleton, FormMessage, SubmitButton, Field/FIELD_LABEL, ErrorState, PageNumbers); gom ~20 dòng thông báo gõ tay vào `FormMessage`; bỏ `text-[Npx]`; sửa tương phản thanh mục CTV; card trang sản phẩm về `rounded-xl`, panel dashboard dùng `Section`; `error.tsx` cho storefront + CTV, 404 trong khung CTV, 404 storefront có gợi ý + nút Tìm sản phẩm; form storefront dùng `storeLabel` + `SubmitButton`; trạng thái rỗng/badge storefront dùng component chung; control CTV 44px dưới md; gộp phân trang vào một file; test `ui-rules`.
 
+**Đã làm 26/11/2026 (P3):** tách khối của trang dài thành component — `admin/product-detail.tsx` (ảnh, đặt trước, bảng tồn, bảng giá, lịch sử, danh sách điều kiện; trang SP 706 → ~490 dòng), `admin/order-detail.tsx` (COD, hàng + tổng, CTV, trả hàng; trang đơn 487 → ~260), `admin/inventory-views.tsx` (xem theo SP / theo lô; trang Tồn kho 502 → ~250); gộp `Stat` + `StatCard`; thanh mục dạng viên dùng chung (`ui/pill-nav.ts`, tab tài khoản khách + thanh mục CTV desktop — mục đang mở của CTV đổi từ nền xám sang nền màu nhấn); một tên màu nhấn `primary` (bỏ class `brand-dark`).
+
 **Còn lại**
 - Hộp thông báo gõ tay chưa đổi (khác kiểu, giữ để không đổi role/E2E): `checkout/page.tsx:116`, `action-form.tsx` (khối secret), `bulk-order-bar.tsx`, `receive-bulk-form.tsx` (khối kết quả), `order/[code]/page.tsx:54`.
 - Màn đăng nhập admin còn `ui/input` + `ui/label` (`login-form.tsx`).
-- **P3 (tuỳ chọn, đổi nhìn thấy được):** tách component nội bộ của `products/[id]/page.tsx` (706 dòng), `inventory/page.tsx` (502), `orders/[id]/page.tsx` (487); gộp `Stat`/`StatCard`; thống nhất tab store/CTV; chọn một tên màu nhấn (`primary` hay `brand-dark`).

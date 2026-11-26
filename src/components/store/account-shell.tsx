@@ -2,6 +2,7 @@ import { LogOut } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { PILL_NAV, pillNavItem } from "@/components/ui/pill-nav";
 import { signOutCustomerAction } from "@/server/accounts/actions";
 import type { CustomerUser } from "@/server/auth/customer-session";
 
@@ -41,16 +42,13 @@ export async function AccountShell({
           </button>
         </form>
       </div>
-      <nav aria-label={t("title")} className="flex gap-1 overflow-x-auto rounded-xl bg-card p-1 ring-1 ring-border">
+      <nav aria-label={t("title")} className={cn(PILL_NAV.list, "overflow-x-auto")}>
         {TABS.map((tab) => (
           <Link
             key={tab.key}
             href={tab.href}
             aria-current={tab.key === active ? "page" : undefined}
-            className={cn(
-              "inline-flex min-h-11 flex-1 items-center justify-center rounded-lg px-3 text-sm whitespace-nowrap",
-              tab.key === active ? "bg-brand-dark font-medium text-brand-dark-foreground" : "hover:bg-muted",
-            )}
+            className={pillNavItem(tab.key === active, "min-h-11 flex-1")}
           >
             {t(`nav.${tab.key}`)}
           </Link>

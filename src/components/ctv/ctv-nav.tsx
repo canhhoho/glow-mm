@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { CreditCard, House, ListOrdered, PlusCircle, UserRound, Users, type LucideIcon } from "lucide-react";
 import { activeHref } from "@/server/admin/nav";
 import { cn } from "@/lib/utils";
+import { PILL_NAV, pillNavItem } from "@/components/ui/pill-nav";
 
 const ICONS: Record<string, LucideIcon> = {
   "/ctv": House,
@@ -68,7 +69,7 @@ export function CtvNav({ items, variant = "tabs" }: { items: { href: string; lab
   // Tab xuống hàng khi hết chỗ (chữ Myanmar/Anh dài ở 768px) thay vì cuộn ngang làm mục cuối bị giấu.
   return (
     <nav aria-label="CTV">
-      <ul className="flex flex-wrap gap-1 text-sm whitespace-nowrap">
+      <ul className={cn(PILL_NAV.list, "inline-flex flex-wrap")}>
         {items.map((i) => {
           const Icon = ICONS[i.href];
           const active = i.href === current;
@@ -77,10 +78,7 @@ export function CtvNav({ items, variant = "tabs" }: { items: { href: string; lab
               <Link
                 href={i.href}
                 aria-current={active ? "page" : undefined}
-                className={cn(
-                  "inline-flex min-h-10 items-center gap-1.5 rounded-lg px-3 hover:bg-muted",
-                  active && "bg-accent font-medium text-accent-foreground",
-                )}
+                className={pillNavItem(active)}
               >
                 {Icon && <Icon className="size-4" aria-hidden />}
                 {i.label}

@@ -5,7 +5,7 @@ import { siteUrl } from "@/lib/site";
 import { requireAffiliate } from "@/server/auth/session";
 import { bpToPercent } from "@/server/affiliates/commission";
 import { teamOverview } from "@/server/affiliates/affiliates";
-import { Badge, DataTable, Page, PageHeader, Section, StatCard, Td } from "@/components/admin/ui";
+import { Badge, DataTable, Page, PageHeader, Section, Stat, Td } from "@/components/admin/ui";
 import { CopyLink } from "@/components/ctv/copy-link";
 
 /** Tuyến dưới (P11c): link mời + CTV mình tuyển trực tiếp và hoa hồng tầng trên — không có thông tin khách. */
@@ -30,9 +30,9 @@ export default async function CtvTeamPage() {
       </Section>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <StatCard icon={<Clock />} tone="warning" label={t("team.pending")} value={amount(team.total.pendingMmk)} testId="ctv-team-pending" />
-        <StatCard icon={<Wallet />} tone="success" label={t("team.payable")} value={amount(team.total.payableMmk)} />
-        <StatCard icon={<CircleCheck />} tone="neutral" label={t("team.paid")} value={amount(team.total.paidMmk)} />
+        <Stat icon={<Clock />} tone="warning" label={t("team.pending")} value={amount(team.total.pendingMmk)} testId="ctv-team-pending" />
+        <Stat icon={<Wallet />} tone="success" label={t("team.payable")} value={amount(team.total.payableMmk)} />
+        <Stat icon={<CircleCheck />} tone="neutral" label={t("team.paid")} value={amount(team.total.paidMmk)} />
       </div>
 
       <Section title={`${t("team.members")} (${team.children.length})`}>
