@@ -2,7 +2,7 @@
 
 ## Trạng thái hiện tại — đọc đầu tiên khi mở phiên mới (cập nhật 26/11/2026, máy Việt Nam)
 
-- **Code:** production = `main` (PR #56 deploy 25/11/2026). `dev` = `main` + tài liệu + 26/11: `db:test:fresh` nối thẳng pg (không cần Docker), đồng bộ `package-lock` (@emnapi 1.11.3), luật agent trong AGENTS.md. **Không có việc code dở.** Lock mới chưa qua CI [CẦN XÁC MINH khi CI chạy].
+- **Code:** production = `main` (PR #56 deploy 25/11/2026). `dev` = `main` + tài liệu + 26/11: `db:test:fresh` nối thẳng pg (không cần Docker), đồng bộ `package-lock` (@emnapi 1.11.3), luật agent trong AGENTS.md, CLAUDE.md rút gọn đoạn deploy (chi tiết ở docs/lenh-trien-khai-tandcstore.md). **Không có việc code dở.** Lock mới chưa qua CI [CẦN XÁC MINH khi CI chạy].
 - **Máy Việt Nam (26/11/2026):** dựng xong môi trường dev — Windows 22H2, PostgreSQL 17 cài thẳng (không Docker, xem CLAUDE.md mục Hai máy); `check`, `test:int`, `db:test:fresh` xanh.
 - **Xong 25/11/2026:** P25 trợ lý AI — gói A, GĐ 5 `receive_draft` (tạo nháp một bước), B1 `data_health`, B2 đọc đơn (thông tin khách **ẩn**, phương án A), B3 `price_suggest` (chỉ tính), B4 `public:read`; dọn web C1 (skill agent), C2 (`catalog_search` theo ngôn ngữ), C4 = audit F2 (nhắc banner chưa có link), C5 = audit G1 (trang chủ bớt lặp), C6 (rà giao diện admin). Chốt: **không làm `catalog_submit`**, không cần nhắc việc hằng ngày.
 - **Chờ chủ shop:** gắn link banner (Admin › Banner, nhãn "Chưa có link"); A7a model dự phòng cho OpenClaw (`agents.defaults.model.fallbacks: ["google/gemini-3.5-flash"]`, chủ shop tự chạy `openclaw config patch`); cài agent trên máy Việt Nam (repo agent, `_quan-tri/VAN-HANH.md` mục 8).
