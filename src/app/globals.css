@@ -14,8 +14,6 @@
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
-  --color-brand-dark: var(--brand-dark);
-  --color-brand-dark-foreground: var(--brand-dark-foreground);
   --color-brand-2: var(--brand-2);
   --color-cream: var(--cream);
   --color-ink: var(--ink);
@@ -61,7 +59,8 @@
   /* Thương hiệu — đổi màu chỉ cần sửa ở đây (PLAN.md §5) */
   --brand: #e8657a;
   --brand-foreground: #ffffff;
-  /* Token màu đậm hơn cho nút, giá, chữ nhỏ đạt tương phản WCAG AA >= 4.5:1 (5.47:1 với trắng, 5.21:1 với kem) */
+  /* Màu đậm cho nút, giá, chữ nhỏ đạt tương phản WCAG AA >= 4.5:1 (5.47:1 với trắng, 5.21:1 với kem).
+     Chỉ là nguồn của --primary / --ring: class dùng `primary` (26/11/2026: bỏ class `*-brand-dark`, một tên màu nhấn). */
   --brand-dark: #be354d;
   --brand-dark-foreground: #ffffff;
   --brand-2: #7fb89a;

@@ -51,7 +51,7 @@ export function StoreSection({
   return (
     <section aria-labelledby={id} className={storeCard}>
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 id={id} className="rounded-lg bg-brand-dark px-3 py-1.5 font-medium text-brand-dark-foreground lg:text-lg">
+        <h2 id={id} className="rounded-lg bg-primary px-3 py-1.5 font-medium text-primary-foreground lg:text-lg">
           {title}
         </h2>
         {more && (
@@ -75,7 +75,7 @@ export function Breadcrumb({ label, items }: { label: string; items: { href?: st
           <li key={i} className="flex items-center gap-1">
             {i > 0 && <ChevronRight className="size-3.5" aria-hidden />}
             {it.href ? (
-              <Link href={it.href} className="hover:text-brand-dark hover:underline">
+              <Link href={it.href} className="hover:text-primary hover:underline">
                 {it.name}
               </Link>
             ) : (

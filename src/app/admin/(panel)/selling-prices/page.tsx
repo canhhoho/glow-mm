@@ -6,7 +6,7 @@ import { FEATURES } from "@/lib/features";
 import { requirePagePermission } from "@/server/auth/session";
 import { PricingRunsTab } from "@/components/admin/pricing-runs-tab";
 import { PriceHistoryTab, RatesTab } from "@/components/admin/pricing-tabs";
-import { ClearFilters, FilterBar, FilterButton, LinkButton, Page, PageHeader, PageNumbers, SearchInput, StatCard, TabNav, fieldClass } from "@/components/admin/ui";
+import { ClearFilters, FilterBar, FilterButton, LinkButton, Page, PageHeader, PageNumbers, SearchInput, Stat, TabNav, fieldClass } from "@/components/admin/ui";
 import { Notice } from "@/components/ui/notice";
 import { rateRecalcVariantIds } from "@/server/pricing/rate-recalc";
 import { focusQuery, parsePriceFocus } from "@/lib/price-focus";
@@ -71,10 +71,10 @@ export default async function SellingPricesPage({ searchParams }: PageProps<"/ad
         description={t("subtitle")}
       />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard icon={<Layers />} tone="brand" value={fmtInt(stats.total)} label={t("statTotal")} href={href({ state: null, page: 1 })} active={manual && !state} />
-        <StatCard icon={<CircleDollarSign />} tone="danger" value={fmtInt(stats.zero)} label={t("state.zero")} href={href({ state: "zero", page: 1 })} active={manual && state === "zero"} testId="stat-zero" />
-        <StatCard icon={<Clock />} tone="warning" value={fmtInt(stats.pending)} label={t("state.pending")} href={href({ state: "pending", page: 1 })} active={manual && state === "pending"} testId="stat-pending" />
-        <StatCard icon={<TriangleAlert />} tone="neutral" value={fmtInt(stats.stale)} label={t("state.stale")} href={href({ state: "stale", page: 1 })} active={manual && state === "stale"} testId="stat-stale" />
+        <Stat icon={<Layers />} tone="brand" value={fmtInt(stats.total)} label={t("statTotal")} href={href({ state: null, page: 1 })} active={manual && !state} />
+        <Stat icon={<CircleDollarSign />} tone="danger" value={fmtInt(stats.zero)} label={t("state.zero")} href={href({ state: "zero", page: 1 })} active={manual && state === "zero"} testId="stat-zero" />
+        <Stat icon={<Clock />} tone="warning" value={fmtInt(stats.pending)} label={t("state.pending")} href={href({ state: "pending", page: 1 })} active={manual && state === "pending"} testId="stat-pending" />
+        <Stat icon={<TriangleAlert />} tone="neutral" value={fmtInt(stats.stale)} label={t("state.stale")} href={href({ state: "stale", page: 1 })} active={manual && state === "stale"} testId="stat-stale" />
       </div>
       {recalc > 0 && (
         <Notice tone="warning" data-testid="rate-recalc">

@@ -347,51 +347,7 @@ export const fieldLabelClass = FIELD_LABEL.compact;
 /** Nhãn nhỏ (text-xs) cho form dày đặc: dòng nhập lô, bảng nhập nhiều cột. */
 export const fieldLabelSmClass = FIELD_LABEL.compactSm;
 
-/** Ô chỉ số không icon (báo cáo, hàng đợi): cùng khung với `StatCard`; `tone` tô số khi cần chú ý; có `href` thì bấm được. */
-export function Stat({
-  label,
-  value,
-  href,
-  tone = "neutral",
-  hint,
-  testId,
-}: {
-  label: string;
-  value: React.ReactNode;
-  href?: string;
-  tone?: "neutral" | "warning" | "danger";
-  /** Dòng nhỏ dưới số: kỳ / phạm vi / điều kiện của chỉ số. */
-  hint?: React.ReactNode;
-  testId?: string;
-}) {
-  const body = (
-    <>
-      {/* Như StatCard: nhãn xuống dòng (tối đa 2), không cắt "…" giữa nghĩa. */}
-      <div className="line-clamp-2 text-sm leading-snug break-words text-muted-foreground" title={label}>{label}</div>
-      <div
-        className={cn(
-          "text-xl leading-tight font-semibold tabular-nums",
-          tone === "warning" && "text-warning",
-          tone === "danger" && "text-destructive",
-        )}
-      >
-        {value}
-      </div>
-      {hint && <div className="mt-0.5 text-xs text-muted-foreground">{hint}</div>}
-    </>
-  );
-  const cls = "block min-w-0 rounded-xl border bg-card p-3 shadow-xs";
-  return href ? (
-    <Link href={href} className={cn(cls, "transition-colors hover:border-primary/40", focusRing)} data-testid={testId}>
-      {body}
-    </Link>
-  ) : (
-    <div className={cls} data-testid={testId}>
-      {body}
-    </div>
-  );
-}
-
+/** Màu nền + màu icon của ô chỉ số có icon. */
 export const ICON_TONES = {
   brand: "bg-primary/10 text-primary",
   green: "bg-secondary text-brand-2",
@@ -401,42 +357,68 @@ export const ICON_TONES = {
   neutral: "bg-muted text-muted-foreground",
 } as const;
 
+/** Ô không icon: `tone` tô màu con số (chỉ khi cần chú ý). `green`/`neutral` giữ màu chữ thường. */
+const VALUE_TONES: Partial<Record<keyof typeof ICON_TONES, string>> = {
+  brand: "text-primary",
+  success: "text-success",
+  warning: "text-warning",
+  danger: "text-destructive",
+};
+
 /**
- * Ô chỉ số có icon (P3, thiết kế mới): icon tròn màu nhạt + số lớn + nhãn. `href` → bấm được; `active` → viền màu chính
- * (đang lọc theo ô này).
+ * Ô chỉ số dùng chung (báo cáo, hàng đợi, tổng kho, cổng CTV) — một component cho hai kiểu (gộp Stat + StatCard 26/11/2026):
+ * - không `icon`: nhãn trên, số dưới; `tone` tô màu số; `hint` = dòng nhỏ dưới số (kỳ / phạm vi / điều kiện).
+ * - có `icon`: icon tròn màu nhạt (`tone`) bên trái + số lớn + nhãn.
+ * `href` → bấm được; `active` → viền màu chính (đang lọc theo ô này). Nhãn xuống dòng tối đa 2, không cắt "…".
  */
-export function StatCard({
+export function Stat({
   icon,
   label,
   value,
-  tone = "neutral",
   href,
+  tone = "neutral",
+  hint,
   active = false,
   testId,
 }: {
   icon?: React.ReactNode;
   label: string;
   value: React.ReactNode;
-  tone?: keyof typeof ICON_TONES;
   href?: string;
+  tone?: keyof typeof ICON_TONES;
+  hint?: React.ReactNode;
   active?: boolean;
   testId?: string;
 }) {
-  const body = (
+  const labelEl = (
+    <span className="line-clamp-2 block text-sm leading-snug break-words text-muted-foreground" title={label}>
+      {label}
+    </span>
+  );
+  const hintEl = hint && <span className="mt-0.5 block text-xs text-muted-foreground">{hint}</span>;
+  const body = icon ? (
     <>
-      {icon && (
-        <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-xl [&_svg]:size-5", ICON_TONES[tone])} aria-hidden>
-          {icon}
-        </span>
-      )}
+      <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-xl [&_svg]:size-5", ICON_TONES[tone])} aria-hidden>
+        {icon}
+      </span>
       <span className="min-w-0">
         <span className="block text-xl leading-tight font-semibold tabular-nums">{value}</span>
-        {/* Nhãn xuống dòng (tối đa 2), không cắt "…" — nhãn dài như "Hàng trả (giảm doanh thu)" vẫn đọc đủ; title cho nhãn dài hơn. */}
-        <span className="line-clamp-2 text-sm leading-snug break-words text-muted-foreground" title={label}>{label}</span>
+        {labelEl}
+        {hintEl}
       </span>
     </>
+  ) : (
+    <>
+      {labelEl}
+      <span className={cn("block text-xl leading-tight font-semibold tabular-nums", VALUE_TONES[tone])}>{value}</span>
+      {hintEl}
+    </>
   );
-  const cls = cn("flex items-center gap-3 rounded-xl border bg-card p-3 shadow-xs", active && "border-primary/50 bg-primary/5");
+  const cls = cn(
+    "min-w-0 rounded-xl border bg-card p-3 shadow-xs",
+    icon ? "flex items-center gap-3" : "block",
+    active && "border-primary/50 bg-primary/5",
+  );
   return href ? (
     <Link href={href} className={cn(cls, "transition-colors hover:border-primary/40", focusRing)} data-testid={testId} aria-current={active ? "page" : undefined}>
       {body}

@@ -17,7 +17,7 @@ import { storeField } from "./ui";
 const langClass =
   "inline-flex min-h-8 cursor-pointer list-none items-center gap-1 rounded px-2 py-0.5 text-sm leading-[1.8] whitespace-nowrap text-brand-foreground ring-1 ring-white/50 [&::-webkit-details-marker]:hidden";
 const langItem =
-  "flex min-h-11 items-center px-4 text-sm leading-[1.8] hover:bg-accent aria-[current=true]:font-medium aria-[current=true]:text-brand-dark";
+  "flex min-h-11 items-center px-4 text-sm leading-[1.8] hover:bg-accent aria-[current=true]:font-medium aria-[current=true]:text-primary";
 
 /** Tên ngôn ngữ viết bằng chính ngôn ngữ đó (menu) + mã ngắn (nút). Thứ tự = `routing.locales`: my, en, vi. */
 const LOCALE_NAMES: Record<StoreLocale, string> = { my: "မြန်မာ", en: "English", vi: "Tiếng Việt" };
@@ -62,7 +62,7 @@ async function CartBadge() {
   if (n === 0) return null;
   return (
     <span
-      className="absolute top-1 right-0.5 grid min-w-4 place-items-center rounded-full bg-brand-dark px-1 text-2xs leading-4 text-brand-dark-foreground lg:bg-card lg:text-brand-dark"
+      className="absolute top-1 right-0.5 grid min-w-4 place-items-center rounded-full bg-primary px-1 text-2xs leading-4 text-primary-foreground lg:bg-card lg:text-primary"
       data-testid="cart-count"
     >
       {n > 99 ? "99+" : n}
@@ -75,7 +75,7 @@ async function HeaderContact({ locale }: { locale: string }) {
   await connection();
   const { FB_PAGE_USERNAME, VIBER_CHAT_URI } = env();
   const t = await getTranslations({ locale, namespace: "Product" });
-  const link = "inline-flex min-h-11 items-center hover:text-brand-dark";
+  const link = "inline-flex min-h-11 items-center hover:text-primary";
   return (
     <>
       {VIBER_CHAT_URI && (
@@ -130,7 +130,7 @@ export async function StoreHeader({ locale }: { locale: StoreLocale }) {
           </Suspense>
           <button
             type="submit"
-            className="hidden h-11 shrink-0 items-center justify-center rounded-lg bg-card px-5 font-medium whitespace-nowrap text-brand-dark hover:bg-muted lg:inline-flex"
+            className="hidden h-11 shrink-0 items-center justify-center rounded-lg bg-card px-5 font-medium whitespace-nowrap text-primary hover:bg-muted lg:inline-flex"
           >
             {ts("submit")}
           </button>
@@ -157,7 +157,7 @@ export async function StoreHeader({ locale }: { locale: StoreLocale }) {
         </Link>
 
         <div className="col-span-4 col-start-2 row-start-2 hidden items-center justify-end gap-5 text-sm lg:flex">
-          <Link href="/track" className="inline-flex min-h-11 items-center gap-1.5 hover:text-brand-dark">
+          <Link href="/track" className="inline-flex min-h-11 items-center gap-1.5 hover:text-primary">
             <PackageSearch className="size-4" aria-hidden />
             {t("orderLookup")}
           </Link>

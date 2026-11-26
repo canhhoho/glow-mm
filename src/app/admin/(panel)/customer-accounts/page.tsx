@@ -8,7 +8,7 @@ import { listPasswordResetRequests } from "@/server/accounts/password-reset";
 import { decidePasswordResetAction, deleteCustomerAccountAction, setCustomerActiveAction } from "@/server/accounts/actions";
 import { ActionButton } from "@/components/admin/action-button";
 import { AccountRowActions } from "@/components/admin/account-row-actions";
-import { Badge, ClearFilters, DataTable, FilterBar, FilterButton, Page, PageHeader, SearchInput, StatCard, Td } from "@/components/admin/ui";
+import { Badge, ClearFilters, DataTable, FilterBar, FilterButton, Page, PageHeader, SearchInput, Stat, Td } from "@/components/admin/ui";
 import { AccountTabs } from "@/components/admin/section-tabs";
 
 /**
@@ -73,9 +73,9 @@ export default async function CustomerAccountsPage({ searchParams }: PageProps<"
         </section>
       )}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" data-testid="customer-summary">
-        <StatCard icon={<Users />} tone="brand" label={t("listCount")} value={fmtInt(accounts.length)} />
-        <StatCard icon={<UserCheck />} tone="success" label={t("active")} value={fmtInt(activeCount)} />
-        <StatCard icon={<UserX />} tone="neutral" label={t("locked")} value={fmtInt(accounts.length - activeCount)} />
+        <Stat icon={<Users />} tone="brand" label={t("listCount")} value={fmtInt(accounts.length)} />
+        <Stat icon={<UserCheck />} tone="success" label={t("active")} value={fmtInt(activeCount)} />
+        <Stat icon={<UserX />} tone="neutral" label={t("locked")} value={fmtInt(accounts.length - activeCount)} />
       </div>
       <section aria-labelledby="customer-list-title" className="space-y-3 [&_td]:align-middle">
         <h2 id="customer-list-title" className="sr-only">{t("listTitle")}</h2>
