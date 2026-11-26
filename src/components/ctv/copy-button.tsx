@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-/** Nút sao chép (cổng CTV) — cao bằng ô nhập admin (size lg, 18/11/2026). */
+/** Nút sao chép (cổng CTV) — cao bằng ô nhập (size lg: 36px, 44px dưới md trong khung CTV). */
 export function CopyButton({ text, label, done }: { text: string; label: string; done: string }) {
   const [copied, setCopied] = useState(false);
   return (

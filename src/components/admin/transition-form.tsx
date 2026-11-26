@@ -8,6 +8,7 @@ import { fieldClass, fieldLabelSmClass } from "@/components/admin/ui";
 import { transitionOrderAction } from "@/server/orders/actions";
 import { cn } from "@/lib/utils";
 import { confirmOrPrevent } from "@/lib/confirm";
+import { FormMessage } from "@/components/ui/form-message";
 
 export type TransitionField = {
   name: "reason" | "carrier" | "trackingNo" | "fromLocationId" | "note";
@@ -75,15 +76,15 @@ export function TransitionForm({
         {label}
       </Button>
       {state?.error && (
-        <p role="alert" className="w-full text-sm text-destructive">
+        <FormMessage className="w-full">
           {t("error")}: {state.error}
-        </p>
+        </FormMessage>
       )}
       {/* Thông báo kèm khi thành công (vd bàn giao bằng lô giá vốn tạm); mã ngắn = tên thao tác thì không hiện. */}
       {state?.ok && !state.error && state.ok !== transition && (
-        <p role="status" className="w-full text-sm text-warning" data-testid="transition-note">
+        <FormMessage tone="warning" role="status" className="w-full" data-testid="transition-note">
           {state.ok}
-        </p>
+        </FormMessage>
       )}
     </form>
   );

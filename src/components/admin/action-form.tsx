@@ -3,12 +3,13 @@
 import { startTransition, useActionState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { Save } from "lucide-react";
+import { Loader2, Save } from "lucide-react";
 import type { ActionState } from "@/server/inventory/actions";
 import { askConfirm } from "@/lib/confirm";
 import { cn } from "@/lib/utils";
 import { CopyButton } from "@/components/ctv/copy-button";
 import type { Density } from "@/components/ui/field";
+import { FormMessage } from "@/components/ui/form-message";
 
 /**
  * Form gửi server action với các ô nhập render sẵn (children, có thể là Server Component).
@@ -71,14 +72,14 @@ export function ActionForm({
       {children}
       {/* self-end: form dạng lưới/flex → nút nằm đáy ô, thẳng hàng với ô nhập cùng hàng (nút cao bằng ô: size lg). */}
       <div className={cn("flex flex-wrap items-center gap-3 self-end", actionsClassName)}>
-        <Button size={density === "touch" ? "touch" : "lg"} type="submit" variant={variant} disabled={pending}>
-          {icon}
+        <Button size={density === "touch" ? "touch" : "lg"} type="submit" variant={variant} disabled={pending} aria-busy={pending || undefined}>
+          {pending ? <Loader2 aria-hidden className="animate-spin" /> : icon}
           {submitLabel}
         </Button>
         {state?.ok && !state.error && !secret && (
-          <p role="status" className="text-sm text-success">
+          <FormMessage tone="success">
             {okText ?? state.ok}
-          </p>
+          </FormMessage>
         )}
       </div>
       {secret && state?.ok && !state.error && (
@@ -99,9 +100,9 @@ export function ActionForm({
         </div>
       )}
       {state?.error && (
-        <p role="alert" className="col-span-full basis-full max-w-2xl text-sm text-destructive">
+        <FormMessage className="col-span-full basis-full max-w-2xl">
           {t("error")}: {state.error}
-        </p>
+        </FormMessage>
       )}
     </form>
   );

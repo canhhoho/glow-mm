@@ -1,7 +1,8 @@
 import { getTranslations } from "next-intl/server";
 import { storeFilters } from "@/server/catalog/cached";
 import type { StoreSort } from "@/server/catalog/store-queries";
-import { outlineButton, storeField } from "./ui";
+import { outlineButton, storeField, storeLabel } from "./ui";
+import { cn } from "@/lib/utils";
 import { Pagination } from "@/components/ui/pagination";
 
 export type CatalogParams = { q?: string; brand?: string; tags: string[]; sort: StoreSort; page: number };
@@ -62,7 +63,7 @@ export async function CatalogFilters({ locale, current }: { locale: string; curr
       <summary className="flex min-h-11 cursor-pointer items-center px-3 font-medium">{t("filter")}</summary>
       <form className="space-y-3 px-3 pb-3 lg:flex lg:flex-wrap lg:items-end lg:gap-x-4 lg:gap-y-3 lg:space-y-0 lg:p-4">
         {current.q && <input type="hidden" name="q" value={current.q} />}
-        <label className="block space-y-1 text-sm lg:w-52">
+        <label className={cn(storeLabel, "lg:w-52")}>
           <span>{t("sort")}</span>
           <select name="sort" defaultValue={current.sort} className={storeField}>
             <option value="new">{t("sortNew")}</option>
@@ -70,7 +71,7 @@ export async function CatalogFilters({ locale, current }: { locale: string; curr
             <option value="price_desc">{t("sortPriceDesc")}</option>
           </select>
         </label>
-        <label className="block space-y-1 text-sm lg:w-52">
+        <label className={cn(storeLabel, "lg:w-52")}>
           <span>{t("brand")}</span>
           <select name="brand" defaultValue={current.brand ?? ""} className={storeField}>
             <option value="">{t("allBrands")}</option>

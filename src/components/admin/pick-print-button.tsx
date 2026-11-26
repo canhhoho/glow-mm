@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { savePickManifestsAction } from "@/server/orders/actions";
+import { FormMessage } from "@/components/ui/form-message";
 
 /**
  * D3-lite: "Chốt lô & In" — lưu phiếu soạn (manifest lô) cho các đơn đang xem rồi mở hộp thoại in.
@@ -39,14 +40,14 @@ export function PickPrintButton({ ids, hash, plannable }: { ids: string[]; hash:
         {plannable ? t("bulk.pickSaveAndPrint") : t("print")}
       </Button>
       {saved != null && (
-        <span role="status" className="text-sm text-success">
+        <FormMessage tone="success" as="span">
           {t("bulk.pickSaved", { count: saved })}
-        </span>
+        </FormMessage>
       )}
       {error && (
-        <span role="alert" className="text-sm text-destructive">
+        <FormMessage as="span">
           {error}
-        </span>
+        </FormMessage>
       )}
     </div>
   );

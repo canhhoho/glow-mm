@@ -95,7 +95,7 @@ export function ProductCreateForm({ kind, options, prefill }: { kind: "product" 
 
 
   return (
-    <form action={action} className="max-w-2xl space-y-4 rounded-lg border p-4" data-testid="product-create-form">
+    <form action={action} className="max-w-2xl space-y-4 rounded-xl border p-4" data-testid="product-create-form">
       <input type="hidden" name="payload" value={payload} />
       <p className="text-sm text-muted-foreground">{t("create.intro")}</p>
 

@@ -7,13 +7,14 @@ import { emailAuthEnabled } from "@/lib/env";
 import { requireCustomer } from "@/server/auth/customer-session";
 import { AccountShell } from "@/components/store/account-shell";
 import { ChangePasswordForm, ProfileForm } from "@/components/store/account-forms";
-import { BlockSkeleton, storeCard } from "@/components/store/ui";
+import { storeCard } from "@/components/store/ui";
+import { PageSkeleton } from "@/components/ui/skeleton";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default function ProfilePage(props: PageProps<"/[locale]/account/profile">) {
   return (
-    <Suspense fallback={<BlockSkeleton />}>
+    <Suspense fallback={<PageSkeleton />}>
       <ProfileContent {...props} />
     </Suspense>
   );

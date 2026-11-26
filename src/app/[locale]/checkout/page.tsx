@@ -14,14 +14,15 @@ import { getCartDetails } from "@/server/catalog/store-queries";
 import { getBoolSetting } from "@/server/settings";
 import { CheckoutForm } from "@/components/store/checkout-form";
 import { ContactLinks } from "@/components/store/contact-links";
-import { BlockSkeleton, Notice, PageTitle } from "@/components/store/ui";
+import { Notice, PageTitle } from "@/components/store/ui";
+import { PageSkeleton } from "@/components/ui/skeleton";
 
 /** Thanh toán: không cho máy tìm kiếm index (SEO, P7). */
 export const metadata: Metadata = { robots: { index: false, follow: true } };
 
 export default function CheckoutPage(props: PageProps<"/[locale]/checkout">) {
   return (
-    <Suspense fallback={<BlockSkeleton />}>
+    <Suspense fallback={<PageSkeleton />}>
       <CheckoutContent {...props} />
     </Suspense>
   );

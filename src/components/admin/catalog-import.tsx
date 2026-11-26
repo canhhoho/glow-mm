@@ -13,6 +13,7 @@ import { fmtInt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { MAX_CATALOG_FILE_BYTES, visibleXlsxSheets } from "@/lib/xlsx-sheets";
 import { BatchReviewOptions, BatchReviewSummary } from "@/components/admin/batch-review";
+import { FormMessage } from "@/components/ui/form-message";
 
 const ACTION_TONE = { create: "brand", update: "warning", same: "neutral", error: "danger" } as const;
 const FILTERS = ["all", "error", "warning", "create", "update", "same"] as const;
@@ -106,7 +107,7 @@ export function CatalogImport({ canApprove = false }: { canApprove?: boolean }) 
           <Button type="submit" size="lg" disabled={!canPreview}><Eye aria-hidden />{t("preview")}</Button>
         </fieldset>
       </form>
-      {workbook?.status === "loading" && <p role="status" className="text-sm text-muted-foreground">{t("readingSheets")}</p>}
+      {workbook?.status === "loading" && <FormMessage tone="muted">{t("readingSheets")}</FormMessage>}
       {workbook?.status === "error" && <Notice tone="danger">{t(workbook.message)}</Notice>}
       {state?.error && <Notice tone="danger" className="whitespace-pre-line">{state.error}</Notice>}
 

@@ -62,7 +62,7 @@ async function CartBadge() {
   if (n === 0) return null;
   return (
     <span
-      className="absolute top-1 right-0.5 grid min-w-4 place-items-center rounded-full bg-brand-dark px-1 text-[10px] leading-4 text-brand-dark-foreground lg:bg-card lg:text-brand-dark"
+      className="absolute top-1 right-0.5 grid min-w-4 place-items-center rounded-full bg-brand-dark px-1 text-2xs leading-4 text-brand-dark-foreground lg:bg-card lg:text-brand-dark"
       data-testid="cart-count"
     >
       {n > 99 ? "99+" : n}

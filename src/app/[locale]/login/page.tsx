@@ -10,13 +10,14 @@ import { authRedirectErrorKey, safeNextPath } from "@/server/auth/customer-polic
 import { getCustomerUser } from "@/server/auth/customer-session";
 import { AuthCard } from "@/components/store/auth-card";
 import { LoginForm } from "@/components/store/auth-forms";
-import { BlockSkeleton, Notice } from "@/components/store/ui";
+import { Notice } from "@/components/store/ui";
+import { PageSkeleton } from "@/components/ui/skeleton";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default function LoginPage(props: PageProps<"/[locale]/login">) {
   return (
-    <Suspense fallback={<BlockSkeleton />}>
+    <Suspense fallback={<PageSkeleton />}>
       <LoginContent {...props} />
     </Suspense>
   );

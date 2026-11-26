@@ -8,7 +8,9 @@ import { withStock } from "@/server/catalog/store-queries";
 import { visibleCollections } from "@/server/content/collections";
 import { railsToShow } from "@/lib/home-rails";
 import { ProductRail } from "./product-card";
-import { ListSkeleton, StoreSection, storeCard } from "./ui";
+import { StoreSection, storeCard } from "./ui";
+import { GridSkeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const RAIL_SIZE = 10;
 
@@ -36,7 +38,7 @@ export async function HomeCatalog({ locale }: { locale: StoreLocale }) {
   const collections = visible.map((c, i) => ({ slug: c.slug, name: c.name, products: rest[categories.length + i] }));
   const showCategory = railsToShow(newest, byCategory, RAIL_SIZE);
 
-  if (newest.length === 0) return <p className="text-sm text-muted-foreground">{t("empty")}</p>;
+  if (newest.length === 0) return <EmptyState>{t("empty")}</EmptyState>;
 
   return (
     <>
@@ -90,5 +92,5 @@ export async function HomeCatalog({ locale }: { locale: StoreLocale }) {
 }
 
 export function HomeCatalogSkeleton() {
-  return <ListSkeleton />;
+  return <GridSkeleton />;
 }

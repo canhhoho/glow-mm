@@ -1,9 +1,11 @@
 import { cva } from "class-variance-authority"
 import { cn } from "cn"
+import { TOUCH_ON_MOBILE } from "./field"
 
 /**
  * Lớp nút dùng chung (tách khỏi button.tsx để storefront dùng chuỗi class mà không kéo @base-ui vào bundle client).
- * Size `lg`/`icon-lg` = admin (h-9 trên desktop); `touch`/`icon-touch` = storefront + cổng CTV (h-11).
+ * Size `lg`/`icon-lg` = admin (h-9 trên desktop; `lg` cao h-11 dưới md trong vùng `data-density="touch"` — cổng CTV);
+ * `touch`/`icon-touch` = storefront (h-11).
  */
 const buttonBase = cva(
   "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -26,7 +28,7 @@ const buttonBase = cva(
           "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
         xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
+        lg: `h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 ${TOUCH_ON_MOBILE}`,
         /** Storefront + cổng CTV: cao bằng ô nhập `FIELD.touch` (h-11, vùng bấm ≥ 44px). */
         touch: "h-11 gap-2 px-4 text-base has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
         icon: "size-8",

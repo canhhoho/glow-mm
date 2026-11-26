@@ -9,13 +9,14 @@ import { formatMmk } from "@/lib/money";
 import { accountOrders } from "@/server/accounts/accounts";
 import { requireCustomer } from "@/server/auth/customer-session";
 import { AccountShell } from "@/components/store/account-shell";
-import { BlockSkeleton, primaryButton, storeCard } from "@/components/store/ui";
+import { primaryButton, storeCard } from "@/components/store/ui";
+import { PageSkeleton } from "@/components/ui/skeleton";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default function AccountPage(props: PageProps<"/[locale]/account">) {
   return (
-    <Suspense fallback={<BlockSkeleton />}>
+    <Suspense fallback={<PageSkeleton />}>
       <AccountContent {...props} />
     </Suspense>
   );

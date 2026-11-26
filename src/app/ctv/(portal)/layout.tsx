@@ -37,7 +37,7 @@ export default async function CtvPortalLayout({ children }: LayoutProps<"/ctv">)
     <div className="min-h-dvh bg-background">
       <header className="sticky top-0 z-30 border-b bg-card/95 backdrop-blur">
         <div className={`${CONTAINER} flex items-center gap-2 py-2`}>
-          <div className="grid h-8 min-w-8 shrink-0 place-items-center rounded-lg bg-brand px-1 text-[11px] font-bold text-brand-foreground">{BRAND_MARK}</div>
+          <div className="grid h-8 min-w-8 shrink-0 place-items-center rounded-lg bg-brand px-1 text-2xs font-bold text-brand-foreground">{BRAND_MARK}</div>
           <div className="min-w-0 leading-tight">
             <div className="text-sm font-semibold">{BRAND_NAME}</div>
             <div className="truncate text-xs text-muted-foreground" data-testid="ctv-user">
@@ -59,7 +59,8 @@ export default async function CtvPortalLayout({ children }: LayoutProps<"/ctv">)
           <CtvNav items={items} />
         </div>
       </header>
-      <main className={`${CONTAINER} pt-5 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-6`}>{children}</main>
+      {/* data-density="touch": ô nhập + nút size lg của thành phần admin cao 44px dưới md (design-system §1). */}
+      <main data-density="touch" className={`${CONTAINER} pt-5 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-6`}>{children}</main>
       {/* Ngoài <header>: backdrop-blur của header làm `fixed` bên trong bám theo header thay vì màn hình. */}
       <CtvNav items={items.filter((i) => i.href !== "/ctv/account")} variant="bottom" />
     </div>

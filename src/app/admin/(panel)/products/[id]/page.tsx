@@ -236,7 +236,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           ) : (
             <ImagePlus className="absolute inset-0 m-auto size-6 text-muted-foreground" aria-hidden />
           )}
-          <span className="absolute right-1 bottom-1 flex items-center gap-0.5 rounded-md bg-background/90 px-1.5 py-0.5 text-[11px] font-medium shadow-sm group-hover:bg-background">
+          <span className="absolute right-1 bottom-1 flex items-center gap-0.5 rounded-md bg-background/90 px-1.5 py-0.5 text-2xs font-medium shadow-sm group-hover:bg-background">
             {images.length > 0 ? images.length : <Plus className="size-3" aria-hidden />}
           </span>
         </a>
@@ -307,7 +307,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
       {tab === "info" && (
       <Section id="step-create" className="scroll-mt-20" title={<StepTitle step={step("create")} t={t} />}>
         {stepIssues("create").length > 0 && issueList(stepIssues("create"))}
-        <section id="product-images" aria-labelledby="product-images-title" className="scroll-mt-20 rounded-lg border p-4">
+        <section id="product-images" aria-labelledby="product-images-title" className="scroll-mt-20 rounded-xl border p-4">
           <h3 id="product-images-title" className="mb-3 font-medium">
             {t("images")}
           </h3>
@@ -365,7 +365,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           )}
         </section>
         {/* Form sửa đầy đủ: mở sẵn khi SP chưa đăng bán (đang thiết lập), đóng khi đã bán. key: nạp lại state sau khi lưu. */}
-        <details id="product-edit" open={!product.published} className="scroll-mt-28 rounded-lg border p-4" data-testid="product-edit">
+        <details id="product-edit" open={!product.published} className="scroll-mt-28 rounded-xl border p-4" data-testid="product-edit">
           <summary className="cursor-pointer font-medium">{t("block.editInfo")}</summary>
           <div className="mt-4">
             <ProductForm
@@ -427,7 +427,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
         {/* QT3: hết hàng → nhận đặt trước (mặc định bật); combo không đặt trước. 20/11/2026: chuyển từ khối Đăng bán về bước 2 —
             bật đặt trước là một nhánh hợp lệ của "Kho bán & hàng" (productSteps). */}
         {!archived && (
-        <details className="rounded-lg border p-4" data-testid="preorder-settings">
+        <details className="rounded-xl border p-4" data-testid="preorder-settings">
           <summary className="cursor-pointer font-medium">
             {t("preorder.title")} · {approval.preorderEnabled ? t("preorder.on") : t("preorder.off")}
           </summary>

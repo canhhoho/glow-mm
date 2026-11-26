@@ -11,6 +11,7 @@ import type { ProductEditData } from "@/server/catalog/admin-queries";
 import { cn } from "@/lib/utils";
 import { fmtInt } from "@/lib/format";
 import { suggestProductSlug, suggestVariantSku } from "@/lib/product-identifiers";
+import { FormMessage } from "@/components/ui/form-message";
 
 type Options = {
   brands: { id: string; name: string }[];
@@ -57,7 +58,7 @@ const EMPTY: ProductEditData = {
   variants: [],
 };
 
-const sectionClass = "grid gap-3 rounded-lg border p-4 sm:grid-cols-2";
+const sectionClass = "grid gap-3 rounded-xl border p-4 sm:grid-cols-2";
 
 /**
  * Form sửa SP theo bộ trường chung (`lib/product-fields.ts`, cùng nhãn `ProductFields.*` với file Excel):
@@ -177,7 +178,7 @@ export function ProductForm({
       </section>
 
       {/* ── 2. Phân loại: mỗi dòng một SKU (luôn hiện, kể cả SP một loại) ── */}
-      <section className="space-y-3 rounded-lg border p-4" data-testid="product-section-variant">
+      <section className="space-y-3 rounded-xl border p-4" data-testid="product-section-variant">
         <h2 className="font-medium">{tf("sections.variant")}</h2>
         {variants.map((v, index) => (
           <fieldset key={v.key} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-3" data-testid="product-variant-row">
@@ -285,14 +286,14 @@ export function ProductForm({
       </section>
 
       {/* ── 3. Mô tả cho khách ── */}
-      <section className="space-y-3 rounded-lg border p-4" data-testid="product-section-content">
+      <section className="space-y-3 rounded-xl border p-4" data-testid="product-section-content">
         <h2 className="font-medium">{tf("sections.content")}</h2>
         <Field label={tf("description_my.label")}>{textarea(tf("description_my.label"), p.my.description, (v) => set("my", { ...p.my, description: v }))}</Field>
         <Field label={tf("description_en.label")}>{textarea(tf("description_en.label"), p.en.description, (v) => set("en", { ...p.en, description: v }))}</Field>
       </section>
 
       {/* ── 4. Chi tiết thêm (khách thấy trên trang SP; tuỳ chọn) ── */}
-      <details className="rounded-lg border p-4" data-testid="product-section-extra">
+      <details className="rounded-xl border p-4" data-testid="product-section-extra">
         <summary className="cursor-pointer font-medium">{tf("sections.extra")}</summary>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <Field label={tf("usage_my.label")}>{textarea(tf("usage_my.label"), p.my.usage, (v) => set("my", { ...p.my, usage: v }))}</Field>
@@ -316,7 +317,7 @@ export function ProductForm({
       </details>
 
       {/* ── 5. Thiết lập khác ── */}
-      <details className="rounded-lg border p-4">
+      <details className="rounded-xl border p-4">
         <summary className="cursor-pointer font-medium">{t("otherSettings")}</summary>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <Field label={t("slug")}>
@@ -354,9 +355,9 @@ export function ProductForm({
       </div>
 
       {state?.error && (
-        <p role="alert" className="text-sm text-destructive">
+        <FormMessage>
           {td("error")}: {state.error}
-        </p>
+        </FormMessage>
       )}
     </form>
   );

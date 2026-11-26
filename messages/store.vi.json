@@ -62,7 +62,9 @@
   },
   "NotFound": {
     "title": "Không tìm thấy trang",
-    "back": "Về trang chủ"
+    "back": "Về trang chủ",
+    "hint": "Đường dẫn sai hoặc trang đã bị gỡ.",
+    "search": "Tìm sản phẩm"
   },
   "Catalog": {
     "all": "Tất cả sản phẩm",
@@ -405,5 +407,11 @@
     "chooseTownship": "Chọn thị trấn",
     "phone2": "Số điện thoại phụ (không bắt buộc)",
     "shippingNote": "Tiền hàng trả cho shop. Phí ship khách trả trực tiếp cho hãng vận chuyển khi nhận; phí và thời gian tuỳ vùng."
+  },
+  "Error": {
+    "title": "Đã có lỗi xảy ra",
+    "hint": "Vui lòng thử lại. Nếu vẫn lỗi, hãy liên hệ cửa hàng.",
+    "retry": "Thử lại",
+    "home": "Về trang chủ"
   }
 }

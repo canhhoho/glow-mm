@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { fieldClass, fieldLabelClass } from "@/components/admin/ui";
 import { saveBannerAction } from "@/server/content/actions";
 import { cn } from "@/lib/utils";
+import { FormMessage } from "@/components/ui/form-message";
 
 const MAX_EACH = 5 * 1024 * 1024;
 // Giới hạn body Server Action 6MB (next.config) — chừa chỗ cho phần còn lại của form.
@@ -117,9 +118,9 @@ export function BannerForm({ banner }: { banner?: BannerFormValue }) {
 
       <Button size="lg" type="submit" disabled={pending}><Save aria-hidden className="size-4 shrink-0" /> {t("save")}</Button>
       {error && (
-        <p role="alert" className="text-sm text-destructive">
+        <FormMessage>
           {td("error")}: {error}
-        </p>
+        </FormMessage>
       )}
     </form>
   );

@@ -7,6 +7,7 @@ import { FileField } from "@/components/admin/file-field";
 import { Button } from "@/components/ui/button";
 import { setCategoryIconAction } from "@/server/catalog/actions";
 import type { ActionState } from "@/server/inventory/actions";
+import { FormMessage } from "@/components/ui/form-message";
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
@@ -28,14 +29,14 @@ export function CategoryIconUpload({ categoryId }: { categoryId: string }) {
         <Button size="lg" type="submit" variant="outline" disabled={pending}><Upload aria-hidden className="size-4 shrink-0" /> {t("iconUploadBtn")}</Button>
       </div>
       {state?.error && (
-        <p role="alert" className="text-sm text-destructive">
+        <FormMessage>
           {td("error")}: {state.error}
-        </p>
+        </FormMessage>
       )}
       {state?.ok && !state.error && (
-        <p role="status" className="text-sm text-success">
+        <FormMessage tone="success">
           {t("iconUploaded")}
-        </p>
+        </FormMessage>
       )}
     </form>
   );

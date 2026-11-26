@@ -12,6 +12,7 @@ import { createDocumentAction, updateDocumentAction } from "@/server/inventory/a
 import type { ReceiveVariant } from "@/server/inventory/queries";
 import type { ReceivePick } from "@/lib/receive-picks";
 import { FEATURES } from "@/lib/features";
+import { FormMessage } from "@/components/ui/form-message";
 
 type StockType = "SELLABLE" | "TESTER";
 type ExpiryStatus = "DATED" | "NONE" | "UNKNOWN";
@@ -669,9 +670,9 @@ export function ReceiveBulkForm({
         </span>
         {docCount > 1 && <span className="text-sm font-medium" data-testid="receive-split-preview">{t("splitPreview", { count: docCount })}</span>}
         {(clientError || state?.error) && (
-          <p role="alert" className="w-full text-sm text-destructive">
+          <FormMessage className="w-full">
             {t("error")}: {clientError || state?.error}
-          </p>
+          </FormMessage>
         )}
       </div>
     </form>
@@ -684,7 +685,7 @@ const small = cn(fieldClass, "text-xs");
 /** Nhãn ô chỉ hiện trên điện thoại (bảng xếp thành thẻ, không có hàng tiêu đề). Ẩn với trình đọc màn hình vì ô đã có aria-label. */
 function Cap({ children }: { children: React.ReactNode }) {
   return (
-    <span aria-hidden className="mb-0.5 block text-[11px] text-muted-foreground md:hidden">
+    <span aria-hidden className="mb-0.5 block text-2xs text-muted-foreground md:hidden">
       {children}
     </span>
   );
@@ -767,7 +768,7 @@ const ReceiveRow = memo(function ReceiveRow({
               )}
             </div>
           )}
-          {r.expiryStatus === "DATED" && !r.expiryDate && d.expiryDate && <div className="text-[11px] text-muted-foreground">{t("usesDefault", { value: d.expiryDate })}</div>}
+          {r.expiryStatus === "DATED" && !r.expiryDate && d.expiryDate && <div className="text-2xs text-muted-foreground">{t("usesDefault", { value: d.expiryDate })}</div>}
         </td>
       )}
       {FEATURES.expiry && (

@@ -9,7 +9,8 @@ import { formatMmk } from "@/lib/money";
 import { saveCartAction, setCartQtyAction } from "@/server/cart/actions";
 import { CART_COOKIE, parseCart } from "@/server/cart/cart";
 import { getCartDetails } from "@/server/catalog/store-queries";
-import { BlockSkeleton, Notice, outlineButton, PageTitle, primaryButton, storeCard, storeField } from "@/components/store/ui";
+import { Notice, outlineButton, PageTitle, primaryButton, storeCard, storeField } from "@/components/store/ui";
+import { PageSkeleton } from "@/components/ui/skeleton";
 import { buttonVariants } from "@/components/ui/button-variants";
 
 /** Giỏ hàng: không cho máy tìm kiếm index (SEO, P7). */
@@ -17,7 +18,7 @@ export const metadata: Metadata = { robots: { index: false, follow: true } };
 
 export default function CartPage(props: PageProps<"/[locale]/cart">) {
   return (
-    <Suspense fallback={<BlockSkeleton />}>
+    <Suspense fallback={<PageSkeleton />}>
       <CartContent {...props} />
     </Suspense>
   );

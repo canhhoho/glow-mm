@@ -6,7 +6,8 @@ import { useTranslations } from "next-intl";
 import type { AddressCatalog } from "@/server/locations/locations";
 import { placeOrderAction } from "@/server/cart/actions";
 import { AddressPicker } from "../address-picker";
-import { Notice, primaryButton, storeField } from "./ui";
+import { Notice, primaryButton, storeField, storeLabel } from "./ui";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { useAddressLabels } from "./address-labels";
 import { analyticsContext } from "@/lib/analytics-client";
 
@@ -93,7 +94,7 @@ export function CheckoutForm({
       <input type="hidden" name="expectedTotalMmk" value={currentExpectedTotal} />
       <input type="hidden" name="expectedPreorder" value={currentExpectedPreorder ? "1" : "0"} />
       {addresses.length > 0 && (
-        <label className="block space-y-1 text-sm">
+        <label className={storeLabel}>
           <span className="font-medium">{t("savedAddress")}</span>
           <select value={selected} onChange={(e) => setSelected(e.target.value)} className={storeField}>
             {addresses.map((x) => (
@@ -108,7 +109,7 @@ export function CheckoutForm({
       {/* key: đổi địa chỉ đã chọn → các ô nhận lại giá trị mặc định mới. */}
       <fieldset key={selected} className="space-y-3">
         <legend className="mb-1 font-medium">{t("contact")}</legend>
-        <label className="block space-y-1 text-sm">
+        <label className={storeLabel}>
           <span>{t("name")}</span>
           <input
             name="name"
@@ -121,7 +122,7 @@ export function CheckoutForm({
           />
           {errorFor("name")}
         </label>
-        <label className="block space-y-1 text-sm">
+        <label className={storeLabel}>
           <span>{t("phone")}</span>
           <input
             name="phone"
@@ -136,14 +137,14 @@ export function CheckoutForm({
           />
           {errorFor("phone")}
         </label>
-        <label className="block space-y-1 text-sm">
+        <label className={storeLabel}>
           <span>{ta("phone2")}</span>
           <input name="phone2" {...field("phone2")} type="tel" inputMode="tel" defaultValue={a?.phone2 ?? ""} className={storeField} />
           {errorFor("phone2")}
         </label>
         {/* Thị trấn của địa chỉ đã lưu có thể đã ngừng giao → picker để trống cho khách chọn lại. */}
         <AddressPicker catalog={catalog} labels={labels} defaultTownshipId={a?.townshipId} fieldClass={storeField} error={state?.fieldErrors?.townshipId} errorId="checkout-townshipId-error" />
-        <label className="block space-y-1 text-sm">
+        <label className={storeLabel}>
           <span>{t("address")}</span>
           <textarea
             name="addressLine"
@@ -157,7 +158,7 @@ export function CheckoutForm({
           />
           {errorFor("addressLine")}
         </label>
-        <label className="block space-y-1 text-sm">
+        <label className={storeLabel}>
           <span>{t("note")}</span>
           <input name="note" {...field("note")} maxLength={500} defaultValue={a?.note ?? ""} className={storeField} />
           {errorFor("note")}
@@ -205,13 +206,13 @@ export function CheckoutForm({
       )}
       {state?.cartError && <Link href="/cart" className="underline">{t("reviewCart")}</Link>}
       {summary}
-      <button type="submit" disabled={pending || !hydrated} className={`${primaryButton} w-full`} data-testid="place-order-button">
+      <SubmitButton pending={pending} disabled={!hydrated} className={`${primaryButton} w-full`} data-testid="place-order-button">
         {state?.needsPreorderConfirm
           ? t("preorderConfirm")
           : state?.priceChanged
             ? t("priceChangedConfirm")
             : t("place")}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

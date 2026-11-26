@@ -10,6 +10,7 @@ import { batchQtyAt, batchSelectable, keepValidBatches, variantsInStockAt } from
 import { cn } from "@/lib/utils";
 import { FEATURES } from "@/lib/features";
 import { VariantPicker, pickerIndex, pickerTextFor, type PickerText, type PickerVariant } from "@/components/admin/variant-picker";
+import { FormMessage } from "@/components/ui/form-message";
 
 type DocType = "RECEIVE" | "TRANSFER" | "ISSUE" | "ADJUST";
 type StockType = "SELLABLE" | "TESTER";
@@ -369,9 +370,9 @@ export function DocumentForm({ type, data, replace }: { type: DocType; data: For
       </div>
 
       {state?.error && (
-        <p role="alert" className="text-sm text-destructive">
+        <FormMessage>
           {t("error")}: {state.error}
-        </p>
+        </FormMessage>
       )}
       <Button size="lg" type="submit" disabled={pending}><Save aria-hidden /> {t("saveDraft")}</Button>
     </form>

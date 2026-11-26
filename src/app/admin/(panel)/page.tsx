@@ -11,7 +11,7 @@ import { catalogStats } from "@/server/catalog/stats";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Box, FileText, ImageOff, Package, ShieldCheck, Store, Tag, TriangleAlert } from "lucide-react";
-import { Badge, BlockSkeleton, DataTable, LinkButton, Notice, Page, PageHeader, Segmented, Stat, Td } from "@/components/admin/ui";
+import { Badge, BlockSkeleton, DataTable, LinkButton, Notice, Page, PageHeader, Section, Segmented, Stat, Td } from "@/components/admin/ui";
 import { LineChart } from "@/components/admin/charts";
 import { cn } from "@/lib/utils";
 import { PRODUCT_LABEL_TONE } from "@/components/admin/status-tones";
@@ -172,7 +172,7 @@ async function Exceptions({ showStock, showCatalog }: { showStock: boolean; show
         </div>
       )}
       {taskRows.length > 0 && (
-        <Card title={t("catalogExceptions", { n: taskRows.reduce((s, r) => s + r.n, 0) })} testId="catalog-tasks">
+        <Section title={t("catalogExceptions", { n: taskRows.reduce((s, r) => s + r.n, 0) })} testId="catalog-tasks">
           <ul className="divide-y text-sm">
             {taskRows.map((r) => (
               <li key={r.key}>
@@ -184,20 +184,8 @@ async function Exceptions({ showStock, showCatalog }: { showStock: boolean; show
               </li>
             ))}
           </ul>
-        </Card>
+        </Section>
       )}
-    </section>
-  );
-}
-
-function Card({ title, action, children, className, testId }: { title: string; action?: React.ReactNode; children: React.ReactNode; className?: string; testId?: string }) {
-  return (
-    <section className={cn("min-w-0 space-y-3 rounded-xl border bg-card p-4", className)} data-testid={testId}>
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="font-medium">{title}</h2>
-        {action}
-      </div>
-      {children}
     </section>
   );
 }
@@ -217,7 +205,7 @@ async function RecentActivity({ days, showStock }: { days: number; showStock: bo
       <h2 className="font-medium">{t("recent")}</h2>
       <div className={cn("grid gap-5", showStock && "lg:grid-cols-2")}>
         {showStock && (
-          <Card title={t("receiptsTitle")} action={<Link href="/admin/inventory/documents" className="-my-2 inline-flex min-h-10 items-center gap-1 text-sm text-primary">{t("viewAll")} <ArrowRight className="size-3.5" aria-hidden /></Link>} testId="recent-receipts">
+          <Section title={t("receiptsTitle")} actions={<Link href="/admin/inventory/documents" className="-my-2 inline-flex min-h-10 items-center gap-1 text-sm text-primary">{t("viewAll")} <ArrowRight className="size-3.5" aria-hidden /></Link>} testId="recent-receipts">
             {receipts.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t("receiptsEmpty")}</p>
             ) : (
@@ -240,9 +228,9 @@ async function RecentActivity({ days, showStock }: { days: number; showStock: bo
                 ))}
               </DataTable>
             )}
-          </Card>
+          </Section>
         )}
-        <Card title={t("recentTitle")} action={<Link href="/admin/products" className="-my-2 inline-flex min-h-10 items-center gap-1 text-sm text-primary">{t("viewAll")} <ArrowRight className="size-3.5" aria-hidden /></Link>} testId="recent-products">
+        <Section title={t("recentTitle")} actions={<Link href="/admin/products" className="-my-2 inline-flex min-h-10 items-center gap-1 text-sm text-primary">{t("viewAll")} <ArrowRight className="size-3.5" aria-hidden /></Link>} testId="recent-products">
           <ul className="divide-y">
             {recent.map((p) => (
               <li key={p.id} className="flex items-center gap-3 py-2">
@@ -258,11 +246,11 @@ async function RecentActivity({ days, showStock }: { days: number; showStock: bo
               </li>
             ))}
           </ul>
-        </Card>
+        </Section>
       </div>
-      <Card
+      <Section
         title={t("activityTitle", { days })}
-        action={
+        actions={
           <Segmented
             label={t("rangeLabel")}
             items={DASHBOARD_RANGES.map((d) => ({ href: d === DASHBOARD_RANGES[0] ? "/admin" : `/admin?range=${d}`, label: t("rangeDays", { n: d }), active: d === days }))}
@@ -279,7 +267,7 @@ async function RecentActivity({ days, showStock }: { days: number; showStock: bo
             { key: "submitted", label: t("series.submitted"), color: "var(--warning)", values: activity.map((a) => a.submitted) },
           ]}
         />
-      </Card>
+      </Section>
     </div>
   );
 }

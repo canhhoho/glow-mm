@@ -41,8 +41,8 @@ export function CtvNav({ items, variant = "tabs" }: { items: { href: string; lab
                   href={i.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex min-h-14 flex-col items-center justify-center gap-0.5 px-0.5 py-1.5 text-center text-[11px] leading-tight text-muted-foreground",
-                    active && "font-medium text-brand",
+                    "flex min-h-14 flex-col items-center justify-center gap-0.5 px-0.5 py-1.5 text-center text-2xs leading-tight text-muted-foreground",
+                    active && "font-medium text-primary",
                   )}
                 >
                   {Icon && (
