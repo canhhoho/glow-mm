@@ -8,13 +8,13 @@ import { localePrefix } from "@/lib/site";
 import { emailAuthEnabled } from "@/lib/env";
 import { AuthCard } from "@/components/store/auth-card";
 import { ForgotPasswordForm, PhoneResetRequestForm } from "@/components/store/auth-forms";
-import { BlockSkeleton } from "@/components/store/ui";
+import { PageSkeleton } from "@/components/ui/skeleton";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default function ForgotPasswordPage(props: PageProps<"/[locale]/forgot-password">) {
   return (
-    <Suspense fallback={<BlockSkeleton />}>
+    <Suspense fallback={<PageSkeleton />}>
       <ForgotContent {...props} />
     </Suspense>
   );

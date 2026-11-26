@@ -1,5 +1,7 @@
 # Kế hoạch refactor giao diện (theo UI_AUDIT.md)
 
+> **LỊCH SỬ** — quy chuẩn hiện hành: [docs/design-system.md](design-system.md) (26/11/2026). Giữ để tra cứu, không cập nhật.
+
 > Ngày: 2026-11-09 · Nhánh `dev` · Trạng thái: **chờ duyệt, chưa sửa code**.
 > Cơ sở: [UI_AUDIT.md](../UI_AUDIT.md) và quyết định 1A · 2A · 3A · 4A · 5A (mục 9 của audit).
 

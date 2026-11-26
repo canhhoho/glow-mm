@@ -1,5 +1,7 @@
 # Đồng bộ UI Admin — checklist (12/11/2026)
 
+> **LỊCH SỬ** — quy chuẩn hiện hành: [docs/design-system.md](design-system.md) (26/11/2026). Giữ để tra cứu, không cập nhật.
+
 Chuẩn: Tổng quan, Danh sách SP, Chi tiết SP (kế hoạch nằm trong thư mục kế hoạch của phiên làm việc).
 Quy ước ô: `☐` chưa làm/kiểm · `✔` đã làm và kiểm đúng nội dung cột · `—` không áp dụng. **Chỉ đánh ✔ sau khi thật sự kiểm.**
 

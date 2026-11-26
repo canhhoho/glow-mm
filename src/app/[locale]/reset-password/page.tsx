@@ -5,13 +5,14 @@ import { getPathname, Link } from "@/i18n/navigation";
 import type { StoreLocale } from "@/i18n/routing";
 import { AuthCard } from "@/components/store/auth-card";
 import { ResetPasswordForm } from "@/components/store/auth-forms";
-import { BlockSkeleton, Notice } from "@/components/store/ui";
+import { Notice } from "@/components/store/ui";
+import { PageSkeleton } from "@/components/ui/skeleton";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default function ResetPasswordPage(props: PageProps<"/[locale]/reset-password">) {
   return (
-    <Suspense fallback={<BlockSkeleton />}>
+    <Suspense fallback={<PageSkeleton />}>
       <ResetContent {...props} />
     </Suspense>
   );

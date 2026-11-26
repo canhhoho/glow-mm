@@ -8,7 +8,8 @@ import type { AddressCatalog } from "@/server/locations/locations";
 import { AddressPicker } from "../address-picker";
 import { useAddressLabels } from "./address-labels";
 import { changeCustomerPasswordAction, saveAddressAction, updateProfileAction } from "@/server/accounts/actions";
-import { Notice, outlineButton, primaryButton, storeField } from "./ui";
+import { Notice, outlineButton, primaryButton, storeField, storeLabel } from "./ui";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { cn } from "@/lib/utils";
 
 /** Form khu tài khoản khách (P14b) — Server Action, JS chỉ để hiện lỗi/trạng thái. */
@@ -41,11 +42,11 @@ export function AddressForm({
     <form action={action} className="space-y-3" data-testid="address-form">
       <input type="hidden" name="locale" value={locale} />
       {address && <input type="hidden" name="id" value={address.id} />}
-      <label className="block space-y-1 text-sm">
+      <label className={storeLabel}>
         <span>{t("recipientName")}</span>
         <input name="recipientName" required maxLength={100} autoComplete="name" defaultValue={address?.recipientName} className={storeField} />
       </label>
-      <label className="block space-y-1 text-sm">
+      <label className={storeLabel}>
         <span>{t("phone")}</span>
         <input
           name="phone"
@@ -58,12 +59,12 @@ export function AddressForm({
           className={storeField}
         />
       </label>
-      <label className="block space-y-1 text-sm">
+      <label className={storeLabel}>
         <span>{ta("phone2")}</span>
         <input name="phone2" type="tel" inputMode="tel" defaultValue={address?.phone2 ?? ""} className={storeField} />
       </label>
       <AddressPicker catalog={catalog} labels={labels} defaultTownshipId={address?.townshipId} fieldClass={storeField} />
-      <label className="block space-y-1 text-sm">
+      <label className={storeLabel}>
         <span>{t("line")}</span>
         <textarea
           name="line"
@@ -75,7 +76,7 @@ export function AddressForm({
           className={`${storeField} h-auto py-2`}
         />
       </label>
-      <label className="block space-y-1 text-sm">
+      <label className={storeLabel}>
         <span>{t("note")}</span>
         <input name="note" maxLength={300} defaultValue={address?.note ?? ""} className={storeField} />
       </label>
@@ -87,7 +88,7 @@ export function AddressForm({
       )}
       {state?.error && <Notice tone="danger">{state.error}</Notice>}
       <div className="flex gap-2">
-        <button type="submit" disabled={pending} className={cn(primaryButton, "flex-1")}><Save aria-hidden className="size-4 shrink-0" /> {t("save")}</button>
+        <SubmitButton pending={pending} icon={<Save aria-hidden className="size-4 shrink-0" />} className={cn(primaryButton, "flex-1")}>{t("save")}</SubmitButton>
         {address && (
           <Link href="/account/addresses" className={outlineButton}>
             {t("cancel")}
@@ -104,13 +105,13 @@ export function ProfileForm({ locale, name }: { locale: string; name: string }) 
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="locale" value={locale} />
-      <label className="block space-y-1 text-sm">
+      <label className={storeLabel}>
         <span>{t("name")}</span>
         <input name="name" required maxLength={100} autoComplete="name" defaultValue={name} className={storeField} />
       </label>
       {state?.error && <Notice tone="danger">{state.error}</Notice>}
       {state?.ok && <Notice tone="success">{t("saved")}</Notice>}
-      <button type="submit" disabled={pending} className={primaryButton}><Save aria-hidden className="size-4 shrink-0" /> {t("save")}</button>
+      <SubmitButton pending={pending} icon={<Save aria-hidden className="size-4 shrink-0" />} className={primaryButton}>{t("save")}</SubmitButton>
     </form>
   );
 }
@@ -119,7 +120,7 @@ export function ChangePasswordForm({ locale }: { locale: string }) {
   const t = useTranslations("Account");
   const [state, action, pending] = useActionState(changeCustomerPasswordAction, undefined);
   const field = (name: string, label: string, autoComplete: string) => (
-    <label className="block space-y-1 text-sm">
+    <label className={storeLabel}>
       <span>{label}</span>
       <input name={name} type="password" required maxLength={128} autoComplete={autoComplete} className={storeField} />
     </label>
@@ -132,9 +133,9 @@ export function ChangePasswordForm({ locale }: { locale: string }) {
       {field("confirmPassword", t("confirmPassword"), "new-password")}
       {state?.error && <Notice tone="danger">{state.error}</Notice>}
       {state?.ok && <Notice tone="success">{t("passwordChanged")}</Notice>}
-      <button type="submit" disabled={pending} className={primaryButton}>
+      <SubmitButton pending={pending} className={primaryButton}>
         {t("changePassword")}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

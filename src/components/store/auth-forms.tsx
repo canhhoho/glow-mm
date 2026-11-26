@@ -4,7 +4,8 @@ import { startTransition, useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import { customerAuthClient } from "@/lib/customer-auth-client";
 import { phoneRegisterAction, phoneSignInAction, requestPasswordResetAction } from "@/server/accounts/actions";
-import { Notice, primaryButton, storeField } from "./ui";
+import { Notice, primaryButton, storeField, storeLabel } from "./ui";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { PasswordToggle } from "@/components/ui/password-toggle";
 
 /**
@@ -39,7 +40,7 @@ function PasswordInput({ name, autoComplete, label }: { name: string; autoComple
   const t = useTranslations("Auth");
   const [show, setShow] = useState(false);
   return (
-    <label className="block space-y-1 text-sm">
+    <label className={storeLabel}>
       <span>{label}</span>
       <span className="relative block">
         <input
@@ -60,7 +61,7 @@ function PasswordInput({ name, autoComplete, label }: { name: string; autoComple
 function EmailInput() {
   const t = useTranslations("Auth");
   return (
-    <label className="block space-y-1 text-sm">
+    <label className={storeLabel}>
       <span>{t("email")}</span>
       <input name="email" type="email" required maxLength={200} autoComplete="email" inputMode="email" className={storeField} />
     </label>
@@ -108,7 +109,7 @@ export function LoginForm({ prefix, next, emailEnabled }: { prefix: string; next
 
   return (
     <form onSubmit={onSubmit} className="space-y-3">
-      <label className="block space-y-1 text-sm">
+      <label className={storeLabel}>
         <span>{t(emailEnabled ? "emailOrPhone" : "phone")}</span>
         <input
           name="identifier"
@@ -123,9 +124,9 @@ export function LoginForm({ prefix, next, emailEnabled }: { prefix: string; next
       </label>
       <PasswordInput name="password" autoComplete="current-password" label={t("password")} />
       {error && <Notice tone="danger">{t(`err.${error}`, { min: 8 })}</Notice>}
-      <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
+      <SubmitButton pending={pending} className={`${primaryButton} w-full`}>
         {t("submitLogin")}
-      </button>
+      </SubmitButton>
     </form>
   );
 }
@@ -145,11 +146,11 @@ export function PhoneRegisterForm({ locale, next }: { locale: string; next: stri
     <form onSubmit={onSubmit} className="space-y-3">
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="next" value={next} />
-      <label className="block space-y-1 text-sm">
+      <label className={storeLabel}>
         <span>{t("name")}</span>
         <input name="name" required maxLength={100} autoComplete="name" className={storeField} />
       </label>
-      <label className="block space-y-1 text-sm">
+      <label className={storeLabel}>
         <span>{t("phone")}</span>
         <input
           name="phone"
@@ -166,9 +167,9 @@ export function PhoneRegisterForm({ locale, next }: { locale: string; next: stri
       <p className="-mt-2 text-xs text-muted-foreground">{t("passwordHint")}</p>
       <PasswordInput name="confirmPassword" autoComplete="new-password" label={t("confirmPassword")} />
       {state?.error && <Notice tone="danger">{t(`err.${state.error}`, { min: 8 })}</Notice>}
-      <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
+      <SubmitButton pending={pending} className={`${primaryButton} w-full`}>
         {t("submitRegister")}
-      </button>
+      </SubmitButton>
     </form>
   );
 }
@@ -201,7 +202,7 @@ export function RegisterForm({ prefix, next }: { prefix: string; next: string })
   if (sentTo) return <Notice tone="success">{t("checkEmail", { email: sentTo })}</Notice>;
   return (
     <form onSubmit={onSubmit} className="space-y-3">
-      <label className="block space-y-1 text-sm">
+      <label className={storeLabel}>
         <span>{t("name")}</span>
         <input name="name" required maxLength={100} autoComplete="name" className={storeField} />
       </label>
@@ -210,9 +211,9 @@ export function RegisterForm({ prefix, next }: { prefix: string; next: string })
       <p className="-mt-2 text-xs text-muted-foreground">{t("passwordHint")}</p>
       <PasswordInput name="confirmPassword" autoComplete="new-password" label={t("confirmPassword")} />
       {error && <Notice tone="danger">{t(`err.${error}`, { min: 8 })}</Notice>}
-      <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
+      <SubmitButton pending={pending} className={`${primaryButton} w-full`}>
         {t("submitRegister")}
-      </button>
+      </SubmitButton>
     </form>
   );
 }
@@ -232,7 +233,7 @@ export function PhoneResetRequestForm() {
   if (state?.ok) return <Notice tone="success">{t("resetRequested")}</Notice>;
   return (
     <form onSubmit={onSubmit} className="space-y-3">
-      <label className="block space-y-1 text-sm">
+      <label className={storeLabel}>
         <span>{t("phone")}</span>
         <input
           name="phone"
@@ -249,9 +250,9 @@ export function PhoneResetRequestForm() {
       <p className="-mt-2 text-xs text-muted-foreground">{t("passwordHint")}</p>
       <PasswordInput name="confirmPassword" autoComplete="new-password" label={t("confirmPassword")} />
       {state?.error && <Notice tone="danger">{t(`err.${state.error}`, { min: 8 })}</Notice>}
-      <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
+      <SubmitButton pending={pending} className={`${primaryButton} w-full`}>
         {t("submitResetRequest")}
-      </button>
+      </SubmitButton>
     </form>
   );
 }
@@ -278,9 +279,9 @@ export function ForgotPasswordForm({ prefix }: { prefix: string }) {
     <form onSubmit={onSubmit} className="space-y-3">
       <EmailInput />
       {error && <Notice tone="danger">{t(`err.${error}`, { min: 8 })}</Notice>}
-      <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
+      <SubmitButton pending={pending} className={`${primaryButton} w-full`}>
         {t("sendLink")}
-      </button>
+      </SubmitButton>
     </form>
   );
 }
@@ -320,9 +321,9 @@ export function ResetPasswordForm({ token, loginHref }: { token: string; loginHr
       <p className="-mt-2 text-xs text-muted-foreground">{t("passwordHint")}</p>
       <PasswordInput name="confirmPassword" autoComplete="new-password" label={t("confirmPassword")} />
       {error && <Notice tone="danger">{t(`err.${error}`, { min: 8 })}</Notice>}
-      <button type="submit" disabled={pending} className={`${primaryButton} w-full`}>
+      <SubmitButton pending={pending} className={`${primaryButton} w-full`}>
         {t("savePassword")}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

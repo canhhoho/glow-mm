@@ -62,7 +62,9 @@
   },
   "NotFound": {
     "title": "Page not found",
-    "back": "Back to home"
+    "back": "Back to home",
+    "hint": "The link may be wrong or the page was removed.",
+    "search": "Search products"
   },
   "Catalog": {
     "all": "All products",
@@ -405,5 +407,11 @@
     "chooseTownship": "Choose township",
     "phone2": "Alternative phone (optional)",
     "shippingNote": "Product total is paid to the shop. Shipping fee is paid directly to the courier upon delivery; cost and delivery time vary by region."
+  },
+  "Error": {
+    "title": "Something went wrong",
+    "hint": "Please try again. If it keeps failing, contact the shop.",
+    "retry": "Try again",
+    "home": "Back to home"
   }
 }

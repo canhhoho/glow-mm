@@ -106,7 +106,9 @@ test("CTV tự lên đơn cho khách; không xem được đơn không phải c�
   // (Cổng CTV render dạng stream sau khi kiểm tra phiên nên mã HTTP vẫn 200, giống trang admin.)
   const other = await orderIdByKey("seed-demo-5");
   await page.goto(`/ctv/orders/${other}`);
-  await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
+  // 26/11/2026: 404 nằm trong khung CTV (NotFoundState: "404" + tiêu đề + nút về Tổng quan) thay cho trang 404 mặc định.
+  await expect(page.getByRole("heading", { level: 1, name: "Không tìm thấy trang" })).toBeVisible();
+  await expect(page.getByTestId("ctv-bottom-nav")).toBeVisible();
   await expect(page.getByText("Ma Su")).toHaveCount(0);
 });
 

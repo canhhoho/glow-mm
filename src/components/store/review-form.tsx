@@ -3,7 +3,8 @@
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { submitReviewAction } from "@/server/reviews/actions";
-import { Notice, outlineButton, storeField } from "./ui";
+import { Notice, outlineButton, storeField, storeLabel } from "./ui";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 /** Đánh giá 1 sản phẩm trong đơn đã giao: 1–5 sao (radio, không cần JS để chọn) + nhận xét. */
 export function ReviewForm({ locale, code, productId, name }: { locale: string; code: string; productId: string; name: string }) {
@@ -28,14 +29,14 @@ export function ReviewForm({ locale, code, productId, name }: { locale: string; 
           </label>
         ))}
       </fieldset>
-      <label className="block space-y-1 text-sm">
+      <label className={storeLabel}>
         <span className="text-muted-foreground">{t("body")}</span>
         <textarea name="body" rows={2} maxLength={1000} className={`${storeField} h-auto py-2`} />
       </label>
       {state?.error && <Notice tone="danger">{state.error}</Notice>}
-      <button type="submit" disabled={pending} className={outlineButton}>
+      <SubmitButton pending={pending} className={outlineButton}>
         {t("submit")}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

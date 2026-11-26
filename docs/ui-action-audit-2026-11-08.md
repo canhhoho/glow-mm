@@ -1,5 +1,7 @@
 # Rà soát nút thao tác — 08/11/2026
 
+> **LỊCH SỬ** — quy chuẩn hiện hành: [docs/design-system.md](design-system.md) (26/11/2026). Giữ để tra cứu, không cập nhật.
+
 Đã áp dụng quy tắc hiển thị: lưu biểu mẫu và thao tác hàng loạt dùng icon kèm chữ; sửa/xóa/khóa theo dòng dùng icon đơn. Nút thêm mới và thao tác ở khối chi tiết giữ icon kèm chữ.
 
 Đối chiếu mã nguồn sau thay đổi: **93/93 vị trí** theo quy tắc đã chọn — **31 chỉ icon**, **62 icon kèm chữ**, **0 chỉ chữ** trong phạm vi thống kê. Đây không phải số nút thực tế sau khi nhân số dòng dữ liệu.

@@ -10,15 +10,18 @@ import { requireCustomer } from "@/server/auth/customer-session";
 import { addressCatalog } from "@/server/locations/cached";
 import { AccountShell } from "@/components/store/account-shell";
 import { AddressForm } from "@/components/store/account-forms";
-import { BlockSkeleton, Notice, storeCard } from "@/components/store/ui";
+import { Notice, storeCard } from "@/components/store/ui";
+import { PageSkeleton } from "@/components/ui/skeleton";
 import { ConfirmSubmitButton } from "@/components/ui/confirm-submit";
 import { buttonVariants } from "@/components/ui/button-variants";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default function AddressesPage(props: PageProps<"/[locale]/account/addresses">) {
   return (
-    <Suspense fallback={<BlockSkeleton />}>
+    <Suspense fallback={<PageSkeleton />}>
       <AddressesContent {...props} />
     </Suspense>
   );
@@ -43,7 +46,7 @@ async function AddressesContent({ params, searchParams }: PageProps<"/[locale]/a
     <AccountShell user={user} locale={locale} active="addresses">
       <h2 className="font-medium">{t("addressesTitle")}</h2>
       {saved && <Notice tone="success">{t("saved")}</Notice>}
-      {addresses.length === 0 && <p className="text-sm text-muted-foreground">{t("noAddresses")}</p>}
+      {addresses.length === 0 && <EmptyState>{t("noAddresses")}</EmptyState>}
       <ul className="space-y-2">
         {addresses.map((a) => (
           <li key={a.id} className={`${storeCard} space-y-2 text-sm`} data-testid="address">
@@ -51,7 +54,7 @@ async function AddressesContent({ params, searchParams }: PageProps<"/[locale]/a
               <span className="font-medium">{a.recipientName}</span>
               <span>{a.phone}</span>
               {a.phone2 && <span>· {a.phone2}</span>}
-              {a.isDefault && <span className="rounded bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">{t("default")}</span>}
+              {a.isDefault && <Badge tone="success">{t("default")}</Badge>}
             </p>
             <p>
               {a.line}

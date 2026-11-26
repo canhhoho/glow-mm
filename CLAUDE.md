@@ -6,9 +6,11 @@ Web bán mỹ phẩm B2C **T&C Cosmetics** (tên cũ Glow VN) nhập từ Việt
 |---|---|
 | Kiến trúc, quy tắc kho/giá/nhập hàng chi tiết, hạ tầng, i18n, auth, cache | [docs/kien-truc.md](docs/kien-truc.md) |
 | Sửa giá/kho/đơn/hoa hồng: điểm vào, hàm domain, nơi đọc/ghi | [docs/ban-do-nghiep-vu-admin.md](docs/ban-do-nghiep-vu-admin.md) |
+| **Giao diện**: token, component dùng chung, quy chuẩn UI 3 portal (đọc trước khi tạo/sửa UI) | [docs/design-system.md](docs/design-system.md) |
 | Hướng dẫn người dùng (admin / CTV) | [docs/huong-dan-van-hanh-admin.md](docs/huong-dan-van-hanh-admin.md), [docs/huong-dan-cong-ctv.md](docs/huong-dan-cong-ctv.md) |
 | Triển khai server `10.201.42.65` (tandcstore.com, Docker Compose, **không** Coolify) | [docs/lenh-trien-khai-tandcstore.md](docs/lenh-trien-khai-tandcstore.md), [docs/huong-dan-trien-khai-tandcstore.md](docs/huong-dan-trien-khai-tandcstore.md), [DEPLOY.md](DEPLOY.md) (§2 Coolify chỉ là lịch sử) |
-| Kế hoạch / phase | [PLAN.md](PLAN.md) |
+| **Trạng thái hiện tại, việc dở, bước tiếp theo** (đọc đầu phiên) · kế hoạch / phase | [PLAN.md](PLAN.md) mục đầu |
+| Trợ lý AI (OpenClaw, cổng MCP, token, công cụ) | [docs/ket-noi-tro-ly-ai.md](docs/ket-noi-tro-ly-ai.md); workspace agent: repo private `canhhoho/tc-cosmetics-agent` |
 
 ## Cách làm việc
 - Trả lời **tiếng Việt**, dễ hiểu, ngắn gọn. Điều chưa xác minh (luật/dịch vụ/thư viện Myanmar, hành vi chưa chạy thử) ghi **[CẦN XÁC MINH]**, không tự giả định.
@@ -17,6 +19,8 @@ Web bán mỹ phẩm B2C **T&C Cosmetics** (tên cũ Glow VN) nhập từ Việt
 - **Truy vết trước khi sửa nghiệp vụ:** liệt kê điểm vào và nơi đọc/ghi — trang chính/con, form, Excel, thao tác hàng loạt, API/server action, hàm domain, DB, cache, web khách — bằng bản đồ nghiệp vụ + grep mọi đường ghi cột/hàm đó. Sửa nhất quán cả chuỗi, không chỉ vá một màn hình; cập nhật bản đồ trong cùng commit.
 - **Tái sử dụng:** mỗi nghiệp vụ có **một trang chính + một hàm domain**; trang/nút khác chỉ là lối tắt gọi action/hàm sẵn có (giữ lối tắt hữu ích). Không chép form/schema/công thức/component — dùng lại.
 - **Tiếp tục sau gián đoạn:** trước khi chạy lại, xem `git status` + `git log`, log/kết quả test gần nhất và tác vụ nền đang chạy; không chạy lại thứ đã xong.
+- **Hai máy (Myanmar / Việt Nam), mỗi lúc một máy:** đầu phiên `git status` + `git stash list` rồi `git pull` `dev`; cuối phiên push `dev` + cập nhật mục "Trạng thái hiện tại" ở đầu PLAN.md (chỉ khi người dùng yêu cầu push). Ghi nhớ của Claude không đồng bộ giữa máy → quy tắc lâu dài ghi vào file này. **Máy VN** (26/11/2026): không có Docker (DISM của Windows hỏng, không bật được WSL2) → PostgreSQL 17 cài thẳng (dịch vụ `postgresql-x64-17`, cổng 15432, user/DB như docker-compose); bỏ qua `docker compose`. npm 11.19 ở máy này chặn script cài đặt → sau `npm ci`/`npm install` chạy `npx prisma generate`.
+- **Worktree:** không tạo junction/symlink `node_modules` vào worktree (`git worktree remove --force` từng xoá sạch `node_modules` chính). Cần so sánh bản cũ: worktree có `npm ci` riêng hoặc `git stash`.
 - **Tài liệu:** mỗi thông tin một nguồn; giữ ngắn; không tạo bản `v01/v02`; không cập nhật nhiều file cho việc nhỏ. Hành vi đổi → cập nhật hướng dẫn vận hành + bản đồ nghiệp vụ; quyết định/bàn giao đáng lưu → thêm vào `docs/kien-truc.md` (hoặc PLAN.md nếu là phase). Tài liệu cũ **không** đúng hơn code đã kiểm chứng.
 - **Báo cáo test** luôn đủ 4 dòng: Đạt / Lỗi / Bỏ qua / Không chạy (kèm lý do); phần chỉ suy luận ghi rõ "chưa chạy".
 
@@ -39,9 +43,9 @@ npm run db:migrate                    # prisma migrate dev; db:deploy = migrate 
 npm run db:seed                       # dữ liệu mẫu + tài khoản *@glow.local (db:seed:demo / db:seed:placeholders: chỉ DB dev)
 npm run dev                           # http://localhost:3000 (storefront) · /admin
 npm run check                         # NHANH: lint + typecheck + vitest unit — mặc định sau mỗi thay đổi
-npm run test:int                      # vitest integration (DB glow_test, cần docker)
+npm run test:int                      # vitest integration (DB glow_test, cần Postgres localhost:15432)
 npm run test:e2e                      # Playwright (build standalone, cổng 3100); npm test = tất cả
-npm run db:test:fresh                 # xoá + tạo lại glow_test (chỉ localhost:15432/glow_test) rồi migrate + seed
+npm run db:test:fresh                 # xoá + tạo lại glow_test (chỉ localhost:15432/glow_test, nối thẳng pg — có/không Docker đều chạy) rồi migrate + seed
 npm run test:e2e:fresh                # làm sạch glow_test rồi chạy E2E — dùng cho full E2E trên máy (glow_test tích luỹ dữ liệu làm E2E timeout)
 npm run data:check                    # kiểm dữ liệu; db:backfill-lot-cost: bổ sung giá vốn lô cũ (mặc định chạy thử)
 npm run i18n:export | i18n:import -- file.csv    # trao đổi bản dịch my qua CSV
@@ -74,7 +78,7 @@ Tài khoản seed: `admin@` / `kho@` / `donhang@glow.local` (admin), `ctv@glow.l
 - Component/layout dùng chung (`src/components/*`, layout, `globals.css`, `messages/*`, `proxy.ts`, `lib/csp.ts`): grep nơi import → chạy spec mọi trang bị ảnh hưởng (mobile + desktop nếu có).
 - **Đổi UI → xem trực quan** (preview/screenshot hoặc spec có kiểm hiển thị), không chỉ dựa vào type/lint.
 - **Full E2E** (`npm test`; hoặc job `e2e` CI chạy tay/PR vào `main`/hằng tuần) bắt buộc trước khi merge `main`/phát hành và cho thay đổi rủi ro cao: kho/ledger/FEFO, state-machine đơn, checkout, auth/RBAC/rate limit, migration Prisma, CSP/proxy, env. **Full E2E xanh ở local (DB trắng, mobile + desktop, báo cáo 4 dòng) được coi là đạt — không đợi thêm job `e2e` của CI.**
-- Không có staging. **Deploy tự động (17/11/2026):** push `main` → CI `check` + `e2e` xanh → job `release` gắn tag `release-YYYYMMDD-HHMM` (UTC) → job `deploy` trên runner self-hosted gọi wrapper root `ops/tandc-deploy` → `ops/deploy.sh --yes` (backup khi có migration, health, smoke). Tối ưu (18/11/2026): `e2e` chia 3 shard song song; merge PR mà cây code giống hệt đầu PR đã xanh `check`+`e2e` → bỏ chạy lại, deploy ngay; chỉ sửa tài liệu (`docs/**`, `*.md` gốc, `README.md`) → không check/e2e/deploy. Không tự rollback; rollback = Actions → CI → Run workflow `rollback_tag` (runbook PHẦN 4). Sửa `ops/tandc-deploy`/`ops/sudoers-tandc-deploy` phải cài lại tay trên server.
+- Không có staging. **Push `main` = deploy production tự động** (CI `check`+`e2e` → tag `release-*` → `ops/tandc-deploy`; chi tiết + rollback `rollback_tag`: [docs/lenh-trien-khai-tandcstore.md](docs/lenh-trien-khai-tandcstore.md)). Chỉ sửa tài liệu (`docs/**`, `*.md` gốc, `README.md`) → không check/e2e/deploy; merge PR có cây code giống hệt đầu PR đã xanh → bỏ chạy lại, deploy ngay. Không tự rollback. Sửa `ops/tandc-deploy`/`ops/sudoers-tandc-deploy` phải cài lại tay trên server.
 
 ## Git
 - Làm việc trên `dev`; `main` chỉ chứa code đã test; merge `main` khi `check` xanh và đã có full E2E xanh (mục trên). Commit sau mỗi bước hoàn thành, kèm dòng `Co-Authored-By` theo hướng dẫn của hệ thống.

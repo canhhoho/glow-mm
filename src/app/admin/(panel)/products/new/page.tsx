@@ -7,6 +7,7 @@ import { Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fieldClass, fieldLabelClass, LinkButton, Page, PageHeader } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
+import { FormMessage } from "@/components/ui/form-message";
 
 /**
  * Bước 1 "Tạo sản phẩm" (5 ô) — `?type=combo` tạo combo; `?copyFrom=<id>` điền sẵn từ SP cũ (không chép giá).
@@ -57,7 +58,7 @@ export default async function NewProductPage({ searchParams }: PageProps<"/admin
           <Button type="submit" size="lg" variant="outline" disabled={sources.length === 0}><Copy aria-hidden />{t("copyLoad")}</Button>
         </form>
         <p className="mt-2 text-sm text-muted-foreground">{t("create.copyHelp")}</p>
-        {source && <p role="status" className="mt-2 text-sm text-success">{t("copyLoaded", { name: source.en.name || source.my.name || source.slug })}</p>}
+        {source && <FormMessage tone="success" className="mt-2">{t("copyLoaded", { name: source.en.name || source.my.name || source.slug })}</FormMessage>}
       </details>
       <ProductCreateForm key={`${kind}-${sourceId}`} kind={kind} options={options} prefill={prefill} />
     </Page>

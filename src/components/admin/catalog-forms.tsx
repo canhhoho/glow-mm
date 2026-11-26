@@ -6,15 +6,16 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { fieldClass, fieldLabelClass } from "@/components/admin/ui";
 import { createCategoryAction } from "@/server/catalog/actions";
+import { FormMessage } from "@/components/ui/form-message";
 
 function Feedback({ error, ok }: { error?: string; ok?: string }) {
   const t = useTranslations("Products");
   const td = useTranslations("Docs");
   if (error)
     return (
-      <p role="alert" className="text-sm text-destructive">
+      <FormMessage>
         {td("error")}: {error}
-      </p>
+      </FormMessage>
     );
   return ok ? <p className="text-sm text-success">{t("added")}</p> : null;
 }

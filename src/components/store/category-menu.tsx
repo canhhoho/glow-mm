@@ -7,6 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { CATALOG_TAG } from "@/server/catalog/category-tree";
 import { listCategoryTree } from "@/server/catalog/queries";
 import { CloseOnNavigate } from "./close-on-navigate";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /** Cây danh mục dùng chung cho mọi request theo locale (admin đổi catalog → updateTag). */
 async function cachedTree(locale: string) {
@@ -100,7 +101,7 @@ export async function CategoryMenu({ locale }: { locale: string }) {
             </Link>
           </li>
         </ul>
-        <Suspense fallback={<div className="h-44 animate-pulse bg-accent" aria-hidden />}>
+        <Suspense fallback={<Skeleton className="h-44 rounded-none" />}>
           <CategoryTree locale={locale} />
         </Suspense>
       </nav>

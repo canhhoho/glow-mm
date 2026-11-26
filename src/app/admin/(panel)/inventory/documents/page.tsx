@@ -5,7 +5,7 @@ import { can } from "@/server/auth/roles";
 import { datePresetItems, optionalRange, presetLabels } from "@/lib/date-range";
 import { DOC_PAGE_SIZE, DOC_TYPES, isDocType, listDocuments } from "@/server/inventory/queries";
 import { LocationName, NewDocMenu } from "@/components/admin/stock-parts";
-import { Badge, ClearFilters, DataTable, DateRangeFields, fieldClass, FilterBar, FilterButton, Page, PageHeader, PageNumbers, SearchInput, TabNav, Td } from "@/components/admin/ui";
+import { Badge, ClearFilters, DataTable, DateRangeFields, fieldClass, FilterBar, FilterButton, Notice, Page, PageHeader, PageNumbers, SearchInput, TabNav, Td } from "@/components/admin/ui";
 import { fmtDate } from "@/lib/format";
 
 const STATUS_TONE = { DRAFT: "warning", POSTED: "success", CANCELLED: "neutral" } as const;
@@ -43,7 +43,7 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/admin/
         title={t("title")}
         actions={<NewDocMenu role={user.role} label={t("new")} td={t} />}
       />
-      {split > 1 && status === "DRAFT" && <p role="status" data-testid="receive-split-notice" className="rounded-md bg-success-muted px-3 py-2 text-sm text-success">{t("splitNotice", { n: split })}</p>}
+      {split > 1 && status === "DRAFT" && <Notice tone="success" data-testid="receive-split-notice">{t("splitNotice", { n: split })}</Notice>}
       <TabNav label={t("status")} tabs={(["POSTED", "DRAFT"] as const).map((s) => ({
         href: href({ status: s === "DRAFT" ? "DRAFT" : undefined, page: undefined }), active: status === s, label: t(s),
       }))} />

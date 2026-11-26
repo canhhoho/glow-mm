@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import type { ActionState } from "@/server/inventory/actions";
 import { confirmOrPrevent } from "@/lib/confirm";
+import { FormMessage } from "@/components/ui/form-message";
 
 /** Nút gửi một server action đơn giản (kèm hidden fields), hiện lỗi nếu có. */
 export function ActionButton({
@@ -49,9 +50,9 @@ export function ActionButton({
         {icon && iconOnly ? <span className="sr-only">{label}</span> : label}
       </Button>
       {state?.error && (
-        <p role="alert" className="max-w-md text-sm text-destructive">
+        <FormMessage className="max-w-md">
           {t("error")}: {state.error}
-        </p>
+        </FormMessage>
       )}
     </form>
   );

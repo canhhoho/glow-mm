@@ -5,8 +5,8 @@ import { useTranslations } from "next-intl";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { submitApplicationAction } from "@/server/affiliates/portal-actions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FIELD } from "@/components/ui/field";
+import { Field } from "@/components/ui/form-field";
 import { Notice } from "@/components/ui/notice";
 
 /** Form đăng ký làm CTV qua link mời. Gửi xong chỉ hiện thông báo chờ duyệt (chưa đăng nhập được). */
@@ -24,7 +24,6 @@ export function JoinForm({ invite, minPassword }: { invite: string; minPassword:
     );
   }
 
-  const field = "h-11 bg-card";
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="invite" value={invite} />
@@ -44,9 +43,8 @@ export function JoinForm({ invite, minPassword }: { invite: string; minPassword:
           ["confirmPassword", "password", "new-password"],
         ] as const
       ).map(([name, type, autoComplete]) => (
-        <div key={name} className="space-y-1.5">
-          <Label htmlFor={`join-${name}`}>{t(name)}</Label>
-          <Input
+        <Field key={name} label={t(name)} density="touch">
+          <input
             id={`join-${name}`}
             name={name}
             type={type}
@@ -55,9 +53,9 @@ export function JoinForm({ invite, minPassword }: { invite: string; minPassword:
             inputMode={type === "tel" ? "tel" : undefined}
             minLength={name.toLowerCase().includes("password") ? minPassword : undefined}
             maxLength={name === "email" ? 200 : 128}
-            className={field}
+            className={FIELD.touch}
           />
-        </div>
+        </Field>
       ))}
       <p className="text-xs text-muted-foreground">{t("passwordHint", { min: minPassword })}</p>
       {state?.error && (

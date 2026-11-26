@@ -2,6 +2,19 @@ import Link from "next/link";
 import { ArrowLeft, ChevronRight, Eye, Pencil, Plus, Search } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { FIELD } from "@/components/ui/field";
+import { Badge, TONES } from "@/components/ui/badge";
+import { FIELD_LABEL } from "@/components/ui/form-field";
+
+/*
+ * Primitive dùng chung ba portal nằm ở `components/ui/` (docs/design-system.md); file này re-export để trang admin/CTV
+ * import một chỗ, và chỉ định nghĩa phần riêng admin/CTV (Page, PageHeader, Section, DataTable, FilterBar, Stat…).
+ */
+export { Badge, TONES } from "@/components/ui/badge";
+export { Field } from "@/components/ui/form-field";
+export { EmptyState } from "@/components/ui/empty-state";
+export { BlockSkeleton } from "@/components/ui/skeleton";
+export { PageNumbers } from "@/components/ui/pagination";
+export { FormMessage } from "@/components/ui/form-message";
 import { cn } from "@/lib/utils";
 
 /** Khối giao diện nhỏ dùng chung cho các trang admin (server components). */
@@ -325,40 +338,14 @@ export function Td({ children, className, label, numeric = false }: { children?:
   );
 }
 
-export const TONES = {
-  neutral: "bg-muted text-muted-foreground",
-  success: "bg-success-muted text-success-foreground",
-  warning: "bg-warning-muted text-warning-foreground",
-  danger: "bg-danger-muted text-danger-foreground",
-  brand: "bg-primary/10 text-primary",
-} as const;
-
-export function Badge({ tone = "neutral", children }: { tone?: keyof typeof TONES; children: React.ReactNode }) {
-  return <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap", TONES[tone])}>{children}</span>;
-}
-
 /** Ô nhập admin cao 36px (h-9) — nút cạnh ô dùng `size="lg"` (cũng h-9) để thẳng hàng. */
 export const fieldClass = FIELD.compact;
 
-/**
- * Nhãn trường: chữ nằm TRÊN ô (grid). Không dùng `space-y-1` — span + ô inline sẽ đứng cạnh nhau khi ô không `w-full`.
- * Chữ nhãn (span đầu tiên) luôn màu phụ — mọi form cùng một kiểu, kể cả nơi quên đặt màu cho span.
- */
-export const fieldLabelClass = "grid content-start gap-1 text-sm [&>span:first-child]:text-muted-foreground";
+/** Nhãn trường admin/CTV (chữ nhãn màu phụ) — xem `FIELD_LABEL` trong `components/ui/form-field`. */
+export const fieldLabelClass = FIELD_LABEL.compact;
 
 /** Nhãn nhỏ (text-xs) cho form dày đặc: dòng nhập lô, bảng nhập nhiều cột. */
-export const fieldLabelSmClass = "grid content-start gap-1 text-xs [&>span:first-child]:text-muted-foreground";
-
-/** Ô form có nhãn phía trên (chữ nhãn màu phụ). `hint` = dòng gợi ý nhỏ dưới ô. */
-export function Field({ label, hint, className, children }: { label: React.ReactNode; hint?: React.ReactNode; className?: string; children: React.ReactNode }) {
-  return (
-    <label className={cn(fieldLabelClass, className)}>
-      <span className="text-muted-foreground">{label}</span>
-      {children}
-      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
-    </label>
-  );
-}
+export const fieldLabelSmClass = FIELD_LABEL.compactSm;
 
 /** Ô chỉ số không icon (báo cáo, hàng đợi): cùng khung với `StatCard`; `tone` tô số khi cần chú ý; có `href` thì bấm được. */
 export function Stat({
@@ -461,75 +448,6 @@ export function StatCard({
   );
 }
 
-/**
- * Phân trang số trang (P3): « 1 2 3 … n » + trạng thái "Hiển thị a–b trên n" + cỡ trang (link). Không cần JS.
- */
-export function PageNumbers({
-  page,
-  pageCount,
-  pageSize,
-  pageSizes,
-  status,
-  sizeLabel,
-  prevLabel,
-  nextLabel,
-  href,
-}: {
-  page: number;
-  pageCount: number;
-  pageSize: number;
-  /** Không truyền → ẩn bộ chọn cỡ trang (trang có cỡ cố định). */
-  pageSizes?: readonly number[];
-  status: React.ReactNode;
-  sizeLabel?: string;
-  prevLabel: string;
-  nextLabel: string;
-  href: (page: number, size?: number) => string;
-}) {
-  const near = new Set([1, pageCount, page - 1, page, page + 1].filter((p) => p >= 1 && p <= pageCount));
-  const pages = [...near].sort((a, b) => a - b);
-  const btn = cn(focusRing, "inline-flex size-9 items-center justify-center rounded-md border text-sm tabular-nums");
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3 text-sm" data-testid="pager">
-      <span className="text-muted-foreground" data-testid="page-info">{status}</span>
-      <div className="flex flex-wrap items-center gap-3">
-        {pageSizes && pageSizes.length > 1 && (
-        <span className="flex items-center gap-1 text-muted-foreground">
-          {sizeLabel}
-          {pageSizes.map((s) => (
-            <Link key={s} href={href(1, s)} aria-current={s === pageSize ? "true" : undefined} className={cn(focusRing, "rounded px-1.5 py-0.5 tabular-nums", s === pageSize ? "bg-muted font-medium text-foreground" : "hover:text-foreground")}>
-              {s}
-            </Link>
-          ))}
-        </span>
-        )}
-        {pageCount > 1 && (
-          <nav aria-label={status ? String(status) : undefined} className="flex items-center gap-1">
-            {page > 1 ? (
-              <Link href={href(page - 1)} className={btn} aria-label={prevLabel}>‹</Link>
-            ) : (
-              <span className={cn(btn, "opacity-40")} aria-hidden>‹</span>
-            )}
-            {pages.map((p, i) => (
-              <span key={p} className="flex items-center gap-1">
-                {i > 0 && p - pages[i - 1] > 1 && <span className="px-1 text-muted-foreground">…</span>}
-                <Link href={href(p)} aria-current={p === page ? "page" : undefined} className={cn(btn, p === page ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted")}>
-                  {p}
-                </Link>
-              </span>
-            ))}
-            {page < pageCount ? (
-              <Link href={href(page + 1)} className={btn} aria-label={nextLabel}>›</Link>
-            ) : (
-              <span className={cn(btn, "opacity-40")} aria-hidden>›</span>
-            )}
-          </nav>
-        )}
-      </div>
-    </div>
-  );
-}
-
 /** Liên kết "Xoá lọc" đặt cuối `FilterBar` — một kiểu chung. */
 export function ClearFilters({ href, children }: { href: string; children: React.ReactNode }) {
   return (
@@ -593,21 +511,6 @@ export function Segmented({ label, items }: { label: string; items: { key?: stri
         </Link>
       ))}
     </nav>
-  );
-}
-
-/** Trạng thái rỗng ngoài bảng (danh sách thẻ, khối không có dữ liệu). */
-export function EmptyState({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <p className={cn("rounded-xl border bg-card px-3 py-6 text-center text-sm text-muted-foreground", className)}>{children}</p>;
-}
-
-/** Khung chờ cho một khối đang tải (Suspense/loading.tsx). */
-export function BlockSkeleton({ label, className }: { label?: string; className?: string }) {
-  return (
-    <section aria-label={label} aria-busy="true" className="space-y-2">
-      {label && <h2 className="font-medium">{label}</h2>}
-      <div aria-hidden className={cn("h-28 animate-pulse rounded-xl bg-muted", className)} />
-    </section>
   );
 }
 

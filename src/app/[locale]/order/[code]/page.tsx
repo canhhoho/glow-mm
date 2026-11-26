@@ -10,14 +10,15 @@ import { reviewablesForOrder } from "@/server/reviews/reviews";
 import { getStringSetting } from "@/server/settings";
 import { ContactLinks } from "@/components/store/contact-links";
 import { ReviewForm } from "@/components/store/review-form";
-import { BlockSkeleton, Notice } from "@/components/store/ui";
+import { Notice } from "@/components/store/ui";
+import { PageSkeleton } from "@/components/ui/skeleton";
 
 /** Đơn của khách (riêng tư): không cho máy tìm kiếm index (SEO, P7). */
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default function OrderPage(props: PageProps<"/[locale]/order/[code]">) {
   return (
-    <Suspense fallback={<BlockSkeleton />}>
+    <Suspense fallback={<PageSkeleton />}>
       <OrderContent {...props} />
     </Suspense>
   );

@@ -10,13 +10,13 @@ import { safeNextPath } from "@/server/auth/customer-policy";
 import { getCustomerUser } from "@/server/auth/customer-session";
 import { AuthCard } from "@/components/store/auth-card";
 import { PhoneRegisterForm, RegisterForm } from "@/components/store/auth-forms";
-import { BlockSkeleton } from "@/components/store/ui";
+import { PageSkeleton } from "@/components/ui/skeleton";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default function RegisterPage(props: PageProps<"/[locale]/register">) {
   return (
-    <Suspense fallback={<BlockSkeleton />}>
+    <Suspense fallback={<PageSkeleton />}>
       <RegisterContent {...props} />
     </Suspense>
   );

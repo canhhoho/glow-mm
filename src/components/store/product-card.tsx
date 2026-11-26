@@ -5,6 +5,7 @@ import { formatMmk } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import type { ProductCardData } from "@/server/catalog/store-queries";
 import { ImageFallback } from "./ui";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /** Ảnh thẻ: mobile 2 cột (50vw, như trước), sm 3 cột, lg 5 cột trong khung 1152px. */
 const CARD_SIZES = "(min-width: 1024px) 220px, (min-width: 640px) 33vw, 50vw";
@@ -46,7 +47,7 @@ export async function ProductCard({ p, locale }: { p: ProductCardData; locale: s
 
 export async function ProductGrid({ products, locale }: { products: ProductCardData[]; locale: string }) {
   const t = await getTranslations({ locale, namespace: "Catalog" });
-  if (products.length === 0) return <p className="text-sm text-muted-foreground">{t("empty")}</p>;
+  if (products.length === 0) return <EmptyState>{t("empty")}</EmptyState>;
   return (
     <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
       {products.map((p) => (

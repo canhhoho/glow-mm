@@ -7,6 +7,7 @@ import { FileField } from "@/components/admin/file-field";
 import { Button } from "@/components/ui/button";
 import { addProductImagesAction } from "@/server/catalog/actions";
 import type { ActionState } from "@/server/inventory/actions";
+import { FormMessage } from "@/components/ui/form-message";
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
@@ -40,14 +41,14 @@ export function ProductImageUpload({ productId }: { productId: string }) {
       </div>
       <p className="text-xs text-muted-foreground">{t("imagesHelp")}</p>
       {state?.error && (
-        <p role="alert" className="text-sm text-destructive">
+        <FormMessage>
           {td("error")}: {state.error}
-        </p>
+        </FormMessage>
       )}
       {state?.ok && !state.error && (
-        <p role="status" className="text-sm text-success">
+        <FormMessage tone="success">
           {t("imagesUploaded")}
-        </p>
+        </FormMessage>
       )}
     </form>
   );

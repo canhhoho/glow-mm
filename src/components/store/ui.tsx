@@ -2,11 +2,18 @@ import { ChevronRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { FIELD } from "@/components/ui/field";
+import { FIELD_LABEL } from "@/components/ui/form-field";
 import { buttonVariants } from "@/components/ui/button-variants";
 
-/** Lớp giao diện storefront (mobile-first, vùng bấm ≥ 44px, màu theo design token). */
+/**
+ * Lớp giao diện riêng storefront (mobile-first, vùng bấm ≥ 44px, màu theo design token). Primitive dùng chung
+ * (Badge, EmptyState, Skeleton, SubmitButton, FormMessage, Pagination) import thẳng từ `components/ui/` — docs/design-system.md.
+ */
 
 export const storeField = FIELD.touch;
+
+/** Nhãn trường storefront (chữ nằm trên ô) — cùng nguồn `FIELD_LABEL` với admin, mật độ touch. */
+export const storeLabel = FIELD_LABEL.touch;
 
 /**
  * Nút storefront = `buttonVariants` dùng chung, cỡ `touch` (h-11), dạng chuỗi class (không thêm JS client).
@@ -80,27 +87,6 @@ export function Breadcrumb({ label, items }: { label: string; items: { href?: st
         ))}
       </ol>
     </nav>
-  );
-}
-
-/** Khung chờ cao ≥ 1 màn hình: footer nằm ngoài khung nhìn → không gây layout shift khi nội dung stream vào. */
-export function ListSkeleton({ rows = 10 }: { rows?: number }) {
-  return (
-    <div className="grid min-h-dvh grid-cols-2 content-start gap-3 sm:grid-cols-3 lg:grid-cols-5" aria-hidden>
-      {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="aspect-[3/4] animate-pulse rounded-lg bg-accent" />
-      ))}
-    </div>
-  );
-}
-
-export function BlockSkeleton() {
-  return (
-    <div className="min-h-dvh space-y-3" aria-hidden>
-      <div className="h-6 w-1/2 animate-pulse rounded bg-accent" />
-      <div className="h-40 animate-pulse rounded-lg bg-accent" />
-      <div className="h-11 animate-pulse rounded-lg bg-accent" />
-    </div>
   );
 }
 

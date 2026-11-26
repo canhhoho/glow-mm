@@ -4,15 +4,15 @@ import { Plus } from "lucide-react";
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { fieldClass, fieldLabelClass } from "@/components/admin/ui";
+import { fieldClass, fieldLabelClass, FormMessage } from "@/components/admin/ui";
 import { addShipmentCostAction, allocateShipmentAction, attachBatchAction, createShipmentAction } from "@/server/inventory/actions";
 
 function ErrorText({ error }: { error?: string }) {
   const t = useTranslations("Docs");
   return error ? (
-    <p role="alert" className="text-sm text-destructive">
+    <FormMessage>
       {t("error")}: {error}
-    </p>
+    </FormMessage>
   ) : null;
 }
 

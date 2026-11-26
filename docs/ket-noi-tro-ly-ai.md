@@ -1,6 +1,6 @@
 # Kết nối trợ lý AI (OpenClaw) với web — thiết kế
 
-**Trạng thái: ĐÃ DUYỆT 23/11/2026** (5 quyết định ở §12; phase **P25** trong PLAN.md). **GĐ 3 đã code xong 24/11/2026** trên `dev` (bước 2–3 ở §11, chưa merge `main`); tiếp theo là bước 4 (chủ shop). GĐ 5 chưa làm.
+**Trạng thái: ĐÃ DUYỆT 23/11/2026** (5 quyết định ở §12; phase **P25** trong PLAN.md). **Trên production 25/11/2026:** GĐ 3 (đọc), gói A, GĐ 5 `receive_draft`, B1 `data_health`, B2 đọc đơn (ẩn khách), B3 `price_suggest`, B4 `public:read`, C2. `catalog_submit`, `import_commit` không làm. Còn: B5 Telegram, B6 đơn nháp (chưa duyệt).
 Người viết thiết kế: Claude Cowork. Người làm code: Claude Code, theo CLAUDE.md. Mục ghi **[CẦN XÁC MINH]** phải kiểm khi nối thật.
 
 ## 1. Mục tiêu và phạm vi
@@ -16,6 +16,7 @@ Agent quản trị **tc-admin** (hiện là agent `tc-cosmetics` trong OpenClaw,
 ## 2. Hiện trạng
 
 - **Agent:** OpenClaw 2026.11.6 trên máy Windows của chủ shop, model `google/gemini-3.5-flash-lite`. Workspace `D:\1. CONG VIEC\4. IT\8. openclaw\tc-cosmetics`: quy tắc (`AGENTS.md`), danh mục 74 SKU chép tay (`PRODUCTS.md`, bản 23/11/2026), quy trình soạn CSV nhập hàng (`NHAP-HANG.md`).
+- **Workspace agent trên GitHub (25/11/2026):** repo **private** `canhhoho/tc-cosmetics-agent` (nhánh `master`) — đồng bộ giữa máy Myanmar và máy Việt Nam; cài máy mới: `_quan-tri/VAN-HANH.md` mục 8 + file vá `_quan-tri/openclaw-agent.patch.json5` (không bí mật). Mỗi máy một token riêng.
 - **Skill workspace (gói C1, 25/11/2026):** `skills/tra-cuu-web/SKILL.md` (chọn công cụ `tandc__*`, cách dùng `data_health`) và `skills/nhap-hang/SKILL.md` (thay `NHAP-HANG.md`, file cũ chỉ còn dòng trỏ sang skill). `AGENTS.md` (luôn nạp) rút còn ~9 KB; agent chỉ đọc nội dung skill khi cần. Bản trước khi tách: `_backup_20261125-c1/`.
 - **Phương án tạm đang chạy:** agent soạn CSV đúng tiêu đề mẫu "Nhập Excel" → chủ shop tự tải lên `/admin/products/import`. Điểm yếu: agent đối chiếu SKU bằng `PRODUCTS.md` (cũ dần), không biết kho/giá thật; lỗi lệch kho làm giá VND bị hiểu là MMK mà web không báo (dòng có SKU, bỏ trống Kho bán → giá mua ghi theo tiền của kho hiện tại của SP).
 - **Web đã có đủ hàm domain** (xem `docs/ban-do-nghiep-vu-admin.md`): `previewCatalogImport` / `commitCatalogImport`, `saveReceiveDrafts` (phiếu nháp, tách theo kho), `submitProducts`, `stockSummary`, `availableToSell`, `loadVariantStock`, `listProductsPage`, `productReadinessView`. **Chưa có** cổng cho máy gọi vào: mọi action dựa trên phiên đăng nhập (`requirePermission` → cookie Better Auth).
@@ -180,7 +181,7 @@ Ghi chú triển khai và cách thử: §13.
 
 ## 13. Đã triển khai GĐ 3 (24/11/2026)
 
-**Code:** `src/server/agent/config.ts` (env, scope, so token) · `tools.ts` (7 công cụ đọc) · `mcp.ts` (JSON-RPC, kiểm quyền, rate limit, audit) · route `src/app/api/agent/mcp/route.ts` · biến `AGENT_ADMIN_*` trong `src/lib/env.ts` + `.env.example` (để trống = tắt; token mẫu `change-me…` bị chặn ở production). Test: `tests/unit/agent-config.test.ts`, `tests/integration/agent-mcp.test.ts`.
+**Code:** `src/server/agent/config.ts` (env, scope, so token) · `tools.ts` (`AGENT_TOOLS`: 14 công cụ đọc + `receive_draft`) · `mask.ts` (ẩn thông tin khách) · `mcp.ts` (JSON-RPC, kiểm quyền, rate limit, audit) · route `src/app/api/agent/mcp/route.ts` · biến `AGENT_ADMIN_*` trong `src/lib/env.ts` + `.env.example` (để trống = tắt; token mẫu `change-me…` bị chặn ở production). Test: `tests/unit/agent-config.test.ts`, `tests/integration/agent-mcp.test.ts`.
 
 **Bước 4 — chủ shop làm (Claude không deploy):**
 1. `/admin/users` → tạo nhân viên "Trợ lý AI", vai trò **Quản lý kho**, rồi **khoá** tài khoản. Lấy id từ đường dẫn `/admin/users/<id>`.

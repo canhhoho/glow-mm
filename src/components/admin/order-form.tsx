@@ -12,6 +12,7 @@ import { createOrderAction } from "@/server/orders/actions";
 import type { OrderFormOptions } from "@/server/orders/admin-queries";
 import type { ActionState } from "@/server/inventory/actions";
 import { cn } from "@/lib/utils";
+import { FormMessage } from "@/components/ui/form-message";
 
 type Line = { key: number; variantId: string; qty: string };
 export type OrderFormInitial = { phone: string; phone2: string; name: string; townshipId: string; addressLine: string };
@@ -272,9 +273,9 @@ export function OrderForm({
       </dl>
 
       {state?.error && (
-        <p role="alert" className="text-sm text-destructive">
+        <FormMessage>
           {t("error")}: {state.error}
-        </p>
+        </FormMessage>
       )}
       <Button size={btn} type="submit" disabled={pending}><Plus aria-hidden className="size-4 shrink-0" /> {t("create")}</Button>
     </form>
