@@ -1,5 +1,7 @@
 # UI_AUDIT — T&C Cosmetics
 
+> **LỊCH SỬ** — quy chuẩn hiện hành: [docs/design-system.md](docs/design-system.md) (26/11/2026). Giữ để tra cứu, không cập nhật.
+
 > Ngày: 2026-11-09 · Nhánh `dev` · Chỉ báo cáo, chưa sửa code. Mọi "phương án" là đề xuất **chờ duyệt**.
 
 ### 0. Tóm tắt

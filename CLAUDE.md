@@ -6,6 +6,7 @@ Web bán mỹ phẩm B2C **T&C Cosmetics** (tên cũ Glow VN) nhập từ Việt
 |---|---|
 | Kiến trúc, quy tắc kho/giá/nhập hàng chi tiết, hạ tầng, i18n, auth, cache | [docs/kien-truc.md](docs/kien-truc.md) |
 | Sửa giá/kho/đơn/hoa hồng: điểm vào, hàm domain, nơi đọc/ghi | [docs/ban-do-nghiep-vu-admin.md](docs/ban-do-nghiep-vu-admin.md) |
+| **Giao diện**: token, component dùng chung, quy chuẩn UI 3 portal (đọc trước khi tạo/sửa UI) | [docs/design-system.md](docs/design-system.md) |
 | Hướng dẫn người dùng (admin / CTV) | [docs/huong-dan-van-hanh-admin.md](docs/huong-dan-van-hanh-admin.md), [docs/huong-dan-cong-ctv.md](docs/huong-dan-cong-ctv.md) |
 | Triển khai server `10.201.42.65` (tandcstore.com, Docker Compose, **không** Coolify) | [docs/lenh-trien-khai-tandcstore.md](docs/lenh-trien-khai-tandcstore.md), [docs/huong-dan-trien-khai-tandcstore.md](docs/huong-dan-trien-khai-tandcstore.md), [DEPLOY.md](DEPLOY.md) (§2 Coolify chỉ là lịch sử) |
 | **Trạng thái hiện tại, việc dở, bước tiếp theo** (đọc đầu phiên) · kế hoạch / phase | [PLAN.md](PLAN.md) mục đầu |
